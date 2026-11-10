@@ -6,10 +6,22 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .platform_capabilities_analytics_account_numbers_item import PlatformCapabilitiesAnalyticsAccountNumbersItem
+from .platform_capabilities_analytics_post_counts_item import PlatformCapabilitiesAnalyticsPostCountsItem
 
 
 class PlatformCapabilitiesAnalytics(UniversalBaseModel):
+    account_numbers: typing_extensions.Annotated[
+        typing.List[PlatformCapabilitiesAnalyticsAccountNumbersItem],
+        FieldMetadata(alias="accountNumbers"),
+        pydantic.Field(alias="accountNumbers"),
+    ]
     per_post: typing_extensions.Annotated[bool, FieldMetadata(alias="perPost"), pydantic.Field(alias="perPost")]
+    post_counts: typing_extensions.Annotated[
+        typing.List[PlatformCapabilitiesAnalyticsPostCountsItem],
+        FieldMetadata(alias="postCounts"),
+        pydantic.Field(alias="postCounts"),
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

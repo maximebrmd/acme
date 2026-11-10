@@ -9,8 +9,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import social.peal.core.ObjectMappers;
@@ -18,18 +21,38 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = PlatformCapabilitiesAnalytics.Builder.class)
 public final class PlatformCapabilitiesAnalytics {
+    private final List<PlatformCapabilitiesAnalyticsAccountNumbersItem> accountNumbers;
+
     private final boolean perPost;
+
+    private final List<PlatformCapabilitiesAnalyticsPostCountsItem> postCounts;
 
     private final Map<String, Object> additionalProperties;
 
-    private PlatformCapabilitiesAnalytics(boolean perPost, Map<String, Object> additionalProperties) {
+    private PlatformCapabilitiesAnalytics(
+            List<PlatformCapabilitiesAnalyticsAccountNumbersItem> accountNumbers,
+            boolean perPost,
+            List<PlatformCapabilitiesAnalyticsPostCountsItem> postCounts,
+            Map<String, Object> additionalProperties) {
+        this.accountNumbers = accountNumbers;
         this.perPost = perPost;
+        this.postCounts = postCounts;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("accountNumbers")
+    public List<PlatformCapabilitiesAnalyticsAccountNumbersItem> getAccountNumbers() {
+        return accountNumbers;
     }
 
     @JsonProperty("perPost")
     public boolean getPerPost() {
         return perPost;
+    }
+
+    @JsonProperty("postCounts")
+    public List<PlatformCapabilitiesAnalyticsPostCountsItem> getPostCounts() {
+        return postCounts;
     }
 
     @java.lang.Override
@@ -44,12 +67,14 @@ public final class PlatformCapabilitiesAnalytics {
     }
 
     private boolean equalTo(PlatformCapabilitiesAnalytics other) {
-        return perPost == other.perPost;
+        return accountNumbers.equals(other.accountNumbers)
+                && perPost == other.perPost
+                && postCounts.equals(other.postCounts);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.perPost);
+        return Objects.hash(this.accountNumbers, this.perPost, this.postCounts);
     }
 
     @java.lang.Override
@@ -73,11 +98,27 @@ public final class PlatformCapabilitiesAnalytics {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage accountNumbers(List<PlatformCapabilitiesAnalyticsAccountNumbersItem> accountNumbers);
+
+        _FinalStage addAccountNumbers(PlatformCapabilitiesAnalyticsAccountNumbersItem accountNumbers);
+
+        _FinalStage addAllAccountNumbers(List<PlatformCapabilitiesAnalyticsAccountNumbersItem> accountNumbers);
+
+        _FinalStage postCounts(List<PlatformCapabilitiesAnalyticsPostCountsItem> postCounts);
+
+        _FinalStage addPostCounts(PlatformCapabilitiesAnalyticsPostCountsItem postCounts);
+
+        _FinalStage addAllPostCounts(List<PlatformCapabilitiesAnalyticsPostCountsItem> postCounts);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements PerPostStage, _FinalStage {
         private boolean perPost;
+
+        private List<PlatformCapabilitiesAnalyticsPostCountsItem> postCounts = new ArrayList<>();
+
+        private List<PlatformCapabilitiesAnalyticsAccountNumbersItem> accountNumbers = new ArrayList<>();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -85,7 +126,9 @@ public final class PlatformCapabilitiesAnalytics {
 
         @java.lang.Override
         public Builder from(PlatformCapabilitiesAnalytics other) {
+            accountNumbers(other.getAccountNumbers());
             perPost(other.getPerPost());
+            postCounts(other.getPostCounts());
             return this;
         }
 
@@ -97,13 +140,63 @@ public final class PlatformCapabilitiesAnalytics {
         }
 
         @java.lang.Override
+        public _FinalStage addAllPostCounts(List<PlatformCapabilitiesAnalyticsPostCountsItem> postCounts) {
+            if (postCounts != null) {
+                this.postCounts.addAll(postCounts);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addPostCounts(PlatformCapabilitiesAnalyticsPostCountsItem postCounts) {
+            this.postCounts.add(postCounts);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "postCounts", nulls = Nulls.SKIP)
+        public _FinalStage postCounts(List<PlatformCapabilitiesAnalyticsPostCountsItem> postCounts) {
+            this.postCounts.clear();
+            if (postCounts != null) {
+                this.postCounts.addAll(postCounts);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addAllAccountNumbers(List<PlatformCapabilitiesAnalyticsAccountNumbersItem> accountNumbers) {
+            if (accountNumbers != null) {
+                this.accountNumbers.addAll(accountNumbers);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addAccountNumbers(PlatformCapabilitiesAnalyticsAccountNumbersItem accountNumbers) {
+            this.accountNumbers.add(accountNumbers);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "accountNumbers", nulls = Nulls.SKIP)
+        public _FinalStage accountNumbers(List<PlatformCapabilitiesAnalyticsAccountNumbersItem> accountNumbers) {
+            this.accountNumbers.clear();
+            if (accountNumbers != null) {
+                this.accountNumbers.addAll(accountNumbers);
+            }
+            return this;
+        }
+
+        @java.lang.Override
         public PlatformCapabilitiesAnalytics build() {
-            return new PlatformCapabilitiesAnalytics(perPost, additionalProperties);
+            return new PlatformCapabilitiesAnalytics(accountNumbers, perPost, postCounts, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("perPost")) {
+            if (key.equalsIgnoreCase("accountNumbers")
+                    || key.equalsIgnoreCase("perPost")
+                    || key.equalsIgnoreCase("postCounts")) {
                 return;
             }
             this.additionalProperties.put(key, value);

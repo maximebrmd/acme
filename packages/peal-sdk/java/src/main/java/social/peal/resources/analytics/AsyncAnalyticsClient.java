@@ -3,13 +3,19 @@
  */
 package social.peal.resources.analytics;
 
+import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 import social.peal.core.ClientOptions;
 import social.peal.core.PealClientHttpResponse;
 import social.peal.core.RequestOptions;
+import social.peal.resources.analytics.requests.ChannelAnalyticsRequest;
+import social.peal.resources.analytics.requests.DashboardAnalyticsRequest;
+import social.peal.resources.analytics.requests.ExportAnalyticsRequest;
 import social.peal.resources.analytics.requests.PostAnalyticsRequest;
 import social.peal.resources.analytics.requests.SummaryAnalyticsRequest;
+import social.peal.types.AnalyticsDashboard;
 import social.peal.types.AnalyticsSummary;
+import social.peal.types.ChannelSeries;
 import social.peal.types.PostAnalytics;
 
 public class AsyncAnalyticsClient {
@@ -52,6 +58,99 @@ public class AsyncAnalyticsClient {
         CompletableFuture<PealClientHttpResponse<AnalyticsSummary>> rawFuture =
                 this.rawClient.summary(workspaceId, request, requestOptions);
         CompletableFuture<AnalyticsSummary> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the <code>topPosts</code> (5 unless said, 25 at most) with the most engagement. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+     */
+    public CompletableFuture<AnalyticsDashboard> dashboard(String workspaceId, DashboardAnalyticsRequest request) {
+        CompletableFuture<PealClientHttpResponse<AnalyticsDashboard>> rawFuture =
+                this.rawClient.dashboard(workspaceId, request);
+        CompletableFuture<AnalyticsDashboard> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the <code>topPosts</code> (5 unless said, 25 at most) with the most engagement. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+     */
+    public CompletableFuture<AnalyticsDashboard> dashboard(
+            String workspaceId, DashboardAnalyticsRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<AnalyticsDashboard>> rawFuture =
+                this.rawClient.dashboard(workspaceId, request, requestOptions);
+        CompletableFuture<AnalyticsDashboard> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+     */
+    public CompletableFuture<ChannelSeries> channel(
+            String workspaceId, String channelId, ChannelAnalyticsRequest request) {
+        CompletableFuture<PealClientHttpResponse<ChannelSeries>> rawFuture =
+                this.rawClient.channel(workspaceId, channelId, request);
+        CompletableFuture<ChannelSeries> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+     */
+    public CompletableFuture<ChannelSeries> channel(
+            String workspaceId, String channelId, ChannelAnalyticsRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<ChannelSeries>> rawFuture =
+                this.rawClient.channel(workspaceId, channelId, request, requestOptions);
+        CompletableFuture<ChannelSeries> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Streams the workspace's analytics as a file: <code>kind=posts</code> lists each post published in the range on each channel with its latest counts, <code>kind=accounts</code> each channel's account day by day. <code>format=csv</code> (the default) writes a header line then one line a row, as RFC 4180; <code>format=json</code> writes one JSON object a line (<code>application/x-ndjson</code>). A number a platform does not give is empty in CSV and null in JSON. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Needs analytics:read.
+     */
+    public CompletableFuture<InputStream> export(String workspaceId, ExportAnalyticsRequest request) {
+        CompletableFuture<PealClientHttpResponse<InputStream>> rawFuture = this.rawClient.export(workspaceId, request);
+        CompletableFuture<InputStream> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Streams the workspace's analytics as a file: <code>kind=posts</code> lists each post published in the range on each channel with its latest counts, <code>kind=accounts</code> each channel's account day by day. <code>format=csv</code> (the default) writes a header line then one line a row, as RFC 4180; <code>format=json</code> writes one JSON object a line (<code>application/x-ndjson</code>). A number a platform does not give is empty in CSV and null in JSON. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Needs analytics:read.
+     */
+    public CompletableFuture<InputStream> export(
+            String workspaceId, ExportAnalyticsRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<InputStream>> rawFuture =
+                this.rawClient.export(workspaceId, request, requestOptions);
+        CompletableFuture<InputStream> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);

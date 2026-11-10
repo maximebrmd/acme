@@ -22,25 +22,59 @@ CREATE SCHEMA "webhooks";
 --> statement-breakpoint
 CREATE SCHEMA "auth";
 --> statement-breakpoint
+CREATE TABLE "analytics"."account_snapshots" (
+	"channel_id" uuid,
+	"collected_at" timestamp with time zone NOT NULL,
+	"day" date,
+	"followers" integer,
+	"following" integer,
+	"posts" integer,
+	"reach" integer,
+	"views" integer,
+	CONSTRAINT "account_snapshots_pkey" PRIMARY KEY("channel_id","day"),
+	CONSTRAINT "account_snapshots_counts" CHECK (coalesce("followers", 0) >= 0 AND coalesce("following", 0) >= 0 AND coalesce("posts", 0) >= 0 AND coalesce("reach", 0) >= 0 AND coalesce("views", 0) >= 0)
+);
+--> statement-breakpoint
 CREATE TABLE "analytics"."erased_workspaces" (
 	"erased_at" timestamp with time zone NOT NULL,
 	"workspace_id" uuid PRIMARY KEY
 );
 --> statement-breakpoint
 CREATE TABLE "analytics"."metric_snapshots" (
+	"clicks" integer,
 	"collected_at" timestamp with time zone,
 	"impressions" integer,
 	"likes" integer NOT NULL,
 	"quotes" integer,
+	"reach" integer,
 	"replies" integer NOT NULL,
 	"reposts" integer NOT NULL,
+	"saves" integer,
 	"target_id" uuid,
 	CONSTRAINT "metric_snapshots_pkey" PRIMARY KEY("target_id","collected_at"),
-	CONSTRAINT "metric_snapshots_counts" CHECK ("likes" >= 0 AND "reposts" >= 0 AND "replies" >= 0 AND coalesce("quotes", 0) >= 0 AND coalesce("impressions", 0) >= 0)
+	CONSTRAINT "metric_snapshots_counts" CHECK ("likes" >= 0 AND "reposts" >= 0 AND "replies" >= 0 AND coalesce("quotes", 0) >= 0 AND coalesce("impressions", 0) >= 0 AND coalesce("clicks", 0) >= 0 AND coalesce("reach", 0) >= 0 AND coalesce("saves", 0) >= 0)
+);
+--> statement-breakpoint
+CREATE TABLE "analytics"."paid_reads" (
+	"day" date,
+	"platform" text,
+	"resource" text,
+	"workspace_id" uuid,
+	CONSTRAINT "paid_reads_pkey" PRIMARY KEY("workspace_id","platform","day","resource")
+);
+--> statement-breakpoint
+CREATE TABLE "analytics"."tracked_channels" (
+	"channel_id" uuid PRIMARY KEY,
+	"gone_at" timestamp with time zone,
+	"last_collected_at" timestamp with time zone,
+	"next_collection_at" timestamp with time zone NOT NULL,
+	"platform" text NOT NULL,
+	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "analytics"."tracked_posts" (
 	"channel_id" uuid NOT NULL,
+	"clicks" integer,
 	"end_reason" text,
 	"ended_at" timestamp with time zone,
 	"impressions" integer,
@@ -52,8 +86,10 @@ CREATE TABLE "analytics"."tracked_posts" (
 	"post_id" uuid NOT NULL,
 	"published_at" timestamp with time zone NOT NULL,
 	"quotes" integer,
+	"reach" integer,
 	"replies" integer,
 	"reposts" integer,
+	"saves" integer,
 	"target_id" uuid PRIMARY KEY,
 	"workspace_id" uuid NOT NULL,
 	CONSTRAINT "tracked_posts_collection" CHECK (("next_collection_at" IS NULL) <> ("ended_at" IS NULL))
@@ -830,6 +866,9 @@ CREATE TABLE "auth"."verification" (
 	"updated_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
+CREATE INDEX "paid_reads_day" ON "analytics"."paid_reads" ("day");--> statement-breakpoint
+CREATE INDEX "tracked_channels_due" ON "analytics"."tracked_channels" ("next_collection_at","channel_id") WHERE "gone_at" IS NULL;--> statement-breakpoint
+CREATE INDEX "tracked_channels_workspace" ON "analytics"."tracked_channels" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collection_at","channel_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_channel_due" ON "analytics"."tracked_posts" ("channel_id","next_collection_at","target_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" ("workspace_id","published_at");--> statement-breakpoint
@@ -922,6 +961,7 @@ CREATE INDEX "oauthRefreshToken_authorizationCodeId_idx" ON "auth"."oauth_refres
 CREATE UNIQUE INDEX "organization_slug_uidx" ON "auth"."organization" ("slug");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "auth"."session" ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "auth"."verification" ("identifier");--> statement-breakpoint
+ALTER TABLE "analytics"."account_snapshots" ADD CONSTRAINT "account_snapshots_channel_id_tracked_channels_channel_id_fkey" FOREIGN KEY ("channel_id") REFERENCES "analytics"."tracked_channels"("channel_id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "analytics"."metric_snapshots" ADD CONSTRAINT "metric_snapshots_target_id_tracked_posts_target_id_fkey" FOREIGN KEY ("target_id") REFERENCES "analytics"."tracked_posts"("target_id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."post_targets" ADD CONSTRAINT "post_targets_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "publishing"."posts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_attempts" ADD CONSTRAINT "publication_attempts_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint

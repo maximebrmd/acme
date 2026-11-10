@@ -7,11 +7,14 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class PostMetrics(UniversalBaseModel):
+    clicks: typing.Optional[int] = None
     impressions: typing.Optional[int] = None
     likes: int
     quotes: typing.Optional[int] = None
+    reach: typing.Optional[int] = None
     replies: int
     reposts: int
+    saves: typing.Optional[int] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

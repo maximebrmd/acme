@@ -1,0 +1,116 @@
+import { DateTime, Option, Schema } from "effect";
+import { exportColumns } from "peal-contract";
+import type { ExportFormat, ExportKind } from "peal-contract";
+
+import type { ExportRow } from "#analytics/application/analytics-queries.ts";
+import type { PostMetrics } from "#analytics/domain/post-metrics.ts";
+
+// How an export is written: a line a row, as CSV or as JSON.
+
+/** A cell: text, a number, or nothing where a platform gives none. */
+export type Cell = number | string | null;
+
+const isNumber = Schema.is(Schema.Number);
+
+const needsQuotes = /[",\r\n]/u;
+
+// A spreadsheet takes a cell that starts with one of these for a formula.
+const startsFormula = /^[=+\-@\t\r]/u;
+
+const cellText = (cell: Cell): string => {
+  if (cell === null) {
+    return "";
+  }
+
+  if (isNumber(cell)) {
+    return String(cell);
+  }
+
+  const safe = startsFormula.test(cell) ? `'${cell}` : cell;
+
+  return needsQuotes.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
+};
+
+/**
+ * A line of CSV as RFC 4180 writes it: cells between commas, one with a
+ * comma, a quote or a line break in quotes with its quotes doubled, and
+ * CRLF at the end. Text that would start a formula in a spreadsheet gets
+ * an apostrophe first, so a file opened there runs nothing.
+ */
+export const csvLine = (cells: readonly Cell[]): string =>
+  `${cells.map(cellText).join(",")}\r\n`;
+
+/** A line of JSON: one object, its keys the columns in order. */
+export const ndjsonLine = (
+  columns: readonly string[],
+  cells: readonly Cell[]
+): string =>
+  `${JSON.stringify(
+    Object.fromEntries(
+      columns.map((column, index) => [column, cells[index] ?? null])
+    )
+  )}\n`;
+
+const instant = (at: Option.Option<DateTime.Utc>) =>
+  at.pipe(Option.map(DateTime.formatIso), Option.getOrNull);
+
+/** A row's cells, in the order of its kind's columns. */
+export const cellsOf = (exported: ExportRow): readonly Cell[] => {
+  if (exported._tag === "accountDay") {
+    const { row } = exported;
+
+    return [
+      row.day,
+      row.channelId,
+      row.platform,
+      Option.getOrNull(row.followers),
+      Option.getOrNull(row.following),
+      Option.getOrNull(row.posts),
+      Option.getOrNull(row.views),
+      Option.getOrNull(row.reach),
+    ];
+  }
+
+  const { platform, post } = exported.row;
+
+  const count = (pick: (metrics: PostMetrics) => Option.Option<number>) =>
+    post.latest.pipe(Option.flatMap(pick), Option.getOrNull);
+
+  return [
+    DateTime.formatIso(post.publishedAt),
+    post.postId,
+    post.targetId,
+    post.channelId,
+    Option.getOrNull(platform),
+    Option.getOrNull(post.permalink),
+    count((metrics) => Option.some(metrics.likes)),
+    count((metrics) => Option.some(metrics.reposts)),
+    count((metrics) => Option.some(metrics.replies)),
+    count((metrics) => metrics.quotes),
+    count((metrics) => metrics.impressions),
+    count((metrics) => metrics.clicks),
+    count((metrics) => metrics.reach),
+    count((metrics) => metrics.saves),
+    instant(post.lastCollectedAt),
+  ];
+};
+
+/** The media type of each format. */
+export const contentTypes = {
+  csv: "text/csv; charset=utf-8",
+  json: "application/x-ndjson",
+} as const satisfies Readonly<Record<ExportFormat, string>>;
+
+/** The line that starts a file: a CSV's header, nothing for JSON. */
+export const headerOf = (kind: ExportKind, format: ExportFormat): string =>
+  format === "csv" ? csvLine(exportColumns[kind]) : "";
+
+/** A row's line in a format. */
+export const lineOf = (
+  kind: ExportKind,
+  format: ExportFormat,
+  row: ExportRow
+): string =>
+  format === "csv"
+    ? csvLine(cellsOf(row))
+    : ndjsonLine(exportColumns[kind], cellsOf(row));

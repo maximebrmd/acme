@@ -6,7 +6,7 @@
   "Analytics": {
     "open": "Analytics",
     "openLabel": "Analytics of {workspace}",
-    "metric": "{metric, select, posts {Posts} likes {Likes} reposts {Reposts} replies {Replies} quotes {Quotes} impressions {Impressions} other {{metric}}}",
+    "metric": "{metric, select, posts {Posts} likes {Likes} reposts {Reposts} replies {Replies} quotes {Quotes} impressions {Impressions} engagement {Engagement} followers {Followers} views {Views} reach {Reach} clicks {Clicks} saves {Saves} other {{metric}}}",
     "page": {
       "title": "Analytics",
       "description": "How the posts published over a range of days did on their platforms. Days run in your time zone, {zone}.",
@@ -15,9 +15,9 @@
       "loading": "Loading the analytics…",
       "loadFailed": "The analytics could not be loaded.",
       "retry": "Try again",
-      "empty": "No post went out on Mastodon or Bluesky in this range yet, the platforms Peal reads counts on so far. A post’s counts appear within the hour after it goes live.",
+      "empty": "No post went out in this range yet on a platform Peal reads counts on. A post’s counts appear within the hour after it goes live.",
       "collection": "Peal reads each post’s counts every hour for 48 hours after it goes live, then every day until it is 30 days old.",
-      "noImpressions": "Mastodon and Bluesky do not tell how many people saw a post, so there are no impressions; TikTok's and YouTube's are their views."
+      "noImpressions": "No post of this range is on a platform that tells how many times it was shown, so there are no impressions. Mastodon and Bluesky tell none; TikTok’s and YouTube’s are their views."
     },
     "totals": {
       "title": "Totals",
@@ -58,6 +58,32 @@
       "uncounted": "Counts are not available on {platforms}: Peal reads them on {counted} only, so far.",
       "countedName": "{platform, select, linkedin {LinkedIn pages} other {{name}}}",
       "uncountedName": "{platform, select, linkedin {LinkedIn profiles} other {{name}}}"
+    },
+    "trend": {
+      "title": "Against the {days, plural, one {day} other {# days}} before",
+      "description": "The posts published over the range, beside those published from {from} to {to}.",
+      "more": "{count} more{shared, select, yes { ({share})} other {}}",
+      "fewer": "{count} fewer{shared, select, yes { ({share})} other {}}",
+      "same": "No change",
+      "unknown": "Not given by the platform"
+    },
+    "accounts": {
+      "title": "Followers",
+      "description": "Peal reads each channel’s followers once a day, from the day the channel is connected. Where a platform counts an account’s views and reach by day, they are in the table.",
+      "none": "Peal reads each channel’s followers once a day, from the day the channel is connected. Nothing was read over this range yet.",
+      "gained": "{change, select, more {{count} more} fewer {{count} fewer} other {No change}} over the range{range, select, previous { before} other {}}",
+      "views": "Show the followers as",
+      "caption": "Followers at the end of each day, from {from} to {to}. The table gives the same figures, with views and reach.",
+      "tableCaption": "Followers, views and reach each day",
+      "byChannel": "Followers at the end of the range, by channel",
+      "change": "Change",
+      "disconnected": "A channel no longer connected"
+    },
+    "export": {
+      "title": "Export",
+      "description": "The same numbers as CSV files, to open in a spreadsheet. A number a platform does not give is left empty.",
+      "posts": "Posts of the range",
+      "accounts": "Accounts, day by day"
     }
   },
   "Assistant": {

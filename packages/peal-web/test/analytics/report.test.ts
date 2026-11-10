@@ -10,6 +10,7 @@ import {
   readingRows,
   shownKeys,
   summaryTimeZone,
+  trendOf,
 } from "#analytics/report.ts";
 
 const summaryWith = (quotes: number | null, posts = 1): AnalyticsSummary => ({
@@ -95,11 +96,14 @@ describe(engagementOf, () => {
   it("adds likes, reposts, replies and quotes, not impressions", () => {
     expect(
       engagementOf({
+        clicks: null,
         impressions: 900,
         likes: 3,
         quotes: null,
+        reach: null,
         replies: 2,
         reposts: 1,
+        saves: null,
       })
     ).toBe(6);
   });
@@ -112,11 +116,14 @@ describe(readingRows, () => {
         {
           collectedAt: DateTime.makeUnsafe("2026-11-09T10:07:00.000Z"),
           metrics: {
+            clicks: null,
             impressions: null,
             likes: 3,
             quotes: null,
+            reach: null,
             replies: 0,
             reposts: 1,
+            saves: null,
           },
         },
       ])
@@ -129,5 +136,19 @@ describe(readingRows, () => {
         reposts: 1,
       },
     ]);
+  });
+});
+
+describe(trendOf, () => {
+  it("is the difference against the period before, and its share of it", () => {
+    expect(trendOf(12, 8)).toStrictEqual({ change: 4, share: 0.5 });
+    expect(trendOf(6, 8)).toStrictEqual({ change: -2, share: -0.25 });
+    expect(trendOf(8, 8)).toStrictEqual({ change: 0, share: 0 });
+  });
+
+  it("has no share from nothing, and is unknown when either number is", () => {
+    expect(trendOf(5, 0)).toStrictEqual({ change: 5, share: null });
+    expect(trendOf(null, 3)).toBeNull();
+    expect(trendOf(3, null)).toBeNull();
   });
 });

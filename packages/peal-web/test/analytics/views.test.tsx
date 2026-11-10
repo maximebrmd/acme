@@ -1,10 +1,20 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
-import type { AnalyticsSummary, Channel, PostAnalytics } from "peal-contract";
+import type {
+  AnalyticsDashboard,
+  AnalyticsSummary,
+  Channel,
+  DashboardTotals,
+  PostAnalytics,
+} from "peal-contract";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import {
+  AccountDaysTable,
+  AccountNumbers,
+} from "#components/analytics/account-numbers.tsx";
 import { ChannelTotals } from "#components/analytics/channel-totals.tsx";
 import { EngagementChart } from "#components/analytics/engagement-chart.tsx";
 import { PostMetricsView } from "#components/analytics/post-metrics.tsx";
@@ -152,11 +162,14 @@ const analytics: PostAnalytics = {
       collecting: true,
       lastCollectedAt: DateTime.makeUnsafe("2026-11-09T10:07:00.000Z"),
       latest: {
+        clicks: null,
         impressions: null,
         likes: 12,
         quotes: 2,
+        reach: null,
         replies: 4,
         reposts: 3,
+        saves: null,
       },
       permalink: "https://mastodon.test/@alice/1",
       publishedAt: DateTime.makeUnsafe("2026-11-09T08:00:00.000Z"),
@@ -221,7 +234,7 @@ describe(PostMetricsView, () => {
     );
 
     expect(html).toContain(
-      "Peal relève pour l’instant les chiffres sur Mastodon, Bluesky, TikTok, YouTube, Instagram, Pinterest et les pages LinkedIn, dans l’heure qui suit la parution."
+      "Peal relève pour l’instant les chiffres sur Mastodon, Bluesky, TikTok, YouTube, Instagram, Pinterest, les pages LinkedIn, Facebook, Threads et X, dans l’heure qui suit la parution."
     );
   });
 
@@ -233,18 +246,19 @@ describe(PostMetricsView, () => {
       platform: "linkedin",
     };
 
-    const x: Channel = {
+    // A location: Google gives no count of a post.
+    const business: Channel = {
       ...channel,
-      handle: "@alice_example",
+      handle: "Example Bakery",
       id: "01900000-0000-7000-8000-0000000000c4",
-      platform: "x",
+      platform: "googleBusiness",
     };
 
     const view = (
       <PostMetricsView
         analytics={{ postId: analytics.postId, targets: [] }}
-        channels={[channel, linkedin, x]}
-        publishedOn={[linkedin.id, x.id]}
+        channels={[channel, linkedin, business]}
+        publishedOn={[linkedin.id, business.id]}
       />
     );
 
@@ -252,11 +266,11 @@ describe(PostMetricsView, () => {
     const french = await render("fr", view);
 
     expect(english).toContain(
-      "Counts are not available on LinkedIn profiles and X: Peal reads them on Mastodon, Bluesky, TikTok, YouTube, Instagram, Pinterest, and LinkedIn pages only, so far."
+      "Counts are not available on LinkedIn profiles and Google Business Profile: Peal reads them on Mastodon, Bluesky, TikTok, YouTube, Instagram, Pinterest, LinkedIn pages, Facebook, Threads, and X only, so far."
     );
     expect(english).not.toContain("within the hour");
     expect(french).toContain(
-      "Les chiffres ne sont pas disponibles sur les profils LinkedIn et X : Peal ne les relève pour l’instant que sur Mastodon, Bluesky, TikTok, YouTube, Instagram, Pinterest et les pages LinkedIn."
+      "Les chiffres ne sont pas disponibles sur les profils LinkedIn et Google Business Profile : Peal ne les relève pour l’instant que sur Mastodon, Bluesky, TikTok, YouTube, Instagram, Pinterest, les pages LinkedIn, Facebook, Threads et X."
     );
     expect(french).not.toContain("dans l’heure");
   });
@@ -330,5 +344,155 @@ describe(PostMetricsView, () => {
 
     expect(html).toContain(">12<");
     expect(html).toContain("Counts are not available on LinkedIn profiles:");
+  });
+});
+
+const totalsOf = (likes: number): DashboardTotals => ({
+  clicks: null,
+  engagement: likes + 2,
+  impressions: null,
+  likes,
+  posts: 3,
+  quotes: null,
+  reach: null,
+  replies: 1,
+  reposts: 1,
+  saves: null,
+});
+
+const numbers = {
+  followers: { current: 1250, gained: 30 },
+  previousFollowers: { current: 1220, gained: -4 },
+  previousTotals: totalsOf(8),
+  totals: totalsOf(12),
+};
+
+const dashboard: AnalyticsDashboard = {
+  ...numbers,
+  channels: [
+    { ...numbers, channelId: channel.id, platform: "mastodon" },
+    {
+      ...numbers,
+      channelId: "01900000-0000-7000-8000-0000000000c9",
+      followers: { current: null, gained: null },
+      platform: null,
+    },
+  ],
+  days: [
+    {
+      date: "2026-11-08",
+      followers: null,
+      likes: 0,
+      quotes: 0,
+      reach: null,
+      replies: 0,
+      reposts: 0,
+      views: null,
+    },
+    {
+      date: "2026-11-09",
+      followers: 1250,
+      likes: 4,
+      quotes: 0,
+      reach: 300,
+      replies: 0,
+      reposts: 0,
+      views: 420,
+    },
+  ],
+  from: "2026-11-08",
+  platforms: [{ ...numbers, platform: "mastodon" }],
+  previous: { from: "2026-11-06", to: "2026-11-07" },
+  timeZone: "Europe/Paris",
+  to: "2026-11-09",
+  topPosts: [],
+};
+
+const shown = async () => {
+  const html = await render(
+    "en",
+    <AccountNumbers
+      channels={[channel]}
+      dashboard={dashboard}
+      exports={{
+        accounts: "/export?kind=accounts",
+        posts: "/export?kind=posts",
+      }}
+    />
+  );
+
+  return html;
+};
+
+describe("the accounts' numbers", () => {
+  it("shows the trend against the period before", async () => {
+    const html = await shown();
+
+    expect(html).toContain("Against the 2 days before");
+    // 14 interactions against 10: 4 more, 40%.
+    expect(html).toContain("4 more (+40%)");
+    // Unknown is written, never as zero.
+    expect(html).toContain("Not given by the platform");
+    expect(html).toContain('href="/export?kind=posts"');
+  });
+
+  it("shows followers with what they gained, in all and by channel", async () => {
+    const html = await shown();
+
+    expect(html).toContain(">1,250<");
+    expect(html).toContain("30 more over the range");
+    expect(html).toContain("4 fewer over the range before");
+    expect(html).toContain("@alice@mastodon.test");
+    expect(html).toContain("A channel no longer connected");
+  });
+
+  it("hides the followers chart from screen readers", async () => {
+    const html = await shown();
+
+    expect(html).toContain('aria-label="Show the followers as"');
+    expect(html).toMatch(/data-slot="chart"[^>]*aria-hidden="true"/u);
+    expect(html).toContain(
+      "Followers at the end of each day, from Nov 8, 2026 to Nov 9, 2026."
+    );
+  });
+
+  it("gives the chart's figures as a table, with views and reach", async () => {
+    const table = await render(
+      "en",
+      <AccountDaysTable days={dashboard.days} />
+    );
+
+    expect(table).toContain("Followers, views and reach each day");
+    expect(table).toContain("Nov 9, 2026");
+    expect(table).toContain(">1,250<");
+    expect(table).toContain(">420<");
+    // The day nothing was read says so.
+    expect(table).toContain("Not given by the platform");
+  });
+
+  it("shows nothing of followers where no account was read yet", async () => {
+    const html = await render(
+      "fr",
+      <AccountNumbers
+        channels={[channel]}
+        dashboard={{
+          ...dashboard,
+          channels: [],
+          days: dashboard.days.map((day) => ({
+            ...day,
+            followers: null,
+            reach: null,
+            views: null,
+          })),
+          followers: { current: null, gained: null },
+        }}
+        exports={{ accounts: "/a", posts: "/p" }}
+      />
+    );
+
+    expect(html).toContain(
+      "Peal relève les abonnés de chaque canal une fois par jour"
+    );
+    expect(html).not.toContain("recharts");
   });
 });

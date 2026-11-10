@@ -1,5 +1,5 @@
 use crate::api::*;
-use crate::{ApiError, ClientConfig, HttpClient, QueryBuilder, RequestOptions};
+use crate::{ApiError, ByteStream, ClientConfig, HttpClient, QueryBuilder, RequestOptions};
 use reqwest::Method;
 
 pub struct AnalyticsClient {
@@ -64,6 +64,194 @@ impl AnalyticsClient {
                     .serialize("from", Some(request.from.clone()))
                     .string("timeZone", request.time_zone.clone())
                     .serialize("to", Some(request.to.clone()))
+                    .build(),
+                options,
+            )
+            .await
+    }
+
+    /// Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the `topPosts` (5 unless said, 25 at most) with the most engagement. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .analytics
+    ///         .dashboard(
+    ///             &"workspaceId".to_string(),
+    ///             &DashboardQueryRequest {
+    ///                 time_zone: "timeZone".to_string(),
+    ///                 days: None,
+    ///                 from: None,
+    ///                 to: None,
+    ///                 top_posts: None,
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn dashboard(
+        &self,
+        workspace_id: &str,
+        request: &DashboardQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<AnalyticsDashboard, ApiError> {
+        self.http_client
+            .execute_request(
+                Method::GET,
+                &format!("api/workspaces/{}/analytics/dashboard", workspace_id),
+                None,
+                QueryBuilder::new()
+                    .string("days", request.days.clone())
+                    .serialize("from", request.from.clone())
+                    .string("timeZone", request.time_zone.clone())
+                    .serialize("to", request.to.clone())
+                    .string("topPosts", request.top_posts.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
+
+    /// Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .analytics
+    ///         .channel(
+    ///             &"workspaceId".to_string(),
+    ///             &"channelId".to_string(),
+    ///             &ChannelQueryRequest {
+    ///                 time_zone: "timeZone".to_string(),
+    ///                 days: None,
+    ///                 from: None,
+    ///                 to: None,
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn channel(
+        &self,
+        workspace_id: &str,
+        channel_id: &str,
+        request: &ChannelQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<ChannelSeries, ApiError> {
+        self.http_client
+            .execute_request(
+                Method::GET,
+                &format!(
+                    "api/workspaces/{}/analytics/channels/{}",
+                    workspace_id, channel_id
+                ),
+                None,
+                QueryBuilder::new()
+                    .string("days", request.days.clone())
+                    .serialize("from", request.from.clone())
+                    .string("timeZone", request.time_zone.clone())
+                    .serialize("to", request.to.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
+
+    /// Streams the workspace's analytics as a file: `kind=posts` lists each post published in the range on each channel with its latest counts, `kind=accounts` each channel's account day by day. `format=csv` (the default) writes a header line then one line a row, as RFC 4180; `format=json` writes one JSON object a line (`application/x-ndjson`). A number a platform does not give is empty in CSV and null in JSON. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Needs analytics:read.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// Streaming file download (use .into_bytes() to collect or stream chunks)
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .analytics
+    ///         .export(
+    ///             &"workspaceId".to_string(),
+    ///             &ExportQueryRequest {
+    ///                 time_zone: "timeZone".to_string(),
+    ///                 kind: AnalyticsExportKind::Posts,
+    ///                 days: None,
+    ///                 from: None,
+    ///                 to: None,
+    ///                 format: None,
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn export(
+        &self,
+        workspace_id: &str,
+        request: &ExportQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<ByteStream, ApiError> {
+        self.http_client
+            .execute_stream_request(
+                Method::GET,
+                &format!("api/workspaces/{}/analytics/export", workspace_id),
+                None,
+                QueryBuilder::new()
+                    .string("days", request.days.clone())
+                    .serialize("from", request.from.clone())
+                    .string("timeZone", request.time_zone.clone())
+                    .serialize("to", request.to.clone())
+                    .serialize("format", request.format.clone())
+                    .serialize("kind", Some(request.kind.clone()))
                     .build(),
                 options,
             )

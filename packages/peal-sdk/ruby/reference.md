@@ -3760,6 +3760,331 @@ client.analytics.summary(
 </dl>
 </details>
 
+<details><summary><code>client.analytics.<a href="/lib/peal/analytics/client.rb">dashboard</a>(workspace_id:) -> Peal::Types::AnalyticsDashboard</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the `topPosts` (5 unless said, 25 at most) with the most engagement. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.analytics.dashboard(
+  workspace_id: "workspaceId",
+  time_zone: "timeZone"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**top_posts:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Peal::Analytics::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.analytics.<a href="/lib/peal/analytics/client.rb">channel</a>(workspace_id:, channel_id:) -> Peal::Types::ChannelSeries</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.analytics.channel(
+  workspace_id: "workspaceId",
+  channel_id: "channelId",
+  time_zone: "timeZone"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Peal::Analytics::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.analytics.<a href="/lib/peal/analytics/client.rb">export</a>(workspace_id:) -> String</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Streams the workspace's analytics as a file: `kind=posts` lists each post published in the range on each channel with its latest counts, `kind=accounts` each channel's account day by day. `format=csv` (the default) writes a header line then one line a row, as RFC 4180; `format=json` writes one JSON object a line (`application/x-ndjson`). A number a platform does not give is empty in CSV and null in JSON. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.analytics.export(
+  workspace_id: "workspaceId",
+  time_zone: "timeZone",
+  kind: "posts"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**format:** `Peal::Types::AnalyticsExportFormat` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**kind:** `Peal::Types::AnalyticsExportKind` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Peal::Analytics::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.analytics.<a href="/lib/peal/analytics/client.rb">post</a>(workspace_id:, post_id:) -> Peal::Types::PostAnalytics</code></summary>
 <dl>
 <dd>

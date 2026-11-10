@@ -375,7 +375,8 @@ const ExportedUsageSchema = Schema.Struct({
 });
 
 // A post analytics followed on a channel, and each reading of its counts.
-// Quotes and impressions are null where the platform gives none.
+// Quotes, impressions, clicks, reach and saves are null where the platform
+// gives none.
 const ExportedAnalyticsSchema = Schema.Struct({
   channelId: Schema.String,
   permalink: nullable(Schema.String),
@@ -383,12 +384,15 @@ const ExportedAnalyticsSchema = Schema.Struct({
   publishedAt: instant,
   snapshots: Schema.Array(
     Schema.Struct({
+      clicks: nullable(Schema.Int),
       collectedAt: instant,
       impressions: nullable(Schema.Int),
       likes: Schema.Int,
       quotes: nullable(Schema.Int),
+      reach: nullable(Schema.Int),
       replies: Schema.Int,
       reposts: Schema.Int,
+      saves: nullable(Schema.Int),
     })
   ),
   targetId: Schema.String,
@@ -468,7 +472,23 @@ const ExportedWebhookSchema = Schema.Struct({
   url: Schema.String,
 });
 
+// A channel's account on one UTC day: its followers, the accounts it
+// follows and its posts as read that day, and the views and reach its
+// platform counted. Each is null where the platform gives none.
+const ExportedAccountDaySchema = Schema.Struct({
+  channelId: Schema.String,
+  // A UTC day, as YYYY-MM-DD.
+  day: Schema.String,
+  followers: nullable(Schema.Int),
+  following: nullable(Schema.Int),
+  platform: Schema.String,
+  posts: nullable(Schema.Int),
+  reach: nullable(Schema.Int),
+  views: nullable(Schema.Int),
+});
+
 const ExportedWorkspaceSchema = Schema.Struct({
+  accountAnalytics: Schema.Array(ExportedAccountDaySchema),
   analytics: Schema.Array(ExportedAnalyticsSchema),
   apiKeys: Schema.Array(ApiKeySchema),
   assistantUsage: Schema.Array(ExportedUsageSchema),

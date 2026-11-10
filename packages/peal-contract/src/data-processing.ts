@@ -23,6 +23,10 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  * How long each kind of record is kept. Each is the figure a rule or a
  * setting enforces, which a test compares it with:
  *
+ * - `analytics` and the platforms' own caps (`analyticsLinkedIn`,
+ *   `analyticsPinterest`, `analyticsGoogleBusiness`), and
+ *   `analyticsDisconnected`: the figures the platforms report
+ *   (`analytics/domain/analytics-retention.ts`);
  * - `auditLog`, `banRecords`, `banPastEnd`: the staff audit log
  *   (`staff/domain/audit-retention.ts`);
  * - `legalIdentity`, `legalAccount`, `legalConnections`,
@@ -46,6 +50,11 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  *   four weekly full backups, which hold deleted data 5 weeks at most).
  */
 export const retentionPeriods = {
+  analytics: { days: 730 },
+  analyticsDisconnected: { days: 30 },
+  analyticsGoogleBusiness: { days: 30 },
+  analyticsLinkedIn: { days: 365 },
+  analyticsPinterest: { days: 90 },
   auditLog: { months: 12 },
   backups: { weeks: 5 },
   banPastEnd: { months: 12 },
@@ -146,8 +155,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The posts, media and schedules of your workspaces, what was read of each file (its type, size, dimensions, duration, or a document’s number of pages), the comments members write on posts and the approvals they ask for and decide, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts; for a post made in one call with an idempotency key, a digest of that key and of its request, never either",
-      fr: "Les publications, médias et planifications de vos espaces de travail, ce qui a été lu de chaque fichier (son type, sa taille, ses dimensions, sa durée, ou le nombre de pages d’un document), les commentaires que les membres écrivent sur les publications et les approbations qu’ils demandent et décident, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre",
+      en: "The posts, media and schedules of your workspaces, what was read of each file (its type, size, dimensions, duration, or a document’s number of pages), the comments members write on posts and the approvals they ask for and decide, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts and for the accounts you connected (their followers, and their views where the platform counts them, day by day); for a post made in one call with an idempotency key, a digest of that key and of its request, never either",
+      fr: "Les publications, médias et planifications de vos espaces de travail, ce qui a été lu de chaque fichier (son type, sa taille, ses dimensions, sa durée, ou le nombre de pages d’un document), les commentaires que les membres écrivent sur les publications et les approbations qu’ils demandent et décident, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications et pour les comptes que vous avez connectés (leurs abonnés, et leurs vues quand la plateforme les compte, jour par jour) ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre",
     },
     id: "content",
     legalBasis: contract,
@@ -161,12 +170,12 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Planifier et mettre en ligne vos publications, et montrer leurs résultats",
     },
     retention: {
-      en: `Drafts and media files: until a member deletes them, or the workspace is deleted. Posts that were scheduled, published or cancelled, their publication history and their figures: until the workspace is deleted. The posts you wrote or scheduled in a workspace you share stay with it when you close your account, without your name. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
-      fr: `Brouillons et fichiers média : jusqu’à leur suppression par un membre, ou celle de l’espace de travail. Publications programmées, mises en ligne ou annulées, leur historique de mise en ligne et leurs chiffres : jusqu’à la suppression de l’espace de travail. Les publications que vous avez écrites ou programmées dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
+      en: `Drafts and media files: until a member deletes them, or the workspace is deleted. Posts that were scheduled, published or cancelled, and their publication history: until the workspace is deleted. The figures the platforms report for posts and accounts: ${p.analytics.days / 365} years, or less where a platform’s terms allow less (LinkedIn ${p.analyticsLinkedIn.days / 365} year, Pinterest ${p.analyticsPinterest.days} days, Google Business Profile ${p.analyticsGoogleBusiness.days} days); an account’s own figures go when it is disconnected, and those of its posts ${p.analyticsDisconnected.days} days after; all of them earlier with the workspace. The posts you wrote or scheduled in a workspace you share stay with it when you close your account, without your name. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
+      fr: `Brouillons et fichiers média : jusqu’à leur suppression par un membre, ou celle de l’espace de travail. Publications programmées, mises en ligne ou annulées, et leur historique de mise en ligne : jusqu’à la suppression de l’espace de travail. Les chiffres que les plateformes communiquent pour les publications et les comptes : ${p.analytics.days / 365} ans, ou moins quand les conditions d’une plateforme l’imposent (LinkedIn ${p.analyticsLinkedIn.days / 365} an, Pinterest ${p.analyticsPinterest.days} jours, Google Business Profile ${p.analyticsGoogleBusiness.days} jours) ; les chiffres propres à un compte partent à sa déconnexion, et ceux de ses publications ${p.analyticsDisconnected.days} jours après ; tous plus tôt avec l’espace de travail. Les publications que vous avez écrites ou programmées dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
     },
     source: {
-      en: "You and the other members of your workspaces; the platforms you connected, for the figures",
-      fr: "Vous et les autres membres de vos espaces de travail ; les plateformes que vous avez connectées, pour les chiffres",
+      en: "You and the other members of your workspaces; the platforms you connected, for the figures of your posts and accounts",
+      fr: "Vous et les autres membres de vos espaces de travail ; les plateformes que vous avez connectées, pour les chiffres de vos publications et de vos comptes",
     },
   },
   {

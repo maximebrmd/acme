@@ -12,6 +12,7 @@ import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
+import { DrizzleChannelDirectory } from "#channels/infrastructure/drizzle-channel-directory.ts";
 import { DrizzleChannelRecords } from "#channels/infrastructure/drizzle-channel-records.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
@@ -59,6 +60,7 @@ const PlatformsLive = Layer.mergeAll(
 const AdaptersLive = Layer.mergeAll(
   DrizzleChannelRecords,
   DrizzleChannelRepository,
+  DrizzleChannelDirectory,
   DrizzleConnectAttempts,
   DrizzleConnectChoices,
   DrizzleDataDeletions.pipe(Layer.provide(WebhookChannelEvents)),

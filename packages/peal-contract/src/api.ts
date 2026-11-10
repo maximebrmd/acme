@@ -121,11 +121,24 @@ export { AltTextTooLong } from "./alt-text-too-long.ts";
 
 export {
   AnalyticsApi,
+  AnalyticsDashboardSchema,
   AnalyticsSummarySchema,
   CalendarDaySchema,
+  ChannelDashboardSchema,
+  ChannelDaySchema,
   ChannelMetricsSchema,
+  ChannelSeriesSchema,
   countedPlatforms,
+  DashboardDaySchema,
+  dashboardPeriods,
+  DashboardTotalsSchema,
   EngagementDaySchema,
+  exportColumns,
+  ExportFormatSchema,
+  ExportKindSchema,
+  FollowerChangeSchema,
+  maxTopPosts,
+  PlatformDashboardSchema,
   MetricsSnapshotSchema,
   MetricTotalsSchema,
   PostAnalyticsSchema,
@@ -135,10 +148,20 @@ export {
 } from "./analytics.ts";
 
 export type {
+  AnalyticsDashboard,
   AnalyticsSummary,
   CalendarDay,
+  ChannelDashboard,
+  ChannelDay,
   ChannelMetrics,
+  ChannelSeries,
+  DashboardDay,
+  DashboardTotals,
   EngagementDay,
+  ExportFormat,
+  ExportKind,
+  FollowerChange,
+  PlatformDashboard,
   MetricsSnapshot,
   MetricTotals,
   PostAnalytics,
@@ -303,6 +326,7 @@ export type {
 } from "./billing-plans.ts";
 
 export {
+  accountNumberNames,
   AccountRestrictionSchema,
   AccountStandingSchema,
   AccountUnreadReasonSchema,
@@ -313,6 +337,7 @@ export {
   MediaFormatSchema,
   OptionConstraintSchema,
   PlatformCapabilitiesSchema,
+  postCountNames,
   TextCapabilitiesSchema,
   TextLimitSchema,
 } from "./capabilities.ts";

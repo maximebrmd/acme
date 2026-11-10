@@ -159,9 +159,11 @@ describe("reading counts on a LinkedIn page", () => {
         );
 
         const counted = new PostMetrics({
+          clicks: Option.some(78),
           impressions: Option.some(5287),
           likes: 14,
           quotes: Option.none(),
+          reach: Option.some(4100),
           replies: 24,
           reposts: 5,
         });
@@ -177,9 +179,11 @@ describe("reading counts on a LinkedIn page", () => {
               {
                 _tag: "counted",
                 metrics: new PostMetrics({
+                  clicks: Option.some(0),
                   impressions: Option.some(0),
                   likes: 0,
                   quotes: Option.none(),
+                  reach: Option.some(0),
                   replies: 0,
                   reposts: 0,
                 }),

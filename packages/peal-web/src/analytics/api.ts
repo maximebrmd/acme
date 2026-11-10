@@ -1,4 +1,4 @@
-import type { CalendarDay } from "peal-contract";
+import type { CalendarDay, ExportKind } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 
@@ -28,3 +28,24 @@ export const postAnalytics = (workspaceId: string, postId: string) =>
     params: { postId, workspaceId },
     reactivityKeys: analyticsKeys,
   });
+
+/**
+ * The workspace's analytics over the range beside the range before it,
+ * with the accounts' followers.
+ */
+export const analyticsDashboard = (workspaceId: string, range: SummaryRange) =>
+  PealApi.query("analytics", "dashboard", {
+    params: { workspaceId },
+    query: range,
+    reactivityKeys: analyticsKeys,
+  });
+
+/** Where the browser downloads an export of the range from, as CSV. */
+export const exportUrl = (
+  workspaceId: string,
+  kind: ExportKind,
+  range: SummaryRange
+): string =>
+  `/api/workspaces/${encodeURIComponent(workspaceId)}/analytics/export?${new URLSearchParams(
+    { ...range, format: "csv", kind }
+  ).toString()}`;

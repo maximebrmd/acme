@@ -1,23 +1,53 @@
 ---
 title: Analytics
-description: See how your posts did on Mastodon, Bluesky, TikTok, YouTube, Instagram and Pinterest, by channel and day, which posts did best, and each post's counts over time.
+description: See how your posts and accounts did on each platform, by channel and day, against the period before, which posts did best, each post's counts over time, and export the figures.
 sidebar:
   order: 6
 ---
 
-Once a post goes live, Peal reads its counts back from the platform for a month: likes, reposts and replies, and quotes where the platform counts them. Open a workspace from **Workspaces**, then **Analytics**, to see them. Every member may, whatever their role.
+Once a post goes live, Peal reads its counts back from the platform for a month: likes, reposts and replies, and the counts only some platforms tell. It also reads each connected account once a day, from the day you connect it: its followers, and its views where the platform counts them. Open a workspace from **Workspaces**, then **Analytics**, to see them. Every member may, whatever their role.
 
-## What Peal counts [#counts]
+## What Peal counts on a post [#counts]
 
-| Count       | Mastodon               | Bluesky   | TikTok    | YouTube        | Instagram | Pinterest   |
-| ----------- | ---------------------- | --------- | --------- | -------------- | --------- | ----------- |
-| Likes       | Favourites             | Likes     | Likes     | Likes          | Likes     | Reactions   |
-| Reposts     | Boosts                 | Reposts   | Shares    | None, always 0 | Shares    | Saves       |
-| Replies     | Replies                | Replies   | Comments  | Comments       | Comments  | Comments    |
-| Quotes      | From Mastodon 4.5 only | Quotes    | Not given | Not given      | Not given | Not given   |
-| Impressions | Not given              | Not given | Views     | Views          | Views     | Impressions |
+| Platform       | Likes      | Reposts        | Replies  | Quotes   | Impressions | Clicks | Reach              | Saves     |
+| -------------- | ---------- | -------------- | -------- | -------- | ----------- | ------ | ------------------ | --------- |
+| Mastodon       | Favourites | Boosts         | Replies  | From 4.5 | –           | –      | –                  | –         |
+| Bluesky        | Likes      | Reposts        | Replies  | Quotes   | –           | –      | –                  | –         |
+| Threads        | Likes      | Reposts        | Replies  | Quotes   | Views       | –      | –                  | –         |
+| Instagram      | Likes      | Shares         | Comments | –        | Views       | –      | –                  | –         |
+| Facebook Pages | Reactions  | Shares         | Comments | –        | –           | –      | –                  | –         |
+| LinkedIn pages | Likes      | Shares         | Comments | –        | Impressions | Clicks | Unique impressions | –         |
+| TikTok         | Likes      | Shares         | Comments | –        | Views       | –      | –                  | –         |
+| YouTube        | Likes      | None, always 0 | Comments | –        | Views       | –      | –                  | –         |
+| Pinterest      | Reactions  | Saves          | Comments | –        | Impressions | –      | –                  | –         |
+| X              | Likes      | Reposts        | Replies  | Quotes   | Impressions | –      | –                  | Bookmarks |
 
-Mastodon and Bluesky do not tell how many people saw a post, so Peal shows no impressions for them; on TikTok, YouTube and Instagram, impressions are the post's views, and on Pinterest how often the Pin was shown. A count a platform does not give is shown as missing, never as zero. **Engagement** is likes, reposts, replies and quotes together.
+A dash is a count the platform does not give, or one Peal may not read there: it is shown as missing, never as zero. **Engagement** is likes, reposts, replies and quotes together. On Facebook Pages, comments count the replies to comments too.
+
+Three platforms need more than connecting the account:
+
+- **Threads**: Meta gives a post's insights to apps it granted `threads_manage_insights`. Until the server's app has it and the account allowed it, Threads posts are passed over.
+- **Facebook Pages**: reactions, comments and shares are read with what Peal asks today. A post's views and clicks are a Page's insights, which need `read_insights`, a permission Meta grants after a review: Peal reads them for a Page connected with it, and shows none otherwise.
+- **X**: X bills the app for each post a read returns. Peal reads nothing there unless the server's operator turned it on ([`X_ANALYTICS`](/environment-variables)), and each workspace then has a number of reads a day; past it, counts wait for the next day.
+
+Peal reads no counts on LinkedIn profiles, which LinkedIn opens to few apps, nor on Google Business Profile, where Google counts views and clicks for a location as a whole, not for each post, since it withdrew its post insights in 2023. It finds so at a post's first turn, stops there, and leaves the post out of **Analytics**, rather than show it with no counts. A channel's [capabilities](/api-overview#capabilities) list the counts it has.
+
+## What Peal reads of an account [#accounts]
+
+| Platform       | Followers                                  | Following | Posts            | Views by day | Reach by day       |
+| -------------- | ------------------------------------------ | --------- | ---------------- | ------------ | ------------------ |
+| Mastodon       | Yes                                        | Yes       | Yes              | –            | –                  |
+| Bluesky        | Yes                                        | Yes       | Yes              | –            | –                  |
+| Threads        | With `threads_manage_insights`             | –         | –                | –            | –                  |
+| Instagram      | Yes                                        | Yes       | Yes              | –            | –                  |
+| Facebook Pages | Yes                                        | –         | –                | –            | –                  |
+| LinkedIn pages | Yes                                        | –         | –                | Impressions  | Unique impressions |
+| TikTok         | With `user.info.stats`                     | Likewise  | Videos, likewise | –            | –                  |
+| YouTube        | Subscribers, unless the channel hides them | –         | Public videos    | –            | –                  |
+| Pinterest      | Yes                                        | Yes       | Pins             | Impressions  | –                  |
+| X              | Where the operator turned X reads on       | Likewise  | Likewise         | –            | –                  |
+
+Platforms rarely give the history of an account, so Peal keeps its own: one reading a day from the day the channel is connected, on the run of the hour it was first read. Followers before that day are not known, and a range that starts earlier counts what an account gained from its first reading. YouTube rounds subscribers down to three significant figures. A day's views on LinkedIn and Pinterest are read for the last three finished days, as both revise a day after it ends; days are UTC days. Peal reads no account numbers on LinkedIn profiles nor on Google Business Profile.
 
 For a post of several parts, a [thread](/scheduling#threads), the counts are those of its first part: the replies that make the thread are not read one by one.
 
@@ -33,16 +63,26 @@ Readings take turns with the channel's publishing: Peal makes one call at a time
 - **YouTube**: Peal reads the channel's videos with its access, 50 at a time, so private and unlisted videos are read too. A count the channel hides, such as its likes, reads as 0.
 - **Instagram**: Peal reads each post's insights, one post at a time, with the account's access, when the account allowed Peal to read them: through Instagram Login, or through a Facebook Page connected since Peal asks for insights. An account that did not is passed over until you [reconnect](/channels#reconnect) it and allow them.
 - **Pinterest**: Peal reads each Pin's analytics, one Pin at a time, with the account's access: its impressions and saves over the last 90 days, which cover the month Peal follows it, and its reactions and comments. A save puts the Pin on someone's board, so Peal counts it as a repost. Pinterest also counts Pin clicks and outbound clicks, which Peal does not show yet. Pinterest's figures for a day may be estimates until it finishes counting.
-- **LinkedIn**: Peal reads the posts of a company page with the page's share statistics, all of a page's posts due in one request: impressions, likes, comments as replies and shares as reposts, organic only, over the past twelve months. LinkedIn gives them to the page's administrators: a page connected by a content administrator is passed over. A member's profile has no counts Peal may read.
+- **Threads**: Peal reads each post's insights, one post at a time, for an account that granted them.
+- **Facebook Pages**: Peal reads each post with the Page's access, three requests a post: its shares, its reactions and its comments.
+- **X**: Peal looks posts up 100 at a time. X bills each post once a UTC day however often it is read, and Peal counts a post once a day against the workspace's reads.
+- **LinkedIn**: Peal reads the posts of a company page with the page's share statistics, all of a page's posts due in one request: impressions and unique impressions, clicks, likes, comments as replies and shares as reposts, organic only, over the past twelve months. LinkedIn gives them to the page's administrators: a page connected by a content administrator is passed over. A member's profile has no counts Peal may read.
 
-Peal reads no counts on LinkedIn profiles, X, Threads or Facebook Pages yet, nor on Google Business Profile, where Google counts views and clicks for a location as a whole, not for each post, since it withdrew its post insights in 2023. It finds so at a post's first turn, stops there, and leaves the post out of **Analytics**, rather than show it with no counts.
+Accounts are read once a day by a second hourly run, half an hour from the posts': it takes turns with publishing the same way, reads an account whose platform put it off at the next hour, and passes over a channel that is off for a day.
+
+## How long figures are kept [#retention]
+
+Peal keeps a post's counts and an account's days {{keep-analytics-en}}, then deletes them. Where a platform's terms for developers allow less, its cap applies: LinkedIn pages {{keep-analytics-linkedin-en}}, Pinterest {{keep-analytics-pinterest-en}}. Disconnecting a channel deletes its account's days at once, and its posts' counts {{keep-analytics-disconnected-en}} later; deleting the workspace deletes everything.
 
 ## The analytics page [#page]
 
 Pick the last 7, 30 or 90 days. Days run in your browser's time zone, or in UTC when the browser cannot tell it, and the range takes the posts published in it:
 
+- **Against the days before**: posts, engagement, impressions and reach, each beside the same number of days just before the range, with what changed.
+- **Followers**: how many follow the workspace's accounts at the end of the range, what they gained over it and over the range before, a chart of each day, and each channel's. Choose **Table** for the same figures as a table, with each day's views and reach, which is also what screen readers read.
+- **Export**: the posts of the range with their counts, or the accounts day by day, as CSV files.
 - **Totals**: how many posts went out, counting each channel a post went out on, and their latest counts, in all and by channel.
-- **Engagement over time**: what those posts gained each day, as a chart. Choose **Table** for the same figures as a table, which is also what screen readers read.
+- **Engagement over time**: what those posts gained each day, as a chart, with its table.
 - **Top posts**: the five posts with the most engagement, each with a link to it in Peal and on the platform.
 
 ## A post's counts [#post]
@@ -51,4 +91,14 @@ A post's page shows how it did on each channel it went out on: its latest counts
 
 ## Through the API [#api]
 
-`GET /api/workspaces/{workspaceId}/analytics/summary?from=2026-11-01&to=2026-11-30&timeZone=Europe/Paris` sums up the posts published over a range of days, at most 366, as days run in an IANA time zone. `GET /api/workspaces/{workspaceId}/analytics/posts/{postId}` answers with a post's counts over time. Both need the `analytics:read` permission. See the [API reference](/reference).
+Every endpoint is under `/api/workspaces/{workspaceId}/analytics` and needs the `analytics:read` permission. A range is `days=7`, `30` or `90` (ending today in `timeZone`), or `from` and `to`, at most 366 days, as days run in an IANA `timeZone`.
+
+| Endpoint                                                                        | Answers                                                                                                                                                                  |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /dashboard?days=30&timeZone=Europe/Paris`                                  | The range and the one before it in one call: totals and followers of each, the same by channel and by platform, each day, and the `topPosts` (5 unless said, 25 at most) |
+| `GET /channels/{channelId}?from=2026-11-01&to=2026-11-30&timeZone=Europe/Paris` | One channel day by day: followers, following, posts, views, reach, and what its posts gained                                                                             |
+| `GET /export?kind=posts&format=csv&days=90&timeZone=UTC`                        | A file, streamed: `kind=posts` or `accounts`, `format=csv` (RFC 4180, a header line first) or `json` (one object a line)                                                 |
+| `GET /summary?from=…&to=…&timeZone=…`                                           | The posts of a range summed up, by channel and day, with the five that did best                                                                                          |
+| `GET /posts/{postId}`                                                           | A post's counts on each channel, every reading                                                                                                                           |
+
+A number a platform does not give is `null` in JSON and empty in CSV, never `0`. The same is in the [command line](/cli#analytics) (`peal analytics dashboard`, `channel`, `export`) and the [MCP tools](/mcp) (`analytics_dashboard`, `channel_analytics`). See the [API reference](/reference).

@@ -309,6 +309,38 @@ groups:
                     type: gt
                     params: [1.5]
 
+      - uid: peal-accounts-collection-behind
+        title: The collection of accounts' numbers falls behind
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two or more of the last three hourly collections of accounts' followers stopped at their budget with channels still due (peal.analytics.accounts.unfinished). Followers are read later than once a day, and a day may be missed. Raise PEAL_ANALYTICS_CONCURRENCY if platforms answer, or read the server's warnings for the one that does not.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A run an hour: three in the window.
+              expr: sum(increase(peal_analytics_accounts_unfinished_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1.5]
+
       - uid: peal-uploads-waiting
         title: Uploads to platforms wait for a slot
         condition: B

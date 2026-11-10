@@ -412,15 +412,24 @@ describe("a channel's capabilities, by the way in it came through", () => {
   });
 
   it("count posts on the platforms with a reader, and no other", () => {
-    expect(platforms.filter(isCounted)).toStrictEqual([
+    expect(platforms.filter((platform) => isCounted(platform))).toStrictEqual([
       "linkedin",
       "bluesky",
       "mastodon",
+      "threads",
       "instagram",
+      "facebook",
       "tiktok",
       "youtube",
       "pinterest",
     ]);
+  });
+
+  it("count posts on X only where the operator turned its billed reads on", () => {
+    expect(isCounted("x")).toBeFalsy();
+    expect(isCounted("x", { x: true })).toBeTruthy();
+    expect(countsChannel("x", Option.none(), { x: true })).toBeTruthy();
+    expect(countsChannel("x", Option.none())).toBeFalsy();
   });
 });
 

@@ -60,8 +60,14 @@ const schemas = [
 // The rows of each table that name a workspace: none may be left once it is
 // deleted.
 const workspaceRows = {
+  "analytics.account_snapshots": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM analytics.account_snapshots s JOIN analytics.tracked_channels c ON c.channel_id = s.channel_id WHERE c.workspace_id = ${id}`,
   "analytics.metric_snapshots": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM analytics.metric_snapshots s JOIN analytics.tracked_posts t ON t.target_id = s.target_id WHERE t.workspace_id = ${id}`,
+  "analytics.paid_reads": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM analytics.paid_reads WHERE workspace_id = ${id}`,
+  "analytics.tracked_channels": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM analytics.tracked_channels WHERE workspace_id = ${id}`,
   "analytics.tracked_posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM analytics.tracked_posts WHERE workspace_id = ${id}`,
   "assistant.daily_usage": (sql, id) =>
@@ -358,6 +364,16 @@ const fill = Effect.fn("fill")(function* fill(
     VALUES (${uuid7()}, ${workspaceId}, ${postId}, 'synthetic', ${person.id}, 'member', now(), now(), 'Europe/Paris', 'approved', now(), 'member', ${person.id})`;
 
   yield* seedTrackedPost(workspaceId, channelId, postId);
+
+  // The channel's account, followed and read for a day.
+  yield* sql`INSERT INTO analytics.tracked_channels (channel_id, workspace_id, platform, next_collection_at)
+    VALUES (${channelId}, ${workspaceId}, 'mastodon', now())`;
+  yield* sql`INSERT INTO analytics.account_snapshots (channel_id, day, collected_at, followers)
+    VALUES (${channelId}, current_date, now(), 12)`;
+
+  // A post read on a platform that bills reads, counted for the day.
+  yield* sql`INSERT INTO analytics.paid_reads (workspace_id, platform, day, resource)
+    VALUES (${workspaceId}, 'x', current_date, '1800000000000000001')`;
   yield* seedUsage(workspaceId, 2);
   yield* seedSubscription(workspaceId, "canceled");
 

@@ -17,11 +17,36 @@ export const countedPlatforms = [
   "pinterest",
   // Company pages only: a member's profile has no counts Peal may read.
   "linkedin",
+  // Reactions, comments and shares; views once a Page grants its insights.
+  "facebook",
+  // Accounts that granted their insights.
+  "threads",
+  // Where the operator turned its reads on, which X bills.
+  "x",
 ] as const satisfies readonly Platform[];
 
-/** Whether Peal reads counts on the platform. */
-export const isCounted = (platform: Platform): boolean =>
-  countedPlatforms.some((counted) => counted === platform);
+/**
+ * The reads a platform bills, which the operator turns on: none unless
+ * set.
+ */
+export interface BilledReads {
+  /** Whether this server reads counts on X. */
+  readonly x: boolean;
+}
+
+/** No billed read is on: what a server does unless its operator says. */
+export const noBilledReads: BilledReads = { x: false };
+
+/**
+ * Whether Peal reads counts on the platform, on a server with these billed
+ * reads on.
+ */
+export const isCounted = (
+  platform: Platform,
+  billed: BilledReads = noBilledReads
+): boolean =>
+  countedPlatforms.some((counted) => counted === platform) &&
+  (platform !== "x" || billed.x);
 
 /**
  * Whether Peal reads the counts of a channel's posts, from its platform and
@@ -29,7 +54,8 @@ export const isCounted = (platform: Platform): boolean =>
  */
 export const countsChannel = (
   platform: Platform,
-  connection: Option.Option<ChannelConnection>
+  connection: Option.Option<ChannelConnection>,
+  billed: BilledReads = noBilledReads
 ): boolean =>
-  isCounted(platform) &&
+  isCounted(platform, billed) &&
   (platform !== "linkedin" || Option.contains(connection, "linkedinPage"));

@@ -21,11 +21,14 @@ public class PostTest : BaseMockServerTest
                   "collecting": true,
                   "lastCollectedAt": "lastCollectedAt",
                   "latest": {
+                    "clicks": 1,
                     "impressions": 1,
                     "likes": 1,
                     "quotes": 1,
+                    "reach": 1,
                     "replies": 1,
-                    "reposts": 1
+                    "reposts": 1,
+                    "saves": 1
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
@@ -33,21 +36,27 @@ public class PostTest : BaseMockServerTest
                     {
                       "collectedAt": "collectedAt",
                       "metrics": {
+                        "clicks": 1,
                         "impressions": 1,
                         "likes": 1,
                         "quotes": 1,
+                        "reach": 1,
                         "replies": 1,
-                        "reposts": 1
+                        "reposts": 1,
+                        "saves": 1
                       }
                     },
                     {
                       "collectedAt": "collectedAt",
                       "metrics": {
+                        "clicks": 1,
                         "impressions": 1,
                         "likes": 1,
                         "quotes": 1,
+                        "reach": 1,
                         "replies": 1,
-                        "reposts": 1
+                        "reposts": 1,
+                        "saves": 1
                       }
                     }
                   ],
@@ -58,11 +67,14 @@ public class PostTest : BaseMockServerTest
                   "collecting": true,
                   "lastCollectedAt": "lastCollectedAt",
                   "latest": {
+                    "clicks": 1,
                     "impressions": 1,
                     "likes": 1,
                     "quotes": 1,
+                    "reach": 1,
                     "replies": 1,
-                    "reposts": 1
+                    "reposts": 1,
+                    "saves": 1
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
@@ -70,21 +82,27 @@ public class PostTest : BaseMockServerTest
                     {
                       "collectedAt": "collectedAt",
                       "metrics": {
+                        "clicks": 1,
                         "impressions": 1,
                         "likes": 1,
                         "quotes": 1,
+                        "reach": 1,
                         "replies": 1,
-                        "reposts": 1
+                        "reposts": 1,
+                        "saves": 1
                       }
                     },
                     {
                       "collectedAt": "collectedAt",
                       "metrics": {
+                        "clicks": 1,
                         "impressions": 1,
                         "likes": 1,
                         "quotes": 1,
+                        "reach": 1,
                         "replies": 1,
-                        "reposts": 1
+                        "reposts": 1,
+                        "saves": 1
                       }
                     }
                   ],

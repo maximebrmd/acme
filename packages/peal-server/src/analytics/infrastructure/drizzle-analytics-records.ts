@@ -5,12 +5,20 @@ import { SqlClient } from "effect/sql";
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type {
+  AccountSnapshotRecord,
   AnalyticsRecord,
   MetricsSnapshotRecord,
 } from "#shared/application/personal-data.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { erasedWorkspaces, metricSnapshots, trackedPosts } from "./schema.ts";
+import {
+  erasedWorkspaces,
+  metricSnapshots,
+  accountSnapshots,
+  paidReads,
+  trackedChannels,
+  trackedPosts,
+} from "./schema.ts";
 import { shareTrackingLock } from "./tracking-lock.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
@@ -48,12 +56,15 @@ export const DrizzleAnalyticsRecords = Layer.effect(
         // list of their ids would pass the parameters one query takes.
         const snapshots = yield* db
           .select({
+            clicks: metricSnapshots.clicks,
             collectedAt: metricSnapshots.collectedAt,
             impressions: metricSnapshots.impressions,
             likes: metricSnapshots.likes,
             quotes: metricSnapshots.quotes,
+            reach: metricSnapshots.reach,
             replies: metricSnapshots.replies,
             reposts: metricSnapshots.reposts,
+            saves: metricSnapshots.saves,
             targetId: metricSnapshots.targetId,
           })
           .from(metricSnapshots)
@@ -111,12 +122,52 @@ export const DrizzleAnalyticsRecords = Layer.effect(
               yield* db
                 .delete(trackedPosts)
                 .where(eq(trackedPosts.workspaceId, workspaceId));
+
+              yield* db
+                .delete(trackedChannels)
+                .where(eq(trackedChannels.workspaceId, workspaceId));
+
+              yield* db
+                .delete(paidReads)
+                .where(eq(paidReads.workspaceId, workspaceId));
             })
           )
           .pipe(Effect.mapError(failed));
       }
     );
 
-    return AnalyticsRecords.of({ eraseWorkspace, exportWorkspace });
+    const exportAccounts = Effect.fn("AnalyticsRecords.exportAccounts")(
+      function* exportAccounts(workspaceId: string) {
+        const days = yield* db
+          .select({
+            channelId: accountSnapshots.channelId,
+            day: accountSnapshots.day,
+            followers: accountSnapshots.followers,
+            following: accountSnapshots.following,
+            platform: trackedChannels.platform,
+            posts: accountSnapshots.posts,
+            reach: accountSnapshots.reach,
+            views: accountSnapshots.views,
+          })
+          .from(accountSnapshots)
+          .innerJoin(
+            trackedChannels,
+            eq(trackedChannels.channelId, accountSnapshots.channelId)
+          )
+          .where(eq(trackedChannels.workspaceId, workspaceId))
+          .orderBy(asc(accountSnapshots.channelId), asc(accountSnapshots.day))
+          .pipe(Effect.mapError(failed));
+
+        const records: readonly AccountSnapshotRecord[] = days;
+
+        return records;
+      }
+    );
+
+    return AnalyticsRecords.of({
+      eraseWorkspace,
+      exportAccounts,
+      exportWorkspace,
+    });
   })
 );

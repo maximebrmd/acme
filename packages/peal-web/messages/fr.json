@@ -6,7 +6,7 @@
   "Analytics": {
     "open": "Statistiques",
     "openLabel": "Statistiques de {workspace}",
-    "metric": "{metric, select, posts {Publications} likes {J’aime} reposts {Partages} replies {Réponses} quotes {Citations} impressions {Impressions} other {{metric}}}",
+    "metric": "{metric, select, posts {Publications} likes {J’aime} reposts {Partages} replies {Réponses} quotes {Citations} impressions {Impressions} engagement {Engagement} followers {Abonnés} views {Vues} reach {Portée} clicks {Clics} saves {Enregistrements} other {{metric}}}",
     "page": {
       "title": "Statistiques",
       "description": "Ce qu’ont donné, sur leurs plateformes, les publications parues sur une période. Les jours suivent votre fuseau horaire, {zone}.",
@@ -15,9 +15,9 @@
       "loading": "Chargement des statistiques…",
       "loadFailed": "Les statistiques n’ont pas pu être chargées.",
       "retry": "Réessayer",
-      "empty": "Aucune publication n’est encore parue sur Mastodon ou Bluesky sur cette période, les plateformes dont Peal relève les chiffres pour l’instant. Les chiffres d’une publication arrivent dans l’heure qui suit sa parution.",
+      "empty": "Aucune publication n’est encore parue sur cette période sur une plateforme dont Peal relève les chiffres. Les chiffres d’une publication arrivent dans l’heure qui suit sa parution.",
       "collection": "Peal relève les chiffres de chaque publication toutes les heures pendant les 48 heures qui suivent sa parution, puis chaque jour jusqu’à ses 30 jours.",
-      "noImpressions": "Mastodon et Bluesky ne disent pas combien de personnes ont vu une publication : il n’y a donc pas d’impressions ; celles de TikTok et de YouTube sont leurs vues."
+      "noImpressions": "Aucune publication de la période n’est sur une plateforme qui dit combien de fois elle a été affichée : il n’y a donc pas d’impressions. Mastodon et Bluesky n’en donnent pas ; celles de TikTok et de YouTube sont leurs vues."
     },
     "totals": {
       "title": "Totaux",
@@ -58,6 +58,32 @@
       "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Peal ne les relève pour l’instant que sur {counted}.",
       "countedName": "{platform, select, linkedin {les pages LinkedIn} other {{name}}}",
       "uncountedName": "{platform, select, linkedin {les profils LinkedIn} other {{name}}}"
+    },
+    "trend": {
+      "title": "Par rapport {days, plural, one {au jour précédent} other {aux # jours précédents}}",
+      "description": "Les publications parues sur la période, à côté de celles parues du {from} au {to}.",
+      "more": "{count} de plus{shared, select, yes { ({share})} other {}}",
+      "fewer": "{count} de moins{shared, select, yes { ({share})} other {}}",
+      "same": "Pas de changement",
+      "unknown": "Non fourni par la plateforme"
+    },
+    "accounts": {
+      "title": "Abonnés",
+      "description": "Peal relève les abonnés de chaque canal une fois par jour, à partir du jour où le canal est connecté. Quand une plateforme compte les vues et la portée d’un compte par jour, elles sont dans le tableau.",
+      "none": "Peal relève les abonnés de chaque canal une fois par jour, à partir du jour où le canal est connecté. Rien n’a encore été relevé sur cette période.",
+      "gained": "{change, select, more {{count} de plus} fewer {{count} de moins} other {Pas de changement}} sur la période{range, select, previous { précédente} other {}}",
+      "views": "Afficher les abonnés en",
+      "caption": "Abonnés à la fin de chaque jour, du {from} au {to}. Le tableau donne les mêmes chiffres, avec les vues et la portée.",
+      "tableCaption": "Abonnés, vues et portée chaque jour",
+      "byChannel": "Abonnés à la fin de la période, par canal",
+      "change": "Évolution",
+      "disconnected": "Un canal qui n’est plus connecté"
+    },
+    "export": {
+      "title": "Export",
+      "description": "Les mêmes chiffres en fichiers CSV, à ouvrir dans un tableur. Un chiffre qu’une plateforme ne fournit pas reste vide.",
+      "posts": "Publications de la période",
+      "accounts": "Comptes, jour par jour"
     }
   },
   "Assistant": {

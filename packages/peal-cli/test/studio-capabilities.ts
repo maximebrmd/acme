@@ -101,7 +101,13 @@ const pinterestLookups: readonly LookupDescription[] = [
 ];
 
 const plain = (platform: Platform): PlatformCapabilities => ({
-  analytics: { perPost: platform === "mastodon" },
+  analytics: {
+    accountNumbers:
+      platform === "mastodon" ? ["followers", "following", "posts"] : [],
+    perPost: platform === "mastodon",
+    postCounts:
+      platform === "mastodon" ? ["likes", "reposts", "replies", "quotes"] : [],
+  },
   followUps: platform === "mastodon" ? { kind: "thread", maxCount: 24 } : null,
   lookups: [],
   media: {

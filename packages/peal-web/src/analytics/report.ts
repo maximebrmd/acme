@@ -116,3 +116,30 @@ export const readingRows = (
     replies: metrics.replies,
     reposts: metrics.reposts,
   }));
+
+/** How many days a range covers, both ends included. */
+export const daysBetween = (from: CalendarDay, to: CalendarDay): number =>
+  Math.round((dayDate(to).getTime() - dayDate(from).getTime()) / 86_400_000) +
+  1;
+
+/** A number against the period before: the difference, and its share. */
+export interface Trend {
+  readonly change: number;
+  /** The difference as a share of the number before; null from nothing. */
+  readonly share: number | null;
+}
+
+/**
+ * How a number moved against the period before. Null when either is
+ * unknown: a number a platform does not give has no trend.
+ */
+export const trendOf = (
+  now: number | null,
+  before: number | null
+): Trend | null =>
+  now === null || before === null
+    ? null
+    : {
+        change: now - before,
+        share: before === 0 ? null : (now - before) / before,
+      };

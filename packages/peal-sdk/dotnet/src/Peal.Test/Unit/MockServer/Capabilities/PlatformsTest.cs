@@ -16,7 +16,15 @@ public class PlatformsTest : BaseMockServerTest
             [
               {
                 "analytics": {
-                  "perPost": true
+                  "accountNumbers": [
+                    "followers",
+                    "followers"
+                  ],
+                  "perPost": true,
+                  "postCounts": [
+                    "likes",
+                    "likes"
+                  ]
                 },
                 "followUps": {
                   "kind": "thread",
@@ -246,7 +254,15 @@ public class PlatformsTest : BaseMockServerTest
               },
               {
                 "analytics": {
-                  "perPost": true
+                  "accountNumbers": [
+                    "followers",
+                    "followers"
+                  ],
+                  "perPost": true,
+                  "postCounts": [
+                    "likes",
+                    "likes"
+                  ]
                 },
                 "followUps": {
                   "kind": "thread",
@@ -504,7 +520,13 @@ public class PlatformsTest : BaseMockServerTest
             [
               {
                 "analytics": {
-                  "perPost": true
+                  "accountNumbers": [
+                    "followers"
+                  ],
+                  "perPost": true,
+                  "postCounts": [
+                    "likes"
+                  ]
                 },
                 "followUps": {
                   "kind": "thread",

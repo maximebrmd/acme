@@ -23,31 +23,51 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = PostMetrics.Builder.class)
 public final class PostMetrics {
+    private final Optional<Integer> clicks;
+
     private final Optional<Integer> impressions;
 
     private final int likes;
 
     private final Optional<Integer> quotes;
 
+    private final Optional<Integer> reach;
+
     private final int replies;
 
     private final int reposts;
 
+    private final Optional<Integer> saves;
+
     private final Map<String, Object> additionalProperties;
 
     private PostMetrics(
+            Optional<Integer> clicks,
             Optional<Integer> impressions,
             int likes,
             Optional<Integer> quotes,
+            Optional<Integer> reach,
             int replies,
             int reposts,
+            Optional<Integer> saves,
             Map<String, Object> additionalProperties) {
+        this.clicks = clicks;
         this.impressions = impressions;
         this.likes = likes;
         this.quotes = quotes;
+        this.reach = reach;
         this.replies = replies;
         this.reposts = reposts;
+        this.saves = saves;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonIgnore
+    public Optional<Integer> getClicks() {
+        if (clicks == null) {
+            return Optional.empty();
+        }
+        return clicks;
     }
 
     @JsonIgnore
@@ -71,6 +91,14 @@ public final class PostMetrics {
         return quotes;
     }
 
+    @JsonIgnore
+    public Optional<Integer> getReach() {
+        if (reach == null) {
+            return Optional.empty();
+        }
+        return reach;
+    }
+
     @JsonProperty("replies")
     public int getReplies() {
         return replies;
@@ -79,6 +107,20 @@ public final class PostMetrics {
     @JsonProperty("reposts")
     public int getReposts() {
         return reposts;
+    }
+
+    @JsonIgnore
+    public Optional<Integer> getSaves() {
+        if (saves == null) {
+            return Optional.empty();
+        }
+        return saves;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("clicks")
+    private Optional<Integer> _getClicks() {
+        return clicks;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
@@ -93,6 +135,18 @@ public final class PostMetrics {
         return quotes;
     }
 
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("reach")
+    private Optional<Integer> _getReach() {
+        return reach;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("saves")
+    private Optional<Integer> _getSaves() {
+        return saves;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -105,16 +159,27 @@ public final class PostMetrics {
     }
 
     private boolean equalTo(PostMetrics other) {
-        return impressions.equals(other.impressions)
+        return clicks.equals(other.clicks)
+                && impressions.equals(other.impressions)
                 && likes == other.likes
                 && quotes.equals(other.quotes)
+                && reach.equals(other.reach)
                 && replies == other.replies
-                && reposts == other.reposts;
+                && reposts == other.reposts
+                && saves.equals(other.saves);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.impressions, this.likes, this.quotes, this.replies, this.reposts);
+        return Objects.hash(
+                this.clicks,
+                this.impressions,
+                this.likes,
+                this.quotes,
+                this.reach,
+                this.replies,
+                this.reposts,
+                this.saves);
     }
 
     @java.lang.Override
@@ -147,6 +212,12 @@ public final class PostMetrics {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage clicks(Optional<Integer> clicks);
+
+        _FinalStage clicks(Integer clicks);
+
+        _FinalStage clicks(Nullable<Integer> clicks);
+
         _FinalStage impressions(Optional<Integer> impressions);
 
         _FinalStage impressions(Integer impressions);
@@ -158,6 +229,18 @@ public final class PostMetrics {
         _FinalStage quotes(Integer quotes);
 
         _FinalStage quotes(Nullable<Integer> quotes);
+
+        _FinalStage reach(Optional<Integer> reach);
+
+        _FinalStage reach(Integer reach);
+
+        _FinalStage reach(Nullable<Integer> reach);
+
+        _FinalStage saves(Optional<Integer> saves);
+
+        _FinalStage saves(Integer saves);
+
+        _FinalStage saves(Nullable<Integer> saves);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -168,9 +251,15 @@ public final class PostMetrics {
 
         private int reposts;
 
+        private Optional<Integer> saves = Optional.empty();
+
+        private Optional<Integer> reach = Optional.empty();
+
         private Optional<Integer> quotes = Optional.empty();
 
         private Optional<Integer> impressions = Optional.empty();
+
+        private Optional<Integer> clicks = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -178,11 +267,14 @@ public final class PostMetrics {
 
         @java.lang.Override
         public Builder from(PostMetrics other) {
+            clicks(other.getClicks());
             impressions(other.getImpressions());
             likes(other.getLikes());
             quotes(other.getQuotes());
+            reach(other.getReach());
             replies(other.getReplies());
             reposts(other.getReposts());
+            saves(other.getSaves());
             return this;
         }
 
@@ -204,6 +296,56 @@ public final class PostMetrics {
         @JsonSetter("reposts")
         public _FinalStage reposts(int reposts) {
             this.reposts = reposts;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage saves(Nullable<Integer> saves) {
+            if (saves.isNull()) {
+                this.saves = null;
+            } else if (saves.isEmpty()) {
+                this.saves = Optional.empty();
+            } else {
+                this.saves = Optional.of(saves.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage saves(Integer saves) {
+            this.saves = Optional.ofNullable(saves);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "saves", nulls = Nulls.SKIP)
+        public _FinalStage saves(Optional<Integer> saves) {
+            this.saves = saves;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage reach(Nullable<Integer> reach) {
+            if (reach.isNull()) {
+                this.reach = null;
+            } else if (reach.isEmpty()) {
+                this.reach = Optional.empty();
+            } else {
+                this.reach = Optional.of(reach.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage reach(Integer reach) {
+            this.reach = Optional.ofNullable(reach);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "reach", nulls = Nulls.SKIP)
+        public _FinalStage reach(Optional<Integer> reach) {
+            this.reach = reach;
             return this;
         }
 
@@ -258,17 +400,46 @@ public final class PostMetrics {
         }
 
         @java.lang.Override
+        public _FinalStage clicks(Nullable<Integer> clicks) {
+            if (clicks.isNull()) {
+                this.clicks = null;
+            } else if (clicks.isEmpty()) {
+                this.clicks = Optional.empty();
+            } else {
+                this.clicks = Optional.of(clicks.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage clicks(Integer clicks) {
+            this.clicks = Optional.ofNullable(clicks);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "clicks", nulls = Nulls.SKIP)
+        public _FinalStage clicks(Optional<Integer> clicks) {
+            this.clicks = clicks;
+            return this;
+        }
+
+        @java.lang.Override
         public PostMetrics build() {
-            return new PostMetrics(impressions, likes, quotes, replies, reposts, additionalProperties);
+            return new PostMetrics(
+                    clicks, impressions, likes, quotes, reach, replies, reposts, saves, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("impressions")
+            if (key.equalsIgnoreCase("clicks")
+                    || key.equalsIgnoreCase("impressions")
                     || key.equalsIgnoreCase("likes")
                     || key.equalsIgnoreCase("quotes")
+                    || key.equalsIgnoreCase("reach")
                     || key.equalsIgnoreCase("replies")
-                    || key.equalsIgnoreCase("reposts")) {
+                    || key.equalsIgnoreCase("reposts")
+                    || key.equalsIgnoreCase("saves")) {
                 return;
             }
             this.additionalProperties.put(key, value);

@@ -253,8 +253,13 @@ const platformLines = (
         ...columns(lookupRows(capabilities.lookups)),
       ]),
   capabilities.analytics.perPost
-    ? "Analytics: Peal reads each post's counts."
+    ? `Analytics: Peal reads each post's counts (${capabilities.analytics.postCounts.join(", ")}).`
     : "Analytics: Peal reads no counts there.",
+  ...(capabilities.analytics.accountNumbers.length === 0
+    ? []
+    : [
+        `Account: Peal reads its ${capabilities.analytics.accountNumbers.join(", ")}, once a day.`,
+      ]),
 ];
 
 // A platform on one line: its text limits, media, options and lookups.

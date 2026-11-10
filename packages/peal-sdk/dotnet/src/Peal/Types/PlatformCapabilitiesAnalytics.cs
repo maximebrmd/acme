@@ -11,8 +11,16 @@ public record PlatformCapabilitiesAnalytics : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("accountNumbers")]
+    public IEnumerable<PlatformCapabilitiesAnalyticsAccountNumbersItem> AccountNumbers { get; set; } =
+        new List<PlatformCapabilitiesAnalyticsAccountNumbersItem>();
+
     [JsonPropertyName("perPost")]
     public required bool PerPost { get; set; }
+
+    [JsonPropertyName("postCounts")]
+    public IEnumerable<PlatformCapabilitiesAnalyticsPostCountsItem> PostCounts { get; set; } =
+        new List<PlatformCapabilitiesAnalyticsPostCountsItem>();
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

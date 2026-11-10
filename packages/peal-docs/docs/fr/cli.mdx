@@ -233,9 +233,15 @@ Un agent qui lance des commandes plutôt que des outils MCP travaille de la mêm
 peal analytics summary                                     # les 30 derniers jours, aujourd’hui compris
 peal analytics summary --from 2026-10-01 --to 2026-10-31 --time-zone Europe/Paris
 peal analytics post <post-id>
+peal analytics dashboard --days 7                          # par rapport aux 7 jours précédents
+peal analytics channel <channel-id> --days 30
+peal analytics export posts --output posts.csv --from 2026-10-01 --to 2026-10-31
+peal analytics export accounts --format json --output accounts.ndjson
 ```
 
 `peal analytics summary` additionne les compteurs des publications parues sur une période : au total, par canal, et les publications qui ont le plus fait réagir. Les jours suivent `--time-zone`, un fuseau IANA comme `Europe/Paris` ; sans lui, `TZ`, puis le fuseau de votre ordinateur. `peal analytics post` affiche les derniers compteurs d’une publication sur chaque canal où elle est partie. Un tiret remplace un compteur que la plateforme ne donne pas. Voir [Statistiques](/analytics).
+
+`peal analytics dashboard` montre une période à côté du même nombre de jours avant elle : chaque total avec ce qui a changé, les abonnés avec ce qu’ils ont gagné, chaque canal, et les meilleures publications. `peal analytics channel` affiche un canal jour par jour : abonnés, abonnements, vues, portée, et les interactions gagnées par ses publications. Les deux acceptent `--days 7`, `30` ou `90` (30 par défaut), ou `--from` et `--to`. `peal analytics export posts` ou `accounts` enregistre les chiffres dans le fichier que nomme `--output`, en CSV ou, avec `--format json`, un objet JSON par ligne ; il ne remplace aucun fichier.
 
 ## Facturation [#billing]
 

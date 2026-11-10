@@ -96,6 +96,9 @@ require_relative "peal/billing/types/get_billing_request"
 require_relative "peal/billing/types/standing_billing_request"
 require_relative "peal/analytics/client"
 require_relative "peal/analytics/types/summary_analytics_request"
+require_relative "peal/analytics/types/dashboard_analytics_request"
+require_relative "peal/analytics/types/channel_analytics_request"
+require_relative "peal/analytics/types/export_analytics_request"
 require_relative "peal/analytics/types/post_analytics_request"
 require_relative "peal/tiktok/client"
 require_relative "peal/tiktok/types/creator_tiktok_request"
@@ -178,11 +181,21 @@ module Peal
     autoload :AccountStanding, ::File.join(__dir__, "peal/types/account_standing")
     autoload :AlreadyMemberEncoded, ::File.join(__dir__, "peal/types/already_member_encoded")
     autoload :CalendarDay, ::File.join(__dir__, "peal/types/calendar_day")
+    autoload :AnalyticsDashboardPrevious, ::File.join(__dir__, "peal/types/analytics_dashboard_previous")
+    autoload :DashboardTotals, ::File.join(__dir__, "peal/types/dashboard_totals")
+    autoload :FollowerChange, ::File.join(__dir__, "peal/types/follower_change")
+    autoload :Platform, ::File.join(__dir__, "peal/types/platform")
+    autoload :ChannelDashboard, ::File.join(__dir__, "peal/types/channel_dashboard")
+    autoload :DashboardDay, ::File.join(__dir__, "peal/types/dashboard_day")
+    autoload :PlatformDashboard, ::File.join(__dir__, "peal/types/platform_dashboard")
+    autoload :PostMetrics, ::File.join(__dir__, "peal/types/post_metrics")
+    autoload :TopPost, ::File.join(__dir__, "peal/types/top_post")
+    autoload :AnalyticsDashboard, ::File.join(__dir__, "peal/types/analytics_dashboard")
+    autoload :AnalyticsExportFormat, ::File.join(__dir__, "peal/types/analytics_export_format")
+    autoload :AnalyticsExportKind, ::File.join(__dir__, "peal/types/analytics_export_kind")
     autoload :ChannelMetrics, ::File.join(__dir__, "peal/types/channel_metrics")
     autoload :EngagementDay, ::File.join(__dir__, "peal/types/engagement_day")
     autoload :MetricTotals, ::File.join(__dir__, "peal/types/metric_totals")
-    autoload :PostMetrics, ::File.join(__dir__, "peal/types/post_metrics")
-    autoload :TopPost, ::File.join(__dir__, "peal/types/top_post")
     autoload :AnalyticsSummary, ::File.join(__dir__, "peal/types/analytics_summary")
     autoload :Permission, ::File.join(__dir__, "peal/types/permission")
     autoload :APIKey, ::File.join(__dir__, "peal/types/api_key")
@@ -201,7 +214,6 @@ module Peal
     autoload :AssistantActionHashtags, ::File.join(__dir__, "peal/types/assistant_action_hashtags")
     autoload :AssistantTone, ::File.join(__dir__, "peal/types/assistant_tone")
     autoload :AssistantActionRewrite, ::File.join(__dir__, "peal/types/assistant_action_rewrite")
-    autoload :Platform, ::File.join(__dir__, "peal/types/platform")
     autoload :AssistantActionShorten, ::File.join(__dir__, "peal/types/assistant_action_shorten")
     autoload :TranslationLanguage, ::File.join(__dir__, "peal/types/translation_language")
     autoload :AssistantActionTranslate, ::File.join(__dir__, "peal/types/assistant_action_translate")
@@ -262,6 +274,8 @@ module Peal
     autoload :OptionConstraintNotWith, ::File.join(__dir__, "peal/types/option_constraint_not_with")
     autoload :OptionConstraintOnlyWith, ::File.join(__dir__, "peal/types/option_constraint_only_with")
     autoload :OptionConstraint, ::File.join(__dir__, "peal/types/option_constraint")
+    autoload :PlatformCapabilitiesAnalyticsAccountNumbersItem, ::File.join(__dir__, "peal/types/platform_capabilities_analytics_account_numbers_item")
+    autoload :PlatformCapabilitiesAnalyticsPostCountsItem, ::File.join(__dir__, "peal/types/platform_capabilities_analytics_post_counts_item")
     autoload :PlatformCapabilitiesAnalytics, ::File.join(__dir__, "peal/types/platform_capabilities_analytics")
     autoload :PlatformCapabilitiesOptions, ::File.join(__dir__, "peal/types/platform_capabilities_options")
     autoload :TextUnit, ::File.join(__dir__, "peal/types/text_unit")
@@ -269,6 +283,7 @@ module Peal
     autoload :TextCapabilities, ::File.join(__dir__, "peal/types/text_capabilities")
     autoload :PlatformCapabilities, ::File.join(__dir__, "peal/types/platform_capabilities")
     autoload :ChannelCapabilities, ::File.join(__dir__, "peal/types/channel_capabilities")
+    autoload :ChannelDay, ::File.join(__dir__, "peal/types/channel_day")
     autoload :ChannelNotFoundEncoded, ::File.join(__dir__, "peal/types/channel_not_found_encoded")
     autoload :GoogleBusinessCallToAction, ::File.join(__dir__, "peal/types/google_business_call_to_action")
     autoload :GoogleBusinessPostType, ::File.join(__dir__, "peal/types/google_business_post_type")
@@ -283,6 +298,7 @@ module Peal
     autoload :YouTubeOptions, ::File.join(__dir__, "peal/types/you_tube_options")
     autoload :TargetOptions, ::File.join(__dir__, "peal/types/target_options")
     autoload :ChannelOptions, ::File.join(__dir__, "peal/types/channel_options")
+    autoload :ChannelSeries, ::File.join(__dir__, "peal/types/channel_series")
     autoload :ChoosableAccount, ::File.join(__dir__, "peal/types/choosable_account")
     autoload :CommentInvalidEncodedTag, ::File.join(__dir__, "peal/types/comment_invalid_encoded_tag")
     autoload :CommentProblem, ::File.join(__dir__, "peal/types/comment_problem")

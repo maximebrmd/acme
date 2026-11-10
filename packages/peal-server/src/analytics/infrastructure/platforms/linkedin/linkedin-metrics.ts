@@ -43,10 +43,12 @@ const StatisticsSchema = Schema.Struct({
       Schema.Struct({
         share: Schema.optionalKey(Schema.String),
         totalShareStatistics: Schema.Struct({
+          clickCount: Schema.optionalKey(CountSchema),
           commentCount: Schema.optionalKey(CountSchema),
           impressionCount: Schema.optionalKey(CountSchema),
           likeCount: Schema.optionalKey(CountSchema),
           shareCount: Schema.optionalKey(CountSchema),
+          uniqueImpressionsCount: Schema.optionalKey(CountSchema),
         }),
         ugcPost: Schema.optionalKey(Schema.String),
       })
@@ -64,13 +66,15 @@ const statisticsOf = HttpClientResponse.schemaBodyJson(StatisticsSchema);
 const count = (value: number | undefined) =>
   Math.min(Math.max(Math.trunc(value ?? 0), 0), maxCount);
 
-// Organic statistics: comments are replies, shares reposts. LinkedIn
-// counts no quotes, and its clicks have no place in Peal's counts yet.
+// Organic statistics: comments are replies, shares reposts, unique
+// impressions the reach. LinkedIn counts no quotes.
 const metricsOf = (statistics: Statistics) =>
   new PostMetrics({
+    clicks: Option.some(count(statistics.clickCount)),
     impressions: Option.some(count(statistics.impressionCount)),
     likes: count(statistics.likeCount),
     quotes: Option.none(),
+    reach: Option.some(count(statistics.uniqueImpressionsCount)),
     replies: count(statistics.commentCount),
     reposts: count(statistics.shareCount),
   });

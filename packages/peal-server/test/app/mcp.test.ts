@@ -236,9 +236,11 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
         // Every tool is listed; those that change something refuse.
         assert.deepStrictEqual(results.names, [
+          "analytics_dashboard",
           "analytics_summary",
           "approve_post",
           "cancel_post",
+          "channel_analytics",
           "confirm_target",
           "create_draft",
           "create_post",

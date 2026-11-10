@@ -8,6 +8,12 @@ use Peal\Core\Json\JsonProperty;
 class PostMetrics extends JsonSerializableType
 {
     /**
+     * @var ?int $clicks
+     */
+    #[JsonProperty('clicks')]
+    public ?int $clicks;
+
+    /**
      * @var ?int $impressions
      */
     #[JsonProperty('impressions')]
@@ -26,6 +32,12 @@ class PostMetrics extends JsonSerializableType
     public ?int $quotes;
 
     /**
+     * @var ?int $reach
+     */
+    #[JsonProperty('reach')]
+    public ?int $reach;
+
+    /**
      * @var int $replies
      */
     #[JsonProperty('replies')]
@@ -38,22 +50,34 @@ class PostMetrics extends JsonSerializableType
     public int $reposts;
 
     /**
+     * @var ?int $saves
+     */
+    #[JsonProperty('saves')]
+    public ?int $saves;
+
+    /**
      * @param array{
      *   likes: int,
      *   replies: int,
      *   reposts: int,
+     *   clicks?: ?int,
      *   impressions?: ?int,
      *   quotes?: ?int,
+     *   reach?: ?int,
+     *   saves?: ?int,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->clicks = $values['clicks'] ?? null;
         $this->impressions = $values['impressions'] ?? null;
         $this->likes = $values['likes'];
         $this->quotes = $values['quotes'] ?? null;
+        $this->reach = $values['reach'] ?? null;
         $this->replies = $values['replies'];
         $this->reposts = $values['reposts'];
+        $this->saves = $values['saves'] ?? null;
     }
 
     /**
