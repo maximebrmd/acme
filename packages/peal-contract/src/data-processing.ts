@@ -147,8 +147,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The posts, media and schedules of your workspaces, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts; for a post made in one call with an idempotency key, a digest of that key and of its request, never either",
-      fr: "Les publications, médias et planifications de vos espaces de travail, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre",
+      en: "The posts, media and schedules of your workspaces, what was read of each file (its type, size, dimensions, duration, or a document’s number of pages), the comments members write on posts and the approvals they ask for and decide, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts; for a post made in one call with an idempotency key, a digest of that key and of its request, never either",
+      fr: "Les publications, médias et planifications de vos espaces de travail, ce qui a été lu de chaque fichier (son type, sa taille, ses dimensions, sa durée, ou le nombre de pages d’un document), les commentaires que les membres écrivent sur les publications et les approbations qu’ils demandent et décident, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre",
     },
     id: "content",
     legalBasis: contract,
@@ -173,8 +173,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The social media accounts you connect, their identifiers on each platform, and the access tokens the platforms issue, stored encrypted",
-      fr: "Les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme, et les jetons d’accès que les plateformes délivrent, stockés chiffrés",
+      en: "The social media accounts you connect, their identifiers on each platform, the way each was connected where a platform has several (a LinkedIn profile or company page, either of Instagram’s logins), and the access tokens the platforms issue, stored encrypted",
+      fr: "Les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme, la façon dont chacun a été connecté quand une plateforme en a plusieurs (un profil ou une page d’entreprise LinkedIn, l’une ou l’autre des connexions Instagram), et les jetons d’accès que les plateformes délivrent, stockés chiffrés",
     },
     id: "channels",
     legalBasis: contract,
