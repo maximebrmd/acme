@@ -1,0 +1,5 @@
+---
+# Where the server keeps its hosts file and cloud-init's settings. The tests
+# name a folder of their own (tests/test_cloud_init.py).
+system_hosts_file: /etc/hosts
+system_cloud_init_dir: /etc/cloud

@@ -10,6 +10,8 @@ from typing import Any
 
 import pytest
 
+from ansible.template import trust_as_template
+
 from conftest import INFRA, ansible_render, render, role_file, settings, task
 
 ENVIRONMENTS = ["production", "sandbox"]
@@ -119,3 +121,47 @@ def test_an_empty_credential_written_by_hand_is_unset(tmp_path: Path, empty: str
     credentials = f"PEAL_S3_ACCESS_KEY_ID={empty}\nTELEGRAM_BOT_TOKEN='synthetic'\nRESEND_API_KEY={empty}\n"
 
     assert _unset(tmp_path, credentials) == ["PEAL_S3_ACCESS_KEY_ID", "RESEND_API_KEY or SMTP_URL"]
+
+
+def _misplaced(media: str, backup: str) -> list[str]:
+    """The storage endpoints peal_runtime refuses, by setting."""
+    found = task("peal_runtime", "Refuse storage endpoints the stack would misread, or outside the EU")
+    return ansible_render(
+        found["vars"]["peal_runtime_misplaced"],
+        **{name: trust_as_template(value) for name, value in found["vars"].items()},
+        peal_media_endpoint=media,
+        peal_backup_endpoint=backup,
+    )
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_the_inventory_s_storage_endpoints_are_taken(environment: str) -> None:
+    chosen = settings(environment)
+
+    assert _misplaced(chosen["peal_media_endpoint"], chosen["peal_backup_endpoint"]) == []
+
+
+def test_any_s3_store_is_taken() -> None:
+    """The stack asks for the S3 API, not for a provider."""
+    assert _misplaced("https://s3.eu-store.test", "s3.eu-store.test") == []
+
+
+def test_an_r2_endpoint_outside_the_eu_jurisdiction_is_refused() -> None:
+    """A bucket made in R2's EU jurisdiction answers at the `.eu.` endpoint
+    alone: the account's plain endpoint names buckets stored anywhere."""
+    account = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+    assert _misplaced(
+        f"https://{account}.r2.cloudflarestorage.com", f"{account}.r2.cloudflarestorage.com"
+    ) == ["peal_media_endpoint", "peal_backup_endpoint"]
+    assert _misplaced(
+        f"https://{account}.eu.r2.cloudflarestorage.com", f"{account}.r2.cloudflarestorage.com"
+    ) == ["peal_backup_endpoint"]
+
+
+def test_the_media_endpoint_is_a_url_and_the_backup_endpoint_a_host() -> None:
+    """The server reads a URL; pgBackRest reads a host, and takes a scheme
+    for part of its name."""
+    assert _misplaced("s3.eu-store.test", "s3.eu-store.test") == ["peal_media_endpoint"]
+    assert _misplaced("http://s3.eu-store.test", "s3.eu-store.test") == ["peal_media_endpoint"]
+    assert _misplaced("https://s3.eu-store.test", "https://s3.eu-store.test") == ["peal_backup_endpoint"]

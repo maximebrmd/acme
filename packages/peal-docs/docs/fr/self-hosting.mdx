@@ -152,6 +152,26 @@ Le serveur joint lui-même les plateformes, en HTTPS : il doit donc accéder à 
 
 Pour publier une image ou une vidéo, le serveur la lit dans le stockage des médias, en entier, en mémoire, puis l’envoie : une vidéo Bluesky peut prendre jusqu’à 300 Mo. LinkedIn et X prennent les vidéos par parties de 4 Mio : le serveur n’en garde qu’une à la fois. Donnez au serveur la mémoire nécessaire aux plus gros fichiers que publient vos membres.
 
+### Adresses à enregistrer [#platform-addresses]
+
+L’application de chaque plateforme reçoit des adresses de votre serveur : celle où la plateforme renvoie les personnes après leur connexion et, pour Meta, celles où ses serveurs appellent le vôtre. Une commande les affiche toutes pour votre `PUBLIC_URL`, chacune à côté du réglage où elle va, à partir des chemins que le serveur sert et envoie lui-même. Depuis le dépôt :
+
+```sh
+PUBLIC_URL=https://peal.example.com bun nx run peal-server:platform-addresses
+```
+
+Ou sur un serveur qui tourne, qui répond pour sa propre `PUBLIC_URL`, avec les fichiers et les réglages de la pile comme dans [Avec Docker Compose et Caddy](#compose) :
+
+```sh
+docker compose --project-name peal --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/peal/peal.env \
+  exec server bun packages/peal-server/scripts/platform-addresses.ts
+```
+
+Enregistrez ce qu’elle affiche, par copie, plutôt que des adresses écrites à la main : une plateforme refuse une connexion dont l’adresse de redirection diffère d’un seul caractère de celle enregistrée, barre oblique finale comprise. Relancez-la après avoir changé `PUBLIC_URL`, et après une mise à jour qui ajoute une plateforme. Avec `--json`, elle affiche la même liste pour un programme.
+
+Les adresses qu’elle signale comme appelées par les serveurs de la plateforme, les deux rappels de Meta et les documents du client Bluesky, doivent répondre à Internet sans connexion devant elles : laissez-les passer toute page de connexion ou liste d’autorisation placée devant le serveur. Les autres sont ouvertes par le navigateur des personnes.
+
 ### Bluesky [#bluesky]
 
 Un serveur en production ne connecte des comptes Bluesky qu’avec des clés à lui, qui l’identifient auprès de Bluesky. `PUBLIC_URL` doit être en HTTPS, sans port. Créez une clé, depuis le dépôt :
@@ -160,7 +180,7 @@ Un serveur en production ne connecte des comptes Bluesky qu’avec des clés à 
 bun nx run peal-server:bluesky-key
 ```
 
-Mettez la ligne qu’elle affiche dans `BLUESKY_CLIENT_KEYS`. Les entrées sont séparées par des virgules : pour en changer, placez une nouvelle clé en tête, et gardez les anciennes jusqu’à ce que les sessions qu’elles ont signées aient été rafraîchies. Bluesky lit la description du client de Peal à `PUBLIC_URL/api/channels/oauth/bluesky/client-metadata.json`, et ses clés publiques à côté.
+Mettez la ligne qu’elle affiche dans `BLUESKY_CLIENT_KEYS`. Les entrées sont séparées par des virgules : pour en changer, placez une nouvelle clé en tête, et gardez les anciennes jusqu’à ce que les sessions qu’elles ont signées aient été rafraîchies. Rien n’est enregistré auprès de Bluesky : ses serveurs lisent la description du client de Peal, et ses clés publiques à côté, aux adresses que [la commande](#platform-addresses) affiche pour Bluesky.
 
 Sans clés, un serveur lancé depuis les sources sur `localhost` utilise le client de développement de Bluesky, dont les sessions durent deux semaines, et tout autre serveur ne peut pas connecter Bluesky.
 
@@ -169,7 +189,7 @@ Sans clés, un serveur lancé depuis les sources sur `localhost` utilise le clie
 Un serveur connecte des membres LinkedIn une fois que vous lui avez enregistré une application sur le portail développeurs de LinkedIn, qui demande une page LinkedIn pour la détenir :
 
 1. Ajoutez les produits **Sign In with LinkedIn using OpenID Connect** et **Share on LinkedIn**. Les deux sont accordés tout de suite, sans examen.
-2. Sous **Auth**, ajoutez `PUBLIC_URL/connect/linkedin/callback` comme URL de redirection autorisée, comme `https://peal.example.com/connect/linkedin/callback`.
+2. Sous **Auth**, ajoutez l’adresse que [la commande](#platform-addresses) affiche pour LinkedIn comme URL de redirection autorisée.
 3. Mettez l’identifiant client de l’application dans `LINKEDIN_CLIENT_ID` et son secret client principal dans `LINKEDIN_CLIENT_SECRET`.
 
 Ces applications n’obtiennent pas de jeton de rafraîchissement : les membres reconnectent leur canal tous les 60 jours, et en sont prévenus une semaine avant. Peal appelle l’API de LinkedIn dans la version que nomme `LINKEDIN_API_VERSION`, une version récente si elle n’est pas définie ; LinkedIn retire chaque version un an après sa sortie, et une version retirée fait échouer chaque publication.
@@ -179,7 +199,7 @@ Ces applications n’obtiennent pas de jeton de rafraîchissement : les membres 
 Un serveur connecte des comptes X une fois que vous lui avez enregistré une application dans la console développeurs de X :
 
 1. Dans les réglages d’authentification des utilisateurs de l’application, activez OAuth 2.0, comme **Web App, Automated App or Bot**, avec les permissions **Read and write**.
-2. Ajoutez `PUBLIC_URL/connect/x/callback` comme URI de rappel, exactement, comme `https://peal.example.com/connect/x/callback`. X refuse `localhost` : en développement, utilisez `http://127.0.0.1` et son port.
+2. Ajoutez l’adresse que [la commande](#platform-addresses) affiche pour X comme URI de rappel, exactement. X refuse `localhost` : en développement, utilisez `http://127.0.0.1` et son port.
 3. Mettez l’identifiant client OAuth 2.0 dans `X_CLIENT_ID` et son secret client dans `X_CLIENT_SECRET`.
 
 X facture chaque requête de l’API à l’application, sur des crédits achetés d’avance ([tarifs](https://docs.x.com/x-api/getting-started/pricing)), et une publication avec un lien coûte environ 13 fois plus qu’une sans. Achetez des crédits et fixez une limite de dépenses dans la console de X. Une fois les crédits épuisés (X répond `402`) ou la limite atteinte (`usage-capped`), X refuse toutes les publications de l’application jusqu’à ce que vous ajoutiez des crédits ou releviez la limite : les publications n’y sont pour rien, alors Peal journalise une erreur, que l’alerte du serveur sur les journaux d’erreurs signale, et attend comme pour une panne, plus de deux heures, avant qu’une publication échoue avec la raison « la plateforme refuse l’application de ce serveur tant que son opérateur ne l’a pas réglée ».
@@ -194,7 +214,7 @@ Pour LinkedIn comme pour X, l’un des deux réglages sans l’autre arrête le 
 
 Un serveur connecte des créateurs TikTok une fois que vous lui avez enregistré une application sur TikTok for Developers :
 
-1. Ajoutez le produit **Login Kit**, avec `PUBLIC_URL/connect/tiktok/callback` comme URI de redirection pour le web, comme `https://peal.example.com/connect/tiktok/callback`. TikTok n’accepte que des URI de redirection en HTTPS : en développement, passez par un tunnel HTTPS.
+1. Ajoutez le produit **Login Kit**, avec l’adresse que [la commande](#platform-addresses) affiche pour TikTok comme URI de redirection pour le web. TikTok n’accepte que des URI de redirection en HTTPS : en développement, passez par un tunnel HTTPS.
 2. Ajoutez la **Content Posting API**, avec **Direct Post** activé, et la **Display API**, pour les statistiques. Ajoutez les scopes `user.info.basic`, `user.info.profile`, `video.publish` et `video.list`.
 3. Mettez la clé client de l’application dans `TIKTOK_CLIENT_KEY` et son secret client dans `TIKTOK_CLIENT_SECRET`.
 
@@ -217,15 +237,13 @@ Une plateforme dont les paramètres manquent n’est pas proposée. Instagram l�
 | Connexion Instagram (`INSTAGRAM_APP_ID`)    | Un compte professionnel, sans Page     | 60 jours, renouvelé par Peal une semaine avant | La publication (images, reels, carrousels), les statistiques ; appelle `graph.instagram.com`                                                                                     |
 | Facebook Login via une Page (`META_APP_ID`) | Un compte professionnel lié à une Page | Celui de la Page, qui n’expire pas             | La même chose, plus ce que seule cette API a (identification de produits, collaborateurs, recherche de hashtags), dont Peal ne se sert pas encore ; appelle `graph.facebook.com` |
 
-Dans le tableau de bord, enregistrez ces adresses :
+Dans le tableau de bord, donnez à chaque cas d’usage les adresses que [la commande](#platform-addresses) affiche pour lui :
 
-| Paramètre                                                          | Adresse                                                                                                                                                 |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| URI de redirection OAuth valides de Facebook Login                 | `PUBLIC_URL/connect/facebook/callback` et `PUBLIC_URL/connect/instagram/callback`                                                                       |
-| URI de redirection OAuth de la connexion professionnelle Instagram | `PUBLIC_URL/connect/instagram/callback`                                                                                                                 |
-| URL de rappel de redirection de Threads                            | `PUBLIC_URL/connect/threads/callback`                                                                                                                   |
-| URL de demande de suppression des données                          | `PUBLIC_URL/api/data-deletion/facebook` ; `PUBLIC_URL/api/data-deletion/instagram` pour Instagram ; `PUBLIC_URL/api/data-deletion/threads` pour Threads |
-| URL de rappel d’annulation d’autorisation                          | `PUBLIC_URL/api/data-deletion/facebook/deauthorize`, et de même avec `instagram` et `threads` dans leurs cas d’usage                                    |
+| Cas d’usage    | Paramètres où vont les adresses                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Facebook Login | Ses URI de redirection OAuth valides, deux, pour les Pages Facebook et pour Instagram ; son URL de demande de suppression des données ; son URL de rappel d’annulation d’autorisation |
+| Instagram      | Les URI de redirection OAuth de sa connexion professionnelle ; son URL de demande de suppression des données ; son URL de rappel d’annulation d’autorisation                          |
+| Threads        | Son URL de rappel de redirection ; son URL de demande de suppression des données ; son URL de rappel d’annulation d’autorisation                                                      |
 
 Quand l’une de ses utilisatrices ou l’un de ses utilisateurs demande à Meta de supprimer ce que Peal détient sur elle ou lui, Meta appelle l’adresse de suppression des données avec une demande signée avec le secret de ce cas d’usage. Peal vérifie la signature, supprime, dans chaque espace de travail, les canaux que la personne a connectés par là et leurs jetons, ainsi que les comptes que sa connexion propose encore à un membre de choisir, et répond avec un code de confirmation et la page où s’affiche son état, `PUBLIC_URL/data-deletion/<code>`. La même demande envoyée à nouveau, comme Meta peut la renvoyer, reçoit la même réponse et ne supprime rien de plus. Une demande d’Instagram désigne le compte par son identifiant propre à l’application ou par le sien : Peal prend l’un comme l’autre.
 
@@ -241,7 +259,7 @@ Un serveur connecte des chaînes YouTube une fois que vous lui avez créé un cl
 
 1. Dans la console Google Cloud, créez un projet, et activez la **YouTube Data API v3** sous API et services.
 2. Sous **Google Auth Platform**, configurez l’écran de consentement pour des utilisateurs **Externes**, et ajoutez les champs d’application `https://www.googleapis.com/auth/youtube.upload` et `https://www.googleapis.com/auth/youtube.readonly`.
-3. Sous **Clients**, créez un client **Application Web**, avec `PUBLIC_URL/connect/youtube/callback` comme URI de redirection autorisée, comme `https://peal.example.com/connect/youtube/callback`.
+3. Sous **Clients**, créez un client **Application Web**, avec l’adresse que [la commande](#platform-addresses) affiche pour YouTube comme URI de redirection autorisée.
 4. Mettez l’identifiant client dans `YOUTUBE_CLIENT_ID` et son secret dans `YOUTUBE_CLIENT_SECRET`.
 
 L’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas YouTube. Les membres se connectent avec Google et choisissent la chaîne, celle d’un compte de marque comprise, dans le sélecteur de comptes de Google : une connexion est une chaîne. Peal demande à mettre en ligne des vidéos et à lire la chaîne et ses vidéos, rien de plus, et renouvelle son accès toutes les heures. Déconnecter une chaîne révoque cet accès chez Google, sauf si un autre espace de travail connecte encore la même chaîne.

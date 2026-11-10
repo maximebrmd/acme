@@ -5,6 +5,16 @@
 server_hostname: peal-production
 peal_environment: production
 
+# Where the server is hosted: the provider, a European company, in lowercase
+# as its own site writes it, and the city of its data centre, in lowercase
+# English (paris, not the provider's zone, which differs between providers
+# for one city). No provider is chosen yet: these are placeholders, which
+# the preflight refuses. Nothing else reads them but the uptime server's
+# check that it shares neither (group_vars/uptime). README.md, "Choosing a
+# provider and a size", says what the stack needs of any provider.
+hosting_provider: REPLACE-WITH-THE-PROVIDER-OF-PRODUCTION
+hosting_location: REPLACE-WITH-THE-CITY-OF-PRODUCTION
+
 # Host names on the Cloudflare zone. Cloudflare's free certificate covers the
 # zone and its first-level subdomains only, so no name goes deeper.
 peal_hostnames:
@@ -34,9 +44,12 @@ peal_mail_from: Peal <notifications@mail.peal.social>
 # credential PEAL_HEARTBEAT_TOKEN, which the uptime server generates.
 peal_heartbeat_url: https://uptime.peal.social/api/v1/endpoints/production_grafana-heartbeat/external?success=true
 
-# Cloudflare R2: one bucket for media, one for database backups, in the
-# account whose id names the endpoint. Both buckets are created in R2's EU
-# jurisdiction, whose endpoints carry `.eu.`, so the data stays in the EU.
+# Object storage, in the EU: one bucket for media, one for database backups,
+# on any store that speaks the S3 API (README.md, "Object storage"). The
+# media endpoint is an https:// URL, the backup endpoint a host. These name
+# Cloudflare R2, in the account whose id names the endpoint: both buckets
+# are created in R2's EU jurisdiction, which cannot change afterwards and
+# whose endpoints carry `.eu.`, so the data stays in the EU.
 peal_media_endpoint: https://0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com
 peal_media_bucket: peal-production-media
 peal_backup_endpoint: 0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com
