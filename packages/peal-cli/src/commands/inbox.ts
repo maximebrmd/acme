@@ -152,7 +152,7 @@ const threads = Command.make(
 
     if (page.items.length === 0) {
       yield* Console.log(
-        `No comments in ${workspace.name}'s inbox. Peal reads comments on ${inboxPlatforms.join(" and ")}, for ${String(inboxWindowDays)} days after a post went live, and keeps them ${String(inboxRetentionDays)} days after that.`
+        `No comments in ${workspace.name}'s inbox. Peal reads comments on ${inboxPlatforms.join(" and ")}, for ${String(inboxWindowDays)} days after a post went live unless whoever runs the server set another window, and keeps them ${String(inboxRetentionDays)} days after that.`
       );
 
       return;

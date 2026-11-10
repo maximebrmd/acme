@@ -2328,7 +2328,7 @@
     "openLabel": "Inbox of {workspace}",
     "title": "Inbox",
     "description": "The comments people leave under the posts of {workspace}, where they went live.",
-    "collected": "Peal reads comments on {platforms}, for {windowDays, number} days after a post went live, and keeps them {retentionDays, number} days after that.",
+    "collected": "Peal reads comments on {platforms}, for {windowDays, number} days after a post went live unless whoever runs Peal set another window, and keeps them {retentionDays, number} days after that.",
     "loading": "Loading the comments…",
     "loadFailed": "The comments could not be loaded.",
     "retry": "Try again",

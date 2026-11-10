@@ -335,7 +335,7 @@ export class InboxApi extends HttpApiGroup.make("inbox")
       success: InboxThreadPageSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, ${defaultInboxPageSize} a page unless \`limit\` (at most ${maxInboxPageSize}) says otherwise. \`channelId\`, \`postId\` and \`unanswered\` narrow the list. Pass the page's \`nextCursor\` as \`cursor\` for the next one. Peal reads comments on ${inboxPlatforms.join(" and ")}, for ${inboxWindowDays} days after a post went live, and keeps a thread ${inboxRetentionDays} days after that. ${reading}`,
+        description: `Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, ${defaultInboxPageSize} a page unless \`limit\` (at most ${maxInboxPageSize}) says otherwise. \`channelId\`, \`postId\` and \`unanswered\` narrow the list. Pass the page's \`nextCursor\` as \`cursor\` for the next one. Peal reads comments on ${inboxPlatforms.join(" and ")}, for ${inboxWindowDays} days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread ${inboxRetentionDays} days after that. ${reading}`,
         summary: "List the inbox's threads",
       })
     ),

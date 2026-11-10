@@ -29,7 +29,7 @@ const needsReplying =
 
 export const ListCommentThreads = Tool.make("list_comment_threads", {
   dependencies: [CurrentMember],
-  description: `Lists the threads of comments under the workspace's published posts, one per post and channel: those with a comment waiting for an answer first, then by latest comment. Each says how many comments it has and how many wait, never their text: call get_comment_thread for that. Peal reads comments on ${inboxPlatforms.join(" and ")}, for ${String(inboxWindowDays)} days after a post went live, and keeps a thread ${String(inboxRetentionDays)} days after that. Pass a page's nextCursor as cursor for the next one.`,
+  description: `Lists the threads of comments under the workspace's published posts, one per post and channel: those with a comment waiting for an answer first, then by latest comment. Each says how many comments it has and how many wait, never their text: call get_comment_thread for that. Peal reads comments on ${inboxPlatforms.join(" and ")}, for ${String(inboxWindowDays)} days after a post went live by default (the server's operator may set another window), and keeps a thread ${String(inboxRetentionDays)} days after that. Pass a page's nextCursor as cursor for the next one.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelId: Schema.optionalKey(Schema.String),
