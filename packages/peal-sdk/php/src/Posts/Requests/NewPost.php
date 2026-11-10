@@ -12,9 +12,20 @@ use Peal\Types\PostTiming;
 class NewPost extends JsonSerializableType
 {
     /**
+     * @var ?string $wait
+     */
+    public ?string $wait;
+
+    /**
      * @var ?string $idempotencyKey
      */
     public ?string $idempotencyKey;
+
+    /**
+     * @var ?bool $allowDuplicate
+     */
+    #[JsonProperty('allowDuplicate')]
+    public ?bool $allowDuplicate;
 
     /**
      * @var array<string> $channelIds
@@ -45,14 +56,18 @@ class NewPost extends JsonSerializableType
      *   channelIds: array<string>,
      *   content: PostContent,
      *   when: PostTiming,
+     *   wait?: ?string,
      *   idempotencyKey?: ?string,
+     *   allowDuplicate?: ?bool,
      *   options?: ?array<ChannelOptions>,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->wait = $values['wait'] ?? null;
         $this->idempotencyKey = $values['idempotencyKey'] ?? null;
+        $this->allowDuplicate = $values['allowDuplicate'] ?? null;
         $this->channelIds = $values['channelIds'];
         $this->content = $values['content'];
         $this->options = $values['options'] ?? null;

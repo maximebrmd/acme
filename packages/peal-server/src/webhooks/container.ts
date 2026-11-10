@@ -3,6 +3,7 @@ import { FetchHttpClient } from "effect/http";
 
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 import { DeliverWebhook } from "#webhooks/application/deliver-webhook.ts";
+import { EventOrigins } from "#webhooks/application/ports/event-origins.ts";
 import { PurgeDeliveries } from "#webhooks/application/purge-deliveries.ts";
 import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
@@ -14,6 +15,7 @@ import { DrizzleEndpointStore } from "#webhooks/infrastructure/drizzle-endpoint-
 import { DrizzleWebhookRecords } from "#webhooks/infrastructure/drizzle-webhook-records.ts";
 import { HttpWebhookTransport } from "#webhooks/infrastructure/http-webhook-transport.ts";
 import { NotifiedEndpointNotices } from "#webhooks/infrastructure/notified-endpoint-notices.ts";
+import { PartnerEventOrigins } from "#webhooks/infrastructure/partner-event-origins.ts";
 import { WindowedManualSends } from "#webhooks/infrastructure/windowed-manual-sends.ts";
 import { WorkflowDeliveryJobs } from "#webhooks/infrastructure/workflow-delivery-jobs.ts";
 
@@ -42,8 +44,9 @@ export const webhooksWith = <ROut, E, R>(adapters: Layer.Layer<ROut, E, R>) =>
     WebhookOversight.layer
   ).pipe(
     Layer.provideMerge(adapters),
-    // Counted in this process, unless the adapters bring another count.
-    Layer.provide(WindowedManualSends)
+    // Counted in this process, unless the adapters bring another count;
+    // and no workspace a partner's, unless they say whose each is.
+    Layer.provide(Layer.mergeAll(WindowedManualSends, EventOrigins.layerNone))
   );
 
 /**
@@ -53,8 +56,9 @@ export const webhooksWith = <ROut, E, R>(adapters: Layer.Layer<ROut, E, R>) =>
  * endpoints turned off told through the notifications context's Notify;
  * with WebhookRecords, for the workspace context's exports and erasures.
  * Needs the database (Drizzle and SqlClient), migrated, a
- * TransactionRunner, Ids, the workflow engine, Dns, the TokenCipher and
- * Notify, which the composition root provides.
+ * TransactionRunner, Ids, the workflow engine, Dns, the TokenCipher,
+ * Notify and the workspace context's PartnerOwnership, which the
+ * composition root provides.
  */
 export const WebhooksLive = Layer.merge(
   webhooksWith(
@@ -64,7 +68,8 @@ export const WebhooksLive = Layer.merge(
       CipherEndpointSecrets,
       TransportLive,
       WorkflowDeliveryJobs,
-      NotifiedEndpointNotices
+      NotifiedEndpointNotices,
+      PartnerEventOrigins
     )
   ),
   DrizzleWebhookRecords

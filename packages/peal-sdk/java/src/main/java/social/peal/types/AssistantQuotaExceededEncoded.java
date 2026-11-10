@@ -24,7 +24,11 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = AssistantQuotaExceededEncoded.Builder.class)
 public final class AssistantQuotaExceededEncoded {
-    private final AssistantQuotaExceededEncodedTag tag;
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
 
     private final Optional<String> billingUrl;
 
@@ -39,14 +43,18 @@ public final class AssistantQuotaExceededEncoded {
     private final Map<String, Object> additionalProperties;
 
     private AssistantQuotaExceededEncoded(
-            AssistantQuotaExceededEncodedTag tag,
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
             Optional<String> billingUrl,
             int dailyLimit,
             Optional<Plan> plan,
             Optional<PaidPlan> planWithRoom,
             String resetsAt,
             Map<String, Object> additionalProperties) {
-        this.tag = tag;
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.billingUrl = billingUrl;
         this.dailyLimit = dailyLimit;
         this.plan = plan;
@@ -55,9 +63,19 @@ public final class AssistantQuotaExceededEncoded {
         this.additionalProperties = additionalProperties;
     }
 
-    @JsonProperty("_tag")
-    public AssistantQuotaExceededEncodedTag getTag() {
-        return tag;
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonIgnore
@@ -124,7 +142,9 @@ public final class AssistantQuotaExceededEncoded {
     }
 
     private boolean equalTo(AssistantQuotaExceededEncoded other) {
-        return tag.equals(other.tag)
+        return code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
                 && billingUrl.equals(other.billingUrl)
                 && dailyLimit == other.dailyLimit
                 && plan.equals(other.plan)
@@ -134,7 +154,15 @@ public final class AssistantQuotaExceededEncoded {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.billingUrl, this.dailyLimit, this.plan, this.planWithRoom, this.resetsAt);
+        return Objects.hash(
+                this.code,
+                this.message,
+                this.requestId,
+                this.billingUrl,
+                this.dailyLimit,
+                this.plan,
+                this.planWithRoom,
+                this.resetsAt);
     }
 
     @java.lang.Override
@@ -142,18 +170,14 @@ public final class AssistantQuotaExceededEncoded {
         return ObjectMappers.stringify(this);
     }
 
-    public static TagStage builder() {
+    public static DailyLimitStage builder() {
         return new Builder();
-    }
-
-    public interface TagStage {
-        DailyLimitStage tag(@NotNull AssistantQuotaExceededEncodedTag tag);
-
-        Builder from(AssistantQuotaExceededEncoded other);
     }
 
     public interface DailyLimitStage {
         ResetsAtStage dailyLimit(int dailyLimit);
+
+        Builder from(AssistantQuotaExceededEncoded other);
     }
 
     public interface ResetsAtStage {
@@ -166,6 +190,18 @@ public final class AssistantQuotaExceededEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
 
         _FinalStage billingUrl(Optional<String> billingUrl);
 
@@ -187,9 +223,7 @@ public final class AssistantQuotaExceededEncoded {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements TagStage, DailyLimitStage, ResetsAtStage, _FinalStage {
-        private AssistantQuotaExceededEncodedTag tag;
-
+    public static final class Builder implements DailyLimitStage, ResetsAtStage, _FinalStage {
         private int dailyLimit;
 
         private String resetsAt;
@@ -200,25 +234,26 @@ public final class AssistantQuotaExceededEncoded {
 
         private Optional<String> billingUrl = Optional.empty();
 
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(AssistantQuotaExceededEncoded other) {
-            tag(other.getTag());
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             billingUrl(other.getBillingUrl());
             dailyLimit(other.getDailyLimit());
             plan(other.getPlan());
             planWithRoom(other.getPlanWithRoom());
             resetsAt(other.getResetsAt());
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter("_tag")
-        public DailyLimitStage tag(@NotNull AssistantQuotaExceededEncodedTag tag) {
-            this.tag = Objects.requireNonNull(tag, "tag must not be null");
             return this;
         }
 
@@ -312,14 +347,63 @@ public final class AssistantQuotaExceededEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public AssistantQuotaExceededEncoded build() {
             return new AssistantQuotaExceededEncoded(
-                    tag, billingUrl, dailyLimit, plan, planWithRoom, resetsAt, additionalProperties);
+                    code,
+                    message,
+                    requestId,
+                    billingUrl,
+                    dailyLimit,
+                    plan,
+                    planWithRoom,
+                    resetsAt,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag")
+            if (key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
                     || key.equalsIgnoreCase("billingUrl")
                     || key.equalsIgnoreCase("dailyLimit")
                     || key.equalsIgnoreCase("plan")

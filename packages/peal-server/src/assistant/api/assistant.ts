@@ -7,14 +7,12 @@ import {
   AssistantQuotaExceeded,
   AssistantUnavailable,
   CurrentMember,
-  Forbidden,
 } from "peal-contract";
 
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 // The answers say what went wrong by kind only: neither the text nor what
 // the model answered ever reaches an error or a log.

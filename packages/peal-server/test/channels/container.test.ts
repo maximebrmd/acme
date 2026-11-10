@@ -6,6 +6,7 @@ import { Dns } from "effect/net";
 
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { ConnectLinkJournal } from "#channels/application/connect-link-journal.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
@@ -24,7 +25,9 @@ import {
   freshWorkspace,
   syntheticKeyring,
 } from "#test/channels/support.ts";
+import { TransactionsTest } from "#test/notifications/support.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
+import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
 
 // What the context needs from the rest of the server: names to resolve,
 // notices to send, which nothing here sends, and plans, which limit nothing.
@@ -38,7 +41,9 @@ const Neighbours = Layer.mergeAll(
     WebhookEvents,
     WebhookEvents.of({ publish: () => Effect.void })
   ),
-  UnmeteredTest
+  UnmeteredTest,
+  PartnerOwnership.layerNone,
+  ConnectLinkJournal.none
 );
 
 // The channels context as the server builds it, with these settings. A blank
@@ -51,6 +56,7 @@ const channelsWithSettings = (settings: Record<string, string>) =>
       })
     ),
     Layer.provide(Neighbours),
+    Layer.provide(TransactionsTest),
     Layer.provideMerge(DatabaseTest)
   );
 

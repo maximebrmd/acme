@@ -8,11 +8,21 @@ import {
 } from "effect/http-api";
 
 import { Authentication } from "./authentication.ts";
+import { DuplicatePost, duplicateWindowHours } from "./duplicate-post.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
+import { ImportUnreadable } from "./import-unreadable.ts";
 import { InvalidTimeRange } from "./invalid-time-range.ts";
 import { InvalidTimeZone } from "./invalid-time-zone.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
+import { PlatformSchema } from "./platform.ts";
+import {
+  ImportCellProblemSchema,
+  maxBulkPosts,
+  maxImportLength,
+  maxImportRows,
+  PostRefusalSchema,
+} from "./post-batches.ts";
 import { PostContentInvalid } from "./post-content-invalid.ts";
 import { PostNotFound } from "./post-not-found.ts";
 import { PostStatusConflict } from "./post-status-conflict.ts";
@@ -25,6 +35,7 @@ import {
   maxPartDelaySeconds,
   maxPostTextLength,
 } from "./post-text.ts";
+import { PostValidationSchema } from "./post-validation.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
 import { ChannelOptionsSchema, TargetOptionsSchema } from "./target-options.ts";
 import type { ChannelOptions } from "./target-options.ts";
@@ -358,6 +369,9 @@ export type PostTiming = typeof PostTimingSchema.Type;
  * goes to, the options it has on those whose platform takes them, and when.
  */
 export const NewPostSchema = Schema.Struct({
+  // True when the same content may go to a channel that already has it;
+  // otherwise that is refused (DuplicatePost).
+  allowDuplicate: Schema.optionalKey(Schema.Boolean),
   channelIds: Schema.NonEmptyArray(Schema.String),
   content: PostContentSchema,
   options: Schema.optionalKey(
@@ -373,11 +387,153 @@ export const NewPostSchema = Schema.Struct({
 
 export type NewPost = typeof NewPostSchema.Type;
 
+/**
+ * A post to check without making it: what `send` takes, or a draft, whose
+ * time is left out. Without `when`, neither the time nor the plan's room is
+ * checked.
+ */
+export const PostToValidateSchema = Schema.Struct({
+  // True when the same content may go to a channel that already has it;
+  // otherwise that is refused (DuplicatePost).
+  allowDuplicate: Schema.optionalKey(Schema.Boolean),
+  channelIds: Schema.Array(Schema.String),
+  content: PostContentSchema,
+  options: Schema.optionalKey(
+    Schema.Array(ChannelOptionsSchema).check(
+      uniqueBy(
+        (chosen: ChannelOptions) => chosen.channelId,
+        "options for each channel once"
+      )
+    )
+  ),
+  when: Schema.optionalKey(PostTimingSchema),
+}).annotate({ identifier: "PostToValidate" });
+
+export type PostToValidate = typeof PostToValidateSchema.Type;
+
 /** The longest `Idempotency-Key` Peal takes. */
 export const maxIdempotencyKeyLength = 255;
 
 /** How long Peal remembers an `Idempotency-Key`, in hours. */
 export const idempotencyKeyLifetimeHours = 24;
+
+/**
+ * One post of a bulk request: what `send` takes, and the idempotency key
+ * of its own, if it has one.
+ */
+export const BulkPostSchema = Schema.Struct({
+  ...NewPostSchema.fields,
+  idempotencyKey: Schema.optionalKey(
+    Schema.String.check(
+      Schema.isBetweenLength(1, maxIdempotencyKeyLength),
+      isWithoutNul
+    )
+  ),
+}).annotate({ identifier: "BulkPost" });
+
+export type BulkPost = typeof BulkPostSchema.Type;
+
+/** Posts to create and send in one request. */
+export const BulkPostsSchema = Schema.Struct({
+  posts: Schema.Array(BulkPostSchema).check(
+    Schema.isMinLength(1),
+    Schema.isMaxLength(maxBulkPosts)
+  ),
+}).annotate({ identifier: "BulkPosts" });
+
+export type BulkPosts = typeof BulkPostsSchema.Type;
+
+/**
+ * What became of one post of a bulk request, by its place in the request,
+ * from 0: `created`, with the post (`replayed` when its idempotency key
+ * answered one made before), or `refused`, with what `send` would have
+ * answered for it alone.
+ */
+export const BulkPostResultSchema = Schema.Union([
+  Schema.TaggedStruct("created", {
+    index: Schema.Int,
+    post: PostSchema,
+    replayed: Schema.Boolean,
+  }),
+  Schema.TaggedStruct("refused", {
+    index: Schema.Int,
+    refusal: PostRefusalSchema,
+  }),
+]).annotate({ identifier: "BulkPostResult" });
+
+export type BulkPostResult = typeof BulkPostResultSchema.Type;
+
+/** What a bulk request came to: one result per post, in the order sent. */
+export const BulkResultSchema = Schema.Struct({
+  // How many posts it made, or answered again.
+  created: Schema.Int,
+  items: Schema.Array(BulkPostResultSchema),
+  refused: Schema.Int,
+}).annotate({ identifier: "BulkResult" });
+
+export type BulkResult = typeof BulkResultSchema.Type;
+
+/** A CSV file of posts to create and send. */
+export const PostImportSchema = Schema.Struct({
+  csv: Schema.String.check(Schema.isMaxLength(maxImportLength)),
+  // True to check the file and make nothing.
+  dryRun: Schema.optionalKey(Schema.Boolean),
+}).annotate({ identifier: "PostImport" });
+
+export type PostImport = typeof PostImportSchema.Type;
+
+/**
+ * What became of one row of a CSV import, by its place under the first
+ * line, from 1: `created`, with its post; `valid`, when it was checked and
+ * not made (a dry run, or another row kept the file from being imported);
+ * `refused`, with what `send` would have answered for it; or `unreadable`,
+ * with the cells that could not be read.
+ */
+export const ImportRowResultSchema = Schema.Union([
+  Schema.TaggedStruct("created", {
+    post: PostSchema,
+    replayed: Schema.Boolean,
+    row: Schema.Int,
+  }),
+  Schema.TaggedStruct("valid", { row: Schema.Int }),
+  Schema.TaggedStruct("refused", {
+    refusal: PostRefusalSchema,
+    row: Schema.Int,
+  }),
+  Schema.TaggedStruct("unreadable", {
+    // When the row has more or fewer cells than the first line names, as
+    // a comma its text did not quote makes it: how many were expected and
+    // found. Such a row is not read at all, and `problems` is empty.
+    cells: Schema.optionalKey(
+      Schema.Struct({ expected: Schema.Int, found: Schema.Int })
+    ),
+    problems: Schema.Array(ImportCellProblemSchema),
+    row: Schema.Int,
+  }),
+]).annotate({ identifier: "ImportRowResult" });
+
+export type ImportRowResult = typeof ImportRowResultSchema.Type;
+
+/** What a CSV import came to: one result per row, in the file's order. */
+export const ImportResultSchema = Schema.Struct({
+  // How many posts it made, or answered again.
+  created: Schema.Int,
+  // Whether it only checked the file.
+  dryRun: Schema.Boolean,
+  rows: Schema.Array(ImportRowResultSchema),
+}).annotate({ identifier: "ImportResult" });
+
+export type ImportResult = typeof ImportResultSchema.Type;
+
+/** The longest `wait` takes, in seconds. */
+export const maxOutcomeWaitSeconds = 60;
+
+// How long the request waits for the post to go out, in seconds.
+const wait = Schema.optionalKey(
+  Schema.Int.check(
+    Schema.isBetween({ maximum: maxOutcomeWaitSeconds, minimum: 0 })
+  )
+);
 
 /** A page of drafts, newest first. */
 export const DraftPageSchema = Schema.Struct({
@@ -387,6 +543,45 @@ export const DraftPageSchema = Schema.Struct({
 }).annotate({ identifier: "DraftPage" });
 
 export type DraftPage = typeof DraftPageSchema.Type;
+
+/**
+ * How a list of posts is ordered: by creation or by scheduled instant,
+ * newest (`Desc`) or oldest (`Asc`) first.
+ */
+export const PostSortSchema = Schema.Literals([
+  "createdDesc",
+  "createdAsc",
+  "scheduledDesc",
+  "scheduledAsc",
+]).annotate({ identifier: "PostSort" });
+
+export type PostSort = typeof PostSortSchema.Type;
+
+/** A channel a page's posts go to, and its platform. */
+export const PostChannelSchema = Schema.Struct({
+  channelId: Schema.String,
+  platform: PlatformSchema,
+}).annotate({ identifier: "PostChannel" });
+
+export type PostChannel = typeof PostChannelSchema.Type;
+
+/** A page of posts, in the order asked. */
+export const PostPageSchema = Schema.Struct({
+  // The channels the page's posts go to that are still connected, with
+  // their platforms, so a client names each target without another call.
+  channels: Schema.Array(PostChannelSchema),
+  items: Schema.Array(PostSchema),
+  // Pass it as `cursor` for the next page; null on the last one.
+  nextCursor: Schema.NullOr(Schema.String),
+}).annotate({ identifier: "PostPage" });
+
+export type PostPage = typeof PostPageSchema.Type;
+
+/** How many posts a page holds, unless `limit` says otherwise. */
+export const defaultPostPageSize = 20;
+
+/** The most posts a page holds. */
+export const maxPostPageSize = 100;
 
 /** How many drafts a page holds, unless `limit` says otherwise. */
 export const defaultDraftPageSize = 20;
@@ -427,6 +622,14 @@ export const PublicationAttemptSchema = Schema.Struct({
   finishedAt: Schema.DateTimeUtc,
   // The place of the part it sent: 0 for the post itself.
   part: Schema.Int,
+  // The code behind a refusal, for support and for programs that tell
+  // refusals apart more finely than `result` does: the platform's own
+  // error code as it gave it (`duplicate`, `190`, `quotaExceeded`), or
+  // Peal's when Peal refused before calling the platform. Null when the
+  // attempt was not refused, or the refusal has no code. It never holds
+  // content, a token or an address; codes are the platforms', and change
+  // with them.
+  refusalCode: Schema.NullOr(Schema.String),
   result: AttemptResultSchema,
   // When Peal tried again, if it did.
   retryAt: Schema.NullOr(Schema.DateTimeUtc),
@@ -524,6 +727,33 @@ export class PostsApi extends HttpApiGroup.make("posts")
         summary: "List scheduled posts",
       })
     ),
+    HttpApiEndpoint.get("search", "/search", {
+      error: [Forbidden, InvalidTimeRange, HttpApiError.BadRequest],
+      params: workspace,
+      query: {
+        authorId: Schema.optionalKey(Schema.String),
+        channelId: Schema.optionalKey(Schema.String),
+        createdVia: Schema.optionalKey(PostOriginViaSchema),
+        cursor: Schema.optionalKey(Schema.String),
+        from: Schema.optionalKey(Schema.DateTimeUtc),
+        limit: Schema.optionalKey(
+          Schema.Int.check(
+            Schema.isBetween({ maximum: maxPostPageSize, minimum: 1 })
+          )
+        ),
+        outcome: Schema.optionalKey(PostOutcomeSchema),
+        platform: Schema.optionalKey(PlatformSchema),
+        sort: Schema.optionalKey(PostSortSchema),
+        status: Schema.optionalKey(PostStatusSchema),
+        to: Schema.optionalKey(Schema.DateTimeUtc),
+      },
+      success: PostPageSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Lists the workspace's posts, whatever their state, a page at a time: ${defaultPostPageSize} unless \`limit\` (at most ${maxPostPageSize}) says otherwise. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended, such as \`failed\` or \`partiallyPublished\`), \`channelId\` (posts with a target on that channel), \`platform\` (posts with a target on a connected channel of that platform), \`from\` (included) and \`to\` (excluded), on the scheduled instant, which leave out posts without a time, \`createdVia\` (\`web\`, \`apiKey\` or \`application\`) and \`authorId\`. \`sort\` orders them by creation (\`createdDesc\`, the default, or \`createdAsc\`) or by scheduled instant (\`scheduledDesc\`, \`scheduledAsc\`, which list only posts with a time). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and \`channels\` gives the platform of each channel the page names. Needs post:read and channel:read.`,
+        summary: "List posts",
+      })
+    ),
     HttpApiEndpoint.post("create", "/", {
       error: [Forbidden, PostContentInvalid, UnknownChannels, UnknownMedia],
       params: workspace,
@@ -547,6 +777,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
         PlanLimitReached,
         IdempotencyKeyReused,
         PostNotFound,
+        DuplicatePost,
       ],
       headers: {
         "idempotency-key": Schema.optionalKey(
@@ -557,11 +788,60 @@ export class PostsApi extends HttpApiGroup.make("posts")
       },
       params: workspace,
       payload: NewPostSchema,
+      query: { wait },
       success: PostSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Creates a post and sends it to some of the workspace's channels in one call: \`when\` is \`now\`, which publishes at once, or \`at\` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status \`awaitingApproval\`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an \`Idempotency-Key\` header (any text of your choosing, at most ${maxIdempotencyKeyLength} characters, such as a UUID) to make a request safe to send again: within ${idempotencyKeyLifetimeHours} hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.`,
+        description: `Creates a post and sends it to some of the workspace's channels in one call: \`when\` is \`now\`, which publishes at once, or \`at\` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status \`awaitingApproval\`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an \`Idempotency-Key\` header (any text of your choosing, at most ${maxIdempotencyKeyLength} characters, such as a UUID) to make a request safe to send again: within ${idempotencyKeyLifetimeHours} hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than ${duplicateWindowHours} hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says \`allowDuplicate: true\`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless \`wait\` says to wait for the outcome: up to that many seconds (${maxOutcomeWaitSeconds} at most) for a post that goes out now, the answer is then the post once every channel has its result (\`status\` \`finished\`, with its \`outcome\`, each target \`published\` with its \`permalink\` or \`failed\` with its \`failureReason\`), or the post as it stands when the time runs out, some targets still \`pending\` or \`publishing\`: it goes on publishing, and \`GET …/posts/{postId}/outcome\` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.`,
         summary: "Create and send a post",
+      })
+    ),
+    HttpApiEndpoint.post("bulk", "/bulk", {
+      error: [Forbidden],
+      headers: {
+        "idempotency-key": Schema.optionalKey(
+          Schema.String.check(
+            Schema.isBetweenLength(1, maxIdempotencyKeyLength)
+          )
+        ),
+      },
+      params: workspace,
+      payload: BulkPostsSchema,
+      success: BulkResultSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Creates and sends up to ${maxBulkPosts} posts in one request, each as \`send\` would: one post per item, each with its own channels, content, options and time, so the same content at several times, or at a time of its own on each channel, is several items. Items are taken in order, one at a time, each on its own: one refused keeps none of the others from being made, and nothing is undone. The answer is 200 whenever the request itself was read, even if every item was refused: \`items\` says, for each by its place in the request, \`created\` with its post, or \`refused\` with what \`send\` would have answered for it alone (its content's violations, unknown channels or media, a time gone by, the plan's limit, a duplicate). A request that cannot be read at all (malformed, no item, more than ${maxBulkPosts}) is 400, and makes nothing. The plan's limits hold across the request: once the month has no room, the items left are refused. Each item is checked against the posts made before it, the request's earlier items included, for the same content on the same channel (DuplicatePost). An \`Idempotency-Key\` header makes the whole request safe to send again within ${idempotencyKeyLifetimeHours} hours: each item is kept under the key and its place, so the same request sent again answers the posts it made (\`replayed\`), makes those that were not made the first time if they now can be, and an item that changed under the same key is refused (IdempotencyKeyReused). An item's own \`idempotencyKey\` is used instead of the header's for that item. Needs post:schedule and channel:read, and media:read for the items that show media; an OAuth client needs the scope workspace:publish.`,
+        summary: "Create and send several posts",
+      })
+    ),
+    HttpApiEndpoint.post("import", "/import", {
+      error: [Forbidden, ImportUnreadable],
+      headers: {
+        "idempotency-key": Schema.optionalKey(
+          Schema.String.check(
+            Schema.isBetweenLength(1, maxIdempotencyKeyLength)
+          )
+        ),
+      },
+      params: workspace,
+      payload: PostImportSchema,
+      success: ImportResultSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Creates and sends the posts a CSV file lists, one per row, at most ${maxImportRows} rows under its first line, which names the columns, in any order: \`text\` and \`channels\` (channel ids separated by spaces, commas or semicolons) are required columns, \`at\` too (\`now\`, an instant with its offset such as 2026-11-20T09:00:00Z, or a local time without one such as 2026-11-20 10:00, read in the row's \`time_zone\`, an IANA zone, UTC if left out); \`media\` (ids of ready media of the workspace), \`allow_duplicate\` (\`true\` or \`false\`) and \`idempotency_key\` are optional. Cells follow RFC 4180, strictly: a cell with a comma, a quote or a line break is written between double quotes, a quote inside it doubled; a quote anywhere else is ImportUnreadable (\`strayQuote\`). Blank lines are no rows. The file is checked first, every row, as \`validate\` checks a post and as the file it is (a row an earlier row leaves no room for in its month, one that repeats an earlier row's content near its time, and one that carries an earlier row's key with another post are refused; a row with more or fewer cells than the first line names is unreadable, never guessed); unless every row is valid, nothing is made, and \`rows\` says which are \`valid\`, \`refused\` (with what \`send\` would have answered) or \`unreadable\` (with the cells at fault). \`dryRun\` stops there even when every row is valid. Otherwise the rows are then made in order as \`bulk\` makes its items, each \`created\` or, when something changed since the check or a row repeats an earlier one, \`refused\`. The answer is 200 once the file was read; a file that cannot be read at all is ImportUnreadable. An \`Idempotency-Key\` header works as on \`bulk\`, by row. Needs post:schedule, post:read and channel:read, and media:read for rows with media; an OAuth client needs the scope workspace:publish.`,
+        summary: "Import posts from CSV",
+      })
+    ),
+    HttpApiEndpoint.post("validate", "/validate", {
+      error: [Forbidden],
+      params: workspace,
+      payload: PostToValidateSchema,
+      success: PostValidationSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Checks a post without making it, and changes nothing: send what `send` takes, or a draft (no `when`). It answers 200 whether or not the post would go through, with `valid` and everything that would refuse it, all at once: per channel, the text the channel receives, counted as its platform counts it against each of its limits, its hashtags, mentions, links and media, and every violation of the platform's rules (text, media formats, sizes, counts and durations, options) and of the account's own where its platform tells them; the channels and media that are not the workspace's; and, when `when` is given, whether the time can be kept, whether the workspace's plan has room, and the channels that already have the same content from another post (`duplicates`, as DuplicatePost tells them; none with `allowDuplicate`). A post that is valid now can still be refused later: a channel disconnected, a plan's month filled meanwhile. Needs post:read and channel:read, and media:read when it shows media.",
+        summary: "Validate a post",
       })
     ),
     HttpApiEndpoint.get("get", "/:postId", {
@@ -572,6 +852,17 @@ export class PostsApi extends HttpApiGroup.make("posts")
       OpenApi.annotations({
         description: "Answers with a post of the workspace. Needs post:read.",
         summary: "Get a post",
+      })
+    ),
+    HttpApiEndpoint.get("outcome", "/:postId/outcome", {
+      error: [Forbidden, PostNotFound],
+      params: post,
+      query: { wait },
+      success: PostSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Answers with a post once it has gone out: it waits up to \`wait\` seconds (${maxOutcomeWaitSeconds} at most; none unless given) until every channel has its result, and answers the post then (\`status\` \`finished\`), or as it stands when the time runs out, which a client asks again. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing and holds nothing: the post publishes in its own job either way. Needs post:read.`,
+        summary: "Wait for a post's outcome",
       })
     ),
     HttpApiEndpoint.get("attempts", "/:postId/attempts", {

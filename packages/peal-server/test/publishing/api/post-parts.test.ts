@@ -173,6 +173,7 @@ describe("the posts endpoints, for a post of several parts", () => {
                 },
                 when: { _tag: "now" },
               },
+              query: {},
             })
             .pipe(Effect.flip);
 
@@ -226,6 +227,7 @@ describe("the posts endpoints, for a post of several parts", () => {
                 timeZone: "Europe/Paris",
               },
             },
+            query: {},
           });
 
           const params = { postId: sent.id, workspaceId };

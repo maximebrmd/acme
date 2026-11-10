@@ -66,7 +66,7 @@ public class Example {
                 .builder()
                 .name("name")
                 .permissions(
-                    Arrays.asList(Permission.ANALYTICS_READ)
+                    Arrays.asList(Permission.ACTIVITY_READ)
                 )
                 .build()
         );

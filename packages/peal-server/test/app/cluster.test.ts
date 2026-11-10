@@ -14,6 +14,8 @@ import { ClusterCron, RunnerAddress } from "effect/cluster";
 import type { Sharding } from "effect/cluster";
 import { SqlClient } from "effect/sql";
 
+import { ActivityLog } from "#activity/application/activity-log.ts";
+import { RequestLimiter } from "#activity/application/request-limiter.ts";
 import { CollectAccounts } from "#analytics/application/collect-accounts.ts";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import { PurgeAnalytics } from "#analytics/application/purge-analytics.ts";
@@ -23,6 +25,7 @@ import { PurgeContractRecords } from "#billing/application/purge-contract-record
 import { ReceiveContractRequest } from "#billing/application/receive-contract-request.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
+import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
 import { CollectComments } from "#engagement/application/collect-comments.ts";
@@ -65,6 +68,7 @@ import {
   syntheticContent,
 } from "#test/publishing/support.ts";
 import { PurgeDeliveries } from "#webhooks/application/purge-deliveries.ts";
+import { MeterPartnerUsage } from "#workspace/application/meter-partner-usage.ts";
 
 // The cluster as the server runs it: SingleRunner with SQL message and
 // runner storage, on the Postgres that DATABASE_URL names, with the real
@@ -119,6 +123,14 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     PurgeLegalRecords,
     PurgeLegalRecords.of({ purge: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    PurgeConnectLinks,
+    PurgeConnectLinks.of({ run: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    MeterPartnerUsage,
+    MeterPartnerUsage.of({ run: Effect.succeed({ keys: 0, partners: 0 }) })
   ),
   Layer.succeed(
     PurgeReviewData,
@@ -210,6 +222,21 @@ const ChannelJobsTest = Layer.mergeAll(
         reconnectRequired: 0,
         reconnectSoon: 0,
       }),
+    })
+  ),
+  Layer.succeed(
+    RequestLimiter,
+    RequestLimiter.of({
+      admit: () => Effect.die("not used by the crons"),
+      purge: Effect.succeed(0),
+    })
+  ),
+  Layer.succeed(
+    ActivityLog,
+    ActivityLog.of({
+      list: () => Effect.die("not used by the crons"),
+      purge: Effect.succeed(0),
+      record: () => Effect.die("not used by the crons"),
     })
   ),
   Layer.succeed(

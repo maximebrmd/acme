@@ -5,7 +5,6 @@ package social.peal.resources.analytics;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
-import java.io.InputStream;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -20,22 +19,16 @@ import social.peal.core.PealClientException;
 import social.peal.core.PealClientHttpResponse;
 import social.peal.core.QueryStringMapper;
 import social.peal.core.RequestOptions;
-import social.peal.core.ResponseBodyInputStream;
 import social.peal.core.RetryInterceptor;
 import social.peal.errors.BadRequestError;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.NotFoundError;
+import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
-import social.peal.resources.analytics.requests.ChannelAnalyticsRequest;
-import social.peal.resources.analytics.requests.DashboardAnalyticsRequest;
-import social.peal.resources.analytics.requests.ExportAnalyticsRequest;
 import social.peal.resources.analytics.requests.PostAnalyticsRequest;
 import social.peal.resources.analytics.requests.SummaryAnalyticsRequest;
-import social.peal.types.AnalyticsDashboard;
 import social.peal.types.AnalyticsSummary;
-import social.peal.types.ChannelSeries;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.PostAnalytics;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -109,305 +102,15 @@ public class RawAnalyticsClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 422:
                         throw new UnprocessableEntityError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                }
-            } catch (JsonProcessingException ignored) {
-                // unable to map error response, throwing generic error
-            }
-            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
-            throw new PealClientApiException(
-                    "Error with status code " + response.code(), response.code(), errorBody, response);
-        } catch (JsonProcessingException e) {
-            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new PealClientException("Network error executing HTTP request", e);
-        }
-    }
-
-    /**
-     * Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the <code>topPosts</code> (5 unless said, 25 at most) with the most engagement. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
-     */
-    public PealClientHttpResponse<AnalyticsDashboard> dashboard(String workspaceId, DashboardAnalyticsRequest request) {
-        return dashboard(workspaceId, request, null);
-    }
-
-    /**
-     * Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the <code>topPosts</code> (5 unless said, 25 at most) with the most engagement. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
-     */
-    public PealClientHttpResponse<AnalyticsDashboard> dashboard(
-            String workspaceId, DashboardAnalyticsRequest request, RequestOptions requestOptions) {
-        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
-                .newBuilder()
-                .addPathSegments("api/workspaces")
-                .addPathSegment(PathSegments.validate(workspaceId))
-                .addPathSegments("analytics")
-                .addPathSegments("dashboard");
-        if (request.getDays().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "days", request.getDays().get(), false);
-        }
-        if (request.getFrom().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "from", request.getFrom().get(), false);
-        }
-        QueryStringMapper.addQueryParameter(httpUrl, "timeZone", request.getTimeZone(), false);
-        if (request.getTo().isPresent()) {
-            QueryStringMapper.addQueryParameter(httpUrl, "to", request.getTo().get(), false);
-        }
-        if (request.getTopPosts().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "topPosts", request.getTopPosts().get(), false);
-        }
-        if (requestOptions != null) {
-            requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                httpUrl.addQueryParameter(_key, _value);
-            });
-        }
-        Request.Builder _requestBuilder = new Request.Builder()
-                .url(httpUrl.build())
-                .method("GET", null)
-                .headers(Headers.of(clientOptions.headers(requestOptions)))
-                .addHeader("Accept", "application/json");
-        Request okhttpRequest = _requestBuilder.build();
-        OkHttpClient client = clientOptions.httpClient();
-        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-            client = clientOptions.httpClientWithTimeout(requestOptions);
-        }
-        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
-            okhttpRequest = okhttpRequest
-                    .newBuilder()
-                    .tag(
-                            RetryInterceptor.MaxRetriesOverride.class,
-                            new RetryInterceptor.MaxRetriesOverride(
-                                    requestOptions.getMaxRetries().get()))
-                    .build();
-        }
-        try (Response response = client.newCall(okhttpRequest).execute()) {
-            ResponseBody responseBody = response.body();
-            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
-            if (response.isSuccessful()) {
-                return new PealClientHttpResponse<>(
-                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, AnalyticsDashboard.class), response);
-            }
-            try {
-                switch (response.code()) {
-                    case 400:
-                        throw new BadRequestError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 401:
-                        throw new UnauthorizedError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
-                                response);
-                    case 403:
-                        throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
-                    case 404:
-                        throw new NotFoundError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 422:
-                        throw new UnprocessableEntityError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                }
-            } catch (JsonProcessingException ignored) {
-                // unable to map error response, throwing generic error
-            }
-            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
-            throw new PealClientApiException(
-                    "Error with status code " + response.code(), response.code(), errorBody, response);
-        } catch (JsonProcessingException e) {
-            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new PealClientException("Network error executing HTTP request", e);
-        }
-    }
-
-    /**
-     * Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
-     */
-    public PealClientHttpResponse<ChannelSeries> channel(
-            String workspaceId, String channelId, ChannelAnalyticsRequest request) {
-        return channel(workspaceId, channelId, request, null);
-    }
-
-    /**
-     * Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
-     */
-    public PealClientHttpResponse<ChannelSeries> channel(
-            String workspaceId, String channelId, ChannelAnalyticsRequest request, RequestOptions requestOptions) {
-        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
-                .newBuilder()
-                .addPathSegments("api/workspaces")
-                .addPathSegment(PathSegments.validate(workspaceId))
-                .addPathSegments("analytics/channels")
-                .addPathSegment(PathSegments.validate(channelId));
-        if (request.getDays().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "days", request.getDays().get(), false);
-        }
-        if (request.getFrom().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "from", request.getFrom().get(), false);
-        }
-        QueryStringMapper.addQueryParameter(httpUrl, "timeZone", request.getTimeZone(), false);
-        if (request.getTo().isPresent()) {
-            QueryStringMapper.addQueryParameter(httpUrl, "to", request.getTo().get(), false);
-        }
-        if (requestOptions != null) {
-            requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                httpUrl.addQueryParameter(_key, _value);
-            });
-        }
-        Request.Builder _requestBuilder = new Request.Builder()
-                .url(httpUrl.build())
-                .method("GET", null)
-                .headers(Headers.of(clientOptions.headers(requestOptions)))
-                .addHeader("Accept", "application/json");
-        Request okhttpRequest = _requestBuilder.build();
-        OkHttpClient client = clientOptions.httpClient();
-        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-            client = clientOptions.httpClientWithTimeout(requestOptions);
-        }
-        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
-            okhttpRequest = okhttpRequest
-                    .newBuilder()
-                    .tag(
-                            RetryInterceptor.MaxRetriesOverride.class,
-                            new RetryInterceptor.MaxRetriesOverride(
-                                    requestOptions.getMaxRetries().get()))
-                    .build();
-        }
-        try (Response response = client.newCall(okhttpRequest).execute()) {
-            ResponseBody responseBody = response.body();
-            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
-            if (response.isSuccessful()) {
-                return new PealClientHttpResponse<>(
-                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ChannelSeries.class), response);
-            }
-            try {
-                switch (response.code()) {
-                    case 400:
-                        throw new BadRequestError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 401:
-                        throw new UnauthorizedError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
-                                response);
-                    case 403:
-                        throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
-                    case 404:
-                        throw new NotFoundError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 422:
-                        throw new UnprocessableEntityError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                }
-            } catch (JsonProcessingException ignored) {
-                // unable to map error response, throwing generic error
-            }
-            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
-            throw new PealClientApiException(
-                    "Error with status code " + response.code(), response.code(), errorBody, response);
-        } catch (JsonProcessingException e) {
-            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new PealClientException("Network error executing HTTP request", e);
-        }
-    }
-
-    /**
-     * Streams the workspace's analytics as a file: <code>kind=posts</code> lists each post published in the range on each channel with its latest counts, <code>kind=accounts</code> each channel's account day by day. <code>format=csv</code> (the default) writes a header line then one line a row, as RFC 4180; <code>format=json</code> writes one JSON object a line (<code>application/x-ndjson</code>). A number a platform does not give is empty in CSV and null in JSON. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Needs analytics:read.
-     */
-    public PealClientHttpResponse<InputStream> export(String workspaceId, ExportAnalyticsRequest request) {
-        return export(workspaceId, request, null);
-    }
-
-    /**
-     * Streams the workspace's analytics as a file: <code>kind=posts</code> lists each post published in the range on each channel with its latest counts, <code>kind=accounts</code> each channel's account day by day. <code>format=csv</code> (the default) writes a header line then one line a row, as RFC 4180; <code>format=json</code> writes one JSON object a line (<code>application/x-ndjson</code>). A number a platform does not give is empty in CSV and null in JSON. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Needs analytics:read.
-     */
-    public PealClientHttpResponse<InputStream> export(
-            String workspaceId, ExportAnalyticsRequest request, RequestOptions requestOptions) {
-        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
-                .newBuilder()
-                .addPathSegments("api/workspaces")
-                .addPathSegment(PathSegments.validate(workspaceId))
-                .addPathSegments("analytics")
-                .addPathSegments("export");
-        if (request.getDays().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "days", request.getDays().get(), false);
-        }
-        if (request.getFrom().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "from", request.getFrom().get(), false);
-        }
-        QueryStringMapper.addQueryParameter(httpUrl, "timeZone", request.getTimeZone(), false);
-        if (request.getTo().isPresent()) {
-            QueryStringMapper.addQueryParameter(httpUrl, "to", request.getTo().get(), false);
-        }
-        if (request.getFormat().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "format", request.getFormat().get(), false);
-        }
-        QueryStringMapper.addQueryParameter(httpUrl, "kind", request.getKind(), false);
-        if (requestOptions != null) {
-            requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                httpUrl.addQueryParameter(_key, _value);
-            });
-        }
-        Request.Builder _requestBuilder = new Request.Builder()
-                .url(httpUrl.build())
-                .method("GET", null)
-                .headers(Headers.of(clientOptions.headers(requestOptions)))
-                .addHeader("Accept", "application/json");
-        Request okhttpRequest = _requestBuilder.build();
-        OkHttpClient client = clientOptions.httpClient();
-        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-            client = clientOptions.httpClientWithTimeout(requestOptions);
-        }
-        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
-            okhttpRequest = okhttpRequest
-                    .newBuilder()
-                    .tag(
-                            RetryInterceptor.MaxRetriesOverride.class,
-                            new RetryInterceptor.MaxRetriesOverride(
-                                    requestOptions.getMaxRetries().get()))
-                    .build();
-        }
-        try {
-            Response response = client.newCall(okhttpRequest).execute();
-            ResponseBody responseBody = response.body();
-            if (response.isSuccessful()) {
-                return new PealClientHttpResponse<>(new ResponseBodyInputStream(response), response);
-            }
-            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
-            try {
-                switch (response.code()) {
-                    case 400:
-                        throw new BadRequestError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 401:
-                        throw new UnauthorizedError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
-                                response);
-                    case 403:
-                        throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
-                    case 404:
-                        throw new NotFoundError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 422:
-                        throw new UnprocessableEntityError(
+                    case 429:
+                        throw new TooManyRequestsError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
@@ -495,10 +198,12 @@ public class RawAnalyticsClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 429:
+                        throw new TooManyRequestsError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {

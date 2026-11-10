@@ -4,6 +4,9 @@ import * as Peal from "../index.js";
 
 export interface PostStatusConflictEncoded {
     _tag: PostStatusConflictEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     status: Peal.PostStatus;
 }
 

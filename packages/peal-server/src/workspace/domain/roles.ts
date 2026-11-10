@@ -10,10 +10,12 @@ import type { Grant, Permission } from "#shared/domain/access.ts";
 /**
  * A member's role in a workspace, from most to least trusted:
  *
- * - `owner`: everything, including deleting the workspace. Whoever creates a
- *   workspace owns it.
- * - `admin`: everything but deleting the workspace. Owners and admins alone
- *   manage members, API keys, billing and webhooks.
+ * - `owner`: everything, including deleting the workspace and reading its
+ *   activity log (who changed what, through which application). Whoever
+ *   creates a workspace owns it.
+ * - `admin`: everything but deleting the workspace and reading its activity
+ *   log. Owners and admins alone manage members, API keys, billing and
+ *   webhooks.
  * - `editor`: writes, schedules, approves and publishes posts, manages media,
  *   asks the writing assistant, reads channels and analytics, and reads
  *   and answers the comments under the workspace's posts.
@@ -31,10 +33,12 @@ export const RoleSchema = Schema.Literals([
 
 export type Role = typeof RoleSchema.Type;
 
-const { organization, ...allButOrganization } = statements;
+// What owners alone hold: the workspace itself, and the log of what its
+// members, keys and applications changed, which answers to them.
+const { activity, organization, ...shared } = statements;
 
 export const roleGrants: Readonly<Record<Role, Grant>> = {
-  admin: { ...allButOrganization, organization: ["update"] },
+  admin: { ...shared, organization: ["update"] },
   contributor: {
     analytics: ["read"],
     assistant: ["use"],
@@ -51,7 +55,7 @@ export const roleGrants: Readonly<Record<Role, Grant>> = {
     media: ["read", "upload", "delete"],
     post: statements.post,
   },
-  owner: { ...allButOrganization, organization },
+  owner: { ...shared, activity, organization },
   viewer: {
     analytics: ["read"],
     channel: ["read"],

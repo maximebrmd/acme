@@ -2,6 +2,9 @@
 
 export interface TooManyWebhookEndpointsEncoded {
     _tag: TooManyWebhookEndpointsEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     allowed: number;
 }
 

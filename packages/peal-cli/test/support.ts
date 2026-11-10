@@ -17,9 +17,12 @@ import { ChildProcessSpawner } from "effect/process";
 import { TestConsole } from "effect/testing";
 import {
   Api,
+  apiChangelog,
   Authentication,
   BillingNotEnabled,
   ClientErrorIntake,
+  ConnectLinkIntake,
+  ConnectLinkNotFound,
   ContractRequestIntake,
   ContractRequestNotFound,
   CurrentPrincipal,
@@ -139,8 +142,23 @@ const securityLive = (authorization: AuthorizationServer, studio: Studio) =>
         bearer: (httpEffect, { credential }) =>
           Effect.gen(function* bearer() {
             const accepted = yield* authorization.acceptedToken;
+            const sent = Redacted.value(credential);
+            const key = studio.keys.find((known) => known.key === sent);
 
-            if (!Option.contains(accepted, Redacted.value(credential))) {
+            // A workspace API key is nobody: it acts in its workspace,
+            // with its own permissions.
+            if (key !== undefined) {
+              return yield* httpEffect.pipe(
+                Effect.provideService(CurrentPrincipal, {
+                  _tag: "apiKey",
+                  apiKeyId: key.id,
+                  permissions: key.permissions,
+                  workspaceId: key.workspaceId,
+                })
+              );
+            }
+
+            if (!Option.contains(accepted, sent)) {
               return yield* new Unauthenticated();
             }
 
@@ -197,6 +215,16 @@ const signedInGroupsLive = (
     HttpApiBuilder.group(Api, "workspaces", (handlers) =>
       handlers.handleAll({ delete: () => refusing })
     ),
+    HttpApiBuilder.group(Api, "partner", (handlers) =>
+      handlers.handleAll({
+        account: () => refusing,
+        createWorkspace: () => refusing,
+        deleteWorkspace: () => refusing,
+        getWorkspace: () => refusing,
+        listWorkspaces: () => refusing,
+        updateWorkspace: () => refusing,
+      })
+    ),
     HttpApiBuilder.group(Api, "billingActions", (handlers) =>
       handlers.handleAll({
         cancel: () => refusing,
@@ -231,7 +259,9 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
   handlers.handleAll({
     audit: () => notStaff,
     ban: () => notStaff,
+    grantPartner: () => notStaff,
     impersonate: () => notStaff,
+    partner: () => notStaff,
     resendVerification: () => notStaff,
     revokeSessions: () => notStaff,
     session: () => notStaff,
@@ -332,6 +362,28 @@ const ClientErrorsLive = HttpApiBuilder.group(Api, "clientErrors", (handlers) =>
   )
 );
 
+// No link opens anything here: the hosted pages are the web app's.
+const noConnectLink = Effect.fail(new ConnectLinkNotFound());
+
+const HostedConnectLive = HttpApiBuilder.group(
+  Api,
+  "hostedConnect",
+  (handlers) =>
+    handlers.handleAll({
+      choose: () => noConnectLink,
+      complete: () => noConnectLink,
+      open: () => noConnectLink,
+      start: () => noConnectLink,
+    })
+).pipe(
+  Layer.provideMerge(
+    Layer.succeed(
+      ConnectLinkIntake,
+      ConnectLinkIntake.of((httpEffect) => httpEffect)
+    )
+  )
+);
+
 const notConfigured = Effect.fail(new MetaAppNotConfigured());
 
 const DataDeletionLive = HttpApiBuilder.group(Api, "dataDeletion", (handlers) =>
@@ -364,6 +416,7 @@ export const inMemoryServer = (
                 Layer.provide(
                   HttpApiBuilder.group(Api, "system", (handlers) =>
                     handlers.handleAll({
+                      changelog: () => Effect.succeed(apiChangelog),
                       health: () => health,
                       ready: () => health,
                     })
@@ -376,6 +429,7 @@ export const inMemoryServer = (
                 Layer.provide(StaffLive),
                 Layer.provide(LegalLive),
                 Layer.provide(ClientErrorsLive),
+                Layer.provide(HostedConnectLive),
                 Layer.provide(ReviewLinkLive),
                 Layer.provide(ContractRequestsLive)
               ),

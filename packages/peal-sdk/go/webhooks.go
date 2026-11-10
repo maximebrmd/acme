@@ -14,7 +14,8 @@ var (
 	newWebhookEndpointFieldDescription = big.NewInt(1 << 1)
 	newWebhookEndpointFieldEnabled     = big.NewInt(1 << 2)
 	newWebhookEndpointFieldEventTypes  = big.NewInt(1 << 3)
-	newWebhookEndpointFieldURL         = big.NewInt(1 << 4)
+	newWebhookEndpointFieldScope       = big.NewInt(1 << 4)
+	newWebhookEndpointFieldURL         = big.NewInt(1 << 5)
 )
 
 type NewWebhookEndpoint struct {
@@ -22,6 +23,7 @@ type NewWebhookEndpoint struct {
 	Description *string                        `json:"description,omitempty" url:"-"`
 	Enabled     *bool                          `json:"enabled,omitempty" url:"-"`
 	EventTypes  []SubscribableWebhookEventType `json:"eventTypes" url:"-"`
+	Scope       *WebhookEndpointScope          `json:"scope,omitempty" url:"-"`
 	URL         string                         `json:"url" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -63,6 +65,13 @@ func (n *NewWebhookEndpoint) SetEnabled(enabled *bool) {
 func (n *NewWebhookEndpoint) SetEventTypes(eventTypes []SubscribableWebhookEventType) {
 	n.EventTypes = eventTypes
 	n.require(newWebhookEndpointFieldEventTypes)
+}
+
+// SetScope sets the Scope field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewWebhookEndpoint) SetScope(scope *WebhookEndpointScope) {
+	n.Scope = scope
+	n.require(newWebhookEndpointFieldScope)
 }
 
 // SetURL sets the URL field and marks it as non-optional;
@@ -968,8 +977,9 @@ var (
 	webhookEndpointFieldFailingSince            = big.NewInt(1 << 6)
 	webhookEndpointFieldID                      = big.NewInt(1 << 7)
 	webhookEndpointFieldPreviousSecretExpiresAt = big.NewInt(1 << 8)
-	webhookEndpointFieldUpdatedAt               = big.NewInt(1 << 9)
-	webhookEndpointFieldURL                     = big.NewInt(1 << 10)
+	webhookEndpointFieldScope                   = big.NewInt(1 << 9)
+	webhookEndpointFieldUpdatedAt               = big.NewInt(1 << 10)
+	webhookEndpointFieldURL                     = big.NewInt(1 << 11)
 )
 
 // webhookEndpointNullableFields maps the wire names of WebhookEndpoint's nullable fields (required or optional) to their field bits.
@@ -990,6 +1000,7 @@ type WebhookEndpoint struct {
 	FailingSince            *string                        `json:"failingSince,omitempty" url:"failingSince,omitempty"`
 	ID                      string                         `json:"id" url:"id"`
 	PreviousSecretExpiresAt *string                        `json:"previousSecretExpiresAt,omitempty" url:"previousSecretExpiresAt,omitempty"`
+	Scope                   WebhookEndpointScope           `json:"scope" url:"scope"`
 	UpdatedAt               string                         `json:"updatedAt" url:"updatedAt"`
 	URL                     string                         `json:"url" url:"url"`
 
@@ -1061,6 +1072,13 @@ func (w *WebhookEndpoint) GetPreviousSecretExpiresAt() *string {
 		return nil
 	}
 	return w.PreviousSecretExpiresAt
+}
+
+func (w *WebhookEndpoint) GetScope() WebhookEndpointScope {
+	if w == nil {
+		return ""
+	}
+	return w.Scope
 }
 
 func (w *WebhookEndpoint) GetUpdatedAt() string {
@@ -1156,6 +1174,13 @@ func (w *WebhookEndpoint) SetPreviousSecretExpiresAt(previousSecretExpiresAt *st
 	w.require(webhookEndpointFieldPreviousSecretExpiresAt)
 }
 
+// SetScope sets the Scope field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookEndpoint) SetScope(scope WebhookEndpointScope) {
+	w.Scope = scope
+	w.require(webhookEndpointFieldScope)
+}
+
 // SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (w *WebhookEndpoint) SetUpdatedAt(updatedAt string) {
@@ -1217,6 +1242,28 @@ func (w *WebhookEndpoint) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", w)
+}
+
+type WebhookEndpointScope string
+
+const (
+	WebhookEndpointScopeWorkspace WebhookEndpointScope = "workspace"
+	WebhookEndpointScopePartner   WebhookEndpointScope = "partner"
+)
+
+func NewWebhookEndpointScopeFromString(s string) (WebhookEndpointScope, error) {
+	switch s {
+	case "workspace":
+		return WebhookEndpointScopeWorkspace, nil
+	case "partner":
+		return WebhookEndpointScopePartner, nil
+	}
+	var t WebhookEndpointScope
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (w WebhookEndpointScope) Ptr() *WebhookEndpointScope {
+	return &w
 }
 
 var (

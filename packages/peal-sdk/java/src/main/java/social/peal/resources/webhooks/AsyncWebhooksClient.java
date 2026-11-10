@@ -100,7 +100,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With <code>scope</code> <code>partner</code>, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (<code>workspaceExternalId</code>); any other workspace answers 404 <code>PartnerNotFound</code>. Needs webhook:manage.
      */
     public CompletableFuture<WebhookEndpointSecret> create(String workspaceId, NewWebhookEndpoint request) {
         CompletableFuture<PealClientHttpResponse<WebhookEndpointSecret>> rawFuture =
@@ -115,7 +115,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With <code>scope</code> <code>partner</code>, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (<code>workspaceExternalId</code>); any other workspace answers 404 <code>PartnerNotFound</code>. Needs webhook:manage.
      */
     public CompletableFuture<WebhookEndpointSecret> create(
             String workspaceId, NewWebhookEndpoint request, RequestOptions requestOptions) {

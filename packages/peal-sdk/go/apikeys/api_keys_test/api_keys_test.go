@@ -118,7 +118,7 @@ func TestAPIKeysCreateWithWireMock(
 		WorkspaceID: "workspaceId",
 		Name:        "name",
 		Permissions: []peal.Permission{
-			peal.PermissionAnalyticsRead,
+			peal.PermissionActivityRead,
 		},
 	}
 	_, invocationErr := client.APIKeys.Create(

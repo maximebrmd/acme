@@ -5,11 +5,11 @@ import { HttpApiError } from "effect/http-api";
 import {
   Authentication,
   ClientErrorIntake,
+  ConnectLinkIntake,
   ContractRequestIntake,
   CurrentMember,
   CurrentPrincipal,
   CurrentStaff,
-  Forbidden,
   ReviewVisitor,
   ReviewVisitorAddress,
   StaffAccess,
@@ -19,18 +19,29 @@ import {
 } from "peal-contract";
 import type { Member } from "peal-contract";
 
+import {
+  changedNothing,
+  ChangeMark,
+  makeChangeMark,
+} from "#shared/api/change-mark.ts";
+import { forbidden, refused } from "#shared/api/forbidden.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
+import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ConnectionJournal } from "#workspace/application/connection-journal.ts";
 import type { ContentChange } from "#workspace/application/connection-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
+import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 
+import { recorded } from "./activity-recording.ts";
 import { memberOf, principalOf, toContractPrincipal } from "./principal.ts";
+import { pastLimit, tooManyRequests } from "./rate-limit.ts";
+import { explaining } from "./refusal.ts";
 
 // Reads change nothing; any other method needs a trusted origin when it
 // comes with cookies, which a browser sends to Peal from any site.
@@ -39,8 +50,6 @@ const safeMethods: ReadonlySet<string> = new Set(["GET", "HEAD", "OPTIONS"]);
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
 
 const unauthenticated = () => Effect.fail(new Unauthenticated());
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const as = (principal: Principal) =>
   Effect.provideService(CurrentPrincipal, toContractPrincipal(principal));
@@ -64,11 +73,25 @@ const contentGroups: ReadonlySet<string> = new Set([
   "review",
 ]);
 
+// The requests sent as writes that make nothing: checking a post reads it
+// and answers, so its connection is not kept, and the activity log, which
+// keeps what was asked to change, leaves it out. A request that makes
+// nothing only when asked not to (a dry run) says so itself (ChangeMark).
+const checksOnly: ReadonlySet<string> = new Set([
+  // A lookup reads the platform, and answers: its input comes in a body.
+  "lookups.run",
+  "posts.validate",
+]);
+
 // Whether the request changes content.
 const changesContent = (
   request: HttpServerRequest.HttpServerRequest,
-  group: { readonly identifier: string }
-) => !safeMethods.has(request.method) && contentGroups.has(group.identifier);
+  group: { readonly identifier: string },
+  endpoint: { readonly identifier: string }
+) =>
+  !safeMethods.has(request.method) &&
+  contentGroups.has(group.identifier) &&
+  !checksOnly.has(`${group.identifier}.${endpoint.identifier}`);
 
 /** Who made a change to content, and how, as the journal keeps it. */
 export const contentChangeOf = (
@@ -92,6 +115,17 @@ export const contentChangeOf = (
     };
   }
 
+  // A partner key, in the workspace of its partner the path names.
+  if (principal._tag === "PartnerKeyPrincipal") {
+    return {
+      access,
+      apiKeyId: Option.some(principal.partnerKeyId),
+      origin,
+      userId: Option.none(),
+      workspaceId: workspaceId.pipe(Option.flatMap(decodeWorkspaceId)),
+    };
+  }
+
   return {
     access,
     apiKeyId: Option.none(),
@@ -106,20 +140,29 @@ export const contentChangeOf = (
 
 /**
  * Keeps the connection of a request that changed content, once its handler
- * answered without an error. A failure to keep it is logged: the change
- * was made, and the client is told so.
+ * answered without an error, unless it said it changed nothing (a dry
+ * run). A failure to keep it is logged: the change was made, and the
+ * client is told so.
  */
 export const journalled =
   (journal: ConnectionJournal["Service"], change: () => ContentChange) =>
   (response: HttpServerResponse.HttpServerResponse) =>
     response.status >= 400
       ? Effect.succeed(response)
-      : journal.contentChanged(change()).pipe(
-          Effect.catchCause((cause) =>
-            Effect.logError(
-              "Keeping the connection that changed content failed",
-              cause
-            )
+      : changedNothing.pipe(
+          Effect.flatMap((nothing) =>
+            nothing
+              ? Effect.void
+              : journal
+                  .contentChanged(change())
+                  .pipe(
+                    Effect.catchCause((cause) =>
+                      Effect.logError(
+                        "Keeping the connection that changed content failed",
+                        cause
+                      )
+                    )
+                  )
           ),
           Effect.as(response)
         );
@@ -139,6 +182,9 @@ export const journalled =
  * A write to posts or media that succeeds is kept in the ConnectionJournal,
  * whatever authenticated it: the address and protocol it came over, never
  * what it carried.
+ *
+ * A bearer credential's requests are counted (RequestLimits): each answer
+ * says where it stands, and one past the limit is a 429.
  */
 export const AuthenticationLive = Layer.effect(
   Authentication,
@@ -146,9 +192,10 @@ export const AuthenticationLive = Layer.effect(
     const authenticate = yield* Authenticate;
     const guard = yield* ImpersonationGuard;
     const journal = yield* ConnectionJournal;
+    const limits = yield* RequestLimits;
 
     return Authentication.of({
-      bearer: (httpEffect, { credential, group }) =>
+      bearer: (httpEffect, { credential, endpoint, group }) =>
         Effect.gen(function* bearer() {
           const request = yield* HttpServerRequest.HttpServerRequest;
 
@@ -165,8 +212,22 @@ export const AuthenticationLive = Layer.effect(
               })
             );
 
-          if (!changesContent(request, group)) {
-            return yield* httpEffect.pipe(as(principal));
+          // A key or an application past its limit is told so before
+          // anything is handled.
+          const limited = yield* pastLimit(limits, principal);
+
+          if (Option.isSome(limited)) {
+            return tooManyRequests(limited.value);
+          }
+
+          // What the handler says of the request, for what is kept of it.
+          const marked = Effect.provideService(
+            ChangeMark,
+            yield* makeChangeMark
+          );
+
+          if (!changesContent(request, group, endpoint)) {
+            return yield* httpEffect.pipe(as(principal), marked);
           }
 
           const params = yield* HttpRouter.params;
@@ -177,12 +238,13 @@ export const AuthenticationLive = Layer.effect(
               journalled(journal, () =>
                 contentChangeOf(
                   principal,
-                  principal._tag === "ApiKeyPrincipal" ? "apiKey" : "oauth",
+                  principal._tag === "UserPrincipal" ? "oauth" : "apiKey",
                   request,
                   Option.fromNullishOr(params["workspaceId"])
                 )
               )
-            )
+            ),
+            marked
           );
         }),
       session: (httpEffect, { endpoint, group }) =>
@@ -202,7 +264,7 @@ export const AuthenticationLive = Layer.effect(
               Option.fromNullishOr(request.headers["origin"])
             )
           ) {
-            return yield* new Forbidden();
+            return yield* refused("untrustedOrigin");
           }
 
           // A write reads the session from the database, so one revoked a
@@ -237,8 +299,13 @@ export const AuthenticationLive = Layer.effect(
               .pipe(Effect.orDie);
           }
 
-          if (!changesContent(request, group)) {
-            return yield* httpEffect.pipe(as(principal));
+          const marked = Effect.provideService(
+            ChangeMark,
+            yield* makeChangeMark
+          );
+
+          if (!changesContent(request, group, endpoint)) {
+            return yield* httpEffect.pipe(as(principal), marked);
           }
 
           return yield* httpEffect.pipe(
@@ -252,7 +319,8 @@ export const AuthenticationLive = Layer.effect(
                   Option.fromNullishOr(params["workspaceId"])
                 )
               )
-            )
+            ),
+            marked
           );
         }),
     });
@@ -262,14 +330,23 @@ export const AuthenticationLive = Layer.effect(
 /**
  * WorkspaceAccess: the caller as a member of the workspace in the path. A
  * workspace they do not belong to reads as one that does not exist.
+ *
+ * A member's request that asks to change something (any method but GET,
+ * HEAD and OPTIONS) is kept in the workspace's activity log once it is
+ * answered, done, refused or failed (ActivityJournal): who asked, through
+ * what, the endpoint and the ids its path names, the status and the
+ * error's code, never what it carried. Reads leave nothing, and neither
+ * does a check (`checksOnly`) or a dry run (ChangeMark).
  */
 export const WorkspaceAccessLive = Layer.effect(
   WorkspaceAccess,
   Effect.gen(function* workspaceAccess() {
     const members = yield* ResolveMember;
+    const activity = yield* ActivityJournal;
 
-    return WorkspaceAccess.of((httpEffect) =>
+    return WorkspaceAccess.of((httpEffect, { endpoint, group }) =>
       Effect.gen(function* member() {
+        const request = yield* HttpServerRequest.HttpServerRequest;
         const principal = principalOf(yield* CurrentPrincipal);
         const params = yield* HttpRouter.params;
         const workspaceId = decodeWorkspaceId(params["workspaceId"]);
@@ -287,8 +364,28 @@ export const WorkspaceAccessLive = Layer.effect(
           })
         );
 
-        return yield* httpEffect.pipe(
-          Effect.provideService(CurrentMember, memberOf(actor, principal))
+        const current = memberOf(actor, principal);
+
+        // A refusal for a missing permission says whose it is: the
+        // application's scope, the key's or the role's.
+        const answered = httpEffect.pipe(
+          Effect.provideService(CurrentMember, current),
+          explaining(current)
+        );
+
+        const operation = `${group.identifier}.${endpoint.identifier}`;
+
+        if (safeMethods.has(request.method) || checksOnly.has(operation)) {
+          return yield* answered;
+        }
+
+        return yield* answered.pipe(
+          recorded(activity, {
+            named: params,
+            operation,
+            principal,
+            workspaceId: workspaceId.value,
+          })
         );
       })
     );
@@ -352,8 +449,8 @@ export const StaffAccessLive = Layer.effect(
   })
 );
 
-// For tests: nobody is staff, and every error report and every request
-// to cancel or withdraw passes its intake.
+// For tests: nobody is staff, and every error report, every request to
+// cancel or withdraw and every hosted connect page's passes its intake.
 // HttpApiTest serves every group of the API, so tests provide every
 // middleware, whichever groups they exercise.
 const noStaffTest = Layer.succeed(
@@ -381,6 +478,10 @@ const openIntakeTest = Layer.mergeAll(
   Layer.succeed(
     ContractRequestIntake,
     ContractRequestIntake.of((httpEffect) => httpEffect)
+  ),
+  Layer.succeed(
+    ConnectLinkIntake,
+    ConnectLinkIntake.of((httpEffect) => httpEffect)
   )
 );
 

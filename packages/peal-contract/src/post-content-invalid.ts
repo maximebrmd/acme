@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
 import { ByteCountSchema } from "./int64.ts";
 import { MediaContentTypeSchema } from "./media.ts";
 import { PlatformSchema } from "./platform.ts";
@@ -139,7 +140,7 @@ export type ContentViolation = typeof ContentViolationSchema.Type;
 /** The post's content breaks the rules of its channels' platforms. */
 export class PostContentInvalid extends Schema.TaggedError<PostContentInvalid>()(
   "PostContentInvalid",
-  { violations: Schema.Array(ContentViolationSchema) },
+  { ...errorEnvelope, violations: Schema.Array(ContentViolationSchema) },
   {
     description:
       "The post's content breaks the rules of its channels' platforms: `violations` says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (`field`).",

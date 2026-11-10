@@ -7,6 +7,7 @@ import type {
   Forbidden,
   Platform,
   Suggestion,
+  TooManyRequests,
   Unauthenticated,
   WorkspaceNotFound,
 } from "peal-contract";
@@ -19,6 +20,9 @@ export type AssistantFailure =
   | AssistantQuotaExceeded
   | AssistantUnavailable
   | Forbidden
+  // Answered to keys and applications only: the web app signs in with a
+  // session, whose requests are not counted.
+  | TooManyRequests
   | Unauthenticated
   | WorkspaceNotFound
   // The request failed in a way the API does not declare: the network, or

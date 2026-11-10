@@ -10,8 +10,7 @@ import {
 
 import { approvalSubject } from "#publishing/domain/approval-subject.ts";
 import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
-import { optionsOn } from "#publishing/domain/channel-options.ts";
-import { checkPublishable } from "#publishing/domain/content-rules.ts";
+import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
 import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
@@ -47,9 +46,11 @@ import { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 
-import { AccountRules } from "./account-rules.ts";
+import type { AccountRules } from "./account-rules.ts";
 import { ApprovalGate } from "./approval-gate.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
+import type { ContentFingerprints } from "./content-fingerprints.ts";
+import { admit, remember } from "./duplicate-guard.ts";
 import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { IdempotencyKeys } from "./idempotency-keys.ts";
 import type { KeyedRequest, KeyUse } from "./idempotency-keys.ts";
@@ -61,6 +62,7 @@ import { channelsFor, mediaFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets, StoredPost } from "./post-repository.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
+import { violationsOf } from "./publishability.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
 import { withinPlan as withinPlanOf } from "./within-plan.ts";
@@ -98,6 +100,11 @@ export interface SchedulePostRequest {
  * what `posts.send`, the MCP tool `create_post` and `peal post` ask for.
  */
 export interface SendPostRequest {
+  /**
+   * True when the same content may go to a channel that already has it
+   * within `duplicateWindow`; otherwise that is DuplicateContent.
+   */
+  readonly allowDuplicate?: boolean;
   /** When it goes out; none is now. */
   readonly at: Option.Option<DateTime.Utc>;
   // At least one; a channel listed twice gets one target.
@@ -141,6 +148,7 @@ type Ports =
   | AccountRules
   | ApprovalGate
   | AttachableMedia
+  | ContentFingerprints
   | IdempotencyKeys
   | Ids
   | PostAllowance
@@ -183,6 +191,14 @@ const mayChange = (actor: Actor, { status }: Post) =>
 export class PostScheduling extends Context.Service<
   PostScheduling,
   {
+    /**
+     * Whether the actor may ask for posts to go out: whoever may schedule,
+     * and whoever the workspace's gate lets ask, whose posts then wait for
+     * an approval. `MissingPermission` (post:schedule) otherwise.
+     */
+    readonly mayAsk: (
+      actor: Actor
+    ) => Effect.Effect<Actor, DatabaseError | MissingPermission>;
     /** Creates a post scheduled on the given channels. */
     readonly schedule: (
       actor: Actor,
@@ -208,6 +224,7 @@ export class PostScheduling extends Context.Service<
     ) => Effect.Effect<
       SentPost,
       | DatabaseError
+      | DuplicateContent
       | IdempotencyKeyReused
       | MissingPermission
       | PostNotFound
@@ -347,32 +364,13 @@ export class PostScheduling extends Context.Service<
           const channels = yield* channelsFor(actor, channelIds);
           const files = yield* mediaFor(actor, content);
 
-          // What the platforms' rules refuse, every violation of them.
-          const againstRules = Result.match(
-            checkPublishable(content, channels, files, options),
-            {
-              onFailure: (rejected) => rejected.violations,
-              onSuccess: () => [],
-            }
-          );
-
-          // And what each account's own settings refuse, which only its
-          // platform tells: both come in one answer, so whoever fixes the
-          // post fixes it once.
-          const rules = yield* AccountRules;
-
-          const refused = yield* Effect.forEach(
+          // What the platforms' rules and each account's own refuse.
+          const violations = yield* violationsOf(
+            content,
             channels,
-            (channel) =>
-              rules.violationsOn({
-                channel,
-                files,
-                options: optionsOn(options, channel.channelId),
-              }),
-            { concurrency: 4 }
+            files,
+            options
           );
-
-          const violations = [...againstRules, ...refused.flat()];
 
           if (Arr.isReadonlyArrayNonEmpty(violations)) {
             return yield* new PostContentRejected({ violations });
@@ -506,6 +504,10 @@ export class PostScheduling extends Context.Service<
         yield* staysInMonth ? withinPlan(moved) : roomInMonth(moved);
 
         yield* applied(yield* posts.update(moved, current.post));
+        // What it sends is kept, for posts sent later to be compared with:
+        // a draft scheduled, or a post moved, is itself never refused as a
+        // duplicate, being one post its member sees.
+        yield* remember(moved, yield* posts.targets(moved.id)).pipe(withPorts);
         yield* stopJob(current);
         yield* startJob(moved);
 
@@ -546,7 +548,7 @@ export class PostScheduling extends Context.Service<
       // `claimed` finds, in the same transaction, that another request made
       // it already.
       const scheduleNew = Effect.fn("PostScheduling.scheduleNew")(
-        function* scheduleNew<E>(
+        function* scheduleNew<E, E2>(
           actor: Actor,
           {
             channelIds,
@@ -556,7 +558,13 @@ export class PostScheduling extends Context.Service<
           }: SchedulePostRequest,
           claimed: (
             post: Post
-          ) => Effect.Effect<Option.Option<KeyUse>, DatabaseError | E>
+          ) => Effect.Effect<Option.Option<KeyUse>, DatabaseError | E>,
+          // Keeps what the post sends to its channels, once nothing
+          // refuses it: `remember`, or `admit`, which refuses duplicates.
+          kept: (
+            post: Post,
+            targets: readonly PostTarget[]
+          ) => Effect.Effect<void, DatabaseError | E2, ContentFingerprints>
         ) {
           // The checks can take minutes, when a platform is slow to say
           // what an account takes: the time asked for is judged as of now.
@@ -614,6 +622,7 @@ export class PostScheduling extends Context.Service<
 
               yield* roomInMonth(placed);
               yield* posts.insert(placed, targets);
+              yield* kept(placed, targets).pipe(withPorts);
               yield* startJob(placed);
               // Told once, with the post: a request that finds its key
               // used made none, and tells nothing.
@@ -633,8 +642,11 @@ export class PostScheduling extends Context.Service<
       ) {
         yield* mayAsk(actor);
 
-        const { made } = yield* scheduleNew(actor, request, () =>
-          Effect.succeed(Option.none())
+        const { made } = yield* scheduleNew(
+          actor,
+          request,
+          () => Effect.succeed(Option.none()),
+          remember
         );
 
         return made;
@@ -665,7 +677,13 @@ export class PostScheduling extends Context.Service<
 
       const send = Effect.fn("PostScheduling.send")(function* send(
         actor: Actor,
-        { at, idempotency, timeZone, ...request }: SendPostRequest
+        {
+          allowDuplicate = false,
+          at,
+          idempotency,
+          timeZone,
+          ...request
+        }: SendPostRequest
       ) {
         // As `schedule`: where the gate lets them, people and applications
         // without post:schedule send posts too, which wait for an approval.
@@ -703,7 +721,8 @@ export class PostScheduling extends Context.Service<
                   { at: now, postId: post.id },
                   since
                 ),
-            })
+            }),
+          (post, targets) => admit(post, targets, allowDuplicate)
         );
 
         // Sent together with this one, the other request made the post.
@@ -907,6 +926,7 @@ export class PostScheduling extends Context.Service<
       return PostScheduling.of({
         cancel,
         forgetExpiredKeys,
+        mayAsk,
         reschedule,
         schedule,
         scheduleDraft,

@@ -686,35 +686,6 @@ func (c *Channel) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-// The way in a channel came through, on platforms that have several.
-type ChannelConnection string
-
-const (
-	ChannelConnectionInstagramLogin  ChannelConnection = "instagramLogin"
-	ChannelConnectionFacebookLogin   ChannelConnection = "facebookLogin"
-	ChannelConnectionLinkedinProfile ChannelConnection = "linkedinProfile"
-	ChannelConnectionLinkedinPage    ChannelConnection = "linkedinPage"
-)
-
-func NewChannelConnectionFromString(s string) (ChannelConnection, error) {
-	switch s {
-	case "instagramLogin":
-		return ChannelConnectionInstagramLogin, nil
-	case "facebookLogin":
-		return ChannelConnectionFacebookLogin, nil
-	case "linkedinProfile":
-		return ChannelConnectionLinkedinProfile, nil
-	case "linkedinPage":
-		return ChannelConnectionLinkedinPage, nil
-	}
-	var t ChannelConnection
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (c ChannelConnection) Ptr() *ChannelConnection {
-	return &c
-}
-
 type ChannelStatus struct {
 	Type          string
 	Active        *ChannelStatusActive

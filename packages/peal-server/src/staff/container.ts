@@ -6,12 +6,14 @@ import { LegalDisclosureAudit } from "#staff/application/legal-disclosure-audit.
 import { PurgeAuditLog } from "#staff/application/purge-audit-log.ts";
 import { StaffActions } from "#staff/application/staff-actions.ts";
 import { StaffConsole } from "#staff/application/staff-console.ts";
+import { StaffPartners } from "#staff/application/staff-partners.ts";
 import { AccountsModeration } from "#staff/infrastructure/account-moderation.ts";
 import { AccountStaffDirectory } from "#staff/infrastructure/account-staff-directory.ts";
 import { ContextSystemHealth } from "#staff/infrastructure/context-system-health.ts";
 import { ContextWorkspaceHealth } from "#staff/infrastructure/context-workspace-health.ts";
 import { DrizzleAuditLog } from "#staff/infrastructure/drizzle-audit-log.ts";
 import { DrizzleExpiredAuditEvents } from "#staff/infrastructure/drizzle-expired-audit-events.ts";
+import { WorkspacePartnerDesk } from "#staff/infrastructure/workspace-partner-desk.ts";
 
 const AdaptersLive = Layer.mergeAll(
   AccountStaffDirectory,
@@ -19,21 +21,25 @@ const AdaptersLive = Layer.mergeAll(
   ContextSystemHealth,
   ContextWorkspaceHealth,
   DrizzleAuditLog,
-  DrizzleExpiredAuditEvents
+  DrizzleExpiredAuditEvents,
+  WorkspacePartnerDesk
 );
 
 /**
  * The staff console's use cases: what it reads (StaffConsole) and what staff
- * do, recorded in the audit log (StaffActions), and the log's retention
+ * do, recorded in the audit log (StaffActions, and StaffPartners for the
+ * partner accounts they grant), and the log's retention
  * (PurgeAuditLog). Needs the database (Drizzle
  * and SqlClient), Ids, and what the other contexts hand staff: the
- * workspace context's AccountDirectory and AccountModeration, billing's
+ * workspace context's AccountDirectory, AccountModeration, PartnerAccounts
+ * and PartnerOwnership, billing's
  * WorkspaceEntitlements, the channels' ChannelOversight and publishing's
  * PostOversight, which the composition root brings.
  */
 export const StaffLive = Layer.mergeAll(
   StaffActions.layer,
   StaffConsole.layer,
+  StaffPartners.layer,
   PurgeAuditLog.layer
 ).pipe(Layer.provide(AdaptersLive));
 

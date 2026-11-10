@@ -4,9 +4,21 @@ import { Effect, Layer, Option, Redacted, Ref } from "effect";
 import { UserIdSchema } from "#shared/domain/ids.ts";
 import { AuthGateway } from "#workspace/application/auth-gateway.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
+import { PartnerKeys } from "#workspace/application/partner-keys.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 const userId = UserIdSchema.make("7c9e6679-7425-40de-944b-e07fc1f90ae7");
+
+// No partner has a key.
+const NoPartnerKeys = Layer.succeed(
+  PartnerKeys,
+  PartnerKeys.of({
+    create: () => Effect.die("unused"),
+    list: () => Effect.die("unused"),
+    revoke: () => Effect.die("unused"),
+    verify: () => Effect.succeedNone,
+  })
+);
 
 // A gateway that knows one session, and counts the calls it gets.
 const gateway = Effect.gen(function* makeGateway() {
@@ -37,7 +49,8 @@ const gateway = Effect.gen(function* makeGateway() {
             ),
         })
       )
-    )
+    ),
+    Layer.provide(NoPartnerKeys)
   );
 
   return { calls, layer };

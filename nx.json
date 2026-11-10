@@ -6,7 +6,12 @@
   },
   "neverConnectToCloud": true,
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "workspaceConfig"],
+    "default": [
+      "{projectRoot}/**/*",
+      "!{projectRoot}/**/AGENTS.md",
+      "!{projectRoot}/**/CLAUDE.md",
+      "workspaceConfig"
+    ],
     "workspaceConfig": [
       "{workspaceRoot}/nx.json",
       "{workspaceRoot}/package.json",

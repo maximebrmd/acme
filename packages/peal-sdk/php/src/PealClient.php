@@ -19,7 +19,10 @@ use Peal\Tiktok\TiktokClient;
 use Peal\Capabilities\CapabilitiesClient;
 use Peal\Lookups\LookupsClient;
 use Peal\Webhooks\WebhooksClient;
-use Peal\Inbox\InboxClient;
+use Peal\Activity\ActivityClient;
+use Peal\Partner\PartnerClient;
+use Peal\PartnerAccount\PartnerAccountClient;
+use Peal\ConnectLinks\ConnectLinksClient;
 use Peal\Review\ReviewClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
@@ -112,9 +115,24 @@ class PealClient
     public WebhooksClient $webhooks;
 
     /**
-     * @var InboxClient $inbox
+     * @var ActivityClient $activity
      */
-    public InboxClient $inbox;
+    public ActivityClient $activity;
+
+    /**
+     * @var PartnerClient $partner
+     */
+    public PartnerClient $partner;
+
+    /**
+     * @var PartnerAccountClient $partnerAccount
+     */
+    public PartnerAccountClient $partnerAccount;
+
+    /**
+     * @var ConnectLinksClient $connectLinks
+     */
+    public ConnectLinksClient $connectLinks;
 
     /**
      * @var ReviewClient $review
@@ -189,7 +207,10 @@ class PealClient
         $this->capabilities = new CapabilitiesClient($this->client, $this->options);
         $this->lookups = new LookupsClient($this->client, $this->options);
         $this->webhooks = new WebhooksClient($this->client, $this->options);
-        $this->inbox = new InboxClient($this->client, $this->options);
+        $this->activity = new ActivityClient($this->client, $this->options);
+        $this->partner = new PartnerClient($this->client, $this->options);
+        $this->partnerAccount = new PartnerAccountClient($this->client, $this->options);
+        $this->connectLinks = new ConnectLinksClient($this->client, $this->options);
         $this->review = new ReviewClient($this->client, $this->options);
     }
 }

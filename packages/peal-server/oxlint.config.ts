@@ -23,6 +23,7 @@ const contexts = [
   "legal",
   "review",
   "webhooks",
+  "activity",
   "engagement",
 ] as const;
 

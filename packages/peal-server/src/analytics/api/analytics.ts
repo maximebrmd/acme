@@ -4,7 +4,6 @@ import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   CurrentMember,
-  Forbidden,
   InvalidDateRange,
   InvalidTimeZone,
 } from "peal-contract";
@@ -17,6 +16,7 @@ import {
 import type { RangeAsked } from "#analytics/application/analytics-queries.ts";
 import type { PostHistory } from "#analytics/application/analytics-reports.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
@@ -37,8 +37,6 @@ const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
 const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 
 const decodeTimeZone = Schema.decodeUnknownOption(TimeZoneIdSchema);
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const noHistory: readonly PostHistory[] = [];
 

@@ -5,6 +5,7 @@ import {
   countsChannel,
   isCounted,
 } from "#analytics/domain/counted-platforms.ts";
+import { previewOn } from "#publishing/domain/channel-preview.ts";
 import {
   describeFields,
   isDescribed,
@@ -28,7 +29,10 @@ import {
   everyCapabilities,
 } from "#publishing/domain/platform-capabilities.ts";
 import { platformRules } from "#publishing/domain/platform-rules.ts";
-import { maxMediaPerPost } from "#publishing/domain/post-content.ts";
+import {
+  emptyContent,
+  maxMediaPerPost,
+} from "#publishing/domain/post-content.ts";
 import { maxPostTextLength } from "#publishing/domain/post-text.ts";
 import {
   describeOptionsOn,
@@ -650,5 +654,40 @@ describe("a TikTok creator's restrictions", () => {
         }),
       ])
     ).toStrictEqual([]);
+  });
+});
+
+const previewChannel = "0195d2c0-0000-7000-8000-0000000000c1";
+
+describe("a channel's preview and its capabilities", () => {
+  it("give the same limits, on every platform", () => {
+    for (const platform of platforms) {
+      const capabilities = capabilitiesOf(platform, false);
+
+      const preview = previewOn(
+        emptyContent,
+        { channelId: ChannelIdSchema.make(previewChannel), platform },
+        []
+      );
+
+      // What a check counts a post against is what the description of
+      // the platform says it takes: never a larger number than Peal takes.
+      expect([platform, preview.media.maximum]).toStrictEqual([
+        platform,
+        capabilities.maxMedia,
+      ]);
+      expect(
+        preview.textCounts.map(({ maximum, unit }) => ({ maximum, unit }))
+      ).toStrictEqual(capabilities.rules.textLimits);
+      expect([
+        preview.hashtags.maximum,
+        preview.links.maximum,
+        preview.mentions.maximum,
+      ]).toStrictEqual([
+        capabilities.rules.maxHashtags,
+        capabilities.rules.maxLinks,
+        capabilities.rules.maxMentions,
+      ]);
+    }
   });
 });

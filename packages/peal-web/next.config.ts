@@ -38,6 +38,18 @@ const securityHeaders = [
   ...strictTransportSecurity,
 ];
 
+// A connect link's page holds the link's token in its address, the only
+// credential its visitor has: the address goes into no Referer, the page
+// into no cache and no search engine. English has no prefix, any other
+// language its own.
+const hostedLinkHeaders = [
+  { key: "Cache-Control", value: "no-store" },
+  { key: "Referrer-Policy", value: "no-referrer" },
+  { key: "X-Robots-Tag", value: "noindex, nofollow" },
+];
+
+const hostedLinkSources = ["/connect/link", "/:locale/connect/link"];
+
 const config: NextConfig = {
   // How long, in milliseconds, a request that src/proxy.ts forwards may take
   // before Next answers 500 instead: 30 seconds unless set. The writing
@@ -45,9 +57,16 @@ const config: NextConfig = {
   // src/assistant/infrastructure/language-model-writing-model.ts), so this
   // waits longer.
   experimental: { proxyTimeout: 120_000 },
-  // Every page and every /api response proxied to the server.
+  // Every page and every /api response proxied to the server, then the
+  // connect links' pages, whose headers replace those of the same name.
   headers: async () =>
-    await Promise.resolve([{ headers: securityHeaders, source: "/:path*" }]),
+    await Promise.resolve([
+      { headers: securityHeaders, source: "/:path*" },
+      ...hostedLinkSources.map((source) => ({
+        headers: hostedLinkHeaders,
+        source,
+      })),
+    ]),
   // A self-contained server for the production image. Tracing starts at the
   // workspace root so packages installed there are included.
   output: "standalone",

@@ -50,7 +50,10 @@ public partial class PealClient : IPealClient
         Capabilities = new CapabilitiesClient(_client);
         Lookups = new LookupsClient(_client);
         Webhooks = new WebhooksClient(_client);
-        Inbox = new InboxClient(_client);
+        Activity = new ActivityClient(_client);
+        Partner = new PartnerClient(_client);
+        PartnerAccount = new PartnerAccountClient(_client);
+        ConnectLinks = new ConnectLinksClient(_client);
         Review = new ReviewClient(_client);
     }
 
@@ -88,7 +91,13 @@ public partial class PealClient : IPealClient
 
     public IWebhooksClient Webhooks { get; }
 
-    public IInboxClient Inbox { get; }
+    public IActivityClient Activity { get; }
+
+    public IPartnerClient Partner { get; }
+
+    public IPartnerAccountClient PartnerAccount { get; }
+
+    public IConnectLinksClient ConnectLinks { get; }
 
     public IReviewClient Review { get; }
 }

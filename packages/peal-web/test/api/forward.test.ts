@@ -85,6 +85,8 @@ describe("what the server answers", () => {
     "/.well-known/oauth-authorization-server/api/auth",
     "/.well-known/oauth-protected-resource",
     "/.well-known/oauth-protected-resource/api/mcp",
+    "/.well-known/api-catalog",
+    "/llms.txt",
   ])("%s goes to the server", (pathname) => {
     assert.isTrue(servedByApi(pathname));
   });
@@ -96,6 +98,9 @@ describe("what the server answers", () => {
     "/apis",
     "/.well-known/oauth-protected-resources",
     "/.well-known/security.txt",
+    "/.well-known/api-catalogue",
+    "/llms.txt/more",
+    "/fr/llms.txt",
   ])("%s is the web app's", (pathname) => {
     assert.isFalse(servedByApi(pathname));
   });

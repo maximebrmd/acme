@@ -175,12 +175,15 @@ export const connect = (
   token: Option.Option<string>,
   protocol:
     | typeof McpProtocol.v2025_11_25
-    | typeof McpProtocol.v2026_07_28 = McpProtocol.v2026_07_28
+    | typeof McpProtocol.v2026_07_28 = McpProtocol.v2026_07_28,
+  // What the client sends with every request besides its token: the
+  // workspace a partner key acts in.
+  headers: Readonly<Record<string, string>> = {}
 ) =>
   McpClient.layerHttp({
     headers: Option.match(token, {
-      onNone: () => ({}),
-      onSome: (value) => ({ authorization: `Bearer ${value}` }),
+      onNone: () => headers,
+      onSome: (value) => ({ ...headers, authorization: `Bearer ${value}` }),
     }),
     name: "peal-test",
     protocol,

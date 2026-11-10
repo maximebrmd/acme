@@ -7,7 +7,6 @@ import {
   CurrentMember,
   DesiredDayTooFar,
   desiredDayHorizonDays,
-  Forbidden,
   NothingToCancel,
   PlanTooSmall,
   ReductionRefused,
@@ -22,10 +21,9 @@ import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { withinHorizon } from "#billing/domain/desired-day.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden, personRequired } from "#shared/api/forbidden.ts";
 
 import { standingView } from "./billing-view.ts";
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const notEnabled = () => Effect.fail(new BillingNotEnabled());
 
@@ -48,7 +46,7 @@ const inPerson = (member: Member) =>
   member.principal.impersonatedBy === null &&
   member.principal.oauth === undefined
     ? Effect.succeed(actorOf(member))
-    : forbidden();
+    : personRequired();
 
 export const BillingActionsHandlers = HttpApiBuilder.group(
   Api,

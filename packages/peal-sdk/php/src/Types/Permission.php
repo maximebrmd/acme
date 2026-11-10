@@ -4,6 +4,7 @@ namespace Peal\Types;
 
 enum Permission: string
 {
+    case ActivityRead = "activity:read";
     case AnalyticsRead = "analytics:read";
     case ApiKeyCreate = "apiKey:create";
     case ApiKeyRead = "apiKey:read";
@@ -27,6 +28,8 @@ enum Permission: string
     case MemberDelete = "member:delete";
     case OrganizationUpdate = "organization:update";
     case OrganizationDelete = "organization:delete";
+    case PartnerRead = "partner:read";
+    case PartnerManage = "partner:manage";
     case PostRead = "post:read";
     case PostCreate = "post:create";
     case PostUpdate = "post:update";

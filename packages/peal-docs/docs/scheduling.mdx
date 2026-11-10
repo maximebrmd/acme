@@ -176,7 +176,7 @@ An image or video is sent as the platform needs it, and some platforms process v
 
 ## From an agent, the command line or the API [#api]
 
-What the composer does, an [MCP client](/mcp#tools), the [command line](/cli#posts) and the [HTTP API](/api-overview) do too, through the same checks: writing a draft, scheduling it, publishing it now, moving it, taking it back to draft and cancelling it. `POST /api/workspaces/{workspaceId}/posts/send` creates a post and sends it in one request, now or at an instant, and refuses it whole, listing every violation at once, when it breaks a rule of one of its channels' platforms.
+What the composer does, an [MCP client](/mcp#tools), the [command line](/cli#posts) and the [HTTP API](/api-overview) do too, through the same checks: writing a draft, scheduling it, publishing it now, moving it, taking it back to draft and cancelling it. `POST /api/workspaces/{workspaceId}/posts/send` creates a post and sends it in one request, now or at an instant, and refuses it whole, listing every violation at once, when it breaks a rule of one of its channels' platforms. [Posting through the API](/posting-api) shows how to check a post first, send several at once, import them from a CSV file and list them.
 
 An application you connected schedules and publishes only if you let it: publishing is a permission of its own, which you may leave out so that it writes drafts for you to review. An API key does only what the permissions it was given allow. [Posting from an AI agent](/agents) explains both, with an example.
 

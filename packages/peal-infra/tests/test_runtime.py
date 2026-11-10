@@ -36,6 +36,15 @@ def test_host_env_holds_one_setting_a_line(rendered: Path, environment: str) -> 
 
 
 @pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_the_server_knows_where_its_documentation_is(rendered: Path, environment: str) -> None:
+    """The API catalogue and llms.txt link to the docs only when the server
+    is told where they are (PEAL_DOCS_URL)."""
+    host_env = _host_env(rendered, environment)
+
+    assert host_env["PEAL_DOCS_URL"] == f"https://{settings(environment)['peal_hostnames']['docs']}"
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
 def test_peals_servers_keep_what_french_law_has_a_host_keep(rendered: Path, environment: str) -> None:
     """The software keeps nothing by default; Peal, a host established in
     France, must (loi n° 2004-575, art. 6, V, A)."""

@@ -4,10 +4,20 @@ import { CurrentMember } from "peal-contract";
 
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ConnectionJournal } from "#workspace/application/connection-journal.ts";
+import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 
 import { memberOf } from "./principal.ts";
+import { pastLimit, limitHeaders } from "./rate-limit.ts";
 import { contentChangeOf, journalled } from "./security.ts";
+
+/**
+ * The header a partner key's client names its workspace in, on the MCP
+ * endpoint: the id of a workspace the key's partner owns.
+ */
+export const workspaceHeaderName = "Peal-Workspace";
+
+const workspaceHeader = workspaceHeaderName.toLowerCase();
 
 // A JSON-RPC call of a tool, alone or in a batch.
 const ToolCallSchema = Schema.Struct({
@@ -60,14 +70,21 @@ const forbidden = () =>
  * with one that no longer works, gets a 401 whose RFC 9728 challenge leads
  * the client to sign in; one lacking scopes, a 403 that asks for them. A
  * token works in the workspace it is bound to, while its user still belongs
- * to it and is not banned, which is checked on every request. Routes behind
- * it get the member as CurrentMember.
+ * to it and is not banned, which is checked on every request. An API key
+ * works in its workspace; a partner key in the workspace it names in the
+ * `Peal-Workspace` header, when its partner owns it. Routes behind it get
+ * the member as CurrentMember.
  *
  * A request that calls one of `contentTools`, those that create, change or
  * delete content, is kept in the ConnectionJournal once answered without
  * an error, as the API's writes to posts and media are.
  */
-export const mcpAuthentication = (contentTools: ReadonlySet<string>) =>
+export const mcpAuthentication = ({
+  contentTools,
+}: {
+  /** The tools that create, change or delete posts and media. */
+  readonly contentTools: ReadonlySet<string>;
+}) =>
   HttpRouter.middleware<{
     provides: CurrentMember;
   }>()(
@@ -75,6 +92,7 @@ export const mcpAuthentication = (contentTools: ReadonlySet<string>) =>
       const authenticate = yield* Authenticate;
       const members = yield* ResolveMember;
       const journal = yield* ConnectionJournal;
+      const limits = yield* RequestLimits;
 
       return (httpEffect) =>
         Effect.gen(function* authenticated() {
@@ -87,20 +105,55 @@ export const mcpAuthentication = (contentTools: ReadonlySet<string>) =>
             dpopProof: Option.fromNullishOr(request.headers["dpop"]),
             method: request.method,
             path: request.url,
+            workspace: Option.fromNullishOr(request.headers[workspaceHeader]),
           });
 
-          const actor = yield* members.resolve(principal, workspaceId);
+          // The same count as the API's: a credential has one limit,
+          // wherever it sends its requests.
+          const limited = yield* pastLimit(limits, principal);
 
-          const answered = httpEffect.pipe(
-            Effect.provideService(CurrentMember, memberOf(actor, principal))
+          if (Option.isSome(limited)) {
+            return jsonRpcError(
+              429,
+              `Too many requests: this credential may send ${String(limited.value.limit)} every ${String(limited.value.windowSeconds)} seconds. Try again in ${String(limited.value.resetAfterSeconds)} seconds.`,
+              Object.fromEntries(limitHeaders(limited.value))
+            );
+          }
+
+          // A partner key in a workspace its partner does not own, its
+          // home workspace included, is told there is no such workspace,
+          // as the API tells it.
+          const resolved = yield* members.resolve(principal, workspaceId).pipe(
+            Effect.asSome,
+            Effect.catchTag("NotAMember", (denied) =>
+              principal._tag === "PartnerKeyPrincipal"
+                ? Effect.succeedNone
+                : Effect.fail(denied)
+            )
           );
 
+          if (Option.isNone(resolved)) {
+            return jsonRpcError(
+              404,
+              `No such workspace: the ${workspaceHeaderName} header names none this partner key acts in.`
+            );
+          }
+
+          const member = memberOf(resolved.value, principal);
+
           // The body is read once and kept, so the MCP server reads it again.
-          const changesContent =
-            request.method === "POST" &&
-            toolsCalled(
-              yield* request.text.pipe(Effect.orElseSucceed(() => ""))
-            ).some((name) => contentTools.has(name));
+          const called =
+            request.method === "POST"
+              ? toolsCalled(
+                  yield* request.text.pipe(Effect.orElseSucceed(() => ""))
+                )
+              : [];
+
+          const answered = httpEffect.pipe(
+            Effect.provideService(CurrentMember, member)
+          );
+
+          const changesContent = called.some((name) => contentTools.has(name));
 
           if (!changesContent) {
             return yield* answered;
@@ -131,6 +184,13 @@ export const mcpAuthentication = (contentTools: ReadonlySet<string>) =>
               ),
             NotAMember: forbidden,
             WorkspaceMismatch: forbidden,
+            WorkspaceNotNamed: () =>
+              Effect.succeed(
+                jsonRpcError(
+                  400,
+                  `A partner key acts in one workspace at a time here: send the id of a workspace its partner owns in the ${workspaceHeaderName} header.`
+                )
+              ),
           })
         );
     })

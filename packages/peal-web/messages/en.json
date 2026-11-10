@@ -125,7 +125,8 @@
     }
   },
   "AppShell": {
-    "productName": "Peal"
+    "productName": "Peal",
+    "hostedBy": "Secure connection by {product}"
   },
   "LanguageSwitcher": {
     "label": "Language",
@@ -364,6 +365,63 @@
     "connected": "{handle} is connected.",
     "toChannels": "Back to the channels",
     "toWorkspaces": "Back to your workspaces"
+  },
+  "ConnectLink": {
+    "title": "Connect an account",
+    "heading": "Connect your {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account",
+    "loading": "Opening the link…",
+    "retry": "Try again",
+    "asks": "{host} asks to connect your {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account, to publish there for you.",
+    "asksAgain": "{host} asks you to sign in again to {handle} on {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}, so it can keep publishing there for you.",
+    "explains": "You will sign in at {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} and see what you allow. {host} never sees your password. The connection is handled by Peal, the service {host} publishes with.",
+    "input": {
+      "instance": {
+        "label": "Your Mastodon server",
+        "hint": "The address of the server your account is on, such as mastodon.social."
+      },
+      "handle": {
+        "label": "Your Bluesky handle",
+        "hint": "Such as name.bsky.social."
+      }
+    },
+    "continue": "Continue to {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "opening": "Opening…",
+    "backTo": "Back to {host}",
+    "back": "Go back",
+    "over": {
+      "completed": "This link was used already: the account is connected. You can close this page.",
+      "expired": "This link has expired. Ask {host} for a new one.",
+      "revoked": "This link no longer works. Ask {host} for a new one."
+    },
+    "connected": "{count, plural, one {{handles} is connected.} other {These accounts are connected: {handles}.}}",
+    "mayClose": "You can close this page.",
+    "returning": "Taking you back…",
+    "continueBack": "Continue",
+    "failedTitle": "The account was not connected",
+    "finishing": "Finishing the connection…",
+    "tryAgain": "Try again",
+    "errors": {
+      "platformNotSupported": "Accounts of this platform cannot be connected here yet.",
+      "notConfigured": "Accounts of this platform cannot be connected here for now. Tell whoever sent you this link.",
+      "invalidInstance": "This is not the address of a server. Check it, for example mastodon.social.",
+      "instanceNotAllowed": "Only servers on the public internet, over HTTPS, can be connected.",
+      "invalidHandle": "No account was found for this handle.",
+      "invalidState": "This sign-in expired, or was started in another browser. Open the link again, in this browser.",
+      "denied": "The connection was cancelled on the platform.",
+      "authorizationFailed": "The platform did not hand over the account. Try again.",
+      "accountMismatch": "You signed in to another account than the one to connect again. Try again with that account.",
+      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages; on YouTube, the Google account you chose has no channel.",
+      "linkExpired": "This link has expired. Ask whoever sent it for a new one.",
+      "linkCompleted": "This link was used already.",
+      "linkRevoked": "This link no longer works. Ask whoever sent it for a new one.",
+      "tooManyAttempts": "This link was tried too many times. Ask whoever sent it for a new one.",
+      "planLimit": "No more accounts can be connected for now. Tell whoever sent you this link.",
+      "channelGone": "The account to connect again was removed since. Ask whoever sent this link for a new one.",
+      "platformUnreachable": "The platform did not answer. Try again in a moment.",
+      "notFound": "This link opens nothing. Check that you have the whole address, or ask for a new link.",
+      "tooMany": "Too many tries from your network for now. Try again in an hour.",
+      "unknown": "Something went wrong. Try again."
+    }
   },
   "MetaChannels": {
     "title": "{platform, select, facebook {Facebook Pages} instagram {Instagram} threads {Threads} other {{platform}}}",
@@ -1358,7 +1416,10 @@
       "tooManyRequests": "Too many attempts. Wait a minute, then try again.",
       "unknown": "Something went wrong. Try again.",
       "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes.",
-      "storeUnavailable": "The deletion could not be recorded where backups cannot undo it, so nothing was deleted. Try again in a few minutes."
+      "storeUnavailable": "The deletion could not be recorded where backups cannot undo it, so nothing was deleted. Try again in a few minutes.",
+      "partnerClosed": "This server opens partner accounts through its staff: ask the people who run it for one.",
+      "partnerInvalid": "A value cannot be kept. Check the name, the logo’s address (HTTPS) and the origins: each as https://host, with nothing after, 20 at most.",
+      "partnerOwnsWorkspaces": "The partner account of a workspace this would delete still owns workspaces. Delete each through the partner API first."
     },
     "cancellation": {
       "title": "{count, plural, one {Deleting cancels a subscription} other {Deleting cancels # subscriptions}}",
@@ -1383,7 +1444,8 @@
       "members": "Members",
       "invitations": "Invitations",
       "apiKeys": "API keys",
-      "webhooks": "Webhooks"
+      "webhooks": "Webhooks",
+      "partner": "Partner"
     },
     "general": {
       "title": "Name",
@@ -1470,6 +1532,49 @@
       "copied": "Key copied.",
       "copyFailed": "The key could not be copied. Select it and copy it yourself.",
       "done": "I saved it"
+    },
+    "partner": {
+      "description": "A partner account lets a product of yours use Peal for its own customers: one workspace for each of them, created and used through the API with a partner key, and hosted links where they connect their social accounts without a Peal account.",
+      "askOperator": "This server opens partner accounts through its staff: ask the people who run it for one.",
+      "askOwner": "This workspace has no partner account. An owner or an admin can open one.",
+      "openIntro": "Open a partner account for this workspace: it becomes the account’s home workspace, and the workspaces the account creates share its plan.",
+      "name": "Name",
+      "nameHint": "What your customers read on the hosted pages, in 80 characters at most.",
+      "open": "Open the partner account",
+      "opening": "Opening…",
+      "usage": "{workspaces, plural, =0 {No workspace yet} one {# workspace} other {# workspaces}}, {channels, plural, =0 {no channel connected} one {# channel connected} other {# channels connected}} across them and this workspace.",
+      "accountTitle": "What your customers see",
+      "logo": "Logo address",
+      "logoHint": "An HTTPS address, shown from there on the hosted pages. Leave it empty to show the name alone.",
+      "origins": "Return origins",
+      "originsHint": "One a line, as https://app.example.com: scheme, host and port, with nothing after. A hosted page sends your customers back only to an address on one of these, exactly.",
+      "save": "Save",
+      "saved": "The partner account is saved.",
+      "keysTitle": "Partner keys",
+      "keysHint": "A partner key creates and reads the workspaces of this account, and acts inside each of them. It never acts in this workspace, nor in any the account does not own.",
+      "noKeys": "The account has no key.",
+      "keyName": "Name",
+      "keyNameHint": "What uses it, in 80 characters at most.",
+      "scopes": "What it may do with the workspaces",
+      "scopesHint": "workspaces:read lists and reads them, workspaces:write creates and changes them, workspaces:delete deletes them with everything they hold.",
+      "permissions": "What it may do inside each workspace",
+      "permissionsHint": "What a product does for its customers. Members, invitations, API keys and billing changes stay with people.",
+      "createKey": "Create the key",
+      "creatingKey": "Creating…",
+      "keyStartsWith": "Starts with {start}",
+      "keyCreated": "Created {created}",
+      "revoke": "Revoke",
+      "revokeKey": "Revoke the key {name}",
+      "revokingKey": "Revoking…",
+      "keyRevoked": "The key {name} is revoked.",
+      "workspacesTitle": "Workspaces",
+      "noWorkspaces": "The account owns no workspace yet. Create them through the API, with a partner key.",
+      "workspaceLine": "{channels, plural, =0 {No channel} one {# channel} other {# channels}} · {externalId, select, none {no external id} other {external id {externalId}}}",
+      "moreWorkspaces": "The {shown} newest of {total}. The API lists them all.",
+      "closeTitle": "Close the partner account",
+      "closeHint": "Its keys stop working at once. An account closes only once it owns no workspace: delete each through the API first.",
+      "close": "Close the partner account",
+      "closing": "Closing…"
     }
   },
   "Webhooks": {
@@ -1817,7 +1922,8 @@
       "self": "Staff do not do this to their own account.",
       "staff": "Staff never act as other staff.",
       "unknown": "That did not work. Try again.",
-      "verified": "This address is confirmed already."
+      "verified": "This address is confirmed already.",
+      "workspaceGone": "This workspace no longer exists, or a partner owns it."
     },
     "workspaces": {
       "title": "Workspaces",
@@ -1895,7 +2001,7 @@
       "noReason": "Not kept",
       "until": "Until",
       "workspace": "In a workspace",
-      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} other {{action}}}"
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} grantPartner {Granted a partner account} other {{action}}}"
     },
     "channelStatus": {
       "active": "Works",
@@ -2017,6 +2123,20 @@
         "now": "the answer",
         "returned": "{held, plural, =0 {No closed account} one {# closed account} other {# closed accounts}}, {connections, plural, =0 {no connection} one {# connection} other {# connections}}"
       }
+    },
+    "partner": {
+      "title": "Partner account",
+      "none": "This workspace has no partner account, and no partner owns it.",
+      "account": "Its partner account",
+      "workspaces": "Workspaces it owns",
+      "owned": "A partner owns this workspace.",
+      "home": "The partner’s home workspace",
+      "externalId": "The id the partner gave it",
+      "noExternalId": "None",
+      "grantHint": "Opens a partner account for this workspace, named after it. Its owners and admins then name it, create its keys and register where hosted pages send their customers back.",
+      "grant": "Grant a partner account",
+      "granting": "Granting…",
+      "granted": "The workspace has a partner account."
     }
   },
   "Impersonation": {

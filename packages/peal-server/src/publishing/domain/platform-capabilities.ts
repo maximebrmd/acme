@@ -74,6 +74,15 @@ export const ownTextLimit: TextLimit = {
   unit: "utf16Units",
 };
 
+/**
+ * The most images, videos and documents together a post takes on a
+ * platform: the platform's, or Peal's own where the platform takes more or
+ * its count is not known. What the description of a platform says and
+ * what a check counts a post against are both this.
+ */
+export const mediaLimitOf = (rules: PlatformRules): number =>
+  Math.min(rules.maxMedia ?? maxMediaPerPost, maxMediaPerPost);
+
 const describedOptionsOn = (platform: Platform) =>
   describeOptionsOn(platform).filter(isDescribed);
 
@@ -128,7 +137,7 @@ export const capabilitiesOf = (
       rules.media?.maxAltTextLength ?? maxAltTextLength,
       maxAltTextLength
     ),
-    maxMedia: Math.min(rules.maxMedia ?? maxMediaPerPost, maxMediaPerPost),
+    maxMedia: mediaLimitOf(rules),
     optionConstraints: optionConstraintsOn(platform),
     options: describedOptionsOn(platform),
     platform,

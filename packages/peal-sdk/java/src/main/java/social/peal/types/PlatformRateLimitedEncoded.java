@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.jetbrains.annotations.NotNull;
 import social.peal.core.Nullable;
 import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
@@ -24,24 +23,42 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = PlatformRateLimitedEncoded.Builder.class)
 public final class PlatformRateLimitedEncoded {
-    private final PlatformRateLimitedEncodedTag tag;
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
 
     private final Optional<Integer> retryAfterSeconds;
 
     private final Map<String, Object> additionalProperties;
 
     private PlatformRateLimitedEncoded(
-            PlatformRateLimitedEncodedTag tag,
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
             Optional<Integer> retryAfterSeconds,
             Map<String, Object> additionalProperties) {
-        this.tag = tag;
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.retryAfterSeconds = retryAfterSeconds;
         this.additionalProperties = additionalProperties;
     }
 
-    @JsonProperty("_tag")
-    public PlatformRateLimitedEncodedTag getTag() {
-        return tag;
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonIgnore
@@ -70,12 +87,15 @@ public final class PlatformRateLimitedEncoded {
     }
 
     private boolean equalTo(PlatformRateLimitedEncoded other) {
-        return tag.equals(other.tag) && retryAfterSeconds.equals(other.retryAfterSeconds);
+        return code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && retryAfterSeconds.equals(other.retryAfterSeconds);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.retryAfterSeconds);
+        return Objects.hash(this.code, this.message, this.requestId, this.retryAfterSeconds);
     }
 
     @java.lang.Override
@@ -83,33 +103,17 @@ public final class PlatformRateLimitedEncoded {
         return ObjectMappers.stringify(this);
     }
 
-    public static TagStage builder() {
+    public static Builder builder() {
         return new Builder();
     }
 
-    public interface TagStage {
-        _FinalStage tag(@NotNull PlatformRateLimitedEncodedTag tag);
-
-        Builder from(PlatformRateLimitedEncoded other);
-    }
-
-    public interface _FinalStage {
-        PlatformRateLimitedEncoded build();
-
-        _FinalStage additionalProperty(String key, Object value);
-
-        _FinalStage additionalProperties(Map<String, Object> additionalProperties);
-
-        _FinalStage retryAfterSeconds(Optional<Integer> retryAfterSeconds);
-
-        _FinalStage retryAfterSeconds(Integer retryAfterSeconds);
-
-        _FinalStage retryAfterSeconds(Nullable<Integer> retryAfterSeconds);
-    }
-
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements TagStage, _FinalStage {
-        private PlatformRateLimitedEncodedTag tag;
+    public static final class Builder {
+        private Optional<String> code = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> requestId = Optional.empty();
 
         private Optional<Integer> retryAfterSeconds = Optional.empty();
 
@@ -117,22 +121,59 @@ public final class PlatformRateLimitedEncoded {
 
         private Builder() {}
 
-        @java.lang.Override
         public Builder from(PlatformRateLimitedEncoded other) {
-            tag(other.getTag());
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             retryAfterSeconds(other.getRetryAfterSeconds());
             return this;
         }
 
-        @java.lang.Override
-        @JsonSetter("_tag")
-        public _FinalStage tag(@NotNull PlatformRateLimitedEncodedTag tag) {
-            this.tag = Objects.requireNonNull(tag, "tag must not be null");
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public Builder code(Optional<String> code) {
+            this.code = code;
             return this;
         }
 
-        @java.lang.Override
-        public _FinalStage retryAfterSeconds(Nullable<Integer> retryAfterSeconds) {
+        public Builder code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public Builder message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        public Builder message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public Builder requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        public Builder requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @JsonSetter(value = "retryAfterSeconds", nulls = Nulls.SKIP)
+        public Builder retryAfterSeconds(Optional<Integer> retryAfterSeconds) {
+            this.retryAfterSeconds = retryAfterSeconds;
+            return this;
+        }
+
+        public Builder retryAfterSeconds(Integer retryAfterSeconds) {
+            this.retryAfterSeconds = Optional.ofNullable(retryAfterSeconds);
+            return this;
+        }
+
+        public Builder retryAfterSeconds(Nullable<Integer> retryAfterSeconds) {
             if (retryAfterSeconds.isNull()) {
                 this.retryAfterSeconds = null;
             } else if (retryAfterSeconds.isEmpty()) {
@@ -143,39 +184,26 @@ public final class PlatformRateLimitedEncoded {
             return this;
         }
 
-        @java.lang.Override
-        public _FinalStage retryAfterSeconds(Integer retryAfterSeconds) {
-            this.retryAfterSeconds = Optional.ofNullable(retryAfterSeconds);
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter(value = "retryAfterSeconds", nulls = Nulls.SKIP)
-        public _FinalStage retryAfterSeconds(Optional<Integer> retryAfterSeconds) {
-            this.retryAfterSeconds = retryAfterSeconds;
-            return this;
-        }
-
-        @java.lang.Override
         public PlatformRateLimitedEncoded build() {
-            return new PlatformRateLimitedEncoded(tag, retryAfterSeconds, additionalProperties);
+            return new PlatformRateLimitedEncoded(code, message, requestId, retryAfterSeconds, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag") || key.equalsIgnoreCase("retryAfterSeconds")) {
+            if (key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("retryAfterSeconds")) {
                 return;
             }
             this.additionalProperties.put(key, value);
         }
 
-        @java.lang.Override
         public Builder additionalProperty(String key, Object value) {
             this.additionalProperties.put(key, value);
             return this;
         }
 
-        @java.lang.Override
         public Builder additionalProperties(Map<String, Object> additionalProperties) {
             this.additionalProperties.putAll(additionalProperties);
             return this;

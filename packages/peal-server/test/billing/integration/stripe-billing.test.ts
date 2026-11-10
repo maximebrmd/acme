@@ -1419,10 +1419,11 @@ layer(BillingIntegration, {
       );
 
       assert.strictEqual(refused.status, 402);
-      assert.deepStrictEqual(refused.body, {
+      assert.deepInclude(refused.body, {
         _tag: "PlanLimitReached",
         allowed: 500_000_000,
         billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
+        code: "plan_limit_reached",
         limit: "mediaStorage",
         plan: "free",
         planWithRoom: "starter",

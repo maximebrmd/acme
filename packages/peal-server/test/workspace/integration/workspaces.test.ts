@@ -41,6 +41,15 @@ const ListSchema = Schema.Array(ApiKeySchema);
 
 const decodeMe = Schema.decodeUnknownEffect(MeSchema);
 
+// A change asked of the sign-in service's workspace routes, as the
+// activity log keeps it.
+const session = (operation: string, status: number, by: string) => ({
+  operation: `auth:/organization/${operation}`,
+  status,
+  user_id: by,
+  via: "session",
+});
+
 layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
   "workspaces",
   (it) => {
@@ -261,6 +270,53 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
           me.workspaces.map(({ role }) => role),
           ["editor"]
         );
+
+        // Each of those asked to change who is in the workspace: its
+        // owners read them in its activity log, refused or done, with who
+        // asked and never what was sent. Someone outside the workspace
+        // who names it leaves nothing there.
+        const outsider = yield* signedUp("outsider");
+
+        const intruding = yield* app.request(
+          "/api/auth/organization/update-member-role",
+          {
+            body: {
+              memberId: member.id,
+              organizationId: workspaceId,
+              role: "owner",
+            },
+            headers: { cookie: outsider.cookies },
+          }
+        );
+
+        assert.isAtLeast(intruding.status, 400);
+
+        const sql = yield* SqlClient.SqlClient;
+
+        const logged =
+          yield* sql`SELECT operation, status, user_id, via FROM activity.events WHERE workspace_id = ${workspaceId} AND operation LIKE 'auth:%' ORDER BY id`.pipe(
+            Effect.flatMap(
+              Schema.decodeUnknownEffect(
+                Schema.Array(
+                  Schema.Struct({
+                    operation: Schema.String,
+                    status: Schema.NullOr(Schema.Number),
+                    user_id: Schema.NullOr(Schema.String),
+                    via: Schema.String,
+                  })
+                )
+              )
+            ),
+            Effect.orDie
+          );
+
+        assert.deepStrictEqual(logged, [
+          session("invite-member", 400, owner.id),
+          session("invite-member", 200, owner.id),
+          session("accept-invitation", 200, guest.id),
+          session("update-member-role", 400, owner.id),
+          session("update-member-role", 200, owner.id),
+        ]);
       })
     );
 

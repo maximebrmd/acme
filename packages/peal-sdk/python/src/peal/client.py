@@ -10,19 +10,22 @@ from .core.logging import LogConfig, Logger
 from .environment import PealEnvironment
 
 if typing.TYPE_CHECKING:
+    from .activity.client import ActivityClient, AsyncActivityClient
     from .analytics.client import AnalyticsClient, AsyncAnalyticsClient
     from .api_keys.client import ApiKeysClient, AsyncApiKeysClient
     from .assistant.client import AssistantClient, AsyncAssistantClient
     from .billing.client import AsyncBillingClient, BillingClient
     from .capabilities.client import AsyncCapabilitiesClient, CapabilitiesClient
     from .channels.client import AsyncChannelsClient, ChannelsClient
-    from .inbox.client import AsyncInboxClient, InboxClient
+    from .connect_links.client import AsyncConnectLinksClient, ConnectLinksClient
     from .invitations.client import AsyncInvitationsClient, InvitationsClient
     from .lookups.client import AsyncLookupsClient, LookupsClient
     from .media.client import AsyncMediaClient, MediaClient
     from .members.client import AsyncMembersClient, MembersClient
     from .notices.client import AsyncNoticesClient, NoticesClient
     from .notification_preferences.client import AsyncNotificationPreferencesClient, NotificationPreferencesClient
+    from .partner.client import AsyncPartnerClient, PartnerClient
+    from .partner_account.client import AsyncPartnerAccountClient, PartnerAccountClient
     from .posts.client import AsyncPostsClient, PostsClient
     from .review.client import AsyncReviewClient, ReviewClient
     from .session.client import AsyncSessionClient, SessionClient
@@ -132,7 +135,10 @@ class Peal:
         self._capabilities: typing.Optional[CapabilitiesClient] = None
         self._lookups: typing.Optional[LookupsClient] = None
         self._webhooks: typing.Optional[WebhooksClient] = None
-        self._inbox: typing.Optional[InboxClient] = None
+        self._activity: typing.Optional[ActivityClient] = None
+        self._partner: typing.Optional[PartnerClient] = None
+        self._partner_account: typing.Optional[PartnerAccountClient] = None
+        self._connect_links: typing.Optional[ConnectLinksClient] = None
         self._review: typing.Optional[ReviewClient] = None
 
     @property
@@ -272,12 +278,36 @@ class Peal:
         return self._webhooks
 
     @property
-    def inbox(self):
-        if self._inbox is None:
-            from .inbox.client import InboxClient  # noqa: E402
+    def activity(self):
+        if self._activity is None:
+            from .activity.client import ActivityClient  # noqa: E402
 
-            self._inbox = InboxClient(client_wrapper=self._client_wrapper)
-        return self._inbox
+            self._activity = ActivityClient(client_wrapper=self._client_wrapper)
+        return self._activity
+
+    @property
+    def partner(self):
+        if self._partner is None:
+            from .partner.client import PartnerClient  # noqa: E402
+
+            self._partner = PartnerClient(client_wrapper=self._client_wrapper)
+        return self._partner
+
+    @property
+    def partner_account(self):
+        if self._partner_account is None:
+            from .partner_account.client import PartnerAccountClient  # noqa: E402
+
+            self._partner_account = PartnerAccountClient(client_wrapper=self._client_wrapper)
+        return self._partner_account
+
+    @property
+    def connect_links(self):
+        if self._connect_links is None:
+            from .connect_links.client import ConnectLinksClient  # noqa: E402
+
+            self._connect_links = ConnectLinksClient(client_wrapper=self._client_wrapper)
+        return self._connect_links
 
     @property
     def review(self):
@@ -410,7 +440,10 @@ class AsyncPeal:
         self._capabilities: typing.Optional[AsyncCapabilitiesClient] = None
         self._lookups: typing.Optional[AsyncLookupsClient] = None
         self._webhooks: typing.Optional[AsyncWebhooksClient] = None
-        self._inbox: typing.Optional[AsyncInboxClient] = None
+        self._activity: typing.Optional[AsyncActivityClient] = None
+        self._partner: typing.Optional[AsyncPartnerClient] = None
+        self._partner_account: typing.Optional[AsyncPartnerAccountClient] = None
+        self._connect_links: typing.Optional[AsyncConnectLinksClient] = None
         self._review: typing.Optional[AsyncReviewClient] = None
 
     @property
@@ -550,12 +583,36 @@ class AsyncPeal:
         return self._webhooks
 
     @property
-    def inbox(self):
-        if self._inbox is None:
-            from .inbox.client import AsyncInboxClient  # noqa: E402
+    def activity(self):
+        if self._activity is None:
+            from .activity.client import AsyncActivityClient  # noqa: E402
 
-            self._inbox = AsyncInboxClient(client_wrapper=self._client_wrapper)
-        return self._inbox
+            self._activity = AsyncActivityClient(client_wrapper=self._client_wrapper)
+        return self._activity
+
+    @property
+    def partner(self):
+        if self._partner is None:
+            from .partner.client import AsyncPartnerClient  # noqa: E402
+
+            self._partner = AsyncPartnerClient(client_wrapper=self._client_wrapper)
+        return self._partner
+
+    @property
+    def partner_account(self):
+        if self._partner_account is None:
+            from .partner_account.client import AsyncPartnerAccountClient  # noqa: E402
+
+            self._partner_account = AsyncPartnerAccountClient(client_wrapper=self._client_wrapper)
+        return self._partner_account
+
+    @property
+    def connect_links(self):
+        if self._connect_links is None:
+            from .connect_links.client import AsyncConnectLinksClient  # noqa: E402
+
+            self._connect_links = AsyncConnectLinksClient(client_wrapper=self._client_wrapper)
+        return self._connect_links
 
     @property
     def review(self):

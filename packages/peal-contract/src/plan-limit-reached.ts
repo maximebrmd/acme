@@ -5,6 +5,7 @@ import {
   PlanLimitSchema,
   PlanSchema,
 } from "./billing-plans.ts";
+import { errorEnvelope } from "./error-envelope.ts";
 import { Int64Schema } from "./int64.ts";
 
 /**
@@ -15,6 +16,7 @@ import { Int64Schema } from "./int64.ts";
 export class PlanLimitReached extends Schema.TaggedError<PlanLimitReached>()(
   "PlanLimitReached",
   {
+    ...errorEnvelope,
     // How many the plan allows.
     // A count of bytes for `mediaStorage`: 64-bit.
     allowed: Int64Schema,

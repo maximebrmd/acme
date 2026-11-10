@@ -2,6 +2,9 @@
 
 export interface DatabaseUnavailableEncoded {
     _tag: DatabaseUnavailableEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace DatabaseUnavailableEncoded {

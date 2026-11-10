@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
 import { PostStatusSchema } from "./post-status.ts";
 
 /**
@@ -8,7 +9,7 @@ import { PostStatusSchema } from "./post-status.ts";
  */
 export class PostStatusConflict extends Schema.TaggedError<PostStatusConflict>()(
   "PostStatusConflict",
-  { status: PostStatusSchema },
+  { ...errorEnvelope, status: PostStatusSchema },
   {
     description:
       "The post's status does not allow this. `status` is the status it has.",

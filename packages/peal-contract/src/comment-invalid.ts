@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * Why a comment is not taken: its text is empty once cleaned, or too long
  * (`text`); so is the name given (`name`); it answers a comment that started no thread of the post
@@ -20,7 +22,10 @@ export type CommentProblem = typeof CommentProblemSchema.Type;
 /** A comment that cannot be kept as it was sent. */
 export class CommentInvalid extends Schema.TaggedError<CommentInvalid>()(
   "CommentInvalid",
-  { problem: CommentProblemSchema },
+  {
+    ...errorEnvelope,
+    problem: CommentProblemSchema,
+  },
   {
     description:
       "The comment cannot be kept as it was sent. `problem` names what is wrong with it.",

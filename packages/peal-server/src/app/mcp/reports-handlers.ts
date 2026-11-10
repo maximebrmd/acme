@@ -1,7 +1,10 @@
 import { Effect, Option, Schema } from "effect";
-import { CurrentMember } from "peal-contract";
+import { CurrentMember, defaultActivityPageSize } from "peal-contract";
 import type { CalendarDay } from "peal-contract";
 
+import { toEventView } from "#activity/api/activity-view.ts";
+import { ActivityLog } from "#activity/application/activity-log.ts";
+import { ActivityEventIdSchema } from "#activity/domain/activity-event-id.ts";
 import {
   channelSeriesView,
   dashboardView,
@@ -28,6 +31,7 @@ import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
 
+const decodeEventId = Schema.decodeUnknownOption(ActivityEventIdSchema);
 const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 
 const decodeTimeZone = Schema.decodeUnknownOption(TimeZoneIdSchema);
@@ -92,6 +96,7 @@ export const ReportToolsLive = ReportTools.toLayer(
   Effect.gen(function* reportTools() {
     const analytics = yield* AnalyticsQueries;
     const billing = yield* BillingOverview;
+    const activity = yield* ActivityLog;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
@@ -165,6 +170,38 @@ export const ReportToolsLive = ReportTools.toLayer(
           );
 
           return billingView(found);
+        }),
+      list_activity: ({ actor: actorId, cursor, limit, operation }) =>
+        Effect.gen(function* listed() {
+          // A cursor is the id of the last event of the page before.
+          const after = Option.fromUndefinedOr(cursor).pipe(
+            Option.map(decodeEventId)
+          );
+
+          if (Option.isSome(after) && Option.isNone(after.value)) {
+            return yield* refuse(
+              "This cursor is not one of the activity log's: pass a page's nextCursor as it came."
+            );
+          }
+
+          const page = yield* activity
+            .list(yield* actor, {
+              actorId: Option.fromUndefinedOr(actorId),
+              after: Option.flatten(after),
+              limit: limit ?? defaultActivityPageSize,
+              operation: Option.fromUndefinedOr(operation),
+            })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("read the activity log"),
+              })
+            );
+
+          return {
+            items: page.items.map(toEventView),
+            nextCursor: Option.getOrNull(page.next),
+          };
         }),
       post_analytics: ({ postId }) =>
         Effect.gen(function* post() {

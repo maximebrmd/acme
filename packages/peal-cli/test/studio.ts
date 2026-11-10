@@ -1,18 +1,26 @@
 import { DateTime, Effect, Layer, Option, Ref, Stream } from "effect";
 import { HttpRouter } from "effect/http";
-import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
+import { HttpApiBuilder, HttpApiError, HttpApiSchema } from "effect/http-api";
 import {
   AlreadyMember,
   Api,
   ApprovalChanged,
   ApprovalNotPending,
   ChannelNotFound,
+  ConnectFailed,
+  ConnectLinkNotFound,
   CurrentMember,
+  duplicateWindowHours,
   CurrentPrincipal,
   Forbidden,
+  DuplicatePost,
   IdempotencyKeyReused,
+  importColumns,
+  ImportUnreadable,
+  InvalidTimeRange,
   InvalidTimeZone,
   InvitationNotFound,
+  maxImportRows,
   LookupInputInvalid,
   LookupNotFound,
   maxWebhookEndpoints,
@@ -23,6 +31,7 @@ import {
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
+  ReturnUrlNotAllowed,
   ReviewLinkNotFound,
   ScheduleInPast,
   TargetStatusConflict,
@@ -42,23 +51,37 @@ import {
 } from "peal-contract";
 import type {
   AccountExport,
+  ActivityEvent,
   ApprovalPolicy,
   ApprovalRequest,
   Billing,
   Channel,
   ChannelOptions,
+  ChannelPreview,
   ConnectedApp,
+  ConnectLink,
   ContentViolation,
+  CustomerWorkspace,
+  DuplicateOnChannel,
+  ImportCellProblem,
+  ImportColumn,
+  ImportRowResult,
   Invitation,
   Me,
   Media,
   MediaContentType,
+  NewPost,
+  Partner,
   Permission,
   Post,
   PostContent,
   PostDraft,
   PostOrigin,
+  PostSort,
   PostTarget,
+  PostValidation,
+  PublicationAttempt,
+  ScheduleCheck,
   ReviewComment,
   ReviewLink,
   SignedRequest,
@@ -69,6 +92,13 @@ import type {
   WebhookEventType,
   WebhookUrlRefusal,
 } from "peal-contract";
+import {
+  countHashtags,
+  countLinks,
+  countMentions,
+  measureText,
+  platformRules,
+} from "peal-contract/post-text";
 
 import {
   capabilitiesOn,
@@ -108,9 +138,11 @@ export const shopId = "6c1d7f75-6e1a-4b8f-8b63-4a2d3e5f6071";
 export const userId = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
 
 const everything: readonly Permission[] = [
+  "activity:read",
   "analytics:read",
   "billing:read",
   "channel:read",
+  "channel:connect",
   "engagement:read",
   "engagement:reply",
   "invitation:create",
@@ -118,6 +150,7 @@ const everything: readonly Permission[] = [
   "media:read",
   "media:upload",
   "media:delete",
+  "partner:read",
   "organization:update",
   "post:approve",
   "post:read",
@@ -364,6 +397,32 @@ const posts: readonly Post[] = [
   },
 ];
 
+// How Peal tried the post that finished, on the channel that limited it.
+const attempts: readonly PublicationAttempt[] = [
+  {
+    attempt: 1,
+    finishedAt: at("2026-11-08T09:00:02Z"),
+    part: 0,
+    refusalCode: "429",
+    result: "rateLimited",
+    retryAt: at("2026-11-08T09:05:00Z"),
+    round: 1,
+    startedAt: at("2026-11-08T09:00:00Z"),
+    targetId: failedTargetId,
+  },
+  {
+    attempt: 2,
+    finishedAt: at("2026-11-08T09:05:02Z"),
+    part: 0,
+    refusalCode: "429",
+    result: "rateLimited",
+    retryAt: null,
+    round: 1,
+    startedAt: at("2026-11-08T09:05:00Z"),
+    targetId: failedTargetId,
+  },
+];
+
 /** The fingerprint of what the post that waits says. */
 export const awaitingSubject = "5a".repeat(32);
 
@@ -485,6 +544,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     recipients: [],
     rights: [],
   },
+  activity: [],
   authoredPosts: [],
   connectedApps: [cli],
   contracts: { orders: [], requests: [], withdrawals: [] },
@@ -563,6 +623,54 @@ export interface StoredRequest {
   readonly part: string | null;
 }
 
+export const auditedKeyId = "3d6f0a1b-2c4e-4f5a-8b7c-9d0e1f2a3b4c";
+
+/**
+ * Studio's activity log, newest first: a draft an application made for the
+ * user, a key refused, and a channel the user disconnected in the web app.
+ */
+export const activityLog: readonly ActivityEvent[] = [
+  {
+    actor: { _tag: "user", userId },
+    application: { id: "peal-cli", name: "Peal CLI" },
+    errorCode: null,
+    id: "0190f3a0-0000-7000-8000-0000000a0003",
+    impersonated: false,
+    objectIds: {},
+    occurredAt: at("2026-11-09T11:30:00Z"),
+    operation: "posts.create",
+    requestId: "0190f3a0-0000-7000-8000-0000000b0003",
+    status: 201,
+    via: "oauth",
+  },
+  {
+    actor: { _tag: "apiKey", apiKeyId: auditedKeyId },
+    application: { id: auditedKeyId, name: "ci" },
+    errorCode: "forbidden",
+    id: "0190f3a0-0000-7000-8000-0000000a0002",
+    impersonated: false,
+    objectIds: { postId: "0190f3a0-0000-7000-8000-00000000d002" },
+    occurredAt: at("2026-11-09T10:15:00Z"),
+    operation: "posts.schedule",
+    requestId: "synthetic-request-0002",
+    status: 403,
+    via: "apiKey",
+  },
+  {
+    actor: { _tag: "user", userId },
+    application: null,
+    errorCode: null,
+    id: "0190f3a0-0000-7000-8000-0000000a0001",
+    impersonated: false,
+    objectIds: { channelId: "0190f3a0-0000-7000-8000-00000000c002" },
+    occurredAt: at("2026-11-08T09:00:00Z"),
+    operation: "channels.disconnect",
+    requestId: null,
+    status: 204,
+    via: "session",
+  },
+];
+
 export const hookId = "0190f3a0-0000-7000-8000-00000000b001";
 
 export const failingHookId = "0190f3a0-0000-7000-8000-00000000b002";
@@ -585,6 +693,7 @@ export const webhooks: readonly WebhookEndpoint[] = [
     failingSince: at("2026-11-09T11:00:00Z"),
     id: hookId,
     previousSecretExpiresAt: null,
+    scope: "workspace",
     updatedAt: at("2026-11-01T10:00:00Z"),
     url: "https://hooks.example.com/peal",
   },
@@ -598,6 +707,7 @@ export const webhooks: readonly WebhookEndpoint[] = [
     failingSince: at("2026-11-01T10:00:00Z"),
     id: failingHookId,
     previousSecretExpiresAt: null,
+    scope: "workspace",
     updatedAt: at("2026-11-06T10:00:00Z"),
     url: "https://hooks.example.com/old",
   },
@@ -686,6 +796,56 @@ const deliveries: readonly StudioDelivery[] = [
   },
 ];
 
+export const usedLinkId = "0190f3a0-0000-7000-8000-00000000c001";
+
+export const newLinkId = "0190f3a0-0000-7000-8000-00000000c002";
+
+/** The address the studio's new links open, shown once. */
+export const newLinkUrl =
+  "https://peal.example.test/connect/link#synthetic-token-0123456789abcdefghijklmnopq";
+
+// A link used a day ago, which connected one channel.
+const usedLink: ConnectLink = {
+  channelId: null,
+  channelIds: ["0190f3a0-0000-7000-8000-00000000d001"],
+  completedAt: at("2026-11-08T10:00:00Z"),
+  createdAt: at("2026-11-08T09:00:00Z"),
+  expiresAt: at("2026-11-15T09:00:00Z"),
+  failedAt: null,
+  failure: null,
+  id: usedLinkId,
+  platform: "mastodon",
+  returnUrl: "https://app.example.test/social",
+  status: "completed",
+};
+
+/** The studio's partner account, and what it owns. */
+export const studioPartner: Partner = {
+  createdAt: at("2026-10-01T09:00:00Z"),
+  id: "0190f3a0-0000-7000-8000-00000000e001",
+  logoUrl: "https://cdn.example.test/logo.png",
+  name: "Studio Suite",
+  returnOrigins: ["https://app.example.test"],
+  workspaceId: studioId,
+};
+
+const customers: readonly CustomerWorkspace[] = [
+  {
+    channels: 2,
+    createdAt: at("2026-11-02T09:00:00Z"),
+    externalId: "cus_002",
+    id: "8e3f9a97-8a3c-4dab-8d85-6c4f5a7b8293",
+    name: "Garage Dupont",
+  },
+  {
+    channels: 1,
+    createdAt: at("2026-11-01T09:00:00Z"),
+    externalId: "cus_001",
+    id: "7d2e8f86-7f2b-4c9a-9c74-5b3e4f6a7182",
+    name: "Boulangerie Martin",
+  },
+];
+
 /** What the instance holds, and what the commands changed. */
 export interface StudioState {
   readonly approvals: readonly ApprovalRequest[];
@@ -695,6 +855,8 @@ export interface StudioState {
   /** Whether the studio holds more than its plan allows, as a test sets it. */
   readonly overPlan: boolean;
   readonly invitations: readonly Invitation[];
+  /** The workspace's connect links, newest first. */
+  readonly connectLinks: readonly ConnectLink[];
   readonly links: readonly ReviewLink[];
   readonly media: readonly Media[];
   readonly policy: ApprovalPolicy;
@@ -711,21 +873,73 @@ export interface StudioState {
   readonly webhooks: readonly WebhookEndpoint[];
 }
 
+/** A synthetic API key of a workspace, with what it may do there. */
+export interface StudioKey {
+  readonly id: string;
+  /** The secret a request sends as its bearer token. */
+  readonly key: string;
+  readonly permissions: readonly Permission[];
+  readonly workspaceId: string;
+}
+
+/** The id of the request the studio refuses a key in, as the server names it. */
+export const refusedRequestId = "0190f3a0-0000-7000-8000-0000000c0001";
+
+// As the server words them (peal-server's refusals), with the envelope it
+// fills on every error.
+const keyWithout = (permission: Permission) =>
+  new Forbidden({
+    code: "forbidden",
+    message: `This API key does not have the permission ${permission}. An owner or an admin of the workspace gives it to the key, or creates a key that has it.`,
+    permission,
+    reason: "missingPermission",
+    requestId: refusedRequestId,
+  });
+
+const personRequired = new Forbidden({
+  code: "forbidden",
+  message:
+    "Only a person signed in to Peal does this, in the web app: not an API key, an application acting for them, or staff acting as them.",
+  reason: "personRequired",
+  requestId: refusedRequestId,
+});
+
+const wrongWorkspace = new Forbidden({
+  code: "forbidden",
+  message:
+    "This key or token belongs to another workspace: use it there, or use one of this workspace.",
+  reason: "wrongWorkspace",
+  requestId: refusedRequestId,
+});
+
+// What only a person does: an API key is nobody.
+const inPerson = CurrentPrincipal.pipe(
+  Effect.flatMap((principal) =>
+    principal._tag === "apiKey" ? Effect.fail(personRequired) : Effect.void
+  )
+);
+
 export interface Studio {
   readonly inbox: Ref.Ref<InboxState>;
+  /** The API keys the server takes, beside the user's access token. */
+  readonly keys: readonly StudioKey[];
   readonly me: Me;
   readonly state: Ref.Ref<StudioState>;
   /** What happens while the server answers an export, as a test sets it. */
   readonly whileExporting: Ref.Ref<Effect.Effect<void>>;
 }
 
-export const makeStudio = (me: Me = studioMe) =>
+export const makeStudio = (
+  me: Me = studioMe,
+  keys: readonly StudioKey[] = []
+) =>
   Effect.all({
     inbox: makeInbox,
     state: Ref.make<StudioState>({
       approvals: [approval],
       changes: [],
       comments: [comment],
+      connectLinks: [usedLink],
       deliveries,
       invitations: [invitation],
       links: [],
@@ -740,13 +954,17 @@ export const makeStudio = (me: Me = studioMe) =>
       webhooks,
     }),
     whileExporting: Ref.make<Effect.Effect<void>>(Effect.void),
-  }).pipe(Effect.map((refs): Studio => ({ me, ...refs })));
+  }).pipe(Effect.map((refs): Studio => ({ keys, me, ...refs })));
 
 const record = (studio: Studio, change: string) =>
   Ref.update(studio.state, (current) => ({
     ...current,
     changes: [...current.changes, change],
   }));
+
+// The actor an event names: the member's user id, or the key's id.
+const actorIdOf = ({ actor }: ActivityEvent): string | null =>
+  actor._tag === "apiKey" ? actor.apiKeyId : actor.userId;
 
 // The studio's channel a path names.
 const channelIn = (params: {
@@ -765,14 +983,21 @@ const channelIn = (params: {
     }
   );
 
-// The member a request acts as, if they may do this.
+// The member a request acts as, if they may do this. A key is told what
+// it lacks, in the server's words.
 const allowed = (permission: Permission) =>
   CurrentMember.pipe(
-    Effect.flatMap((member) =>
-      member.permissions.includes(permission)
-        ? Effect.succeed(member)
-        : Effect.fail(new Forbidden())
-    )
+    Effect.flatMap((member) => {
+      if (member.permissions.includes(permission)) {
+        return Effect.succeed(member);
+      }
+
+      return Effect.fail(
+        member.principal._tag === "apiKey"
+          ? keyWithout(permission)
+          : new Forbidden()
+      );
+    })
   );
 
 const inStudio = (workspaceId: string) =>
@@ -1163,11 +1388,581 @@ const deliverTo = (
     return delivery;
   });
 
+// The same words to the same channel again, from a post that still goes
+// out, is a mistake unless meant.
+const duplicatesOf = (
+  all: readonly Post[],
+  payload: Pick<NewPost, "allowDuplicate" | "content"> & {
+    readonly channelIds: readonly string[];
+  },
+  near: DateTime.Utc
+): DuplicateOnChannel[] =>
+  payload.allowDuplicate === true
+    ? []
+    : payload.channelIds.flatMap((channelId) =>
+        all
+          .filter(
+            (other) =>
+              other.status !== "draft" &&
+              other.status !== "cancelled" &&
+              other.schedule !== null &&
+              // Less than the window from this one's time, either way.
+              Math.abs(
+                DateTime.toEpochMillis(other.schedule.at) -
+                  DateTime.toEpochMillis(near)
+              ) <
+                duplicateWindowHours * 3_600_000 &&
+              other.content.text === payload.content.text &&
+              other.targets.some((target) => target.channelId === channelId)
+          )
+          .slice(0, 1)
+          .map((other) => ({ channelId, postId: other.id }))
+      );
+
+// A new post's time: now is the studio's clock.
+const timeOf = ({ when }: Pick<NewPost, "when">) =>
+  when._tag === "now"
+    ? { at: studioNow, timeZone: when.timeZone ?? "UTC" }
+    : { at: when.at, timeZone: when.timeZone };
+
+// Everything sending a post checks before making it, in the order the
+// server answers: its channels, its media, its time, what its platforms
+// refuse, and the posts that already send it.
+const checkNewPost = (studio: Studio, payload: NewPost) =>
+  Effect.gen(function* checkingNewPost() {
+    yield* checkChannels(payload.channelIds);
+    yield* checkMedia(studio, payload.content);
+
+    const when = timeOf(payload);
+    const status = yield* checkTime(when.at, when.timeZone);
+
+    yield* checkContent(
+      payload.channelIds,
+      payload.content,
+      payload.options ?? []
+    );
+
+    const { posts: all } = yield* Ref.get(studio.state);
+    const duplicates = duplicatesOf(all, payload, timeOf(payload).at);
+
+    if (duplicates.length > 0) {
+      return yield* new DuplicatePost({ duplicates });
+    }
+
+    return { status, when };
+  });
+
+// The post a first request made under the key, if one did: the same key
+// with another body is refused.
+const madeUnder = (studio: Studio, payload: NewPost, key: string | undefined) =>
+  Effect.gen(function* findingFirst() {
+    const { sent } = yield* Ref.get(studio.state);
+    const first = key === undefined ? undefined : sent[key];
+
+    if (first === undefined) {
+      return Option.none<string>();
+    }
+
+    return first.body === JSON.stringify(payload)
+      ? Option.some(first.postId)
+      : yield* new IdempotencyKeyReused();
+  });
+
+// Makes a post as `send` does, under its idempotency key if it has one:
+// the same key answers the post its first request made, as it now stands,
+// and makes no other.
+const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
+  Effect.gen(function* making() {
+    const first = yield* madeUnder(studio, payload, key);
+
+    if (Option.isSome(first)) {
+      return {
+        post: yield* findPost(studio, studioId, first.value),
+        replayed: true,
+      };
+    }
+
+    const body = JSON.stringify(payload);
+    const before = yield* Ref.get(studio.state);
+    const checked = yield* checkNewPost(studio, payload);
+    const { when } = checked;
+
+    // Where every post waits, this one does: nothing goes out.
+    const status =
+      before.policy === "always"
+        ? ("awaitingApproval" as const)
+        : checked.status;
+
+    const id = nextId("d", before.posts.length);
+
+    yield* Ref.update(studio.state, (current) => ({
+      ...current,
+      sent:
+        key === undefined
+          ? current.sent
+          : { ...current.sent, [key]: { body, postId: id } },
+    }));
+    yield* record(studio, `send:${id}:${payload.when._tag}:${key ?? "no key"}`);
+
+    const post = yield* savePost(studio, {
+      authorId: userId,
+      content: payload.content,
+      createdVia: viaCommandLine,
+      id,
+      outcome: null,
+      schedule: when,
+      scheduledBy: userId,
+      scheduledVia: viaCommandLine,
+      status,
+      targets: targetsOf(id, payload),
+    });
+
+    return { post, replayed: false };
+  });
+
+// How a post ended, by how many of its channels have it.
+const outcomeOf = (targets: readonly PostTarget[]) => {
+  const published = targets.filter(
+    ({ status }) => status === "published"
+  ).length;
+
+  if (published === targets.length) {
+    return "published" as const;
+  }
+
+  return published === 0
+    ? ("failed" as const)
+    : ("partiallyPublished" as const);
+};
+
+// A target once its platform answered: published, with its address, unless
+// its channel must be reconnected, which fails it.
+const settledOn = (target: PostTarget): PostTarget => {
+  const channel = channels.find(({ id }) => id === target.channelId);
+
+  if (target.status !== "pending" && target.status !== "publishing") {
+    return target;
+  }
+
+  return channel === undefined || channel.status._tag !== "active"
+    ? { ...target, failureReason: "tokenExpired", status: "failed" }
+    : {
+        ...target,
+        permalink:
+          channel.platform === "mastodon"
+            ? `https://social.example.test/@studio/${target.id}`
+            : `https://${channel.platform}.example.test/posts/${target.id}`,
+        publishedAt: studioNow,
+        status: "published",
+      };
+};
+
+// The synthetic platforms answer within a second: a post that is going out
+// has finished for whoever waits that long.
+const afterWaiting = (studio: Studio, post: Post, wait: number | undefined) =>
+  Effect.gen(function* settling() {
+    if (post.status !== "publishing" || wait === undefined || wait < 1) {
+      return post;
+    }
+
+    const targets = post.targets.map(settledOn);
+
+    yield* record(studio, `settle:${post.id}`);
+
+    return yield* savePost(studio, {
+      ...post,
+      outcome: outcomeOf(targets),
+      status: "finished",
+      targets,
+    });
+  });
+
+// Whether a post's time can be kept, as `validate` answers it.
+const scheduleCheck = (payload: Pick<NewPost, "when">) => {
+  const when = timeOf(payload);
+
+  return checkTime(when.at, when.timeZone).pipe(
+    Effect.as<ScheduleCheck>("ok"),
+    Effect.catchTags({
+      InvalidTimeZone: () => Effect.succeed<ScheduleCheck>("invalidTimeZone"),
+      ScheduleInPast: () => Effect.succeed<ScheduleCheck>("inPast"),
+    })
+  );
+};
+
+// What a post would be on one channel, counted as its platform counts it.
+const previewOn = (
+  channel: Channel,
+  postContent: PostContent,
+  options: readonly ChannelOptions[]
+): ChannelPreview => {
+  const rules = platformRules[channel.platform];
+
+  const text =
+    postContent.overrides.find(({ channelId }) => channelId === channel.id)
+      ?.text ?? postContent.text;
+
+  return {
+    channelId: channel.id,
+    hashtags: {
+      count: countHashtags(text),
+      maximum: rules.maxHashtags ?? null,
+    },
+    links: { count: countLinks(text), maximum: rules.maxLinks ?? null },
+    media: {
+      count: postContent.media.length,
+      maximum: rules.maxMedia ?? null,
+    },
+    mentions: {
+      count: countMentions(text),
+      maximum: rules.maxMentions ?? null,
+    },
+    platform: channel.platform,
+    text,
+    textCounts: rules.textLimits.map(({ maximum, unit }) => ({
+      length: measureText(text, unit),
+      maximum,
+      unit,
+    })),
+    violations: violationsOf([channel.id], postContent, options),
+  };
+};
+
+const unknownMediaOf = (studio: Studio, postContent: PostContent) =>
+  checkMedia(studio, postContent).pipe(
+    Effect.as<readonly string[]>([]),
+    Effect.catchTag("UnknownMedia", ({ mediaIds }) => Effect.succeed(mediaIds))
+  );
+
+// A cursor is the id of the last post of the page before.
+const pageFrom = (listed: readonly Post[], cursor: string | undefined) => {
+  if (cursor === undefined) {
+    return Effect.succeed(listed);
+  }
+
+  const index = listed.findIndex(({ id }) => id === cursor);
+
+  return index === -1
+    ? Effect.fail(new HttpApiError.BadRequest())
+    : Effect.succeed(listed.slice(index + 1));
+};
+
+const scheduledAt = (post: Post): number =>
+  post.schedule === null ? 0 : DateTime.toEpochMillis(post.schedule.at);
+
+// The studio keeps its posts newest first.
+const sorted = (all: readonly Post[], sort: PostSort): readonly Post[] => {
+  const timed = all.filter(({ schedule }) => schedule !== null);
+
+  const orders: Readonly<Record<PostSort, () => readonly Post[]>> = {
+    createdAsc: () => all.toReversed(),
+    createdDesc: () => all,
+    scheduledAsc: () =>
+      timed.toSorted((one, other) => scheduledAt(one) - scheduledAt(other)),
+    scheduledDesc: () =>
+      timed.toSorted((one, other) => scheduledAt(other) - scheduledAt(one)),
+  };
+
+  return orders[sort]();
+};
+
+// Whether a post has a target on a channel of the platform.
+const isOnPlatform = (post: Post, platform: string): boolean =>
+  post.targets.some(({ channelId }) =>
+    channels.some(
+      (channel) => channel.id === channelId && channel.platform === platform
+    )
+  );
+
+// Whether a post's time is in the range: one without a time never is.
+const isWithin = (
+  post: Post,
+  from: DateTime.Utc | undefined,
+  to: DateTime.Utc | undefined
+): boolean => {
+  if (from === undefined && to === undefined) {
+    return true;
+  }
+
+  if (post.schedule === null) {
+    return false;
+  }
+
+  const instant = scheduledAt(post);
+
+  return (
+    (from === undefined || instant >= DateTime.toEpochMillis(from)) &&
+    (to === undefined || instant < DateTime.toEpochMillis(to))
+  );
+};
+
+// A cell of a CSV file, bare or between double quotes, and what ends it.
+const cellPattern =
+  /(?:"(?<quoted>(?:[^"]|"")*)"|(?<bare>[^",\r\n]*))(?<end>,|\r?\n|$)/gu;
+
+// The rows of a CSV file, each a list of cells; none when a quoted cell
+// never ends. Empty lines are no rows.
+const csvRows = (csv: string): Option.Option<string[][]> => {
+  const rows: string[][] = [[]];
+  let read = 0;
+
+  for (const match of csv.matchAll(cellPattern)) {
+    // A gap is a quote the pattern could not close.
+    if (match.index !== read) {
+      return Option.none();
+    }
+
+    read += match[0].length;
+
+    const quoted = match.groups?.["quoted"];
+
+    rows
+      .at(-1)
+      ?.push(
+        quoted === undefined
+          ? (match.groups?.["bare"] ?? "")
+          : quoted.replaceAll('""', '"')
+      );
+
+    if (match.groups?.["end"] !== ",") {
+      rows.push([]);
+    }
+  }
+
+  return read === csv.length
+    ? Option.some(rows.filter((row) => row.length > 1 || (row[0] ?? "") !== ""))
+    : Option.none();
+};
+
+const isImportColumn = (name: string): name is ImportColumn =>
+  importColumns.some((column) => column === name);
+
+const requiredColumns: readonly ImportColumn[] = ["text", "channels", "at"];
+
+const unreadable = (
+  problem: ImportUnreadable["problem"],
+  column: string | null = null
+) => Effect.fail(new ImportUnreadable({ column, problem }));
+
+// The columns a file's first line names, in its order.
+const columnsOf = (header: readonly string[]) =>
+  Effect.gen(function* readingHeader() {
+    const names = header.map((name) => name.trim());
+    const unknown = names.find((name) => !isImportColumn(name));
+
+    if (unknown !== undefined) {
+      return yield* unreadable("unknownColumn", unknown);
+    }
+
+    const repeated = names.find((name, index) => names.indexOf(name) < index);
+
+    if (repeated !== undefined) {
+      return yield* unreadable("repeatedColumn", repeated);
+    }
+
+    const missing = requiredColumns.find((column) => !names.includes(column));
+
+    if (missing !== undefined) {
+      return yield* unreadable("missingColumn", missing);
+    }
+
+    return names.filter(isImportColumn);
+  });
+
+// A file's rows, each as its cells by column.
+const importRows = (csv: string) =>
+  Effect.gen(function* readingRows() {
+    const read = csvRows(csv);
+
+    if (Option.isNone(read)) {
+      return yield* unreadable("unterminatedQuote");
+    }
+
+    const [header, ...rows] = read.value;
+
+    if (header === undefined) {
+      return yield* unreadable("empty");
+    }
+
+    const names = yield* columnsOf(header);
+
+    if (rows.length > maxImportRows) {
+      return yield* unreadable("tooManyRows");
+    }
+
+    return rows.map(
+      (cells) =>
+        new Map(names.map((name, index) => [name, (cells[index] ?? "").trim()]))
+    );
+  });
+
+const instantWithOffset =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$/u;
+
+const localTime = /^(?<day>\d{4}-\d{2}-\d{2})[ T](?<time>\d{2}:\d{2})$/u;
+
+// The time a row's `at` names: now, an instant, or a local time read in
+// the row's zone (UTC when the zone is no zone: its check says so).
+const whenOf = (
+  written: string,
+  timeZone: string
+): Option.Option<NewPost["when"]> => {
+  if (written === "now") {
+    return Option.some({ _tag: "now", timeZone });
+  }
+
+  if (instantWithOffset.test(written)) {
+    return DateTime.make(written).pipe(
+      Option.map((instant) => ({
+        _tag: "at" as const,
+        at: DateTime.toUtc(instant),
+        timeZone,
+      }))
+    );
+  }
+
+  const local = localTime.exec(written)?.groups;
+
+  if (local === undefined) {
+    return Option.none();
+  }
+
+  const wallClock = `${local["day"] ?? ""}T${local["time"] ?? ""}:00Z`;
+
+  return DateTime.makeZoned(wallClock, {
+    adjustForTimeZone: true,
+    timeZone,
+  }).pipe(
+    Option.orElse(() => DateTime.make(wallClock)),
+    Option.map((instant) => ({
+      _tag: "at" as const,
+      at: DateTime.toUtc(instant),
+      timeZone,
+    }))
+  );
+};
+
+const idsIn = (cell: string): string[] =>
+  cell.split(/[\s,;]+/u).filter((id) => id !== "");
+
+const problem = (
+  column: ImportColumn,
+  kind: ImportCellProblem["problem"]
+): ImportCellProblem => ({ column, problem: kind });
+
+/** A row of an import, read: its post and key, or the cells at fault. */
+type ImportedRow =
+  | { readonly _tag: "unreadable"; readonly problems: ImportCellProblem[] }
+  | {
+      readonly _tag: "read";
+      readonly key: string | undefined;
+      readonly post: NewPost;
+    };
+
+// A row's post, or the cells that cannot be read, in the columns' order.
+const rowOf = (cells: ReadonlyMap<ImportColumn, string>): ImportedRow => {
+  const cell = (column: ImportColumn) => cells.get(column) ?? "";
+  const channelIds = idsIn(cell("channels"));
+  const media = idsIn(cell("media"));
+  const when = whenOf(cell("at"), cell("time_zone") || "UTC");
+  const duplicate = cell("allow_duplicate");
+  const [first, ...others] = channelIds;
+
+  const problems = [
+    cell("text") === "" && media.length === 0
+      ? [problem("text", "missing")]
+      : [],
+    first === undefined ? [problem("channels", "missing")] : [],
+    cell("at") === "" ? [problem("at", "missing")] : [],
+    cell("at") !== "" && Option.isNone(when) ? [problem("at", "invalid")] : [],
+    ["", "true", "false"].includes(duplicate)
+      ? []
+      : [problem("allow_duplicate", "invalid")],
+  ].flat();
+
+  if (problems.length > 0 || first === undefined || Option.isNone(when)) {
+    return { _tag: "unreadable", problems };
+  }
+
+  return {
+    _tag: "read",
+    key: cell("idempotency_key") || undefined,
+    post: {
+      allowDuplicate: duplicate === "true",
+      channelIds: [first, ...others],
+      content: {
+        media: media.map((mediaId) => ({ altText: "", mediaId })),
+        overrides: [],
+        text: cell("text"),
+      },
+      when: when.value,
+    },
+  };
+};
+
+// The key a row is kept under: its own, or the request's with its place.
+const keyOf = (
+  read: { readonly key: string | undefined },
+  row: number,
+  key: string | undefined
+) => read.key ?? (key === undefined ? undefined : `${key}:${String(row)}`);
+
+// A row as the import's first pass finds it: checked, and not made. One
+// made before under its key is valid: it is answered again.
+const checkedRow = (
+  studio: Studio,
+  read: ImportedRow,
+  row: number,
+  key: string | undefined
+): Effect.Effect<ImportRowResult> =>
+  read._tag === "unreadable"
+    ? Effect.succeed({ _tag: "unreadable", problems: read.problems, row })
+    : madeUnder(studio, read.post, keyOf(read, row, key)).pipe(
+        Effect.flatMap((first) =>
+          Option.isSome(first) ? Effect.void : checkNewPost(studio, read.post)
+        ),
+        Effect.match({
+          onFailure: (refusal): ImportRowResult => ({
+            _tag: "refused",
+            refusal,
+            row,
+          }),
+          onSuccess: (): ImportRowResult => ({ _tag: "valid", row }),
+        })
+      );
+
+// A row as the import's second pass makes it, under its own key or the
+// request's, by its place.
+const madeRow = (
+  studio: Studio,
+  read: ImportedRow,
+  row: number,
+  key: string | undefined
+): Effect.Effect<ImportRowResult> =>
+  read._tag === "unreadable"
+    ? Effect.succeed({ _tag: "unreadable", problems: read.problems, row })
+    : makePost(studio, read.post, keyOf(read, row, key)).pipe(
+        Effect.match({
+          onFailure: (refusal): ImportRowResult => ({
+            _tag: "refused",
+            refusal,
+            row,
+          }),
+          onSuccess: (made): ImportRowResult => ({
+            _tag: "created",
+            ...made,
+            row,
+          }),
+        })
+      );
+
 /** The workspace groups and the account's, answered from the studio. */
 export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
     HttpApiBuilder.group(Api, "session", (handlers) =>
-      handlers.handleAll({ me: () => Effect.succeed(studio.me) })
+      handlers.handleAll({
+        me: () => inPerson.pipe(Effect.as(studio.me)),
+      })
     ),
     HttpApiBuilder.group(Api, "channels", (handlers) =>
       handlers.handleAll({
@@ -1185,7 +1980,53 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     HttpApiBuilder.group(Api, "posts", (handlers) =>
       handlers.handleAll({
-        attempts: () => refusing,
+        attempts: ({ params }) =>
+          allowed("post:read").pipe(
+            Effect.andThen(findPost(studio, params.workspaceId, params.postId)),
+            Effect.map(({ id }) => (id === finishedId ? attempts : []))
+          ),
+        bulk: ({ headers, params, payload }) =>
+          Effect.gen(function* bulk() {
+            yield* publishing;
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const key = headers["idempotency-key"];
+
+            // One at a time, in order: each is checked against those made
+            // before it.
+            const items = yield* Effect.all(
+              payload.posts.map(({ idempotencyKey, ...written }, index) =>
+                makePost(
+                  studio,
+                  written,
+                  idempotencyKey ??
+                    (key === undefined ? undefined : `${key}:${String(index)}`)
+                ).pipe(
+                  Effect.match({
+                    onFailure: (refusal) => ({
+                      _tag: "refused" as const,
+                      index,
+                      refusal,
+                    }),
+                    onSuccess: (made) => ({
+                      _tag: "created" as const,
+                      index,
+                      ...made,
+                    }),
+                  })
+                )
+              )
+            );
+
+            const created = items.filter(
+              ({ _tag }) => _tag === "created"
+            ).length;
+
+            return { created, items, refused: items.length - created };
+          }),
         cancel: ({ params }) =>
           Effect.gen(function* cancel() {
             yield* publishing;
@@ -1314,7 +2155,63 @@ export const studioGroupsLive = (studio: Studio) =>
           allowed("post:read").pipe(
             Effect.andThen(findPost(studio, params.workspaceId, params.postId))
           ),
-        list: () => refusing,
+        import: ({ headers, params, payload }) =>
+          Effect.gen(function* importing() {
+            yield* publishing;
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const read = (yield* importRows(payload.csv)).map(rowOf);
+            const key = headers["idempotency-key"];
+
+            // Every row is checked first: nothing is made unless all of
+            // them are valid.
+            const checked = yield* Effect.all(
+              read.map((row, index) => checkedRow(studio, row, index + 1, key))
+            );
+
+            const dryRun = payload.dryRun === true;
+
+            if (dryRun || checked.some(({ _tag }) => _tag !== "valid")) {
+              return { created: 0, dryRun, rows: checked };
+            }
+
+            const rows = yield* Effect.all(
+              read.map((row, index) => madeRow(studio, row, index + 1, key))
+            );
+
+            return {
+              created: rows.filter(({ _tag }) => _tag === "created").length,
+              dryRun,
+              rows,
+            };
+          }),
+        list: ({ params, query }) =>
+          Effect.gen(function* list() {
+            yield* allowed("post:read");
+
+            if (DateTime.isLessThan(query.to, query.from)) {
+              return yield* new InvalidTimeRange();
+            }
+
+            const { posts: all } = yield* Ref.get(studio.state);
+
+            return params.workspaceId === studioId
+              ? all.filter(
+                  ({ schedule }) =>
+                    schedule !== null &&
+                    DateTime.isGreaterThanOrEqualTo(schedule.at, query.from) &&
+                    DateTime.isLessThan(schedule.at, query.to)
+                )
+              : [];
+          }),
+        outcome: ({ params, query }) =>
+          allowed("post:read").pipe(
+            Effect.andThen(findPost(studio, params.workspaceId, params.postId)),
+            Effect.flatMap((post) => afterWaiting(studio, post, query.wait))
+          ),
         repost: ({ params }) =>
           publishing.pipe(
             Effect.andThen(
@@ -1404,7 +2301,63 @@ export const studioGroupsLive = (studio: Studio) =>
               }),
             });
           }),
-        send: ({ headers, params, payload }) =>
+        search: ({ params, query }) =>
+          Effect.gen(function* search() {
+            yield* allowed("post:read");
+            yield* allowed("channel:read");
+
+            if (
+              query.from !== undefined &&
+              query.to !== undefined &&
+              DateTime.toEpochMillis(query.to) <
+                DateTime.toEpochMillis(query.from)
+            ) {
+              return yield* new InvalidTimeRange();
+            }
+
+            const { posts: all } = yield* Ref.get(studio.state);
+
+            const matching = sorted(
+              params.workspaceId === studioId ? all : [],
+              query.sort ?? "createdDesc"
+            ).filter((post) =>
+              [
+                query.status === undefined || post.status === query.status,
+                query.outcome === undefined || post.outcome === query.outcome,
+                query.channelId === undefined ||
+                  post.targets.some(
+                    ({ channelId }) => channelId === query.channelId
+                  ),
+                query.platform === undefined ||
+                  isOnPlatform(post, query.platform),
+                isWithin(post, query.from, query.to),
+                query.createdVia === undefined ||
+                  post.createdVia?.via === query.createdVia,
+                query.authorId === undefined ||
+                  post.authorId === query.authorId,
+              ].every(Boolean)
+            );
+
+            const listed = yield* pageFrom(matching, query.cursor);
+            const limit = query.limit ?? 20;
+            const items = listed.slice(0, limit);
+            const last = items.at(-1);
+
+            return {
+              // The channels the page names that are still connected.
+              channels: channels.flatMap(({ id, platform }) =>
+                items.some(({ targets }) =>
+                  targets.some(({ channelId }) => channelId === id)
+                )
+                  ? [{ channelId: id, platform }]
+                  : []
+              ),
+              items,
+              nextCursor:
+                last !== undefined && limit < listed.length ? last.id : null,
+            };
+          }),
+        send: ({ headers, params, payload, query }) =>
           Effect.gen(function* send() {
             yield* publishing;
 
@@ -1412,67 +2365,13 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new Forbidden();
             }
 
-            const key = headers["idempotency-key"];
-            const body = JSON.stringify(payload);
-            const before = yield* Ref.get(studio.state);
-            const first = key === undefined ? undefined : before.sent[key];
-
-            // The same key answers the post its first request made, as it
-            // now stands, and makes no other.
-            if (first !== undefined) {
-              return first.body === body
-                ? yield* findPost(studio, params.workspaceId, first.postId)
-                : yield* new IdempotencyKeyReused();
-            }
-
-            yield* checkChannels(payload.channelIds);
-            yield* checkMedia(studio, payload.content);
-
-            const when =
-              payload.when._tag === "now"
-                ? { at: studioNow, timeZone: payload.when.timeZone ?? "UTC" }
-                : { at: payload.when.at, timeZone: payload.when.timeZone };
-
-            const asked = yield* checkTime(when.at, when.timeZone);
-
-            // Where every post waits, this one does: nothing goes out.
-            const status =
-              before.policy === "always"
-                ? ("awaitingApproval" as const)
-                : asked;
-
-            yield* checkContent(
-              payload.channelIds,
-              payload.content,
-              payload.options ?? []
-            );
-
-            const id = nextId("d", before.posts.length);
-
-            yield* Ref.update(studio.state, (current) => ({
-              ...current,
-              sent:
-                key === undefined
-                  ? current.sent
-                  : { ...current.sent, [key]: { body, postId: id } },
-            }));
-            yield* record(
+            const { post } = yield* makePost(
               studio,
-              `send:${id}:${payload.when._tag}:${key ?? "no key"}`
+              payload,
+              headers["idempotency-key"]
             );
 
-            return yield* savePost(studio, {
-              authorId: userId,
-              content: payload.content,
-              createdVia: viaCommandLine,
-              id,
-              outcome: null,
-              schedule: when,
-              scheduledBy: userId,
-              scheduledVia: viaCommandLine,
-              status,
-              targets: targetsOf(id, payload),
-            });
+            return yield* afterWaiting(studio, post, query.wait);
           }),
         unschedule: ({ params }) =>
           Effect.gen(function* unschedule() {
@@ -1517,6 +2416,63 @@ export const studioGroupsLive = (studio: Studio) =>
               content: payload.content,
               targets: targetsOf(post.id, payload),
             });
+          }),
+        validate: ({ params, payload }) =>
+          Effect.gen(function* validate() {
+            yield* allowed("post:read");
+            yield* allowed("channel:read");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const { when } = payload;
+            const { policy, posts: all } = yield* Ref.get(studio.state);
+
+            const validation: Omit<PostValidation, "valid"> = {
+              // Where every post waits, this one would.
+              awaitsApproval: when !== undefined && policy === "always",
+              channels: payload.channelIds.flatMap((channelId) => {
+                const channel = channels.find(({ id }) => id === channelId);
+
+                return channel === undefined
+                  ? []
+                  : [
+                      previewOn(
+                        channel,
+                        payload.content,
+                        payload.options ?? []
+                      ),
+                    ];
+              }),
+              // Without a time, nothing is near it.
+              duplicates:
+                when === undefined
+                  ? []
+                  : duplicatesOf(all, payload, timeOf({ when }).at),
+              planLimit: null,
+              schedule:
+                when === undefined ? null : yield* scheduleCheck({ when }),
+              unknownChannels: payload.channelIds.filter(
+                (channelId) => !channels.some(({ id }) => id === channelId)
+              ),
+              unknownMedia: yield* unknownMediaOf(studio, payload.content),
+              violations:
+                payload.channelIds.length === 0 ? [{ _tag: "noChannels" }] : [],
+            };
+
+            return {
+              ...validation,
+              valid:
+                validation.channels.every(
+                  ({ violations }) => violations.length === 0
+                ) &&
+                validation.duplicates.length === 0 &&
+                (validation.schedule ?? "ok") === "ok" &&
+                validation.unknownChannels.length === 0 &&
+                validation.unknownMedia.length === 0 &&
+                validation.violations.length === 0,
+            };
           }),
       })
     ),
@@ -1638,7 +2594,10 @@ export const studioGroupsLive = (studio: Studio) =>
             yield* record(studio, `delete-media:${found.id}`);
           }),
         describe: () => refusing,
-        get: () => refusing,
+        get: ({ params }) =>
+          allowed("media:read").pipe(
+            Effect.andThen(findMedia(studio, params.mediaId))
+          ),
         // What the address stands for, by its host: one the server does not
         // fetch, one that answers too slowly, one that has no such file.
         importFromUrl: ({ params, payload }) =>
@@ -1910,28 +2869,31 @@ export const studioGroupsLive = (studio: Studio) =>
     HttpApiBuilder.group(Api, "members", (handlers) =>
       handlers.handleAll({
         list: () =>
-          Effect.succeed([
-            {
-              email: "synthetic@example.test",
-              joinedAt: at("2026-10-01T08:00:00Z"),
-              name: "Synthetic User",
-              role: "owner",
-              userId,
-            },
-            {
-              email: "sam@example.test",
-              joinedAt: at("2026-10-02T08:00:00Z"),
-              name: "Sam Example",
-              role: "viewer",
-              userId: "2d8a4b6c-5e3f-4a71-8cbd-3e4f5a6b7c8d",
-            },
-          ]),
+          inPerson.pipe(
+            Effect.as([
+              {
+                email: "synthetic@example.test",
+                joinedAt: at("2026-10-01T08:00:00Z"),
+                name: "Synthetic User",
+                role: "owner",
+                userId,
+              },
+              {
+                email: "sam@example.test",
+                joinedAt: at("2026-10-02T08:00:00Z"),
+                name: "Sam Example",
+                role: "viewer",
+                userId: "2d8a4b6c-5e3f-4a71-8cbd-3e4f5a6b7c8d",
+              },
+            ])
+          ),
       })
     ),
     HttpApiBuilder.group(Api, "invitations", (handlers) =>
       handlers.handleAll({
         create: ({ payload }) =>
           Effect.gen(function* create() {
+            yield* inPerson;
             yield* allowed("invitation:create");
 
             if (payload.email === "sam@example.test") {
@@ -1956,12 +2918,14 @@ export const studioGroupsLive = (studio: Studio) =>
             return sent;
           }),
         list: () =>
-          allowed("invitation:create").pipe(
+          inPerson.pipe(
+            Effect.andThen(allowed("invitation:create")),
             Effect.andThen(Ref.get(studio.state)),
             Effect.map(({ invitations }) => invitations)
           ),
         revoke: ({ params }) =>
           Effect.gen(function* revoke() {
+            yield* inPerson;
             yield* allowed("invitation:cancel");
 
             const { invitations } = yield* Ref.get(studio.state);
@@ -2004,6 +2968,157 @@ export const studioGroupsLive = (studio: Studio) =>
       handlers.handleAll({
         list: () => Effect.succeed([cli]),
         revoke: () => refusing,
+      })
+    ),
+    HttpApiBuilder.group(Api, "connectLinks", (handlers) =>
+      handlers.handleAll({
+        create: ({ params, payload }) =>
+          Effect.gen(function* create() {
+            yield* allowed("channel:connect");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            if (payload.platform === "pinterest") {
+              return yield* new ConnectFailed({
+                reason: "platformNotSupported",
+              });
+            }
+
+            // Only where the studio's partner account said.
+            if (
+              payload.returnUrl !== undefined &&
+              !payload.returnUrl.startsWith("https://app.example.test/")
+            ) {
+              return yield* new ReturnUrlNotAllowed();
+            }
+
+            const now = at("2026-11-09T12:00:00Z");
+
+            const link: ConnectLink = {
+              channelId: payload.channelId ?? null,
+              channelIds: [],
+              completedAt: null,
+              createdAt: now,
+              expiresAt: DateTime.add(now, {
+                hours: payload.expiresInHours ?? 168,
+              }),
+              failedAt: null,
+              failure: null,
+              id: newLinkId,
+              platform: payload.platform,
+              returnUrl: payload.returnUrl ?? null,
+              status: "pending",
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              connectLinks: [link, ...current.connectLinks],
+            }));
+            yield* record(studio, `link:create:${payload.platform}`);
+
+            return { link, url: newLinkUrl };
+          }),
+        get: ({ params }) =>
+          Effect.gen(function* get() {
+            yield* allowed("channel:read");
+
+            const { connectLinks: links } = yield* Ref.get(studio.state);
+            const found = links.find(({ id }) => id === params.linkId);
+
+            return found ?? (yield* new ConnectLinkNotFound());
+          }),
+        list: ({ params }) =>
+          allowed("channel:read").pipe(
+            Effect.andThen(Ref.get(studio.state)),
+            Effect.map(({ connectLinks }) =>
+              params.workspaceId === studioId ? connectLinks : []
+            )
+          ),
+        revoke: ({ params }) =>
+          Effect.gen(function* revoke() {
+            yield* allowed("channel:connect");
+
+            const { connectLinks: links } = yield* Ref.get(studio.state);
+            const found = links.find(({ id }) => id === params.linkId);
+
+            if (found === undefined) {
+              return yield* new ConnectLinkNotFound();
+            }
+
+            // One already over stays as it is.
+            if (found.status !== "pending") {
+              return found;
+            }
+
+            const revoked: ConnectLink = {
+              ...found,
+              completedAt: at("2026-11-09T12:00:00Z"),
+              status: "revoked",
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              connectLinks: current.connectLinks.map((link) =>
+                link.id === revoked.id ? revoked : link
+              ),
+            }));
+            yield* record(studio, `link:revoke:${revoked.id}`);
+
+            return revoked;
+          }),
+      })
+    ),
+    HttpApiBuilder.group(Api, "partnerAccount", (handlers) =>
+      handlers.handleAll({
+        close: () => refusing,
+        createKey: () => refusing,
+        get: ({ params }) =>
+          allowed("partner:read").pipe(
+            Effect.as(
+              params.workspaceId === studioId
+                ? {
+                    canOpen: false,
+                    partner: studioPartner,
+                    usage: { channels: 5, days: [], workspaces: 2 },
+                  }
+                : { canOpen: false, partner: null, usage: null }
+            )
+          ),
+        listKeys: () =>
+          allowed("partner:read").pipe(
+            Effect.as([
+              {
+                createdAt: at("2026-10-02T09:00:00Z"),
+                expiresAt: null,
+                id: "0190f3a0-0000-7000-8000-00000000e101",
+                name: "backend",
+                permissions: ["channel:read", "post:schedule"] as const,
+                scopes: ["workspaces:read", "workspaces:write"] as const,
+                start: "peal_partner_synt",
+              },
+            ])
+          ),
+        listWorkspaces: ({ query }) =>
+          allowed("partner:read").pipe(
+            Effect.map(() => {
+              const found = customers.filter(
+                (customer) =>
+                  (query.externalId === undefined ||
+                    customer.externalId === query.externalId) &&
+                  (query.name === undefined ||
+                    customer.name
+                      .toLowerCase()
+                      .includes(query.name.toLowerCase()))
+              );
+
+              return { next: null, total: found.length, workspaces: found };
+            })
+          ),
+        open: () => refusing,
+        revokeKey: () => refusing,
+        update: () => refusing,
       })
     ),
     HttpApiBuilder.group(Api, "capabilities", (handlers) =>
@@ -2422,6 +3537,7 @@ export const studioGroupsLive = (studio: Studio) =>
               failingSince: null,
               id: `0190f3a0-0000-7000-8000-00000000b${String(current.webhooks.length + 1).padStart(3, "0")}`,
               previousSecretExpiresAt: null,
+              scope: "workspace",
               updatedAt: now,
               url: payload.url,
             });
@@ -2609,6 +3725,50 @@ export const studioGroupsLive = (studio: Studio) =>
       })
     ),
     studioInboxLive(studio.inbox),
+    HttpApiBuilder.group(Api, "activity", (handlers) =>
+      handlers.handleAll({
+        list: ({ params, query }) =>
+          Effect.gen(function* list() {
+            const member = yield* CurrentMember;
+
+            // As the server words it, for the member it refuses.
+            if (!member.permissions.includes("activity:read")) {
+              return yield* new Forbidden({
+                message:
+                  "Your role in this workspace does not have the permission activity:read. An owner or an admin of the workspace changes roles, in its settings.",
+                permission: "activity:read",
+                reason: "missingPermission",
+              });
+            }
+
+            const listed = (
+              params.workspaceId === studioId ? activityLog : []
+            ).filter(
+              (event) =>
+                (query.operation === undefined ||
+                  event.operation === query.operation) &&
+                (query.actor === undefined || actorIdOf(event) === query.actor)
+            );
+
+            const start =
+              query.cursor === undefined
+                ? 0
+                : listed.findIndex(({ id }) => id === query.cursor) + 1;
+
+            const limit = query.limit ?? 30;
+            const items = listed.slice(start, start + limit);
+            const last = items.at(-1);
+
+            return {
+              items,
+              nextCursor:
+                last !== undefined && start + limit < listed.length
+                  ? last.id
+                  : null,
+            };
+          }),
+      })
+    ),
     HttpApiBuilder.group(Api, "tiktok", (handlers) =>
       handlers.handleAll({
         creator: ({ params }) =>
@@ -2634,6 +3794,21 @@ export const studioAccessLive = (studio: Studio) =>
       Effect.gen(function* member() {
         const principal = yield* CurrentPrincipal;
         const params = yield* HttpRouter.params;
+
+        // A key acts in its own workspace alone, with its own permissions.
+        if (principal._tag === "apiKey") {
+          if (principal.workspaceId !== params["workspaceId"]) {
+            return yield* wrongWorkspace;
+          }
+
+          return yield* httpEffect.pipe(
+            Effect.provideService(CurrentMember, {
+              permissions: principal.permissions,
+              principal,
+              workspaceId: principal.workspaceId,
+            })
+          );
+        }
 
         const workspace = studio.me.workspaces.find(
           ({ id }) => id === params["workspaceId"]

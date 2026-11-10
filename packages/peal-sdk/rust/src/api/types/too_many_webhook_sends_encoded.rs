@@ -1,9 +1,14 @@
 pub use crate::prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct TooManyWebhookSendsEncoded {
-    #[serde(rename = "_tag")]
-    pub tag: TooManyWebhookSendsEncodedTag,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+    #[serde(rename = "requestId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub request_id: Option<String>,
     #[serde(default)]
     pub allowed: i64,
 }
@@ -17,13 +22,25 @@ impl TooManyWebhookSendsEncoded {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct TooManyWebhookSendsEncodedBuilder {
-    tag: Option<TooManyWebhookSendsEncodedTag>,
+    code: Option<String>,
+    message: Option<String>,
+    request_id: Option<String>,
     allowed: Option<i64>,
 }
 
 impl TooManyWebhookSendsEncodedBuilder {
-    pub fn tag(mut self, value: TooManyWebhookSendsEncodedTag) -> Self {
-        self.tag = Some(value);
+    pub fn code(mut self, value: impl Into<String>) -> Self {
+        self.code = Some(value.into());
+        self
+    }
+
+    pub fn message(mut self, value: impl Into<String>) -> Self {
+        self.message = Some(value.into());
+        self
+    }
+
+    pub fn request_id(mut self, value: impl Into<String>) -> Self {
+        self.request_id = Some(value.into());
         self
     }
 
@@ -34,11 +51,12 @@ impl TooManyWebhookSendsEncodedBuilder {
 
     /// Consumes the builder and constructs a [`TooManyWebhookSendsEncoded`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`tag`](TooManyWebhookSendsEncodedBuilder::tag)
     /// - [`allowed`](TooManyWebhookSendsEncodedBuilder::allowed)
     pub fn build(self) -> Result<TooManyWebhookSendsEncoded, BuildError> {
         Ok(TooManyWebhookSendsEncoded {
-            tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
+            code: self.code,
+            message: self.message,
+            request_id: self.request_id,
             allowed: self
                 .allowed
                 .ok_or_else(|| BuildError::missing_field("allowed"))?,

@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * Why Peal will not deliver to an address:
  *
@@ -25,7 +27,7 @@ export type WebhookUrlRefusal = typeof WebhookUrlRefusalSchema.Type;
 /** The endpoint's address is not one Peal delivers to. */
 export class WebhookUrlRefused extends Schema.TaggedError<WebhookUrlRefused>()(
   "WebhookUrlRefused",
-  { reason: WebhookUrlRefusalSchema },
+  { ...errorEnvelope, reason: WebhookUrlRefusalSchema },
   {
     description:
       "Peal does not deliver to this address; `reason` says why. Nothing was saved.",

@@ -1,4 +1,4 @@
-import { DateTime, Duration, Option, Schema } from "effect";
+import { DateTime, Duration, Effect, Option, Schema } from "effect";
 
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -41,6 +41,15 @@ export const DisabledReasonSchema = Schema.Literals([
 
 export type DisabledReason = typeof DisabledReasonSchema.Type;
 
+/**
+ * What an endpoint hears: the events of its own workspace (`workspace`),
+ * or, in a partner's home workspace, those of every workspace the partner
+ * owns too (`partner`). Chosen when it is created.
+ */
+export const EndpointScopeSchema = Schema.Literals(["workspace", "partner"]);
+
+export type EndpointScope = typeof EndpointScopeSchema.Type;
+
 export const EndpointStatusSchema = Schema.Union([
   Schema.TaggedStruct("enabled", {}),
   Schema.TaggedStruct("disabled", {
@@ -67,6 +76,9 @@ export class WebhookEndpoint extends Schema.Class<WebhookEndpoint>(
   failingSince: Schema.Option(Schema.DateTimeUtc),
   id: WebhookEndpointIdSchema,
   previousSecretExpiresAt: Schema.Option(Schema.DateTimeUtc),
+  scope: EndpointScopeSchema.pipe(
+    Schema.withConstructorDefault(Effect.succeed("workspace" as const))
+  ),
   status: EndpointStatusSchema,
   updatedAt: Schema.DateTimeUtc,
   url: WebhookUrlSchema,
@@ -98,6 +110,7 @@ const withFields = (
     failingSince: endpoint.failingSince,
     id: endpoint.id,
     previousSecretExpiresAt: endpoint.previousSecretExpiresAt,
+    scope: endpoint.scope,
     status: endpoint.status,
     updatedAt: endpoint.updatedAt,
     url: endpoint.url,
@@ -139,7 +152,8 @@ export const createEndpoint = (
   id: WebhookEndpointId,
   workspaceId: WorkspaceId,
   settings: EndpointSettings,
-  now: DateTime.Utc
+  now: DateTime.Utc,
+  scope: EndpointScope = "workspace"
 ): WebhookEndpoint =>
   new WebhookEndpoint({
     createdAt: now,
@@ -148,6 +162,7 @@ export const createEndpoint = (
     failingSince: Option.none(),
     id,
     previousSecretExpiresAt: Option.none(),
+    scope,
     status: statusOf(settings.enabled, Option.none(), now),
     updatedAt: now,
     url: settings.url,
@@ -202,6 +217,13 @@ export const previousSecretSigns = (
   Option.exists(endpoint.previousSecretExpiresAt, (expiresAt) =>
     DateTime.isLessThan(now, expiresAt)
   );
+
+/**
+ * Whether the endpoint hears what happens in the workspaces a partner
+ * owns, beside its own workspace's events.
+ */
+export const hearsPartner = (endpoint: WebhookEndpoint): boolean =>
+  endpoint.scope === "partner";
 
 /**
  * Whether the endpoint is sent an event of this type: while it is on, those

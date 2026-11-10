@@ -26,6 +26,12 @@ import social.peal.core.ObjectMappers;
 public final class PlanLimitReachedEncoded {
     private final PlanLimitReachedEncodedTag tag;
 
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final long allowed;
 
     private final String billingUrl;
@@ -42,6 +48,9 @@ public final class PlanLimitReachedEncoded {
 
     private PlanLimitReachedEncoded(
             PlanLimitReachedEncodedTag tag,
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
             long allowed,
             String billingUrl,
             PlanLimit limit,
@@ -50,6 +59,9 @@ public final class PlanLimitReachedEncoded {
             long used,
             Map<String, Object> additionalProperties) {
         this.tag = tag;
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.allowed = allowed;
         this.billingUrl = billingUrl;
         this.limit = limit;
@@ -62,6 +74,21 @@ public final class PlanLimitReachedEncoded {
     @JsonProperty("_tag")
     public PlanLimitReachedEncodedTag getTag() {
         return tag;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("allowed")
@@ -116,6 +143,9 @@ public final class PlanLimitReachedEncoded {
 
     private boolean equalTo(PlanLimitReachedEncoded other) {
         return tag.equals(other.tag)
+                && code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
                 && allowed == other.allowed
                 && billingUrl.equals(other.billingUrl)
                 && limit.equals(other.limit)
@@ -127,7 +157,16 @@ public final class PlanLimitReachedEncoded {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.tag, this.allowed, this.billingUrl, this.limit, this.plan, this.planWithRoom, this.used);
+                this.tag,
+                this.code,
+                this.message,
+                this.requestId,
+                this.allowed,
+                this.billingUrl,
+                this.limit,
+                this.plan,
+                this.planWithRoom,
+                this.used);
     }
 
     @java.lang.Override
@@ -172,6 +211,18 @@ public final class PlanLimitReachedEncoded {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
+
         _FinalStage planWithRoom(Optional<PaidPlan> planWithRoom);
 
         _FinalStage planWithRoom(PaidPlan planWithRoom);
@@ -196,6 +247,12 @@ public final class PlanLimitReachedEncoded {
 
         private Optional<PaidPlan> planWithRoom = Optional.empty();
 
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -203,6 +260,9 @@ public final class PlanLimitReachedEncoded {
         @java.lang.Override
         public Builder from(PlanLimitReachedEncoded other) {
             tag(other.getTag());
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             allowed(other.getAllowed());
             billingUrl(other.getBillingUrl());
             limit(other.getLimit());
@@ -280,14 +340,66 @@ public final class PlanLimitReachedEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public PlanLimitReachedEncoded build() {
             return new PlanLimitReachedEncoded(
-                    tag, allowed, billingUrl, limit, plan, planWithRoom, used, additionalProperties);
+                    tag,
+                    code,
+                    message,
+                    requestId,
+                    allowed,
+                    billingUrl,
+                    limit,
+                    plan,
+                    planWithRoom,
+                    used,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
                     || key.equalsIgnoreCase("allowed")
                     || key.equalsIgnoreCase("billingUrl")
                     || key.equalsIgnoreCase("limit")

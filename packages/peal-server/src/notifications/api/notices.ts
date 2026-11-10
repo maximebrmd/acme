@@ -1,11 +1,6 @@
 import { Effect, Match, Option, Schema } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
-import {
-  Api,
-  CurrentPrincipal,
-  defaultNoticePageSize,
-  Forbidden,
-} from "peal-contract";
+import { Api, CurrentPrincipal, defaultNoticePageSize } from "peal-contract";
 import type {
   Notice as NoticeView,
   NoticeChannel as NoticeChannelView,
@@ -24,11 +19,10 @@ import type {
 import { NoticeIdSchema } from "#notifications/domain/notice-id.ts";
 import type { Notice } from "#notifications/domain/notice.ts";
 import type { NotificationPreferences } from "#notifications/domain/notification-preferences.ts";
+import { forbidden, personRequired } from "#shared/api/forbidden.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
 
 const decodeNoticeId = Schema.decodeUnknownOption(NoticeIdSchema);
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 /**
  * Who reads the inbox: a user, impersonated or through an OAuth client. An
@@ -48,7 +42,7 @@ const readerOf = (principal: Principal) =>
           userId: UserIdSchema.make(principal.userId),
         })
       )
-    : forbidden();
+    : personRequired();
 
 const currentReader = Effect.gen(function* currentReader() {
   return yield* readerOf(yield* CurrentPrincipal);

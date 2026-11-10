@@ -5,6 +5,7 @@ import {
   OpenApi,
 } from "effect/http-api";
 
+import { ApiChangelogSchema } from "./api-changelog.ts";
 import { DatabaseUnavailable } from "./database-unavailable.ts";
 
 // Top-level, so the client calls these as `client.health()` and
@@ -36,6 +37,17 @@ export class SystemApi extends HttpApiGroup.make("system", {
       description:
         "Answers once the server can reach its database, and fails with DatabaseUnavailable while it cannot. Use it as a readiness check before sending traffic.",
       summary: "Check that the server can take traffic",
+    })
+  ),
+  // What each release of the API added: no credentials, as a client reads
+  // it to learn what the server it found can do.
+  HttpApiEndpoint.get("changelog", "/api/changelog", {
+    success: ApiChangelogSchema,
+  }).annotateMerge(
+    OpenApi.annotations({
+      description:
+        "Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.",
+      summary: "List what each release of the API changed",
     })
   )
 ) {}

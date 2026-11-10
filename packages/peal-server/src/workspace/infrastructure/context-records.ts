@@ -1,5 +1,6 @@
 import { Effect, Layer } from "effect";
 
+import { ActivityRecords } from "#activity/application/activity-records.ts";
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { UsageRecords } from "#assistant/application/ports/usage-records.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
@@ -43,8 +44,9 @@ const billingRefusals = (workspaceId: WorkspaceId) => ({
 /**
  * ContextRecords through each context's own records: publishing's posts,
  * the channels, the media library, the notices, the assistant's usage,
- * analytics' posts followed, engagement's threads, billing's subscriptions, the webhooks, the
- * staff audit log, the legal records, and the reviews of posts.
+ * analytics' posts followed, engagement's threads, billing's
+ * subscriptions, the webhooks, the activity logs, the staff audit log, the
+ * legal records, and the reviews of posts.
  */
 export const ContextRecordsLive = Layer.effect(
   ContextRecords,
@@ -60,6 +62,7 @@ export const ContextRecordsLive = Layer.effect(
     const legal = yield* LegalRecords;
     const reviews = yield* ReviewRecords;
     const webhooks = yield* WebhookRecords;
+    const activity = yield* ActivityRecords;
     const engagement = yield* EngagementRecords;
     const pseudonyms = yield* Pseudonyms;
 
@@ -73,6 +76,7 @@ export const ContextRecordsLive = Layer.effect(
           yield* engagement.forgetUser(userId);
           yield* reviews.forgetUser(userId);
           yield* channels.eraseUser(userId);
+          yield* activity.forgetUser(userId);
           yield* staff.forgetUser(userId, pseudonym);
           yield* billing.forgetUser(userId, pseudonym);
         }
@@ -93,6 +97,7 @@ export const ContextRecordsLive = Layer.effect(
           yield* notices.eraseWorkspace(workspaceId);
           yield* usage.eraseWorkspace(workspaceId);
           yield* webhooks.eraseWorkspace(workspaceId);
+          yield* activity.eraseWorkspace(workspaceId);
 
           // Billing last: refused if Stripe still bills it, which settling
           // made sure it no longer does, unless a checkout completed since.
@@ -105,6 +110,7 @@ export const ContextRecordsLive = Layer.effect(
         posts.exportAuthored(userId, workspaceIds),
       exportUser: (userId) =>
         Effect.all({
+          activity: activity.exportUser(userId),
           contracts: billing.exportUser(userId),
           legalHold: legal.exportUser(userId),
           replies: engagement.exportUser(userId),
@@ -112,23 +118,15 @@ export const ContextRecordsLive = Layer.effect(
           staffActions: staff.exportUser(userId),
           user: notices.exportUser(userId),
         }).pipe(
-          Effect.map(
-            ({
-              contracts,
-              legalHold,
-              replies,
-              review,
-              staffActions,
-              user,
-            }) => ({
-              ...user,
-              contracts,
-              legalHold,
-              replies,
-              review,
-              staffActions,
-            })
-          )
+          Effect.map((exported) => ({
+            ...exported.user,
+            activity: exported.activity,
+            contracts: exported.contracts,
+            legalHold: exported.legalHold,
+            replies: exported.replies,
+            review: exported.review,
+            staffActions: exported.staffActions,
+          }))
         ),
       exportWorkspace: (workspaceId) =>
         Effect.all({

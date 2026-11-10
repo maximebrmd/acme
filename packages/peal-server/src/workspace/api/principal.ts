@@ -9,6 +9,11 @@ import type { Actor } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { ApiKeyPrincipal } from "#workspace/domain/api-key-principal.ts";
 import type { OAuthGrant } from "#workspace/domain/oauth-grant.ts";
+import {
+  PartnerIdSchema,
+  PartnerKeyIdSchema,
+} from "#workspace/domain/partner-id.ts";
+import { PartnerKeyPrincipal } from "#workspace/domain/partner-key-principal.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
@@ -29,23 +34,36 @@ const grantOf = (grant: ContractGrant): OAuthGrant => ({
   ),
 });
 
-export const toContractPrincipal = (principal: Principal): ContractPrincipal =>
-  principal._tag === "UserPrincipal"
+export const toContractPrincipal = (
+  principal: Principal
+): ContractPrincipal => {
+  if (principal._tag === "UserPrincipal") {
+    return {
+      _tag: "user",
+      impersonatedBy: Option.getOrNull(principal.impersonatedBy),
+      ...Option.match(principal.oauth, {
+        onNone: () => ({}),
+        onSome: (grant) => ({ oauth: toContractGrant(grant) }),
+      }),
+      userId: principal.userId,
+    };
+  }
+
+  return principal._tag === "ApiKeyPrincipal"
     ? {
-        _tag: "user",
-        impersonatedBy: Option.getOrNull(principal.impersonatedBy),
-        ...Option.match(principal.oauth, {
-          onNone: () => ({}),
-          onSome: (grant) => ({ oauth: toContractGrant(grant) }),
-        }),
-        userId: principal.userId,
-      }
-    : {
         _tag: "apiKey",
         apiKeyId: principal.apiKeyId,
         permissions: principal.permissions,
         workspaceId: principal.workspaceId,
+      }
+    : {
+        _tag: "partnerKey",
+        partnerId: principal.partnerId,
+        partnerKeyId: principal.partnerKeyId,
+        permissions: principal.permissions,
+        scopes: principal.scopes,
       };
+};
 
 export const userPrincipalOf = (
   principal: Extract<ContractPrincipal, { readonly _tag: "user" }>
@@ -58,14 +76,29 @@ export const userPrincipalOf = (
     userId: UserIdSchema.make(principal.userId),
   });
 
-export const principalOf = (principal: ContractPrincipal): Principal =>
-  principal._tag === "user"
-    ? userPrincipalOf(principal)
-    : new ApiKeyPrincipal({
+export const partnerKeyPrincipalOf = (
+  principal: Extract<ContractPrincipal, { readonly _tag: "partnerKey" }>
+): PartnerKeyPrincipal =>
+  new PartnerKeyPrincipal({
+    partnerId: PartnerIdSchema.make(principal.partnerId),
+    partnerKeyId: PartnerKeyIdSchema.make(principal.partnerKeyId),
+    permissions: principal.permissions,
+    scopes: principal.scopes,
+  });
+
+export const principalOf = (principal: ContractPrincipal): Principal => {
+  if (principal._tag === "user") {
+    return userPrincipalOf(principal);
+  }
+
+  return principal._tag === "apiKey"
+    ? new ApiKeyPrincipal({
         apiKeyId: principal.apiKeyId,
         permissions: principal.permissions,
         workspaceId: WorkspaceIdSchema.make(principal.workspaceId),
-      });
+      })
+    : partnerKeyPrincipalOf(principal);
+};
 
 export const memberOf = (actor: Actor, principal: Principal): Member => ({
   permissions: actor.permissions,

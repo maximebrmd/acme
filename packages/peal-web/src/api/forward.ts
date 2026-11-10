@@ -14,9 +14,18 @@ const discoveryDocuments = [
   "/.well-known/oauth-protected-resource",
 ];
 
+// What says where the API and the MCP endpoint are, each at the one path
+// its specification gives: the API catalogue (RFC 9727) and llms.txt
+// (llmstxt.org), which the server writes from its own address.
+const serverDocuments: ReadonlySet<string> = new Set([
+  "/.well-known/api-catalog",
+  "/llms.txt",
+]);
+
 /** Whether the server, not a page, answers this path. */
 export const servedByApi = (pathname: string): boolean =>
   pathname.startsWith(apiPrefix) ||
+  serverDocuments.has(pathname) ||
   discoveryDocuments.some(
     (document) => pathname === document || pathname.startsWith(`${document}/`)
   );
@@ -26,7 +35,7 @@ export const servedByApi = (pathname: string): boolean =>
 // carrying it, and is refused instead of going round.
 export const forwardedHeader = "x-peal-forwarded";
 
-// Rewrites /api/* and the OAuth discovery documents to the Peal server, path
+// Rewrites /api/* and the discovery documents to the Peal server, path
 // unchanged, so the browser stays same-origin and the API needs no CORS. The
 // server answers under /api itself: the HTTP API, Better Auth, whose emailed
 // links point there, and the MCP endpoint. A server URL with this app's own

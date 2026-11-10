@@ -6,6 +6,7 @@ use Peal\Core\Json\JsonSerializableType;
 use Peal\Core\Json\JsonProperty;
 use Peal\Types\SubscribableWebhookEventType;
 use Peal\Core\Types\ArrayType;
+use Peal\Types\WebhookEndpointScope;
 
 class NewWebhookEndpoint extends JsonSerializableType
 {
@@ -28,6 +29,12 @@ class NewWebhookEndpoint extends JsonSerializableType
     public array $eventTypes;
 
     /**
+     * @var ?value-of<WebhookEndpointScope> $scope
+     */
+    #[JsonProperty('scope')]
+    public ?string $scope;
+
+    /**
      * @var string $url
      */
     #[JsonProperty('url')]
@@ -39,6 +46,7 @@ class NewWebhookEndpoint extends JsonSerializableType
      *   url: string,
      *   description?: ?string,
      *   enabled?: ?bool,
+     *   scope?: ?value-of<WebhookEndpointScope>,
      * } $values
      */
     public function __construct(
@@ -47,6 +55,7 @@ class NewWebhookEndpoint extends JsonSerializableType
         $this->description = $values['description'] ?? null;
         $this->enabled = $values['enabled'] ?? null;
         $this->eventTypes = $values['eventTypes'];
+        $this->scope = $values['scope'] ?? null;
         $this->url = $values['url'];
     }
 }

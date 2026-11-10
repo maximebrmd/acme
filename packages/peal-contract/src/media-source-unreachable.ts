@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * Why a file could not be fetched from its address: its host does not
  * resolve (`unknownHost`), did not answer, or broke off (`noAnswer`),
@@ -21,6 +23,7 @@ export type MediaSourceFailure = typeof MediaSourceFailureSchema.Type;
 export class MediaSourceUnreachable extends Schema.TaggedError<MediaSourceUnreachable>()(
   "MediaSourceUnreachable",
   {
+    ...errorEnvelope,
     reason: MediaSourceFailureSchema,
     // The HTTP status the host answered, for `badStatus`.
     status: Schema.NullOr(Schema.Int),

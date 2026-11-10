@@ -10,6 +10,7 @@ export const StaffErrorKeySchema = Schema.Literals([
   "staff",
   "unknown",
   "verified",
+  "workspaceGone",
 ]);
 
 export type StaffErrorKey = typeof StaffErrorKeySchema.Type;
@@ -25,6 +26,7 @@ const decodeRefused = Schema.decodeUnknownOption(RefusedSchema);
 const reasons = new Map<string, StaffErrorKey>([
   ["NotFound", "notStaff"],
   ["UserNotFound", "gone"],
+  ["WorkspaceNotFound", "workspaceGone"],
 ]);
 
 /**

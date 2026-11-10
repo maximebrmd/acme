@@ -7,9 +7,21 @@ import {
   Schema,
 } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
-import { PostSchema, TargetConfirmationSchema } from "peal-contract";
-import type { FailureReason, Post, PostTarget } from "peal-contract";
+import {
+  maxOutcomeWaitSeconds,
+  PostSchema,
+  PublicationAttemptSchema,
+  TargetConfirmationSchema,
+} from "peal-contract";
+import type {
+  FailureReason,
+  Post,
+  PostOutcome,
+  PostTarget,
+} from "peal-contract";
 
+import { importPosts } from "#commands/posts-import.ts";
+import { list } from "#commands/posts-list.ts";
 import { explain, explainingPublishing } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { channelIdsOf, channelsFlag } from "#post-flags.ts";
@@ -95,6 +107,76 @@ const targetDetail = (target: PostTarget): string => {
   return `${target.status}${partsDetail(target)}`;
 };
 
+// How a finished post ended across its channels.
+const outcomes: Readonly<Record<PostOutcome, string>> = {
+  cancelled: "it was cancelled",
+  failed: "it went out on no channel",
+  partiallyPublished: "it went out on some of its channels only",
+  published: "it went out on every channel",
+  unconfirmed:
+    "Peal cannot tell whether it went out everywhere: check the platform, then say what you found with peal posts confirm",
+};
+
+// Where a post is, for someone who waits for it.
+const standingOf = (post: Post): string => {
+  switch (post.status) {
+    case "finished": {
+      return post.outcome === null
+        ? `Post ${post.id} finished.`
+        : `Post ${post.id} finished: ${outcomes[post.outcome]}.`;
+    }
+
+    case "publishing": {
+      return `Post ${post.id} is still going out: peal posts wait ${post.id} waits for the rest.`;
+    }
+
+    case "scheduled": {
+      return `Post ${post.id} is scheduled for ${timeOf(post)}: it has not gone out yet.`;
+    }
+
+    case "draft": {
+      return `Post ${post.id} is a draft: it goes out at no time until it is scheduled.`;
+    }
+
+    case "awaitingApproval": {
+      return `Post ${post.id} waits for an approval, for ${timeOf(post)}: nothing goes out until a person approves it. peal approvals list shows the posts that wait.`;
+    }
+
+    case "cancelled": {
+      return `Post ${post.id} was cancelled: it goes out on no channel.`;
+    }
+
+    default: {
+      return post.status satisfies never;
+    }
+  }
+};
+
+const stillGoing = (target: PostTarget): string =>
+  target.status === "pending" || target.status === "publishing"
+    ? `still going (${target.status})`
+    : targetDetail(target);
+
+/**
+ * How a post went, for someone who waited for it: where it stands, then,
+ * once it goes out, each channel on its line: published, with its address,
+ * failed, with why, or still going.
+ */
+export const outcomeLines = (
+  post: Post,
+  names: ReadonlyMap<string, string>
+): string[] => [
+  standingOf(post),
+  ...(post.status === "publishing" || post.status === "finished"
+    ? columns(
+        post.targets.map((target) => [
+          `  ${named(names, target.channelId)}`,
+          stillGoing(target),
+        ])
+      )
+    : []),
+];
+
 const targetOf = (post: Post, targetId: string) =>
   Option.fromUndefinedOr(post.targets.find(({ id }) => id === targetId));
 
@@ -154,6 +236,108 @@ const show = Command.make(
 ).pipe(
   Command.withDescription(
     "Show a post: its status and time, how it went on each channel, with the target ids repost and confirm take, and its options on the platforms that ask for more."
+  )
+);
+
+const attempts = Command.make(
+  "attempts",
+  { json: jsonFlag, postId: postArgument, workspace: workspaceFlag },
+  Effect.fn("posts.attempts")(function* attempts({
+    json,
+    postId,
+    workspace: choice,
+  }) {
+    const { client, url, workspace } = yield* inWorkspace(choice);
+
+    const found = yield* client.posts
+      .attempts({ params: { postId, workspaceId: workspace.id } })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(Schema.Array(PublicationAttemptSchema), found);
+
+      return;
+    }
+
+    if (found.length === 0) {
+      yield* Console.log(`Peal has made no attempt at post ${postId} yet.`);
+
+      return;
+    }
+
+    yield* Console.log(`Attempts at post ${postId} of ${workspace.name}:`);
+
+    for (const line of columns(
+      found.map((attempt) => [
+        `  ${attempt.targetId}`,
+        `round ${String(attempt.round)}`,
+        `attempt ${String(attempt.attempt)}`,
+        instant(attempt.startedAt),
+        attempt.refusalCode === null
+          ? attempt.result
+          : `${attempt.result} (${attempt.refusalCode})`,
+        attempt.retryAt === null ? "" : `retried ${instant(attempt.retryAt)}`,
+      ])
+    )) {
+      yield* Console.log(line);
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "List every attempt Peal made at publishing a post, by channel, round and attempt: how each ended, and the code behind a refusal, the platform's own or Peal's."
+  )
+);
+
+const wait = Command.make(
+  "wait",
+  {
+    json: jsonFlag,
+    postId: postArgument,
+    seconds: Flag.Int("seconds").pipe(
+      Flag.withMetavar("<seconds>"),
+      Flag.withDescription(
+        `How long to wait for the post to go out, ${String(maxOutcomeWaitSeconds)} seconds at most; 0 answers at once.`
+      ),
+      Flag.withDefault(30)
+    ),
+    workspace: workspaceFlag,
+  },
+  Effect.fn("posts.wait")(function* wait({
+    json,
+    postId,
+    seconds,
+    workspace: choice,
+  }) {
+    if (seconds < 0 || seconds > maxOutcomeWaitSeconds) {
+      yield* new Refused({
+        reason: `--seconds takes 0 to ${String(maxOutcomeWaitSeconds)} seconds.`,
+      });
+    }
+
+    const { client, url, workspace } = yield* inWorkspace(choice);
+
+    const post = yield* client.posts
+      .outcome({
+        params: { postId, workspaceId: workspace.id },
+        query: { wait: seconds },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(PostSchema, post);
+
+      return;
+    }
+
+    const names = yield* channelNames(client, workspace.id);
+
+    for (const line of outcomeLines(post, names)) {
+      yield* Console.log(line);
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "Wait for a post that is going out, 30 seconds unless --seconds says otherwise, then say how it went on each channel: published, with its address, failed, with why, or still going when the time runs out, in which case run it again. A draft, a cancelled post and a post scheduled for later are answered at once. Waiting changes nothing: the post goes out either way."
   )
 );
 
@@ -450,10 +634,13 @@ const cancel = Command.make(
 
 export const posts = Command.make("posts").pipe(
   Command.withDescription(
-    "A workspace's posts: scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, and following up where it failed. peal post writes and sends one in a single command."
+    "A workspace's posts: listing them, scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, following up where it failed, and importing a file of them. peal post writes and sends one in a single command."
   ),
   Command.withSubcommands([
+    list,
     show,
+    attempts,
+    wait,
     schedule,
     publish,
     reschedule,
@@ -461,5 +648,6 @@ export const posts = Command.make("posts").pipe(
     cancel,
     repost,
     confirm,
+    importPosts,
   ])
 );

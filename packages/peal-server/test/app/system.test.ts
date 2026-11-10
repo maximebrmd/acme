@@ -92,6 +92,27 @@ layer(handlersWith(SqlLive))("SystemApi with its database", (it) => {
       assert.isUndefined(yield* client.ready());
     })
   );
+
+  it.effect("lists the API's releases, newest first, to anyone", () =>
+    Effect.gen(function* changelog() {
+      const client = yield* makeClient;
+      const { entries } = yield* client.changelog();
+
+      assert.isNotEmpty(entries);
+      assert.deepStrictEqual(
+        entries.map(({ date }) => date),
+        entries
+          .map(({ date }) => date)
+          .toSorted()
+          .toReversed()
+      );
+
+      for (const entry of entries) {
+        assert.match(entry.date, /^\d{4}-\d{2}-\d{2}$/u);
+        assert.isNotEmpty(entry.title);
+      }
+    })
+  );
 });
 
 layer(handlersWith(UnreachableDatabase))(

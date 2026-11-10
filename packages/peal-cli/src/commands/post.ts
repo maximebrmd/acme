@@ -1,15 +1,19 @@
-import { Array as Arr, Effect, Option, Schema } from "effect";
+import { Array as Arr, Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
+  duplicateWindowHours,
   idempotencyKeyLifetimeHours,
   maxIdempotencyKeyLength,
+  maxOutcomeWaitSeconds,
   NewPostSchema,
+  PostValidationSchema,
 } from "peal-contract";
 import type { MediaAttachment, NewPost, PostTiming } from "peal-contract";
 import { maxMediaPerPost } from "peal-contract/post-text";
 
-import { explainingPublishing } from "#explain.ts";
-import { jsonFlag } from "#json.ts";
+import { outcomeLines } from "#commands/posts.ts";
+import { explain, explainingPublishing } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import {
   importAddress,
   isAddress,
@@ -17,6 +21,7 @@ import {
   uploadFile,
 } from "#media-files.ts";
 import type { MediaDestination } from "#media-files.ts";
+import { previewLines, problemsOf } from "#post-check.ts";
 import {
   channelIdsOf,
   channelsFlag,
@@ -29,7 +34,9 @@ import {
 import { channelsOf, namesFor, printPost, timeOf } from "#post-result.ts";
 import { Refused } from "#refused.ts";
 import { instantOf, timeZoneFlag } from "#when.ts";
-import { inWorkspace, workspaceFlag } from "#workspace.ts";
+import { channelNames, inWorkspace, workspaceFlag } from "#workspace.ts";
+
+type InWorkspace = Effect.Success<ReturnType<typeof inWorkspace>>;
 
 const refuse = (reason: string) => Effect.fail(new Refused({ reason }));
 
@@ -76,6 +83,88 @@ const attached = (
     }
 
     return attachment(media.id);
+  });
+
+// What --dry-run and --wait ask for holds together with the other flags:
+// checked before any request, as a file or an address given as --media
+// would be stored by the time the server refused the rest.
+const checkModes = (input: {
+  readonly at: Option.Option<string>;
+  readonly dryRun: boolean;
+  readonly media: readonly string[];
+  readonly wait: Option.Option<number>;
+}) =>
+  Effect.gen(function* checkingModes() {
+    if (
+      Option.exists(
+        input.wait,
+        (seconds) => seconds < 0 || seconds > maxOutcomeWaitSeconds
+      )
+    ) {
+      return yield* refuse(
+        `--wait takes 0 to ${String(maxOutcomeWaitSeconds)} seconds.`
+      );
+    }
+
+    if (Option.isSome(input.wait) && input.dryRun) {
+      return yield* refuse(
+        "--dry-run makes nothing, so there is no outcome to wait for: leave --wait out."
+      );
+    }
+
+    if (Option.isSome(input.wait) && Option.isSome(input.at)) {
+      return yield* refuse(
+        "--wait goes with --now: a post scheduled with --at goes out later, and peal posts wait <post-id> waits for it then."
+      );
+    }
+
+    if (input.dryRun && !input.media.every(isMediaId)) {
+      return yield* refuse(
+        "With --dry-run, --media takes media ids only, as peal media list shows them: uploading a file or importing an address would store it. Store it first with peal media upload or peal media import, or leave it out."
+      );
+    }
+
+    return input;
+  });
+
+// Checks the post without making it: what each channel would receive on
+// stdout, and, when it would be refused, every reason as the refusal.
+const check = (
+  { client, url, workspace }: InWorkspace,
+  payload: NewPost,
+  json: boolean
+) =>
+  Effect.gen(function* checking() {
+    const validation = yield* client.posts
+      .validate({ params: { workspaceId: workspace.id }, payload })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(PostValidationSchema, validation);
+    } else {
+      const names = yield* channelNames(client, workspace.id);
+
+      if (validation.valid) {
+        yield* Console.log(
+          validation.awaitsApproval
+            ? "Checked, and made nothing: the post would be made, and wait for an approval before it goes out."
+            : "Checked, and made nothing: the post would go through."
+        );
+      }
+
+      for (const line of previewLines(validation, names)) {
+        yield* Console.log(line);
+      }
+    }
+
+    if (!validation.valid) {
+      yield* refuse(
+        [
+          "Checked, and made nothing: Peal would refuse the post.",
+          ...problemsOf(validation, payload.when.timeZone ?? "UTC"),
+        ].join("\n")
+      );
+    }
   });
 
 // What the flags ask for, once they hold together: where the post goes,
@@ -153,6 +242,12 @@ const planned = (input: {
 export const post = Command.make(
   "post",
   {
+    allowDuplicate: Flag.Boolean("allow-duplicate").pipe(
+      Flag.withDescription(
+        `Send it even when another post already sends the same text and media to one of these channels less than ${String(duplicateWindowHours)} hours from its time, which is otherwise refused as a post sent twice by mistake.`
+      ),
+      Flag.withDefault(false)
+    ),
     alt: Flag.String("alt").pipe(
       Flag.withMetavar("<text>"),
       Flag.withDescription(
@@ -169,6 +264,12 @@ export const post = Command.make(
     ),
     channels: channelsFlag(
       "A channel the post goes to, as peal channels list shows its id; repeat it, or separate ids with commas. At least one."
+    ),
+    dryRun: Flag.Boolean("dry-run").pipe(
+      Flag.withDescription(
+        "Check the post and make nothing: it prints what each channel would receive, with its text counted against the platform's limits, and everything that would refuse it, all at once, then ends as a refusal unless the post would go through. A post that would go through now can still be refused later. With it, --media takes media ids only."
+      ),
+      Flag.withDefault(false)
     ),
     idempotencyKey: Flag.String("idempotency-key").pipe(
       Flag.withMetavar("<key>"),
@@ -202,23 +303,38 @@ export const post = Command.make(
       Argument.withDescription("What the post says.")
     ),
     timeZone: timeZoneFlag,
+    wait: Flag.Int("wait").pipe(
+      Flag.withMetavar("<seconds>"),
+      Flag.withDescription(
+        `With --now, wait up to that many seconds, ${String(maxOutcomeWaitSeconds)} at most, for the post to go out, then say how it went on each channel: published, with its address, failed, with why, or still going. The post is made either way, and goes on publishing when the time runs out: peal posts wait waits for the rest.`
+      ),
+      Flag.optional
+    ),
     workspace: workspaceFlag,
   },
   Effect.fn("post")(function* sendPost(input) {
+    yield* checkModes(input);
+
     const { channelIds, options, when } = yield* planned(input);
     const followUps = yield* followUpsOf(input.parts, input.partsDelay);
 
-    const withMedia = (media: readonly MediaAttachment[]) =>
-      checkPost({
+    const withMedia = (media: readonly MediaAttachment[]) => {
+      const written: NewPost = {
         channelIds,
         content: { followUps, media, overrides: [], text: input.text },
         options,
         when,
-      });
+      };
+
+      return checkPost(
+        input.allowDuplicate ? { ...written, allowDuplicate: true } : written
+      );
+    };
 
     yield* withMedia([]);
 
-    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+    const session = yield* inWorkspace(input.workspace);
+    const { client, url, workspace } = session;
     const destination = { client, url, workspaceId: workspace.id };
     const media: MediaAttachment[] = [];
 
@@ -232,6 +348,12 @@ export const post = Command.make(
       );
     }
 
+    if (input.dryRun) {
+      yield* check(session, yield* withMedia(media), input.json);
+
+      return;
+    }
+
     const sent = yield* client.posts
       .send({
         headers: Option.match(input.idempotencyKey, {
@@ -240,6 +362,10 @@ export const post = Command.make(
         }),
         params: { workspaceId: workspace.id },
         payload: yield* withMedia(media),
+        query: Option.match(input.wait, {
+          onNone: () => ({}),
+          onSome: (wait) => ({ wait }),
+        }),
       })
       .pipe(explainingPublishing(url));
 
@@ -251,9 +377,15 @@ export const post = Command.make(
         ? `Publishing now on ${where}: post ${sent.id}. It reaches these accounts' public, and cannot be taken back from here once it is out; peal posts show ${sent.id} tells how it went.`
         : `Scheduled for ${timeOf(sent)} on ${where}: post ${sent.id}. It reaches these accounts' public then; until then, peal posts cancel ${sent.id} stops it.`
     );
+
+    if (Option.isSome(input.wait) && !input.json) {
+      for (const line of outcomeLines(sent, names)) {
+        yield* Console.log(line);
+      }
+    }
   })
 ).pipe(
   Command.withDescription(
-    "Write a post and send it in one command, to the public of the accounts its channels connect: scheduled with --at, or published at once with --now. One of the two is required. Its media are uploaded or imported first, and its text, media and options must fit each platform's rules, or nothing is posted."
+    "Write a post and send it in one command, to the public of the accounts its channels connect: scheduled with --at, or published at once with --now. One of the two is required. Its media are uploaded or imported first, and its text, media and options must fit each platform's rules, or nothing is posted. --dry-run checks it and makes nothing; --wait, with --now, says how it went on each channel."
   )
 );

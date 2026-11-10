@@ -17,4 +17,12 @@ public partial interface ISystemClient
         RequestOptions? options = null,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+    /// </summary>
+    WithRawResponseTask<ApiChangelog> ChangelogAsync(
+        RequestOptions? options = null,
+        CancellationToken cancellationToken = default
+    );
 }

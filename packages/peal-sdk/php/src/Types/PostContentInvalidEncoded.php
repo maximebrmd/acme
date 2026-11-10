@@ -9,6 +9,24 @@ use Peal\Core\Types\ArrayType;
 class PostContentInvalidEncoded extends JsonSerializableType
 {
     /**
+     * @var ?string $code
+     */
+    #[JsonProperty('code')]
+    public ?string $code;
+
+    /**
+     * @var ?string $message
+     */
+    #[JsonProperty('message')]
+    public ?string $message;
+
+    /**
+     * @var ?string $requestId
+     */
+    #[JsonProperty('requestId')]
+    public ?string $requestId;
+
+    /**
      * @var array<ContentViolation> $violations
      */
     #[JsonProperty('violations'), ArrayType([ContentViolation::class])]
@@ -17,11 +35,17 @@ class PostContentInvalidEncoded extends JsonSerializableType
     /**
      * @param array{
      *   violations: array<ContentViolation>,
+     *   code?: ?string,
+     *   message?: ?string,
+     *   requestId?: ?string,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->code = $values['code'] ?? null;
+        $this->message = $values['message'] ?? null;
+        $this->requestId = $values['requestId'] ?? null;
         $this->violations = $values['violations'];
     }
 

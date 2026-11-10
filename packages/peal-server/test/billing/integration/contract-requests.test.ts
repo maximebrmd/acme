@@ -309,8 +309,9 @@ layer(BillingApp, { excludeTestServices: true, timeout: "180 seconds" })(
           replies.map(({ status }) => status),
           [200, 200, 200, 200, 200, 429]
         );
-        assert.deepStrictEqual(replies.map(({ body }) => body).at(-1), {
+        assert.deepInclude(replies.map(({ body }) => body).at(-1), {
           _tag: "TooManyContractRequests",
+          code: "too_many_contract_requests",
         });
 
         // Another address is not held back.

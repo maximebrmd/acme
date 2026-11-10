@@ -6,6 +6,7 @@ import { Drizzle } from "#shared/infrastructure/database.ts";
 import { CredentialNames } from "#workspace/application/credential-names.ts";
 
 import { apikey, oauthClient } from "./auth-schema.generated.ts";
+import { partnerKeys, partnerWorkspaces } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -19,11 +20,32 @@ const nameOf = (rows: readonly { readonly name: string | null }[]) =>
     Option.filter((name) => name !== "")
   );
 
-/** CredentialNames, read from Better Auth's tables. */
+/**
+ * CredentialNames, read from Better Auth's tables, and, for a partner key
+ * acting in a workspace its partner owns, from the partner's keys.
+ */
 export const DrizzleCredentialNames = Layer.effect(
   CredentialNames,
   Effect.gen(function* DrizzleCredentialNames() {
     const db = yield* Drizzle;
+
+    // The name of a key of the partner that owns the workspace.
+    const partnerKey = (workspaceId: string, keyId: string) =>
+      db
+        .select({ name: partnerKeys.name })
+        .from(partnerKeys)
+        .innerJoin(
+          partnerWorkspaces,
+          eq(partnerWorkspaces.partnerId, partnerKeys.partnerId)
+        )
+        .where(
+          and(
+            eq(partnerKeys.id, keyId),
+            eq(partnerWorkspaces.workspaceId, workspaceId)
+          )
+        )
+        .limit(1)
+        .pipe(Effect.mapError(failed), Effect.map(nameOf));
 
     return CredentialNames.of({
       apiKey: (workspaceId, apiKeyId) =>
@@ -38,7 +60,16 @@ export const DrizzleCredentialNames = Layer.effect(
                 )
               )
               .limit(1)
-              .pipe(Effect.mapError(failed), Effect.map(nameOf))
+              .pipe(
+                Effect.mapError(failed),
+                Effect.map(nameOf),
+                Effect.flatMap(
+                  Option.match({
+                    onNone: () => partnerKey(workspaceId, apiKeyId),
+                    onSome: (name) => Effect.succeed(Option.some(name)),
+                  })
+                )
+              )
           : Effect.succeed(Option.none()),
       application: (clientId) =>
         db

@@ -1,0 +1,43 @@
+# Compose files and telemetry
+
+Running the development stack is in the root [`AGENTS.md`](../../AGENTS.md),
+under Development stack.
+
+## Compose files
+
+- In `packages/peal-docker/compose.yaml`, pin every image (image mounts
+  included) to an exact version, publish ports on 127.0.0.1 only, give every
+  service a health check, and use synthetic credentials.
+  `packages/peal-docker/test/compose.test.ts` enforces these rules, and checks
+  that the server image uses the Bun in `.bun-version`, runs as nonroot, ships
+  ffprobe, and pins every image it builds on or copies from by digest.
+- `compose.production.yaml` follows the same rules, pins every image it pulls
+  by digest at the version `compose.yaml` runs, gives every service
+  `restart: unless-stopped` and the server `stop_grace_period: 75s`, and tags
+  the images it builds `${PEAL_VERSION:-local}` (`PEAL_POSTGRES_VERSION` for
+  Postgres). It passes optional settings through by name (`NAME:` with no
+  value), so one that is unset stays unset rather than empty, which the
+  server would read as set, and names every server setting the docs'
+  environment variables page lists: a container sees no other. Every service
+  runs `read_only` with `no-new-privileges`, writing to its volumes and tmpfs
+  mounts only. The same test covers it, the web, static and
+  Postgres images (CI's Node, the workspace's Bun, digests, nonroot) and
+  `compose.self-host.yaml`, where Caddy alone publishes ports to the world.
+- Keep `MP_SMTP_DISABLE_RDNS` on Mailpit, in compose and CI: its reverse DNS
+  lookup otherwise stalls each SMTP greeting for about 10 seconds, and the
+  email tests time out.
+
+## Telemetry and alerting
+
+- Telemetry goes through an OpenTelemetry Collector to Loki, Tempo, Prometheus
+  and Grafana; alerts go to a Telegram bot. Grafana's alert rules
+  (`config/production/grafana/alerting/rules.yaml`) and dashboards
+  (`config/production/grafana/dashboards/`) are provisioned from
+  `peal-docker`; the web app's error reports have an alert and a dashboard
+  of their own, and the server's error-log alert leaves them out. The
+  heartbeat rule (`alerting/heartbeat.yaml`) is apart: it always fires, to
+  its own contact point, never to Telegram.
+- Telemetry keeps logs 31 days (Loki), traces 14 days
+  (`config/production/tempo.yaml`, whose `block_retention` is set for both
+  the backend scheduler and worker) and metrics 30 days, as the privacy
+  policy says: change both together.

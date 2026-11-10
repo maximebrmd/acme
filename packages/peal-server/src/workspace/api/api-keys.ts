@@ -1,9 +1,10 @@
 import { Effect, Option, Redacted } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
-import { Api, ApiKeyNotFound, CurrentMember, Forbidden } from "peal-contract";
+import { Api, ApiKeyNotFound, CurrentMember } from "peal-contract";
 import type { ApiKey as ApiKeyView } from "peal-contract";
 
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { ApiKeys } from "#workspace/application/api-keys.ts";
 import type { ApiKey } from "#workspace/domain/api-key.ts";
 
@@ -15,8 +16,6 @@ const toView = (apiKey: ApiKey): ApiKeyView => ({
   permissions: apiKey.permissions,
   start: Option.getOrNull(apiKey.start),
 });
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 export const ApiKeysHandlers = HttpApiBuilder.group(
   Api,

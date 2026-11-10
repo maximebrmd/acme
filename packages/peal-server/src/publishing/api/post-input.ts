@@ -177,6 +177,7 @@ export const sendRequestFrom = (input: NewPostInput, key?: string) =>
     });
 
     const request: SendPostRequest = {
+      allowDuplicate: input.allowDuplicate ?? false,
       at: when._tag === "at" ? Option.some(when.at) : Option.none(),
       channelIds,
       content: yield* contentFrom(input.content),

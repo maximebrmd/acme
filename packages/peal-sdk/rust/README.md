@@ -60,7 +60,7 @@ async fn main() {
             &"workspaceId".to_string(),
             &NewApiKey {
                 name: "name".to_string(),
-                permissions: vec![Permission::AnalyticsRead],
+                permissions: vec![Permission::ActivityRead],
                 expires_in_days: None,
             },
             None,

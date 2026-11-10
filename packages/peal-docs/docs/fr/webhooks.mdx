@@ -2,7 +2,7 @@
 title: Webhooks
 description: Faites prévenir votre propre serveur par Peal de ce qui se passe dans un espace de travail, sans l’interroger en boucle. Les points de terminaison et leur secret de signature, chaque événement avec son schéma et un exemple, comment les livraisons sont signées, retentées et journalisées, et comment les vérifier.
 sidebar:
-  order: 14
+  order: 16
 ---
 
 Un webhook est une requête que Peal envoie à une adresse à vous quand il se passe quelque chose dans un espace de travail : une publication est partie ou a échoué, un canal doit être reconnecté, un fichier est prêt. Un produit qui publie par l’[API](/api-overview), ou une automatisation, l’apprend aussitôt, sans redemander sans cesse.
@@ -30,6 +30,7 @@ Un point de terminaison, c’est une adresse, les événements qu’il veut rece
 - **Les événements** sont les [types d’événements](#events) auxquels le point de terminaison est abonné, un au moins. Il reçoit ceux-là, et rien d’autre.
 - **La description**, de 200 caractères au plus, dit à quoi sert le point de terminaison.
 - **Activé ou désactivé.** Tant qu’un point de terminaison est désactivé, Peal ne lui envoie rien, ses livraisons encore en attente échouent, et ce qui se passe entre-temps n’est pas gardé pour lui : le réactiver ne le rejoue pas.
+- **La portée**, par l’API : `workspace`, par défaut, entend cet espace de travail ; `partner`, sur l’espace de travail principal d’un [compte partenaire](/embedding#webhooks) seulement, entend aussi chaque espace de travail que le compte possède. Ailleurs, `partner` répond 404 `PartnerNotFound`. Elle est fixée à la création du point de terminaison, et reste.
 
 ## Le secret de signature [#secret]
 
@@ -59,13 +60,14 @@ webhook-signature: v1,Mfm1tWLUX4U95AK/DHjduW4e8bHrj/HztAOACn91BF4=
 
 Le corps est un objet JSON :
 
-| Champ       | Type   | Ce qu’il contient                                                                               |
-| ----------- | ------ | ----------------------------------------------------------------------------------------------- |
-| `id`        | chaîne | L’identifiant de l’événement, comme dans `webhook-id`                                           |
-| `type`      | chaîne | Ce qui s’est passé, comme `post.published`. Il dit ce que contient `data`.                      |
-| `version`   | entier | La version de `data` : 1                                                                        |
-| `timestamp` | chaîne | Le moment où cela s’est passé, en instant ISO 8601 en UTC. Pas celui où la requête est envoyée. |
-| `data`      | objet  | Les champs propres à l’événement, [ci-dessous](#events)                                         |
+| Champ                 | Type           | Ce qu’il contient                                                                                                                                                                                                         |
+| --------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | chaîne         | L’identifiant de l’événement, comme dans `webhook-id`                                                                                                                                                                     |
+| `type`                | chaîne         | Ce qui s’est passé, comme `post.published`. Il dit ce que contient `data`.                                                                                                                                                |
+| `version`             | entier         | La version de `data` : 1                                                                                                                                                                                                  |
+| `timestamp`           | chaîne         | Le moment où cela s’est passé, en instant ISO 8601 en UTC. Pas celui où la requête est envoyée.                                                                                                                           |
+| `workspaceExternalId` | chaîne ou null | Pour un espace de travail que possède un compte partenaire, l’identifiant que le partenaire lui a donné, tel qu’il était à ce moment-là ; null quand le partenaire n’en a pas donné, et pour tout autre espace de travail |
+| `data`                | objet          | Les champs propres à l’événement, [ci-dessous](#events)                                                                                                                                                                   |
 
 L’ordre des champs dans le corps ne fait pas partie du contrat.
 
@@ -131,6 +133,7 @@ Une publication a été programmée, ou déplacée à une autre heure. Une publi
   "type": "post.scheduled",
   "version": 1,
   "timestamp": "2026-11-09T16:42:10.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -167,6 +170,7 @@ Une publication programmée, ou qui attendait une approbation, est repassée en 
   "type": "post.unscheduled",
   "version": 1,
   "timestamp": "2026-11-09T17:05:44.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01"
@@ -195,6 +199,7 @@ La publication est en ligne sur le canal.
   "type": "post.published",
   "version": 1,
   "timestamp": "2026-11-10T09:00:03.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -249,6 +254,7 @@ La publication n’est pas partie sur le canal.
   "type": "post.failed",
   "version": 1,
   "timestamp": "2026-11-10T09:00:04.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -290,6 +296,7 @@ Peal ne peut pas savoir si la publication est en ligne sur le canal, et ne la re
   "type": "post.unconfirmed",
   "version": 1,
   "timestamp": "2026-11-10T09:00:21.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -320,6 +327,7 @@ La publication a été annulée. `targets` liste les canaux où elle ne partira 
   "type": "post.cancelled",
   "version": 1,
   "timestamp": "2026-11-09T18:30:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -360,6 +368,7 @@ Ce qui suit dit ce qu’elle est devenue, l’un de :
   "type": "post.approval_requested",
   "version": 1,
   "timestamp": "2026-11-09T16:40:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -385,6 +394,7 @@ La publication a été approuvée. Approuvée à temps, elle est programmée, et
   "type": "post.approved",
   "version": 1,
   "timestamp": "2026-11-09T17:00:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -410,6 +420,7 @@ Des modifications ont été demandées sur une publication qui attendait : elle 
   "type": "post.changes_requested",
   "version": 1,
   "timestamp": "2026-11-09T17:00:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -435,6 +446,7 @@ Un compte a été connecté à l’espace de travail, ou un canal que l’espace
   "type": "channel.connected",
   "version": 1,
   "timestamp": "2026-11-08T10:15:30.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
@@ -460,6 +472,7 @@ Un canal a été déconnecté de l’espace de travail.
   "type": "channel.disconnected",
   "version": 1,
   "timestamp": "2026-11-12T14:02:09.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
@@ -484,6 +497,7 @@ L’autorisation du canal ne fonctionne plus : rien n’y est publié tant que p
   "type": "channel.reconnect_needed",
   "version": 1,
   "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
@@ -508,6 +522,7 @@ Peal [a lu le fichier](/media#library) une fois stocké, et il peut aller dans d
   "type": "media.ready",
   "version": 1,
   "timestamp": "2026-11-09T16:30:55.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
@@ -543,6 +558,7 @@ Le fichier a été refusé, ou Peal n’a pas pu le lire. Un fichier qui n’a p
   "type": "media.failed",
   "version": 1,
   "timestamp": "2026-11-09T16:31:20.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
@@ -630,6 +646,7 @@ Quelqu’un a demandé un événement de test sur le point de terminaison. Il es
   "type": "webhook.test",
   "version": 1,
   "timestamp": "2026-11-10T08:12:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "endpointId": "019a6e00-77aa-7f12-b0c4-1a2b3c4d5e6f"
@@ -893,6 +910,8 @@ curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
 ```
 
 La réponse contient l’`endpoint` et son `secret`. Les réponses suivantes ne contiennent plus jamais le secret.
+
+Les erreurs suivent le format de l’API, chacune avec un `code` en snake case à côté de son nom, comme `webhook_url_refused` pour `WebhookUrlRefused` ([Erreurs](/api-conventions#errors)). Les requêtes d’une clé d’API comptent dans sa [limite de débit](/api-conventions#rate-limits).
 
 | Code | Erreur                    | Quand                                                                                             |
 | ---- | ------------------------- | ------------------------------------------------------------------------------------------------- |

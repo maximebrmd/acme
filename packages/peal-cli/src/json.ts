@@ -1,16 +1,20 @@
 import { Console, Effect, Schema } from "effect";
 import { Flag } from "effect/cli";
 
+import type { JsonObject } from "#api-error.ts";
 import { actsOnTerminal } from "#print.ts";
+
+/** The flag's name, as `report.ts` looks for it among the arguments. */
+export const jsonFlagName = "json";
 
 /**
  * `--json`, on the commands a script or an agent reads: the API's answer
- * as one JSON document on stdout, and nothing else there. A refusal still
- * goes to stderr, with a non-zero exit.
+ * as one JSON document on stdout, and nothing else there. A failure is one
+ * JSON document too, on stderr, with a non-zero exit (`report.ts`).
  */
-export const jsonFlag = Flag.Boolean("json").pipe(
+export const jsonFlag = Flag.Boolean(jsonFlagName).pipe(
   Flag.withDescription(
-    "Print the API's answer as one JSON document on stdout, and nothing else there: instants are ISO 8601, in UTC. A refusal still goes to stderr, with a non-zero exit."
+    'Print the API\'s answer as one JSON document on stdout, and nothing else there: instants are ISO 8601, in UTC, and an answer without a body is null. A failure is one JSON document on stderr, {"error": {"code", "message", "requestId", …}}, with exit code 1: for a refusal of the API, its error as the server sent it.'
   ),
   Flag.withDefault(false)
 );
@@ -40,3 +44,10 @@ export const printJson = <S extends Schema.Top>(schema: S, value: S["Type"]) =>
       Console.log(jsonText(JSON.stringify(encoded, null, 2)))
     )
   );
+
+/** Prints a document of the command line's own, as `printJson` would. */
+export const printDocument = (document: JsonObject | null) =>
+  Console.log(jsonText(JSON.stringify(document, null, 2)));
+
+/** Prints what an answer without a body is in JSON: null. */
+export const printNothing = printDocument(null);

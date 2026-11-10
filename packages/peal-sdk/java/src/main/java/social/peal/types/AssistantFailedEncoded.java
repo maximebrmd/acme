@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -21,15 +23,27 @@ import social.peal.core.ObjectMappers;
 public final class AssistantFailedEncoded {
     private final AssistantFailedEncodedTag tag;
 
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final AssistantFailedEncodedReason reason;
 
     private final Map<String, Object> additionalProperties;
 
     private AssistantFailedEncoded(
             AssistantFailedEncodedTag tag,
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
             AssistantFailedEncodedReason reason,
             Map<String, Object> additionalProperties) {
         this.tag = tag;
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.reason = reason;
         this.additionalProperties = additionalProperties;
     }
@@ -37,6 +51,21 @@ public final class AssistantFailedEncoded {
     @JsonProperty("_tag")
     public AssistantFailedEncodedTag getTag() {
         return tag;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("reason")
@@ -56,12 +85,16 @@ public final class AssistantFailedEncoded {
     }
 
     private boolean equalTo(AssistantFailedEncoded other) {
-        return tag.equals(other.tag) && reason.equals(other.reason);
+        return tag.equals(other.tag)
+                && code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && reason.equals(other.reason);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.reason);
+        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.reason);
     }
 
     @java.lang.Override
@@ -89,6 +122,18 @@ public final class AssistantFailedEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -97,6 +142,12 @@ public final class AssistantFailedEncoded {
 
         private AssistantFailedEncodedReason reason;
 
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -104,6 +155,9 @@ public final class AssistantFailedEncoded {
         @java.lang.Override
         public Builder from(AssistantFailedEncoded other) {
             tag(other.getTag());
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             reason(other.getReason());
             return this;
         }
@@ -123,13 +177,56 @@ public final class AssistantFailedEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public AssistantFailedEncoded build() {
-            return new AssistantFailedEncoded(tag, reason, additionalProperties);
+            return new AssistantFailedEncoded(tag, code, message, requestId, reason, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag") || key.equalsIgnoreCase("reason")) {
+            if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("reason")) {
                 return;
             }
             this.additionalProperties.put(key, value);

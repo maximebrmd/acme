@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * The account owns, alone, workspaces that other members still use: it can
  * be deleted once another member owns each of them, or they are deleted.
@@ -7,6 +9,7 @@ import { Schema } from "effect";
 export class LastOwner extends Schema.TaggedError<LastOwner>()(
   "LastOwner",
   {
+    ...errorEnvelope,
     workspaces: Schema.Array(
       Schema.Struct({ id: Schema.String, name: Schema.String })
     ),

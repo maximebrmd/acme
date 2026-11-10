@@ -1,10 +1,11 @@
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
-import { Api, CurrentMember, Forbidden } from "peal-contract";
+import { Api, CurrentMember } from "peal-contract";
 
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 
 import { billingView, standingView } from "./billing-view.ts";
 
@@ -23,7 +24,7 @@ export const BillingHandlers = HttpApiBuilder.group(
           const found = yield* overview.of(actor).pipe(
             Effect.catchTags({
               DatabaseError: Effect.die,
-              MissingPermission: () => Effect.fail(new Forbidden()),
+              MissingPermission: forbidden,
             })
           );
 

@@ -8,10 +8,14 @@ import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { MediaLibrary } from "#media/application/media-library.ts";
+import { PostBatches } from "#publishing/application/post-batches.ts";
+import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
+import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostSearch } from "#publishing/application/post-search.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
@@ -123,9 +127,13 @@ describe("a plan's refusal, through the tools", () => {
                       })
                     ),
                 }),
+                Layer.mock(PostBatches, {}),
+                Layer.mock(PostChecks, {}),
                 Layer.mock(PostDrafts, {}),
                 Layer.mock(PostFollowUp, {}),
+                Layer.mock(PostOutcomes, {}),
                 Layer.mock(PostQueries, {}),
+                Layer.mock(PostSearch, {}),
                 Layer.mock(TikTokCreatorInfo, {}),
                 UpgradePaths.layerTest
               )

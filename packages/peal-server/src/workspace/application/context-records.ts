@@ -4,6 +4,7 @@ import type { DateTime, Effect } from "effect";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   AccountSnapshotRecord,
+  ActivityRecord,
   AnalyticsRecord,
   AuthoredPostRecord,
   BillingRecord,
@@ -62,6 +63,11 @@ export interface WorkspaceContent {
 
 /** What the other contexts keep about a user, wherever they are a member. */
 export interface UserContent {
+  /**
+   * The changes they asked for in workspaces, as the activity logs keep
+   * them, oldest first.
+   */
+  readonly activity: readonly ActivityRecord[];
   /** The orders and withdrawals they made. */
   readonly contracts: ContractsRecord;
   /**
@@ -87,7 +93,7 @@ export interface UserContent {
  * The data the other contexts keep about workspaces and users: channels,
  * posts and their authors, media, analytics, the comments under posts and
  * the replies sent to them, assistant usage, billing,
- * webhooks, notices and preferences, the staff audit log, and what the law has Peal
+ * webhooks, the activity logs, notices and preferences, the staff audit log, and what the law has Peal
  * keep (`#legal`). Erasures run in the caller's transaction, except the media
  * files, which the store holds outside the database: remove them once the
  * rest is committed.
@@ -139,8 +145,8 @@ export class ContextRecords extends Context.Service<
     /**
      * Deletes the user's notices and preferences, and the connections they
      * have in progress, and forgets them as the author of posts in the
-     * workspaces that remain, and as the account staff acted on in the
-     * audit log; what is kept beyond the account (a ban's reason, the
+     * workspaces that remain, as who asked for the changes their activity
+     * logs keep, and as the account staff acted on in the audit log; what is kept beyond the account (a ban's reason, the
      * trial it had) is kept by a keyed pseudonym of `email`.
      */
     readonly eraseUser: (

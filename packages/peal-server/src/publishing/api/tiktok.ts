@@ -5,13 +5,13 @@ import {
   ChannelCannotPost,
   ChannelNotFound,
   CurrentMember,
-  Forbidden,
   PlatformUnreachable,
 } from "peal-contract";
 
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 
 import { tiktokAccountView } from "./tiktok-account-view.ts";
 
@@ -43,7 +43,7 @@ export const TikTokHandlers = HttpApiBuilder.group(
                       : new ChannelNotFound()
                   ),
                 DatabaseError: Effect.die,
-                MissingPermission: () => Effect.fail(new Forbidden()),
+                MissingPermission: forbidden,
                 PlatformUnavailable: unreachable,
                 RateLimited: unreachable,
                 TokenExpired: () =>

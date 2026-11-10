@@ -43,6 +43,7 @@ const count = (rows: ReturnType<Count>) =>
 // The schemas the migrations create. Effect's cluster tables, in `public`,
 // hold the jobs' payloads (ids), and are not the migrations'.
 const schemas = [
+  "activity",
   "analytics",
   "assistant",
   "auth",
@@ -56,11 +57,15 @@ const schemas = [
   "review",
   "staff",
   "webhooks",
+  "workspace",
 ];
 
 // The rows of each table that name a workspace: none may be left once it is
 // deleted.
 const workspaceRows = {
+  // The log of who changed what in it.
+  "activity.events": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM activity.events WHERE workspace_id = ${id}`,
   "analytics.account_snapshots": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM analytics.account_snapshots s JOIN analytics.tracked_channels c ON c.channel_id = s.channel_id WHERE c.workspace_id = ${id}`,
   "analytics.metric_snapshots": (sql, id) =>
@@ -117,6 +122,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM channels.connect_attempts WHERE workspace_id = ${id}`,
   "channels.connect_choices": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.connect_choices WHERE workspace_id = ${id}`,
+  "channels.connect_links": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM channels.connect_links WHERE workspace_id = ${id}`,
   // What other people wrote under the workspace's posts goes with it, as
   // do the replies sent to them.
   "engagement.comments": (sql, id) =>
@@ -155,11 +162,32 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM webhooks.endpoints WHERE workspace_id = ${id}`,
   "webhooks.events": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM webhooks.events WHERE workspace_id = ${id}`,
+  // A partner account goes with its home workspace, and with it its keys,
+  // its creations' idempotency keys and its daily counts.
+  "workspace.partner_idempotency_keys": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM workspace.partner_idempotency_keys k JOIN workspace.partners p ON p.id = k.partner_id WHERE p.workspace_id = ${id}`,
+  "workspace.partner_keys": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM workspace.partner_keys k JOIN workspace.partners p ON p.id = k.partner_id WHERE p.workspace_id = ${id}`,
+  "workspace.partner_usage_days": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM workspace.partner_usage_days d JOIN workspace.partners p ON p.id = d.partner_id WHERE p.workspace_id = ${id}`,
+  "workspace.partners": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM workspace.partners WHERE workspace_id = ${id}`,
 } satisfies Readonly<Record<string, Count>>;
+
+// The tables whose rows go with a workspace a partner owns, which has no
+// member to delete it: `partners.test.ts` offboards one, and counts them.
+const offboardedRows = ["workspace.partner_workspaces"];
 
 // The rows of each table that name a user: none may be left once their
 // account is closed. Posts stay with their workspaces, without an author.
 const userRows = {
+  // What they changed in the workspaces that remain stays in those
+  // workspaces' logs, without them; their id leaves the ids other events
+  // name.
+  "activity.events": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM activity.events
+      WHERE user_id = ${id}
+        OR EXISTS (SELECT 1 FROM jsonb_each_text(object_ids) AS named(name, value) WHERE value = ${id})`,
   "auth.account": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.account WHERE user_id = ${id}`,
   "auth.device_code": (sql, id) =>
@@ -201,6 +229,9 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM channels.connect_attempts WHERE started_by = ${`user:${id}`}`,
   "channels.connect_choices": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.connect_choices WHERE started_by = ${`user:${id}`}`,
+  // The links they created stay their workspaces', without them.
+  "channels.connect_links": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM channels.connect_links WHERE created_by = ${`user:${id}`}`,
   // The replies they sent, and the threads of the posts they wrote, stay
   // with the workspace, without them.
   "engagement.replies": (sql, id) =>
@@ -233,6 +264,9 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM staff.audit_events
       WHERE target_id = ${id}
         OR EXISTS (SELECT 1 FROM jsonb_each_text(object_ids) AS named(name, value) WHERE value = ${id})`,
+  // The partner keys they created stay their partner's, without them.
+  "workspace.partner_keys": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM workspace.partner_keys WHERE created_by = ${id}`,
 } satisfies Readonly<Record<string, Count>>;
 
 // The rows of each table that the law has Peal keep about a user once
@@ -249,6 +283,8 @@ const heldRows = {
 
 // Tables that name neither a workspace nor a user, and why they stay.
 const kept = {
+  "activity.request_counts":
+    "how many requests a credential sent in a window, by a digest that names nobody, kept an hour",
   "analytics.erased_workspaces":
     "the ids of erased workspaces, so posts listed before are never followed after",
   "auth.jwks": "the server's keys that sign OAuth access tokens",
@@ -454,6 +490,26 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO webhooks.deliveries (id, endpoint_id, event_id, workspace_id, event_type, status, attempts, created_at)
     VALUES (${uuid7()}, ${endpointId}, ${eventId}, ${workspaceId}, 'webhook.test', 'pending', 0, now())`;
 
+  // A connect link the person created, not yet used.
+  yield* sql`INSERT INTO channels.connect_links (id, workspace_id, platform, channel_ids, token_digest, created_by, starts, status, created_at, expires_at)
+    VALUES (${uuid7()}, ${workspaceId}, 'mastodon', '{}', ${randomUUID()}, ${`user:${person.id}`}, 0, 'pending', now(), now() + interval '7 days')`;
+
+  // A partner account, with a key the person created, a creation's
+  // idempotency key and a day's count.
+  const partnerId = uuid7();
+
+  yield* sql`INSERT INTO workspace.partners (id, workspace_id, name, return_origins, created_at, updated_at)
+    VALUES (${partnerId}, ${workspaceId}, 'Synthetic partner', ARRAY['https://app.example.test'], now(), now())`;
+
+  yield* sql`INSERT INTO workspace.partner_keys (id, partner_id, name, key_digest, start, scopes, permissions, created_by, created_at)
+    VALUES (${uuid7()}, ${partnerId}, 'Synthetic key', ${randomUUID()}, 'peal_partner_synt', ARRAY['workspaces:read'], ARRAY['post:read'], ${person.id}, now())`;
+
+  yield* sql`INSERT INTO workspace.partner_idempotency_keys (partner_id, key_digest, request_digest, workspace_id, created_at)
+    VALUES (${partnerId}, ${randomUUID()}, ${randomUUID()}, ${randomUUID()}, now())`;
+
+  yield* sql`INSERT INTO workspace.partner_usage_days (partner_id, day, workspaces, channels)
+    VALUES (${partnerId}, '2026-11-09', 0, 1)`;
+
   yield* sql`INSERT INTO channels.connect_attempts (state_hash, workspace_id, started_by, platform, secret, created_at, expires_at)
     VALUES (${randomUUID().replaceAll("-", "")}, ${workspaceId}, ${`user:${person.id}`}, 'mastodon', 'synthetic.iv.ciphertext', now(), now() + interval '15 minutes')`;
 
@@ -560,6 +616,7 @@ layer(RetainingLive, {
         ...Object.keys(userRows),
         ...Object.keys(heldRows),
         ...Object.keys(kept),
+        ...offboardedRows,
       ]);
 
       assert.deepStrictEqual(
@@ -639,6 +696,15 @@ layer(RetainingLive, {
         assert.deepStrictEqual(
           yield* countsOf(userRows, ana.id),
           none(userRows)
+        );
+
+        // The key she created in the workspace she shared is still in its
+        // log, as a change someone made.
+        assert.isAbove(
+          yield* count(
+            sql`SELECT count(*)::int AS count FROM activity.events WHERE workspace_id = ${shared} AND operation = 'apiKeys.create' AND actor_kind = 'user' AND user_id IS NULL AND application_id IS NULL`
+          ),
+          0
         );
 
         // Only what the law has a host keep is left, apart: who held the

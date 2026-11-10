@@ -12,13 +12,17 @@ import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import { pacedLookups } from "#publishing/application/paced-lookups.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
+import { PostBatches } from "#publishing/application/post-batches.ts";
+import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostOrigins } from "#publishing/application/post-origins.ts";
+import { PostOutcomesLive } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostSearch } from "#publishing/application/post-search.ts";
 import { PostUsage } from "#publishing/application/post-usage.ts";
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
@@ -32,6 +36,7 @@ import {
   UnreadComments,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
+import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
 import { DrizzlePostOversight } from "#publishing/infrastructure/drizzle-post-oversight.ts";
@@ -79,16 +84,21 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
   events: Layer.Layer<PostEvents | H, never, R4>
 ) =>
   Layer.mergeAll(
+    PostBatches.layer.pipe(
+      Layer.provideMerge(Layer.merge(PostChecks.layer, PostScheduling.layer))
+    ),
     PostDrafts.layer,
+    PostOutcomesLive,
     PostQueries.layer,
     PostRecords.layer,
-    PostScheduling.layer,
+    PostSearch.layer,
     HeldPosts.layer,
     PostFollowUp.layer,
     PostUsage.layer
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzleContentFingerprints,
         DrizzleIdempotencyKeys,
         DrizzlePostOversight,
         DrizzlePostRepository,
@@ -107,7 +117,8 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
   );
 
 /**
- * The publishing context's use cases (`PostDrafts`, `PostQueries`,
+ * The publishing context's use cases (`PostBatches`, `PostChecks`,
+ * `PostDrafts`, `PostOutcomes`, `PostQueries`, `PostSearch`,
  * `PostScheduling`, `PostFollowUp`, for the handlers; `HeldPosts`, for the
  * review context; `PostRecords`, for the workspace context's exports and
  * erasures; `PostUsage`, for billing; `PublishedTargets`, which analytics

@@ -4,6 +4,7 @@ import typing
 
 Permission = typing.Union[
     typing.Literal[
+        "activity:read",
         "analytics:read",
         "apiKey:create",
         "apiKey:read",
@@ -27,6 +28,8 @@ Permission = typing.Union[
         "member:delete",
         "organization:update",
         "organization:delete",
+        "partner:read",
+        "partner:manage",
         "post:read",
         "post:create",
         "post:update",

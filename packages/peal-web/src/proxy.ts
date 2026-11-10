@@ -7,7 +7,8 @@ import { routing } from "#i18n/routing.ts";
 
 const handleI18nRouting = createMiddleware(routing);
 
-// /api/* and the OAuth discovery documents go to the Peal server (see
+// /api/*, the OAuth discovery documents, the API catalogue and llms.txt go
+// to the Peal server (see
 // src/api/forward.ts). The rewrite lives here rather than in next.config.ts
 // because Next resolves config rewrites at build time; here PEAL_API_URL is
 // read per request. Everything else is a page: negotiate its locale, with
@@ -20,10 +21,12 @@ const proxy = (request: NextRequest) =>
 export default proxy;
 
 export const config = {
-  // /api/*, the OAuth discovery documents, and pages: not Next's own files
-  // nor anything else with a dot, such as favicon.ico.
+  // /api/*, the discovery documents, and pages: not Next's own files nor
+  // anything else with a dot, such as favicon.ico.
   matcher: [
     "/api/:path*",
+    "/.well-known/api-catalog",
+    "/llms.txt",
     "/.well-known/oauth-authorization-server/:path*",
     "/.well-known/oauth-protected-resource/:path*",
     "/((?!api|_next|.*\\..*).*)",

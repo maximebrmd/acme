@@ -55,6 +55,7 @@ const auth = makeAuth({
     resetPassword: ignore,
     subscriptionChanged: nothing,
     verifyEmail: ignore,
+    workspaceChange: nothing,
   },
   settings: {
     captcha: Option.none(),

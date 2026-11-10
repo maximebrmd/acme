@@ -3743,56 +3743,6 @@ func TestStringUsage(t *testing.T) {
 	})
 }
 
-func TestEnumPlan(t *testing.T) {
-	t.Run("NewFromString_free", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPlanFromString("free")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, Plan("free"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_starter", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPlanFromString("starter")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, Plan("starter"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_pro", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPlanFromString("pro")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, Plan("pro"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_business", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPlanFromString("business")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, Plan("business"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_agency", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewPlanFromString("agency")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, Plan("agency"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewPlanFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewPlanFromString("free")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
 func TestEnumSubscriptionStatus(t *testing.T) {
 	t.Run("NewFromString_incomplete", func(t *testing.T) {
 		t.Parallel()

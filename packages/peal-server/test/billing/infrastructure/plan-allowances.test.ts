@@ -32,7 +32,10 @@ const allowancesWith = (
     Layer.provide(
       Layer.succeed(
         ChannelUsage,
-        ChannelUsage.of({ connected: () => Effect.succeed(4) })
+        ChannelUsage.of({
+          connected: () => Effect.succeed(4),
+          connectedIn: () => Effect.succeed(new Map()),
+        })
       )
     ),
     Layer.provide(

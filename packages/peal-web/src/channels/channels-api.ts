@@ -1,5 +1,6 @@
-import { Cause, Exit, Option } from "effect";
+import { Cause, Exit, Option, Schema } from "effect";
 import { Atom } from "effect/reactivity";
+import { ConnectFailureReasonSchema } from "peal-contract";
 import type { ConnectFailureReason } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
@@ -52,17 +53,20 @@ export type ChannelErrorKey =
   | "unknown"
   | "unreachable";
 
+// Several errors give a `reason`, each from its own list.
 interface Tagged {
   readonly _tag: string;
-  readonly reason?: ConnectFailureReason;
+  readonly reason?: string;
 }
+
+const isConnectFailure = Schema.is(ConnectFailureReasonSchema);
 
 // The contract's errors, told apart by tag; anything else, such as the
 // server being down, is unknown.
 const keyOf = (error: Tagged): ChannelErrorKey => {
   switch (error._tag) {
     case "ConnectFailed": {
-      return error.reason ?? "unknown";
+      return isConnectFailure(error.reason) ? error.reason : "unknown";
     }
 
     case "PlatformUnreachable": {

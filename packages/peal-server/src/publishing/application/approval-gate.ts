@@ -43,6 +43,12 @@ export class ApprovalGate extends Context.Service<
      */
     readonly maySubmit: (actor: Actor) => Effect.Effect<boolean, DatabaseError>;
     /**
+     * Whether a post the actor asks to send would be held, as `admit`
+     * would hold a new one. It records nothing: for a check that makes no
+     * post.
+     */
+    readonly holds: (actor: Actor) => Effect.Effect<boolean, DatabaseError>;
+    /**
      * Admits the post, or holds it and records that the actor asks for its
      * approval. A post approved as it now is (`subject`) is admitted.
      */
@@ -80,6 +86,7 @@ export class ApprovalGate extends Context.Service<
       admit: () => Effect.succeed("admitted"),
       approved: () => Effect.succeed(false),
       forgotten: () => Effect.void,
+      holds: () => Effect.succeed(false),
       maySubmit: (actor) => Effect.succeed(can(actor, "post:schedule")),
       withdrawn: () => Effect.void,
     })

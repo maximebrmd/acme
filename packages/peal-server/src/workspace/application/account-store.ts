@@ -93,8 +93,9 @@ export class AccountStore extends Context.Service<
     ) => Effect.Effect<Option.Option<WorkspaceSummary>, DatabaseError>;
     /**
      * Deletes the workspace with its members and invitations, its API keys,
-     * which stop working, the OAuth grants bound to it, and the sign-in
-     * service's copy of its subscriptions.
+     * which stop working, the OAuth grants bound to it, the sign-in
+     * service's copy of its subscriptions, and what ties it to a partner:
+     * that a partner owns it, or its own partner account with its keys.
      */
     readonly deleteWorkspace: (
       workspaceId: WorkspaceId
@@ -114,7 +115,7 @@ export class AccountStore extends Context.Service<
      * Deletes the user with their sessions, those they opened as staff to
      * act as someone else included, sign-in methods, memberships, the
      * invitations they sent or that await their address, and what they let
-     * OAuth clients do.
+     * OAuth clients do. The partner keys they created stay, without them.
      */
     readonly deleteUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
   }

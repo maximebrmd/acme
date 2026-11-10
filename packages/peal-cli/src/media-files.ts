@@ -42,7 +42,8 @@ const altOf = (altText: Option.Option<string>) =>
     onSome: (text) => ({ altText: text }),
   });
 
-const cannotRead =
+/** A local file that cannot be read, told without anything it holds. */
+export const cannotRead =
   (file: string) =>
   (failure: { readonly message: string }): Refused =>
     new Refused({ reason: `Cannot read ${file} (${failure.message}).` });

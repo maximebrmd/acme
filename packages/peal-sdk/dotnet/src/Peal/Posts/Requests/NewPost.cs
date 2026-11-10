@@ -10,7 +10,13 @@ public record NewPost
     public required string WorkspaceId { get; set; }
 
     [JsonIgnore]
+    public string? Wait { get; set; }
+
+    [JsonIgnore]
     public string? IdempotencyKey { get; set; }
+
+    [JsonPropertyName("allowDuplicate")]
+    public bool? AllowDuplicate { get; set; }
 
     [JsonPropertyName("channelIds")]
     public IEnumerable<string> ChannelIds { get; set; } = new List<string>();

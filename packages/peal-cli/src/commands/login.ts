@@ -3,6 +3,7 @@ import { Command } from "effect/cli";
 import { cliClientId, deviceCodeGrantType } from "peal-contract";
 import type { DeviceAuthorization, OAuthError, Token } from "peal-contract";
 
+import { personOnly } from "#api-key.ts";
 import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";
 import { PealApi } from "#api.ts";
@@ -44,8 +45,14 @@ export const login = Command.make(
   "login",
   {},
   Effect.fn("login")(function* login() {
-    const { baseUrl, oauth } = yield* PealApi;
+    yield* personOnly("sign in");
+
+    const { baseUrl, oauth, sendingCredentials } = yield* PealApi;
     const store = yield* CredentialStore;
+
+    // The device code goes out and the tokens come back on this channel.
+    yield* sendingCredentials;
+
     const url = display(baseUrl);
     const failed = requestFailed(url);
 

@@ -15,6 +15,7 @@ import {
 import { DateTime, Effect, Layer, Match, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
+import type { PostPosition } from "#publishing/application/post-listing.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import type {
   PostWithTargets,
@@ -32,9 +33,11 @@ import { Post } from "#publishing/domain/post.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
 import { TargetOptionsSchema } from "#publishing/domain/target-options.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { MediaAssetId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
+import { pageConditions, pageOrder } from "./post-search-query.ts";
 import { posts, postTargets } from "./schema.ts";
 
 type PostRow = typeof posts.$inferSelect;
@@ -402,6 +405,18 @@ export const DrizzlePostRepository = Layer.effect(
       });
 
     return PostRepository.of({
+      channelsUsed: (workspaceId) =>
+        db
+          .selectDistinct({ channelId: postTargets.channelId })
+          .from(postTargets)
+          .innerJoin(posts, eq(posts.id, postTargets.postId))
+          .where(eq(posts.workspaceId, workspaceId))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) =>
+              rows.map(({ channelId }) => ChannelIdSchema.make(channelId))
+            )
+          ),
       // A transaction's advisory lock, in the two-key form: the first key
       // names what is counted, the second the workspace and the month.
       claimMonth: (workspaceId, { from }) =>
@@ -546,6 +561,44 @@ export const DrizzlePostRepository = Layer.effect(
           .delete(posts)
           .where(eq(posts.id, postId))
           .pipe(Effect.mapError(failed), Effect.asVoid),
+      search: (page) =>
+        Effect.gen(function* search() {
+          // No channel to be on: no post, and no query.
+          if (
+            Option.exists(page.filter.channelIds, (ids) => ids.length === 0)
+          ) {
+            return { items: [], next: Option.none() };
+          }
+
+          // One more than asked tells whether another page follows.
+          const postRows = yield* db
+            .select()
+            .from(posts)
+            .where(pageConditions(page))
+            .orderBy(...pageOrder(page.sort))
+            .limit(page.limit + 1);
+
+          const rows = postRows.slice(0, page.limit);
+          const last = rows.at(-1);
+
+          return {
+            items: yield* withTargetsOf(rows),
+            next:
+              postRows.length > page.limit && last !== undefined
+                ? Option.some<PostPosition>({
+                    postId: PostIdSchema.make(last.id),
+                    scheduledAt:
+                      last.scheduledAt === null
+                        ? null
+                        : DateTime.makeUnsafe(last.scheduledAt),
+                    sort: page.sort,
+                  })
+                : Option.none(),
+          };
+        }).pipe(
+          Effect.mapError(failed),
+          Effect.withSpan("PostRepository.search")
+        ),
       setExecution: (post, executionId: ExecutionId) =>
         db
           .update(posts)

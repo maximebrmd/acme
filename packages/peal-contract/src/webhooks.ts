@@ -9,6 +9,7 @@ import {
 
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
+import { PartnerNotFound } from "./partner-not-found.ts";
 import { TooManyWebhookEndpoints } from "./too-many-webhook-endpoints.ts";
 import { TooManyWebhookSends } from "./too-many-webhook-sends.ts";
 import { WebhookDeliveryNotFound } from "./webhook-delivery-not-found.ts";
@@ -62,6 +63,18 @@ export const WebhookDisabledReasonSchema = Schema.Literals([
 export type WebhookDisabledReason = typeof WebhookDisabledReasonSchema.Type;
 
 /**
+ * What an endpoint hears: the events of its own workspace (`workspace`),
+ * or, in a partner account's home workspace, those of every workspace the
+ * partner owns too (`partner`). Chosen when it is created.
+ */
+export const WebhookEndpointScopeSchema = Schema.Literals([
+  "workspace",
+  "partner",
+]).annotate({ identifier: "WebhookEndpointScope" });
+
+export type WebhookEndpointScope = typeof WebhookEndpointScopeSchema.Type;
+
+/**
  * Where a workspace is told what happens in it. Never its signing secret,
  * which is shown once, when it is created or rotated.
  */
@@ -81,6 +94,7 @@ export const WebhookEndpointSchema = Schema.Struct({
   // Until when the secret before the last rotation still signs deliveries,
   // beside the current one; null when only the current one does.
   previousSecretExpiresAt: Schema.NullOr(Schema.DateTimeUtc),
+  scope: WebhookEndpointScopeSchema,
   updatedAt: Schema.DateTimeUtc,
   url: Schema.String,
 }).annotate({ identifier: "WebhookEndpoint" });
@@ -105,6 +119,9 @@ export const NewWebhookEndpointSchema = Schema.Struct({
   // On unless false.
   enabled: Schema.optionalKey(Schema.Boolean),
   eventTypes: EventTypesSchema,
+  // `workspace` unless given: `partner`, in a partner account's home
+  // workspace, hears every workspace the partner owns too.
+  scope: Schema.optionalKey(WebhookEndpointScopeSchema),
   // HTTPS, on the default port, on a public host, without credentials.
   url: UrlSchema,
 }).annotate({ identifier: "NewWebhookEndpoint" });
@@ -239,13 +256,14 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
         TooManyWebhookEndpoints,
         WebhookUrlRefused,
         WebhooksNotConfigured,
+        PartnerNotFound,
       ],
       params: workspace,
       payload: NewWebhookEndpointSchema,
       success: WebhookEndpointSecretSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has ${maxWebhookEndpoints} endpoints at most, whatever its plan. Needs webhook:manage.`,
+        description: `Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has ${maxWebhookEndpoints} endpoints at most, whatever its plan. With \`scope\` \`partner\`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (\`workspaceExternalId\`); any other workspace answers 404 \`PartnerNotFound\`. Needs webhook:manage.`,
         summary: "Create a webhook endpoint",
       })
     ),

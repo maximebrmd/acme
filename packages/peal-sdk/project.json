@@ -6,18 +6,44 @@
   "targets": {
     "typecheck": {
       "command": "tsc --noEmit",
-      "options": { "cwd": "{projectRoot}" }
+      "options": {
+        "cwd": "{projectRoot}"
+      }
     },
     "spec": {
       "command": "bun scripts/spec.ts",
-      "options": { "cwd": "{projectRoot}" },
-      "dependsOn": [{ "projects": ["peal-contract"], "target": "openapi" }],
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": [
+        {
+          "projects": ["peal-contract"],
+          "target": "openapi"
+        }
+      ],
+      "cache": false
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["bun test scripts", "bun scripts/compat.ts"],
+        "cwd": "{projectRoot}",
+        "parallel": false
+      },
+      "dependsOn": ["spec"],
       "cache": false
     },
     "check": {
       "command": "bun scripts/check.ts",
-      "options": { "cwd": "{projectRoot}" },
-      "dependsOn": [{ "projects": ["tag:sdk"], "target": "sdk:generate" }],
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": [
+        {
+          "projects": ["tag:sdk"],
+          "target": "sdk:generate"
+        }
+      ],
       "cache": false
     }
   }

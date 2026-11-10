@@ -190,8 +190,9 @@ const connectedTo = (channel: Channel): ConnectOutcome => ({
  * accounts (a Facebook user's Pages) ends with a choice, kept the same way,
  * which `choose` completes.
  *
- * A new account needs room in the workspace's plan (`ChannelAllowance`):
- * checked when the connection starts, and again before each channel is
+ * A new account needs room in the workspace's plan (`ChannelAllowance`),
+ * which the workspaces of a partner share, their channels counted
+ * together: checked when the connection starts, and again before each channel is
  * added. Accounts chosen together need room for all of them, checked before
  * the choice is taken, so a choice too large connects none and can be made
  * again with fewer; a choice that fails for any other reason before an
@@ -286,6 +287,24 @@ export class ConnectChannel extends Context.Service<
           onSome: Effect.succeed,
         });
 
+      // The channels the workspaces sharing the workspace's plan hold,
+      // which count against its allowance with its own: a partner's
+      // workspaces hold theirs together. Read inside `addingTo`, the
+      // workspaces stay held until the channel is added.
+      const heldElsewhere = Effect.fn("ConnectChannel.heldElsewhere")(
+        function* heldElsewhere(workspaceId: WorkspaceId) {
+          const shared = yield* allowance.sharedWith(workspaceId);
+
+          if (shared.length === 0) {
+            return 0;
+          }
+
+          const held = yield* channels.countIn(shared);
+
+          return [...held.values()].reduce((sum, count) => sum + count, 0);
+        }
+      );
+
       // Room for one more channel in the workspace's plan.
       const roomForChannel = Effect.fn("ConnectChannel.roomForChannel")(
         function* roomForChannel(workspaceId: WorkspaceId) {
@@ -296,9 +315,10 @@ export class ConnectChannel extends Context.Service<
           }
 
           const connected = yield* channels.list(workspaceId);
+          const elsewhere = yield* heldElsewhere(workspaceId);
 
           yield* Effect.fromResult(
-            roomForOneMore("channels", allowed, connected.length)
+            roomForOneMore("channels", allowed, connected.length + elsewhere)
           );
         }
       );
@@ -365,8 +385,10 @@ export class ConnectChannel extends Context.Service<
             return;
           }
 
+          const elsewhere = yield* heldElsewhere(workspaceId);
+
           yield* Effect.fromResult(
-            roomFor("channels", allowed, connected.length, added)
+            roomFor("channels", allowed, connected.length + elsewhere, added)
           );
         }
       );

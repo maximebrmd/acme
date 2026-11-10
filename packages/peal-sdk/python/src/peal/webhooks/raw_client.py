@@ -18,12 +18,12 @@ from ..errors.service_unavailable_error import ServiceUnavailableError
 from ..errors.too_many_requests_error import TooManyRequestsError
 from ..errors.unauthorized_error import UnauthorizedError
 from ..errors.unprocessable_entity_error import UnprocessableEntityError
-from ..types.forbidden_encoded import ForbiddenEncoded
 from ..types.subscribable_webhook_event_type import SubscribableWebhookEventType
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
 from ..types.webhook_delivery import WebhookDelivery
 from ..types.webhook_delivery_page import WebhookDeliveryPage
 from ..types.webhook_endpoint import WebhookEndpoint
+from ..types.webhook_endpoint_scope import WebhookEndpointScope
 from ..types.webhook_endpoint_secret import WebhookEndpointSecret
 from pydantic import ValidationError
 
@@ -83,15 +83,26 @@ class RawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -118,10 +129,11 @@ class RawWebhooksClient:
         url: str,
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
+        scope: typing.Optional[WebhookEndpointScope] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[WebhookEndpointSecret]:
         """
-        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. Needs webhook:manage.
 
         Parameters
         ----------
@@ -134,6 +146,8 @@ class RawWebhooksClient:
         description : typing.Optional[str]
 
         enabled : typing.Optional[bool]
+
+        scope : typing.Optional[WebhookEndpointScope]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -153,6 +167,7 @@ class RawWebhooksClient:
                 "description": description,
                 "enabled": enabled,
                 "eventTypes": event_types,
+                "scope": scope,
                 "url": url,
             },
             headers={
@@ -186,9 +201,9 @@ class RawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -217,6 +232,17 @@ class RawWebhooksClient:
                 )
             if _response.status_code == 422:
                 raise UnprocessableEntityError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -296,15 +322,26 @@ class RawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -365,15 +402,26 @@ class RawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -471,9 +519,9 @@ class RawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -491,6 +539,17 @@ class RawWebhooksClient:
                 )
             if _response.status_code == 422:
                 raise UnprocessableEntityError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -562,15 +621,26 @@ class RawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -653,9 +723,9 @@ class RawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -777,15 +847,26 @@ class RawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -864,9 +945,9 @@ class RawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -966,15 +1047,26 @@ class AsyncRawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -1001,10 +1093,11 @@ class AsyncRawWebhooksClient:
         url: str,
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
+        scope: typing.Optional[WebhookEndpointScope] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[WebhookEndpointSecret]:
         """
-        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. Needs webhook:manage.
 
         Parameters
         ----------
@@ -1017,6 +1110,8 @@ class AsyncRawWebhooksClient:
         description : typing.Optional[str]
 
         enabled : typing.Optional[bool]
+
+        scope : typing.Optional[WebhookEndpointScope]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1036,6 +1131,7 @@ class AsyncRawWebhooksClient:
                 "description": description,
                 "enabled": enabled,
                 "eventTypes": event_types,
+                "scope": scope,
                 "url": url,
             },
             headers={
@@ -1069,9 +1165,9 @@ class AsyncRawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1100,6 +1196,17 @@ class AsyncRawWebhooksClient:
                 )
             if _response.status_code == 422:
                 raise UnprocessableEntityError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -1179,15 +1286,26 @@ class AsyncRawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -1248,15 +1366,26 @@ class AsyncRawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -1354,9 +1483,9 @@ class AsyncRawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1374,6 +1503,17 @@ class AsyncRawWebhooksClient:
                 )
             if _response.status_code == 422:
                 raise UnprocessableEntityError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -1445,15 +1585,26 @@ class AsyncRawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -1536,9 +1687,9 @@ class AsyncRawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1660,15 +1811,26 @@ class AsyncRawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -1747,9 +1909,9 @@ class AsyncRawWebhooksClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

@@ -2,6 +2,9 @@
 
 export interface MediaStoreUnavailableEncoded {
     _tag: MediaStoreUnavailableEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace MediaStoreUnavailableEncoded {

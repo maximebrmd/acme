@@ -657,6 +657,34 @@ describe("peal post", () => {
   );
 
   it.effect(
+    "refuses the same post sent twice without a key, unless --allow-duplicate",
+    () =>
+      Effect.gen(function* duplicates() {
+        const session = yield* signedIn();
+        const twice = note("--channel", mastodonId, "--now");
+
+        const first = idIn(yield* session.printed(twice));
+        const refused = yield* session.refused(twice);
+
+        assert.include(
+          refused,
+          `The same content already goes to channel ${mastodonId} (post ${first}), less than 23 hours from this post's time: nothing was made.`
+        );
+        assert.include(refused, "--allow-duplicate");
+
+        const second = idIn(
+          yield* session.printed([...twice, "--allow-duplicate"])
+        );
+
+        assert.notStrictEqual(second, first);
+        assert.deepStrictEqual(yield* changes(session.studio), [
+          `send:${first}:now:no key`,
+          `send:${second}:now:no key`,
+        ]);
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
     "lists every violation at once, with its channel and field, and makes nothing",
     () =>
       Effect.gen(function* violations() {
@@ -1076,21 +1104,29 @@ describe("--json", () => {
       }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
-  it.effect("keeps a refusal on stderr, and stdout empty", () =>
+  it.effect("prints a refusal as JSON on stderr, and keeps stdout empty", () =>
     Effect.gen(function* refusal() {
       const session = yield* signedIn();
 
       const before = (yield* output).logs.length;
 
-      assert.include(
-        yield* session.refused([
-          "posts",
-          "show",
-          "0190f3a0-0000-7000-8000-00000000ffff",
-          "--json",
-          ...inStudio,
-        ]),
-        "The workspace has no such post."
+      assert.deepStrictEqual(
+        JSON.parse(
+          yield* session.refused([
+            "posts",
+            "show",
+            "0190f3a0-0000-7000-8000-00000000ffff",
+            "--json",
+            ...inStudio,
+          ])
+        ),
+        {
+          error: {
+            _tag: "PostNotFound",
+            code: "post_not_found",
+            message: "The workspace has no post with this id.",
+          },
+        }
       );
       assert.strictEqual((yield* output).logs.length, before);
     }).pipe(Effect.scoped, Effect.provide(filesLayer))

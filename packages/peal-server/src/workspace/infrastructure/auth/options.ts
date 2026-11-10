@@ -47,6 +47,8 @@ import {
   workspaceClaim,
 } from "./oauth.ts";
 import type { AuthConfiguration } from "./settings.ts";
+import { recordWorkspaceChange } from "./workspace-changes.ts";
+import type { WorkspaceChangeRecorder } from "./workspace-changes.ts";
 
 /** A link Better Auth wants mailed, in the recipient's language. */
 export interface AuthLink {
@@ -80,6 +82,11 @@ export interface AuthHooks extends BillingHooks {
   readonly log: (level: AuthLogLevel, message: string) => void;
   readonly resetPassword: (link: AuthLink) => void;
   readonly verifyEmail: (link: AuthLink) => void;
+  /**
+   * Awaited once a route that changes a workspace has answered a browser:
+   * keeps the request in the workspace's activity log. Never throws.
+   */
+  readonly workspaceChange: WorkspaceChangeRecorder;
 }
 
 export interface AuthDatabase {
@@ -408,7 +415,12 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         await Promise.resolve();
       },
     },
-    hooks: { before: beforeEveryRoute(hooks) },
+    hooks: {
+      after: createAuthMiddleware(async (ctx) => {
+        await recordWorkspaceChange(ctx, hooks.workspaceChange);
+      }),
+      before: beforeEveryRoute(hooks),
+    },
     logger: {
       level: "warn",
       // Messages only: Better Auth passes request details as further
@@ -506,9 +518,12 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         defaultPrefix: "peal_",
         enableMetadata: true,
         keyExpiration: { defaultExpiresIn: null, maxExpiresIn: 365 },
-        // These become the defaults of the apikey table's columns, so they
-        // stay constants: 600 requests a minute per key.
-        rateLimit: { enabled: true, maxRequests: 600, timeWindow: 60_000 },
+        // Peal counts a key's requests itself, with those of OAuth
+        // applications (RequestLimits): the plugin's own limit, which
+        // starts its window again at every request, stays off. These
+        // become the defaults of the apikey table's columns, so they stay
+        // constants.
+        rateLimit: { enabled: false, maxRequests: 600, timeWindow: 60_000 },
         references: "organization",
         requireName: true,
       }),

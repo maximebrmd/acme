@@ -9,7 +9,12 @@ import {
   Stream,
 } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
-import { CalendarDaySchema, countedPlatforms } from "peal-contract";
+import {
+  AnalyticsSummarySchema,
+  CalendarDaySchema,
+  countedPlatforms,
+  PostAnalyticsSchema,
+} from "peal-contract";
 import type {
   AnalyticsSummary,
   DashboardTotals,
@@ -18,6 +23,7 @@ import type {
 } from "peal-contract";
 
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import { columns, count, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { channelNames, inWorkspace, named, workspaceFlag } from "#workspace.ts";
@@ -108,6 +114,7 @@ const summary = Command.make(
       "from",
       `The first day, included. Defaults to ${String(defaultDays - 1)} days before --to.`
     ),
+    json: jsonFlag,
     timeZone: timeZoneFlag,
     to: day("to", "The last day, included. Defaults to today."),
     workspace: workspaceFlag,
@@ -143,6 +150,12 @@ const summary = Command.make(
       })
       .pipe(Effect.mapError(explain(url)));
 
+    if (input.json) {
+      yield* printJson(AnalyticsSummarySchema, found);
+
+      return;
+    }
+
     const names = yield* channelNames(client, workspace.id);
 
     yield* Console.log(
@@ -162,6 +175,7 @@ const summary = Command.make(
 const post = Command.make(
   "post",
   {
+    json: jsonFlag,
     postId: Argument.String("post-id").pipe(
       Argument.withDescription(
         "The post, as peal drafts list or the web app shows its id."
@@ -169,12 +183,22 @@ const post = Command.make(
     ),
     workspace: workspaceFlag,
   },
-  Effect.fn("analytics.post")(function* post({ postId, workspace: choice }) {
+  Effect.fn("analytics.post")(function* post({
+    json,
+    postId,
+    workspace: choice,
+  }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const found = yield* client.analytics
       .post({ params: { postId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(PostAnalyticsSchema, found);
+
+      return;
+    }
 
     if (found.targets.length === 0) {
       yield* Console.log(

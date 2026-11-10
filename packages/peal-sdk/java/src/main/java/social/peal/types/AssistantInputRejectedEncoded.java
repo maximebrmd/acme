@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -20,6 +22,12 @@ import social.peal.core.ObjectMappers;
 @JsonDeserialize(builder = AssistantInputRejectedEncoded.Builder.class)
 public final class AssistantInputRejectedEncoded {
     private final AssistantInputRejectedEncodedTag tag;
+
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
 
     private final int maxLength;
 
@@ -29,10 +37,16 @@ public final class AssistantInputRejectedEncoded {
 
     private AssistantInputRejectedEncoded(
             AssistantInputRejectedEncodedTag tag,
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
             int maxLength,
             AssistantInputRejectedEncodedReason reason,
             Map<String, Object> additionalProperties) {
         this.tag = tag;
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.maxLength = maxLength;
         this.reason = reason;
         this.additionalProperties = additionalProperties;
@@ -41,6 +55,21 @@ public final class AssistantInputRejectedEncoded {
     @JsonProperty("_tag")
     public AssistantInputRejectedEncodedTag getTag() {
         return tag;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("maxLength")
@@ -65,12 +94,17 @@ public final class AssistantInputRejectedEncoded {
     }
 
     private boolean equalTo(AssistantInputRejectedEncoded other) {
-        return tag.equals(other.tag) && maxLength == other.maxLength && reason.equals(other.reason);
+        return tag.equals(other.tag)
+                && code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && maxLength == other.maxLength
+                && reason.equals(other.reason);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.maxLength, this.reason);
+        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.maxLength, this.reason);
     }
 
     @java.lang.Override
@@ -102,6 +136,18 @@ public final class AssistantInputRejectedEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -112,6 +158,12 @@ public final class AssistantInputRejectedEncoded {
 
         private AssistantInputRejectedEncodedReason reason;
 
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -119,6 +171,9 @@ public final class AssistantInputRejectedEncoded {
         @java.lang.Override
         public Builder from(AssistantInputRejectedEncoded other) {
             tag(other.getTag());
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             maxLength(other.getMaxLength());
             reason(other.getReason());
             return this;
@@ -146,13 +201,58 @@ public final class AssistantInputRejectedEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public AssistantInputRejectedEncoded build() {
-            return new AssistantInputRejectedEncoded(tag, maxLength, reason, additionalProperties);
+            return new AssistantInputRejectedEncoded(
+                    tag, code, message, requestId, maxLength, reason, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag") || key.equalsIgnoreCase("maxLength") || key.equalsIgnoreCase("reason")) {
+            if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("maxLength")
+                    || key.equalsIgnoreCase("reason")) {
                 return;
             }
             this.additionalProperties.put(key, value);

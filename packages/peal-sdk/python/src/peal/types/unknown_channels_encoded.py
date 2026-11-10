@@ -9,6 +9,11 @@ from ..core.serialization import FieldMetadata
 
 
 class UnknownChannelsEncoded(UniversalBaseModel):
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     channel_ids: typing_extensions.Annotated[
         typing.List[str], FieldMetadata(alias="channelIds"), pydantic.Field(alias="channelIds")
     ]

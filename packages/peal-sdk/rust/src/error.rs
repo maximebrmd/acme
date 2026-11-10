@@ -9,11 +9,20 @@ pub enum ApiError {
     UnauthorizedError {
         message: String,
         tag: Option<UnauthenticatedEncodedTag>,
+        code: Option<String>,
+        request_id: Option<String>,
     },
     #[error("ForbiddenError: Access forbidden - {message}")]
     ForbiddenError {
         message: String,
-        tag: Option<ForbiddenEncodedTag>,
+        resource: Option<String>,
+        required_permission: Option<String>,
+    },
+    #[error("TooManyRequestsError: Rate limit exceeded - {message}")]
+    TooManyRequestsError {
+        message: String,
+        retry_after_seconds: Option<u64>,
+        limit_type: Option<String>,
     },
     #[error("NotFoundError: Resource not found - {message}")]
     NotFoundError {
@@ -25,6 +34,8 @@ pub enum ApiError {
     PaymentRequiredError {
         message: String,
         tag: Option<PlanLimitReachedEncodedTag>,
+        code: Option<String>,
+        request_id: Option<String>,
         allowed: Option<i64>,
         billing_url: Option<String>,
         limit: Option<PlanLimit>,
@@ -51,11 +62,13 @@ pub enum ApiError {
         message: String,
         conflict_type: Option<String>,
     },
-    #[error("TooManyRequestsError: Rate limit exceeded - {message}")]
-    TooManyRequestsError {
+    #[error("InternalServerError: Internal server error - {message}")]
+    InternalServerError {
         message: String,
-        retry_after_seconds: Option<u64>,
-        limit_type: Option<String>,
+        tag: Option<DeletionIncompleteEncodedTag>,
+        code: Option<String>,
+        request_id: Option<String>,
+        subscriptions_cancelled: Option<i64>,
     },
     #[error("HTTP error {status}: {message}")]
     Http { status: u16, message: String },
@@ -112,12 +125,20 @@ impl ApiError {
                             tag: parsed.get("_tag").and_then(|v| {
                                 serde_json::from_value::<UnauthenticatedEncodedTag>(v.clone()).ok()
                             }),
+                            code: parsed
+                                .get("code")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            request_id: parsed
+                                .get("requestId")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
                         };
                     }
                 }
                 return Self::UnauthorizedError {
                     message: body.unwrap_or("Unknown error").to_string(),
                     tag: None,
+                    code: None,
+                    request_id: None,
                 };
             }
             403 => {
@@ -130,15 +151,44 @@ impl ApiError {
                                 .and_then(|v| v.as_str())
                                 .unwrap_or("Unknown error")
                                 .to_string(),
-                            tag: parsed.get("_tag").and_then(|v| {
-                                serde_json::from_value::<ForbiddenEncodedTag>(v.clone()).ok()
-                            }),
+                            resource: parsed
+                                .get("resource")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            required_permission: parsed
+                                .get("requiredPermission")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
                         };
                     }
                 }
                 return Self::ForbiddenError {
                     message: body.unwrap_or("Unknown error").to_string(),
-                    tag: None,
+                    resource: None,
+                    required_permission: None,
+                };
+            }
+            429 => {
+                // Parse error body for TooManyRequestsError;
+                if let Some(body_str) = body {
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(body_str) {
+                        return Self::TooManyRequestsError {
+                            message: parsed
+                                .get("message")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("Unknown error")
+                                .to_string(),
+                            retry_after_seconds: parsed
+                                .get("retryAfterSeconds")
+                                .and_then(|v| v.as_u64()),
+                            limit_type: parsed
+                                .get("limitType")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                        };
+                    }
+                }
+                return Self::TooManyRequestsError {
+                    message: body.unwrap_or("Unknown error").to_string(),
+                    retry_after_seconds: None,
+                    limit_type: None,
                 };
             }
             404 => {
@@ -179,6 +229,12 @@ impl ApiError {
                             tag: parsed.get("_tag").and_then(|v| {
                                 serde_json::from_value::<PlanLimitReachedEncodedTag>(v.clone()).ok()
                             }),
+                            code: parsed
+                                .get("code")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            request_id: parsed
+                                .get("requestId")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
                             allowed: parsed
                                 .get("allowed")
                                 .and_then(|v| serde_json::from_value::<i64>(v.clone()).ok()),
@@ -203,6 +259,8 @@ impl ApiError {
                 return Self::PaymentRequiredError {
                     message: body.unwrap_or("Unknown error").to_string(),
                     tag: None,
+                    code: None,
+                    request_id: None,
                     allowed: None,
                     billing_url: None,
                     limit: None,
@@ -299,29 +357,38 @@ impl ApiError {
                     conflict_type: None,
                 };
             }
-            429 => {
-                // Parse error body for TooManyRequestsError;
+            500 => {
+                // Parse error body for InternalServerError;
                 if let Some(body_str) = body {
                     if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(body_str) {
-                        return Self::TooManyRequestsError {
+                        return Self::InternalServerError {
                             message: parsed
                                 .get("message")
                                 .and_then(|v| v.as_str())
                                 .unwrap_or("Unknown error")
                                 .to_string(),
-                            retry_after_seconds: parsed
-                                .get("retryAfterSeconds")
-                                .and_then(|v| v.as_u64()),
-                            limit_type: parsed
-                                .get("limitType")
+                            tag: parsed.get("_tag").and_then(|v| {
+                                serde_json::from_value::<DeletionIncompleteEncodedTag>(v.clone())
+                                    .ok()
+                            }),
+                            code: parsed
+                                .get("code")
                                 .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            request_id: parsed
+                                .get("requestId")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            subscriptions_cancelled: parsed
+                                .get("subscriptionsCancelled")
+                                .and_then(|v| serde_json::from_value::<i64>(v.clone()).ok()),
                         };
                     }
                 }
-                return Self::TooManyRequestsError {
+                return Self::InternalServerError {
                     message: body.unwrap_or("Unknown error").to_string(),
-                    retry_after_seconds: None,
-                    limit_type: None,
+                    tag: None,
+                    code: None,
+                    request_id: None,
+                    subscriptions_cancelled: None,
                 };
             }
             _ => Self::Http {
