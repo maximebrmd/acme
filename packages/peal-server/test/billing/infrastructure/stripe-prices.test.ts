@@ -137,6 +137,42 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
     }).pipe(Effect.scoped)
   );
 
+  it.effect(
+    "stops when Stripe refuses the key, or answers what the check cannot read: nothing was checked",
+    () =>
+      Effect.gen(function* refused() {
+        const revoked = yield* fakeStripe(() =>
+          json(
+            {
+              error: {
+                message: "Invalid API Key provided",
+                type: "invalid_request_error",
+              },
+            },
+            401
+          )
+        );
+
+        const unreadable = yield* fakeStripe(() =>
+          json({ object: "list", url: "/v1/prices" })
+        );
+
+        const failures = yield* Effect.forEach(
+          [revoked, unreadable],
+          (stripe) =>
+            billingOn(stripe.url).pipe(
+              Effect.flip,
+              Effect.map(({ _tag }) => _tag)
+            )
+        );
+
+        assert.deepStrictEqual(failures, [
+          "StripePricesUnchecked",
+          "StripePricesUnchecked",
+        ]);
+      }).pipe(Effect.scoped)
+  );
+
   it.effect("asks Stripe nothing on a server that does not bill", () =>
     startingOn({})
   );
