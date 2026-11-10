@@ -249,6 +249,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "get_tiktok_creator",
           "import_media",
           "invite_member",
+          "list_activity",
           "list_channels",
           "list_drafts",
           "list_invitations",

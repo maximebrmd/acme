@@ -254,6 +254,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           get_tiktok_creator: [true, false, true, true],
           import_media: [false, false, false, true],
           invite_member: [false, true, false, true],
+          list_activity: [true, false, true, false],
           list_channels: [true, false, true, false],
           list_drafts: [true, false, true, false],
           list_invitations: [true, false, true, false],
@@ -503,6 +504,38 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             operation: "mcp.create_draft",
             via: "mcp",
           });
+
+          // Which an owner's connection reads with a tool, and the key,
+          // made without the permission, does not.
+          const owner = yield* connected(fixture.reading);
+
+          const activity = yield* owner.call(
+            "list_activity",
+            Schema.Struct({
+              items: Schema.Array(
+                Schema.Struct({
+                  application: Schema.NullOr(
+                    Schema.Struct({ name: Schema.NullOr(Schema.String) })
+                  ),
+                  operation: Schema.String,
+                  via: Schema.String,
+                })
+              ),
+              nextCursor: Schema.NullOr(Schema.String),
+            }),
+            { operation: "mcp.create_draft" }
+          );
+
+          assert.deepInclude(activity.items, {
+            application: { name: "ci" },
+            operation: "mcp.create_draft",
+            via: "mcp",
+          });
+
+          assert.include(
+            yield* agent.refused("list_activity"),
+            "activity:read"
+          );
 
           // What it was not given is refused, in words about the key: there
           // is no scope to ask a user for.
