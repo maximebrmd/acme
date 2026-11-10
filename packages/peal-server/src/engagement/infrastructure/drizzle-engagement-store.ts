@@ -909,6 +909,11 @@ export const DrizzleEngagementStore = Layer.effect(
       return deleted.length;
     });
 
+    const lockThread = (threadId: string) =>
+      sql`
+        SELECT 1 FROM engagement.threads WHERE id = ${threadId} FOR UPDATE
+      `.pipe(Effect.asVoid, Effect.mapError(failed));
+
     return EngagementStore.of({
       advanceReply,
       claimCall,
@@ -921,6 +926,7 @@ export const DrizzleEngagementStore = Layer.effect(
       journalReply,
       latestFollowed,
       listThreads,
+      lockThread,
       purge,
       repliesOf,
       reply,

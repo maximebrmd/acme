@@ -111,6 +111,8 @@ export class SendReply extends Context.Service<
 
         // A reply that went out, or may have, answers its comment.
         if (outcome._tag !== "failed") {
+          yield* store.lockThread(settled.success.threadId);
+
           const comment = yield* store.comment(settled.success.commentId);
 
           yield* store.saveComments(

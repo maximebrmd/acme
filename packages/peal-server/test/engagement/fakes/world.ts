@@ -358,6 +358,8 @@ export const makeWorld = () => {
 
         return listed.slice(start, start + page.limit);
       }),
+    // One fiber at a time in a test: nothing to hold.
+    lockThread: () => Effect.void,
     purge: (endedBefore, limit) =>
       Effect.sync(() => {
         const expired = [...state.threads.values()]

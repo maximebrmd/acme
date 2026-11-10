@@ -109,6 +109,15 @@ export class EngagementStore extends Context.Service<
     readonly saveCollections: (
       threads: readonly Thread[]
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Holds the thread until the caller's transaction ends: whoever
+     * changes its comments from what they read (the collection's
+     * reconcile, a member's action, a reply settling) takes it first and
+     * reads them after, so none writes over what another just changed.
+     */
+    readonly lockThread: (
+      threadId: ThreadId
+    ) => Effect.Effect<void, DatabaseError>;
     /** Every comment of the thread, oldest written first. */
     readonly commentsOf: (
       threadId: ThreadId

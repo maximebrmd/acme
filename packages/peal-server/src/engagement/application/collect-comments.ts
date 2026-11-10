@@ -449,12 +449,15 @@ export class CollectComments extends Context.Service<
         }
 
         const now = yield* DateTime.now;
-        const kept = yield* store.commentsOf(thread.id);
 
         // The platform no longer shows the post: its comments went with it.
         if (reading._tag === "missing") {
           return yield* transaction(
             Effect.gen(function* forgetting() {
+              yield* store.lockThread(thread.id);
+
+              const kept = yield* store.commentsOf(thread.id);
+
               yield* store.saveComments(
                 kept.filter(isOnPlatform).map(forgetComment)
               );
@@ -464,24 +467,32 @@ export class CollectComments extends Context.Service<
           );
         }
 
-        const { changed, received } = reconcile(
-          thread,
-          kept,
-          reading,
-          yield* issue(unknownIn(kept, reading.comments)),
-          now
-        );
-
         const read = recordCollection(thread, now, at, pace.window);
 
-        yield* transaction(
+        // The comments are read under the thread's lock, which a member's
+        // action takes too: what reconcile writes is what it read.
+        const { received } = yield* transaction(
           Effect.gen(function* saving() {
-            yield* store.saveComments(changed);
+            yield* store.lockThread(thread.id);
+
+            const kept = yield* store.commentsOf(thread.id);
+
+            const reconciled = reconcile(
+              thread,
+              kept,
+              reading,
+              yield* issue(unknownIn(kept, reading.comments)),
+              now
+            );
+
+            yield* store.saveComments(reconciled.changed);
             yield* store.saveCollections([read]);
 
-            if (received.length > 0) {
-              yield* outcomes.received(read, received);
+            if (reconciled.received.length > 0) {
+              yield* outcomes.received(read, reconciled.received);
             }
+
+            return reconciled;
           })
         );
 

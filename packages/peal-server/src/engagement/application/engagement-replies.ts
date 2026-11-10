@@ -158,6 +158,29 @@ export class EngagementReplies extends Context.Service<
       const { transaction } = yield* TransactionRunner;
       const ids = yield* Ids;
 
+      // Changes a comment as it stands under its thread's lock, which the
+      // collection takes too: neither writes over what the other changed.
+      const changedUnderLock = (
+        comment: Comment,
+        change: (current: Comment) => Comment
+      ) =>
+        transaction(
+          Effect.gen(function* changing() {
+            yield* store.lockThread(comment.threadId);
+
+            const current = Option.getOrElse(
+              yield* store.comment(comment.id),
+              () => comment
+            );
+
+            const changed = change(current);
+
+            yield* store.saveComments([changed]);
+
+            return changed;
+          })
+        );
+
       const commentOf = Effect.fn("EngagementReplies.comment")(
         function* commentOf(actor: Actor, commentId: CommentId) {
           const found = yield* store.comment(commentId);
@@ -346,6 +369,7 @@ export class EngagementReplies extends Context.Service<
 
         yield* transaction(
           Effect.gen(function* confirming() {
+            yield* store.lockThread(confirmed.threadId);
             yield* decided(confirmed, unconfirmed);
             // What a person found is final: no job of this reply may act
             // after it, whatever state it was left in.
@@ -433,11 +457,9 @@ export class EngagementReplies extends Context.Service<
             return yield* new ModerationFailed({ reason: outcome.reason });
           }
 
-          const moderated = applied(comment, action);
-
-          yield* store.saveComments([moderated]);
-
-          return moderated;
+          return yield* changedUnderLock(comment, (now) =>
+            applied(now, action)
+          );
         }
       );
 
@@ -450,14 +472,11 @@ export class EngagementReplies extends Context.Service<
           yield* Effect.fromResult(authorize(actor, "engagement:reply"));
 
           const comment = yield* commentOf(actor, commentId);
+          const at = yield* DateTime.now;
 
-          const changed = answered
-            ? markAnswered(comment, yield* DateTime.now)
-            : markUnanswered(comment);
-
-          yield* store.saveComments([changed]);
-
-          return changed;
+          return yield* changedUnderLock(comment, (now) =>
+            answered ? markAnswered(now, at) : markUnanswered(now)
+          );
         }
       );
 

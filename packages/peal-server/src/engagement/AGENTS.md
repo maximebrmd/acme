@@ -46,6 +46,11 @@
   enough for the longest post), so comments under every part are kept, a
   part is the account's own reply and never a comment, and a comment
   under a later part answers the post (`parentId` null).
+- Whoever changes a thread's comments from what it read takes the thread
+  first (`EngagementStore.lockThread`, in its transaction) and reads them
+  after: the collection's reconcile, a member's moderation or answered
+  mark, a reply settling or confirmed. None writes over what another just
+  changed.
 - Threads are read with a client of their own (`reader`,
   `overflow: "truncate"`): an answer ends at `maxThreadBytes` (8 MiB)
   instead of failing past a megabyte, and `threadBodyOf` keeps what it

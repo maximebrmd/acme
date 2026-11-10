@@ -1,6 +1,16 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Duration, Effect, Layer, Option, Result } from "effect";
+import {
+  DateTime,
+  Deferred,
+  Duration,
+  Effect,
+  Fiber,
+  Layer,
+  Option,
+  Result,
+} from "effect";
 import { SqlClient } from "effect/sql";
+import { TestClock } from "effect/testing";
 
 import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
@@ -773,5 +783,78 @@ layer(StoreTest)("the engagement store", (it) => {
           assert.isTrue(Option.isSome(yield* store.thread(reading2.id)));
         }).pipe(Effect.ensuring(forget(workspaceId)));
       })
+  );
+
+  it.effect(
+    "holds a thread for one writer at a time, who reads its comments after",
+    () =>
+      Effect.gen(function* holds() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* EngagementStore;
+        const sql = yield* SqlClient.SqlClient;
+        const channelId = yield* newId(ChannelIdSchema);
+
+        const thread = yield* threadOn(
+          workspaceId,
+          channelId,
+          "2043-04-02T10:20:00.000Z"
+        );
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([thread]);
+
+          const kept = yield* commentOn(thread, 1, "2043-04-02T10:25:00.000Z");
+
+          yield* store.saveComments([kept]);
+
+          const held = yield* Deferred.make<true>();
+          const release = yield* Deferred.make<true>();
+
+          // The collection holds the thread, as it reconciles.
+          const collecting = yield* sql
+            .withTransaction(
+              Effect.gen(function* reconciling() {
+                yield* store.lockThread(thread.id);
+                yield* Deferred.succeed(held, true);
+                yield* Deferred.await(release);
+                yield* store.saveComments([kept]);
+              })
+            )
+            .pipe(Effect.forkChild);
+
+          yield* Deferred.await(held);
+
+          // A member marks the comment answered meanwhile: they wait for
+          // the thread, then read what the collection left.
+          const answering = yield* sql
+            .withTransaction(
+              Effect.gen(function* member() {
+                yield* store.lockThread(thread.id);
+
+                const current = yield* store.comment(kept.id);
+
+                yield* store.saveComments(
+                  Option.toArray(current).map((found) =>
+                    markAnswered(found, utc("2043-04-02T10:30:00.000Z"))
+                  )
+                );
+              })
+            )
+            .pipe(Effect.forkChild);
+
+          // Real time, for the member's transaction to reach the lock.
+          yield* TestClock.withLive(Effect.sleep("200 millis"));
+          yield* Deferred.succeed(release, true);
+          yield* Fiber.join(collecting);
+          yield* Fiber.join(answering);
+
+          // The member's change is what stays.
+          assert.strictEqual(
+            Option.getOrUndefined(yield* store.comment(kept.id))?.state,
+            "answered"
+          );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      }),
+    { timeout: 20_000 }
   );
 });
