@@ -1,4 +1,12 @@
-import { Context, Effect, FiberSet, Layer, Option, Schema } from "effect";
+import {
+  Context,
+  Duration,
+  Effect,
+  FiberSet,
+  Layer,
+  Option,
+  Schema,
+} from "effect";
 import type { LogLevel } from "effect";
 
 import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
@@ -145,7 +153,15 @@ const keptChange =
         workspaceId: workspaceId.value,
       });
     }).pipe(
-      // The route has answered: a log that cannot be kept is logged.
+      // The route has answered: a log that takes too long, or cannot be
+      // kept, is logged, and holds the answer back no longer.
+      Effect.timeoutOrElse({
+        duration: Duration.seconds(2),
+        orElse: () =>
+          Effect.logError(
+            "Keeping a workspace change in the activity log took too long: it was not kept"
+          ),
+      }),
       Effect.catchCause((cause) =>
         Effect.logError(
           "Keeping a workspace change in the activity log failed",

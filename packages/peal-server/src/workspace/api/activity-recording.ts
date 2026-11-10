@@ -1,4 +1,4 @@
-import { Cause, Effect, Exit, Option, Schema } from "effect";
+import { Cause, Duration, Effect, Exit, Option, Schema } from "effect";
 import type { HttpServerResponse } from "effect/http";
 import { HttpApiError } from "effect/http-api";
 import type { Member } from "peal-contract";
@@ -78,17 +78,29 @@ const erased = (operation: string, outcome: ChangeOutcome) =>
   erasing.has(operation) && outcome._tag === "answered" && outcome.status < 400;
 
 // Keeping the log never changes an answer: a failure to keep it is logged.
+/**
+ * How long an answer waits for its request to be kept: the log is written
+ * before the answer leaves, so a database that is slow, or a pool with no
+ * connection to give, must not hold every write back with it.
+ */
+export const keepingTimeout = Duration.seconds(2);
+
 const kept = (journal: ActivityJournal["Service"], change: AnsweredChange) =>
-  journal
-    .record(change)
-    .pipe(
-      Effect.catchCause((cause) =>
+  journal.record(change).pipe(
+    Effect.timeoutOrElse({
+      duration: keepingTimeout,
+      orElse: () =>
         Effect.logError(
-          "Keeping a request in the workspace's activity log failed",
-          cause
-        )
+          "Keeping a request in the workspace's activity log took too long: it was not kept"
+        ),
+    }),
+    Effect.catchCause((cause) =>
+      Effect.logError(
+        "Keeping a request in the workspace's activity log failed",
+        cause
       )
-    );
+    )
+  );
 
 /** A request to the API that asks to change something in a workspace. */
 export interface RequestedChange {

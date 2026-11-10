@@ -2,6 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Cause, Effect, Exit, Option, Ref, Schema } from "effect";
 import { HttpServerResponse } from "effect/http";
 import { HttpApiError } from "effect/http-api";
+import { TestClock } from "effect/testing";
 import { Forbidden, PostNotFound } from "peal-contract";
 import { errorsByTag } from "peal-contract/errors";
 
@@ -15,6 +16,7 @@ import { DatabaseError } from "#shared/application/database-error.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { memberOf } from "#test/channels/support.ts";
 import {
+  keepingTimeout,
   outcomeOf,
   recorded,
   recordToolCall,
@@ -261,6 +263,25 @@ describe("recording a request", () => {
         );
 
         assert.lengthOf(yield* Ref.get(kept), 1);
+      })
+  );
+
+  it.effect(
+    "waits for the log only so long: a database that does not answer holds no answer back",
+    () =>
+      Effect.gen(function* slow() {
+        const member = memberOf(workspaceId, ["post:create"]);
+
+        const stuck = ActivityJournal.of({ record: () => Effect.never });
+
+        const recording = yield* recordToolCall(stuck, {
+          member,
+          tool: "create_draft",
+        }).pipe(Effect.forkChild);
+
+        yield* TestClock.adjust(keepingTimeout);
+
+        assert.isDefined(recording.pollUnsafe());
       })
   );
 
