@@ -186,8 +186,8 @@ peal media import https://files.example/spring/cover.jpg --alt "A paper catalogu
 peal media list                   # newest first; --limit and --cursor page through them
 ```
 
-- `peal media upload` sends a file to the workspace's media: JPEG, PNG, GIF or WebP up to 16 MiB, MP4 or QuickTime up to 1 GiB, told by its extension. The file goes straight to the media store, then Peal checks and reads it.
-- `peal media import` has the server fetch an image or a video from a public `https://` address, without credentials, within 90 seconds ([Images and videos](/media#import)). Upload larger or slower files instead.
+- `peal media upload` sends a file to the workspace's media: JPEG, PNG, GIF or WebP up to 16 MiB, MP4 or QuickTime up to 1 GiB, or a PDF document up to 100 MiB and 300 pages, told by its extension. The file goes straight to the media store, then Peal checks and reads it.
+- `peal media import` has the server fetch an image, a video or a PDF document from a public `https://` address, without credentials, within 90 seconds ([Images and videos](/media#import)). Upload larger or slower files instead.
 - `peal media list` lists the workspace's images and videos, newest first, with the ids posts attach and whether each is ready. `--limit` takes 100 at most.
 - `--alt` says what the file shows, for people who cannot see it.
 

@@ -186,8 +186,8 @@ peal media import https://files.example/printemps/couverture.jpg --alt "Un catal
 peal media list                   # du plus récent au plus ancien ; --limit et --cursor les parcourent
 ```
 
-- `peal media upload` envoie un fichier dans les médias de l’espace de travail : JPEG, PNG, GIF ou WebP jusqu’à 16 Mio, MP4 ou QuickTime jusqu’à 1 Gio, reconnu à son extension. Le fichier va directement au stockage des médias, puis Peal le vérifie et le lit.
-- `peal media import` fait récupérer au serveur une image ou une vidéo à une adresse `https://` publique, sans identifiants, en 90 secondes au plus ([Images et vidéos](/media#import)). Pour les fichiers plus lourds ou plus lents, utilisez `peal media upload`.
+- `peal media upload` envoie un fichier dans les médias de l’espace de travail : JPEG, PNG, GIF ou WebP jusqu’à 16 Mio, MP4 ou QuickTime jusqu’à 1 Gio, ou un document PDF jusqu’à 100 Mio et 300 pages, reconnu à son extension. Le fichier va directement au stockage des médias, puis Peal le vérifie et le lit.
+- `peal media import` fait récupérer au serveur une image, une vidéo ou un document PDF à une adresse `https://` publique, sans identifiants, en 90 secondes au plus ([Images et vidéos](/media#import)). Pour les fichiers plus lourds ou plus lents, utilisez `peal media upload`.
 - `peal media list` liste les images et vidéos de l’espace de travail, de la plus récente à la plus ancienne, avec les identifiants que les publications prennent et si chacune est prête. `--limit` prend 100 au plus.
 - `--alt` dit ce que montre le fichier, pour les personnes qui ne peuvent pas le voir.
 
