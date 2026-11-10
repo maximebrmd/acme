@@ -289,7 +289,10 @@ The staff context follows these rules too. What the law has a host keep is in
   (`workspaces:read`, `:write`, `:delete`) for `/api/partner`, and the
   permissions it holds in each workspace, out of `partnerKeyPermissions`
   (`workspace/domain/partner-key.ts`): never members, invitations, API keys
-  or billing changes. `Authentication` answers it as a
+  or billing changes. `engagement:read` and `engagement:reply` are among
+  them, as publishing is: a product that posts for its customers reads
+  and answers what is said under those posts, in a workspace that has no
+  member to do it. `Authentication` answers it as a
   `PartnerKeyPrincipal`; `WorkspaceAccess` lets it into a workspace its
   partner owns and answers 404 for every other, the home workspace
   included (`PartnerOwnership.ownerOf`). `/api/me` and the groups for

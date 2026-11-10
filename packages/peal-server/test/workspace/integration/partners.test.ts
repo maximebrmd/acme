@@ -116,6 +116,11 @@ const reads = (workspaceId: string) => [
   `/api/workspaces/${workspaceId}/approvals`,
   `/api/workspaces/${workspaceId}/review/settings`,
   `/api/workspaces/${workspaceId}/connect-links`,
+  // The numbers and their exports, and the comments under its posts.
+  `/api/workspaces/${workspaceId}/analytics/dashboard?days=7&timeZone=Europe/Paris`,
+  `/api/workspaces/${workspaceId}/analytics/export?kind=posts&days=7&timeZone=Europe/Paris`,
+  `/api/workspaces/${workspaceId}/analytics/export?kind=accounts&format=json&days=7&timeZone=Europe/Paris`,
+  `/api/workspaces/${workspaceId}/inbox/threads`,
 ];
 
 const SelfServiceLive = Layer.mergeAll(
@@ -876,6 +881,53 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
         );
 
         assert.strictEqual(media.status, 403);
+
+        // Comments are read and answered by a key that was given each:
+        // reading is not answering, and the numbers are neither.
+        const unknown = "0190f3a0-0000-7000-8000-00000000c0de";
+
+        const answer = (key: string) =>
+          app
+            .request(
+              `/api/workspaces/${customer.id}/inbox/comments/${unknown}/replies`,
+              { body: { text: "Thank you." }, headers: bearer(key) }
+            )
+            .pipe(Effect.map(({ status }) => status));
+
+        const threads = (key: string) =>
+          app
+            .request(`/api/workspaces/${customer.id}/inbox/threads`, {
+              headers: bearer(key),
+            })
+            .pipe(Effect.map(({ status }) => status));
+
+        const listening = (yield* keyOf(owner, home, {
+          permissions: ["engagement:read", "analytics:read"],
+          scopes: [],
+        })).key;
+
+        const answering = (yield* keyOf(owner, home, {
+          permissions: ["engagement:read", "engagement:reply"],
+          scopes: [],
+        })).key;
+
+        assert.deepStrictEqual(
+          yield* Effect.all([
+            threads(reading),
+            threads(listening),
+            answer(listening),
+            // Let through to the use case, which finds no such comment.
+            answer(answering),
+          ]),
+          [403, 200, 403, 404]
+        );
+
+        const numbers = yield* app.request(
+          `/api/workspaces/${customer.id}/analytics/export?kind=posts&days=7&timeZone=Europe/Paris`,
+          { headers: bearer(answering) }
+        );
+
+        assert.strictEqual(numbers.status, 403);
 
         // Without workspaces:read, the key lists nothing.
         const blind = (yield* keyOf(owner, home, {
