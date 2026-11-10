@@ -1,4 +1,12 @@
-import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
+import {
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Metric,
+  Option,
+  Result,
+} from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
@@ -26,6 +34,23 @@ import { EndpointSecrets } from "./ports/endpoint-secrets.ts";
 import { EndpointStore } from "./ports/endpoint-store.ts";
 import type { StoredSecrets } from "./ports/endpoint-store.ts";
 import { WebhookTransport } from "./ports/webhook-transport.ts";
+
+/**
+ * Attempts made, by the event's type and how each ended: `delivered`,
+ * `retry` (failed, another follows) or `failed` (for good). Never the
+ * address, the workspace or the endpoint.
+ */
+export const webhookAttempts = Metric.counter("peal.webhook_attempts", {
+  description: "Webhook delivery attempts, by event type and outcome",
+  incremental: true,
+});
+
+// How the counter names what an attempt left of its delivery.
+const outcomes = {
+  failed: "failed",
+  pending: "retry",
+  succeeded: "delivered",
+} as const;
 
 /**
  * What an attempt left of its delivery: over, delivered or failed for
@@ -202,8 +227,18 @@ export class DeliverWebhook extends Context.Service<
             .pipe(Effect.andThen(recordOnEndpoint(endpoint, made)))
         );
 
+        const { status } = next.success;
+
+        yield* Metric.update(
+          Metric.withAttributes(webhookAttempts, {
+            event: recorded.event.type,
+            outcome: outcomes[status._tag],
+          }),
+          1
+        );
+
         const result: AttemptResult =
-          next.success.status._tag === "pending" ? "retry" : "settled";
+          status._tag === "pending" ? "retry" : "settled";
 
         return result;
       });

@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Option } from "effect";
+import { DateTime, Effect, Metric, Option } from "effect";
 import { TestClock } from "effect/testing";
 
 import type { Actor } from "#shared/domain/access.ts";
@@ -14,7 +14,10 @@ import {
   referenceSignature,
   WebhooksTest,
 } from "#test/webhooks/support.ts";
-import { DeliverWebhook } from "#webhooks/application/deliver-webhook.ts";
+import {
+  DeliverWebhook,
+  webhookAttempts,
+} from "#webhooks/application/deliver-webhook.ts";
 import { DeliveryStore } from "#webhooks/application/ports/delivery-store.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
 import { maxAttempts } from "#webhooks/domain/delivery-policy.ts";
@@ -33,6 +36,15 @@ const pending = (actor: Actor, endpointId: string) =>
   WebhookEndpoints.use((endpoints) => endpoints.sendTest(actor, endpointId));
 
 const unanswered = { _tag: "unanswered", reason: "timeout" } as const;
+
+// How many attempts of test events ended so.
+const counted = (outcome: "delivered" | "failed" | "retry") =>
+  Metric.value(
+    Metric.withAttributes(webhookAttempts, {
+      event: "webhook.test",
+      outcome,
+    })
+  ).pipe(Effect.map(({ count }) => count));
 
 layer(WebhooksTest)("a delivery's attempts", (it) => {
   it.effect("send the event signed as the specification says", () =>
@@ -329,6 +341,29 @@ layer(WebhooksTest)("a delivery's attempts", (it) => {
           { at: now, endpointId: endpoint.id, reason: "gone" },
         ]);
       })
+  );
+
+  it.effect("count each attempt by how it ended, and nothing else", () =>
+    Effect.gen(function* counts() {
+      const owner = yield* freshOwner;
+      const transport = yield* FakeTransport;
+      const { endpoint, host } = yield* freshEndpoint(owner);
+
+      const before = {
+        delivered: yield* counted("delivered"),
+        retry: yield* counted("retry"),
+      };
+
+      yield* transport.next(host, answered(500));
+
+      const delivery = yield* pending(owner, endpoint.id);
+
+      yield* attempt(delivery.id, 1);
+      yield* attempt(delivery.id, 2);
+
+      assert.strictEqual(yield* counted("retry"), before.retry + 1);
+      assert.strictEqual(yield* counted("delivered"), before.delivered + 1);
+    })
   );
 
   it.effect("leave alone a delivery deleted with its endpoint", () =>
