@@ -2194,8 +2194,14 @@ and no socket, for tests.
   `WorkspaceEntitlements.layerShared`). Channels are counted across the
   home workspace and every workspace the partner owns, under the partner's
   advisory lock (`CustomerWorkspaces.hold`, `ChannelAllowance.sharedWith`,
-  `SharedChannelAllowanceLive`); the other limits apply per workspace. Take
-  the partner's lock before a workspace's, never after. Tests that need no
+  `SharedChannelAllowanceLive`); the other limits apply per workspace.
+  Locks are taken in one order, never the other way: a connect link's row
+  (`ConnectLinkStore.lock`), then the workspace's channel additions
+  (`ChannelRepository.addingTo`), then the partner's hold, which
+  `ChannelAllowance.sharedWith` takes inside `addingTo`; scheduling takes
+  the partner's hold inside its own transaction, and holds no channel
+  lock. Creating a customer's workspace and closing the account take the
+  partner's hold alone. Tests that need no
   partner keep the unshared layers (`WorkspaceEntitlements.layer`,
   `PlanChannelAllowanceLive`, `PartnerOwnership.layerNone`,
   `EventOrigins.layerNone`).
@@ -2212,8 +2218,9 @@ and no socket, for tests.
   (`events.external_id`). A partner key never acts in the home workspace,
   so that endpoint is made by a member or the home workspace's API key.
 - A connect link (`ConnectLinks`, `channels.connect_links`) lets whoever
-  holds its address connect one account of one platform to a workspace,
-  and nothing else, without a session: `POST …/connect-links`
+  holds its address connect an account of one platform to a workspace
+  (those they pick, when the sign-in reached several, as a member's
+  picker lets them), and nothing else, without a session: `POST …/connect-links`
   (channel:connect) answers the address once, and only the SHA-256 of its
   token is kept. It works once, for a sign-in that connects an account;
   opening it uses nothing. It lasts 7 days unless told (1 to 720 hours),
