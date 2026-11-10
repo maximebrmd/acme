@@ -18,6 +18,8 @@ module Peal
       member -> { Peal::Types::LookupResultPinterestBoards }, key: "PINTEREST_BOARDS"
 
       member -> { Peal::Types::LookupResultPinterestBoardSections }, key: "PINTEREST_BOARD_SECTIONS"
+
+      member -> { Peal::Types::LookupResultLinkedinOrganizations }, key: "LINKEDIN_ORGANIZATIONS"
     end
   end
 end

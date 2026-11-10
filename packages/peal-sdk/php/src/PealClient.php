@@ -18,6 +18,7 @@ use Peal\Analytics\AnalyticsClient;
 use Peal\Tiktok\TiktokClient;
 use Peal\Capabilities\CapabilitiesClient;
 use Peal\Lookups\LookupsClient;
+use Peal\Review\ReviewClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
 
@@ -104,6 +105,11 @@ class PealClient
     public LookupsClient $lookups;
 
     /**
+     * @var ReviewClient $review
+     */
+    public ReviewClient $review;
+
+    /**
      * @var array{
      *   baseUrl?: string,
      *   client?: ClientInterface,
@@ -170,5 +176,6 @@ class PealClient
         $this->tiktok = new TiktokClient($this->client, $this->options);
         $this->capabilities = new CapabilitiesClient($this->client, $this->options);
         $this->lookups = new LookupsClient($this->client, $this->options);
+        $this->review = new ReviewClient($this->client, $this->options);
     }
 }

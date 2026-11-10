@@ -54,6 +54,7 @@ var (
 	lookupInputFieldLanguage    = big.NewInt(1 << 5)
 	lookupInputFieldLimit       = big.NewInt(1 << 6)
 	lookupInputFieldRegionCode  = big.NewInt(1 << 7)
+	lookupInputFieldVanityName  = big.NewInt(1 << 8)
 )
 
 type LookupInput struct {
@@ -65,6 +66,7 @@ type LookupInput struct {
 	Language    *string `json:"language,omitempty" url:"-"`
 	Limit       *int    `json:"limit,omitempty" url:"-"`
 	RegionCode  *string `json:"regionCode,omitempty" url:"-"`
+	VanityName  *string `json:"vanityName,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -135,6 +137,13 @@ func (l *LookupInput) SetRegionCode(regionCode *string) {
 	l.require(lookupInputFieldRegionCode)
 }
 
+// SetVanityName sets the VanityName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupInput) SetVanityName(vanityName *string) {
+	l.VanityName = vanityName
+	l.require(lookupInputFieldVanityName)
+}
+
 func (l *LookupInput) UnmarshalJSON(data []byte) error {
 	type unmarshaler LookupInput
 	var body unmarshaler
@@ -156,6 +165,136 @@ func (l *LookupInput) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
+var (
+	linkedInOrganizationFieldName       = big.NewInt(1 << 0)
+	linkedInOrganizationFieldUrn        = big.NewInt(1 << 1)
+	linkedInOrganizationFieldVanityName = big.NewInt(1 << 2)
+)
+
+// linkedInOrganizationNullableFields maps the wire names of LinkedInOrganization's nullable fields (required or optional) to their field bits.
+var linkedInOrganizationNullableFields = map[string]*big.Int{
+	"vanityName": linkedInOrganizationFieldVanityName,
+}
+
+type LinkedInOrganization struct {
+	Name       string  `json:"name" url:"name"`
+	Urn        string  `json:"urn" url:"urn"`
+	VanityName *string `json:"vanityName,omitempty" url:"vanityName,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LinkedInOrganization) GetName() string {
+	if l == nil {
+		return ""
+	}
+	return l.Name
+}
+
+func (l *LinkedInOrganization) GetUrn() string {
+	if l == nil {
+		return ""
+	}
+	return l.Urn
+}
+
+func (l *LinkedInOrganization) GetVanityName() *string {
+	if l == nil {
+		return nil
+	}
+	return l.VanityName
+}
+
+func (l *LinkedInOrganization) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LinkedInOrganization) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOrganization) SetName(name string) {
+	l.Name = name
+	l.require(linkedInOrganizationFieldName)
+}
+
+// SetUrn sets the Urn field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOrganization) SetUrn(urn string) {
+	l.Urn = urn
+	l.require(linkedInOrganizationFieldUrn)
+}
+
+// SetVanityName sets the VanityName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOrganization) SetVanityName(vanityName *string) {
+	l.VanityName = vanityName
+	l.require(linkedInOrganizationFieldVanityName)
+}
+
+func (l *LinkedInOrganization) UnmarshalJSON(data []byte) error {
+	type unmarshaler LinkedInOrganization
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LinkedInOrganization(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, linkedInOrganizationNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		l.require(presentFields)
+	}
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LinkedInOrganization) MarshalJSON() ([]byte, error) {
+	type embed LinkedInOrganization
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LinkedInOrganization) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
 type LookupResult struct {
 	Type                   string
 	YoutubeVideoCategories *LookupResultYoutubeVideoCategories
@@ -163,6 +302,7 @@ type LookupResult struct {
 	TiktokCreator          *LookupResultTiktokCreator
 	PinterestBoards        *LookupResultPinterestBoards
 	PinterestBoardSections *LookupResultPinterestBoardSections
+	LinkedinOrganizations  *LookupResultLinkedinOrganizations
 
 	rawJSON json.RawMessage
 }
@@ -209,6 +349,13 @@ func (l *LookupResult) GetPinterestBoardSections() *LookupResultPinterestBoardSe
 	return l.PinterestBoardSections
 }
 
+func (l *LookupResult) GetLinkedinOrganizations() *LookupResultLinkedinOrganizations {
+	if l == nil {
+		return nil
+	}
+	return l.LinkedinOrganizations
+}
+
 func (l *LookupResult) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -251,6 +398,12 @@ func (l *LookupResult) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		l.PinterestBoardSections = value
+	case "linkedinOrganizations":
+		value := new(LookupResultLinkedinOrganizations)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		l.LinkedinOrganizations = value
 	}
 	l.rawJSON = json.RawMessage(data)
 	return nil
@@ -275,6 +428,9 @@ func (l LookupResult) MarshalJSON() ([]byte, error) {
 	if l.PinterestBoardSections != nil {
 		return internal.MarshalJSONWithExtraProperty(l.PinterestBoardSections, "_tag", "pinterestBoardSections")
 	}
+	if l.LinkedinOrganizations != nil {
+		return internal.MarshalJSONWithExtraProperty(l.LinkedinOrganizations, "_tag", "linkedinOrganizations")
+	}
 	if len(l.rawJSON) > 0 {
 		return l.rawJSON, nil
 	}
@@ -287,6 +443,7 @@ type LookupResultVisitor interface {
 	VisitTiktokCreator(*LookupResultTiktokCreator) error
 	VisitPinterestBoards(*LookupResultPinterestBoards) error
 	VisitPinterestBoardSections(*LookupResultPinterestBoardSections) error
+	VisitLinkedinOrganizations(*LookupResultLinkedinOrganizations) error
 }
 
 func (l *LookupResult) Accept(visitor LookupResultVisitor) error {
@@ -304,6 +461,9 @@ func (l *LookupResult) Accept(visitor LookupResultVisitor) error {
 	}
 	if l.PinterestBoardSections != nil {
 		return visitor.VisitPinterestBoardSections(l.PinterestBoardSections)
+	}
+	if l.LinkedinOrganizations != nil {
+		return visitor.VisitLinkedinOrganizations(l.LinkedinOrganizations)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", l)
 }
@@ -327,6 +487,9 @@ func (l *LookupResult) validate() error {
 	}
 	if l.PinterestBoardSections != nil {
 		fields = append(fields, "pinterestBoardSections")
+	}
+	if l.LinkedinOrganizations != nil {
+		fields = append(fields, "linkedinOrganizations")
 	}
 	if len(fields) == 0 {
 		if l.Type != "" {
@@ -352,6 +515,120 @@ func (l *LookupResult) validate() error {
 		}
 	}
 	return nil
+}
+
+var (
+	lookupResultLinkedinOrganizationsFieldItems      = big.NewInt(1 << 0)
+	lookupResultLinkedinOrganizationsFieldNextCursor = big.NewInt(1 << 1)
+)
+
+// lookupResultLinkedinOrganizationsNullableFields maps the wire names of LookupResultLinkedinOrganizations's nullable fields (required or optional) to their field bits.
+var lookupResultLinkedinOrganizationsNullableFields = map[string]*big.Int{
+	"nextCursor": lookupResultLinkedinOrganizationsFieldNextCursor,
+}
+
+type LookupResultLinkedinOrganizations struct {
+	Items      []*LinkedInOrganization `json:"items" url:"items"`
+	NextCursor *string                 `json:"nextCursor,omitempty" url:"nextCursor,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LookupResultLinkedinOrganizations) GetItems() []*LinkedInOrganization {
+	if l == nil {
+		return nil
+	}
+	return l.Items
+}
+
+func (l *LookupResultLinkedinOrganizations) GetNextCursor() *string {
+	if l == nil {
+		return nil
+	}
+	return l.NextCursor
+}
+
+func (l *LookupResultLinkedinOrganizations) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LookupResultLinkedinOrganizations) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetItems sets the Items field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupResultLinkedinOrganizations) SetItems(items []*LinkedInOrganization) {
+	l.Items = items
+	l.require(lookupResultLinkedinOrganizationsFieldItems)
+}
+
+// SetNextCursor sets the NextCursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupResultLinkedinOrganizations) SetNextCursor(nextCursor *string) {
+	l.NextCursor = nextCursor
+	l.require(lookupResultLinkedinOrganizationsFieldNextCursor)
+}
+
+func (l *LookupResultLinkedinOrganizations) UnmarshalJSON(data []byte) error {
+	type unmarshaler LookupResultLinkedinOrganizations
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LookupResultLinkedinOrganizations(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, lookupResultLinkedinOrganizationsNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		l.require(presentFields)
+	}
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LookupResultLinkedinOrganizations) MarshalJSON() ([]byte, error) {
+	type embed LookupResultLinkedinOrganizations
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LookupResultLinkedinOrganizations) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
 }
 
 var (

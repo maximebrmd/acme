@@ -19,6 +19,7 @@ import social.peal.resources.members.AsyncMembersClient;
 import social.peal.resources.notices.AsyncNoticesClient;
 import social.peal.resources.notificationpreferences.AsyncNotificationPreferencesClient;
 import social.peal.resources.posts.AsyncPostsClient;
+import social.peal.resources.review.AsyncReviewClient;
 import social.peal.resources.session.AsyncSessionClient;
 import social.peal.resources.system.AsyncSystemClient;
 import social.peal.resources.tiktok.AsyncTiktokClient;
@@ -58,6 +59,8 @@ public class AsyncPealClient implements AutoCloseable {
 
     protected final Supplier<AsyncLookupsClient> lookupsClient;
 
+    protected final Supplier<AsyncReviewClient> reviewClient;
+
     public AsyncPealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new AsyncSystemClient(clientOptions));
@@ -77,6 +80,7 @@ public class AsyncPealClient implements AutoCloseable {
         this.tiktokClient = Suppliers.memoize(() -> new AsyncTiktokClient(clientOptions));
         this.capabilitiesClient = Suppliers.memoize(() -> new AsyncCapabilitiesClient(clientOptions));
         this.lookupsClient = Suppliers.memoize(() -> new AsyncLookupsClient(clientOptions));
+        this.reviewClient = Suppliers.memoize(() -> new AsyncReviewClient(clientOptions));
     }
 
     public AsyncSystemClient system() {
@@ -141,6 +145,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncLookupsClient lookups() {
         return this.lookupsClient.get();
+    }
+
+    public AsyncReviewClient review() {
+        return this.reviewClient.get();
     }
 
     /**

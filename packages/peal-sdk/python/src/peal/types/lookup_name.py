@@ -4,7 +4,12 @@ import typing
 
 LookupName = typing.Union[
     typing.Literal[
-        "youtubeVideoCategories", "youtubePlaylists", "tiktokCreator", "pinterestBoards", "pinterestBoardSections"
+        "youtubeVideoCategories",
+        "youtubePlaylists",
+        "tiktokCreator",
+        "pinterestBoards",
+        "pinterestBoardSections",
+        "linkedinOrganizations",
     ],
     typing.Any,
 ]

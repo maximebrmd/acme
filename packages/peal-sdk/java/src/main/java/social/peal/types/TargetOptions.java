@@ -34,8 +34,16 @@ public final class TargetOptions {
         return new TargetOptions(new TiktokValue(value));
     }
 
+    public static TargetOptions pinterest(PinterestOptions value) {
+        return new TargetOptions(new PinterestValue(value));
+    }
+
     public static TargetOptions googleBusiness(GoogleBusinessOptions value) {
         return new TargetOptions(new GoogleBusinessValue(value));
+    }
+
+    public static TargetOptions linkedin(LinkedInOptions value) {
+        return new TargetOptions(new LinkedinValue(value));
     }
 
     public boolean isYoutube() {
@@ -46,8 +54,16 @@ public final class TargetOptions {
         return value instanceof TiktokValue;
     }
 
+    public boolean isPinterest() {
+        return value instanceof PinterestValue;
+    }
+
     public boolean isGoogleBusiness() {
         return value instanceof GoogleBusinessValue;
+    }
+
+    public boolean isLinkedin() {
+        return value instanceof LinkedinValue;
     }
 
     public boolean _isUnknown() {
@@ -68,9 +84,23 @@ public final class TargetOptions {
         return Optional.empty();
     }
 
+    public Optional<PinterestOptions> getPinterest() {
+        if (isPinterest()) {
+            return Optional.of(((PinterestValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<GoogleBusinessOptions> getGoogleBusiness() {
         if (isGoogleBusiness()) {
             return Optional.of(((GoogleBusinessValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<LinkedInOptions> getLinkedin() {
+        if (isLinkedin()) {
+            return Optional.of(((LinkedinValue) value).value);
         }
         return Optional.empty();
     }
@@ -108,7 +138,11 @@ public final class TargetOptions {
 
         T visitTiktok(TikTokOptions tiktok);
 
+        T visitPinterest(PinterestOptions pinterest);
+
         T visitGoogleBusiness(GoogleBusinessOptions googleBusiness);
+
+        T visitLinkedin(LinkedInOptions linkedin);
 
         T _visitUnknown(Object unknownType);
     }
@@ -117,7 +151,9 @@ public final class TargetOptions {
     @JsonSubTypes({
         @JsonSubTypes.Type(YoutubeValue.class),
         @JsonSubTypes.Type(TiktokValue.class),
-        @JsonSubTypes.Type(GoogleBusinessValue.class)
+        @JsonSubTypes.Type(PinterestValue.class),
+        @JsonSubTypes.Type(GoogleBusinessValue.class),
+        @JsonSubTypes.Type(LinkedinValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -204,6 +240,46 @@ public final class TargetOptions {
         }
     }
 
+    @JsonTypeName("pinterest")
+    @JsonIgnoreProperties("platform")
+    private static final class PinterestValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private PinterestOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PinterestValue() {}
+
+        private PinterestValue(PinterestOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPinterest(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PinterestValue && equalTo((PinterestValue) other);
+        }
+
+        private boolean equalTo(PinterestValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
     @JsonTypeName("googleBusiness")
     @JsonIgnoreProperties("platform")
     private static final class GoogleBusinessValue implements Value {
@@ -230,6 +306,46 @@ public final class TargetOptions {
         }
 
         private boolean equalTo(GoogleBusinessValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("linkedin")
+    @JsonIgnoreProperties("platform")
+    private static final class LinkedinValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private LinkedInOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private LinkedinValue() {}
+
+        private LinkedinValue(LinkedInOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitLinkedin(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof LinkedinValue && equalTo((LinkedinValue) other);
+        }
+
+        private boolean equalTo(LinkedinValue other) {
             return value.equals(other.value);
         }
 

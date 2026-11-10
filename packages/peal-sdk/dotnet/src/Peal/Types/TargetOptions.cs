@@ -40,11 +40,29 @@ public record TargetOptions
     }
 
     /// <summary>
+    /// Create an instance of TargetOptions with <see cref="TargetOptions.Pinterest"/>.
+    /// </summary>
+    public TargetOptions(TargetOptions.Pinterest value)
+    {
+        Platform = "pinterest";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of TargetOptions with <see cref="TargetOptions.GoogleBusiness"/>.
     /// </summary>
     public TargetOptions(TargetOptions.GoogleBusiness value)
     {
         Platform = "googleBusiness";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of TargetOptions with <see cref="TargetOptions.Linkedin"/>.
+    /// </summary>
+    public TargetOptions(TargetOptions.Linkedin value)
+    {
+        Platform = "linkedin";
         Value = value.Value;
     }
 
@@ -70,9 +88,19 @@ public record TargetOptions
     public bool IsTiktok => Platform == "tiktok";
 
     /// <summary>
+    /// Returns true if <see cref="Platform"/> is "pinterest"
+    /// </summary>
+    public bool IsPinterest => Platform == "pinterest";
+
+    /// <summary>
     /// Returns true if <see cref="Platform"/> is "googleBusiness"
     /// </summary>
     public bool IsGoogleBusiness => Platform == "googleBusiness";
+
+    /// <summary>
+    /// Returns true if <see cref="Platform"/> is "linkedin"
+    /// </summary>
+    public bool IsLinkedin => Platform == "linkedin";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.YouTubeOptions"/> if <see cref="Platform"/> is 'youtube', otherwise throws an exception.
@@ -93,6 +121,15 @@ public record TargetOptions
             : throw new global::System.Exception("TargetOptions.Platform is not 'tiktok'");
 
     /// <summary>
+    /// Returns the value as a <see cref="Peal.PinterestOptions"/> if <see cref="Platform"/> is 'pinterest', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'pinterest'.</exception>
+    public Peal.PinterestOptions AsPinterest() =>
+        IsPinterest
+            ? (Peal.PinterestOptions)Value!
+            : throw new global::System.Exception("TargetOptions.Platform is not 'pinterest'");
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.GoogleBusinessOptions"/> if <see cref="Platform"/> is 'googleBusiness', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'googleBusiness'.</exception>
@@ -101,10 +138,21 @@ public record TargetOptions
             ? (Peal.GoogleBusinessOptions)Value!
             : throw new global::System.Exception("TargetOptions.Platform is not 'googleBusiness'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.LinkedInOptions"/> if <see cref="Platform"/> is 'linkedin', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'linkedin'.</exception>
+    public Peal.LinkedInOptions AsLinkedin() =>
+        IsLinkedin
+            ? (Peal.LinkedInOptions)Value!
+            : throw new global::System.Exception("TargetOptions.Platform is not 'linkedin'");
+
     public T Match<T>(
         Func<Peal.YouTubeOptions, T> onYoutube,
         Func<Peal.TikTokOptions, T> onTiktok,
+        Func<Peal.PinterestOptions, T> onPinterest,
         Func<Peal.GoogleBusinessOptions, T> onGoogleBusiness,
+        Func<Peal.LinkedInOptions, T> onLinkedin,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -112,7 +160,9 @@ public record TargetOptions
         {
             "youtube" => onYoutube(AsYoutube()),
             "tiktok" => onTiktok(AsTiktok()),
+            "pinterest" => onPinterest(AsPinterest()),
             "googleBusiness" => onGoogleBusiness(AsGoogleBusiness()),
+            "linkedin" => onLinkedin(AsLinkedin()),
             _ => onUnknown_(Platform, Value),
         };
     }
@@ -120,7 +170,9 @@ public record TargetOptions
     public void Visit(
         Action<Peal.YouTubeOptions> onYoutube,
         Action<Peal.TikTokOptions> onTiktok,
+        Action<Peal.PinterestOptions> onPinterest,
         Action<Peal.GoogleBusinessOptions> onGoogleBusiness,
+        Action<Peal.LinkedInOptions> onLinkedin,
         Action<string, object?> onUnknown_
     )
     {
@@ -132,8 +184,14 @@ public record TargetOptions
             case "tiktok":
                 onTiktok(AsTiktok());
                 break;
+            case "pinterest":
+                onPinterest(AsPinterest());
+                break;
             case "googleBusiness":
                 onGoogleBusiness(AsGoogleBusiness());
+                break;
+            case "linkedin":
+                onLinkedin(AsLinkedin());
                 break;
             default:
                 onUnknown_(Platform, Value);
@@ -170,6 +228,20 @@ public record TargetOptions
     }
 
     /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.PinterestOptions"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPinterest(out Peal.PinterestOptions? value)
+    {
+        if (Platform == "pinterest")
+        {
+            value = (Peal.PinterestOptions)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
     /// Attempts to cast the value to a <see cref="Peal.GoogleBusinessOptions"/> and returns true if successful.
     /// </summary>
     public bool TryAsGoogleBusiness(out Peal.GoogleBusinessOptions? value)
@@ -183,13 +255,31 @@ public record TargetOptions
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.LinkedInOptions"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsLinkedin(out Peal.LinkedInOptions? value)
+    {
+        if (Platform == "linkedin")
+        {
+            value = (Peal.LinkedInOptions)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator TargetOptions(TargetOptions.Youtube value) => new(value);
 
     public static implicit operator TargetOptions(TargetOptions.Tiktok value) => new(value);
 
+    public static implicit operator TargetOptions(TargetOptions.Pinterest value) => new(value);
+
     public static implicit operator TargetOptions(TargetOptions.GoogleBusiness value) => new(value);
+
+    public static implicit operator TargetOptions(TargetOptions.Linkedin value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<TargetOptions>
@@ -236,11 +326,15 @@ public record TargetOptions
                     ?? throw new JsonException("Failed to deserialize Peal.YouTubeOptions"),
                 "tiktok" => jsonWithoutDiscriminator.Deserialize<Peal.TikTokOptions?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.TikTokOptions"),
+                "pinterest" => jsonWithoutDiscriminator.Deserialize<Peal.PinterestOptions?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.PinterestOptions"),
                 "googleBusiness" =>
                     jsonWithoutDiscriminator.Deserialize<Peal.GoogleBusinessOptions?>(options)
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.GoogleBusinessOptions"
                         ),
+                "linkedin" => jsonWithoutDiscriminator.Deserialize<Peal.LinkedInOptions?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.LinkedInOptions"),
                 _ => json.Deserialize<object?>(options),
             };
             return new TargetOptions(discriminator, value);
@@ -257,7 +351,9 @@ public record TargetOptions
                 {
                     "youtube" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tiktok" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "pinterest" => JsonSerializer.SerializeToNode(value.Value, options),
                     "googleBusiness" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "linkedin" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["platform"] = value.Platform;
@@ -325,6 +421,25 @@ public record TargetOptions
     }
 
     /// <summary>
+    /// Discriminated union type for pinterest
+    /// </summary>
+    [Serializable]
+    public struct Pinterest
+    {
+        public Pinterest(Peal.PinterestOptions value)
+        {
+            Value = value;
+        }
+
+        internal Peal.PinterestOptions Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator TargetOptions.Pinterest(Peal.PinterestOptions value) =>
+            new(value);
+    }
+
+    /// <summary>
     /// Discriminated union type for googleBusiness
     /// </summary>
     [Serializable]
@@ -342,5 +457,24 @@ public record TargetOptions
         public static implicit operator TargetOptions.GoogleBusiness(
             Peal.GoogleBusinessOptions value
         ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for linkedin
+    /// </summary>
+    [Serializable]
+    public struct Linkedin
+    {
+        public Linkedin(Peal.LinkedInOptions value)
+        {
+            Value = value;
+        }
+
+        internal Peal.LinkedInOptions Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator TargetOptions.Linkedin(Peal.LinkedInOptions value) =>
+            new(value);
     }
 }

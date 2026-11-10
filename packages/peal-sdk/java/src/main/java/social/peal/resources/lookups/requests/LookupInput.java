@@ -30,6 +30,8 @@ public final class LookupInput {
 
     private final Optional<String> regionCode;
 
+    private final Optional<String> vanityName;
+
     private final Map<String, Object> additionalProperties;
 
     private LookupInput(
@@ -38,12 +40,14 @@ public final class LookupInput {
             Optional<String> language,
             Optional<Integer> limit,
             Optional<String> regionCode,
+            Optional<String> vanityName,
             Map<String, Object> additionalProperties) {
         this.boardId = boardId;
         this.cursor = cursor;
         this.language = language;
         this.limit = limit;
         this.regionCode = regionCode;
+        this.vanityName = vanityName;
         this.additionalProperties = additionalProperties;
     }
 
@@ -72,6 +76,11 @@ public final class LookupInput {
         return regionCode;
     }
 
+    @JsonProperty("vanityName")
+    public Optional<String> getVanityName() {
+        return vanityName;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -88,12 +97,13 @@ public final class LookupInput {
                 && cursor.equals(other.cursor)
                 && language.equals(other.language)
                 && limit.equals(other.limit)
-                && regionCode.equals(other.regionCode);
+                && regionCode.equals(other.regionCode)
+                && vanityName.equals(other.vanityName);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.boardId, this.cursor, this.language, this.limit, this.regionCode);
+        return Objects.hash(this.boardId, this.cursor, this.language, this.limit, this.regionCode, this.vanityName);
     }
 
     @java.lang.Override
@@ -117,6 +127,8 @@ public final class LookupInput {
 
         private Optional<String> regionCode = Optional.empty();
 
+        private Optional<String> vanityName = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -127,6 +139,7 @@ public final class LookupInput {
             language(other.getLanguage());
             limit(other.getLimit());
             regionCode(other.getRegionCode());
+            vanityName(other.getVanityName());
             return this;
         }
 
@@ -185,8 +198,19 @@ public final class LookupInput {
             return this;
         }
 
+        @JsonSetter(value = "vanityName", nulls = Nulls.SKIP)
+        public Builder vanityName(Optional<String> vanityName) {
+            this.vanityName = vanityName;
+            return this;
+        }
+
+        public Builder vanityName(String vanityName) {
+            this.vanityName = Optional.ofNullable(vanityName);
+            return this;
+        }
+
         public LookupInput build() {
-            return new LookupInput(boardId, cursor, language, limit, regionCode, additionalProperties);
+            return new LookupInput(boardId, cursor, language, limit, regionCode, vanityName, additionalProperties);
         }
 
         @JsonAnySetter
@@ -195,7 +219,8 @@ public final class LookupInput {
                     || key.equalsIgnoreCase("cursor")
                     || key.equalsIgnoreCase("language")
                     || key.equalsIgnoreCase("limit")
-                    || key.equalsIgnoreCase("regionCode")) {
+                    || key.equalsIgnoreCase("regionCode")
+                    || key.equalsIgnoreCase("vanityName")) {
                 return;
             }
             this.additionalProperties.put(key, value);

@@ -12,6 +12,7 @@ module Peal
       TIKTOK_CREATOR = "tiktokCreator"
       PINTEREST_BOARDS = "pinterestBoards"
       PINTEREST_BOARD_SECTIONS = "pinterestBoardSections"
+      LINKEDIN_ORGANIZATIONS = "linkedinOrganizations"
     end
   end
 end

@@ -18,6 +18,7 @@
 //! - **tiktok**
 //! - **capabilities**
 //! - **lookups**
+//! - **review**
 
 use crate::{ApiError, ClientConfig};
 
@@ -34,6 +35,7 @@ pub mod members;
 pub mod notices;
 pub mod notification_preferences;
 pub mod posts;
+pub mod review;
 pub mod session;
 pub mod system;
 pub mod tiktok;
@@ -55,6 +57,7 @@ pub struct PealClient {
     pub tiktok: TiktokClient,
     pub capabilities: CapabilitiesClient,
     pub lookups: LookupsClient,
+    pub review: ReviewClient,
 }
 
 impl PealClient {
@@ -77,6 +80,7 @@ impl PealClient {
             tiktok: TiktokClient::new(config.clone())?,
             capabilities: CapabilitiesClient::new(config.clone())?,
             lookups: LookupsClient::new(config.clone())?,
+            review: ReviewClient::new(config.clone())?,
         })
     }
 }
@@ -94,6 +98,7 @@ pub use members::MembersClient;
 pub use notices::NoticesClient;
 pub use notification_preferences::NotificationPreferencesClient;
 pub use posts::PostsClient;
+pub use review::ReviewClient;
 pub use session::SessionClient;
 pub use system::SystemClient;
 pub use tiktok::TiktokClient;

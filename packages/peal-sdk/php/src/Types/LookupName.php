@@ -9,4 +9,5 @@ enum LookupName: string
     case TiktokCreator = "tiktokCreator";
     case PinterestBoards = "pinterestBoards";
     case PinterestBoardSections = "pinterestBoardSections";
+    case LinkedinOrganizations = "linkedinOrganizations";
 }

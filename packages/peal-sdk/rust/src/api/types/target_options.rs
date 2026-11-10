@@ -56,6 +56,27 @@ pub enum TargetOptions {
         privacy_level: Option<TikTokPrivacyLevel>,
     },
 
+    #[serde(rename = "pinterest")]
+    #[non_exhaustive]
+    Pinterest {
+        #[serde(rename = "boardId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        board_id: Option<String>,
+        #[serde(rename = "boardSectionId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        board_section_id: Option<String>,
+        #[serde(rename = "coverSecond")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cover_second: Option<i64>,
+        #[serde(rename = "dominantColor")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        dominant_color: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        link: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+    },
+
     #[serde(rename = "googleBusiness")]
     #[non_exhaustive]
     GoogleBusiness {
@@ -84,6 +105,30 @@ pub enum TargetOptions {
         terms: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         title: Option<String>,
+    },
+
+    #[serde(rename = "linkedin")]
+    #[non_exhaustive]
+    Linkedin {
+        #[serde(rename = "disableReshare")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        disable_reshare: Option<bool>,
+        #[serde(rename = "documentTitle")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        document_title: Option<String>,
+        #[serde(rename = "linkDescription")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        link_description: Option<String>,
+        #[serde(rename = "linkTitle")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        link_title: Option<String>,
+        #[serde(rename = "linkUrl")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        link_url: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        mentions: Option<Vec<LinkedInMention>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        visibility: Option<LinkedInVisibility>,
     },
 
     /// Catch-all variant for unrecognized discriminant values.
@@ -119,6 +164,17 @@ impl TargetOptions {
         }
     }
 
+    pub fn pinterest() -> Self {
+        Self::Pinterest {
+            board_id: None,
+            board_section_id: None,
+            cover_second: None,
+            dominant_color: None,
+            link: None,
+            title: None,
+        }
+    }
+
     pub fn google_business() -> Self {
         Self::GoogleBusiness {
             call_to_action: None,
@@ -130,6 +186,18 @@ impl TargetOptions {
             starts_at: None,
             terms: None,
             title: None,
+        }
+    }
+
+    pub fn linkedin() -> Self {
+        Self::Linkedin {
+            disable_reshare: None,
+            document_title: None,
+            link_description: None,
+            link_title: None,
+            link_url: None,
+            mentions: None,
+            visibility: None,
         }
     }
 
@@ -449,6 +517,114 @@ impl TargetOptions {
         }
     }
 
+    pub fn pinterest_with_board_id(
+        board_id: String,
+        board_section_id: Option<String>,
+        cover_second: Option<i64>,
+        dominant_color: Option<String>,
+        link: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Pinterest {
+            board_id: Some(board_id),
+            board_section_id,
+            cover_second,
+            dominant_color,
+            link,
+            title,
+        }
+    }
+
+    pub fn pinterest_with_board_section_id(
+        board_id: Option<String>,
+        board_section_id: String,
+        cover_second: Option<i64>,
+        dominant_color: Option<String>,
+        link: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Pinterest {
+            board_id,
+            board_section_id: Some(board_section_id),
+            cover_second,
+            dominant_color,
+            link,
+            title,
+        }
+    }
+
+    pub fn pinterest_with_cover_second(
+        board_id: Option<String>,
+        board_section_id: Option<String>,
+        cover_second: i64,
+        dominant_color: Option<String>,
+        link: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Pinterest {
+            board_id,
+            board_section_id,
+            cover_second: Some(cover_second),
+            dominant_color,
+            link,
+            title,
+        }
+    }
+
+    pub fn pinterest_with_dominant_color(
+        board_id: Option<String>,
+        board_section_id: Option<String>,
+        cover_second: Option<i64>,
+        dominant_color: String,
+        link: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Pinterest {
+            board_id,
+            board_section_id,
+            cover_second,
+            dominant_color: Some(dominant_color),
+            link,
+            title,
+        }
+    }
+
+    pub fn pinterest_with_link(
+        board_id: Option<String>,
+        board_section_id: Option<String>,
+        cover_second: Option<i64>,
+        dominant_color: Option<String>,
+        link: String,
+        title: Option<String>,
+    ) -> Self {
+        Self::Pinterest {
+            board_id,
+            board_section_id,
+            cover_second,
+            dominant_color,
+            link: Some(link),
+            title,
+        }
+    }
+
+    pub fn pinterest_with_title(
+        board_id: Option<String>,
+        board_section_id: Option<String>,
+        cover_second: Option<i64>,
+        dominant_color: Option<String>,
+        link: Option<String>,
+        title: String,
+    ) -> Self {
+        Self::Pinterest {
+            board_id,
+            board_section_id,
+            cover_second,
+            dominant_color,
+            link,
+            title: Some(title),
+        }
+    }
+
     pub fn google_business_with_call_to_action(
         call_to_action: GoogleBusinessCallToAction,
         call_to_action_url: Option<String>,
@@ -662,6 +838,146 @@ impl TargetOptions {
             starts_at,
             terms,
             title: Some(title),
+        }
+    }
+
+    pub fn linkedin_with_disable_reshare(
+        disable_reshare: bool,
+        document_title: Option<String>,
+        link_description: Option<String>,
+        link_title: Option<String>,
+        link_url: Option<String>,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare: Some(disable_reshare),
+            document_title,
+            link_description,
+            link_title,
+            link_url,
+            mentions,
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_document_title(
+        disable_reshare: Option<bool>,
+        document_title: String,
+        link_description: Option<String>,
+        link_title: Option<String>,
+        link_url: Option<String>,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title: Some(document_title),
+            link_description,
+            link_title,
+            link_url,
+            mentions,
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_link_description(
+        disable_reshare: Option<bool>,
+        document_title: Option<String>,
+        link_description: String,
+        link_title: Option<String>,
+        link_url: Option<String>,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title,
+            link_description: Some(link_description),
+            link_title,
+            link_url,
+            mentions,
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_link_title(
+        disable_reshare: Option<bool>,
+        document_title: Option<String>,
+        link_description: Option<String>,
+        link_title: String,
+        link_url: Option<String>,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title,
+            link_description,
+            link_title: Some(link_title),
+            link_url,
+            mentions,
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_link_url(
+        disable_reshare: Option<bool>,
+        document_title: Option<String>,
+        link_description: Option<String>,
+        link_title: Option<String>,
+        link_url: String,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title,
+            link_description,
+            link_title,
+            link_url: Some(link_url),
+            mentions,
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_mentions(
+        disable_reshare: Option<bool>,
+        document_title: Option<String>,
+        link_description: Option<String>,
+        link_title: Option<String>,
+        link_url: Option<String>,
+        mentions: Vec<LinkedInMention>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title,
+            link_description,
+            link_title,
+            link_url,
+            mentions: Some(mentions),
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_visibility(
+        disable_reshare: Option<bool>,
+        document_title: Option<String>,
+        link_description: Option<String>,
+        link_title: Option<String>,
+        link_url: Option<String>,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: LinkedInVisibility,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title,
+            link_description,
+            link_title,
+            link_url,
+            mentions,
+            visibility: Some(visibility),
         }
     }
 

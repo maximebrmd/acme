@@ -18,6 +18,8 @@ public readonly record struct LookupName : IStringEnum
 
     public static readonly LookupName PinterestBoardSections = new(Values.PinterestBoardSections);
 
+    public static readonly LookupName LinkedinOrganizations = new(Values.LinkedinOrganizations);
+
     public LookupName(string value)
     {
         Value = value;
@@ -122,5 +124,7 @@ public readonly record struct LookupName : IStringEnum
         public const string PinterestBoards = "pinterestBoards";
 
         public const string PinterestBoardSections = "pinterestBoardSections";
+
+        public const string LinkedinOrganizations = "linkedinOrganizations";
     }
 }

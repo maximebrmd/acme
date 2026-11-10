@@ -14,7 +14,9 @@ class TargetOptions extends JsonSerializableType
      * @var (
      *    'youtube'
      *   |'tiktok'
+     *   |'pinterest'
      *   |'googleBusiness'
+     *   |'linkedin'
      *   |'_unknown'
      * ) $platform
      */
@@ -24,7 +26,9 @@ class TargetOptions extends JsonSerializableType
      * @var (
      *    YouTubeOptions
      *   |TikTokOptions
+     *   |PinterestOptions
      *   |GoogleBusinessOptions
+     *   |LinkedInOptions
      *   |mixed
      * ) $value
      */
@@ -35,13 +39,17 @@ class TargetOptions extends JsonSerializableType
      *   platform: (
      *    'youtube'
      *   |'tiktok'
+     *   |'pinterest'
      *   |'googleBusiness'
+     *   |'linkedin'
      *   |'_unknown'
      * ),
      *   value: (
      *    YouTubeOptions
      *   |TikTokOptions
+     *   |PinterestOptions
      *   |GoogleBusinessOptions
+     *   |LinkedInOptions
      *   |mixed
      * ),
      * } $values
@@ -78,6 +86,18 @@ class TargetOptions extends JsonSerializableType
     }
 
     /**
+     * @param PinterestOptions $pinterest
+     * @return TargetOptions
+     */
+    public static function pinterest(PinterestOptions $pinterest): TargetOptions
+    {
+        return new TargetOptions([
+            'platform' => 'pinterest',
+            'value' => $pinterest,
+        ]);
+    }
+
+    /**
      * @param GoogleBusinessOptions $googleBusiness
      * @return TargetOptions
      */
@@ -86,6 +106,18 @@ class TargetOptions extends JsonSerializableType
         return new TargetOptions([
             'platform' => 'googleBusiness',
             'value' => $googleBusiness,
+        ]);
+    }
+
+    /**
+     * @param LinkedInOptions $linkedin
+     * @return TargetOptions
+     */
+    public static function linkedin(LinkedInOptions $linkedin): TargetOptions
+    {
+        return new TargetOptions([
+            'platform' => 'linkedin',
+            'value' => $linkedin,
         ]);
     }
 
@@ -136,6 +168,28 @@ class TargetOptions extends JsonSerializableType
     /**
      * @return bool
      */
+    public function isPinterest(): bool
+    {
+        return $this->value instanceof PinterestOptions && $this->platform === 'pinterest';
+    }
+
+    /**
+     * @return PinterestOptions
+     */
+    public function asPinterest(): PinterestOptions
+    {
+        if (!($this->value instanceof PinterestOptions && $this->platform === 'pinterest')) {
+            throw new Exception(
+                "Expected pinterest; got " . $this->platform . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
     public function isGoogleBusiness(): bool
     {
         return $this->value instanceof GoogleBusinessOptions && $this->platform === 'googleBusiness';
@@ -149,6 +203,28 @@ class TargetOptions extends JsonSerializableType
         if (!($this->value instanceof GoogleBusinessOptions && $this->platform === 'googleBusiness')) {
             throw new Exception(
                 "Expected googleBusiness; got " . $this->platform . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLinkedin(): bool
+    {
+        return $this->value instanceof LinkedInOptions && $this->platform === 'linkedin';
+    }
+
+    /**
+     * @return LinkedInOptions
+     */
+    public function asLinkedin(): LinkedInOptions
+    {
+        if (!($this->value instanceof LinkedInOptions && $this->platform === 'linkedin')) {
+            throw new Exception(
+                "Expected linkedin; got " . $this->platform . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -183,8 +259,16 @@ class TargetOptions extends JsonSerializableType
                 $value = $this->asTiktok()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'pinterest':
+                $value = $this->asPinterest()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'googleBusiness':
                 $value = $this->asGoogleBusiness()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'linkedin':
+                $value = $this->asLinkedin()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -229,8 +313,14 @@ class TargetOptions extends JsonSerializableType
             case 'tiktok':
                 $args['value'] = TikTokOptions::jsonDeserialize($data);
                 break;
+            case 'pinterest':
+                $args['value'] = PinterestOptions::jsonDeserialize($data);
+                break;
             case 'googleBusiness':
                 $args['value'] = GoogleBusinessOptions::jsonDeserialize($data);
+                break;
+            case 'linkedin':
+                $args['value'] = LinkedInOptions::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

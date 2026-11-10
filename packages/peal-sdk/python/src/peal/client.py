@@ -23,6 +23,7 @@ if typing.TYPE_CHECKING:
     from .notices.client import AsyncNoticesClient, NoticesClient
     from .notification_preferences.client import AsyncNotificationPreferencesClient, NotificationPreferencesClient
     from .posts.client import AsyncPostsClient, PostsClient
+    from .review.client import AsyncReviewClient, ReviewClient
     from .session.client import AsyncSessionClient, SessionClient
     from .system.client import AsyncSystemClient, SystemClient
     from .tiktok.client import AsyncTiktokClient, TiktokClient
@@ -128,6 +129,7 @@ class Peal:
         self._tiktok: typing.Optional[TiktokClient] = None
         self._capabilities: typing.Optional[CapabilitiesClient] = None
         self._lookups: typing.Optional[LookupsClient] = None
+        self._review: typing.Optional[ReviewClient] = None
 
     @property
     def system(self):
@@ -257,6 +259,14 @@ class Peal:
             self._lookups = LookupsClient(client_wrapper=self._client_wrapper)
         return self._lookups
 
+    @property
+    def review(self):
+        if self._review is None:
+            from .review.client import ReviewClient  # noqa: E402
+
+            self._review = ReviewClient(client_wrapper=self._client_wrapper)
+        return self._review
+
 
 def _make_default_async_client(
     timeout: typing.Optional[float],
@@ -379,6 +389,7 @@ class AsyncPeal:
         self._tiktok: typing.Optional[AsyncTiktokClient] = None
         self._capabilities: typing.Optional[AsyncCapabilitiesClient] = None
         self._lookups: typing.Optional[AsyncLookupsClient] = None
+        self._review: typing.Optional[AsyncReviewClient] = None
 
     @property
     def system(self):
@@ -507,6 +518,14 @@ class AsyncPeal:
 
             self._lookups = AsyncLookupsClient(client_wrapper=self._client_wrapper)
         return self._lookups
+
+    @property
+    def review(self):
+        if self._review is None:
+            from .review.client import AsyncReviewClient  # noqa: E402
+
+            self._review = AsyncReviewClient(client_wrapper=self._client_wrapper)
+        return self._review
 
 
 def _get_base_url(*, base_url: typing.Optional[str] = None, environment: PealEnvironment) -> str:

@@ -13,6 +13,7 @@ import { MembersClient } from "./api/resources/members/client/Client.js";
 import { NoticesClient } from "./api/resources/notices/client/Client.js";
 import { NotificationPreferencesClient } from "./api/resources/notificationPreferences/client/Client.js";
 import { PostsClient } from "./api/resources/posts/client/Client.js";
+import { ReviewClient } from "./api/resources/review/client/Client.js";
 import { SessionClient } from "./api/resources/session/client/Client.js";
 import { SystemClient } from "./api/resources/system/client/Client.js";
 import { TiktokClient } from "./api/resources/tiktok/client/Client.js";
@@ -46,6 +47,7 @@ export class PealClient {
     protected _tiktok: TiktokClient | undefined;
     protected _capabilities: CapabilitiesClient | undefined;
     protected _lookups: LookupsClient | undefined;
+    protected _review: ReviewClient | undefined;
 
     constructor(options: PealClient.Options = {}) {
 
@@ -114,6 +116,10 @@ export class PealClient {
 
     public get lookups(): LookupsClient {
         return (this._lookups ??= new LookupsClient(this._options));
+    }
+
+    public get review(): ReviewClient {
+        return (this._review ??= new ReviewClient(this._options));
     }
 
     /**

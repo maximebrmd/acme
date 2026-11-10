@@ -64,6 +64,15 @@ public record LookupResult
     }
 
     /// <summary>
+    /// Create an instance of LookupResult with <see cref="LookupResult.LinkedinOrganizations"/>.
+    /// </summary>
+    public LookupResult(LookupResult.LinkedinOrganizations value)
+    {
+        Type = "linkedinOrganizations";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -98,6 +107,11 @@ public record LookupResult
     /// Returns true if <see cref="Type"/> is "pinterestBoardSections"
     /// </summary>
     public bool IsPinterestBoardSections => Type == "pinterestBoardSections";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "linkedinOrganizations"
+    /// </summary>
+    public bool IsLinkedinOrganizations => Type == "linkedinOrganizations";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.LookupResultYoutubeVideoCategories"/> if <see cref="Type"/> is 'youtubeVideoCategories', otherwise throws an exception.
@@ -148,12 +162,24 @@ public record LookupResult
                 "LookupResult.Type is not 'pinterestBoardSections'"
             );
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.LookupResultLinkedinOrganizations"/> if <see cref="Type"/> is 'linkedinOrganizations', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'linkedinOrganizations'.</exception>
+    public Peal.LookupResultLinkedinOrganizations AsLinkedinOrganizations() =>
+        IsLinkedinOrganizations
+            ? (Peal.LookupResultLinkedinOrganizations)Value!
+            : throw new global::System.Exception(
+                "LookupResult.Type is not 'linkedinOrganizations'"
+            );
+
     public T Match<T>(
         Func<Peal.LookupResultYoutubeVideoCategories, T> onYoutubeVideoCategories,
         Func<Peal.LookupResultYoutubePlaylists, T> onYoutubePlaylists,
         Func<Peal.LookupResultTiktokCreator, T> onTiktokCreator,
         Func<Peal.LookupResultPinterestBoards, T> onPinterestBoards,
         Func<Peal.LookupResultPinterestBoardSections, T> onPinterestBoardSections,
+        Func<Peal.LookupResultLinkedinOrganizations, T> onLinkedinOrganizations,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -164,6 +190,7 @@ public record LookupResult
             "tiktokCreator" => onTiktokCreator(AsTiktokCreator()),
             "pinterestBoards" => onPinterestBoards(AsPinterestBoards()),
             "pinterestBoardSections" => onPinterestBoardSections(AsPinterestBoardSections()),
+            "linkedinOrganizations" => onLinkedinOrganizations(AsLinkedinOrganizations()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -174,6 +201,7 @@ public record LookupResult
         Action<Peal.LookupResultTiktokCreator> onTiktokCreator,
         Action<Peal.LookupResultPinterestBoards> onPinterestBoards,
         Action<Peal.LookupResultPinterestBoardSections> onPinterestBoardSections,
+        Action<Peal.LookupResultLinkedinOrganizations> onLinkedinOrganizations,
         Action<string, object?> onUnknown_
     )
     {
@@ -193,6 +221,9 @@ public record LookupResult
                 break;
             case "pinterestBoardSections":
                 onPinterestBoardSections(AsPinterestBoardSections());
+                break;
+            case "linkedinOrganizations":
+                onLinkedinOrganizations(AsLinkedinOrganizations());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -270,6 +301,20 @@ public record LookupResult
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.LookupResultLinkedinOrganizations"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsLinkedinOrganizations(out Peal.LookupResultLinkedinOrganizations? value)
+    {
+        if (Type == "linkedinOrganizations")
+        {
+            value = (Peal.LookupResultLinkedinOrganizations)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator LookupResult(LookupResult.YoutubeVideoCategories value) =>
@@ -282,6 +327,9 @@ public record LookupResult
     public static implicit operator LookupResult(LookupResult.PinterestBoards value) => new(value);
 
     public static implicit operator LookupResult(LookupResult.PinterestBoardSections value) =>
+        new(value);
+
+    public static implicit operator LookupResult(LookupResult.LinkedinOrganizations value) =>
         new(value);
 
     [Serializable]
@@ -356,6 +404,13 @@ public record LookupResult
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.LookupResultPinterestBoardSections"
                         ),
+                "linkedinOrganizations" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.LookupResultLinkedinOrganizations?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.LookupResultLinkedinOrganizations"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new LookupResult(discriminator, value);
@@ -381,6 +436,7 @@ public record LookupResult
                         value.Value,
                         options
                     ),
+                    "linkedinOrganizations" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -506,6 +562,26 @@ public record LookupResult
 
         public static implicit operator LookupResult.PinterestBoardSections(
             Peal.LookupResultPinterestBoardSections value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for linkedinOrganizations
+    /// </summary>
+    [Serializable]
+    public struct LinkedinOrganizations
+    {
+        public LinkedinOrganizations(Peal.LookupResultLinkedinOrganizations value)
+        {
+            Value = value;
+        }
+
+        internal Peal.LookupResultLinkedinOrganizations Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator LookupResult.LinkedinOrganizations(
+            Peal.LookupResultLinkedinOrganizations value
         ) => new(value);
     }
 }

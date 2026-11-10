@@ -19,20 +19,11 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.ChannelNotFound"/>.
+    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.ReviewLinkNotFound"/>.
     /// </summary>
-    public NotFoundErrorBody(NotFoundErrorBody.ChannelNotFound value)
+    public NotFoundErrorBody(NotFoundErrorBody.ReviewLinkNotFound value)
     {
-        Type = "ChannelNotFound";
-        Value = value.Value;
-    }
-
-    /// <summary>
-    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.LookupNotFound"/>.
-    /// </summary>
-    public NotFoundErrorBody(NotFoundErrorBody.LookupNotFound value)
-    {
-        Type = "LookupNotFound";
+        Type = "ReviewLinkNotFound";
         Value = value.Value;
     }
 
@@ -57,14 +48,9 @@ public record NotFoundErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "ChannelNotFound"
+    /// Returns true if <see cref="Type"/> is "ReviewLinkNotFound"
     /// </summary>
-    public bool IsChannelNotFound => Type == "ChannelNotFound";
-
-    /// <summary>
-    /// Returns true if <see cref="Type"/> is "LookupNotFound"
-    /// </summary>
-    public bool IsLookupNotFound => Type == "LookupNotFound";
+    public bool IsReviewLinkNotFound => Type == "ReviewLinkNotFound";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "WorkspaceNotFound"
@@ -72,22 +58,15 @@ public record NotFoundErrorBody
     public bool IsWorkspaceNotFound => Type == "WorkspaceNotFound";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.ChannelNotFoundEncoded"/> if <see cref="Type"/> is 'ChannelNotFound', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.ReviewLinkNotFoundEncoded"/> if <see cref="Type"/> is 'ReviewLinkNotFound', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ChannelNotFound'.</exception>
-    public Peal.ChannelNotFoundEncoded AsChannelNotFound() =>
-        IsChannelNotFound
-            ? (Peal.ChannelNotFoundEncoded)Value!
-            : throw new global::System.Exception("NotFoundErrorBody.Type is not 'ChannelNotFound'");
-
-    /// <summary>
-    /// Returns the value as a <see cref="Peal.LookupNotFoundEncoded"/> if <see cref="Type"/> is 'LookupNotFound', otherwise throws an exception.
-    /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'LookupNotFound'.</exception>
-    public Peal.LookupNotFoundEncoded AsLookupNotFound() =>
-        IsLookupNotFound
-            ? (Peal.LookupNotFoundEncoded)Value!
-            : throw new global::System.Exception("NotFoundErrorBody.Type is not 'LookupNotFound'");
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ReviewLinkNotFound'.</exception>
+    public Peal.ReviewLinkNotFoundEncoded AsReviewLinkNotFound() =>
+        IsReviewLinkNotFound
+            ? (Peal.ReviewLinkNotFoundEncoded)Value!
+            : throw new global::System.Exception(
+                "NotFoundErrorBody.Type is not 'ReviewLinkNotFound'"
+            );
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.WorkspaceNotFoundEncoded"/> if <see cref="Type"/> is 'WorkspaceNotFound', otherwise throws an exception.
@@ -101,35 +80,29 @@ public record NotFoundErrorBody
             );
 
     public T Match<T>(
-        Func<Peal.ChannelNotFoundEncoded, T> onChannelNotFound,
-        Func<Peal.LookupNotFoundEncoded, T> onLookupNotFound,
+        Func<Peal.ReviewLinkNotFoundEncoded, T> onReviewLinkNotFound,
         Func<Peal.WorkspaceNotFoundEncoded, T> onWorkspaceNotFound,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "ChannelNotFound" => onChannelNotFound(AsChannelNotFound()),
-            "LookupNotFound" => onLookupNotFound(AsLookupNotFound()),
+            "ReviewLinkNotFound" => onReviewLinkNotFound(AsReviewLinkNotFound()),
             "WorkspaceNotFound" => onWorkspaceNotFound(AsWorkspaceNotFound()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.ChannelNotFoundEncoded> onChannelNotFound,
-        Action<Peal.LookupNotFoundEncoded> onLookupNotFound,
+        Action<Peal.ReviewLinkNotFoundEncoded> onReviewLinkNotFound,
         Action<Peal.WorkspaceNotFoundEncoded> onWorkspaceNotFound,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "ChannelNotFound":
-                onChannelNotFound(AsChannelNotFound());
-                break;
-            case "LookupNotFound":
-                onLookupNotFound(AsLookupNotFound());
+            case "ReviewLinkNotFound":
+                onReviewLinkNotFound(AsReviewLinkNotFound());
                 break;
             case "WorkspaceNotFound":
                 onWorkspaceNotFound(AsWorkspaceNotFound());
@@ -141,27 +114,13 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.ChannelNotFoundEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.ReviewLinkNotFoundEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsChannelNotFound(out Peal.ChannelNotFoundEncoded? value)
+    public bool TryAsReviewLinkNotFound(out Peal.ReviewLinkNotFoundEncoded? value)
     {
-        if (Type == "ChannelNotFound")
+        if (Type == "ReviewLinkNotFound")
         {
-            value = (Peal.ChannelNotFoundEncoded)Value!;
-            return true;
-        }
-        value = null;
-        return false;
-    }
-
-    /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.LookupNotFoundEncoded"/> and returns true if successful.
-    /// </summary>
-    public bool TryAsLookupNotFound(out Peal.LookupNotFoundEncoded? value)
-    {
-        if (Type == "LookupNotFound")
-        {
-            value = (Peal.LookupNotFoundEncoded)Value!;
+            value = (Peal.ReviewLinkNotFoundEncoded)Value!;
             return true;
         }
         value = null;
@@ -184,10 +143,7 @@ public record NotFoundErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator NotFoundErrorBody(NotFoundErrorBody.ChannelNotFound value) =>
-        new(value);
-
-    public static implicit operator NotFoundErrorBody(NotFoundErrorBody.LookupNotFound value) =>
+    public static implicit operator NotFoundErrorBody(NotFoundErrorBody.ReviewLinkNotFound value) =>
         new(value);
 
     public static implicit operator NotFoundErrorBody(NotFoundErrorBody.WorkspaceNotFound value) =>
@@ -234,15 +190,10 @@ public record NotFoundErrorBody
 
             var value = discriminator switch
             {
-                "ChannelNotFound" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.ChannelNotFoundEncoded?>(options)
+                "ReviewLinkNotFound" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ReviewLinkNotFoundEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.ChannelNotFoundEncoded"
-                        ),
-                "LookupNotFound" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.LookupNotFoundEncoded?>(options)
-                        ?? throw new JsonException(
-                            "Failed to deserialize Peal.LookupNotFoundEncoded"
+                            "Failed to deserialize Peal.ReviewLinkNotFoundEncoded"
                         ),
                 "WorkspaceNotFound" => json.Deserialize<Peal.WorkspaceNotFoundEncoded?>(options)
                     ?? throw new JsonException(
@@ -262,8 +213,7 @@ public record NotFoundErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "ChannelNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "LookupNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "ReviewLinkNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     "WorkspaceNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
@@ -294,42 +244,22 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for ChannelNotFound
+    /// Discriminated union type for ReviewLinkNotFound
     /// </summary>
     [Serializable]
-    public struct ChannelNotFound
+    public struct ReviewLinkNotFound
     {
-        public ChannelNotFound(Peal.ChannelNotFoundEncoded value)
+        public ReviewLinkNotFound(Peal.ReviewLinkNotFoundEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.ChannelNotFoundEncoded Value { get; set; }
+        internal Peal.ReviewLinkNotFoundEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator NotFoundErrorBody.ChannelNotFound(
-            Peal.ChannelNotFoundEncoded value
-        ) => new(value);
-    }
-
-    /// <summary>
-    /// Discriminated union type for LookupNotFound
-    /// </summary>
-    [Serializable]
-    public struct LookupNotFound
-    {
-        public LookupNotFound(Peal.LookupNotFoundEncoded value)
-        {
-            Value = value;
-        }
-
-        internal Peal.LookupNotFoundEncoded Value { get; set; }
-
-        public override string ToString() => Value.ToString() ?? "null";
-
-        public static implicit operator NotFoundErrorBody.LookupNotFound(
-            Peal.LookupNotFoundEncoded value
+        public static implicit operator NotFoundErrorBody.ReviewLinkNotFound(
+            Peal.ReviewLinkNotFoundEncoded value
         ) => new(value);
     }
 

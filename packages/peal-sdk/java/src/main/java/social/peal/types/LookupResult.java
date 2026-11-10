@@ -46,6 +46,10 @@ public final class LookupResult {
         return new LookupResult(new PinterestBoardSectionsValue(value));
     }
 
+    public static LookupResult linkedinOrganizations(LookupResultLinkedinOrganizations value) {
+        return new LookupResult(new LinkedinOrganizationsValue(value));
+    }
+
     public boolean isYoutubeVideoCategories() {
         return value instanceof YoutubeVideoCategoriesValue;
     }
@@ -64,6 +68,10 @@ public final class LookupResult {
 
     public boolean isPinterestBoardSections() {
         return value instanceof PinterestBoardSectionsValue;
+    }
+
+    public boolean isLinkedinOrganizations() {
+        return value instanceof LinkedinOrganizationsValue;
     }
 
     public boolean _isUnknown() {
@@ -101,6 +109,13 @@ public final class LookupResult {
     public Optional<LookupResultPinterestBoardSections> getPinterestBoardSections() {
         if (isPinterestBoardSections()) {
             return Optional.of(((PinterestBoardSectionsValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<LookupResultLinkedinOrganizations> getLinkedinOrganizations() {
+        if (isLinkedinOrganizations()) {
+            return Optional.of(((LinkedinOrganizationsValue) value).value);
         }
         return Optional.empty();
     }
@@ -144,6 +159,8 @@ public final class LookupResult {
 
         T visitPinterestBoardSections(LookupResultPinterestBoardSections pinterestBoardSections);
 
+        T visitLinkedinOrganizations(LookupResultLinkedinOrganizations linkedinOrganizations);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -153,7 +170,8 @@ public final class LookupResult {
         @JsonSubTypes.Type(YoutubePlaylistsValue.class),
         @JsonSubTypes.Type(TiktokCreatorValue.class),
         @JsonSubTypes.Type(PinterestBoardsValue.class),
-        @JsonSubTypes.Type(PinterestBoardSectionsValue.class)
+        @JsonSubTypes.Type(PinterestBoardSectionsValue.class),
+        @JsonSubTypes.Type(LinkedinOrganizationsValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -346,6 +364,46 @@ public final class LookupResult {
         }
 
         private boolean equalTo(PinterestBoardSectionsValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "LookupResult{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("linkedinOrganizations")
+    @JsonIgnoreProperties("_tag")
+    private static final class LinkedinOrganizationsValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private LookupResultLinkedinOrganizations value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private LinkedinOrganizationsValue() {}
+
+        private LinkedinOrganizationsValue(LookupResultLinkedinOrganizations value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitLinkedinOrganizations(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof LinkedinOrganizationsValue && equalTo((LinkedinOrganizationsValue) other);
+        }
+
+        private boolean equalTo(LinkedinOrganizationsValue other) {
             return value.equals(other.value);
         }
 

@@ -99,5 +99,10 @@ module Peal
     def lookups
       @lookups ||= Peal::Lookups::Client.new(client: @raw_client)
     end
+
+    # @return [Peal::Review::Client]
+    def review
+      @review ||= Peal::Review::Client.new(client: @raw_client)
+    end
   end
 end

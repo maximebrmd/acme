@@ -14,6 +14,7 @@ class LookupResult extends JsonSerializableType
      *   |'tiktokCreator'
      *   |'pinterestBoards'
      *   |'pinterestBoardSections'
+     *   |'linkedinOrganizations'
      *   |'_unknown'
      * ) $type
      */
@@ -26,6 +27,7 @@ class LookupResult extends JsonSerializableType
      *   |LookupResultTiktokCreator
      *   |LookupResultPinterestBoards
      *   |LookupResultPinterestBoardSections
+     *   |LookupResultLinkedinOrganizations
      *   |mixed
      * ) $value
      */
@@ -39,6 +41,7 @@ class LookupResult extends JsonSerializableType
      *   |'tiktokCreator'
      *   |'pinterestBoards'
      *   |'pinterestBoardSections'
+     *   |'linkedinOrganizations'
      *   |'_unknown'
      * ),
      *   value: (
@@ -47,6 +50,7 @@ class LookupResult extends JsonSerializableType
      *   |LookupResultTiktokCreator
      *   |LookupResultPinterestBoards
      *   |LookupResultPinterestBoardSections
+     *   |LookupResultLinkedinOrganizations
      *   |mixed
      * ),
      * } $values
@@ -115,6 +119,18 @@ class LookupResult extends JsonSerializableType
         return new LookupResult([
             'type' => 'pinterestBoardSections',
             'value' => $pinterestBoardSections,
+        ]);
+    }
+
+    /**
+     * @param LookupResultLinkedinOrganizations $linkedinOrganizations
+     * @return LookupResult
+     */
+    public static function linkedinOrganizations(LookupResultLinkedinOrganizations $linkedinOrganizations): LookupResult
+    {
+        return new LookupResult([
+            'type' => 'linkedinOrganizations',
+            'value' => $linkedinOrganizations,
         ]);
     }
 
@@ -229,6 +245,28 @@ class LookupResult extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isLinkedinOrganizations(): bool
+    {
+        return $this->value instanceof LookupResultLinkedinOrganizations && $this->type === 'linkedinOrganizations';
+    }
+
+    /**
+     * @return LookupResultLinkedinOrganizations
+     */
+    public function asLinkedinOrganizations(): LookupResultLinkedinOrganizations
+    {
+        if (!($this->value instanceof LookupResultLinkedinOrganizations && $this->type === 'linkedinOrganizations')) {
+            throw new Exception(
+                "Expected linkedinOrganizations; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -266,6 +304,10 @@ class LookupResult extends JsonSerializableType
                 break;
             case 'pinterestBoardSections':
                 $value = $this->asPinterestBoardSections()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'linkedinOrganizations':
+                $value = $this->asLinkedinOrganizations()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -318,6 +360,9 @@ class LookupResult extends JsonSerializableType
                 break;
             case 'pinterestBoardSections':
                 $args['value'] = LookupResultPinterestBoardSections::jsonDeserialize($data);
+                break;
+            case 'linkedinOrganizations':
+                $args['value'] = LookupResultLinkedinOrganizations::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

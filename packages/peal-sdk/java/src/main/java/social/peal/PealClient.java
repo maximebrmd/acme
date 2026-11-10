@@ -19,6 +19,7 @@ import social.peal.resources.members.MembersClient;
 import social.peal.resources.notices.NoticesClient;
 import social.peal.resources.notificationpreferences.NotificationPreferencesClient;
 import social.peal.resources.posts.PostsClient;
+import social.peal.resources.review.ReviewClient;
 import social.peal.resources.session.SessionClient;
 import social.peal.resources.system.SystemClient;
 import social.peal.resources.tiktok.TiktokClient;
@@ -58,6 +59,8 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<LookupsClient> lookupsClient;
 
+    protected final Supplier<ReviewClient> reviewClient;
+
     public PealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new SystemClient(clientOptions));
@@ -76,6 +79,7 @@ public class PealClient implements AutoCloseable {
         this.tiktokClient = Suppliers.memoize(() -> new TiktokClient(clientOptions));
         this.capabilitiesClient = Suppliers.memoize(() -> new CapabilitiesClient(clientOptions));
         this.lookupsClient = Suppliers.memoize(() -> new LookupsClient(clientOptions));
+        this.reviewClient = Suppliers.memoize(() -> new ReviewClient(clientOptions));
     }
 
     public SystemClient system() {
@@ -140,6 +144,10 @@ public class PealClient implements AutoCloseable {
 
     public LookupsClient lookups() {
         return this.lookupsClient.get();
+    }
+
+    public ReviewClient review() {
+        return this.reviewClient.get();
     }
 
     /**

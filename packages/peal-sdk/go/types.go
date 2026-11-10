@@ -265,6 +265,111 @@ func (a *APIKeyNotFoundEncoded) String() string {
 }
 
 var (
+	approvalNotPendingEncodedFieldTag = big.NewInt(1 << 0)
+)
+
+type ApprovalNotPendingEncoded struct {
+	Tag ApprovalNotPendingEncodedTag `json:"_tag" url:"_tag"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *ApprovalNotPendingEncoded) GetTag() ApprovalNotPendingEncodedTag {
+	if a == nil {
+		return ""
+	}
+	return a.Tag
+}
+
+func (a *ApprovalNotPendingEncoded) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *ApprovalNotPendingEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *ApprovalNotPendingEncoded) SetTag(tag ApprovalNotPendingEncodedTag) {
+	a.Tag = tag
+	a.require(approvalNotPendingEncodedFieldTag)
+}
+
+func (a *ApprovalNotPendingEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ApprovalNotPendingEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = ApprovalNotPendingEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *ApprovalNotPendingEncoded) MarshalJSON() ([]byte, error) {
+	type embed ApprovalNotPendingEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *ApprovalNotPendingEncoded) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type ApprovalNotPendingEncodedTag string
+
+const (
+	ApprovalNotPendingEncodedTagApprovalNotPending ApprovalNotPendingEncodedTag = "ApprovalNotPending"
+)
+
+func NewApprovalNotPendingEncodedTagFromString(s string) (ApprovalNotPendingEncodedTag, error) {
+	switch s {
+	case "ApprovalNotPending":
+		return ApprovalNotPendingEncodedTagApprovalNotPending, nil
+	}
+	var t ApprovalNotPendingEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a ApprovalNotPendingEncodedTag) Ptr() *ApprovalNotPendingEncodedTag {
+	return &a
+}
+
+var (
 	assistantFailedEncodedFieldTag    = big.NewInt(1 << 0)
 	assistantFailedEncodedFieldReason = big.NewInt(1 << 1)
 )
@@ -1046,10 +1151,232 @@ func (c *ChannelNotFoundEncoded) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+var (
+	commentInvalidEncodedFieldTag     = big.NewInt(1 << 0)
+	commentInvalidEncodedFieldProblem = big.NewInt(1 << 1)
+)
+
+type CommentInvalidEncoded struct {
+	Tag     CommentInvalidEncodedTag `json:"_tag" url:"_tag"`
+	Problem CommentProblem           `json:"problem" url:"problem"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CommentInvalidEncoded) GetTag() CommentInvalidEncodedTag {
+	if c == nil {
+		return ""
+	}
+	return c.Tag
+}
+
+func (c *CommentInvalidEncoded) GetProblem() CommentProblem {
+	if c == nil {
+		return ""
+	}
+	return c.Problem
+}
+
+func (c *CommentInvalidEncoded) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CommentInvalidEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentInvalidEncoded) SetTag(tag CommentInvalidEncodedTag) {
+	c.Tag = tag
+	c.require(commentInvalidEncodedFieldTag)
+}
+
+// SetProblem sets the Problem field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CommentInvalidEncoded) SetProblem(problem CommentProblem) {
+	c.Problem = problem
+	c.require(commentInvalidEncodedFieldProblem)
+}
+
+func (c *CommentInvalidEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler CommentInvalidEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CommentInvalidEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CommentInvalidEncoded) MarshalJSON() ([]byte, error) {
+	type embed CommentInvalidEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CommentInvalidEncoded) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CommentInvalidEncodedTag string
+
+const (
+	CommentInvalidEncodedTagCommentInvalid CommentInvalidEncodedTag = "CommentInvalid"
+)
+
+func NewCommentInvalidEncodedTagFromString(s string) (CommentInvalidEncodedTag, error) {
+	switch s {
+	case "CommentInvalid":
+		return CommentInvalidEncodedTagCommentInvalid, nil
+	}
+	var t CommentInvalidEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CommentInvalidEncodedTag) Ptr() *CommentInvalidEncodedTag {
+	return &c
+}
+
+type CommentNotFoundEncoded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CommentNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CommentNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+func (c *CommentNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler CommentNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CommentNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CommentNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed CommentNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CommentNotFoundEncoded) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CommentProblem string
+
+const (
+	CommentProblemText      CommentProblem = "text"
+	CommentProblemName      CommentProblem = "name"
+	CommentProblemEmail     CommentProblem = "email"
+	CommentProblemParent    CommentProblem = "parent"
+	CommentProblemAnchor    CommentProblem = "anchor"
+	CommentProblemSelection CommentProblem = "selection"
+)
+
+func NewCommentProblemFromString(s string) (CommentProblem, error) {
+	switch s {
+	case "text":
+		return CommentProblemText, nil
+	case "name":
+		return CommentProblemName, nil
+	case "email":
+		return CommentProblemEmail, nil
+	case "parent":
+		return CommentProblemParent, nil
+	case "anchor":
+		return CommentProblemAnchor, nil
+	case "selection":
+		return CommentProblemSelection, nil
+	}
+	var t CommentProblem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CommentProblem) Ptr() *CommentProblem {
+	return &c
+}
+
 type ConflictErrorBody struct {
 	Type               string
-	AlreadyMember      *AlreadyMemberEncoded
-	TooManyInvitations *TooManyInvitationsEncoded
+	PostNotReviewable  *PostNotReviewableEncoded
+	TooManyReviewLinks *TooManyReviewLinksEncoded
 
 	rawJSON json.RawMessage
 }
@@ -1061,18 +1388,18 @@ func (c *ConflictErrorBody) GetType() string {
 	return c.Type
 }
 
-func (c *ConflictErrorBody) GetAlreadyMember() *AlreadyMemberEncoded {
+func (c *ConflictErrorBody) GetPostNotReviewable() *PostNotReviewableEncoded {
 	if c == nil {
 		return nil
 	}
-	return c.AlreadyMember
+	return c.PostNotReviewable
 }
 
-func (c *ConflictErrorBody) GetTooManyInvitations() *TooManyInvitationsEncoded {
+func (c *ConflictErrorBody) GetTooManyReviewLinks() *TooManyReviewLinksEncoded {
 	if c == nil {
 		return nil
 	}
-	return c.TooManyInvitations
+	return c.TooManyReviewLinks
 }
 
 func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
@@ -1087,18 +1414,18 @@ func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", c)
 	}
 	switch unmarshaler.Type {
-	case "AlreadyMember":
-		value := new(AlreadyMemberEncoded)
+	case "PostNotReviewable":
+		value := new(PostNotReviewableEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		c.AlreadyMember = value
-	case "TooManyInvitations":
-		value := new(TooManyInvitationsEncoded)
+		c.PostNotReviewable = value
+	case "TooManyReviewLinks":
+		value := new(TooManyReviewLinksEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		c.TooManyInvitations = value
+		c.TooManyReviewLinks = value
 	}
 	c.rawJSON = json.RawMessage(data)
 	return nil
@@ -1108,11 +1435,11 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
-	if c.AlreadyMember != nil {
-		return internal.MarshalJSONWithExtraProperty(c.AlreadyMember, "_tag", "AlreadyMember")
+	if c.PostNotReviewable != nil {
+		return internal.MarshalJSONWithExtraProperty(c.PostNotReviewable, "_tag", "PostNotReviewable")
 	}
-	if c.TooManyInvitations != nil {
-		return internal.MarshalJSONWithExtraProperty(c.TooManyInvitations, "_tag", "TooManyInvitations")
+	if c.TooManyReviewLinks != nil {
+		return internal.MarshalJSONWithExtraProperty(c.TooManyReviewLinks, "_tag", "TooManyReviewLinks")
 	}
 	if len(c.rawJSON) > 0 {
 		return c.rawJSON, nil
@@ -1121,16 +1448,16 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type ConflictErrorBodyVisitor interface {
-	VisitAlreadyMember(*AlreadyMemberEncoded) error
-	VisitTooManyInvitations(*TooManyInvitationsEncoded) error
+	VisitPostNotReviewable(*PostNotReviewableEncoded) error
+	VisitTooManyReviewLinks(*TooManyReviewLinksEncoded) error
 }
 
 func (c *ConflictErrorBody) Accept(visitor ConflictErrorBodyVisitor) error {
-	if c.AlreadyMember != nil {
-		return visitor.VisitAlreadyMember(c.AlreadyMember)
+	if c.PostNotReviewable != nil {
+		return visitor.VisitPostNotReviewable(c.PostNotReviewable)
 	}
-	if c.TooManyInvitations != nil {
-		return visitor.VisitTooManyInvitations(c.TooManyInvitations)
+	if c.TooManyReviewLinks != nil {
+		return visitor.VisitTooManyReviewLinks(c.TooManyReviewLinks)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", c)
 }
@@ -1140,11 +1467,11 @@ func (c *ConflictErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", c)
 	}
 	var fields []string
-	if c.AlreadyMember != nil {
-		fields = append(fields, "AlreadyMember")
+	if c.PostNotReviewable != nil {
+		fields = append(fields, "PostNotReviewable")
 	}
-	if c.TooManyInvitations != nil {
-		fields = append(fields, "TooManyInvitations")
+	if c.TooManyReviewLinks != nil {
+		fields = append(fields, "TooManyReviewLinks")
 	}
 	if len(fields) == 0 {
 		if c.Type != "" {
@@ -6183,11 +6510,12 @@ func (f *FieldDescription) String() string {
 type FieldType string
 
 const (
-	FieldTypeBoolean  FieldType = "boolean"
-	FieldTypeChoice   FieldType = "choice"
-	FieldTypeInteger  FieldType = "integer"
-	FieldTypeText     FieldType = "text"
-	FieldTypeTextList FieldType = "textList"
+	FieldTypeBoolean     FieldType = "boolean"
+	FieldTypeChoice      FieldType = "choice"
+	FieldTypeInteger     FieldType = "integer"
+	FieldTypeMentionList FieldType = "mentionList"
+	FieldTypeText        FieldType = "text"
+	FieldTypeTextList    FieldType = "textList"
 )
 
 func NewFieldTypeFromString(s string) (FieldType, error) {
@@ -6198,6 +6526,8 @@ func NewFieldTypeFromString(s string) (FieldType, error) {
 		return FieldTypeChoice, nil
 	case "integer":
 		return FieldTypeInteger, nil
+	case "mentionList":
+		return FieldTypeMentionList, nil
 	case "text":
 		return FieldTypeText, nil
 	case "textList":
@@ -6977,6 +7307,7 @@ const (
 	LookupNameTiktokCreator          LookupName = "tiktokCreator"
 	LookupNamePinterestBoards        LookupName = "pinterestBoards"
 	LookupNamePinterestBoardSections LookupName = "pinterestBoardSections"
+	LookupNameLinkedinOrganizations  LookupName = "linkedinOrganizations"
 )
 
 func NewLookupNameFromString(s string) (LookupName, error) {
@@ -6991,6 +7322,8 @@ func NewLookupNameFromString(s string) (LookupName, error) {
 		return LookupNamePinterestBoards, nil
 	case "pinterestBoardSections":
 		return LookupNamePinterestBoardSections, nil
+	case "linkedinOrganizations":
+		return LookupNameLinkedinOrganizations, nil
 	}
 	var t LookupName
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -7076,6 +7409,7 @@ const (
 	MediaContentTypeImageWebp      MediaContentType = "image/webp"
 	MediaContentTypeVideoMp4       MediaContentType = "video/mp4"
 	MediaContentTypeVideoQuicktime MediaContentType = "video/quicktime"
+	MediaContentTypeApplicationPdf MediaContentType = "application/pdf"
 )
 
 func NewMediaContentTypeFromString(s string) (MediaContentType, error) {
@@ -7092,6 +7426,8 @@ func NewMediaContentTypeFromString(s string) (MediaContentType, error) {
 		return MediaContentTypeVideoMp4, nil
 	case "video/quicktime":
 		return MediaContentTypeVideoQuicktime, nil
+	case "application/pdf":
+		return MediaContentTypeApplicationPdf, nil
 	}
 	var t MediaContentType
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -7225,8 +7561,9 @@ func (m MediaInUseEncodedTag) Ptr() *MediaInUseEncodedTag {
 type MediaKind string
 
 const (
-	MediaKindImage MediaKind = "image"
-	MediaKindVideo MediaKind = "video"
+	MediaKindImage    MediaKind = "image"
+	MediaKindVideo    MediaKind = "video"
+	MediaKindDocument MediaKind = "document"
 )
 
 func NewMediaKindFromString(s string) (MediaKind, error) {
@@ -7235,6 +7572,8 @@ func NewMediaKindFromString(s string) (MediaKind, error) {
 		return MediaKindImage, nil
 	case "video":
 		return MediaKindVideo, nil
+	case "document":
+		return MediaKindDocument, nil
 	}
 	var t MediaKind
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -7537,8 +7876,9 @@ func (m *MediaTooLargeEncoded) String() string {
 type MediaTooLargeEncodedKind string
 
 const (
-	MediaTooLargeEncodedKindImage MediaTooLargeEncodedKind = "image"
-	MediaTooLargeEncodedKindVideo MediaTooLargeEncodedKind = "video"
+	MediaTooLargeEncodedKindImage    MediaTooLargeEncodedKind = "image"
+	MediaTooLargeEncodedKindVideo    MediaTooLargeEncodedKind = "video"
+	MediaTooLargeEncodedKindDocument MediaTooLargeEncodedKind = "document"
 )
 
 func NewMediaTooLargeEncodedKindFromString(s string) (MediaTooLargeEncodedKind, error) {
@@ -7547,6 +7887,8 @@ func NewMediaTooLargeEncodedKindFromString(s string) (MediaTooLargeEncodedKind, 
 		return MediaTooLargeEncodedKindImage, nil
 	case "video":
 		return MediaTooLargeEncodedKindVideo, nil
+	case "document":
+		return MediaTooLargeEncodedKindDocument, nil
 	}
 	var t MediaTooLargeEncodedKind
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -7580,10 +7922,9 @@ func (n NonFiniteNumber) Ptr() *NonFiniteNumber {
 }
 
 type NotFoundErrorBody struct {
-	Type              string
-	ChannelNotFound   *ChannelNotFoundEncoded
-	LookupNotFound    *LookupNotFoundEncoded
-	WorkspaceNotFound *WorkspaceNotFoundEncoded
+	Type               string
+	ReviewLinkNotFound *ReviewLinkNotFoundEncoded
+	WorkspaceNotFound  *WorkspaceNotFoundEncoded
 
 	rawJSON json.RawMessage
 }
@@ -7595,18 +7936,11 @@ func (n *NotFoundErrorBody) GetType() string {
 	return n.Type
 }
 
-func (n *NotFoundErrorBody) GetChannelNotFound() *ChannelNotFoundEncoded {
+func (n *NotFoundErrorBody) GetReviewLinkNotFound() *ReviewLinkNotFoundEncoded {
 	if n == nil {
 		return nil
 	}
-	return n.ChannelNotFound
-}
-
-func (n *NotFoundErrorBody) GetLookupNotFound() *LookupNotFoundEncoded {
-	if n == nil {
-		return nil
-	}
-	return n.LookupNotFound
+	return n.ReviewLinkNotFound
 }
 
 func (n *NotFoundErrorBody) GetWorkspaceNotFound() *WorkspaceNotFoundEncoded {
@@ -7628,18 +7962,12 @@ func (n *NotFoundErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", n)
 	}
 	switch unmarshaler.Type {
-	case "ChannelNotFound":
-		value := new(ChannelNotFoundEncoded)
+	case "ReviewLinkNotFound":
+		value := new(ReviewLinkNotFoundEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		n.ChannelNotFound = value
-	case "LookupNotFound":
-		value := new(LookupNotFoundEncoded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		n.LookupNotFound = value
+		n.ReviewLinkNotFound = value
 	case "WorkspaceNotFound":
 		value := new(WorkspaceNotFoundEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -7655,11 +7983,8 @@ func (n NotFoundErrorBody) MarshalJSON() ([]byte, error) {
 	if err := n.validate(); err != nil {
 		return nil, err
 	}
-	if n.ChannelNotFound != nil {
-		return internal.MarshalJSONWithExtraProperty(n.ChannelNotFound, "_tag", "ChannelNotFound")
-	}
-	if n.LookupNotFound != nil {
-		return internal.MarshalJSONWithExtraProperty(n.LookupNotFound, "_tag", "LookupNotFound")
+	if n.ReviewLinkNotFound != nil {
+		return internal.MarshalJSONWithExtraProperty(n.ReviewLinkNotFound, "_tag", "ReviewLinkNotFound")
 	}
 	if n.WorkspaceNotFound != nil {
 		return internal.MarshalJSONWithExtraProperty(n.WorkspaceNotFound, "_tag", "WorkspaceNotFound")
@@ -7671,17 +7996,13 @@ func (n NotFoundErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type NotFoundErrorBodyVisitor interface {
-	VisitChannelNotFound(*ChannelNotFoundEncoded) error
-	VisitLookupNotFound(*LookupNotFoundEncoded) error
+	VisitReviewLinkNotFound(*ReviewLinkNotFoundEncoded) error
 	VisitWorkspaceNotFound(*WorkspaceNotFoundEncoded) error
 }
 
 func (n *NotFoundErrorBody) Accept(visitor NotFoundErrorBodyVisitor) error {
-	if n.ChannelNotFound != nil {
-		return visitor.VisitChannelNotFound(n.ChannelNotFound)
-	}
-	if n.LookupNotFound != nil {
-		return visitor.VisitLookupNotFound(n.LookupNotFound)
+	if n.ReviewLinkNotFound != nil {
+		return visitor.VisitReviewLinkNotFound(n.ReviewLinkNotFound)
 	}
 	if n.WorkspaceNotFound != nil {
 		return visitor.VisitWorkspaceNotFound(n.WorkspaceNotFound)
@@ -7694,11 +8015,8 @@ func (n *NotFoundErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", n)
 	}
 	var fields []string
-	if n.ChannelNotFound != nil {
-		fields = append(fields, "ChannelNotFound")
-	}
-	if n.LookupNotFound != nil {
-		fields = append(fields, "LookupNotFound")
+	if n.ReviewLinkNotFound != nil {
+		fields = append(fields, "ReviewLinkNotFound")
 	}
 	if n.WorkspaceNotFound != nil {
 		fields = append(fields, "WorkspaceNotFound")
@@ -8468,6 +8786,216 @@ func (p *PostNotFoundEncoded) String() string {
 }
 
 var (
+	postNotReviewableEncodedFieldStatus = big.NewInt(1 << 0)
+)
+
+type PostNotReviewableEncoded struct {
+	Status PostNotReviewableEncodedStatus `json:"status" url:"status"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostNotReviewableEncoded) GetStatus() PostNotReviewableEncodedStatus {
+	if p == nil {
+		return ""
+	}
+	return p.Status
+}
+
+func (p *PostNotReviewableEncoded) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostNotReviewableEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostNotReviewableEncoded) SetStatus(status PostNotReviewableEncodedStatus) {
+	p.Status = status
+	p.require(postNotReviewableEncodedFieldStatus)
+}
+
+func (p *PostNotReviewableEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostNotReviewableEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostNotReviewableEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostNotReviewableEncoded) MarshalJSON() ([]byte, error) {
+	type embed PostNotReviewableEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostNotReviewableEncoded) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PostNotReviewableEncodedStatus string
+
+const (
+	PostNotReviewableEncodedStatusPublished PostNotReviewableEncodedStatus = "published"
+	PostNotReviewableEncodedStatusCancelled PostNotReviewableEncodedStatus = "cancelled"
+)
+
+func NewPostNotReviewableEncodedStatusFromString(s string) (PostNotReviewableEncodedStatus, error) {
+	switch s {
+	case "published":
+		return PostNotReviewableEncodedStatusPublished, nil
+	case "cancelled":
+		return PostNotReviewableEncodedStatusCancelled, nil
+	}
+	var t PostNotReviewableEncodedStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PostNotReviewableEncodedStatus) Ptr() *PostNotReviewableEncodedStatus {
+	return &p
+}
+
+var (
+	postScheduleFieldAt       = big.NewInt(1 << 0)
+	postScheduleFieldTimeZone = big.NewInt(1 << 1)
+)
+
+type PostSchedule struct {
+	At       string `json:"at" url:"at"`
+	TimeZone string `json:"timeZone" url:"timeZone"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostSchedule) GetAt() string {
+	if p == nil {
+		return ""
+	}
+	return p.At
+}
+
+func (p *PostSchedule) GetTimeZone() string {
+	if p == nil {
+		return ""
+	}
+	return p.TimeZone
+}
+
+func (p *PostSchedule) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostSchedule) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetAt sets the At field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostSchedule) SetAt(at string) {
+	p.At = at
+	p.require(postScheduleFieldAt)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostSchedule) SetTimeZone(timeZone string) {
+	p.TimeZone = timeZone
+	p.require(postScheduleFieldTimeZone)
+}
+
+func (p *PostSchedule) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostSchedule
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostSchedule(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostSchedule) MarshalJSON() ([]byte, error) {
+	type embed PostSchedule
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostSchedule) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
 	postStatusConflictEncodedFieldTag    = big.NewInt(1 << 0)
 	postStatusConflictEncodedFieldStatus = big.NewInt(1 << 1)
 )
@@ -8586,6 +9114,73 @@ func NewPostStatusConflictEncodedTagFromString(s string) (PostStatusConflictEnco
 
 func (p PostStatusConflictEncodedTag) Ptr() *PostStatusConflictEncodedTag {
 	return &p
+}
+
+type ReviewLinkNotFoundEncoded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *ReviewLinkNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *ReviewLinkNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+func (r *ReviewLinkNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ReviewLinkNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = ReviewLinkNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *ReviewLinkNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed ReviewLinkNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *ReviewLinkNotFoundEncoded) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
 }
 
 type ScheduleInPastEncoded struct {
@@ -9458,6 +10053,92 @@ func (t *TooManyInvitationsEncoded) MarshalJSON() ([]byte, error) {
 }
 
 func (t *TooManyInvitationsEncoded) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+var (
+	tooManyReviewLinksEncodedFieldLimit = big.NewInt(1 << 0)
+)
+
+type TooManyReviewLinksEncoded struct {
+	Limit int `json:"limit" url:"limit"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TooManyReviewLinksEncoded) GetLimit() int {
+	if t == nil {
+		return 0
+	}
+	return t.Limit
+}
+
+func (t *TooManyReviewLinksEncoded) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TooManyReviewLinksEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyReviewLinksEncoded) SetLimit(limit int) {
+	t.Limit = limit
+	t.require(tooManyReviewLinksEncodedFieldLimit)
+}
+
+func (t *TooManyReviewLinksEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler TooManyReviewLinksEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TooManyReviewLinksEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TooManyReviewLinksEncoded) MarshalJSON() ([]byte, error) {
+	type embed TooManyReviewLinksEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TooManyReviewLinksEncoded) String() string {
 	if t == nil {
 		return "<nil>"
 	}

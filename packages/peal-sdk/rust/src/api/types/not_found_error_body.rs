@@ -8,9 +8,6 @@ pub enum NotFoundErrorBody {
     ReviewLinkNotFound {},
 
     #[non_exhaustive]
-    LookupNotFound {},
-
-    #[non_exhaustive]
     WorkspaceNotFound {},
 
     /// Catch-all variant for unrecognized discriminant values.
@@ -23,10 +20,6 @@ pub enum NotFoundErrorBody {
 impl NotFoundErrorBody {
     pub fn review_link_not_found() -> Self {
         Self::ReviewLinkNotFound {}
-    }
-
-    pub fn lookup_not_found() -> Self {
-        Self::LookupNotFound {}
     }
 
     pub fn workspace_not_found() -> Self {

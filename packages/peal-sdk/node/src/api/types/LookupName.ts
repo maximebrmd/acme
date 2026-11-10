@@ -5,6 +5,7 @@ export const LookupName = {
         YoutubePlaylists: "youtubePlaylists",
         TiktokCreator: "tiktokCreator",
         PinterestBoards: "pinterestBoards",
-        PinterestBoardSections: "pinterestBoardSections"
+        PinterestBoardSections: "pinterestBoardSections",
+        LinkedinOrganizations: "linkedinOrganizations"
     } as const;
 export type LookupName = typeof LookupName[keyof typeof LookupName];
