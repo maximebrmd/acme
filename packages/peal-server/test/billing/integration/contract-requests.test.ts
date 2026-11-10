@@ -228,15 +228,10 @@ layer(BillingApp, { excludeTestServices: true, timeout: "180 seconds" })(
             headers: { cookie },
           });
 
-          const found = (yield* bodyOf(OpenRequestsSchema, listed)).find(
+          // The stranger's request, or one that matches nothing below.
+          const waiting = (yield* bodyOf(OpenRequestsSchema, listed)).find(
             ({ email }) => email === stranger
-          );
-
-          if (found === undefined) {
-            return yield* Effect.die(new Error("The request is not listed"));
-          }
-
-          const waiting = found;
+          ) ?? { email: null, id: "", name: null, status: "missing" };
 
           assert.strictEqual(waiting.status, "unmatched");
           assert.strictEqual(waiting.name, "Camille Synthetic");
