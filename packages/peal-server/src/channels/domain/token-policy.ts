@@ -112,6 +112,18 @@ export const tokenPolicies = {
     lifetime: Option.none(),
     refresh: { _tag: "none" },
   }),
+  // Access tokens last 30 days, and the continuous refresh token that
+  // renews them 60, each refresh giving 60 more: the sweep renews a week
+  // ahead, so neither lapses on an account that does not post. The refresh
+  // token an answer brings replaces the one sent.
+  pinterest: new TokenPolicy({
+    lifetime: Option.some(Duration.days(30)),
+    refresh: {
+      _tag: "refreshToken",
+      rotates: true,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.days(7) },
+    },
+  }),
   // Long-lived tokens last 60 days, and are renewed once at least a day old.
   threads: new TokenPolicy({
     lifetime: Option.some(Duration.days(60)),

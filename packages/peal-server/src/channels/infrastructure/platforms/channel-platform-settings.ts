@@ -23,6 +23,8 @@ import {
 import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
+import { pinterestHostsConfig } from "#shared/infrastructure/platforms/pinterest-api.ts";
+import type { PinterestHosts } from "#shared/infrastructure/platforms/pinterest-api.ts";
 import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 
@@ -49,6 +51,10 @@ export interface ChannelPlatformSettings {
   readonly meta: Option.Option<MetaApp>;
   /** Where Meta's services are. */
   readonly metaHosts: MetaHosts;
+  /** Peal's Pinterest app, if the operator registered one. */
+  readonly pinterest: Option.Option<OAuthClient>;
+  /** Where Pinterest's API and sign-in page are: its Sandbox when asked. */
+  readonly pinterestHosts: PinterestHosts;
   /** The web app's origin, where the platforms send members back. */
   readonly publicUrl: string;
   /** The app's Threads credentials; none when this server has none. */
@@ -187,6 +193,10 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   operator made in a Google Cloud project with the YouTube Data API on,
  *   for YouTube channels. Like LinkedIn's and X's, one half alone stops the
  *   server.
+ * - `PINTEREST_APP_ID` and `PINTEREST_APP_SECRET`: the app the operator
+ *   registered on Pinterest's developer site. Without them, Pinterest is
+ *   not offered; one alone stops the server. `PINTEREST_SANDBOX` sends its
+ *   calls to Pinterest's Sandbox.
  */
 export const channelPlatformsConfig = Effect.gen(function* settings() {
   const publicUrl = yield* publicUrlConfig;
@@ -207,6 +217,15 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
   const tiktok = yield* oauthClientConfig("tiktok", "TIKTOK", "CLIENT_KEY");
   const youtube = yield* oauthClientConfig("youtube", "YOUTUBE");
 
+  const pinterest = yield* oauthClientConfig(
+    "pinterest",
+    "PINTEREST",
+    "APP_ID",
+    "APP_SECRET"
+  );
+
+  const pinterestHosts = yield* pinterestHostsConfig;
+
   const platforms: ChannelPlatformSettings = {
     bluesky: mode.pipe(
       Option.map((clientMode) => ({
@@ -219,6 +238,8 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
     linkedin,
     meta,
     metaHosts,
+    pinterest,
+    pinterestHosts,
     publicUrl,
     threads,
     tiktok,

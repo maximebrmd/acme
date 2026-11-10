@@ -49,6 +49,8 @@ const channelsWithSettings = (settings: Record<string, string>) =>
 const withoutApps = {
   LINKEDIN_CLIENT_ID: "",
   LINKEDIN_CLIENT_SECRET: "",
+  PINTEREST_APP_ID: "",
+  PINTEREST_APP_SECRET: "",
   TIKTOK_CLIENT_KEY: "",
   TIKTOK_CLIENT_SECRET: "",
   X_CLIENT_ID: "",
@@ -166,6 +168,7 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
           "facebook",
           "instagram",
           "linkedin",
+          "pinterest",
           "threads",
           "tiktok",
           "x",
@@ -177,10 +180,10 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
 });
 
 layer(DatabaseTest)(
-  "the channels context's LinkedIn, X, TikTok and YouTube settings",
+  "the channels context's LinkedIn, X, TikTok, YouTube and Pinterest settings",
   (it) => {
     it.effect(
-      "connect LinkedIn, X, TikTok and YouTube once their apps are set",
+      "connect LinkedIn, X, TikTok, YouTube and Pinterest once their apps are set",
       () =>
         Effect.gen(function* configured() {
           const authorizers = yield* PlatformAuthorizers.pipe(
@@ -189,6 +192,8 @@ layer(DatabaseTest)(
                 BLUESKY_CLIENT_KEYS: "",
                 LINKEDIN_CLIENT_ID: "77synthetic",
                 LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
+                PINTEREST_APP_ID: "1500000",
+                PINTEREST_APP_SECRET: "synthetic-pinterest-secret",
                 TIKTOK_CLIENT_KEY: "awsynthetic",
                 TIKTOK_CLIENT_SECRET: "synthetic-tiktok-secret",
                 X_CLIENT_ID: "c3ludGhldGlj",
@@ -215,6 +220,11 @@ layer(DatabaseTest)(
             Option.getOrThrow(authorizers.for("youtube")).platform,
             "youtube"
           );
+          assert.strictEqual(
+            Option.getOrThrow(authorizers.for("pinterest")).platform,
+            "pinterest"
+          );
+          assert.isFalse(authorizers.unconfigured.has("pinterest"));
           assert.isFalse(authorizers.unconfigured.has("linkedin"));
           assert.isFalse(authorizers.unconfigured.has("x"));
           assert.isFalse(authorizers.unconfigured.has("tiktok"));
@@ -233,6 +243,13 @@ layer(DatabaseTest)(
             {
               ...withoutApps,
               YOUTUBE_CLIENT_SECRET: "synthetic-google-secret",
+            },
+          ],
+          [
+            "pinterest",
+            {
+              ...withoutApps,
+              PINTEREST_APP_SECRET: "synthetic-pinterest-secret",
             },
           ],
         ] as const) {
