@@ -19,7 +19,7 @@ export type FieldType = typeof FieldTypeSchema.Type;
 /** What a field has when it is left out. */
 export const FieldDefaultSchema = Schema.Union([
   Schema.Boolean,
-  Schema.Number,
+  Schema.Finite,
   Schema.String,
 ]).annotate({ identifier: "FieldDefault" });
 

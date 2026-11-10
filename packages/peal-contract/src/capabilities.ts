@@ -64,7 +64,7 @@ export const MediaFormatSchema = Schema.Struct({
   contentType: MediaContentTypeSchema,
   kind: MediaKindSchema,
   // Width divided by height, both bounds included.
-  maxAspectRatio: Schema.NullOr(Schema.Number),
+  maxAspectRatio: Schema.NullOr(Schema.Finite),
   maxByteSize: Schema.NullOr(ByteCountSchema),
   maxDurationMs: Schema.NullOr(Schema.Int),
   // The most files a post holding one of this type shows.
@@ -73,7 +73,7 @@ export const MediaFormatSchema = Schema.Struct({
   maxPixels: Schema.NullOr(Schema.Int),
   // Each of width and height, in pixels.
   maxSide: Schema.NullOr(Schema.Int),
-  minAspectRatio: Schema.NullOr(Schema.Number),
+  minAspectRatio: Schema.NullOr(Schema.Finite),
   minByteSize: Schema.NullOr(ByteCountSchema),
   minDurationMs: Schema.NullOr(Schema.Int),
   minSide: Schema.NullOr(Schema.Int),
