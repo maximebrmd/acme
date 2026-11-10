@@ -4,7 +4,8 @@ import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { checkDraft } from "#publishing/domain/content-rules.ts";
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
-import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostContent, shownMedia } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import {
   authorOf,
   createDraft,
@@ -305,13 +306,16 @@ export class PostDrafts extends Context.Service<
             )
           );
 
+          // Every file it shows, in any of its parts.
+          const shown = shownMedia(content);
+
           const media =
-            content.media.length === 0
+            shown.length === 0
               ? []
               : yield* AttachableMedia.use((attachable) =>
                   attachable.lookUp(
                     actor,
-                    content.media.map(({ mediaId }) => mediaId)
+                    shown.map(({ mediaId }) => mediaId)
                   )
                 );
 
@@ -328,12 +332,25 @@ export class PostDrafts extends Context.Service<
 
         const { channelIds, mediaIds, tagIds } = yield* refers;
 
+        // Each part's media and texts, of what the workspace still has.
+        const kept = (part: Pick<PostContent, "media" | "overrides">) => ({
+          media: part.media.filter(({ mediaId }) => mediaIds.has(mediaId)),
+          overrides: part.overrides.filter(({ channelId }) =>
+            channelIds.includes(channelId)
+          ),
+        });
+
         return yield* create(actor, {
           channelIds,
           content: new PostContent({
-            media: content.media.filter(({ mediaId }) => mediaIds.has(mediaId)),
-            overrides: content.overrides.filter(({ channelId }) =>
-              channelIds.includes(channelId)
+            ...kept(content),
+            followUps: content.followUps.map(
+              (part) =>
+                new PostPart({
+                  ...kept(part),
+                  delaySeconds: part.delaySeconds,
+                  text: part.text,
+                })
             ),
             text: content.text,
           }),

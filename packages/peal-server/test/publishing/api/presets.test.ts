@@ -374,11 +374,18 @@ describe("a post of several parts", () => {
             payload: { name: "Sign-off", text: "— The studio" },
           });
 
+          const set = yield* editor.channelSets.create({
+            params,
+            payload: { channelIds: [bluesky], name: "Threads" },
+          });
+
+          // Sent to a set's channels, it keeps its parts.
           const sent = yield* editor.posts.send({
             headers: {},
             params,
             payload: {
-              channelIds: [bluesky],
+              channelIds: [],
+              channelSets: [set.id],
               content: thread("Last"),
               signatureId: signOff.id,
               when: tomorrow,
@@ -386,6 +393,10 @@ describe("a post of several parts", () => {
             query: {},
           });
 
+          assert.deepStrictEqual(
+            sent.targets.map(({ channelId }) => channelId),
+            [bluesky]
+          );
           assert.strictEqual(sent.content.text, "First");
           assert.deepStrictEqual(
             (sent.content.followUps ?? []).map((part) => [

@@ -594,5 +594,5 @@ publishing's schema, naming nobody: each goes with its workspace
   the request asks, but default options: an API caller's text is never
   signed unasked.
 - `PostDrafts.duplicate` copies a post, whatever its status, into a new
-  draft of whoever asked: what the workspace no longer has (a channel, a
-  media, a tag) is left out rather than refused.
+  draft of whoever asked, every part included: what the workspace no
+  longer has (a channel, a media, a tag) is left out rather than refused.

@@ -8,6 +8,8 @@ import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PostTags } from "#publishing/application/post-tags.ts";
 import { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { PinterestOptions } from "#publishing/domain/pinterest-options.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import { newId } from "#shared/application/ids.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
@@ -145,6 +147,61 @@ describe("duplicating a post", () => {
           assert.deepStrictEqual(copy.post.content.overrides, []);
           assert.strictEqual(copy.post.content.text, "Hello");
           assert.deepStrictEqual(copy.post.tagIds, []);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "copies the parts that follow the post, each with its own texts and media",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* copiesParts() {
+          const drafts = yield* PostDrafts;
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connect(workspaceId, "mastodon");
+          const bluesky = yield* connect(workspaceId, "bluesky");
+          const actor = actorIn(workspaceId);
+
+          const second = contentOf("Second", {
+            media: [attachableImage],
+            overrides: [[mastodon, "Second, fediverse"]],
+          });
+
+          const draft = yield* drafts.create(actor, {
+            channelIds: [mastodon, bluesky],
+            content: new PostContent({
+              followUps: [
+                new PostPart({
+                  delaySeconds: 90,
+                  media: second.media,
+                  overrides: second.overrides,
+                  text: second.text,
+                }),
+              ],
+              media: [],
+              overrides: [],
+              text: "First",
+            }),
+          });
+
+          const copy = yield* drafts.duplicate(actor, draft.post.id);
+
+          assert.deepStrictEqual(copy.post.content, draft.post.content);
+
+          // A part's text on a channel the workspace no longer has goes.
+          yield* ChannelRepository.use((channels) =>
+            channels.remove(workspaceId, mastodon)
+          );
+
+          const later = yield* drafts.duplicate(actor, draft.post.id);
+          const [part] = later.post.content.followUps;
+
+          assert.strictEqual(part?.text, "Second");
+          assert.strictEqual(part?.delaySeconds, 90);
+          assert.deepStrictEqual(part?.media, second.media);
+          assert.deepStrictEqual(part?.overrides, []);
         })
       ),
     timeout
