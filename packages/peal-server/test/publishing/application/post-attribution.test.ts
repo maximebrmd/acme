@@ -4,8 +4,11 @@ import { Effect, Option } from "effect";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostAttribution } from "#publishing/domain/post-origin.ts";
 import type { PostOrigin } from "#publishing/domain/post-origin.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
+import { TextOverride } from "#publishing/domain/text-override.ts";
 import { newId } from "#shared/application/ids.ts";
 import { Actor } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -125,6 +128,69 @@ describe("a post's attribution", () => {
           assert.deepStrictEqual(
             back.post.attribution,
             attributed(application)
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "exports every part of a post, and how many are live on each channel",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* exportsParts() {
+          const scheduling = yield* PostScheduling;
+          const records = yield* PostRecords;
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+
+          const { post } = yield* scheduling.schedule(
+            actorAs(yield* freshUser, workspaceId),
+            {
+              channelIds: [channel],
+              content: new PostContent({
+                followUps: [
+                  new PostPart({
+                    delaySeconds: 0,
+                    media: [],
+                    overrides: [
+                      new TextOverride({
+                        channelId: channel,
+                        text: "A synthetic second part, here.",
+                      }),
+                    ],
+                    text: "A synthetic second part.",
+                  }),
+                ],
+                media: [],
+                overrides: [],
+                text: "A synthetic first part.",
+              }),
+              schedule: scheduleIn("2026-06-15T08:00:00Z"),
+            }
+          );
+
+          yield* eventually("the job is parked", isSuspended(post.id));
+          yield* setTime("2026-06-15T08:00:00Z");
+          yield* eventually("the post finished", isFinished(post.id));
+
+          const [exported] = yield* records.exportWorkspace(workspaceId);
+
+          assert(exported !== undefined);
+          assert.deepStrictEqual(exported.followUps, [
+            {
+              delaySeconds: 0,
+              media: [],
+              text: "A synthetic second part.",
+              textOverrides: [
+                { channelId: channel, text: "A synthetic second part, here." },
+              ],
+            },
+          ]);
+          assert.deepStrictEqual(
+            exported.targets.map(({ partsLive }) => partsLive),
+            [2]
           );
         })
       ),

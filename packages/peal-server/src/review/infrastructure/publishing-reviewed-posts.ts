@@ -3,13 +3,14 @@ import { Effect, Layer, Option } from "effect";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { HeldPosts } from "#publishing/application/held-posts.ts";
 import { plainOptions } from "#publishing/application/plain-options.ts";
+import { postOnChannel } from "#publishing/application/post-parts.ts";
 import type { PostWithTargets } from "#publishing/application/post-repository.ts";
 import { ReviewedPosts } from "#review/application/ports/reviewed-posts.ts";
 import type {
   ReviewedPost,
   ReviewedStatus,
 } from "#review/application/ports/reviewed-posts.ts";
-import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 
 type PostStatus = PostWithTargets["post"]["status"];
 
@@ -29,10 +30,20 @@ const scheduleOf = (status: PostStatus): ReviewedPost["schedule"] =>
       })
     : Option.none();
 
-// The text the post has on a channel: its override there, or its own.
-const textOn = ({ content }: PostWithTargets["post"], channelId: string) =>
-  content.overrides.find((override) => override.channelId === channelId)
-    ?.text ?? content.text;
+// The post on a channel, as it will receive it: its text there, then the
+// parts that follow, each with its files.
+const partsFor = (post: PostWithTargets["post"], channelId: ChannelId) => {
+  const { followUps, text } = postOnChannel(post, channelId);
+
+  return {
+    followUps: followUps.map((part) => ({
+      delaySeconds: part.delaySeconds,
+      media: part.media.map(({ altText, mediaId }) => ({ altText, mediaId })),
+      text: part.text,
+    })),
+    text,
+  };
+};
 
 /**
  * The posts under review as publishing holds them (HeldPosts), each
@@ -73,7 +84,7 @@ export const PublishingReviewedPosts = Layer.effect(
               handle: channel.pipe(Option.map(({ handle }) => handle)),
               options: plainOptions(target),
               platform: channel.pipe(Option.map(({ platform }) => platform)),
-              text: textOn(post, target.channelId),
+              ...partsFor(post, target.channelId),
             }))
           )
         )

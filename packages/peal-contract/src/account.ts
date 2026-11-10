@@ -102,13 +102,32 @@ const ExportedPostOriginSchema = Schema.Struct({
   via: Schema.String,
 });
 
+const ExportedAttachmentSchema = Schema.Struct({
+  altText: nullable(Schema.String),
+  mediaId: Schema.String,
+});
+
+const ExportedOverrideSchema = Schema.Struct({
+  channelId: Schema.String,
+  text: Schema.String,
+});
+
 const ExportedPostSchema = Schema.Struct({
   // How it was created; null on a post from before this was kept.
   createdVia: nullable(ExportedPostOriginSchema),
-  id: Schema.String,
-  media: Schema.Array(
-    Schema.Struct({ altText: nullable(Schema.String), mediaId: Schema.String })
+  // The parts that follow its first, in order (a thread, or comments,
+  // depending on the platform), each with the seconds it waits after the
+  // part before it. Empty on a post of one part.
+  followUps: Schema.Array(
+    Schema.Struct({
+      delaySeconds: Schema.Int,
+      media: Schema.Array(ExportedAttachmentSchema),
+      text: Schema.String,
+      textOverrides: Schema.Array(ExportedOverrideSchema),
+    })
   ),
+  id: Schema.String,
+  media: Schema.Array(ExportedAttachmentSchema),
   scheduledAt: nullable(instant),
   // How it was last scheduled; null on a draft, or when it was not kept.
   scheduledVia: nullable(ExportedPostOriginSchema),
@@ -121,14 +140,14 @@ const ExportedPostSchema = Schema.Struct({
       keptPrivate: Schema.Boolean,
       // What the post set on that channel's platform, null when nothing.
       options: nullable(TargetOptionsSchema),
+      // How many of the post's parts are live there.
+      partsLive: Schema.Int,
       permalink: nullable(Schema.String),
       status: Schema.String,
     })
   ),
   text: Schema.String,
-  textOverrides: Schema.Array(
-    Schema.Struct({ channelId: Schema.String, text: Schema.String })
-  ),
+  textOverrides: Schema.Array(ExportedOverrideSchema),
   timeZone: nullable(Schema.String),
 });
 

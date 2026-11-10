@@ -2239,6 +2239,7 @@ export const studioGroupsLive = (studio: Studio) =>
               ),
               channels: post.targets.map(({ channelId }) => ({
                 channelId,
+                followUps: [],
                 handle: "@studio@social.example.test",
                 options:
                   post.targets.find((target) => target.channelId === channelId)
