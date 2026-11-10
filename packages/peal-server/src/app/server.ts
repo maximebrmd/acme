@@ -45,7 +45,9 @@ import {
   NotificationsWorkersLive,
 } from "#notifications/container.ts";
 import {
+  CapabilitiesApiLive,
   GatedMetricsReader,
+  LookupsApiLive,
   MediaInPostsLive,
   PostsApiLive,
   PublishingLive,
@@ -85,6 +87,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   BillingActionsApiLive,
   AnalyticsApiLive,
   TikTokApiLive,
+  CapabilitiesApiLive,
+  LookupsApiLive,
   StaffApiLive,
   LegalApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));

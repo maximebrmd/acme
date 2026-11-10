@@ -3,7 +3,9 @@ import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import { AccountRules } from "#publishing/application/account-rules.ts";
+import { AccountStandings } from "#publishing/application/account-standings.ts";
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
+import { ChannelLookups } from "#publishing/application/channel-lookups.ts";
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
@@ -13,9 +15,11 @@ import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PostUsage } from "#publishing/application/post-usage.ts";
+import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import type { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
+import { AnalyticsCountedPlatforms } from "#publishing/infrastructure/analytics-counted-platforms.ts";
 import { ChannelAccessCredentials } from "#publishing/infrastructure/channel-access-credentials.ts";
 import {
   ChannelGateLive,
@@ -38,6 +42,7 @@ import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
+import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platform-lookups-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
@@ -49,7 +54,8 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
  * `PostScheduling`, `PostFollowUp`, for the handlers; `PostRecords`, for the
  * workspace context's exports and erasures; `PostUsage`, for billing;
  * `PublishedTargets`, which analytics follows; `PostOversight`, for the
- * staff console) and the adapters behind its
+ * staff console; in `PublishingLive`, `PostingCapabilities` and
+ * `ChannelLookups`, which tell clients what a post may hold) and the adapters behind its
  * ports, with `references` for the channels and media posts refer to and the
  * posts a month allows. Needs the database (Drizzle), the workflow engine, a
  * TransactionRunner and Ids, and PublicationOutcomes for PostFollowUp.
@@ -106,6 +112,20 @@ export const PublishingLive = publishingWith(
     TikTokCreatorInfo.layer.pipe(Layer.provide(ListedWorkspaceChannels))
   ),
   Layer.provideMerge(
+    Layer.mergeAll(
+      PostingCapabilities.layer.pipe(
+        Layer.provide(
+          Layer.mergeAll(AccountStandings.layer, AnalyticsCountedPlatforms)
+        )
+      ),
+      ChannelLookups.layer.pipe(
+        Layer.provide(
+          PlatformLookupsLive.pipe(Layer.provide(ChannelAccessCredentials))
+        )
+      )
+    ).pipe(Layer.provide(ListedWorkspaceChannels))
+  ),
+  Layer.provideMerge(
     TikTokCreatorsLive.pipe(Layer.provide(ChannelAccessCredentials))
   ),
   Layer.provideMerge(
@@ -131,6 +151,12 @@ export { PostsHandlers as PostsApiLive } from "#publishing/api/posts.ts";
 
 // TikTok's creator info for the composer, behind the same middleware.
 export { TikTokHandlers as TikTokApiLive } from "#publishing/api/tiktok.ts";
+
+// What a post may hold on each platform and channel, and the lookups that
+// answer the values its options take, behind the same middleware.
+export { CapabilitiesHandlers as CapabilitiesApiLive } from "#publishing/api/capabilities.ts";
+
+export { LookupsHandlers as LookupsApiLive } from "#publishing/api/lookups.ts";
 
 // What the gates read analytics' counts with (MetricsReader): the readers
 // the composition root brings, or none.

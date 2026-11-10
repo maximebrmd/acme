@@ -6,6 +6,7 @@ import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
 import { BillingActionsApi } from "./billing-actions.ts";
 import { BillingApi } from "./billing.ts";
+import { CapabilitiesApi } from "./capabilities.ts";
 import { CaptchaApi } from "./captcha.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
@@ -14,6 +15,7 @@ import { ConnectedAppsApi } from "./connected-apps.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { InvitationsApi } from "./invitations.ts";
 import { LegalApi } from "./legal.ts";
+import { LookupsApi } from "./lookups.ts";
 import { MediaApi } from "./media.ts";
 import { MembersApi } from "./members.ts";
 import { NoticesApi } from "./notices.ts";
@@ -221,6 +223,65 @@ export type {
   PlanLimits,
   PlanPrices,
 } from "./billing-plans.ts";
+
+export {
+  AccountRestrictionSchema,
+  AccountStandingSchema,
+  AccountUnreadReasonSchema,
+  CapabilitiesApi,
+  capabilitiesVersion,
+  ChannelCapabilitiesSchema,
+  MediaCapabilitiesSchema,
+  MediaFormatSchema,
+  OptionConstraintSchema,
+  PlatformCapabilitiesSchema,
+  TextCapabilitiesSchema,
+  TextLimitSchema,
+} from "./capabilities.ts";
+
+export type {
+  AccountRestriction,
+  AccountStanding,
+  ChannelCapabilities,
+  MediaFormat,
+  OptionConstraint,
+  PlatformCapabilities,
+  TextLimit,
+} from "./capabilities.ts";
+
+export {
+  FieldDefaultSchema,
+  FieldDescriptionSchema,
+  FieldTypeSchema,
+} from "./field-description.ts";
+
+export type { FieldDescription, FieldType } from "./field-description.ts";
+
+export { LookupInputInvalid } from "./lookup-input-invalid.ts";
+
+export { LookupNameSchema } from "./lookup-name.ts";
+
+export type { LookupName } from "./lookup-name.ts";
+
+export { LookupNotFound } from "./lookup-not-found.ts";
+
+export {
+  LookupDescriptionSchema,
+  LookupInputSchema,
+  LookupResultSchema,
+  LookupsApi,
+  maxLookupPageSize,
+  YouTubePlaylistSchema,
+  YouTubeVideoCategorySchema,
+} from "./lookups.ts";
+
+export type {
+  LookupDescription,
+  LookupInput,
+  LookupResult,
+} from "./lookups.ts";
+
+export { PlatformRateLimited } from "./platform-rate-limited.ts";
 
 export { CaptchaApi, CaptchaSchema } from "./captcha.ts";
 
@@ -664,6 +725,8 @@ export class Api extends HttpApi.make("peal")
   .add(CaptchaApi)
   .add(AnalyticsApi)
   .add(TikTokApi)
+  .add(CapabilitiesApi)
+  .add(LookupsApi)
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)

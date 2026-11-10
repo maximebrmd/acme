@@ -14,12 +14,15 @@ import {
   lookupsOn,
   queryOf,
 } from "#publishing/domain/lookup.ts";
+import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";
 import {
   capabilitiesOf,
   capabilitiesVersion,
   everyCapabilities,
 } from "#publishing/domain/platform-capabilities.ts";
 import { platformRules } from "#publishing/domain/platform-rules.ts";
+import { maxMediaPerPost } from "#publishing/domain/post-content.ts";
+import { maxPostTextLength } from "#publishing/domain/post-text.ts";
 import {
   describeOptionsOn,
   optionConstraintsOn,
@@ -235,6 +238,35 @@ describe("a platform's capabilities", () => {
     expect(bluesky.options).toStrictEqual([]);
     expect(bluesky.lookups).toStrictEqual([]);
     expect(bluesky.countsPosts).toBeFalsy();
+  });
+
+  it("hold Peal's own limits where they are the stricter", () => {
+    const tiktok = capabilitiesOf("tiktok", true);
+
+    expect(platformRules.tiktok.maxMedia).toBe(35);
+    expect(tiktok.maxMedia).toBe(maxMediaPerPost);
+    expect(tiktok.textLimits).toStrictEqual([
+      { maximum: 2200, unit: "utf16Units" },
+      { maximum: maxPostTextLength, unit: "utf16Units" },
+    ]);
+    expect(capabilitiesOf("x", false).maxAltTextLength).toBe(1000);
+    expect(capabilitiesOf("pinterest", false)).toMatchObject({
+      maxAltTextLength,
+      maxMedia: maxMediaPerPost,
+      textLimits: [{ maximum: maxPostTextLength, unit: "utf16Units" }],
+    });
+  });
+
+  it("say which options a lookup fills", () => {
+    expect(
+      capabilitiesOf("youtube", true).lookups.map(({ fills, name }) => [
+        name,
+        fills,
+      ])
+    ).toStrictEqual([
+      ["youtubeVideoCategories", ["categoryId"]],
+      ["youtubePlaylists", []],
+    ]);
   });
 
   it("cover every platform, in the platforms' order", () => {

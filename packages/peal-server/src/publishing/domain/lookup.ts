@@ -145,7 +145,7 @@ export type LookupQueryOf<Name extends LookupName> = Extract<
 interface LookupDefinition<Name extends LookupName> {
   /** The input's fields, as clients send them. */
   readonly input: Schema.Struct<Readonly<Record<string, Schema.Top>>>;
-  readonly notes: Readonly<Record<string, FieldNotes>>;
+  readonly notes: Readonly<Record<string, FieldNotes<LookupName>>>;
   /** Its answer comes in pages, each naming the next one's cursor. */
   readonly paged: boolean;
   readonly platform: Platform;
@@ -227,7 +227,7 @@ export const lookups = {
 /** A lookup as clients are told of it. */
 export interface LookupDescription {
   /** The fields its input takes, none of them required. */
-  readonly input: readonly FieldDescription[];
+  readonly input: readonly FieldDescription<LookupName>[];
   readonly name: LookupName;
   readonly paged: boolean;
   readonly platform: Platform;
@@ -241,9 +241,10 @@ export const describeLookup = (name: LookupName): LookupDescription => {
   const { input, notes, paged, platform } = lookups[name];
 
   return {
-    input: describeFields(input.fields, { notes, required: [] }).filter(
-      isDescribed
-    ),
+    input: describeFields<LookupName>(input.fields, {
+      notes,
+      required: [],
+    }).filter(isDescribed),
     name,
     paged,
     platform,

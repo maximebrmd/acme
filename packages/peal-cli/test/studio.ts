@@ -9,6 +9,8 @@ import {
   CurrentPrincipal,
   Forbidden,
   InvitationNotFound,
+  LookupInputInvalid,
+  LookupNotFound,
   PostNotFound,
   PostStatusConflict,
   TargetStatusConflict,
@@ -29,6 +31,13 @@ import type {
   PostTarget,
   TikTokAccount,
 } from "peal-contract";
+
+import {
+  capabilitiesOn,
+  describedPlatforms,
+  playlistPage,
+  videoCategories,
+} from "./studio-capabilities.ts";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
@@ -363,6 +372,23 @@ const record = (studio: Studio, change: string) =>
     ...current,
     changes: [...current.changes, change],
   }));
+
+// The studio's channel a path names.
+const channelIn = (params: {
+  readonly channelId: string;
+  readonly workspaceId: string;
+}) =>
+  Option.match(
+    Option.fromUndefinedOr(
+      params.workspaceId === studioId
+        ? channels.find(({ id }) => id === params.channelId)
+        : undefined
+    ),
+    {
+      onNone: () => Effect.fail(new ChannelNotFound()),
+      onSome: (channel) => Effect.succeed(channel),
+    }
+  );
 
 // The member a request acts as, if they may do this.
 const allowed = (permission: Permission) =>
@@ -816,6 +842,90 @@ export const studioGroupsLive = (studio: Studio) =>
       handlers.handleAll({
         list: () => Effect.succeed([cli]),
         revoke: () => refusing,
+      })
+    ),
+    HttpApiBuilder.group(Api, "capabilities", (handlers) =>
+      handlers.handleAll({
+        channel: ({ params }) =>
+          allowed("channel:read").pipe(
+            Effect.andThen(channelIn(params)),
+            Effect.map((channel) => ({
+              account:
+                channel.platform === "tiktok"
+                  ? {
+                      _tag: "read" as const,
+                      blocked: null,
+                      restrictions: [
+                        {
+                          _tag: "optionValues" as const,
+                          field: "privacyLevel",
+                          values: ["PUBLIC_TO_EVERYONE", "SELF_ONLY"],
+                        },
+                        {
+                          _tag: "optionFixed" as const,
+                          field: "disableDuet",
+                          value: true,
+                        },
+                        { _tag: "videoDuration" as const, maximumMs: 600_000 },
+                        {
+                          _tag: "mediaTypesRefused" as const,
+                          contentTypes: ["image/jpeg" as const],
+                        },
+                      ],
+                    }
+                  : { _tag: "unrestricted" as const },
+              capabilities: capabilitiesOn(channel.platform),
+              channelId: channel.id,
+            }))
+          ),
+        platforms: () =>
+          allowed("channel:read").pipe(
+            Effect.as(describedPlatforms.map(capabilitiesOn))
+          ),
+      })
+    ),
+    HttpApiBuilder.group(Api, "lookups", (handlers) =>
+      handlers.handleAll({
+        list: ({ params }) =>
+          allowed("channel:read").pipe(
+            Effect.andThen(channelIn(params)),
+            Effect.map(({ platform }) => capabilitiesOn(platform).lookups)
+          ),
+        run: ({ params, payload }) =>
+          Effect.gen(function* run() {
+            yield* allowed("channel:read");
+
+            const channel = yield* channelIn(params);
+
+            if (
+              params.name === "tiktokCreator" &&
+              channel.platform === "tiktok"
+            ) {
+              return {
+                _tag: "tiktokCreator" as const,
+                items: [tiktokAccount],
+                nextCursor: null,
+              };
+            }
+
+            if (channel.platform !== "youtube") {
+              return yield* new LookupNotFound();
+            }
+
+            if (params.name === "youtubeVideoCategories") {
+              return payload.regionCode === "ZZ"
+                ? yield* new LookupInputInvalid()
+                : videoCategories;
+            }
+
+            if (params.name !== "youtubePlaylists") {
+              return yield* new LookupNotFound();
+            }
+
+            return (
+              playlistPage(payload.cursor) ?? (yield* new LookupInputInvalid())
+            );
+          }),
       })
     ),
     HttpApiBuilder.group(Api, "tiktok", (handlers) =>
