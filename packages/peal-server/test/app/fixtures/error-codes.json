@@ -75,6 +75,11 @@
     "tag": "ConnectFailed"
   },
   {
+    "code": "connect_link_not_found",
+    "status": 404,
+    "tag": "ConnectLinkNotFound"
+  },
+  {
     "code": "connected_app_not_found",
     "status": 404,
     "tag": "ConnectedAppNotFound"
@@ -110,14 +115,34 @@
     "tag": "DesiredDayTooFar"
   },
   {
+    "code": "duplicate_post",
+    "status": 409,
+    "tag": "DuplicatePost"
+  },
+  {
+    "code": "external_id_taken",
+    "status": 409,
+    "tag": "ExternalIdTaken"
+  },
+  {
     "code": "forbidden",
     "status": 403,
     "tag": "Forbidden"
   },
   {
+    "code": "hosted_connect_failed",
+    "status": 422,
+    "tag": "HostedConnectFailed"
+  },
+  {
     "code": "idempotency_key_reused",
     "status": 409,
     "tag": "IdempotencyKeyReused"
+  },
+  {
+    "code": "import_unreadable",
+    "status": 422,
+    "tag": "ImportUnreadable"
   },
   {
     "code": "incorrect_password",
@@ -220,6 +245,31 @@
     "tag": "OAuthClientNotPublished"
   },
   {
+    "code": "partner_accounts_closed",
+    "status": 403,
+    "tag": "PartnerAccountsClosed"
+  },
+  {
+    "code": "partner_details_invalid",
+    "status": 422,
+    "tag": "PartnerDetailsInvalid"
+  },
+  {
+    "code": "partner_key_not_found",
+    "status": 404,
+    "tag": "PartnerKeyNotFound"
+  },
+  {
+    "code": "partner_not_found",
+    "status": 404,
+    "tag": "PartnerNotFound"
+  },
+  {
+    "code": "partner_owns_workspaces",
+    "status": 409,
+    "tag": "PartnerOwnsWorkspaces"
+  },
+  {
     "code": "payload_too_large",
     "status": 413,
     "tag": "PayloadTooLarge"
@@ -260,6 +310,11 @@
     "tag": "ReductionRefused"
   },
   {
+    "code": "return_url_not_allowed",
+    "status": 422,
+    "tag": "ReturnUrlNotAllowed"
+  },
+  {
     "code": "schedule_in_past",
     "status": 422,
     "tag": "ScheduleInPast"
@@ -288,6 +343,16 @@
     "code": "too_many_client_errors",
     "status": 429,
     "tag": "TooManyClientErrors"
+  },
+  {
+    "code": "too_many_connect_attempts",
+    "status": 429,
+    "tag": "TooManyConnectAttempts"
+  },
+  {
+    "code": "too_many_connect_links",
+    "status": 429,
+    "tag": "TooManyConnectLinks"
   },
   {
     "code": "too_many_contract_requests",

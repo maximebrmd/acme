@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * How close two posts with the same content on one channel must be, by the
  * times they go out, for the second to be refused: less than this many
@@ -19,6 +21,7 @@ export type DuplicateOnChannel = typeof DuplicateOnChannelSchema.Type;
 export class DuplicatePost extends Schema.TaggedError<DuplicatePost>()(
   "DuplicatePost",
   {
+    ...errorEnvelope,
     // One per channel that has it, with the post nearest in time.
     duplicates: Schema.Array(DuplicateOnChannelSchema),
   },

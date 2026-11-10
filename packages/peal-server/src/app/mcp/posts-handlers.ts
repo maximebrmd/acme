@@ -24,6 +24,7 @@ import {
   sendRequestFrom,
   targetIdFrom,
 } from "#publishing/api/post-input.ts";
+import { toldRefusal } from "#publishing/api/post-refusal.ts";
 import { pageView, searchRequestFrom } from "#publishing/api/post-search.ts";
 import { attemptView, postView } from "#publishing/api/post-view.ts";
 import { tiktokAccountView } from "#publishing/api/tiktok-account-view.ts";
@@ -352,16 +353,20 @@ export const PostToolsLive = PostTools.toLayer(
             })
           );
 
-          const items = answered.map((outcome, index): BulkPostResult =>
-            Result.match(outcome, {
-              onFailure: (refusal) => ({ _tag: "refused", index, refusal }),
-              onSuccess: (made) => ({
-                _tag: "created",
-                index,
-                post: postView(made),
-                replayed: made.replayed,
-              }),
-            })
+          // A refused item carries the code the API's error has.
+          const items = yield* Effect.forEach(
+            answered.map((outcome, index): BulkPostResult =>
+              Result.match(outcome, {
+                onFailure: (refusal) => ({ _tag: "refused", index, refusal }),
+                onSuccess: (made) => ({
+                  _tag: "created",
+                  index,
+                  post: postView(made),
+                  replayed: made.replayed,
+                }),
+              })
+            ),
+            toldRefusal
           );
 
           const created = items.filter(({ _tag }) => _tag === "created").length;

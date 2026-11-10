@@ -1215,7 +1215,10 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
                 Schema.Struct({
                   _tag: Schema.String,
                   index: Schema.Int,
-                  refusal: Schema.Struct({ _tag: Schema.String }),
+                  refusal: Schema.Struct({
+                    _tag: Schema.String,
+                    code: Schema.String,
+                  }),
                 })
               ),
               refused: Schema.Int,
@@ -1229,12 +1232,15 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               {
                 _tag: "refused",
                 index: 0,
-                refusal: { _tag: "PostContentInvalid" },
+                refusal: {
+                  _tag: "PostContentInvalid",
+                  code: "post_content_invalid",
+                },
               },
               {
                 _tag: "refused",
                 index: 1,
-                refusal: { _tag: "UnknownChannels" },
+                refusal: { _tag: "UnknownChannels", code: "unknown_channels" },
               },
             ],
             refused: 2,

@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * Why a hosted page connected nothing:
  *
@@ -38,6 +40,7 @@ export type HostedConnectFailure = typeof HostedConnectFailureSchema.Type;
 export class HostedConnectFailed extends Schema.TaggedError<HostedConnectFailed>()(
   "HostedConnectFailed",
   {
+    ...errorEnvelope,
     reason: HostedConnectFailureSchema,
     // Where the page may send the browser back, when the link has a
     // return address.

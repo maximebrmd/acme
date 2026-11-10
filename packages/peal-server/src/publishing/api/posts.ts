@@ -54,7 +54,7 @@ import {
   sendRequestFrom,
   targetIdFrom,
 } from "./post-input.ts";
-import { refusalOfCheck } from "./post-refusal.ts";
+import { refusalOfCheck, toldRefusal } from "./post-refusal.ts";
 import { pageView, searchRequestFrom } from "./post-search.ts";
 import { attemptView, postView } from "./post-view.ts";
 
@@ -157,16 +157,20 @@ export const PostsHandlers = HttpApiBuilder.group(
             })
           );
 
-          const items = answered.map((outcome, index): BulkPostResult =>
-            Result.match(outcome, {
-              onFailure: (refusal) => ({ _tag: "refused", index, refusal }),
-              onSuccess: (sent) => ({
-                _tag: "created",
-                index,
-                post: postView(sent),
-                replayed: sent.replayed,
-              }),
-            })
+          // A refused item reads as the error `send` would have answered.
+          const items = yield* Effect.forEach(
+            answered.map((outcome, index): BulkPostResult =>
+              Result.match(outcome, {
+                onFailure: (refusal) => ({ _tag: "refused", index, refusal }),
+                onSuccess: (sent) => ({
+                  _tag: "created",
+                  index,
+                  post: postView(sent),
+                  replayed: sent.replayed,
+                }),
+              })
+            ),
+            toldRefusal
           );
 
           const created = items.filter(({ _tag }) => _tag === "created").length;
@@ -394,7 +398,7 @@ export const PostsHandlers = HttpApiBuilder.group(
             return {
               created: 0,
               dryRun: payload.dryRun === true,
-              rows: results,
+              rows: yield* Effect.forEach(results, toldRefusal),
             };
           }
 
@@ -422,7 +426,7 @@ export const PostsHandlers = HttpApiBuilder.group(
           return {
             created: results.filter(({ _tag }) => _tag === "created").length,
             dryRun: false,
-            rows: results,
+            rows: yield* Effect.forEach(results, toldRefusal),
           };
         }),
       list: ({ query }) =>

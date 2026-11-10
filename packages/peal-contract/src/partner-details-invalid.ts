@@ -1,9 +1,12 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /** What was sent for a partner account, a partner key or a workspace cannot be kept. */
 export class PartnerDetailsInvalid extends Schema.TaggedError<PartnerDetailsInvalid>()(
   "PartnerDetailsInvalid",
   {
+    ...errorEnvelope,
     field: Schema.Literals([
       "name",
       "logoUrl",

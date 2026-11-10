@@ -1,22 +1,69 @@
-import { Array as Arr, Effect, Match, Option } from "effect";
+import { Array as Arr, Effect, Match, Option, Schema } from "effect";
 import {
   DuplicatePost,
-  Forbidden,
   IdempotencyKeyReused,
   PostContentInvalid,
   PostNotFound,
+  PostRefusalSchema,
   ScheduleInPast,
   UnknownChannels,
   UnknownMedia,
 } from "peal-contract";
 import type { CurrentMember, PostRefusal } from "peal-contract";
+import { errorsByTag } from "peal-contract/errors";
 
 import type { SendRefusal } from "#publishing/application/post-batches.ts";
 import type { PostCheck } from "#publishing/application/post-checks.ts";
+import { refused } from "#shared/api/forbidden.ts";
 import type { LimitRefusal } from "#shared/api/limit-reached.ts";
+import { RequestId } from "#shared/api/request-id.ts";
 
 // One post of several is answered what `send` would have answered for it
 // alone, as data: the same errors, with the same fields.
+
+const catalogue = errorsByTag();
+
+const encodeRefusal = Schema.encodeEffect(PostRefusalSchema);
+
+const decodeRefusal = Schema.decodeUnknownEffect(PostRefusalSchema);
+
+/**
+ * A refusal answered as data, inside an answer that is not an error, in
+ * the envelope every error of the API comes in: its `code`, words for a
+ * person (its own, or the catalogue's) and the request's id. The server
+ * fills these on an error it answers; nothing does for one inside a 200.
+ */
+export const inEnvelope = (refusal: PostRefusal): Effect.Effect<PostRefusal> =>
+  Effect.gen(function* inEnvelope() {
+    const requestId = yield* Effect.serviceOption(RequestId);
+    const known = catalogue.get(refusal._tag);
+    const own = yield* encodeRefusal(refusal);
+
+    return yield* decodeRefusal({
+      ...own,
+      ...(known === undefined ? {} : { code: known.code }),
+      message:
+        own.message === undefined || own.message === ""
+          ? (known?.message ?? "The post was refused.")
+          : own.message,
+      ...Option.match(requestId, {
+        onNone: () => ({}),
+        onSome: (id) => ({ requestId: id }),
+      }),
+    });
+  }).pipe(Effect.orDie);
+
+/** A post of several, its refusal in the envelope if it was refused. */
+export const toldRefusal = <
+  A extends { readonly _tag: string } | { readonly refusal: PostRefusal },
+>(
+  result: A
+): Effect.Effect<A> =>
+  "refusal" in result
+    ? inEnvelope(result.refusal).pipe(
+        Effect.map((refusal) => ({ ...result, refusal }))
+      )
+    : Effect.succeed(result);
 
 /** Why sending a post failed, as the contract tells it. */
 export const refusalOf =
@@ -34,7 +81,8 @@ export const refusalOf =
         ),
       IdempotencyKeyReused: () =>
         Effect.succeed<PostRefusal>(new IdempotencyKeyReused()),
-      MissingPermission: () => Effect.succeed<PostRefusal>(new Forbidden()),
+      MissingPermission: ({ permission }) =>
+        Effect.succeed<PostRefusal>(refused("missingPermission", permission)),
       PlanLimitReached: (reached) =>
         limitReached(reached).pipe(
           Effect.flip,

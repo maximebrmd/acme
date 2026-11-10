@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * Why a CSV file cannot be read as posts at all: it is `empty`; a quoted
  * cell never ends (`unterminatedQuote`); its first line names a column
@@ -22,6 +24,7 @@ export type ImportProblem = typeof ImportProblemSchema.Type;
 export class ImportUnreadable extends Schema.TaggedError<ImportUnreadable>()(
   "ImportUnreadable",
   {
+    ...errorEnvelope,
     // The column the problem is about, as the file names it; null when it
     // is about no column.
     column: Schema.NullOr(Schema.String),

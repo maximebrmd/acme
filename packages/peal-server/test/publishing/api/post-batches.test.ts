@@ -175,6 +175,15 @@ describe("the bulk endpoint", () => {
           assert.strictEqual(twice.duplicates[0]?.postId, one.post.id);
           assert.instanceOf(refusalAt(first.items, 4), UnknownChannels);
 
+          // A refused item reads as the error `send` would have answered:
+          // the same code, with words for a person.
+          assert.deepStrictEqual(
+            [2, 3, 4].map((place) => refusalAt(first.items, place)?.code),
+            ["post_content_invalid", "duplicate_post", "unknown_channels"]
+          );
+          assert.isAbove(long.message.length, 10);
+          assert.isAbove(twice.message.length, 10);
+
           // Two posts, however often the request is sent.
           const listed = yield* editor.posts.list({
             params,
@@ -447,6 +456,10 @@ describe("the import endpoint", () => {
           const untimed = bad.rows.at(3);
 
           assert.instanceOf(refusalAt(bad.rows, 2), PostContentInvalid);
+          assert.deepStrictEqual(
+            [2, 4].map((place) => refusalAt(bad.rows, place)?.code),
+            ["post_content_invalid", "unknown_channels"]
+          );
           assert.deepStrictEqual(
             untimed?._tag === "unreadable" ? untimed.problems : [],
             [{ column: "at", problem: "missing" }]

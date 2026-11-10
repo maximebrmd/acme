@@ -252,7 +252,10 @@ layer(StaffOnlyLive, { excludeTestServices: true, timeout: "180 seconds" })(
         });
 
         assert.strictEqual(opened.status, 403);
-        assert.deepStrictEqual(opened.body, { _tag: "PartnerAccountsClosed" });
+        assert.deepInclude(opened.body, {
+          _tag: "PartnerAccountsClosed",
+          code: "partner_accounts_closed",
+        });
       })
     );
   }
@@ -583,7 +586,10 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
           });
 
           assert.strictEqual(reused.status, 409);
-          assert.deepStrictEqual(reused.body, { _tag: "IdempotencyKeyReused" });
+          assert.deepInclude(reused.body, {
+            _tag: "IdempotencyKeyReused",
+            code: "idempotency_key_reused",
+          });
 
           // Sent together, two requests under one key make one workspace.
           const together = {
@@ -944,8 +950,9 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
           });
 
           assert.strictEqual(homeDeletion.status, 409);
-          assert.deepStrictEqual(homeDeletion.body, {
+          assert.deepInclude(homeDeletion.body, {
             _tag: "PartnerOwnsWorkspaces",
+            code: "partner_owns_workspaces",
             owned: 1,
           });
 
@@ -1046,8 +1053,9 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             });
 
             assert.strictEqual(refused.status, 422, returnUrl);
-            assert.deepStrictEqual(refused.body, {
+            assert.deepInclude(refused.body, {
               _tag: "ReturnUrlNotAllowed",
+              code: "return_url_not_allowed",
             });
           }
 
