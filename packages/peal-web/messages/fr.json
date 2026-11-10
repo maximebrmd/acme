@@ -350,8 +350,8 @@
     "connectingChosen": "Connexion…",
     "connected": "{count, plural, one {# compte est connecté.} other {# comptes sont connectés.}}",
     "cancel": "Retour aux canaux",
-    "retry": "Choisissez à nouveau, ou reconnectez-vous avec {platform, select, youtube {Google} googleBusiness {Google} other {Facebook}} pour une nouvelle liste.",
-    "startOver": "Se reconnecter avec {platform, select, youtube {Google} googleBusiness {Google} other {Facebook}}"
+    "retry": "Choisissez à nouveau, ou {platform, select, facebook {reconnectez-vous avec Facebook} instagram {reconnectez-vous avec Facebook} youtube {reconnectez-vous avec Google} googleBusiness {reconnectez-vous avec Google} linkedin {reconnectez-vous avec LinkedIn} other {reconnectez-vous}} pour une nouvelle liste.",
+    "startOver": "{platform, select, facebook {Se reconnecter avec Facebook} instagram {Se reconnecter avec Facebook} youtube {Se reconnecter avec Google} googleBusiness {Se reconnecter avec Google} linkedin {Se reconnecter avec LinkedIn} other {Se reconnecter}}"
   },
   "InstagramChannels": {
     "title": "Instagram",

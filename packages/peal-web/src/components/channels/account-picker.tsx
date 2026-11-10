@@ -14,6 +14,7 @@ import {
   failureOf,
 } from "#channels/channels-api.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
+import { choiceStart } from "#channels/choice-connection.ts";
 import { useConnect } from "#channels/use-connect.ts";
 import {
   AccountPickerView,
@@ -92,7 +93,7 @@ export const AccountPicker = ({
           disabled={signIn.isPending}
           focusableWhenDisabled
           onClick={() => {
-            signIn.start({});
+            signIn.start(choiceStart(platform));
           }}
         >
           {signIn.isPending ? t("connecting") : t("startOver", { platform })}

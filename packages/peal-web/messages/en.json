@@ -350,8 +350,8 @@
     "connectingChosen": "Connecting…",
     "connected": "{count, plural, one {# account is connected.} other {# accounts are connected.}}",
     "cancel": "Back to the channels",
-    "retry": "Choose again, or sign in with {platform, select, youtube {Google} googleBusiness {Google} other {Facebook}} again for a new list.",
-    "startOver": "Sign in with {platform, select, youtube {Google} googleBusiness {Google} other {Facebook}} again"
+    "retry": "Choose again, or {platform, select, facebook {sign in with Facebook again} instagram {sign in with Facebook again} youtube {sign in with Google again} googleBusiness {sign in with Google again} linkedin {sign in with LinkedIn again} other {sign in again}} for a new list.",
+    "startOver": "{platform, select, facebook {Sign in with Facebook again} instagram {Sign in with Facebook again} youtube {Sign in with Google again} googleBusiness {Sign in with Google again} linkedin {Sign in with LinkedIn again} other {Sign in again}}"
   },
   "InstagramChannels": {
     "title": "Instagram",
