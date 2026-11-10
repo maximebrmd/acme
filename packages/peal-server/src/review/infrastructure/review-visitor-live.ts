@@ -1,5 +1,11 @@
 import { ByteSize, Effect, Layer } from "effect";
-import { Headers, HttpIncomingMessage, HttpServerRequest } from "effect/http";
+import {
+  Headers,
+  HttpEffect,
+  HttpIncomingMessage,
+  HttpServerRequest,
+  HttpServerResponse,
+} from "effect/http";
 import {
   maxReviewRequestBytes,
   ReviewRequestTooLarge,
@@ -25,7 +31,8 @@ const tooLarge = () => Effect.fail(new ReviewRequestTooLarge());
  * from (`AUTH_IP_HEADERS`, else the connection's), which the handlers count
  * visitors' writes by. The link's token and the captcha's travel in
  * headers, which are redacted wherever these requests' headers are written
- * out; the server's traces record no header.
+ * out; the server's traces record no header. Every answer says
+ * `Cache-Control: no-store`.
  */
 export const ReviewVisitorLive = Layer.effect(
   ReviewVisitor,
@@ -35,6 +42,16 @@ export const ReviewVisitorLive = Layer.effect(
     return ReviewVisitor.of((httpEffect) =>
       Effect.gen(function* visitor() {
         const request = yield* HttpServerRequest.HttpServerRequest;
+
+        // Every link's page has the same address, and its token is in a
+        // header: no cache on the way may keep one link's answer, or a
+        // refusal, for another request.
+        yield* HttpEffect.appendPreResponseHandler((_request, response) =>
+          Effect.succeed(
+            HttpServerResponse.setHeader(response, "cache-control", "no-store")
+          )
+        );
+
         const length = Number(request.headers["content-length"]);
 
         if (Number.isFinite(length) && length > maxReviewRequestBytes) {

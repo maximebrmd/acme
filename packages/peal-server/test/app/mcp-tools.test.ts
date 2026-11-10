@@ -806,6 +806,18 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             "The post does not wait for an approval"
           );
 
+          // A link's page has one address for every link, its token in a
+          // header: nothing between the server and a reader may keep one
+          // link's answer for another.
+          const page = yield* app.request("/api/review-link", {
+            headers: { "x-review-token": "not-a-token" },
+          });
+
+          assert.deepStrictEqual(
+            [page.status, page.headers.get("cache-control")],
+            [404, "no-store"]
+          );
+
           // Back to never, for the tests that follow.
           yield* app.request(`${base}/review/settings`, {
             body: { approvalPolicy: "never" },
