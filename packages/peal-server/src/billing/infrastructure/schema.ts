@@ -31,6 +31,8 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
 export const subscriptions = billing.table(
   "subscriptions",
   {
+    // When Stripe is set to end it, when on a day of its own.
+    cancelAt: instant("cancel_at"),
     cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull(),
     currentPeriodEnd: instant("current_period_end"),
     currentPeriodStart: instant("current_period_start"),
@@ -175,4 +177,69 @@ export const withdrawals = billing.table(
     index("withdrawals_user").on(table.userId),
     index("withdrawals_erased").on(table.erasedAt),
   ]
+);
+
+/**
+ * Each request to cancel a contract or to withdraw from it, as it was
+ * received: from a member in session, or from the form anyone reaches
+ * without signing in, with what its sender wrote there (their name, the
+ * address to acknowledge it at, the contract). `received_at` is the day
+ * that counts, whenever it is applied. `confirmation_digest` is the SHA-256
+ * of the token of the link sent to an address that manages a contract.
+ * Closing the account leaves its requests without the user, the name and
+ * the address; erasing the workspace leaves them without it, from
+ * `erased_at`, for 5 years (`contractRetention`), as long as those no
+ * contract was found for stay from `received_at`.
+ */
+export const contractRequests = billing.table(
+  "contract_requests",
+  {
+    acknowledgedAt: instant("acknowledged_at"),
+    acknowledgement: text("acknowledgement").notNull(),
+    channel: text("channel").notNull(),
+    confirmationDigest: text("confirmation_digest"),
+    confirmationExpiresAt: instant("confirmation_expires_at"),
+    contract: text("contract"),
+    currency: text("currency"),
+    desiredAt: instant("desired_at"),
+    effectiveAt: instant("effective_at"),
+    email: text("email"),
+    erasedAt: instant("erased_at"),
+    id: uuid("id").primaryKey(),
+    kind: text("kind").notNull(),
+    locale: text("locale").notNull(),
+    name: text("name"),
+    receivedAt: instant("received_at").notNull(),
+    refunded: bigint("refunded", { mode: "number" }),
+    refusal: text("refusal"),
+    settledAt: instant("settled_at"),
+    status: text("status").notNull(),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    userId: text("user_id"),
+    workspaceId: uuid("workspace_id"),
+  },
+  (table) => [
+    index("contract_requests_workspace").on(table.workspaceId),
+    index("contract_requests_user").on(table.userId),
+    index("contract_requests_status").on(table.status, table.receivedAt),
+    index("contract_requests_email").on(table.email, table.acknowledgedAt),
+    index("contract_requests_erased").on(table.erasedAt),
+    uniqueIndex("contract_requests_confirmation").on(table.confirmationDigest),
+  ]
+);
+
+/**
+ * The contract number of each subscription whose members were given one,
+ * so a number finds its subscription. A keyed hash of the subscription's
+ * id: it names nobody. Erasing the workspace deletes its rows.
+ */
+export const contractReferences = billing.table(
+  "contract_references",
+  {
+    issuedAt: instant("issued_at").notNull(),
+    reference: text("reference").primaryKey(),
+    stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [index("contract_references_workspace").on(table.workspaceId)]
 );

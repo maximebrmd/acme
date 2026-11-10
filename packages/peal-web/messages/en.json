@@ -938,10 +938,12 @@
       "ends": "Ends on {date}",
       "pastDue": "The last payment did not go through. Update the payment method in the billing portal to keep the plan.",
       "manage": "Manage billing",
+      "invoices": "Invoices and receipts",
+      "invoicesHint": "The invoices and receipts of the workspace’s past plans stay in Stripe’s billing portal.",
       "managing": "Opening the billing portal…",
-      "manageHint": "Change the payment method, the billing address or the VAT number, or download invoices, in Stripe’s billing portal.",
+      "manageHint": "Change the payment method, the billing address or the VAT number, or download invoices and receipts, in Stripe’s billing portal.",
       "trialEnds": "The trial ends on {date}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
-      "withdrawable": "Until {date}, as a consumer you may withdraw from the contract: it ends at once and the unused part is refunded.",
+      "withdrawable": "Until {date}, as a consumer you may withdraw from the contract, here or with “Withdraw from contract here” at the foot of every page: it ends at once and the unused part is refunded.",
       "trialHint": "A plan ordered during the trial ends it once it is paid for; nothing is charged for the trial."
     },
     "usage": {
@@ -972,10 +974,11 @@
     "errors": {
       "forbidden": "Only owners and admins of the workspace, in their own session, can change its billing.",
       "generic": "Stripe could not be reached. Try again in a moment.",
+      "noInvoices": "This workspace has no invoice: it never had a paid plan.",
       "nothingToCancel": "The subscription is already cancelled.",
       "trialUsed": "This workspace or your account already had its trial: order a plan instead.",
-      "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the subscription.",
-      "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the subscription.",
+      "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the contract.",
+      "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the contract.",
       "planTooSmall": "This plan does not hold what the workspace has."
     },
     "limitReached": "{limit, select, channels {The workspace’s plan allows no more channels. Move to a larger plan, or disconnect a channel first.} members {The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, cancel a post, or move to a larger plan.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} mediaStorage {The workspace’s plan has no room for this file. Delete media, or move to a larger plan.} other {The workspace’s plan allows no more of this.}}",
@@ -990,9 +993,9 @@
       "intervalLabel": "Billing period"
     },
     "consent": {
-      "startNow": "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days and then pay only for the days used.",
-      "terms": "Ordering accepts the terms of service, which say how to cancel and how to withdraw.",
-      "termsLink": "Ordering accepts the terms of service, which say how to cancel and how to withdraw.",
+      "startNow": "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days, with “Withdraw from contract here”, at the foot of every page and on this one, and then pay only for the days used.",
+      "terms": "Ordering accepts the terms of service, which say how to cancel and how to withdraw, and hold the model withdrawal form.",
+      "termsLink": "Ordering accepts the terms of service, which say how to cancel and how to withdraw, and hold the model withdrawal form.",
       "needed": "Tick the box above to order a plan or start the trial."
     },
     "trial": {
@@ -1002,11 +1005,11 @@
       "starting": "Opening checkout…"
     },
     "cancel": {
-      "open": "Cancel the subscription",
-      "title": "Cancel the subscription",
-      "summary": "The {plan} subscription ends on {date}, and nothing more is charged. Until then the workspace keeps its plan; it then moves to the free plan, with its content.",
+      "open": "Cancel your contract",
+      "title": "Cancel your contract",
+      "summary": "The {plan} subscription ends on {date}, and nothing more is charged. Until then the workspace keeps its plan; it then moves to the free plan, with its content. To end it on a later day instead, use “Cancel your contract” at the foot of the page.",
       "summaryNow": "The {plan} trial ends now, and nothing is charged. The workspace moves to the free plan, with its content.",
-      "confirm": "Confirm cancellation",
+      "confirm": "Notify the cancellation",
       "confirming": "Cancelling…",
       "doneTitle": "Subscription cancelled",
       "done": "It ends on {date}. A confirmation was emailed to the members who manage billing."
@@ -1022,6 +1025,92 @@
       "done": "The subscription has ended, and {refund} is refunded within 14 days. An acknowledgement with its date and time was emailed to you."
     },
     "keep": "Keep the subscription"
+  },
+  "Contract": {
+    "cancel": {
+      "title": "Cancel your contract",
+      "description": "Cancel a Peal subscription here, with or without signing in. There is no notice period and no fee: the contract ends with the period already paid for, which is not refunded, or on the later day you ask for; a trial ends at once. The workspace then moves to the free plan, with its content.",
+      "notify": "Notify the cancellation",
+      "notifying": "Notifying…",
+      "summaryTitle": "Summary of your cancellation",
+      "doneTitle": "Cancellation notified"
+    },
+    "withdraw": {
+      "title": "Withdraw from contract here",
+      "description": "As a consumer, you may withdraw from a Peal subscription within 14 days of subscribing, without giving a reason, with or without signing in. The contract ends at once, and what you paid for the rest of the period is refunded to your payment method within 14 days.",
+      "notify": "Confirm withdrawal",
+      "notifying": "Confirm withdrawal",
+      "summaryTitle": "Summary of your withdrawal",
+      "doneTitle": "Withdrawal received"
+    },
+    "fields": {
+      "name": "First and last name, or company name",
+      "email": "Email address",
+      "emailHint": "The acknowledgement of receipt is sent there.",
+      "contract": "Contract number, or the workspace’s name",
+      "contractHint": "The contract number is in the email that confirmed your subscription: with it, your request is applied at once. Without it, we email you a link to finish.",
+      "contractChoice": "Contract",
+      "contractOf": "{workspace}",
+      "contractOther": "Another contract",
+      "desiredOn": "Day you want the contract to end (optional)",
+      "desiredOnHint": "Leave empty to end it as soon as the contract allows: with the period already paid for. A later day ends it on that day, the last period charged only up to it."
+    },
+    "invalid": {
+      "name": "Give your name with letters, digits, spaces and ' , & ( ) - only, 100 characters at most.",
+      "email": "Give an email address, such as you@example.com.",
+      "contract": "Write the contract with letters, digits, spaces and ' , & ( ) - only, 100 characters at most."
+    },
+    "signedInAs": "You are signed in as {email}: your contracts are listed, and your request is applied at once.",
+    "continue": "Continue",
+    "modify": "Modify",
+    "summary": {
+      "name": "Name",
+      "email": "Acknowledgement sent to",
+      "contract": "Contract",
+      "contractNotGiven": "Not given: we will email you a link to choose it",
+      "desiredOn": "Day wanted",
+      "desiredOnNone": "As soon as the contract allows",
+      "refund": "Refunded now",
+      "effect": "{kind, select, cancellation {The contract ends with the period already paid for, or on the day wanted if it is later; a trial ends at once. Nothing more is charged.} other {The contract ends at once, and the rest of the period paid for is refunded within 14 days.}}"
+    },
+    "done": {
+      "received": "We received it on {receivedAt, date, long} at {receivedAt, time, short}: that date counts. An acknowledgement, with what you sent, is on its way to {email}. It says what happens next: with the contract number, your request is applied at once; otherwise the email holds a link to finish, or a person will write to you.",
+      "cancelled": "The contract ends on {endsAt, date, long}. Until then the workspace keeps its plan; nothing more is charged. A confirmation was emailed to the members who manage billing.",
+      "withdrawn": "The contract has ended, and {refund} is refunded to your payment method within 14 days. An acknowledgement with its date and time was emailed to you.",
+      "billing": "Open billing"
+    },
+    "errors": {
+      "generic": "Your request could not be sent. Try again in a moment.",
+      "tooMany": "Too many requests came from your connection in the last hour. Try again later, or sign in and use this page: it then needs no check.",
+      "captcha": "The check that you are a person did not pass. Try again.",
+      "notEnabled": "This Peal server sells no subscription: there is no contract to cancel or withdraw from.",
+      "forbidden": "Only owners and admins of the workspace, in their own session, can end its contract.",
+      "nothingToCancel": "This workspace has no subscription to cancel, or it is already set to end.",
+      "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the contract.",
+      "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the contract.",
+      "withdrawalNotSubscribed": "This workspace has no subscription to withdraw from.",
+      "unavailable": "Stripe could not be reached. Nothing changed: try again in a moment."
+    },
+    "links": {
+      "label": "Your contract",
+      "cancel": "Cancel your contract",
+      "withdraw": "Withdraw from contract here"
+    },
+    "confirmation": {
+      "title": "Apply your request",
+      "description": "You followed the link we emailed you, which shows the request is yours. Choose the contract it is about.",
+      "request": "{kind, select, cancellation {Cancellation} other {Withdrawal}} received on {receivedAt, date, long} at {receivedAt, time, short}: it is applied as of that date.",
+      "desiredOn": "Day wanted for the contract to end: {date, date, long}.",
+      "contract": "{workspace}: {plan}{trial, select, true { (trial)} other {}}",
+      "none": "The account this address signs in to manages no subscription now: there is nothing to apply the request to.",
+      "apply": "{kind, select, cancellation {Notify the cancellation} other {Confirm withdrawal}}",
+      "applying": "Applying…",
+      "notFound": "This link opens nothing: it was already used, it expired after 30 days, or it is incomplete. Send your request again from the link at the foot of the page.",
+      "missing": "This page opens from the link in the email we sent you.",
+      "applied": "{kind, select, cancellation {The contract ends on {effectiveAt, date, long}. Nothing more is charged.} other {The contract has ended.}} A confirmation was emailed to the members who manage billing.",
+      "refunded": "{refund} is refunded to the payment method used.",
+      "refused": "{refusal, select, nothingToCancel {There was nothing to cancel: the subscription is already set to end, or has ended.} notSubscribed {The contract has no subscription to withdraw from.} expired {The 14 days to withdraw were over when your statement came. You can cancel the contract instead.} business {The contract was concluded by a business with a verified VAT number, which has no right to withdraw. You can cancel it instead.} other {The request could not be applied.}}"
+    }
   },
   "Upgrade": {
     "title": "{limit, select, channels {This plan has no room for another channel} members {This plan has no room for another member} scheduledPosts {This plan has no room for another post that month} assistantRequests {The writing assistant’s requests for today are used} mediaStorage {This plan has no room for this file} freeWorkspace {One free workspace per account} other {The plan’s limit is reached}}",
@@ -1419,6 +1508,7 @@
       "users": "Accounts",
       "workspaces": "Workspaces",
       "audit": "Audit log",
+      "requests": "Contract requests",
       "legal": "Legal requests"
     },
     "search": {
@@ -1634,7 +1724,7 @@
       "noReason": "Not kept",
       "until": "Until",
       "workspace": "In a workspace",
-      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} other {{action}}}"
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} other {{action}}}"
     },
     "channelStatus": {
       "active": "Works",
@@ -1644,6 +1734,38 @@
     },
     "troubleStatus": "{status, select, failed {Failed} other {Unconfirmed}}",
     "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}",
+    "requests": {
+      "title": "Contract requests",
+      "description": "Requests to cancel a contract or withdraw from one that the form could not apply by itself: no contract was found, or their sender has not followed the link emailed to them. Apply one to a workspace only once you know its sender holds that contract; it takes effect as of the date it was received, and the sender is told.",
+      "empty": "No request waits.",
+      "kind": "{kind, select, cancellation {Cancellation} other {Withdrawal}}",
+      "status": "{status, select, awaitingConfirmation {Awaits the sender’s link} unmatched {No contract found} other {{status}}}",
+      "received": "Received",
+      "name": "Name",
+      "email": "Address",
+      "contract": "Contract, as written",
+      "desiredOn": "Day wanted",
+      "account": "Account of this address",
+      "noAccount": "None",
+      "notGiven": "Not given",
+      "workspaceId": "Workspace id",
+      "workspaceHint": "The id of the workspace whose contract the request is about, from Workspaces.",
+      "reason": "Why",
+      "reasonHint": "Kept in the audit log, with your name: how you made sure, never what the request says.",
+      "apply": "Apply to this workspace",
+      "applying": "Applying…",
+      "close": "Close without applying",
+      "closing": "Closing…",
+      "applied": "Applied: the sender is told what became of it.",
+      "refused": "The contract refused it: {refusal, select, nothingToCancel {nothing to cancel} notSubscribed {no subscription} expired {the 14 days were over when it came} business {a business has no right to withdraw} other {{refusal}}}. The sender is told.",
+      "closed": "Closed.",
+      "errors": {
+        "notFound": "No such request, or no such workspace.",
+        "settled": "This request was already applied, refused or closed.",
+        "unavailable": "Stripe could not be reached: nothing changed.",
+        "unknown": "That did not work. Try again."
+      }
+    },
     "legal": {
       "title": "Legal requests",
       "description": "A judicial authority, or another authority the law empowers, may ask in writing for the data that identifies who contributed content. This page is the only way to read what a closed account left and the connections that created content.",

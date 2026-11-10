@@ -373,7 +373,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
   },
   authoredPosts: [],
   connectedApps: [cli],
-  contracts: { orders: [], withdrawals: [] },
+  contracts: { orders: [], requests: [], withdrawals: [] },
   exportedAt,
   invitations: { received: [], sent: [] },
   legalHold: null,

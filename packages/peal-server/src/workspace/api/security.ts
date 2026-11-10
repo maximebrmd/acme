@@ -5,6 +5,7 @@ import { HttpApiError } from "effect/http-api";
 import {
   Authentication,
   ClientErrorIntake,
+  ContractRequestIntake,
   CurrentMember,
   CurrentPrincipal,
   CurrentStaff,
@@ -343,7 +344,8 @@ export const StaffAccessLive = Layer.effect(
   })
 );
 
-// For tests: nobody is staff, and every error report passes the intake.
+// For tests: nobody is staff, and every error report and every request
+// to cancel or withdraw passes its intake.
 // HttpApiTest serves every group of the API, so tests provide every
 // middleware, whichever groups they exercise.
 const noStaffTest = Layer.succeed(
@@ -351,9 +353,15 @@ const noStaffTest = Layer.succeed(
   StaffAccess.of({ session: notFound })
 );
 
-const openIntakeTest = Layer.succeed(
-  ClientErrorIntake,
-  ClientErrorIntake.of((httpEffect) => httpEffect)
+const openIntakeTest = Layer.mergeAll(
+  Layer.succeed(
+    ClientErrorIntake,
+    ClientErrorIntake.of((httpEffect) => httpEffect)
+  ),
+  Layer.succeed(
+    ContractRequestIntake,
+    ContractRequestIntake.of((httpEffect) => httpEffect)
+  )
 );
 
 /**

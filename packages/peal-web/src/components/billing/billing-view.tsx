@@ -54,6 +54,7 @@ export type BillingAction =
 export type BillingError =
   | "forbidden"
   | "generic"
+  | "noInvoices"
   | "nothingToCancel"
   | "planTooSmall"
   | "trialUsed"
@@ -142,7 +143,8 @@ const SubscriptionLines = ({
   if (subscription.status === "trialing" && subscription.trialEnd !== null) {
     lines.push(t("trialEnds", { date: dateIn(subscription.trialEnd) }));
   } else if (subscription.currentPeriodEnd !== null) {
-    const date = dateIn(subscription.currentPeriodEnd);
+    // Cancelled for a later day, it ends then, not with this period.
+    const date = dateIn(subscription.endsAt ?? subscription.currentPeriodEnd);
 
     lines.push(
       subscription.cancelAtPeriodEnd
@@ -301,6 +303,40 @@ const StepPanel = ({
   );
 };
 
+// A workspace whose plan ended keeps its invoices at Stripe: the way to
+// them stays.
+const PastInvoices = ({
+  billing,
+  busy,
+  canManage,
+  onManage,
+  pending,
+}: Pick<BillingViewProps, "billing" | "canManage" | "onManage" | "pending"> & {
+  readonly busy: boolean;
+}) => {
+  const t = useTranslations("Billing.current");
+
+  if (!canManage || billing.subscription !== null) {
+    return null;
+  }
+
+  return (
+    <CardFooter>
+      <div className="flex flex-col items-start gap-3">
+        <Button
+          variant="ghost"
+          disabled={busy}
+          focusableWhenDisabled
+          onClick={onManage}
+        >
+          {pending?._tag === "portal" ? t("managing") : t("invoices")}
+        </Button>
+        <p className="text-muted-foreground text-xs">{t("invoicesHint")}</p>
+      </div>
+    </CardFooter>
+  );
+};
+
 const CurrentPlan = ({
   billing,
   canManage,
@@ -362,6 +398,13 @@ const CurrentPlan = ({
           ) : null}
         </div>
       </CardContent>
+      <PastInvoices
+        billing={billing}
+        busy={busy}
+        canManage={canManage}
+        pending={pending}
+        onManage={onManage}
+      />
       {canManage && subscription !== null ? (
         <CardFooter>
           <div className="flex flex-col items-start gap-3">

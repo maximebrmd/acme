@@ -1,4 +1,5 @@
-import { Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
+import type { DateTime } from "effect";
 
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
@@ -27,7 +28,13 @@ export type SubscriptionStatus = typeof SubscriptionStatusSchema.Type;
 export class Subscription extends Schema.Class<Subscription>(
   "peal-server/billing/domain/Subscription"
 )({
-  // Whether it ends when the period it was paid for does.
+  // When Stripe is set to end it, when it is: with its trial, or on the
+  // day a cancellation asked for, after the period paid for.
+  cancelAt: Schema.Option(Schema.DateTimeUtc).pipe(
+    Schema.withConstructorDefault(Effect.succeedNone)
+  ),
+  // Whether it is set to end: with the period it was paid for, or at
+  // `cancelAt`.
   cancelAtPeriodEnd: Schema.Boolean,
   // When the period it was paid for ends, and the next payment is due.
   currentPeriodEnd: Schema.Option(Schema.DateTimeUtc),
@@ -45,7 +52,17 @@ export class Subscription extends Schema.Class<Subscription>(
   // When its trial ends, for one that started with a trial.
   trialEnd: Schema.Option(Schema.DateTimeUtc),
   workspaceId: WorkspaceIdSchema,
-}) {}
+}) {
+  /**
+   * When it ends, once it is set to end: the day its cancellation asked
+   * for, or the end of the period paid for. None while it renews.
+   */
+  get endsAt(): Option.Option<DateTime.Utc> {
+    return this.cancelAtPeriodEnd
+      ? this.cancelAt.pipe(Option.orElse(() => this.currentPeriodEnd))
+      : Option.none();
+  }
+}
 
 /**
  * Whether the subscription gives its plan: paid for, in its trial, or past

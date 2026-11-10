@@ -16,6 +16,10 @@ const optional = envField.string({
 const config: AstroUserConfig = {
   env: {
     schema: {
+      // The web app's origin, such as https://app.example.com: adds the
+      // links to cancel a contract and to withdraw from one, which the app
+      // serves, to the foot of every page.
+      SITE_APP_URL: optional,
       // The docs site's origin, such as https://docs.example.com: adds links
       // to it.
       SITE_DOCS_URL: optional,

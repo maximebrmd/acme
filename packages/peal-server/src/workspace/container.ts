@@ -83,6 +83,10 @@ const StaffToolsLive = Layer.mergeAll(
   AccountModerationLive
 );
 
+// The account an email address signs in to, which billing asks for when a
+// contract's cancellation comes without a session.
+export { DrizzleAccountLookup as AccountLookupLive } from "#workspace/infrastructure/drizzle-account-lookup.ts";
+
 // What every request in a session staff act as someone in goes through,
 // from Peal's API and Better Auth's routes alike: the staff member's
 // standing, read fresh, and the audit log, the staff context's.

@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { DateTime, Effect } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type { Money } from "#billing/domain/billing-notice.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -10,7 +10,8 @@ export interface Withdrawal {
   readonly refunded: Money;
   readonly requestedAt: DateTime.Utc;
   readonly stripeSubscriptionId: string;
-  readonly userId: UserId;
+  /** The member who withdrew; none when it came without a session. */
+  readonly userId: Option.Option<UserId>;
   readonly workspaceId: WorkspaceId;
 }
 

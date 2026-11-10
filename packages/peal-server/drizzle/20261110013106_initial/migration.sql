@@ -65,6 +65,39 @@ CREATE TABLE "assistant"."daily_usage" (
 	CONSTRAINT "daily_usage_requests" CHECK ("requests" >= 0)
 );
 --> statement-breakpoint
+CREATE TABLE "billing"."contract_references" (
+	"issued_at" timestamp with time zone NOT NULL,
+	"reference" text PRIMARY KEY,
+	"stripe_subscription_id" text NOT NULL UNIQUE,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "billing"."contract_requests" (
+	"acknowledged_at" timestamp with time zone,
+	"acknowledgement" text NOT NULL,
+	"channel" text NOT NULL,
+	"confirmation_digest" text,
+	"confirmation_expires_at" timestamp with time zone,
+	"contract" text,
+	"currency" text,
+	"desired_at" timestamp with time zone,
+	"effective_at" timestamp with time zone,
+	"email" text,
+	"erased_at" timestamp with time zone,
+	"id" uuid PRIMARY KEY,
+	"kind" text NOT NULL,
+	"locale" text NOT NULL,
+	"name" text,
+	"received_at" timestamp with time zone NOT NULL,
+	"refunded" bigint,
+	"refusal" text,
+	"settled_at" timestamp with time zone,
+	"status" text NOT NULL,
+	"stripe_subscription_id" text,
+	"user_id" text,
+	"workspace_id" uuid
+);
+--> statement-breakpoint
 CREATE TABLE "billing"."metered_posts" (
 	"month" date,
 	"platform" text,
@@ -95,6 +128,7 @@ CREATE TABLE "billing"."stripe_events" (
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."subscriptions" (
+	"cancel_at" timestamp with time zone,
 	"cancel_at_period_end" boolean NOT NULL,
 	"current_period_end" timestamp with time zone,
 	"current_period_start" timestamp with time zone,
@@ -737,6 +771,13 @@ CREATE INDEX "tracked_posts_channel_due" ON "analytics"."tracked_posts" ("channe
 CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" ("workspace_id","published_at");--> statement-breakpoint
 CREATE INDEX "tracked_posts_post" ON "analytics"."tracked_posts" ("post_id");--> statement-breakpoint
 CREATE INDEX "tracked_posts_published" ON "analytics"."tracked_posts" ("published_at","target_id");--> statement-breakpoint
+CREATE INDEX "contract_references_workspace" ON "billing"."contract_references" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "contract_requests_workspace" ON "billing"."contract_requests" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "contract_requests_user" ON "billing"."contract_requests" ("user_id");--> statement-breakpoint
+CREATE INDEX "contract_requests_status" ON "billing"."contract_requests" ("status","received_at");--> statement-breakpoint
+CREATE INDEX "contract_requests_email" ON "billing"."contract_requests" ("email","acknowledged_at");--> statement-breakpoint
+CREATE INDEX "contract_requests_erased" ON "billing"."contract_requests" ("erased_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "contract_requests_confirmation" ON "billing"."contract_requests" ("confirmation_digest");--> statement-breakpoint
 CREATE INDEX "orders_workspace" ON "billing"."orders" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "orders_user" ON "billing"."orders" ("user_id");--> statement-breakpoint
 CREATE INDEX "orders_erased" ON "billing"."orders" ("erased_at");--> statement-breakpoint

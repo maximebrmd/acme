@@ -18,6 +18,42 @@ export interface EmailCatalog {
     readonly workspace: string;
   };
   /**
+   * The acknowledgement of a request to cancel a contract or withdraw from
+   * one, to the address its sender gave. Its body is, in order: `received`
+   * for its kind (`{receivedAt}`), `content` (`{name}`, `{contract}`,
+   * `{email}`), `desired` when a day was asked for (`{desiredAt}`), then
+   * what became of it, from `outcomes` (`{receivedAt}`, `{effectiveAt}`,
+   * `{refunded}`), and `renewalRefunded` when a renewal went back
+   * (`{refunded}`).
+   */
+  readonly contractRequest: {
+    readonly actions: { readonly confirm: string; readonly open: string };
+    readonly content: string;
+    /** `{contract}` when the request named none. */
+    readonly contractNotGiven: string;
+    readonly desired: string;
+    readonly ignore: string;
+    readonly outcomes: {
+      readonly business: string;
+      readonly cancelled: string;
+      readonly confirm: string;
+      readonly expired: string;
+      readonly notSubscribed: string;
+      readonly nothingToCancel: string;
+      readonly review: string;
+      readonly withdrawn: string;
+    };
+    readonly received: {
+      readonly cancellation: string;
+      readonly withdrawal: string;
+    };
+    readonly renewalRefunded: string;
+    readonly subjects: {
+      readonly cancellation: string;
+      readonly withdrawal: string;
+    };
+  };
+  /**
    * Added to an account deletion's body on a server that keeps what French
    * law has a host keep: `identification`, what stays and for how long
    * (`{identity}`, `{account}`: each a number of `years`); `connections`,
@@ -110,6 +146,16 @@ export interface EmailCatalog {
    * will charge, VAT included.
    */
   readonly subscriptionRenewing: EmailMessages;
+  /**
+   * The last day to refuse a yearly plan's renewal, `{renewsAt}`, which
+   * the reminder sets apart in a box, as French law asks.
+   */
+  readonly renewalDeadline: string;
+  /**
+   * Added to a confirmation's and a reminder's body once the contract has
+   * a number, `{reference}`: what it is for.
+   */
+  readonly contractNumber: string;
   /** The `{plan}` subscription was cancelled, and ends at `{endsAt}`. */
   readonly subscriptionCancelled: EmailMessages;
   /**

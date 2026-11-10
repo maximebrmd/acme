@@ -50,6 +50,7 @@ export const billingView = ({
     Option.map((subscription) => ({
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
       currentPeriodEnd: Option.getOrNull(subscription.currentPeriodEnd),
+      endsAt: Option.getOrNull(subscription.endsAt),
       interval: subscription.interval,
       plan: subscription.plan,
       startedAt: Option.getOrNull(subscription.startedAt),

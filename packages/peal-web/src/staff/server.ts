@@ -25,6 +25,9 @@ export type StaffClient = ConsoleClient["staff"];
 /** The legal requests' endpoints, for staff who hold the legal role. */
 export type LegalClient = ConsoleClient["legal"];
 
+/** The requests to cancel or withdraw that wait for staff. */
+export type DeskClient = ConsoleClient["contractRequestsDesk"];
+
 // What the API answers with 404: anyone but staff, and an account or a
 // workspace that is not there.
 const missing: ReadonlySet<string> = new Set([
@@ -89,3 +92,15 @@ export const legalRead = async <A, E extends { readonly _tag: string }>(
  */
 export const answersLegalRequests = async (): Promise<boolean> =>
   Option.isSome(await consoleRead(({ legal }) => legal.standing()));
+
+/**
+ * The same as `staffRead`, for the requests to cancel or withdraw that
+ * wait for staff, which the billing context answers behind the same access.
+ */
+export const deskRead = async <A, E extends { readonly _tag: string }>(
+  read: (desk: DeskClient) => Effect.Effect<A, E>
+): Promise<A> =>
+  Option.getOrElse(
+    await consoleRead(({ contractRequestsDesk }) => read(contractRequestsDesk)),
+    () => notFound()
+  );

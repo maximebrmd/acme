@@ -69,7 +69,7 @@ describe(SubscriptionCancellation, () => {
     expect(english).not.toContain("without a refund of the period paid for<");
 
     await expect(render("fr", [pro])).resolves.toContain(
-      "rétractez-vous d’abord avec Se rétracter du contrat ici"
+      "rétractez-vous d’abord avec Renoncer au contrat ici"
     );
   });
 });

@@ -118,7 +118,9 @@ const WorkspacePage = async ({
                 }
               >
                 <Instant
-                  value={DateTime.formatIso(subscription.currentPeriodEnd)}
+                  value={DateTime.formatIso(
+                    subscription.endsAt ?? subscription.currentPeriodEnd
+                  )}
                 />
               </Fact>
             )}

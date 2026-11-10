@@ -58,7 +58,10 @@ export const StaffReasonSchema = Schema.Trim.check(
  * staff member or the account was banned or signed out everywhere, or the
  * staff member lost the role (`impersonationEnded`); and a legal request a
  * staff member answered (`legalDisclosure`), with the authority and its
- * reference as the reason.
+ * reference as the reason; and a request to cancel a contract or withdraw
+ * from one that staff applied to a workspace's contract or closed
+ * (`applyContractRequest`, `closeContractRequest`), its id among the
+ * object ids.
  */
 export const StaffActionSchema = Schema.Literals([
   "ban",
@@ -70,6 +73,8 @@ export const StaffActionSchema = Schema.Literals([
   "stopImpersonating",
   "impersonationEnded",
   "legalDisclosure",
+  "applyContractRequest",
+  "closeContractRequest",
 ]).annotate({ identifier: "StaffAction" });
 
 /**

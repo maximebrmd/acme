@@ -27,6 +27,8 @@ export const BillingNoticeSchema = Schema.Union([
     interval: BillingIntervalSchema,
     plan: PaidPlanSchema,
     price: MoneySchema,
+    // The contract's number, since contracts have one.
+    reference: Schema.optionalKey(Schema.String),
     startedAt: Schema.DateTimeUtc,
     trialEnd: Schema.Option(Schema.DateTimeUtc),
   }),
@@ -43,6 +45,8 @@ export const BillingNoticeSchema = Schema.Union([
   Schema.TaggedStruct("SubscriptionRenewing", {
     plan: PaidPlanSchema,
     price: MoneySchema,
+    // The contract's number, since contracts have one.
+    reference: Schema.optionalKey(Schema.String),
     renewsAt: Schema.DateTimeUtc,
   }),
   // The subscription was cancelled, and ends at `endsAt`.

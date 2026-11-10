@@ -9,6 +9,27 @@ const link = {
   url: Schema.NonEmptyString,
 };
 
+/**
+ * What became of a request to cancel a contract or withdraw from one, as
+ * its acknowledgement says it: `confirm`, it waits for the link to be
+ * followed; `review`, a person will look at it; `cancelled` or `withdrawn`,
+ * it was applied; or why its contract refused it.
+ */
+export const ContractRequestOutcomeSchema = Schema.Literals([
+  "confirm",
+  "review",
+  "cancelled",
+  "withdrawn",
+  "nothingToCancel",
+  "notSubscribed",
+  "expired",
+  "business",
+]);
+
+export type ContractRequestOutcome = typeof ContractRequestOutcomeSchema.Type;
+
+const instant = Schema.DateTimeUtc;
+
 /** An email that signing in depends on. */
 export const AuthEmailSchema = Schema.Union([
   // Confirms the address of a new account.
@@ -50,6 +71,24 @@ export const AuthEmailSchema = Schema.Union([
   Schema.TaggedStruct("DataExported", {
     ...link,
     via: Schema.Literals(["commandLine", "web"]),
+  }),
+  // Acknowledges, to the address its sender gave, a request to cancel a
+  // contract or withdraw from it: when it was received and what it said
+  // (the name, the contract as written, empty when not given, the day
+  // wanted), then what became of it. Its link applies it (`confirm`), or
+  // opens Peal.
+  Schema.TaggedStruct("ContractRequestAcknowledged", {
+    ...link,
+    contract: Schema.String,
+    desiredAt: Schema.NullOr(instant),
+    effectiveAt: Schema.NullOr(instant),
+    kind: Schema.Literals(["cancellation", "withdrawal"]),
+    name: Schema.String,
+    outcome: ContractRequestOutcomeSchema,
+    receivedAt: instant,
+    refunded: Schema.NullOr(
+      Schema.Struct({ amount: Schema.Int, currency: Schema.NonEmptyString })
+    ),
   }),
 ]);
 

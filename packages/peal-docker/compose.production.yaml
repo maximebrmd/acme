@@ -255,6 +255,7 @@ services:
       dockerfile: packages/peal-docker/static.Dockerfile
       args:
         SITE_URL: ${SITE_URL:-}
+        SITE_APP_URL: ${SITE_APP_URL:-}
         SITE_DOCS_URL: ${SITE_DOCS_URL:-}
         SITE_PLAUSIBLE_DOMAIN: ${SITE_PLAUSIBLE_DOMAIN:-}
         SITE_PLAUSIBLE_HOST: ${SITE_PLAUSIBLE_HOST:-}

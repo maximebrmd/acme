@@ -116,6 +116,7 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
         assert.deepStrictEqual(billing.subscription, {
           cancelAtPeriodEnd: false,
           currentPeriodEnd: periodEnd,
+          endsAt: null,
           interval: "month",
           plan: "pro",
           startedAt,

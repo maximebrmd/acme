@@ -43,7 +43,10 @@ const authWith = (env: Record<string, string>) =>
     Layer.provide(
       Layer.succeed(
         SendAuthEmail,
-        SendAuthEmail.of({ send: () => Effect.void })
+        SendAuthEmail.of({
+          deliver: () => Effect.succeed(true),
+          send: () => Effect.void,
+        })
       )
     ),
     // Nobody signs in here, as staff or anyone.

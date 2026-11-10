@@ -68,6 +68,7 @@ peal_settings:
 # Read when the static image is built.
 peal_static_build_args:
   SITE_URL: https://peal.social
+  SITE_APP_URL: https://app.peal.social
   SITE_DOCS_URL: https://docs.peal.social
   DOCS_SITE_URL: https://docs.peal.social
   SITE_PLAUSIBLE_DOMAIN: peal.social

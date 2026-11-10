@@ -815,6 +815,14 @@ func TestSettersBillingSubscription(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetEndsAt", func(t *testing.T) {
+		obj := &BillingSubscription{}
+		var fernTestValueEndsAt *string
+		obj.SetEndsAt(fernTestValueEndsAt)
+		assert.Equal(t, fernTestValueEndsAt, obj.EndsAt)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetInterval", func(t *testing.T) {
 		obj := &BillingSubscription{}
 		var fernTestValueInterval BillingInterval
@@ -912,6 +920,39 @@ func TestGettersBillingSubscription(t *testing.T) {
 			}
 		}()
 		_ = obj.GetCurrentPeriodEnd() // Should return zero value
+	})
+
+	t.Run("GetEndsAt", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &BillingSubscription{}
+		var expected *string
+		obj.EndsAt = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetEndsAt(), "getter should return the property value")
+	})
+
+	t.Run("GetEndsAt_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &BillingSubscription{}
+		obj.EndsAt = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetEndsAt(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetEndsAt_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *BillingSubscription
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetEndsAt() // Should return zero value
 	})
 
 	t.Run("GetInterval", func(t *testing.T) {
@@ -1091,6 +1132,37 @@ func TestSettersMarkExplicitBillingSubscription(t *testing.T) {
 
 		// Act
 		obj.SetCurrentPeriodEnd(fernTestValueCurrentPeriodEnd)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetEndsAt_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &BillingSubscription{}
+		var fernTestValueEndsAt *string
+
+		// Act
+		obj.SetEndsAt(fernTestValueEndsAt)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -3350,6 +3422,7 @@ func TestRequiredNullableRoundTripBilling(t *testing.T) {
 func TestRequiredNullableRoundTripBillingSubscription(t *testing.T) {
 	requiredNullableKeys := []string{
 		"currentPeriodEnd",
+		"endsAt",
 		"startedAt",
 		"trialEnd",
 	}
@@ -3364,7 +3437,7 @@ func TestRequiredNullableRoundTripBillingSubscription(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj BillingSubscription
-		require.NoError(t, json.Unmarshal([]byte(`{"currentPeriodEnd":null,"startedAt":null,"trialEnd":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"currentPeriodEnd":null,"endsAt":null,"startedAt":null,"trialEnd":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]

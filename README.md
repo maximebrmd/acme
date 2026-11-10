@@ -365,6 +365,8 @@ environment:
 - `DOCS_SITE_URL` and `SITE_URL`: the public origins, for absolute and
   canonical links.
 - `SITE_DOCS_URL`: links the marketing site to the docs.
+- `SITE_APP_URL`: links the marketing site to the web app's pages to
+  cancel a contract and to withdraw from one.
 - `DOCS_PLAUSIBLE_DOMAIN` and `SITE_PLAUSIBLE_DOMAIN`: turn on Plausible.
 - `DOCS_PLAUSIBLE_HOST` and `SITE_PLAUSIBLE_HOST`: point Plausible at a
   self-hosted instance.

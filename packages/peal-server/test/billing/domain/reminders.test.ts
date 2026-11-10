@@ -27,10 +27,13 @@ const tagOf = (now: string, subscription = yearly) =>
   reminderOf(subscription, at(now)).pipe(Option.map(({ _tag }) => _tag));
 
 describe(reminderOf, () => {
-  it("reminds a yearly plan between 45 and 30 days before it renews", () => {
+  it("reminds a yearly plan between three months and one month before it renews", () => {
+    // It renews on 31 January: one month before is 31 December, which 30
+    // days before (1 January) would miss.
     expect(tagOf("2026-12-16T00:00:00Z")).toStrictEqual(Option.none());
     expect(tagOf("2026-12-17T00:00:00Z")).toStrictEqual(Option.some("renewal"));
-    expect(tagOf("2027-01-01T00:00:00Z")).toStrictEqual(Option.none());
+    expect(tagOf("2026-12-29T23:00:00Z")).toStrictEqual(Option.some("renewal"));
+    expect(tagOf("2026-12-30T00:00:00Z")).toStrictEqual(Option.none());
   });
 
   it("reminds no monthly plan, nor one already cancelled", () => {

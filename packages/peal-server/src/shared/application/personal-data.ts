@@ -153,8 +153,9 @@ export interface BillingRecord {
 }
 
 /**
- * The orders and withdrawals a user made, kept as the proof of each
- * contract; the workspace is null once it is erased. No Stripe id.
+ * The orders and withdrawals a user made, and their requests to cancel a
+ * contract or withdraw from it, kept as the proof of each contract; the
+ * workspace is null once it is erased. No Stripe id.
  */
 export interface ContractsRecord {
   readonly orders: readonly {
@@ -164,6 +165,23 @@ export interface ContractsRecord {
     readonly plan: string;
     readonly trial: boolean;
     readonly usedAt: DateTime.Utc | null;
+    readonly workspaceId: string | null;
+  }[];
+  readonly requests: readonly {
+    readonly channel: string;
+    readonly contract: string | null;
+    readonly desiredAt: DateTime.Utc | null;
+    readonly effectiveAt: DateTime.Utc | null;
+    readonly email: string | null;
+    readonly kind: string;
+    readonly name: string | null;
+    readonly receivedAt: DateTime.Utc;
+    readonly refunded: {
+      readonly amount: number;
+      readonly currency: string;
+    } | null;
+    readonly refusal: string | null;
+    readonly status: string;
     readonly workspaceId: string | null;
   }[];
   readonly withdrawals: readonly {

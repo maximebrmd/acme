@@ -24,6 +24,16 @@ export interface AuthResult {
   readonly error: { readonly status: number } | null;
 }
 
+// Why Stripe was not reached: the member may not, the workspace never had
+// a Stripe customer, so has no invoice, or anything else.
+const refusalOf = (status: number): BillingError => {
+  if (status === 401 || status === 403) {
+    return "forbidden";
+  }
+
+  return status === 404 ? "noInvoices" : "generic";
+};
+
 /**
  * Leaves for the page Stripe answered with, its checkout or its portal, or
  * says why not.
@@ -34,11 +44,7 @@ export const leaveFor = async (
   const result = await request();
 
   if (result.error !== null) {
-    return Option.some(
-      result.error.status === 401 || result.error.status === 403
-        ? "forbidden"
-        : "generic"
-    );
+    return Option.some(refusalOf(result.error.status));
   }
 
   return Option.match(decodeRedirect(result.data), {

@@ -65,6 +65,9 @@ export const BillingSubscriptionSchema = Schema.Struct({
   cancelAtPeriodEnd: Schema.Boolean,
   // When the period paid for ends: the next payment, or the end.
   currentPeriodEnd: Schema.NullOr(Schema.DateTimeUtc),
+  // When it ends, once it is set to end: with the period paid for, or on
+  // the later day its cancellation asked for. Null while it renews.
+  endsAt: Schema.NullOr(Schema.DateTimeUtc),
   // How often it is paid for.
   interval: BillingIntervalSchema,
   plan: PaidPlanSchema,
@@ -227,8 +230,26 @@ export const OrderSchema = Schema.Struct({
 export type Order = typeof OrderSchema.Type;
 
 /** What cancelling did. */
+/** What a member says when cancelling, signed in. */
+export const CancelPayloadSchema = Schema.Struct({
+  // The day the contract should end (UTC, as `2026-12-31`), if later than
+  // the period paid for; null or absent is as soon as the contract allows.
+  desiredOn: Schema.optionalKey(
+    Schema.NullOr(
+      Schema.String.check(
+        Schema.isPattern(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/u, {
+          description: "a day, as YYYY-MM-DD",
+        })
+      )
+    )
+  ),
+}).annotate({ identifier: "CancelPayload" });
+
+export type CancelPayload = typeof CancelPayloadSchema.Type;
+
 export const CancellationSchema = Schema.Struct({
-  // When the subscription ends: its period's end, or now for a trial.
+  // When the subscription ends: its period's end, the later day asked
+  // for, or now for a trial.
   endsAt: Schema.DateTimeUtc,
   plan: PaidPlanSchema,
 }).annotate({ identifier: "Cancellation" });

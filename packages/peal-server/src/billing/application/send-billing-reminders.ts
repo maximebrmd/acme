@@ -15,6 +15,7 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 
 import { BillingMode } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
+import { ContractReferences } from "./ports/contract-references.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import { WorkspaceUsage } from "./ports/workspace-usage.ts";
@@ -67,6 +68,7 @@ const overFreePlan = (reminder: Reminder) =>
 const noticeOf = (
   reminder: Reminder,
   price: Money,
+  reference: string,
   over: readonly Excess[]
 ): BillingNotice => {
   const { subscription } = reminder;
@@ -76,6 +78,7 @@ const noticeOf = (
       _tag: "SubscriptionRenewing",
       plan: subscription.plan,
       price,
+      reference,
       renewsAt,
     }),
     started: ({ startedAt }): BillingNotice => ({
@@ -83,6 +86,7 @@ const noticeOf = (
       interval: subscription.interval,
       plan: subscription.plan,
       price,
+      reference,
       startedAt,
       trialEnd:
         subscription.status === "trialing"
@@ -104,7 +108,9 @@ const noticeOf = (
  * 8(7)); that a trial ends in three days, with what the workspace holds
  * beyond the free plan it then moves to; and that a yearly plan renews in
  * about 45 days, so between one and three months before (Code de la
- * consommation L215-1), with its price and how to cancel. The price is
+ * consommation L215-1), with its price and how to cancel. The confirmation
+ * and the renewal give the contract's number, which cancels or withdraws
+ * without signing in. The price is
  * what Stripe charges, taxes included: the first paid invoice's for a
  * confirmation, the next invoice's for a renewal; a notice Stripe cannot
  * price yet, or cannot be asked for, waits for the next run. Runs hourly,
@@ -121,6 +127,7 @@ export class SendBillingReminders extends Context.Service<
       const { enabled } = yield* BillingMode;
       const subscriptions = yield* Subscriptions;
       const notices = yield* BillingNotices;
+      const references = yield* ContractReferences;
       const context = yield* Effect.context<StripeContracts | WorkspaceUsage>();
 
       const run = Effect.gen(function* run() {
@@ -150,12 +157,23 @@ export class SendBillingReminders extends Context.Service<
                 Option.match(price, {
                   onNone: () => Effect.succeed(0),
                   onSome: (charged) =>
-                    overFreePlan(reminder).pipe(
-                      Effect.provide(context),
-                      Effect.flatMap((over) =>
+                    // The contract's number, which its confirmation and
+                    // its reminder give, and what a trial's end leaves
+                    // beyond the free plan.
+                    Effect.all({
+                      over: overFreePlan(reminder).pipe(
+                        Effect.provide(context)
+                      ),
+                      reference: references.issue({
+                        stripeSubscriptionId:
+                          reminder.subscription.stripeSubscriptionId,
+                        workspaceId: reminder.subscription.workspaceId,
+                      }),
+                    }).pipe(
+                      Effect.flatMap(({ over, reference }) =>
                         notices.tell({
                           key: reminderKey(reminder),
-                          notice: noticeOf(reminder, charged, over),
+                          notice: noticeOf(reminder, charged, reference, over),
                           workspaceId: reminder.subscription.workspaceId,
                         })
                       ),

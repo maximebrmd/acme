@@ -1,5 +1,6 @@
 import { Layer } from "effect";
 
+import { ContractRequestAudit } from "#staff/application/contract-request-audit.ts";
 import { ImpersonationAudit } from "#staff/application/impersonation-audit.ts";
 import { LegalDisclosureAudit } from "#staff/application/legal-disclosure-audit.ts";
 import { PurgeAuditLog } from "#staff/application/purge-audit-log.ts";
@@ -52,6 +53,15 @@ export const ImpersonationAuditLive = ImpersonationAudit.layer.pipe(
  * context. Needs the database (Drizzle) and Ids.
  */
 export const LegalDisclosureAuditLive = LegalDisclosureAudit.layer.pipe(
+  Layer.provide(DrizzleAuditLog)
+);
+
+/**
+ * The audit log's record of each request to cancel or withdraw that staff
+ * apply or close, for the billing context. Needs the database (Drizzle)
+ * and Ids.
+ */
+export const ContractRequestAuditLive = ContractRequestAudit.layer.pipe(
   Layer.provide(DrizzleAuditLog)
 );
 

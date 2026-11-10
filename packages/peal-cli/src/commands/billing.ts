@@ -60,7 +60,7 @@ const planLine = (billing: Billing): string => {
   const ends =
     subscription.currentPeriodEnd === null
       ? ""
-      : `, ${subscription.cancelAtPeriodEnd ? "ending" : "renewing"} ${instant(subscription.currentPeriodEnd)}`;
+      : `, ${subscription.cancelAtPeriodEnd ? "ending" : "renewing"} ${instant(subscription.endsAt ?? subscription.currentPeriodEnd)}`;
 
   return `Plan: ${billing.plan}, paid each ${subscription.interval}, subscription ${subscription.status}${ends}.`;
 };
