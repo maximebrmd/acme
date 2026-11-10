@@ -4,3 +4,8 @@
 # only, as host:port.
 ssh_tcp_forwarding: "no"
 ssh_permit_open: []
+
+# Accounts sshd lets in beside the admin user: none on Peal's servers. A
+# sandbox in a VM keeps the VM manager's own account, which reaches the VM
+# over SSH to run it (README.md, "A sandbox on a machine of your own").
+ssh_allow_users_extra: []

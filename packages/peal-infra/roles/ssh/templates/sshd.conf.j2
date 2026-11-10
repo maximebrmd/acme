@@ -4,7 +4,7 @@ PubkeyAuthentication yes
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 AuthenticationMethods publickey
-AllowUsers {{ admin_user }}
+AllowUsers {{ ([admin_user] + (ssh_allow_users_extra | default([]))) | join(' ') }}
 MaxAuthTries 3
 LoginGraceTime 20
 ClientAliveInterval 300
