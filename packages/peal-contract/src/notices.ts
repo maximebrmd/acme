@@ -16,6 +16,17 @@ import { Forbidden } from "./forbidden.ts";
 import { PlatformSchema } from "./platform.ts";
 import { FailureReasonSchema } from "./posts.ts";
 
+/**
+ * Why Peal turned a webhook endpoint off: every attempt failed for days
+ * (`failing`), or the receiver answered 410 Gone (`gone`).
+ */
+export const WebhookTurnOffReasonSchema = Schema.Literals([
+  "failing",
+  "gone",
+]).annotate({ identifier: "WebhookTurnOffReason" });
+
+export type WebhookTurnOffReason = typeof WebhookTurnOffReasonSchema.Type;
+
 /** The account a notice is about, as it was when the notice was made. */
 export const NoticeChannelSchema = Schema.Struct({
   handle: Schema.String,
@@ -92,6 +103,13 @@ export const NoticeEventSchema = Schema.Union([
     plan: PaidPlanSchema,
     refunded: MoneySchema,
     withdrawnAt: Schema.DateTimeUtc,
+  }),
+  // Peal turned a webhook endpoint off: nothing is sent to it until
+  // someone turns it back on. `host` is where its deliveries went.
+  Schema.TaggedStruct("WebhookEndpointDisabled", {
+    endpointId: Schema.String,
+    host: Schema.String,
+    reason: WebhookTurnOffReasonSchema,
   }),
 ]).annotate({ identifier: "NoticeEvent" });
 

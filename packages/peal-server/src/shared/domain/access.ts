@@ -26,6 +26,7 @@ export const statements = {
     "approve",
     "publish",
   ],
+  webhook: ["read", "manage"],
 } as const;
 
 export type Statements = typeof statements;
@@ -67,6 +68,8 @@ export const PermissionSchema = Schema.Literals([
   "post:schedule",
   "post:approve",
   "post:publish",
+  "webhook:read",
+  "webhook:manage",
 ]);
 
 export type Permission = typeof PermissionSchema.Type;

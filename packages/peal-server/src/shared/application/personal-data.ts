@@ -69,6 +69,19 @@ export interface MediaRecord {
   readonly width: number | null;
 }
 
+/**
+ * A webhook endpoint of a workspace: where it is told what happens in it,
+ * without the secret that signs what it is sent.
+ */
+export interface WebhookRecord {
+  readonly createdAt: DateTime.Utc;
+  readonly description: string;
+  readonly enabled: boolean;
+  readonly eventTypes: readonly string[];
+  readonly id: string;
+  readonly url: string;
+}
+
 /** A post's counts on a channel as analytics read them at one moment. */
 export interface MetricsSnapshotRecord {
   readonly collectedAt: DateTime.Utc;
@@ -209,6 +222,12 @@ export type NoticeEventRecord =
       readonly _tag: "TrialEnding";
       readonly endsAt: DateTime.Utc;
       readonly plan: string;
+    }
+  | {
+      readonly _tag: "WebhookEndpointDisabled";
+      readonly endpointId: string;
+      readonly host: string;
+      readonly reason: string;
     };
 
 /** An amount in cents of its currency. */

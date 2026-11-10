@@ -43,6 +43,7 @@ import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import { AccountRules } from "./account-rules.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
 import { PostAllowance } from "./post-allowance.ts";
+import { PostEvents } from "./post-events.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { channelsFor, mediaFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
@@ -201,6 +202,7 @@ export class PostScheduling extends Context.Service<
     Effect.gen(function* PostSchedulingLive() {
       const posts = yield* PostRepository;
       const scheduler = yield* PublicationScheduler;
+      const events = yield* PostEvents;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<Ports>();
 
@@ -399,6 +401,7 @@ export class PostScheduling extends Context.Service<
             yield* roomInMonth(post);
             yield* posts.insert(post, targets);
             yield* startJob(post);
+            yield* events.scheduled(post, targets);
           })
         );
 
@@ -444,6 +447,8 @@ export class PostScheduling extends Context.Service<
 
               const post = yield* move(current, at);
 
+              yield* events.scheduled(post, targets);
+
               return { post, targets };
             })
           );
@@ -474,6 +479,8 @@ export class PostScheduling extends Context.Service<
 
               const post = yield* move(current, at);
 
+              yield* events.scheduled(post, targets);
+
               return { post, targets };
             })
           );
@@ -492,6 +499,7 @@ export class PostScheduling extends Context.Service<
 
               yield* applied(yield* posts.update(draft, current.post));
               yield* stopJob(current);
+              yield* events.unscheduled(draft);
 
               return { post: draft, targets: yield* posts.targets(postId) };
             })
@@ -514,8 +522,26 @@ export class PostScheduling extends Context.Service<
             // Once every target has settled, as when only a repost that had
             // not started yet was left, no job remains to finish the post:
             // it finishes here.
+            // Those still waiting, which this cancels: the others ended, or
+            // end, on their own.
+            const waiting = new Set(
+              (yield* posts.targets(postId))
+                .filter(({ status }) => status._tag === "pending")
+                .map(({ id }) => id)
+            );
+
+            const cancelledNow = (targets: readonly PostTarget[]) =>
+              targets.filter(
+                ({ id, status }) =>
+                  status._tag === "cancelled" && waiting.has(id)
+              );
+
             if (current.post.status._tag === "publishing") {
               const targets = yield* cancelTargets(postId, now);
+
+              if (cancelledNow(targets).length > 0) {
+                yield* events.cancelled(current.post, cancelledNow(targets));
+              }
 
               if (!targets.every(isSettled)) {
                 return { post: current.post, targets };
@@ -539,6 +565,7 @@ export class PostScheduling extends Context.Service<
             const targets = yield* cancelTargets(postId, now);
 
             yield* stopJob(current);
+            yield* events.cancelled(cancelled, cancelledNow(targets));
 
             return { post: cancelled, targets };
           })

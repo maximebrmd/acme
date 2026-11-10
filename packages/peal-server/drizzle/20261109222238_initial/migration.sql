@@ -16,6 +16,8 @@ CREATE SCHEMA "publishing";
 --> statement-breakpoint
 CREATE SCHEMA "staff";
 --> statement-breakpoint
+CREATE SCHEMA "webhooks";
+--> statement-breakpoint
 CREATE SCHEMA "auth";
 --> statement-breakpoint
 CREATE TABLE "analytics"."erased_workspaces" (
@@ -110,11 +112,11 @@ CREATE TABLE "billing"."subscriptions" (
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."trials" (
+	"forgotten_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	"plan" text,
 	"reserved_at" timestamp with time zone NOT NULL,
 	"started_at" timestamp with time zone,
-	"forgotten_at" timestamp with time zone,
 	"stripe_subscription_id" text,
 	"user_id" text,
 	"user_pseudonym" text,
@@ -382,6 +384,55 @@ CREATE TABLE "staff"."audit_events" (
 	"target_id" uuid,
 	"target_pseudonym" text,
 	"workspace_id" uuid
+);
+--> statement-breakpoint
+CREATE TABLE "webhooks"."deliveries" (
+	"attempt_error" text,
+	"attempts" integer NOT NULL,
+	"completed_at" timestamp with time zone,
+	"created_at" timestamp with time zone NOT NULL,
+	"duration_ms" integer,
+	"endpoint_id" uuid NOT NULL,
+	"event_id" uuid NOT NULL,
+	"event_type" text NOT NULL,
+	"failure_reason" text,
+	"id" uuid PRIMARY KEY,
+	"last_attempt_at" timestamp with time zone,
+	"next_attempt_at" timestamp with time zone,
+	"response_excerpt" text,
+	"response_status" integer,
+	"status" text NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "deliveries_status" CHECK ("status" IN ('pending', 'succeeded', 'failed')),
+	CONSTRAINT "deliveries_attempts" CHECK ("attempts" >= 0)
+);
+--> statement-breakpoint
+CREATE TABLE "webhooks"."endpoints" (
+	"created_at" timestamp with time zone NOT NULL,
+	"description" text NOT NULL,
+	"disabled_at" timestamp with time zone,
+	"disabled_reason" text,
+	"event_types" text[] NOT NULL,
+	"failing_since" timestamp with time zone,
+	"id" uuid PRIMARY KEY,
+	"previous_secret" text,
+	"previous_secret_expires_at" timestamp with time zone,
+	"secret" text NOT NULL,
+	"status" text NOT NULL,
+	"updated_at" timestamp with time zone NOT NULL,
+	"url" text NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "endpoints_status" CHECK ("status" IN ('enabled', 'disabled')),
+	CONSTRAINT "endpoints_disabled" CHECK (("status" = 'disabled') = ("disabled_reason" IS NOT NULL AND "disabled_at" IS NOT NULL))
+);
+--> statement-breakpoint
+CREATE TABLE "webhooks"."events" (
+	"data" jsonb NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"key" text NOT NULL CONSTRAINT "events_key" UNIQUE,
+	"occurred_at" timestamp with time zone NOT NULL,
+	"type" text NOT NULL,
+	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."account" (
@@ -703,6 +754,12 @@ CREATE INDEX "audit_events_at" ON "staff"."audit_events" ("at","id");--> stateme
 CREATE INDEX "audit_events_target" ON "staff"."audit_events" ("target_id","at");--> statement-breakpoint
 CREATE INDEX "audit_events_staff" ON "staff"."audit_events" ("staff_id");--> statement-breakpoint
 CREATE INDEX "audit_events_workspace" ON "staff"."audit_events" ("workspace_id","at");--> statement-breakpoint
+CREATE INDEX "deliveries_endpoint" ON "webhooks"."deliveries" ("endpoint_id","id");--> statement-breakpoint
+CREATE INDEX "deliveries_event" ON "webhooks"."deliveries" ("event_id");--> statement-breakpoint
+CREATE INDEX "deliveries_created" ON "webhooks"."deliveries" ("created_at");--> statement-breakpoint
+CREATE INDEX "deliveries_workspace" ON "webhooks"."deliveries" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "endpoints_workspace" ON "webhooks"."endpoints" ("workspace_id","id");--> statement-breakpoint
+CREATE INDEX "events_workspace" ON "webhooks"."events" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "auth"."account" ("user_id");--> statement-breakpoint
 CREATE INDEX "apikey_configId_idx" ON "auth"."apikey" ("config_id");--> statement-breakpoint
 CREATE INDEX "apikey_referenceId_idx" ON "auth"."apikey" ("reference_id");--> statement-breakpoint
@@ -736,6 +793,8 @@ ALTER TABLE "publishing"."post_targets" ADD CONSTRAINT "post_targets_post_id_pos
 ALTER TABLE "publishing"."publication_attempts" ADD CONSTRAINT "publication_attempts_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_calls" ADD CONSTRAINT "publication_calls_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."upload_sessions" ADD CONSTRAINT "upload_sessions_72ct0kRYe5re_fkey" FOREIGN KEY ("idempotency_key") REFERENCES "publishing"."publication_calls"("idempotency_key") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "webhooks"."deliveries" ADD CONSTRAINT "deliveries_endpoint_id_endpoints_id_fkey" FOREIGN KEY ("endpoint_id") REFERENCES "webhooks"."endpoints"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "webhooks"."deliveries" ADD CONSTRAINT "deliveries_event_id_events_id_fkey" FOREIGN KEY ("event_id") REFERENCES "webhooks"."events"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."account" ADD CONSTRAINT "account_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."invitation" ADD CONSTRAINT "invitation_organization_id_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "auth"."organization"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."invitation" ADD CONSTRAINT "invitation_inviter_id_user_id_fkey" FOREIGN KEY ("inviter_id") REFERENCES "auth"."user"("id") ON DELETE CASCADE;--> statement-breakpoint

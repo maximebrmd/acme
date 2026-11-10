@@ -14,6 +14,7 @@ import { logout } from "#commands/logout.ts";
 import { mcp } from "#commands/mcp.ts";
 import { members } from "#commands/members.ts";
 import { posts } from "#commands/posts.ts";
+import { webhooks } from "#commands/webhooks.ts";
 import { whoami } from "#commands/whoami.ts";
 import { CredentialStore } from "#credentials.ts";
 import manifest from "#package.json" with { type: "json" };
@@ -38,6 +39,7 @@ export const cli = peal.pipe(
     billing,
     members,
     invitations,
+    webhooks,
     account,
   ]),
   Command.provide(({ apiUrl }) => PealApi.layer(apiUrl)),

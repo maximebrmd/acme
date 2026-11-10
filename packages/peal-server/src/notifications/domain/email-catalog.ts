@@ -100,6 +100,15 @@ export interface EmailCatalog {
   };
   /** `{channel}` for a post whose channel was disconnected since. */
   readonly unknownChannel: string;
+  /**
+   * Peal turned off the webhook endpoint at `{host}` in `{workspaceName}`,
+   * for `{reason}`, one of `webhookTurnOffReasons`.
+   */
+  readonly webhookEndpointDisabled: EmailMessages;
+  readonly webhookTurnOffReasons: {
+    readonly failing: string;
+    readonly gone: string;
+  };
   readonly verifyEmail: EmailMessages;
   /** The workspace `{workspaceName}` was deleted by its owner. */
   readonly workspaceDeleted: EmailMessages;

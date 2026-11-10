@@ -183,6 +183,17 @@ export const french: EmailCatalog = {
       "Si vous n’avez pas créé de compte Peal, ignorez cet e-mail. Le lien expire dans une heure.",
     subject: "Confirmez votre adresse e-mail pour Peal",
   },
+  webhookEndpointDisabled: {
+    action: "Ouvrir les webhooks",
+    body: "Peal a désactivé le point de terminaison de webhook {host} dans {workspaceName} : {reason} Plus rien ne lui est envoyé, et les événements qui surviennent entre-temps ne sont pas conservés pour lui. Une fois son destinataire rétabli, réactivez le point de terminaison dans les paramètres de l’espace de travail.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez les webhooks de {workspaceName} sur Peal. Cet e-mail est toujours envoyé : les systèmes qui écoutaient ce point de terminaison ne reçoivent plus rien tant que personne n’intervient.",
+    subject: "Point de terminaison de webhook désactivé : {host}",
+  },
+  webhookTurnOffReasons: {
+    failing: "toutes les livraisons vers lui ont échoué pendant 5 jours.",
+    gone: "il a répondu 410 Gone, ce qui demande de ne plus rien lui envoyer.",
+  },
   workspaceDeleted: {
     action: "Ouvrir mes espaces de travail",
     body: "L’espace de travail {workspaceName} a été supprimé à votre demande, avec tout son contenu : ses canaux, publications, médias, statistiques, membres et clés d’API.",

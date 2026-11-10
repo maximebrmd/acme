@@ -23,6 +23,7 @@ import { SessionApi } from "./session.ts";
 import { StaffApi } from "./staff.ts";
 import { SystemApi } from "./system.ts";
 import { TikTokApi } from "./tiktok.ts";
+import { WebhooksApi } from "./webhooks.ts";
 import { WorkspacesApi } from "./workspaces.ts";
 
 export { DatabaseUnavailable } from "./database-unavailable.ts";
@@ -374,6 +375,7 @@ export {
   NoticeSchema,
   NoticesApi,
   UnreadNoticesSchema,
+  WebhookTurnOffReasonSchema,
 } from "./notices.ts";
 
 export type {
@@ -383,6 +385,7 @@ export type {
   NoticeEvent,
   NoticePage,
   UnreadNotices,
+  WebhookTurnOffReason,
 } from "./notices.ts";
 
 export {
@@ -635,6 +638,76 @@ export { UploadRejected } from "./upload-rejected.ts";
 
 export { UserNotFound } from "./user-not-found.ts";
 
+export { TooManyWebhookEndpoints } from "./too-many-webhook-endpoints.ts";
+
+export { WebhookDeliveryNotFound } from "./webhook-delivery-not-found.ts";
+
+export { WebhookEndpointDisabled } from "./webhook-endpoint-disabled.ts";
+
+export { WebhookEndpointNotFound } from "./webhook-endpoint-not-found.ts";
+
+export {
+  MediaFailureReasonSchema,
+  SubscribableWebhookEventTypeSchema,
+  webhookEventVersion,
+  WebhookEventTypeSchema,
+  WebhookPayloadSchema,
+  WebhookTargetSchema,
+} from "./webhook-events.ts";
+
+export type {
+  MediaFailureReason,
+  SubscribableWebhookEventType,
+  WebhookEventType,
+  WebhookPayload,
+  WebhookTarget,
+} from "./webhook-events.ts";
+
+export {
+  WebhookUrlRefusalSchema,
+  WebhookUrlRefused,
+} from "./webhook-url-refused.ts";
+
+export type { WebhookUrlRefusal } from "./webhook-url-refused.ts";
+
+export {
+  defaultWebhookDeliveryPageSize,
+  maxWebhookAttempts,
+  maxWebhookDeliveryPageSize,
+  maxWebhookDescriptionLength,
+  maxWebhookEndpoints,
+  maxWebhookUrlLength,
+  NewWebhookEndpointSchema,
+  WebhookAttemptErrorSchema,
+  WebhookDeliveryFailureSchema,
+  WebhookDeliveryPageSchema,
+  WebhookDeliverySchema,
+  webhookDeliveryRetentionDays,
+  WebhookDeliveryStatusSchema,
+  WebhookDisabledReasonSchema,
+  WebhookEndpointChangeSchema,
+  WebhookEndpointSchema,
+  WebhookEndpointSecretSchema,
+  webhookFailingDays,
+  WebhooksApi,
+  webhookSecretOverlapHours,
+} from "./webhooks.ts";
+
+export type {
+  NewWebhookEndpoint,
+  WebhookAttemptError,
+  WebhookDelivery,
+  WebhookDeliveryFailure,
+  WebhookDeliveryPage,
+  WebhookDeliveryStatus,
+  WebhookDisabledReason,
+  WebhookEndpoint,
+  WebhookEndpointChange,
+  WebhookEndpointSecret,
+} from "./webhooks.ts";
+
+export { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
+
 export { WorkspaceAccess } from "./workspace-access.ts";
 
 export { WorkspaceNotFound } from "./workspace-not-found.ts";
@@ -664,6 +737,7 @@ export class Api extends HttpApi.make("peal")
   .add(CaptchaApi)
   .add(AnalyticsApi)
   .add(TikTokApi)
+  .add(WebhooksApi)
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)

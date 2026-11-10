@@ -1,6 +1,7 @@
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Option } from "effect";
 
+import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
@@ -25,6 +26,7 @@ const UseCasesTest = Layer.mergeAll(
   Layer.provideMerge(
     Layer.mergeAll(
       DrizzleChannelRepository,
+      ChannelEvents.none,
       TokenCipherTest,
       Layer.succeed(PlatformAuthorizers, authorizersOf())
     )

@@ -12,6 +12,7 @@ import {
   S3MediaFoldersLive,
   S3MediaStorageLive,
 } from "#media/infrastructure/s3-media-storage.ts";
+import { webhookMediaAssets } from "#media/infrastructure/webhook-media-assets.ts";
 
 export { MediaLibrary } from "#media/application/media-library.ts";
 
@@ -28,7 +29,8 @@ export { MediaHandlers as MediaApiLive } from "#media/api/media.ts";
  * (MediaStorageUsage). The composition root provides `Drizzle` and `Ids`,
  * the publishing context's MediaInPosts, which says where posts show media,
  * the billing context's WorkspaceEntitlements, whose plans limit storage,
- * and the environment the store's settings (see s3-media-storage.ts).
+ * the webhooks context's WebhookEvents, which hear how uploads end, a
+ * TransactionRunner, and the environment the store's settings (see s3-media-storage.ts).
  */
 export const MediaLive = Layer.mergeAll(
   MediaLibrary.layer,
@@ -38,7 +40,7 @@ export const MediaLive = Layer.mergeAll(
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
-      DrizzleMediaAssetsLive,
+      webhookMediaAssets(DrizzleMediaAssetsLive),
       MediaProbeLive,
       S3MediaStorageLive,
       PublishingMediaUsage,

@@ -4,6 +4,7 @@ import {
   AttemptResultSchema,
   FailureReasonSchema,
   UnconfirmedReasonSchema,
+  WebhookEventTypeSchema,
 } from "peal-contract";
 
 import { loadMessages } from "#i18n/messages.ts";
@@ -41,6 +42,19 @@ describe("message catalogues", () => {
 
     expect(empty).toStrictEqual([]);
   });
+
+  it.each(routing.locales)(
+    "%s names every event a webhook endpoint is sent",
+    async (locale) => {
+      const messages = new Map(entries(await loadMessages(locale)));
+
+      expect(
+        WebhookEventTypeSchema.literals.filter(
+          (type) => !messages.has(`Webhooks.events.${type}`)
+        )
+      ).toStrictEqual([]);
+    }
+  );
 
   // A reason a select leaves out reads as its raw code, as `other` does.
   it.each(routing.locales)(

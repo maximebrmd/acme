@@ -89,6 +89,16 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       endsAt,
       plan,
     }),
+    WebhookEndpointDisabled: ({
+      endpointId,
+      host,
+      reason,
+    }): NoticeEventRecord => ({
+      _tag: "WebhookEndpointDisabled",
+      endpointId,
+      host,
+      reason,
+    }),
   });
 
 /** NoticeRecords on the notifications schema. */

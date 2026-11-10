@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "a59e45b5-c1dd-4287-a95c-3085afd5f4ea",
+  "id": "d4464ef6-b81d-4409-a43a-999e208e4dbd",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -113,6 +113,18 @@
         "s|sch|staff",
         "n|sch|staff",
         "e|sch|staff"
+      ]
+    },
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "webhooks"
+      ],
+      "writes": [
+        "s|sch|webhooks",
+        "n|sch|webhooks",
+        "e|sch|webhooks"
       ]
     },
     {
@@ -682,6 +694,64 @@
       ],
       "reads": [
         "n|sch|staff"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "webhooks",
+        "deliveries"
+      ],
+      "writes": [
+        "s|tbl|webhooks.deliveries",
+        "n|tbl|webhooks.deliveries",
+        "e|tbl|webhooks.deliveries",
+        "n|rel|webhooks.deliveries",
+        "n|type|webhooks.deliveries",
+        "n|rel|webhooks.deliveries_pkey"
+      ],
+      "reads": [
+        "n|sch|webhooks"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "webhooks",
+        "endpoints"
+      ],
+      "writes": [
+        "s|tbl|webhooks.endpoints",
+        "n|tbl|webhooks.endpoints",
+        "e|tbl|webhooks.endpoints",
+        "n|rel|webhooks.endpoints",
+        "n|type|webhooks.endpoints",
+        "n|rel|webhooks.endpoints_pkey"
+      ],
+      "reads": [
+        "n|sch|webhooks"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "webhooks",
+        "events"
+      ],
+      "writes": [
+        "s|tbl|webhooks.events",
+        "n|tbl|webhooks.events",
+        "e|tbl|webhooks.events",
+        "n|rel|webhooks.events",
+        "n|type|webhooks.events",
+        "n|rel|webhooks.events_pkey",
+        "n|rel|webhooks.events_key"
+      ],
+      "reads": [
+        "n|sch|webhooks"
       ]
     },
     {
@@ -1831,6 +1901,128 @@
       "statementType": "create_index",
       "statementTarget": [
         "index",
+        "webhooks",
+        "deliveries",
+        "deliveries_endpoint"
+      ],
+      "writes": [
+        "s|idx|webhooks.deliveries_endpoint",
+        "n|idx|webhooks.deliveries_endpoint",
+        "e|idx|webhooks.deliveries_endpoint",
+        "n|rel|webhooks.deliveries_endpoint"
+      ],
+      "reads": [
+        "n|tbl|webhooks.deliveries",
+        "n|sch|webhooks",
+        "n|col|webhooks.deliveries.endpoint_id",
+        "n|col|webhooks.deliveries.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "webhooks",
+        "deliveries",
+        "deliveries_event"
+      ],
+      "writes": [
+        "s|idx|webhooks.deliveries_event",
+        "n|idx|webhooks.deliveries_event",
+        "e|idx|webhooks.deliveries_event",
+        "n|rel|webhooks.deliveries_event"
+      ],
+      "reads": [
+        "n|tbl|webhooks.deliveries",
+        "n|sch|webhooks",
+        "n|col|webhooks.deliveries.event_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "webhooks",
+        "deliveries",
+        "deliveries_created"
+      ],
+      "writes": [
+        "s|idx|webhooks.deliveries_created",
+        "n|idx|webhooks.deliveries_created",
+        "e|idx|webhooks.deliveries_created",
+        "n|rel|webhooks.deliveries_created"
+      ],
+      "reads": [
+        "n|tbl|webhooks.deliveries",
+        "n|sch|webhooks",
+        "n|col|webhooks.deliveries.created_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "webhooks",
+        "deliveries",
+        "deliveries_workspace"
+      ],
+      "writes": [
+        "s|idx|webhooks.deliveries_workspace",
+        "n|idx|webhooks.deliveries_workspace",
+        "e|idx|webhooks.deliveries_workspace",
+        "n|rel|webhooks.deliveries_workspace"
+      ],
+      "reads": [
+        "n|tbl|webhooks.deliveries",
+        "n|sch|webhooks",
+        "n|col|webhooks.deliveries.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "webhooks",
+        "endpoints",
+        "endpoints_workspace"
+      ],
+      "writes": [
+        "s|idx|webhooks.endpoints_workspace",
+        "n|idx|webhooks.endpoints_workspace",
+        "e|idx|webhooks.endpoints_workspace",
+        "n|rel|webhooks.endpoints_workspace"
+      ],
+      "reads": [
+        "n|tbl|webhooks.endpoints",
+        "n|sch|webhooks",
+        "n|col|webhooks.endpoints.workspace_id",
+        "n|col|webhooks.endpoints.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "webhooks",
+        "events",
+        "events_workspace"
+      ],
+      "writes": [
+        "s|idx|webhooks.events_workspace",
+        "n|idx|webhooks.events_workspace",
+        "e|idx|webhooks.events_workspace",
+        "n|rel|webhooks.events_workspace"
+      ],
+      "reads": [
+        "n|tbl|webhooks.events",
+        "n|sch|webhooks",
+        "n|col|webhooks.events.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
         "auth",
         "account",
         "account_userId_idx"
@@ -2507,6 +2699,52 @@
       "statementType": "create_fk",
       "statementTarget": [
         "table",
+        "webhooks",
+        "deliveries"
+      ],
+      "writes": [
+        "s|fk|webhooks.deliveries.deliveries_endpoint_id_endpoints_id_fkey",
+        "n|fk|webhooks.deliveries.deliveries_endpoint_id_endpoints_id_fkey",
+        "e|fk|webhooks.deliveries.deliveries_endpoint_id_endpoints_id_fkey",
+        "n|con|webhooks.deliveries.deliveries_endpoint_id_endpoints_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|webhooks.deliveries",
+        "n|sch|webhooks",
+        "n|tbl|webhooks.endpoints",
+        "n|sch|webhooks",
+        "n|col|webhooks.deliveries.endpoint_id",
+        "n|col|webhooks.endpoints.id",
+        "e|uniqueness|webhooks.endpoints.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "webhooks",
+        "deliveries"
+      ],
+      "writes": [
+        "s|fk|webhooks.deliveries.deliveries_event_id_events_id_fkey",
+        "n|fk|webhooks.deliveries.deliveries_event_id_events_id_fkey",
+        "e|fk|webhooks.deliveries.deliveries_event_id_events_id_fkey",
+        "n|con|webhooks.deliveries.deliveries_event_id_events_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|webhooks.deliveries",
+        "n|sch|webhooks",
+        "n|tbl|webhooks.events",
+        "n|sch|webhooks",
+        "n|col|webhooks.deliveries.event_id",
+        "n|col|webhooks.events.id",
+        "e|uniqueness|webhooks.events.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
         "auth",
         "account"
       ],
@@ -2956,6 +3194,10 @@
       "entityType": "schemas"
     },
     {
+      "name": "webhooks",
+      "entityType": "schemas"
+    },
+    {
       "name": "auth",
       "entityType": "schemas"
     },
@@ -3130,6 +3372,24 @@
     {
       "schema": "staff",
       "name": "audit_events",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "webhooks",
+      "name": "deliveries",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "webhooks",
+      "name": "endpoints",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "webhooks",
+      "name": "events",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -4030,6 +4290,19 @@
     {
       "schema": "billing",
       "table": "trials",
+      "name": "forgotten_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
       "name": "id",
       "type": "uuid",
       "typeSchema": null,
@@ -4070,19 +4343,6 @@
       "schema": "billing",
       "table": "trials",
       "name": "started_at",
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "entityType": "columns"
-    },
-    {
-      "schema": "billing",
-      "table": "trials",
-      "name": "forgotten_at",
       "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": false,
@@ -6556,6 +6816,474 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "attempt_error",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "attempts",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "completed_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "duration_ms",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "endpoint_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "event_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "event_type",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "failure_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "last_attempt_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "next_attempt_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "response_excerpt",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "response_status",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "description",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "disabled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "disabled_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "event_types",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "failing_since",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "previous_secret",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "previous_secret_expires_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "secret",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "url",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
+      "name": "data",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
+      "name": "key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
+      "name": "occurred_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
+      "name": "type",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -10371,6 +11099,146 @@
       "entityType": "indexes"
     },
     {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "deliveries_endpoint",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "endpoint_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "deliveries_event",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "event_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "deliveries_created",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "deliveries_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "endpoints_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
+      "name": "events_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "auth",
       "table": "account",
       "name": "account_userId_idx",
@@ -11051,6 +11919,40 @@
       "entityType": "fks"
     },
     {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "deliveries_endpoint_id_endpoints_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "endpoint_id"
+      ],
+      "schemaTo": "webhooks",
+      "tableTo": "endpoints",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "deliveries_event_id_events_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "event_id"
+      ],
+      "schemaTo": "webhooks",
+      "tableTo": "events",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
       "schema": "auth",
       "table": "account",
       "name": "account_user_id_user_id_fkey",
@@ -11655,6 +12557,36 @@
       "entityType": "pks"
     },
     {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "deliveries_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "endpoints_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
+      "name": "events_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "auth",
       "table": "account",
       "name": "account_pkey",
@@ -11906,6 +12838,17 @@
       "entityType": "uniques"
     },
     {
+      "schema": "webhooks",
+      "table": "events",
+      "name": "events_key",
+      "nameExplicit": true,
+      "columns": [
+        "key"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
       "schema": "media",
       "table": "media_assets",
       "name": "media_assets_storage_key_key",
@@ -12100,6 +13043,34 @@
       "table": "quota_usage",
       "name": "quota_usage_units",
       "value": "\"units\" >= 0",
+      "entityType": "checks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "deliveries_status",
+      "value": "\"status\" IN ('pending', 'succeeded', 'failed')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "deliveries_attempts",
+      "value": "\"attempts\" >= 0",
+      "entityType": "checks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "endpoints_status",
+      "value": "\"status\" IN ('enabled', 'disabled')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "endpoints_disabled",
+      "value": "(\"status\" = 'disabled') = (\"disabled_reason\" IS NOT NULL AND \"disabled_at\" IS NOT NULL)",
       "entityType": "checks"
     }
   ]

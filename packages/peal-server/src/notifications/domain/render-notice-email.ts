@@ -155,6 +155,13 @@ const contentOf = (
         ["plan", catalog.plans[plan]],
       ],
     }),
+    WebhookEndpointDisabled: ({ host, reason }): Content => ({
+      messages: catalog.webhookEndpointDisabled,
+      values: [
+        ["host", host],
+        ["reason", catalog.webhookTurnOffReasons[reason]],
+      ],
+    }),
   });
 
 /** A notice, in its reader's language. */

@@ -8,6 +8,7 @@ import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
+import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
@@ -39,6 +40,10 @@ import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
+import {
+  webhookOutcomes,
+  WebhookPostEvents,
+} from "#publishing/infrastructure/webhook-post-events.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
@@ -54,13 +59,14 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
  * posts a month allows. Needs the database (Drizzle), the workflow engine, a
  * TransactionRunner and Ids, and PublicationOutcomes for PostFollowUp.
  */
-export const publishingWith = <E, R, E2 = never, R2 = never>(
+export const publishingWith = <E, R, E2 = never, R2 = never, R3 = never>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
     R
   >,
-  accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none
+  accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none,
+  events: Layer.Layer<PostEvents, never, R3> = PostEvents.none
 ) =>
   Layer.mergeAll(
     PostDrafts.layer,
@@ -80,7 +86,8 @@ export const publishingWith = <E, R, E2 = never, R2 = never>(
         LoggedChannelHealth,
         WorkflowPublicationScheduler,
         references,
-        accounts
+        accounts,
+        events
       )
     )
   );
@@ -92,7 +99,9 @@ export const publishingWith = <E, R, E2 = never, R2 = never>(
  * (ListChannels, MediaLibrary, WorkspaceEntitlements). How each target ends
  * is told through the notifications context (Notify), naming channels as
  * the channels context has them (ChannelRepository), once billing counted
- * the posts that went out on platforms that bill per post (MeteredPosts).
+ * the posts that went out on platforms that bill per post (MeteredPosts),
+ * and the workspace's webhook endpoints hear what happens to its posts
+ * (WebhookEvents).
  */
 export const PublishingLive = publishingWith(
   Layer.mergeAll(
@@ -100,7 +109,8 @@ export const PublishingLive = publishingWith(
     LibraryAttachableMedia,
     PlanPostAllowanceLive
   ),
-  AccountRules.layer
+  AccountRules.layer,
+  WebhookPostEvents
 ).pipe(
   Layer.provideMerge(
     TikTokCreatorInfo.layer.pipe(Layer.provide(ListedWorkspaceChannels))
@@ -109,7 +119,7 @@ export const PublishingLive = publishingWith(
     TikTokCreatorsLive.pipe(Layer.provide(ChannelAccessCredentials))
   ),
   Layer.provideMerge(
-    meteredOutcomes(NotifiedPublicationOutcomes).pipe(
+    webhookOutcomes(meteredOutcomes(NotifiedPublicationOutcomes)).pipe(
       Layer.provide(DrizzlePostRepository)
     )
   )

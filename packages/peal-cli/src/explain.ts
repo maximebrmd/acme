@@ -18,9 +18,15 @@ import type {
   PostStatusConflict,
   TargetStatusConflict,
   TooManyInvitations,
+  TooManyWebhookEndpoints,
   Unauthenticated,
   UnknownChannels,
   UnknownMedia,
+  WebhookDeliveryNotFound,
+  WebhookEndpointDisabled,
+  WebhookEndpointNotFound,
+  WebhooksNotConfigured,
+  WebhookUrlRefused,
   WorkspaceNotFound,
 } from "peal-contract";
 
@@ -48,9 +54,15 @@ export type ApiFailure =
   | Schema.SchemaError
   | TargetStatusConflict
   | TooManyInvitations
+  | TooManyWebhookEndpoints
   | Unauthenticated
   | UnknownChannels
   | UnknownMedia
+  | WebhookDeliveryNotFound
+  | WebhookEndpointDisabled
+  | WebhookEndpointNotFound
+  | WebhooksNotConfigured
+  | WebhookUrlRefused
   | WorkspaceNotFound;
 
 const limits: Readonly<Record<PlanLimitReached["limit"], string>> = {
@@ -59,6 +71,21 @@ const limits: Readonly<Record<PlanLimitReached["limit"], string>> = {
   mediaStorage: "bytes of media stored, uploads in progress included",
   members: "members, pending invitations included",
   scheduledPosts: "posts going out a month",
+};
+
+// Why Peal delivers nothing to an address, and what would make it one.
+const urlRefusals: Readonly<Record<WebhookUrlRefused["reason"], string>> = {
+  credentials:
+    "The address carries a user name or a password: leave them out, and check each delivery's signature instead.",
+  malformed:
+    "The address is not a URL: give it whole, such as https://hooks.example.com/peal.",
+  notHttps:
+    "The address must be HTTPS, on the default port (443): Peal delivers nowhere else.",
+  notPublic:
+    "The address's host is not a public address (loopback, private or link-local): Peal delivers only to hosts anyone on the internet can reach.",
+  tooLong: "The address is longer than 2048 characters.",
+  unknownHost:
+    "The address's host name does not resolve: check its spelling, and that its DNS record exists.",
 };
 
 // What breaks a rule, with the option field it names and its channel.
@@ -133,6 +160,10 @@ export const explain =
         refused(
           "The workspace has 100 invitations pending, the most it may: revoke some first."
         ),
+      TooManyWebhookEndpoints: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} webhook endpoints, the most it may, whatever its plan: delete one first, with peal webhooks delete.`
+        ),
       Unauthenticated: () => new SignInExpired({ url }),
       UnknownChannels: ({ channelIds }) =>
         refused(
@@ -141,6 +172,23 @@ export const explain =
       UnknownMedia: ({ mediaIds }) =>
         refused(
           `These media are not the workspace's, or not ready: ${mediaIds.join(", ")}.`
+        ),
+      WebhookDeliveryNotFound: () =>
+        refused(
+          "The endpoint has no delivery with that id: it never existed, or its log no longer keeps it. peal webhooks deliveries lists them."
+        ),
+      WebhookEndpointDisabled: () =>
+        refused(
+          "The endpoint is off, so Peal sends it nothing: turn it on first, with peal webhooks update --enable."
+        ),
+      WebhookEndpointNotFound: () =>
+        refused(
+          "The workspace has no webhook endpoint with that id: peal webhooks list shows them."
+        ),
+      WebhookUrlRefused: ({ reason }) => refused(urlRefusals[reason]),
+      WebhooksNotConfigured: () =>
+        refused(
+          "This server cannot keep a signing secret: its operator must set PEAL_TOKEN_KEYS, the keys that encrypt them, before it has webhooks."
         ),
       WorkspaceNotFound: () =>
         refused("You do not belong to this workspace, or it no longer exists."),

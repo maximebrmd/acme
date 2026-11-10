@@ -18,6 +18,7 @@ import { authorize } from "#shared/domain/authorize.ts";
 import type { PostId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import { PostEvents } from "./post-events.ts";
 import { PostNotFound } from "./post-not-found.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets } from "./post-repository.ts";
@@ -84,6 +85,7 @@ export class PostFollowUp extends Context.Service<
     Effect.gen(function* PostFollowUpLive() {
       const posts = yield* PostRepository;
       const outcomes = yield* PublicationOutcomes;
+      const events = yield* PostEvents;
       const scheduler = yield* PublicationScheduler;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<PostRepository>();
@@ -174,6 +176,7 @@ export class PostFollowUp extends Context.Service<
 
             yield* savePost(revised, post);
             yield* outcomes.resolved(target);
+            yield* events.confirmed(revised, next);
 
             return { post: revised, targets };
           })
