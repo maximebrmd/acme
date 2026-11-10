@@ -373,7 +373,7 @@ What depends on you, Peal cannot know, and never guesses. Declare it in a JSON f
 - `recipients`: every provider that processes your users' data for you (hosting, media storage, email, payments, bot protection, AI, alerts), each with its `name`, the `service` it gives, the `country` it processes the data in, and the `safeguard` of a transfer outside the European Economic Area, or `null`;
 - `retention`: only if you run another stack than this repository's, how long yours keeps `technicalLogs` and `backups`, in English (`en`) and French (`fr`). The registry otherwise states the production stack's: logs {{keep-logs-en}}, traces {{keep-traces-en}}, metrics {{keep-metrics-en}}, and deleted data gone from backups within {{keep-backups-en}}.
 
-Every part is optional. What you leave out reads as not declared in each export, which then tells users less than the law has you tell them: fill it in before you open your server to others. The server reads the file when it starts, and stops on one it cannot read.
+Every part is optional. What you leave out reads as not declared in each export, which then tells users less than the law has you tell them: fill it in before you open your server to others. The server reads the file when it starts, and stops on one it cannot read: restart it after changing the file (`docker compose restart server`), or exports keep the old declaration.
 
 ## Telemetry [#telemetry]
 

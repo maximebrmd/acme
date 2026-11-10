@@ -82,6 +82,12 @@ peal_mail_credentials: [RESEND_API_KEY, SMTP_URL]
 # (PEAL_LEGAL_RETENTION). Both environments are Peal's, and keep it.
 peal_legal_retention: true
 
+# The hosts of object stores other than Cloudflare R2 whose buckets the
+# owner checked are in the EU: nothing in such a store's endpoint says where
+# it keeps them, so peal_runtime refuses one that is not listed here. R2's
+# EU endpoints need no entry, and its others are refused whatever this says.
+peal_storage_eu_hosts: []
+
 # Where the server keeps its ledger of erasures (the id and time of each
 # deleted account and workspace, which a restore replays): empty keeps it
 # in the media bucket, under erasures/, which suits a media bucket nothing
@@ -96,7 +102,9 @@ peal_erasure_ledger_bucket: ""
 # address, the supervisory authority and every provider that processes
 # users' data (the docs' self-hosting page, "Privacy declaration", gives
 # the shape). Empty until the owner confirms the legal entity and the
-# providers: declare none on a guess, as users are told it as a fact.
+# providers: declare none on a guess, as users are told it as a fact. The
+# server reads it when it starts: site.yml restarts the server that runs
+# when it changes.
 peal_privacy_declaration: {}
 
 # The uptime server's address that Grafana sends its heartbeat to, every few

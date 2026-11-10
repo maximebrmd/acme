@@ -373,7 +373,7 @@ Ce qui dépend de vous, Peal ne peut pas le savoir, et ne le devine jamais. Déc
 - `recipients` : chaque prestataire qui traite pour vous les données de vos utilisateurs (hébergement, stockage des médias, e-mail, paiements, protection contre les robots, IA, alertes), avec son `name`, le `service` rendu, le `country` où il traite les données, et le `safeguard` d’un transfert hors de l’Espace économique européen, ou `null` ;
 - `retention` : seulement si vous exploitez une autre pile que celle de ce dépôt, la durée pendant laquelle la vôtre conserve `technicalLogs` et `backups`, en anglais (`en`) et en français (`fr`). Le registre indique sinon celles de la pile de production : journaux {{keep-logs-fr}}, traces {{keep-traces-fr}}, métriques {{keep-metrics-fr}}, et données supprimées disparues des sauvegardes sous {{keep-backups-fr}}.
 
-Chaque partie est facultative. Ce que vous omettez apparaît comme non déclaré dans chaque export, qui en dit alors moins aux utilisateurs que ce que la loi vous impose : renseignez-le avant d’ouvrir votre serveur à d’autres. Le serveur lit le fichier au démarrage, et s’arrête s’il ne peut pas le lire.
+Chaque partie est facultative. Ce que vous omettez apparaît comme non déclaré dans chaque export, qui en dit alors moins aux utilisateurs que ce que la loi vous impose : renseignez-le avant d’ouvrir votre serveur à d’autres. Le serveur lit le fichier au démarrage, et s’arrête s’il ne peut pas le lire : redémarrez-le après avoir modifié le fichier (`docker compose restart server`), sinon les exports gardent l’ancienne déclaration.
 
 ## Télémétrie [#telemetry]
 
