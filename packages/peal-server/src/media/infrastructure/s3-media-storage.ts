@@ -9,22 +9,12 @@ import {
   ListObjectsV2Command,
   ListPartsCommand,
   PutObjectCommand,
-  S3Client,
   S3ServiceException,
   UploadPartCommand,
 } from "@aws-sdk/client-s3";
 import type { ListPartsCommandOutput } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import {
-  Config,
-  Duration,
-  Effect,
-  Layer,
-  Option,
-  Redacted,
-  Schema,
-  Stream,
-} from "effect";
+import { Duration, Effect, Layer, Option, Schema, Stream } from "effect";
 
 import { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import { MultipartUploadNotFound } from "#media/application/multipart-upload-not-found.ts";
@@ -43,9 +33,16 @@ import type { StorageKey } from "#media/domain/storage-key.ts";
 import { PartNumberSchema } from "#media/domain/upload-plan.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
-  isProduction,
-  requiredInProduction,
-} from "#shared/infrastructure/environment.ts";
+  acquireS3Client,
+  S3StorageConfig,
+} from "#shared/infrastructure/s3-store.ts";
+import type { S3StorageSettings } from "#shared/infrastructure/s3-store.ts";
+
+// The store's settings, which the shared kernel reads: the erasure ledger
+// keeps its entries in the same store.
+export { S3StorageConfig } from "#shared/infrastructure/s3-store.ts";
+
+export type { S3StorageSettings } from "#shared/infrastructure/s3-store.ts";
 
 // The media store, on any S3-compatible API: Cloudflare R2 in production,
 // SeaweedFS in development, or the store a self-hoster runs.
@@ -72,46 +69,6 @@ import {
 // |                              | default outside production                      |
 // | PEAL_S3_KEY_PREFIX           | prefix for every key, such as "staging/"        |
 // | PEAL_MEDIA_PUBLIC_BASE_URL   | where the bucket is served publicly, if it is   |
-
-/** Segments of letters, digits, `.`, `-` or `_`, each ending with `/`. */
-const KeyPrefixSchema = Schema.String.check(
-  Schema.isPattern(/^(?:[\w.-]+\/)*$/u)
-);
-
-export const S3StorageConfig = Config.all({
-  accessKeyId: requiredInProduction(
-    Config.Redacted("PEAL_S3_ACCESS_KEY_ID"),
-    Redacted.make("peal")
-  ),
-  bucket: requiredInProduction(
-    Config.NonEmptyString("PEAL_S3_BUCKET"),
-    "peal-media"
-  ),
-  endpoint: requiredInProduction(
-    Config.URL("PEAL_S3_ENDPOINT"),
-    new URL("http://127.0.0.1:18333")
-  ),
-  forcePathStyle: isProduction.pipe(
-    Config.flatMap((production) =>
-      Config.Boolean("PEAL_S3_FORCE_PATH_STYLE").pipe(
-        Config.withDefault(!production)
-      )
-    )
-  ),
-  keyPrefix: Config.schema(KeyPrefixSchema, "PEAL_S3_KEY_PREFIX").pipe(
-    Config.withDefault("")
-  ),
-  publicBaseUrl: Config.option(Config.URL("PEAL_MEDIA_PUBLIC_BASE_URL")),
-  region: Config.NonEmptyString("PEAL_S3_REGION").pipe(
-    Config.withDefault("auto")
-  ),
-  secretAccessKey: requiredInProduction(
-    Config.Redacted("PEAL_S3_SECRET_ACCESS_KEY"),
-    Redacted.make("peal-development-secret")
-  ),
-});
-
-export type S3StorageSettings = Config.Success<typeof S3StorageConfig>;
 
 // SigV4 presigned URLs last at most a week.
 const maxPresignedSeconds = 7 * 24 * 60 * 60;
@@ -176,38 +133,11 @@ const multipartNotFound =
 const readFailed = (cause: unknown) =>
   new MediaStorageFailed({ cause, operation: "read a file" });
 
-// An SDK client for the store, destroyed when the scope closes.
-const acquireClient = (settings: S3StorageSettings) =>
-  Effect.acquireRelease(
-    Effect.sync(
-      () =>
-        new S3Client({
-          credentials: {
-            accessKeyId: Redacted.value(settings.accessKeyId),
-            secretAccessKey: Redacted.value(settings.secretAccessKey),
-          },
-          endpoint: settings.endpoint.href,
-          forcePathStyle: settings.forcePathStyle,
-          region: settings.region,
-          // By default the SDK adds a CRC32 checksum to uploads. In a
-          // presigned URL it is the checksum of an empty body, so the store
-          // refuses the real one (SeaweedFS answers BadDigest): keep to the
-          // checksums an operation requires.
-          requestChecksumCalculation: "WHEN_REQUIRED",
-          responseChecksumValidation: "WHEN_REQUIRED",
-        })
-    ),
-    (opened) =>
-      Effect.sync(() => {
-        opened.destroy();
-      })
-  );
-
 /** Builds the store from settings, closing the client with the layer. */
 export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
   function* makeS3MediaStorage(settings: S3StorageSettings) {
     const { bucket, keyPrefix, publicBaseUrl } = settings;
-    const client = yield* acquireClient(settings);
+    const client = yield* acquireS3Client(settings);
 
     const objectKey = (key: StorageKey): string => `${keyPrefix}${key}`;
 
@@ -544,7 +474,7 @@ const removals = 8;
 export const makeS3MediaFolders = Effect.fn("S3MediaFolders.make")(
   function* makeS3MediaFolders(settings: S3StorageSettings) {
     const { bucket, keyPrefix } = settings;
-    const client = yield* acquireClient(settings);
+    const client = yield* acquireS3Client(settings);
 
     const deleteObject = (key: string) =>
       request(
