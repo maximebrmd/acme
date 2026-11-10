@@ -9,9 +9,8 @@ import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
-import { SqlLive } from "#shared/infrastructure/database.ts";
-
 import {
+  MigratedSqlLive,
   apiKeyOf,
   bodyOf,
   password,
@@ -492,7 +491,7 @@ const none = (rows: Readonly<Record<string, Count>>) =>
 // records are covered too.
 const RetainingLive = Layer.mergeAll(
   TestApp.layerWith({ PEAL_LEGAL_RETENTION: "true" }),
-  SqlLive
+  MigratedSqlLive
 );
 
 layer(RetainingLive, {
