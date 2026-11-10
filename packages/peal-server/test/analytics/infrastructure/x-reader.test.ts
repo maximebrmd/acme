@@ -229,7 +229,7 @@ describe("reading counts on X", () => {
   );
 
   it.live(
-    "reads only what the workspace's allowance for the day covers, and leaves the rest due",
+    "reads only what the workspace's allowance for the day covers, and puts the rest off without stopping the channel",
     () =>
       Effect.gen(function* metered() {
         const ids = [idOf(0), idOf(1), idOf(2)];
@@ -240,15 +240,74 @@ describe("reading counts on X", () => {
         const { batch } = yield* reading(server.url, posts, { allowance: 2 });
         const success = batch._tag === "Success" ? batch.success : undefined;
 
-        assert.strictEqual(success?.halted, true);
+        // Not halted: the channel's other posts, paid for, are still read.
+        assert.strictEqual(success?.halted, false);
         assert.deepStrictEqual(
-          success?.readings.map(({ targetId }) => targetId),
-          posts.slice(0, 2).map(({ targetId }) => targetId)
+          success?.readings.map(({ _tag, targetId }) => ({ _tag, targetId })),
+          [
+            { _tag: "counted", targetId: posts[0]?.targetId },
+            { _tag: "counted", targetId: posts[1]?.targetId },
+            { _tag: "unpaid", targetId: posts[2]?.targetId },
+          ]
         );
         assert.deepStrictEqual(
           server.requests().map((request) => request.query.get("ids")),
           [`${idOf(0)},${idOf(1)}`]
         );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "goes on reading the posts already paid for today once the allowance is spent",
+    () =>
+      Effect.gen(function* paidAlready() {
+        const ids = [idOf(0), idOf(1), idOf(2)];
+        const server = yield* fakePosts(new Map(ids.map((id) => [id, 1])));
+        const [first, second, third] = ids.map(toRead);
+
+        assert(
+          first !== undefined && second !== undefined && third !== undefined
+        );
+
+        const readings = yield* Effect.gen(function* twice() {
+          const reader = yield* MetricsReader;
+
+          // The day's two reads go to the first two posts.
+          yield* reader.read({
+            channelId,
+            posts: [first, second],
+            workspaceId,
+          });
+
+          // Later that day a new post is due first: it has no read left,
+          // and the two paid for are read again all the same.
+          return yield* reader.read({
+            channelId,
+            posts: [third, first, second],
+            workspaceId,
+          });
+        }).pipe(
+          Effect.provide(
+            readersWith({ paidReads: paidReadsOf(2), xApi: server.url }).pipe(
+              Layer.provideMerge(
+                channelAccessOf(account, ["x-access-synthetic-1"])
+              )
+            )
+          )
+        );
+
+        assert.isFalse(readings.halted);
+        assert.deepStrictEqual(
+          readings.readings
+            .map(({ _tag, targetId }) => `${_tag}:${targetId}`)
+            .toSorted(),
+          [
+            `counted:${first.targetId}`,
+            `counted:${second.targetId}`,
+            `unpaid:${third.targetId}`,
+          ].toSorted()
+        );
+        assert.lengthOf(server.requests(), 2);
       }).pipe(Effect.scoped)
   );
 
@@ -262,7 +321,10 @@ describe("reading counts on X", () => {
 
       assert.deepStrictEqual(
         batch._tag === "Success" ? batch.success : undefined,
-        { halted: true, readings: [] }
+        {
+          halted: false,
+          readings: [{ _tag: "unpaid", targetId: toRead(idOf(0), 0).targetId }],
+        }
       );
       assert.lengthOf(server.requests(), 0);
     }).pipe(Effect.scoped)

@@ -47,7 +47,7 @@
   publishing's capabilities read too), and claim each read first from
   `PaidReads` (`analytics.paid_reads`: one row a workspace, platform, day
   and resource, under an advisory lock; `X_ANALYTICS_DAILY_READS` a
-  workspace and day). What the allowance does not cover stays due. A new
+  workspace and day). What the allowance does not cover is answered `unpaid`, post by post, and waits for its next turn: a spent allowance never halts a channel, whose posts already paid for that day are read on. A new
   platform that bills reads goes through `PaidReads` and `BilledReads`.
 - Platforms without a reader (Google Business Profile, and LinkedIn
   profiles) answer

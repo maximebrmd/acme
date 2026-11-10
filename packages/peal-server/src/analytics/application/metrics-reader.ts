@@ -37,9 +37,10 @@ export type MetricsRequest = typeof MetricsRequestSchema.Type;
 /**
  * What reading one post found: its counts, that the platform no longer
  * shows it, deleted or not public, or that reading it failed: the server
- * erred, did not answer, or answered what Peal cannot read. A post whose
- * read failed waits for its next turn like a missing one, so a post its
- * server cannot show never holds back the channel's others.
+ * erred, did not answer, or answered what Peal cannot read, or that it
+ * was not read for want of a paid read. A post whose read failed, or was
+ * not paid for, waits for its next turn like a missing one, so a post
+ * that cannot be read now never holds back the channel's others.
  */
 export const PostReadingSchema = Schema.Union([
   Schema.TaggedStruct("counted", {
@@ -48,6 +49,9 @@ export const PostReadingSchema = Schema.Union([
   }),
   Schema.TaggedStruct("missing", { targetId: PostTargetIdSchema }),
   Schema.TaggedStruct("failed", { targetId: PostTargetIdSchema }),
+  // Its platform bills each read, and the workspace's allowance for the
+  // day is spent: nothing was asked for it.
+  Schema.TaggedStruct("unpaid", { targetId: PostTargetIdSchema }),
 ]);
 
 export type PostReading = typeof PostReadingSchema.Type;

@@ -235,10 +235,15 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
         covered.has(platformPostId)
       );
 
-      const spent = allowed.length < known.length;
+      // The posts the day's allowance does not cover wait for their next
+      // turn, each by itself: the read goes on for those already paid for
+      // today, which cost nothing more, and the run for the channel.
+      const unpaid = known
+        .filter(({ platformPostId }) => !covered.has(platformPostId))
+        .map(({ targetId }): PostReading => ({ _tag: "unpaid", targetId }));
 
       if (allowed.length === 0) {
-        return { halted: spent, readings: unknown };
+        return { halted: false, readings: [...unknown, ...unpaid] };
       }
 
       const batch = yield* access
@@ -254,8 +259,8 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
         );
 
       return {
-        halted: batch.halted || spent,
-        readings: [...batch.readings, ...unknown],
+        halted: batch.halted,
+        readings: [...batch.readings, ...unknown, ...unpaid],
       };
     });
 
