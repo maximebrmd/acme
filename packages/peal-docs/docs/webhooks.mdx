@@ -71,7 +71,7 @@ The order of the fields in the body is not part of the contract.
 
 ### What a payload never holds [#thin]
 
-Payloads carry ids, states, codes, instants and permalinks. They never carry what a post says, nor its images or videos.
+Payloads carry ids, states, codes, instants and permalinks. They never carry what a post says, in any of its parts, nor its images or videos; nor what a comment or a reply to it says, nor who wrote a comment.
 
 The endpoint is a third party to the people who wrote the post: an address someone chose, which Peal cannot check beyond its being public. Keeping payloads thin keeps a workspace's content behind API credentials and their permissions, where each read is checked. When your server needs the post, it reads it through the API with a key of its own: `GET /api/workspaces/{workspaceId}/posts/{postId}`.
 
