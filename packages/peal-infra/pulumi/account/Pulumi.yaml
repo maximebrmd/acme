@@ -1,0 +1,6 @@
+name: peal-account
+description: Peal's account at Cloudflare (packages/peal-infra/pulumi/README.md).
+runtime: bun
+main: index.ts
+backend:
+  url: s3://peal-infra-state?endpoint=https://6fdd7e600b33c2c948da88b6cf8b5f26.eu.r2.cloudflarestorage.com&region=auto&use_path_style=true

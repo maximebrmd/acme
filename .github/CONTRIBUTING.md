@@ -131,7 +131,7 @@ SDKs derive their clients from it.
 | [`peal-site`](../packages/peal-site)         | The marketing site (Astro), with the legal pages                             |
 | [`peal-docker`](../packages/peal-docker)     | The development, production and self-hosting stacks, and the images          |
 | [`peal-e2e`](../packages/peal-e2e)           | End-to-end browser tests against the server and the web app's build          |
-| [`peal-infra`](../packages/peal-infra)       | Peal's own infrastructure: Ansible for its servers and their releases        |
+| [`peal-infra`](../packages/peal-infra)       | Peal's own infrastructure: Pulumi for Cloudflare, Ansible for its servers    |
 
 The data lives in Postgres, one schema per bounded context, with Drizzle;
 media in any S3 API; and logs, metrics and traces go out over OpenTelemetry.

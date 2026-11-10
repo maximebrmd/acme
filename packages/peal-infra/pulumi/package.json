@@ -1,0 +1,24 @@
+{
+  "name": "peal-infra-pulumi",
+  "version": "0.0.0",
+  "private": true,
+  "homepage": "https://peal.social",
+  "bugs": "https://github.com/peal-social/peal/issues",
+  "license": "FSL-1.1-ALv2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peal-social/peal.git",
+    "directory": "packages/peal-infra/pulumi"
+  },
+  "type": "module",
+  "dependencies": {
+    "@pulumi/cloudflare": "6.23.3",
+    "@pulumi/pulumi": "3.274.1",
+    "effect": "4.1.2"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}

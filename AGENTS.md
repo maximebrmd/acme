@@ -51,8 +51,9 @@ one per tool under `packages/peal-infra/`:
   `@e2e-dev/web`). Each run starts the server and the web app's production
   build itself (`scripts/serve.ts`).
 - `peal-infra`: Peal's own infrastructure, one Nx project per tool:
-  `ansible` (`peal-infra-ansible`) configures Peal's servers, production and
-  the sandbox, and releases to them. Python, managed with uv.
+  `pulumi` (`peal-infra-pulumi`) keeps what Peal has at Cloudflare as code,
+  and `ansible` (`peal-infra-ansible`) configures Peal's servers, production
+  and the sandbox, and releases to them. Python, managed with uv.
 - `peal-sdk`: the API's clients in eight languages (`node`, `python`, `go`,
   `ruby`, `java`, `php`, `dotnet`, `rust`), generated from the contract by
   Fern's open-source generators and committed. Each language's folder is an Nx project

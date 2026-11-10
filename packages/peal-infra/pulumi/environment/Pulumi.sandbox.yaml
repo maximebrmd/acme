@@ -1,0 +1,13 @@
+encryptionsalt: v1:iKx7N362W/Y=:v1:V3D6g4aP6QJL9kx1:/sXAwCV9/xeS5uKP1c//LiAVRLD3bA==
+config:
+  peal:accountId: 6fdd7e600b33c2c948da88b6cf8b5f26
+  peal:zoneId: e5b2c1ccbc4294e524f4615e5feece45
+  peal:domain: peal.social
+  peal:environment: sandbox
+  peal:accountStack: organization/peal-account/peal
+  peal:hostnames:
+    app: sandbox
+    site: sandbox-site
+    docs: sandbox-docs
+    grafana: sandbox-grafana
+    ssh: sandbox-ssh
