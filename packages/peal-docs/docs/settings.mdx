@@ -31,6 +31,8 @@ Under **Invitations**, enter an email address and a role, then **Send the invita
 
 Under **API keys**, give a new key a name, how long it works (30, 90 or 365 days, or until revoked) and what it may do, out of the permissions your role gives you. The key appears once, right after: copy it then, as Peal keeps only a hash of it. [The API overview](/api-overview#authentication) tells how to send it. **Revoke** stops a key at once. Staff acting as a member cannot see or handle keys.
 
+The list says of each key whether it **can schedule and publish posts**: it can when it holds `post:schedule`, `post:publish` or `post:approve`, and writes drafts at most without them. Give a key those permissions only when what uses it must publish: what it sends is public on the platforms ([Posting from an AI agent](/agents#api)). A post created or scheduled with a key says so on its page, with the key's name.
+
 ### Delete a workspace [#delete-workspace]
 
 On **General**, owners choose **Delete this workspace…**, then type the workspace's name to confirm. Everything in it goes, for good: its channels and their authorizations, its posts, scheduled or not, and their analytics, its media library and the files in it, its notifications, its writing assistant usage, what Peal recorded of its subscriptions and of its posts on X, its members and invitations, and its API keys, which stop working at once. Nothing more is posted from it. Stripe keeps the invoices it issued.

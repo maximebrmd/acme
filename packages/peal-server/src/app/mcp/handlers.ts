@@ -1,6 +1,7 @@
 import { Array, Effect, Layer, Option } from "effect";
 import { CurrentMember } from "peal-contract";
 
+import { MediaToolsLive } from "#app/mcp/media-handlers.ts";
 import { PeopleToolsLive } from "#app/mcp/people-handlers.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
 import { ReportToolsLive } from "#app/mcp/reports-handlers.ts";
@@ -125,6 +126,7 @@ const BasicToolsLive = BasicTools.toLayer(
 export const PealToolsLive = Layer.mergeAll(
   BasicToolsLive,
   PostToolsLive,
+  MediaToolsLive,
   ReportToolsLive,
   PeopleToolsLive
 );

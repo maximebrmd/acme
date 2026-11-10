@@ -132,6 +132,10 @@ export const actorFor = (
       ),
       subject: {
         _tag: "user",
+        ...Option.match(principal.oauth, {
+          onNone: () => ({}),
+          onSome: ({ clientId }) => ({ clientId }),
+        }),
         impersonatedBy: principal.impersonatedBy,
         userId: principal.userId,
       },

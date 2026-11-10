@@ -20,37 +20,39 @@ const bodilessStatuses: ReadonlySet<number> = new Set([
   101, 103, 204, 205, 304,
 ]);
 
-// The answer, whose body fails to read once it goes past the limit; the
+// The answer, whose body fails to read once it goes past `limit` bytes; the
 // rest is never downloaded.
-const bounded = (response: Response): Response => {
-  if (response.body === null || bodilessStatuses.has(response.status)) {
-    return response;
-  }
+const boundedTo =
+  (limit: number) =>
+  (response: Response): Response => {
+    if (response.body === null || bodilessStatuses.has(response.status)) {
+      return response;
+    }
 
-  let received = 0;
+    let received = 0;
 
-  const limit = new TransformStream<Uint8Array, Uint8Array>({
-    transform: (chunk, controller) => {
-      received += chunk.byteLength;
+    const cutOff = new TransformStream<Uint8Array, Uint8Array>({
+      transform: (chunk, controller) => {
+        received += chunk.byteLength;
 
-      if (received > maxResponseBytes) {
-        controller.error(
-          new TypeError(`The answer is larger than ${maxResponseBytes} bytes`)
-        );
+        if (received > limit) {
+          controller.error(
+            new TypeError(`The answer is larger than ${limit} bytes`)
+          );
 
-        return;
-      }
+          return;
+        }
 
-      controller.enqueue(chunk);
-    },
-  });
+        controller.enqueue(chunk);
+      },
+    });
 
-  return new Response(response.body.pipeThrough(limit), {
-    headers: response.headers,
-    status: response.status,
-    statusText: response.statusText,
-  });
-};
+    return new Response(response.body.pipeThrough(cutOff), {
+      headers: response.headers,
+      status: response.status,
+      statusText: response.statusText,
+    });
+  };
 
 /** A fetch function, as libraries take one. */
 export type PublicFetch = typeof globalThis.fetch;
@@ -65,21 +67,36 @@ const withPreconnect = (
 ): PublicFetch =>
   Object.assign(fetch, { preconnect: globalThis.fetch.preconnect });
 
-const boundedFetch = withPreconnect(async (input, init) =>
-  bounded(await globalThis.fetch(input, init))
-);
+// A fetch whose answers are cut off past `limit` bytes.
+const fetchBoundedTo = (limit: number) => {
+  const bounded = boundedTo(limit);
+
+  return withPreconnect(async (input, init) =>
+    bounded(await globalThis.fetch(input, init))
+  );
+};
+
+const boundedFetch = fetchBoundedTo(maxResponseBytes);
 
 /**
  * The public HTTP client (see `publicHttpClient`), with requests timing out
  * after `timeout`: for uploads of images and videos, which take longer than
- * the default allows.
+ * the default allows. With `maxResponseBytes`, answers are cut off past
+ * that many bytes rather than past a megabyte: for a file a member asked
+ * Peal to fetch, whose caller counts the bytes it takes.
  */
 export const publicHttpClientWith = (options: {
+  readonly maxResponseBytes?: number;
   readonly timeout: Duration.Input;
 }) =>
   Effect.gen(function* publicHttpClient() {
     const client = yield* HttpClient.HttpClient;
     const guard = yield* OutboundGuard;
+
+    const fetch =
+      options.maxResponseBytes === undefined
+        ? boundedFetch
+        : fetchBoundedTo(options.maxResponseBytes);
 
     return client.pipe(
       HttpClient.mapRequestEffect((request) =>
@@ -88,7 +105,7 @@ export const publicHttpClientWith = (options: {
       HttpClient.transform((response) =>
         response.pipe(
           Effect.provideService(FetchHttpClient.RequestInit, noRedirects),
-          Effect.provideService(FetchHttpClient.Fetch, boundedFetch),
+          Effect.provideService(FetchHttpClient.Fetch, fetch),
           Effect.provideService(HttpClient.TracerPropagationEnabled, false)
         )
       ),

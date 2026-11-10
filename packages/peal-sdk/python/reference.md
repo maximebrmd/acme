@@ -1082,7 +1082,7 @@ client.channels.disconnect(
 </details>
 
 ## posts
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L34-L73">drafts</a>(...) -> DraftPage</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L35-L74">drafts</a>(...) -> DraftPage</code></summary>
 <dl>
 <dd>
 
@@ -1171,7 +1171,7 @@ client.posts.drafts(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L75-L111">list</a>(...) -> typing.List[Post]</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L76-L112">list</a>(...) -> typing.List[Post]</code></summary>
 <dl>
 <dd>
 
@@ -1262,7 +1262,7 @@ client.posts.list(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L113-L173">create</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L114-L174">create</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -1361,7 +1361,139 @@ client.posts.create(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L175-L206">get</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L176-L255">send</a>(...) -> Post</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal, PostContent, MediaAttachment, TextOverride, PostTiming_Now
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.posts.send(
+    workspace_id="workspaceId",
+    channel_ids=[
+        "channelIds"
+    ],
+    content=PostContent(
+        media=[
+            MediaAttachment(
+                alt_text="altText",
+                media_id="mediaId",
+            )
+        ],
+        overrides=[
+            TextOverride(
+                channel_id="channelId",
+                text="text",
+            )
+        ],
+        text="text",
+    ),
+    when=PostTiming_Now(),
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_ids:** `typing.List[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**content:** `PostContent` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**when:** `PostTiming` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**idempotency_key:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**options:** `typing.Optional[typing.List[ChannelOptions]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L257-L288">get</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -1443,7 +1575,7 @@ client.posts.get(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L208-L277">update</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L290-L359">update</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -1551,7 +1683,7 @@ client.posts.update(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L279-L311">discard</a>(...)</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L361-L393">discard</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -1633,7 +1765,7 @@ client.posts.discard(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L313-L346">attempts</a>(...) -> typing.List[PublicationAttempt]</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L395-L428">attempts</a>(...) -> typing.List[PublicationAttempt]</code></summary>
 <dl>
 <dd>
 
@@ -1715,7 +1847,7 @@ client.posts.attempts(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L348-L399">schedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L430-L481">schedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -1826,7 +1958,7 @@ client.posts.schedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L401-L448">reschedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L483-L530">reschedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -1918,7 +2050,7 @@ client.posts.reschedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L450-L483">unschedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L532-L565">unschedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2000,7 +2132,7 @@ client.posts.unschedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L485-L526">repost</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L567-L608">repost</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2091,7 +2223,7 @@ client.posts.repost(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L528-L575">confirm</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L610-L657">confirm</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2193,7 +2325,7 @@ client.posts.confirm(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L577-L610">cancel</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L659-L692">cancel</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2464,7 +2596,97 @@ client.media.create(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L125-L158">get</a>(...) -> Media</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L125-L167">import_from_url</a>(...) -> Media</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.media.import_from_url(
+    workspace_id="workspaceId",
+    url="url",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**url:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**alt_text:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L169-L202">get</a>(...) -> Media</code></summary>
 <dl>
 <dd>
 
@@ -2546,7 +2768,7 @@ client.media.get(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L160-L192">delete</a>(...)</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L204-L236">delete</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -2628,7 +2850,7 @@ client.media.delete(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L194-L236">describe</a>(...) -> Media</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L238-L280">describe</a>(...) -> Media</code></summary>
 <dl>
 <dd>
 
@@ -2719,7 +2941,7 @@ client.media.describe(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L238-L271">complete</a>(...) -> Media</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L282-L315">complete</a>(...) -> Media</code></summary>
 <dl>
 <dd>
 
@@ -2801,7 +3023,7 @@ client.media.complete(
 </dl>
 </details>
 
-<details><summary><code>client.media.<a href="src/peal/media/client.py#L273-L306">usage</a>(...) -> MediaUsage</code></summary>
+<details><summary><code>client.media.<a href="src/peal/media/client.py#L317-L350">usage</a>(...) -> MediaUsage</code></summary>
 <dl>
 <dd>
 

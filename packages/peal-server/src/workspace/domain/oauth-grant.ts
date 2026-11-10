@@ -8,11 +8,21 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
  * What a user lets an OAuth client do in their workspaces:
  *
  * - `workspace:read`: read, and change nothing.
- * - `workspace:write`: whatever the user's role allows, reading included.
+ * - `workspace:write`: whatever the user's role allows, reading included,
+ *   but what puts posts out (`publishingPermissions`): it writes drafts,
+ *   handles media and the rest, and nothing it does reaches a platform.
+ * - `workspace:publish`: what the user's role allows of what puts posts
+ *   out, and reading: scheduling, moving, publishing and reposting, and
+ *   taking a post back, cancelling it or confirming how it went.
+ *
+ * Publishing is a grant of its own, which the consent page shows on its own
+ * line: a token issued for `workspace:write` before it existed publishes
+ * nothing until its user agrees again.
  */
 export const WorkspaceScopeSchema = Schema.Literals([
   "workspace:read",
   "workspace:write",
+  "workspace:publish",
 ]);
 
 export type WorkspaceScope = typeof WorkspaceScopeSchema.Type;
@@ -52,9 +62,29 @@ export const isCommandLine = (grant: OAuthGrant): boolean =>
 const reads = (permission: Permission): boolean => permission.endsWith(":read");
 
 /**
+ * The permissions that decide what goes out to the platforms, and when:
+ * only `workspace:publish` leaves them to an OAuth client.
+ */
+export const publishingPermissions: ReadonlySet<Permission> = new Set([
+  "post:schedule",
+  "post:approve",
+  "post:publish",
+]);
+
+/** The scope an OAuth client needs for a permission its user holds. */
+export const scopeFor = (permission: Permission): WorkspaceScope => {
+  if (publishingPermissions.has(permission)) {
+    return "workspace:publish";
+  }
+
+  return reads(permission) ? "workspace:read" : "workspace:write";
+};
+
+/**
  * The permissions a grant leaves of those the user holds in a workspace:
- * none outside the workspace it is bound to, only reading without
- * `workspace:write`, and none without either workspace scope.
+ * none outside the workspace it is bound to, and none without a workspace
+ * scope; reading with any of them, what puts posts out with
+ * `workspace:publish` only, and the rest with `workspace:write`.
  */
 export const grantedPermissions = (
   grant: OAuthGrant,
@@ -65,11 +95,12 @@ export const grantedPermissions = (
     return [];
   }
 
-  if (grant.scopes.includes("workspace:write")) {
-    return permissions;
+  if (!grant.scopes.some(isWorkspaceScope)) {
+    return [];
   }
 
-  return grant.scopes.includes("workspace:read")
-    ? permissions.filter(reads)
-    : [];
+  return permissions.filter(
+    (permission) =>
+      reads(permission) || grant.scopes.includes(scopeFor(permission))
+  );
 };

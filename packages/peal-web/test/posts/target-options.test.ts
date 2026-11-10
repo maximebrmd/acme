@@ -110,9 +110,12 @@ describe(valuesOfPost, () => {
       {
         authorId: null,
         content: { media: [], overrides: [], text: "A synthetic video" },
+        createdVia: null,
         id: "00000000-0000-7000-8000-000000000009",
         outcome: null,
         schedule: null,
+        scheduledBy: null,
+        scheduledVia: null,
         status: "draft",
         targets: ["c1", "c2", "gone"].map((id) => ({
           channelId: id,

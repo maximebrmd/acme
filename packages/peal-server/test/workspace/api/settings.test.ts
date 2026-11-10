@@ -197,9 +197,11 @@ const PortsLive = Layer.mergeAll(
             provide,
             Effect.as(
               workspaceIds.map((workspaceId) => ({
+                createdVia: { name: null, via: "web" },
                 id: "019a6f10-0000-7000-8000-000000000001",
                 media: [],
                 scheduledAt: null,
+                scheduledVia: null,
                 status: "draft",
                 targets: [],
                 text: "A synthetic post of Ana's.",

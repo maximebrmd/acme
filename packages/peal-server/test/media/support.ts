@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { ConfigProvider, Effect, Layer, Option } from "effect";
 import { MessageStorage, ShardingConfig } from "effect/cluster";
+import { Dns } from "effect/net";
 
 import { MediaLive } from "#media/container.ts";
 import { MediaInPostsLive } from "#publishing/container.ts";
@@ -57,7 +58,18 @@ export const MediaInPostsTest = MediaInPostsLive.pipe(
  * server that does not bill, or with the entitlements given.
  */
 export const mediaTestWith = (entitlements: typeof UnmeteredTest) =>
-  MediaLive.pipe(Layer.provide(Layer.mergeAll(MediaInPostsTest, entitlements)));
+  MediaLive.pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        MediaInPostsTest,
+        entitlements,
+        // No name resolves: the guard refuses every address a test could
+        // name, loopback ones included. Tests that import files bring the
+        // context a RemoteMedia of their own (`mediaWith`).
+        Dns.layerStatic({})
+      )
+    )
+  );
 
 /** The media context on a server that does not bill: no storage limit. */
 export const MediaTestLive = mediaTestWith(UnmeteredTest);

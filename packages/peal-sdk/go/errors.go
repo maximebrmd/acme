@@ -69,7 +69,7 @@ func (b *BadRequestError) GetBody() any {
 	return b.Body
 }
 
-// The post's status does not allow this. `status` is the status it has.
+// The `Idempotency-Key` was sent before, within the last 24 hours, with another request: nothing was made. Send a new request under a new key.
 type ConflictError struct {
 	*core.APIError
 	Body any

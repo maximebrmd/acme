@@ -106,6 +106,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM media.media_assets WHERE workspace_id = ${id}`,
   "notifications.notices": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE workspace_id = ${id}`,
+  "publishing.idempotency_keys": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.idempotency_keys WHERE workspace_id = ${id}`,
   "publishing.post_targets": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.post_targets t JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.posts": (sql, id) =>
@@ -163,8 +165,10 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE user_id = ${id}`,
   "notifications.notification_preferences": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notification_preferences WHERE user_id = ${id}`,
+  // Their posts stay with the workspace, without who wrote or scheduled
+  // them.
   "publishing.posts": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id}`,
+    sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id} OR scheduled_by = ${id}`,
   // What staff did to them: the events stay, without them and without the
   // reason given about them. What they did as staff keeps their id (below).
   // An id the user is named by in a change staff made as someone else goes
@@ -271,6 +275,13 @@ const fill = Effect.fn("fill")(function* fill(
     "finished",
     person.id
   );
+
+  // As a post the person scheduled in the web app keeps it.
+  yield* sql`UPDATE publishing.posts SET created_via = '{"_tag":"web"}'::jsonb, scheduled_via = '{"_tag":"web"}'::jsonb, scheduled_by = ${person.id} WHERE id = ${postId}`;
+
+  // The key of the request that made it, as `posts.send` keeps it.
+  yield* sql`INSERT INTO publishing.idempotency_keys (workspace_id, key_digest, request_digest, post_id, created_at)
+    VALUES (${workspaceId}, ${randomUUID()}, 'synthetic-digest', ${postId}, now())`;
 
   const [target] =
     yield* sql`SELECT id FROM publishing.post_targets WHERE post_id = ${postId}`.pipe(
@@ -526,7 +537,7 @@ layer(RetainingLive, {
         ]);
 
         const posts = yield* count(
-          sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${shared} AND author_id IS NULL`
+          sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${shared} AND author_id IS NULL AND scheduled_by IS NULL AND scheduled_via ->> '_tag' = 'web'`
         );
 
         assert.strictEqual(posts, 1);

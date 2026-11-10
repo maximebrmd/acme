@@ -4,6 +4,8 @@ import type { Option } from "effect";
 import type { MediaAssetNotFound } from "#media/application/media-asset-not-found.ts";
 import type { MediaInUse } from "#media/application/media-in-use.ts";
 import type { MediaProbeFailed } from "#media/application/media-probe-failed.ts";
+import type { MediaSourceNotPublic } from "#media/application/media-source-not-public.ts";
+import type { MediaSourceUnreachable } from "#media/application/media-source-unreachable.ts";
 import type { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import type { MediaAssets } from "#media/application/ports/media-assets.ts";
 import { getAsset } from "#media/application/ports/media-assets.ts";
@@ -11,6 +13,7 @@ import type { MediaProbe } from "#media/application/ports/media-probe.ts";
 import type { MediaStorage } from "#media/application/ports/media-storage.ts";
 import { MediaUsage } from "#media/application/ports/media-usage.ts";
 import type { AssetUse } from "#media/application/ports/media-usage.ts";
+import type { RemoteMedia } from "#media/application/ports/remote-media.ts";
 import type { StorageAllowance } from "#media/application/ports/storage-allowance.ts";
 import type { UploadIncomplete } from "#media/application/upload-incomplete.ts";
 import type { UploadRejected } from "#media/application/upload-rejected.ts";
@@ -23,6 +26,8 @@ import type {
 import { deleteMedia } from "#media/application/use-cases/delete-media.ts";
 import { describeMedia } from "#media/application/use-cases/describe-media.ts";
 import { finishUpload } from "#media/application/use-cases/finish-upload.ts";
+import { importMedia } from "#media/application/use-cases/import-media.ts";
+import type { ImportMediaRequest } from "#media/application/use-cases/import-media.ts";
 import { probeMedia } from "#media/application/use-cases/probe-media.ts";
 import type { ProbedMedia } from "#media/application/use-cases/probe-media.ts";
 import {
@@ -52,10 +57,14 @@ type MediaPorts =
   | MediaProbe
   | MediaStorage
   | MediaUsage
+  | RemoteMedia
   | StorageAllowance;
 
 /** A file to upload into the actor's workspace. */
 export type NewUpload = Omit<CreateUploadRequest, "workspaceId">;
+
+/** A file to fetch from an address into the actor's workspace. */
+export type MediaImport = Omit<ImportMediaRequest, "workspaceId">;
 
 /** A page of the actor's workspace's media. */
 export interface MediaPageQuery {
@@ -88,7 +97,7 @@ type CompleteFailure =
  * | -------------------------------------------- | ------------ |
  * | getMedia, listMedia, mediaUsage              | media:read   |
  * | createUpload, completeUpload, finishUpload,  | media:upload |
- * | probeMedia, describeMedia                    |              |
+ * | importMedia, probeMedia, describeMedia       |              |
  * | deleteMedia                                  | media:delete |
  */
 export class MediaLibrary extends Context.Service<
@@ -105,6 +114,25 @@ export class MediaLibrary extends Context.Service<
       | MissingPermission
       | PlanLimitReached
       | UnsupportedMediaType
+    >;
+    /**
+     * Fetches a file from a public address, stores it and probes it, as an
+     * upload that arrived (see `importMedia`).
+     */
+    readonly importMedia: (
+      actor: Actor,
+      file: MediaImport
+    ) => Effect.Effect<
+      MediaItem,
+      | AltTextTooLong
+      | MediaSourceNotPublic
+      | MediaSourceUnreachable
+      | MediaStorageFailed
+      | MediaTooLarge
+      | MissingPermission
+      | PlanLimitReached
+      | UnsupportedMediaType
+      | UploadRejected
     >;
     /** Checks the stored file, without probing it (see `finishUpload`). */
     readonly completeUpload: (
@@ -206,6 +234,18 @@ export class MediaLibrary extends Context.Service<
           uploading(actor, finishUpload(target(actor, assetId))),
         getMedia: (actor, assetId) =>
           reading(actor, getMedia(target(actor, assetId))),
+        importMedia: (actor, file) =>
+          uploading(
+            actor,
+            importMedia({ ...file, workspaceId: actor.workspaceId }).pipe(
+              // The asset was recorded a moment ago, by this very call.
+              Effect.catchTags({
+                InvalidMediaTransition: Effect.die,
+                MediaAssetNotFound: Effect.die,
+                UploadIncomplete: Effect.die,
+              })
+            )
+          ),
         listMedia: (actor, page) =>
           reading(
             actor,

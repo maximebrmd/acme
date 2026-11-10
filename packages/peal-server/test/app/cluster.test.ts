@@ -159,6 +159,7 @@ const serverWith = <E, R>(
     never,
     never,
     | Layer.Success<typeof ChannelJobsTest>
+    | PostScheduling
     | Sharding.Sharding
     | SqlClient.SqlClient
   > = CronsLive

@@ -21,6 +21,12 @@ class Post extends JsonSerializableType
     public PostContent $content;
 
     /**
+     * @var ?PostOrigin $createdVia
+     */
+    #[JsonProperty('createdVia')]
+    public ?PostOrigin $createdVia;
+
+    /**
      * @var string $id
      */
     #[JsonProperty('id')]
@@ -37,6 +43,18 @@ class Post extends JsonSerializableType
      */
     #[JsonProperty('schedule')]
     public ?PostSchedule $schedule;
+
+    /**
+     * @var ?string $scheduledBy
+     */
+    #[JsonProperty('scheduledBy')]
+    public ?string $scheduledBy;
+
+    /**
+     * @var ?PostOrigin $scheduledVia
+     */
+    #[JsonProperty('scheduledVia')]
+    public ?PostOrigin $scheduledVia;
 
     /**
      * @var value-of<PostStatus> $status
@@ -57,8 +75,11 @@ class Post extends JsonSerializableType
      *   status: value-of<PostStatus>,
      *   targets: array<PostTarget>,
      *   authorId?: ?string,
+     *   createdVia?: ?PostOrigin,
      *   outcome?: ?value-of<PostOutcome>,
      *   schedule?: ?PostSchedule,
+     *   scheduledBy?: ?string,
+     *   scheduledVia?: ?PostOrigin,
      * } $values
      */
     public function __construct(
@@ -66,9 +87,12 @@ class Post extends JsonSerializableType
     ) {
         $this->authorId = $values['authorId'] ?? null;
         $this->content = $values['content'];
+        $this->createdVia = $values['createdVia'] ?? null;
         $this->id = $values['id'];
         $this->outcome = $values['outcome'] ?? null;
         $this->schedule = $values['schedule'] ?? null;
+        $this->scheduledBy = $values['scheduledBy'] ?? null;
+        $this->scheduledVia = $values['scheduledVia'] ?? null;
         $this->status = $values['status'];
         $this->targets = $values['targets'];
     }

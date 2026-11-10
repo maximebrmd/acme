@@ -17,9 +17,12 @@ const channel = (id: string): Channel => ({
 const draftFor = (...channelIds: readonly string[]): Post => ({
   authorId: null,
   content: { media: [], overrides: [], text: "A synthetic draft" },
+  createdVia: null,
   id: "00000000-0000-7000-8000-000000000001",
   outcome: null,
   schedule: null,
+  scheduledBy: null,
+  scheduledVia: null,
   status: "draft",
   targets: channelIds.map((channelId, index) => ({
     channelId,

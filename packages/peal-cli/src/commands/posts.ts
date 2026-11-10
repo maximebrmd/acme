@@ -1,11 +1,22 @@
-import { Console, Effect, Option, Schema } from "effect";
+import {
+  Array as Arr,
+  Console,
+  DateTime,
+  Effect,
+  Option,
+  Schema,
+} from "effect";
 import { Argument, Command, Flag } from "effect/cli";
-import { TargetConfirmationSchema } from "peal-contract";
+import { PostSchema, TargetConfirmationSchema } from "peal-contract";
 import type { FailureReason, Post, PostTarget } from "peal-contract";
 
-import { explain } from "#explain.ts";
+import { explain, explainingPublishing } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
+import { channelIdsOf, channelsFlag } from "#post-flags.ts";
+import { channelsOf, namesFor, printPost, timeOf } from "#post-result.ts";
 import { columns, excerpt, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
+import { atFlag, instantOf, timeZoneFlag } from "#when.ts";
 import { channelNames, inWorkspace, named, workspaceFlag } from "#workspace.ts";
 
 const postArgument = Argument.String("post-id").pipe(
@@ -80,13 +91,19 @@ const targetOf = (post: Post, targetId: string) =>
 
 const show = Command.make(
   "show",
-  { postId: postArgument, workspace: workspaceFlag },
-  Effect.fn("posts.show")(function* show({ postId, workspace: choice }) {
+  { json: jsonFlag, postId: postArgument, workspace: workspaceFlag },
+  Effect.fn("posts.show")(function* show({ json, postId, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const post = yield* client.posts
       .get({ params: { postId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(PostSchema, post);
+
+      return;
+    }
 
     const names = yield* channelNames(client, workspace.id);
 
@@ -133,19 +150,23 @@ const show = Command.make(
 
 const unschedule = Command.make(
   "unschedule",
-  { postId: postArgument, workspace: workspaceFlag },
+  { json: jsonFlag, postId: postArgument, workspace: workspaceFlag },
   Effect.fn("posts.unschedule")(function* unschedule({
+    json,
     postId,
     workspace: choice,
   }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
-    yield* client.posts
+    const post = yield* client.posts
       .unschedule({ params: { postId, workspaceId: workspace.id } })
-      .pipe(Effect.mapError(explain(url)));
+      .pipe(explainingPublishing(url));
 
-    yield* Console.log(
-      `Took post ${postId} back to draft: it goes out at no time until it is scheduled again.`
+    yield* printPost(
+      post,
+      json,
+      () =>
+        `Took post ${postId} back to draft: it goes out at no time until it is scheduled again.`
     );
   })
 ).pipe(
@@ -156,8 +177,14 @@ const unschedule = Command.make(
 
 const repost = Command.make(
   "repost",
-  { postId: postArgument, targetId: targetArgument, workspace: workspaceFlag },
+  {
+    json: jsonFlag,
+    postId: postArgument,
+    targetId: targetArgument,
+    workspace: workspaceFlag,
+  },
   Effect.fn("posts.repost")(function* repost({
+    json,
     postId,
     targetId,
     workspace: choice,
@@ -166,7 +193,13 @@ const repost = Command.make(
 
     const post = yield* client.posts
       .repost({ params: { postId, targetId, workspaceId: workspace.id } })
-      .pipe(Effect.mapError(explain(url)));
+      .pipe(explainingPublishing(url));
+
+    if (json) {
+      yield* printJson(PostSchema, post);
+
+      return;
+    }
 
     const names = yield* channelNames(client, workspace.id);
 
@@ -191,6 +224,7 @@ const decodeConfirmation = Schema.decodeUnknownEffect(TargetConfirmationSchema);
 const confirm = Command.make(
   "confirm",
   {
+    json: jsonFlag,
     permalink: Flag.String("permalink").pipe(
       Flag.withMetavar("<url>"),
       Flag.withDescription(
@@ -239,7 +273,13 @@ const confirm = Command.make(
         },
         payload,
       })
-      .pipe(Effect.mapError(explain(url)));
+      .pipe(explainingPublishing(url));
+
+    if (input.json) {
+      yield* printJson(PostSchema, post);
+
+      return;
+    }
 
     const names = yield* channelNames(client, workspace.id);
 
@@ -260,9 +300,157 @@ const confirm = Command.make(
   )
 );
 
+const schedule = Command.make(
+  "schedule",
+  {
+    at: atFlag,
+    channels: channelsFlag(
+      "A channel to schedule the draft on, as peal channels list shows its id; repeat it, or separate ids with commas. Without it, the channels the draft has."
+    ),
+    json: jsonFlag,
+    postId: postArgument,
+    timeZone: timeZoneFlag,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("posts.schedule")(function* schedule(input) {
+    const at = yield* instantOf(input.at, input.timeZone);
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+    const params = { postId: input.postId, workspaceId: workspace.id };
+    const channelIds = channelIdsOf(input.channels);
+
+    const post = yield* (
+      Arr.isArrayNonEmpty(channelIds)
+        ? client.posts.schedule({
+            params,
+            payload: { at, channelIds, timeZone: input.timeZone },
+          })
+        : client.posts.reschedule({
+            params,
+            payload: { at, timeZone: input.timeZone },
+          })
+    ).pipe(explainingPublishing(url));
+
+    const names = yield* namesFor(input.json, client, workspace.id);
+
+    yield* printPost(
+      post,
+      input.json,
+      () =>
+        `Scheduled post ${post.id} for ${timeOf(post)} on ${channelsOf(post, names)}: it goes out then, to these accounts' public.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "Schedule a draft: at --at it goes out on its channels, to the public of the accounts they connect. Its text, media and options must fit each platform's rules. Until then, peal posts unschedule or cancel stops it."
+  )
+);
+
+const publish = Command.make(
+  "publish",
+  {
+    json: jsonFlag,
+    postId: postArgument,
+    timeZone: timeZoneFlag,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("posts.publish")(function* publish(input) {
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+
+    const post = yield* client.posts
+      .reschedule({
+        params: { postId: input.postId, workspaceId: workspace.id },
+        payload: { at: yield* DateTime.now, timeZone: input.timeZone },
+      })
+      .pipe(explainingPublishing(url));
+
+    const names = yield* namesFor(input.json, client, workspace.id);
+
+    yield* printPost(
+      post,
+      input.json,
+      () =>
+        `Publishing post ${post.id} now on ${channelsOf(post, names)}: it cannot be taken back from here once it is out. peal posts show ${post.id} tells how it went.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "Publish a draft, or a scheduled post, now, on the channels it has: it reaches the public of the accounts they connect, and cannot be taken back from Peal once it is out."
+  )
+);
+
+const reschedule = Command.make(
+  "reschedule",
+  {
+    at: atFlag,
+    json: jsonFlag,
+    postId: postArgument,
+    timeZone: timeZoneFlag,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("posts.reschedule")(function* reschedule(input) {
+    const at = yield* instantOf(input.at, input.timeZone);
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+
+    const post = yield* client.posts
+      .reschedule({
+        params: { postId: input.postId, workspaceId: workspace.id },
+        payload: { at, timeZone: input.timeZone },
+      })
+      .pipe(explainingPublishing(url));
+
+    const names = yield* namesFor(input.json, client, workspace.id);
+
+    yield* printPost(
+      post,
+      input.json,
+      () =>
+        `Moved post ${post.id} to ${timeOf(post)}, on ${channelsOf(post, names)}.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "Move a scheduled post to another time. A draft is scheduled then, on the channels it has."
+  )
+);
+
+const cancel = Command.make(
+  "cancel",
+  { json: jsonFlag, postId: postArgument, workspace: workspaceFlag },
+  Effect.fn("posts.cancel")(function* cancel({
+    json,
+    postId,
+    workspace: choice,
+  }) {
+    const { client, url, workspace } = yield* inWorkspace(choice);
+
+    const post = yield* client.posts
+      .cancel({ params: { postId, workspaceId: workspace.id } })
+      .pipe(explainingPublishing(url));
+
+    yield* printPost(post, json, () =>
+      post.status === "cancelled"
+        ? `Cancelled post ${post.id}: it goes out on no channel.`
+        : `Post ${post.id} was already ${post.status}: the channels it was not sent to yet are cancelled, and peal posts show ${post.id} tells what the others did.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "Cancel a draft or a scheduled post for good: it goes out on no channel. A post already publishing finishes with what its channels did. To change a scheduled post and keep it, unschedule it instead."
+  )
+);
+
 export const posts = Command.make("posts").pipe(
   Command.withDescription(
-    "A workspace's posts once scheduled: how they went, taking them back to draft, and following up where they failed."
+    "A workspace's posts: scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, and following up where it failed. peal post writes and sends one in a single command."
   ),
-  Command.withSubcommands([show, unschedule, repost, confirm])
+  Command.withSubcommands([
+    show,
+    schedule,
+    publish,
+    reschedule,
+    unschedule,
+    cancel,
+    repost,
+    confirm,
+  ])
 );

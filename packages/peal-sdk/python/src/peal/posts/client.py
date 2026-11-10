@@ -8,6 +8,7 @@ from ..types.channel_options import ChannelOptions
 from ..types.draft_page import DraftPage
 from ..types.post import Post
 from ..types.post_content import PostContent
+from ..types.post_timing import PostTiming
 from ..types.publication_attempt import PublicationAttempt
 from ..types.target_confirmation import TargetConfirmation
 from .raw_client import AsyncRawPostsClient, RawPostsClient
@@ -169,6 +170,87 @@ class PostsClient:
         """
         _response = self._raw_client.create(
             workspace_id, channel_ids=channel_ids, content=content, options=options, request_options=request_options
+        )
+        return _response.data
+
+    def send(
+        self,
+        workspace_id: str,
+        *,
+        channel_ids: typing.Sequence[str],
+        content: PostContent,
+        when: PostTiming,
+        idempotency_key: typing.Optional[str] = None,
+        options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Post:
+        """
+        Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_ids : typing.Sequence[str]
+
+        content : PostContent
+
+        when : PostTiming
+
+        idempotency_key : typing.Optional[str]
+
+        options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Post
+            Post
+
+        Examples
+        --------
+        from peal import (
+            MediaAttachment,
+            Peal,
+            PostContent,
+            PostTiming_Now,
+            TextOverride,
+        )
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.posts.send(
+            workspace_id="workspaceId",
+            channel_ids=["channelIds"],
+            content=PostContent(
+                media=[
+                    MediaAttachment(
+                        alt_text="altText",
+                        media_id="mediaId",
+                    )
+                ],
+                overrides=[
+                    TextOverride(
+                        channel_id="channelId",
+                        text="text",
+                    )
+                ],
+                text="text",
+            ),
+            when=PostTiming_Now(),
+        )
+        """
+        _response = self._raw_client.send(
+            workspace_id,
+            channel_ids=channel_ids,
+            content=content,
+            when=when,
+            idempotency_key=idempotency_key,
+            options=options,
+            request_options=request_options,
         )
         return _response.data
 
@@ -789,6 +871,95 @@ class AsyncPostsClient:
         """
         _response = await self._raw_client.create(
             workspace_id, channel_ids=channel_ids, content=content, options=options, request_options=request_options
+        )
+        return _response.data
+
+    async def send(
+        self,
+        workspace_id: str,
+        *,
+        channel_ids: typing.Sequence[str],
+        content: PostContent,
+        when: PostTiming,
+        idempotency_key: typing.Optional[str] = None,
+        options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Post:
+        """
+        Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_ids : typing.Sequence[str]
+
+        content : PostContent
+
+        when : PostTiming
+
+        idempotency_key : typing.Optional[str]
+
+        options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Post
+            Post
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import (
+            AsyncPeal,
+            MediaAttachment,
+            PostContent,
+            PostTiming_Now,
+            TextOverride,
+        )
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.posts.send(
+                workspace_id="workspaceId",
+                channel_ids=["channelIds"],
+                content=PostContent(
+                    media=[
+                        MediaAttachment(
+                            alt_text="altText",
+                            media_id="mediaId",
+                        )
+                    ],
+                    overrides=[
+                        TextOverride(
+                            channel_id="channelId",
+                            text="text",
+                        )
+                    ],
+                    text="text",
+                ),
+                when=PostTiming_Now(),
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.send(
+            workspace_id,
+            channel_ids=channel_ids,
+            content=content,
+            when=when,
+            idempotency_key=idempotency_key,
+            options=options,
+            request_options=request_options,
         )
         return _response.data
 

@@ -35,6 +35,7 @@ import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
+import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import {
@@ -135,6 +136,7 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
     Layer.provideMerge(PostScheduling.layer),
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzleIdempotencyKeys,
         DrizzlePostRepository,
         journal,
         RecordingChannelHealth,

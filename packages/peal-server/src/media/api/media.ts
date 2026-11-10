@@ -1,4 +1,4 @@
-import { Duration, Effect, Match, Option, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   AltTextTooLong,
@@ -8,57 +8,25 @@ import {
   Forbidden,
   MediaInUse,
   MediaNotFound,
+  MediaSourceNotPublic,
+  MediaSourceUnreachable,
   MediaStoreUnavailable,
   MediaTooLarge,
   UnsupportedMediaType,
   UploadIncomplete,
   UploadRejected,
 } from "peal-contract";
-import type {
-  Media as MediaView,
-  MediaStatus as MediaStatusView,
-  UploadTarget as UploadTargetView,
-} from "peal-contract";
+import type { UploadTarget as UploadTargetView } from "peal-contract";
 
 import { MediaLibrary } from "#media/application/media-library.ts";
 import type { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
-import type { MediaItem } from "#media/application/use-cases/view-media.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
-import type { MediaAsset } from "#media/domain/media-asset.ts";
-import type { MediaStatus } from "#media/domain/media-status.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 
+import { itemView, toView } from "./media-view.ts";
+
 const decodeAssetId = Schema.decodeUnknownOption(MediaAssetIdSchema);
-
-// Clients see the status without the store's upload ids.
-const statusView = (status: MediaStatus): MediaStatusView =>
-  Match.valueTags(status, {
-    pending: (): MediaStatusView => ({ _tag: "pending" }),
-    ready: (): MediaStatusView => ({ _tag: "ready" }),
-    rejected: ({ reason }): MediaStatusView => ({ _tag: "rejected", reason }),
-    uploaded: ({ probe }): MediaStatusView => ({ _tag: "uploaded", probe }),
-  });
-
-const toView = (asset: MediaAsset, url: Option.Option<string>): MediaView => ({
-  altText: Option.getOrNull(asset.altText),
-  byteSize: asset.byteSize,
-  codec: Option.getOrNull(asset.metadata.codec),
-  contentType: asset.contentType,
-  createdAt: asset.createdAt,
-  dimensions: Option.getOrNull(asset.metadata.dimensions),
-  durationMs: asset.metadata.duration.pipe(
-    Option.map((duration) => Math.round(Duration.toMillis(duration))),
-    Option.getOrNull
-  ),
-  id: asset.id,
-  kind: asset.kind,
-  status: statusView(asset.status),
-  updatedAt: asset.updatedAt,
-  url: Option.getOrNull(url),
-});
-
-const itemView = ({ asset, url }: MediaItem): MediaView => toView(asset, url);
 
 const forbidden = () => Effect.fail(new Forbidden());
 
@@ -198,6 +166,45 @@ export const MediaHandlers = HttpApiBuilder.group(
           );
 
           return itemView(item);
+        }),
+      importFromUrl: ({ payload }) =>
+        Effect.gen(function* importFromUrl() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const imported = yield* library
+            .importMedia(actor, {
+              altText: Option.fromNullishOr(payload.altText),
+              url: payload.url,
+            })
+            .pipe(
+              Effect.catchTags({
+                AltTextTooLong: ({ maxLength }) =>
+                  Effect.fail(new AltTextTooLong({ maxLength })),
+                MediaSourceNotPublic: () =>
+                  Effect.fail(new MediaSourceNotPublic()),
+                MediaSourceUnreachable: ({ reason, status }) =>
+                  Effect.fail(
+                    new MediaSourceUnreachable({
+                      reason,
+                      status: Option.getOrNull(status),
+                    })
+                  ),
+                MediaStorageFailed: storeUnavailable,
+                MediaTooLarge: ({ byteSize, kind, maxByteSize }) =>
+                  Effect.fail(
+                    new MediaTooLarge({ byteSize, kind, maxByteSize })
+                  ),
+                MissingPermission: forbidden,
+                PlanLimitReached: ({ allowed, limit }) =>
+                  Effect.fail(new PlanLimitReached({ allowed, limit })),
+                UnsupportedMediaType: ({ contentType }) =>
+                  Effect.fail(new UnsupportedMediaType({ contentType })),
+                UploadRejected: ({ reason }) =>
+                  Effect.fail(new UploadRejected({ reason })),
+              })
+            );
+
+          return itemView(imported);
         }),
       list: ({ query }) =>
         Effect.gen(function* list() {

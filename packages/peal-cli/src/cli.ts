@@ -12,7 +12,9 @@ import { invitations } from "#commands/invitations.ts";
 import { login } from "#commands/login.ts";
 import { logout } from "#commands/logout.ts";
 import { mcp } from "#commands/mcp.ts";
+import { media } from "#commands/media.ts";
 import { members } from "#commands/members.ts";
+import { post } from "#commands/post.ts";
 import { posts } from "#commands/posts.ts";
 import { whoami } from "#commands/whoami.ts";
 import { CredentialStore } from "#credentials.ts";
@@ -33,7 +35,9 @@ export const cli = peal.pipe(
     mcp,
     channels,
     drafts,
+    post,
     posts,
+    media,
     analytics,
     billing,
     members,

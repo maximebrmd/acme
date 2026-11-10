@@ -37,12 +37,18 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
     readonly env?: Readonly<Record<string, string>>;
     readonly me?: typeof studioMe;
     readonly now?: DateTime.Utc;
+    /** The scopes the user approves at sign-in: all of them, unless told. */
+    readonly scope?: string;
   } = {}
 ) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const directory = yield* fs.makeTempDirectoryScoped();
-  const authorization = yield* makeAuthorizationServer();
+
+  const authorization = yield* makeAuthorizationServer(
+    options.scope === undefined ? {} : { scope: options.scope }
+  );
+
   const studio = yield* makeStudio(options.me ?? studioMe);
 
   yield* TestClock.setTime(DateTime.toEpochMillis(options.now ?? testNow));

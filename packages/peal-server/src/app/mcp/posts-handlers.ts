@@ -1,4 +1,4 @@
-import { Effect, Option } from "effect";
+import { DateTime, Effect, Option } from "effect";
 import { CurrentMember, defaultDraftPageSize } from "peal-contract";
 import type { ChannelOptions as ChannelOptionsInput } from "peal-contract";
 
@@ -10,9 +10,11 @@ import {
   optionsFrom,
   postIdFrom,
   postIdOption,
+  scheduleFrom,
+  sendRequestFrom,
   targetIdFrom,
 } from "#publishing/api/post-input.ts";
-import { postView } from "#publishing/api/post-view.ts";
+import { attemptView, postView } from "#publishing/api/post-view.ts";
 import { tiktokAccountView } from "#publishing/api/tiktok-account-view.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
@@ -24,6 +26,7 @@ import { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import { authorize } from "#shared/domain/authorize.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 
 // What the use cases' refusals tell the user, through their MCP client.
@@ -38,32 +41,39 @@ const targetConflict = ({ from }: { readonly from: string }) =>
     `The post is ${from} on that channel: only a failed or unconfirmed post is reposted, and only an unconfirmed one confirmed.`
   );
 
-// A violation as the user reads it: what, on which channel, and which
-// option field.
-const violationText = (violation: {
-  readonly _tag: string;
-  readonly channelId?: string;
-  readonly field?: string;
-}) => {
-  const where =
-    violation.channelId === undefined ? "" : ` on ${violation.channelId}`;
-
-  const field = violation.field === undefined ? "" : ` (${violation.field})`;
-
-  return `${violation._tag}${field}${where}`;
-};
-
+// Every violation, as data a model fixes the post from: each names what is
+// wrong (`_tag`), on which channel and platform, and its field, media or
+// limit.
 const contentRejected = ({
   violations,
 }: {
-  readonly violations: readonly {
-    readonly _tag: string;
-    readonly channelId?: string;
-    readonly field?: string;
-  }[];
+  readonly violations: readonly { readonly _tag: string }[];
 }) =>
   refuse(
-    `The content cannot be saved: ${[...new Set(violations.map(violationText))].join(", ")}.`
+    `The post was refused, and nothing was saved, scheduled or published. It has ${String(violations.length)} violation${violations.length === 1 ? "" : "s"} of the platforms' rules; fix every one, then call again: ${JSON.stringify(violations)}`
+  );
+
+const inPast = () =>
+  refuse(
+    "This time has passed: nothing was scheduled. Give an instant in the future, or publish now."
+  );
+
+const invalidTimeZone = ({ timeZone }: { readonly timeZone: string }) =>
+  refuse(
+    `"${timeZone}" is not an IANA time zone, such as Europe/Paris or America/New_York: offsets and abbreviations are not taken. Nothing was scheduled.`
+  );
+
+const planLimit = ({
+  allowed,
+  limit,
+}: {
+  readonly allowed: number;
+  readonly limit: string;
+}) =>
+  refuse(
+    limit === "channels"
+      ? `The workspace has more channels connected than its plan allows (${String(allowed)}), so nothing is scheduled until the user disconnects some or changes plan, in the web app.`
+      : `The workspace's plan allows ${String(allowed)} posts a month, and that month is full: nothing was scheduled. The user changes plan in the web app, or the post goes out another month.`
   );
 
 const unknownChannels = ({
@@ -149,7 +159,55 @@ export const PostToolsLive = PostTools.toLayer(
       PostNotFound: notFound,
     } as const;
 
+    // The member, once they may decide what goes out: said before anything
+    // else about the post is.
+    const publisher = actor.pipe(
+      Effect.tap((member) =>
+        Effect.fromResult(authorize(member, "post:schedule")).pipe(
+          Effect.catchTag(
+            "MissingPermission",
+            notAllowed("schedule or publish posts")
+          )
+        )
+      )
+    );
+
+    // What keeps a new post from being scheduled.
+    const newPostFailures = {
+      DatabaseError: Effect.die,
+      MissingPermission: notAllowed("schedule or publish posts"),
+      PlanLimitReached: planLimit,
+      PostContentRejected: contentRejected,
+      ScheduleInPast: inPast,
+      UnknownChannels: unknownChannels,
+      UnknownMedia: unknownMedia,
+    } as const;
+
+    // And one the workspace has already.
+    const schedulingFailures = {
+      ...newPostFailures,
+      InvalidPostTransition: postConflict,
+      PostNotFound: notFound,
+    } as const;
+
+    const badZone = { InvalidTimeZone: invalidTimeZone } as const;
+
     return PostTools.of({
+      cancel_post: ({ postId }) =>
+        Effect.gen(function* cancel() {
+          const cancelled = yield* scheduling
+            .cancel(yield* actor, yield* postIdFrom(postId))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                InvalidPostTransition: postConflict,
+                MissingPermission: notAllowed("cancel posts"),
+                PostNotFound: notFound,
+              })
+            );
+
+          return postView(cancelled);
+        }).pipe(Effect.catchTags(malformedPost)),
       confirm_target: ({ confirmation, postId, targetId }) =>
         Effect.gen(function* confirm() {
           const post = yield* postIdFrom(postId);
@@ -191,6 +249,26 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(created);
         }).pipe(Effect.catchTags(malformedContent)),
+      create_post: ({ idempotencyKey, ...post }) =>
+        Effect.gen(function* createPost() {
+          const request = yield* sendRequestFrom(post, idempotencyKey);
+
+          const sent = yield* scheduling.send(yield* actor, request).pipe(
+            Effect.catchTags({
+              ...newPostFailures,
+              IdempotencyKeyReused: () =>
+                refuse(
+                  "This idempotencyKey was used in the last 24 hours with other arguments: nothing was made. Call again with the first call's exact arguments to get its post, or with a new key for a new post."
+                ),
+              PostNotFound: () =>
+                refuse(
+                  "The post this idempotencyKey made was deleted since: nothing was made. Use a new key to make it again."
+                ),
+            })
+          );
+
+          return postView(sent);
+        }).pipe(Effect.catchTags({ ...malformedContent, ...badZone })),
       discard_draft: ({ postId }) =>
         Effect.gen(function* discard() {
           yield* drafts.discard(yield* actor, yield* postIdFrom(postId)).pipe(
@@ -270,6 +348,62 @@ export const PostToolsLive = PostTools.toLayer(
             nextCursor: Option.getOrNull(page.next),
           };
         }),
+      list_post_attempts: ({ postId }) =>
+        Effect.gen(function* attempts() {
+          const made = yield* queries
+            .attempts(yield* actor, yield* postIdFrom(postId))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("read posts"),
+                PostNotFound: notFound,
+              })
+            );
+
+          return { attempts: made.map(attemptView) };
+        }).pipe(Effect.catchTags(malformedPost)),
+      list_posts: (range) =>
+        Effect.gen(function* listPosts() {
+          const listed = yield* queries.listScheduled(yield* actor, range).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              InvalidTimeRange: () =>
+                refuse(
+                  "`from` must be before `to`, and at most 62 days apart: ask for a shorter range."
+                ),
+              MissingPermission: notAllowed("read posts"),
+            })
+          );
+
+          return { posts: listed.map(postView) };
+        }),
+      publish_post: ({ postId }) =>
+        Effect.gen(function* publish() {
+          const id = yield* postIdFrom(postId);
+          const member = yield* publisher;
+
+          const found = yield* queries.get(member, id).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read posts"),
+              PostNotFound: notFound,
+            })
+          );
+
+          // It keeps the zone it was scheduled in, if it was.
+          const { status } = found.post;
+
+          const zone =
+            status._tag === "scheduled" ? status.schedule.timeZone : "UTC";
+
+          const now = yield* scheduleFrom(yield* DateTime.now, zone);
+
+          const published = yield* scheduling
+            .reschedule(member, id, now)
+            .pipe(Effect.catchTags(schedulingFailures));
+
+          return postView(published);
+        }).pipe(Effect.catchTags({ ...malformedPost, ...badZone })),
       repost_target: ({ postId, targetId }) =>
         Effect.gen(function* repost() {
           const reposted = yield* followUp
@@ -282,6 +416,69 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(reposted);
         }).pipe(Effect.catchTags(malformedPost)),
+      reschedule_post: ({ at, postId, timeZone }) =>
+        Effect.gen(function* reschedule() {
+          const id = yield* postIdFrom(postId);
+          const member = yield* publisher;
+
+          const found = yield* queries.get(member, id).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read posts"),
+              PostNotFound: notFound,
+            })
+          );
+
+          if (found.post.status._tag === "draft") {
+            return yield* refuse(
+              "The post is a draft, which has no time to move: schedule it with schedule_post."
+            );
+          }
+
+          const moved = yield* scheduling
+            .reschedule(member, id, yield* scheduleFrom(at, timeZone))
+            .pipe(Effect.catchTags(schedulingFailures));
+
+          return postView(moved);
+        }).pipe(Effect.catchTags({ ...malformedPost, ...badZone })),
+      schedule_post: ({ at, channelIds, postId, timeZone }) =>
+        Effect.gen(function* schedule() {
+          const id = yield* postIdFrom(postId);
+          const member = yield* publisher;
+          const when = yield* scheduleFrom(at, timeZone);
+
+          const found = yield* queries.get(member, id).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read posts"),
+              PostNotFound: notFound,
+            })
+          );
+
+          if (found.post.status._tag !== "draft") {
+            return yield* refuse(
+              `The post is ${found.post.status._tag}, not a draft: move a scheduled post with reschedule_post, or take it back to draft with unschedule_post first.`
+            );
+          }
+
+          // On the channels given, or those the draft has.
+          const scheduled = yield* (
+            channelIds === undefined
+              ? scheduling.reschedule(member, id, when)
+              : scheduling.scheduleDraft(member, id, {
+                  channelIds: yield* channelIdsFrom(channelIds),
+                  schedule: when,
+                })
+          ).pipe(Effect.catchTags(schedulingFailures));
+
+          return postView(scheduled);
+        }).pipe(
+          Effect.catchTags({
+            ...malformedPost,
+            ...badZone,
+            UnknownChannels: unknownChannels,
+          })
+        ),
       unschedule_post: ({ postId }) =>
         Effect.gen(function* unschedule() {
           const draft = yield* scheduling

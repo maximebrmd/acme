@@ -294,6 +294,15 @@ CREATE TABLE "notifications"."sent_notices" (
 	"sent_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "publishing"."idempotency_keys" (
+	"created_at" timestamp with time zone NOT NULL,
+	"key_digest" text,
+	"post_id" uuid NOT NULL,
+	"request_digest" text NOT NULL,
+	"workspace_id" uuid,
+	CONSTRAINT "idempotency_keys_pkey" PRIMARY KEY("workspace_id","key_digest")
+);
+--> statement-breakpoint
 CREATE TABLE "publishing"."post_targets" (
 	"cancel_requested" boolean DEFAULT false NOT NULL,
 	"channel_id" uuid NOT NULL,
@@ -316,6 +325,7 @@ CREATE TABLE "publishing"."post_targets" (
 CREATE TABLE "publishing"."posts" (
 	"author_id" uuid,
 	"cancelled_at" timestamp with time zone,
+	"created_via" jsonb,
 	"execution_id" text,
 	"finished_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY,
@@ -324,6 +334,8 @@ CREATE TABLE "publishing"."posts" (
 	"schedule_revision" integer DEFAULT 0 NOT NULL,
 	"schedule_zone" text,
 	"scheduled_at" timestamp with time zone,
+	"scheduled_by" uuid,
+	"scheduled_via" jsonb,
 	"started_at" timestamp with time zone,
 	"status" text NOT NULL,
 	"text" text DEFAULT '' NOT NULL,
@@ -699,6 +711,7 @@ CREATE INDEX "identification_holds_user" ON "legal"."identification_holds" ("use
 CREATE INDEX "media_assets_workspace_id_id_index" ON "media"."media_assets" ("workspace_id","id" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "notices_user" ON "notifications"."notices" ("user_id","id");--> statement-breakpoint
 CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHERE "read_at" IS NULL;--> statement-breakpoint
+CREATE INDEX "idempotency_keys_created_at" ON "publishing"."idempotency_keys" ("created_at");--> statement-breakpoint
 CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
 CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint

@@ -354,8 +354,11 @@ export { InvalidTimeZone } from "./invalid-time-zone.ts";
 export {
   defaultMediaPageSize,
   maxMediaPageSize,
+  maxMediaUrlLength,
   MediaContentTypeSchema,
   MediaDescriptionSchema,
+  MediaImportSchema,
+  mediaImportSeconds,
   MediaKindSchema,
   MediaPageSchema,
   MediaSchema,
@@ -371,6 +374,7 @@ export type {
   Media,
   MediaContentType,
   MediaDescription,
+  MediaImport,
   MediaKind,
   MediaPage,
   MediaUsage,
@@ -431,6 +435,15 @@ export type {
 
 export { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 
+export { MediaSourceNotPublic } from "./media-source-not-public.ts";
+
+export {
+  MediaSourceFailureSchema,
+  MediaSourceUnreachable,
+} from "./media-source-unreachable.ts";
+
+export type { MediaSourceFailure } from "./media-source-unreachable.ts";
+
 export { MediaTooLarge } from "./media-too-large.ts";
 
 export { PermissionSchema } from "./permission.ts";
@@ -458,19 +471,27 @@ export { PostStatusSchema } from "./post-status.ts";
 
 export type { PostStatus } from "./post-status.ts";
 
+export { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
+
 export {
   AttemptResultSchema,
   defaultDraftPageSize,
   DraftPageSchema,
   FailureReasonSchema,
+  idempotencyKeyLifetimeHours,
   maxDraftPageSize,
+  maxIdempotencyKeyLength,
   MediaAttachmentSchema,
+  NewPostSchema,
   PostContentSchema,
   PostDraftSchema,
+  PostOriginSchema,
+  PostOriginViaSchema,
   PostOutcomeSchema,
   PostScheduleSchema,
   PostSchema,
   PostTargetSchema,
+  PostTimingSchema,
   PublicationAttemptSchema,
   SchedulePostSchema,
   TargetConfirmationSchema,
@@ -483,12 +504,16 @@ export type {
   DraftPage,
   FailureReason,
   MediaAttachment,
+  NewPost,
   Post,
   PostContent,
   PostDraft,
+  PostOrigin,
+  PostOriginVia,
   PostOutcome,
   PostSchedule,
   PostTarget,
+  PostTiming,
   PublicationAttempt,
   SchedulePost,
   TargetConfirmation,

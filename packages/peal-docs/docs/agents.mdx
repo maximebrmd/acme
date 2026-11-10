@@ -1,0 +1,251 @@
+---
+title: Posting from an AI agent
+description: Let an AI assistant write, schedule and publish posts in a workspace through MCP, the command line or the HTTP API, choose whether it may publish or only write drafts, and read what it did.
+sidebar:
+  order: 9.5
+---
+
+An AI agent can post through Peal the way a member does: it reads the workspace's channels, brings in images and videos, writes a draft for you to review, or schedules and publishes a post itself, then reads how it went. It reaches Peal through the [MCP endpoint](/mcp), the [command line](/cli) or the [HTTP API](/api-overview), and you decide, for each application, whether it may put posts out or only write drafts.
+
+## What an agent can do [#what]
+
+| It can                                                                        | With                                                       |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| See who it acts for, in which workspace, and what it may do there             | `whoami`                                                   |
+| List the channels a post can go to, the media it can show, drafts and posts   | `list_channels`, `list_media`, `list_drafts`, `list_posts` |
+| Bring an image or a video in from a public address                            | `import_media`                                             |
+| Write a draft, change it or discard it                                        | `create_draft`, `update_draft`, `discard_draft`            |
+| Schedule a draft, publish a post now, or create and send one in a single call | `schedule_post`, `publish_post`, `create_post`             |
+| Move a scheduled post, take it back to draft or cancel it                     | `reschedule_post`, `unschedule_post`, `cancel_post`        |
+| Read how a post went on each channel, and every attempt Peal made             | `get_post`, `list_post_attempts`                           |
+| Post again where a post failed, or record what you found on the platform      | `repost_target`, `confirm_target`                          |
+
+[Connect an MCP client](/mcp#tools) lists every tool with what it changes. An agent connects no channel: you connect accounts in the web app, where you sign in on each platform ([Connect channels](/channels)). It acts in one workspace, as you, with no more than your [role](/scheduling#roles) allows: owners, admins and editors schedule and publish; contributors write drafts.
+
+## Connect an MCP client [#connect]
+
+The endpoint is `/api/mcp` at the address you open Peal at, such as `https://peal.example.com/api/mcp`. Give it to your AI assistant, or to any other MCP client, as its documentation says for a remote server over HTTP; `peal mcp` prints a configuration most clients take ([Connect an MCP client](/mcp#endpoint)).
+
+You give the client no key. On its first request it opens a browser on Peal:
+
+1. Sign in, if you are not signed in yet.
+2. **Pick a workspace.** The client acts in that one only.
+3. On the consent page, check what the application asks for and where it sends you back. Publishing has a line of its own, with a box: **Let it schedule and publish posts to your connected accounts, where everyone can see them**. Leave it ticked, or untick it to let the application write drafts only. Then choose **Allow**, or **Deny**.
+
+Peal does not check who made an application that registered itself, and says so on that page: allow one only if you trust it and started the connection yourself.
+
+## What each permission allows [#scopes]
+
+An application asks for up to three permissions on the workspace, which OAuth calls scopes:
+
+| Scope               | The consent page says                                                                                                           | What it allows                                                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workspace:read`    | Read the workspace: posts, channels, media and analytics                                                                        | Reading, and no change                                                                                                                                        |
+| `workspace:write`   | Do what your role allows in the workspace, such as writing drafts and managing media, without scheduling or publishing anything | Everything your role allows but what puts posts out: drafts, media, invitations. Nothing it does reaches a platform.                                          |
+| `workspace:publish` | Let it schedule and publish posts to your connected accounts, where everyone can see them                                       | What your role allows of what puts posts out: scheduling, moving, publishing and reposting a post, unscheduling it, cancelling it, and confirming how it went |
+
+Either of the last two includes reading. Without `workspace:publish`, the tools that write drafts and handle media still work, and those that put posts out are refused, naming the scope.
+
+Publishing is a scope of its own so that you can leave it out. An application you connected before it existed holds `workspace:write` alone: it publishes nothing, and no longer unschedules, reposts or confirms, until you connect it again and allow publishing. A connection keeps the scopes it was given until then.
+
+## An example session [#session]
+
+Here an agent posts a picture to two channels. Each step is a tool call with its arguments; ids and addresses are made up.
+
+1. `whoami`, to see the workspace and what the connection may do. Its `permissions` hold `post:schedule` only when you allowed publishing.
+
+   ```json
+   {}
+   ```
+
+2. `list_channels`, for the ids of the channels the post goes to.
+
+   ```json
+   {}
+   ```
+
+3. `import_media`, to bring the picture into the workspace's media. The answer is the media: it can be attached once its `status` is `ready`.
+
+   ```json
+   {
+     "url": "https://files.example/spring/cover.jpg",
+     "altText": "A paper catalogue open on a wooden table, next to a cup of coffee."
+   }
+   ```
+
+4. `create_draft`, so that you review the post before anything goes out. It joins the workspace's **Drafts**, where you schedule it; the agent can also schedule it later with `schedule_post`.
+
+   ```json
+   {
+     "channelIds": [
+       "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11",
+       "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b12"
+     ],
+     "content": {
+       "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+       "media": [
+         {
+           "mediaId": "019a6c3e-88d0-7e15-a4b7-0c2d9f3e5a01",
+           "altText": "A paper catalogue open on a wooden table, next to a cup of coffee."
+         }
+       ],
+       "overrides": []
+     }
+   }
+   ```
+
+   Or, when you asked for this post to go out at a time, `create_post`, which creates and schedules it in one call. `when` is `at` an instant, with the IANA time zone it was chosen in, or `{ "_tag": "now" }`, which publishes within seconds. The `idempotencyKey` is any text of the agent's choosing, new for each post, of 255 characters at most: called again with the same key and the same arguments within 24 hours, after a lost answer say, the tool answers the post the first call made and makes no second one.
+
+   ```json
+   {
+     "channelIds": [
+       "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11",
+       "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b12"
+     ],
+     "content": {
+       "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+       "media": [
+         {
+           "mediaId": "019a6c3e-88d0-7e15-a4b7-0c2d9f3e5a01",
+           "altText": "A paper catalogue open on a wooden table, next to a cup of coffee."
+         }
+       ],
+       "overrides": []
+     },
+     "when": {
+       "_tag": "at",
+       "at": "2026-11-16T08:00:00Z",
+       "timeZone": "Europe/Paris"
+     },
+     "idempotencyKey": "spring-catalogue-2026-11-16"
+   }
+   ```
+
+5. `get_post`, once its time has passed, to read the outcome. The post's `status` is `finished` when every channel is done; its `outcome` and each of its `targets` say how it went, with the post's address on the platform, or why it failed.
+
+   ```json
+   { "postId": "019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02" }
+   ```
+
+6. `list_post_attempts`, when something failed or went out late: every attempt Peal made, by channel, with how each ended and when Peal tried again.
+
+   ```json
+   { "postId": "019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02" }
+   ```
+
+The channels of a YouTube or TikTok account ask for more than text and media: `create_draft` and `create_post` take them in `options` ([Platform options](/scheduling#options)), and `get_tiktok_creator` reads what a TikTok account offers first.
+
+## How refusals read [#refusals]
+
+A post is checked against every channel's platform before it is scheduled: text length, media types, sizes and counts, required options, and what the account itself refuses. When anything is wrong, nothing is saved, scheduled or published, and the refusal lists every violation at once, as data, so one more call can fix them all:
+
+```json
+[
+  {
+    "_tag": "textTooLong",
+    "channelId": "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11",
+    "platform": "bluesky",
+    "length": 342,
+    "maximum": 300,
+    "unit": "graphemes"
+  },
+  {
+    "_tag": "mediaTooLarge",
+    "channelId": "019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11",
+    "platform": "bluesky",
+    "mediaId": "019a6c3e-88d0-7e15-a4b7-0c2d9f3e5a01",
+    "byteSize": 3481600,
+    "maximum": 2000000
+  }
+]
+```
+
+Each violation names what is wrong (`_tag`), the channel (`channelId`) and its `platform`, the option (`field`) or the media (`mediaId`) concerned, and the limit it broke. The API answers the same list in `PostContentInvalid` (422).
+
+Other refusals are sentences the agent can act on, or pass on to you:
+
+- a missing scope is named, with how to grant it: "the user did not give this client the scope workspace:publish (schedule and publish posts). To grant it, the user connects this client to Peal again and allows it there";
+- a role that does not allow the action is named with its permission, such as `post:schedule`: an owner or admin changes the role in the workspace's settings;
+- a time more than a minute in the past, a time zone that is not an IANA zone, a channel or media that is not the workspace's, a post whose status does not allow the action, and a plan with no room left each say so, and that nothing was made.
+
+## Before you let an agent publish [#safety]
+
+- **Review drafts first.** A draft goes out at no time until someone schedules it. Let a new application write drafts, read them in the web app, and schedule them yourself until you trust what it writes.
+- **Grant publishing only to applications you trust.** What goes out is public on the platforms and seen by the accounts' followers. Peal cannot take it back once it is out: deleting it is done on each platform.
+- **Stop a post before its time.** `unschedule_post` takes a scheduled post back to draft, and `cancel_post` cancels it for good; so do **Back to draft** and **Cancel the post** in the composer. A post already publishing cannot be unscheduled, and cancelling it stops only the channels not yet sent.
+- **Check the platform before reposting.** When a post is unconfirmed, Peal could not tell whether the platform published it. Reposting it then may show it twice: look on the platform, then repost, or record what you found with `confirm_target`.
+- **See who did what.** Each post's page shows how it was created and how it was scheduled: in the web app, with an API key, or by an application, by name. The API answers the same in `createdVia` and `scheduledVia` (`via`: `web`, `apiKey` or `application`, with the key's or the application's `id` and `name`), with the member who last scheduled or moved it in `scheduledBy`.
+- **Disconnect an application** under **Connected applications** in **Account settings**: it can no longer renew its access, and the access it holds ends within 15 minutes. Posts it scheduled stay scheduled: cancel or unschedule those you do not want.
+- **Imports fetch public addresses only.** The Peal server downloads the file itself, without credentials, from an `https://` URL on the default port whose host is public, following at most three redirects, each checked the same way. The file must arrive within 90 seconds: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB. Each import adds a file to the workspace's media, which counts against its plan on an instance that bills. Upload larger or slower files yourself.
+
+## From the command line [#cli]
+
+An agent that runs commands in a terminal uses [`peal`](/cli), signed in as you with `peal login`, which asks for the permission to schedule and publish. `--json` prints the API's answer as one JSON document on stdout; a refusal goes to stderr, with a status other than 0.
+
+| Tool                              | Command                                                                                                       |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `whoami`                          | `peal whoami`                                                                                                 |
+| `list_channels`                   | `peal channels list`                                                                                          |
+| `list_media`, `import_media`      | `peal media list`, `peal media import <url> --alt "…"`; `peal media upload <file>` sends a file from the disk |
+| `list_drafts`, `create_draft`     | `peal drafts list`, `peal drafts save --text "…" --channel <channel-id>`                                      |
+| `create_post`                     | `peal post "…" --channel <channel-id> --at <instant>`, or `--now`                                             |
+| `schedule_post`                   | `peal posts schedule <post-id> --at <instant>`                                                                |
+| `publish_post`                    | `peal posts publish <post-id>`                                                                                |
+| `reschedule_post`                 | `peal posts reschedule <post-id> --at <instant>`                                                              |
+| `unschedule_post`, `cancel_post`  | `peal posts unschedule <post-id>`, `peal posts cancel <post-id>`                                              |
+| `get_post`                        | `peal posts show <post-id>`                                                                                   |
+| `repost_target`, `confirm_target` | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`               |
+
+```sh
+peal post "Our spring catalogue is out. Read it at https://example.com/spring" \
+  --channels 019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11,019a5f10-2c41-7a08-b3d2-6e1f4a9c0b12 \
+  --at 2026-11-16T09:00 --time-zone Europe/Paris \
+  --media https://files.example/spring/cover.jpg \
+  --alt "A paper catalogue open on a wooden table, next to a cup of coffee." \
+  --json
+```
+
+`peal post` never publishes by default: it needs `--at` or `--now`. With `--idempotency-key`, running it again within 24 hours with the same post makes no second one; give `--media` as media ids then, as a file or an address is stored anew on each run. [Command line](/cli#post) describes every flag.
+
+## Through the HTTP API [#api]
+
+Your own agent or script can call the endpoints the tools are built on, under `/api/workspaces/{workspaceId}/` ([API overview](/api-overview)):
+
+| Tool                              | Endpoint                                                             |
+| --------------------------------- | -------------------------------------------------------------------- |
+| `list_channels`                   | `GET …/channels`                                                     |
+| `list_media`, `import_media`      | `GET …/media`, `POST …/media/import`                                 |
+| `list_drafts`, `list_posts`       | `GET …/posts/drafts`, `GET …/posts?from=…&to=…`                      |
+| `create_draft`, `update_draft`    | `POST …/posts`, `PUT …/posts/{postId}`                               |
+| `create_post`                     | `POST …/posts/send`                                                  |
+| `schedule_post`                   | `POST …/posts/{postId}/schedule`                                     |
+| `reschedule_post`, `publish_post` | `POST …/posts/{postId}/reschedule`, with the present instant for now |
+| `unschedule_post`, `cancel_post`  | `POST …/posts/{postId}/unschedule`, `POST …/posts/{postId}/cancel`   |
+| `get_post`, `list_post_attempts`  | `GET …/posts/{postId}`, `GET …/posts/{postId}/attempts`              |
+| `repost_target`, `confirm_target` | `POST …/posts/{postId}/targets/{targetId}/repost`, `…/confirm`       |
+
+`POST …/posts/send` creates a post and sends it in one request. Send an `Idempotency-Key` header, any text of your choosing of 255 characters at most, such as a UUID, to make the request safe to send again:
+
+```bash
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 7d1c9a52-0b7e-4f0a-9c1e-3a5b8e2f6d44" \
+  -d '{
+    "channelIds": ["019a5f10-2c41-7a08-b3d2-6e1f4a9c0b11"],
+    "content": {
+      "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+      "media": [],
+      "overrides": []
+    },
+    "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+  }'
+```
+
+- Within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other.
+- The same key with another body answers 409 `IdempotencyKeyReused`, and makes nothing: send a new request under a new key.
+- Once that post was deleted, the key answers `PostNotFound`. Keys are kept per workspace.
+
+`POST …/media/import` takes `{ "url": "https://files.example/spring/cover.jpg", "altText": "…" }` and answers the media, as `import_media` does. It needs `media:upload`.
+
+An OAuth access token needs the scope `workspace:publish` for every endpoint that needs `post:schedule`: sending, scheduling, moving, unscheduling, cancelling, reposting and confirming. An [API key](/settings#api-keys) has no scope: it carries the permissions chosen when it was created, so a key without `post:schedule` gets 403 on those endpoints and writes drafts at most. The workspace's **API keys** page says of each key whether it **can schedule and publish posts**, which is so when it holds `post:schedule`, `post:publish` or `post:approve`. Give a key those permissions only when the script that holds it must publish.

@@ -20,6 +20,15 @@ Peal lit chaque fichier une fois stocké : les dimensions d’une image, les dim
 
 Sur une instance qui facture, chaque abonnement contient un nombre d’octets de médias ([Abonnements et facturation](/billing#limits)), envois en cours compris : un envoi pour lequel l’espace de travail n’a pas de place est refusé avant que rien ne parte, et supprimer des médias libère de la place.
 
+## Récupérer depuis une adresse [#import]
+
+Un fichier déjà en ligne peut rejoindre la médiathèque sans passer par votre ordinateur : le serveur Peal va le chercher lui-même. `peal media import <url>` le fait depuis la [ligne de commande](/cli#media), l’outil `import_media` depuis un [client MCP](/mcp#tools), et `POST /api/workspaces/{workspaceId}/media/import` depuis l’API, avec l’adresse du fichier (`url`) et, si vous le souhaitez, son texte alternatif (`altText`). Tous trois demandent le droit d’importer des médias.
+
+- L’adresse doit être une URL `https://` sur le port par défaut, sans nom d’utilisateur ni mot de passe, dont l’hôte est public : ni `localhost`, ni un réseau privé. Le serveur n’envoie ni identifiants ni cookies, et suit trois redirections au plus, chacune vérifiée de la même façon.
+- Le type du fichier est lu dans le fichier lui-même, quels que soient son nom ou ce qu’en dit son hôte : les formats et tailles ci-dessus. Un lien vers une page qui montre une image n’est pas l’image.
+- Le fichier doit arriver en 90 secondes au plus. Les fichiers plus lourds ou plus lents s’importent depuis votre ordinateur.
+- Chaque récupération ajoute un nouveau fichier, lu comme l’est un fichier importé. Sur une instance qui facture, il doit tenir dans le stockage de médias de l’abonnement.
+
 ## Ajouter des médias à une publication [#attach]
 
 Dans l’éditeur, sous **Images et vidéos** :

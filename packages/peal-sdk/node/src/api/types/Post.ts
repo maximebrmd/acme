@@ -5,9 +5,12 @@ import * as Peal from "../index.js";
 export interface Post {
     authorId: string | null;
     content: Peal.PostContent;
+    createdVia: Peal.PostOrigin | null;
     id: string;
     outcome: Peal.PostOutcome | null;
     schedule: Peal.PostSchedule | null;
+    scheduledBy: string | null;
+    scheduledVia: Peal.PostOrigin | null;
     status: Peal.PostStatus;
     targets: Peal.PostTarget[];
 }

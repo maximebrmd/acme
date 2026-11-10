@@ -363,6 +363,10 @@
     "targetStatus": "{status, select, pending {Waiting} publishing {Publishing} published {Published} failed {Failed} unconfirmed {To check} cancelled {Cancelled} other {{status}}}",
     "outcome": "{outcome, select, published {Published} partiallyPublished {Partly published} unconfirmed {To check} failed {Failed} cancelled {Cancelled} other {{outcome}}}",
     "disconnectedChannel": "A disconnected channel",
+    "Origin": {
+      "created": "{via, select, web {Created in the web app{who, select, you { by you} other {}}} apiKey {Created with {named, select, yes {the API key “{name}”} other {an API key}}} other {Created by {named, select, yes {the application “{name}”} other {an application}}{who, select, you {, acting as you} other {}}}}",
+      "scheduled": "{via, select, web {Scheduled in the web app{who, select, you { by you} other {}}} apiKey {Scheduled with {named, select, yes {the API key “{name}”} other {an API key}}} other {Scheduled by {named, select, yes {the application “{name}”} other {an application}}{who, select, you {, acting as you} other {}}}}"
+    },
     "nav": {
       "calendar": "Calendar",
       "newPost": "New post",
@@ -801,7 +805,8 @@
       "email": "See your email address",
       "offlineAccess": "Stay connected while you are away, until you disconnect it",
       "workspaceRead": "Read the workspace: posts, channels, media and analytics",
-      "workspaceWrite": "Do what your role allows in the workspace, such as writing, scheduling and publishing posts",
+      "workspaceWrite": "Do what your role allows in the workspace, such as writing drafts and managing media, without scheduling or publishing anything",
+      "workspacePublish": "Schedule and publish posts to your connected accounts, where everyone can see them",
       "other": "Use the permission “{scope}”"
     },
     "device": {
@@ -840,7 +845,9 @@
       "unverified": "Peal has not checked this application. Allow it only if you trust it and started this connection yourself.",
       "allow": "Allow",
       "allowing": "Allowing…",
-      "deny": "Deny"
+      "deny": "Deny",
+      "publish": "Let it schedule and publish posts to your connected accounts, where everyone can see them",
+      "publishHint": "{rest, select, drafts {Without this, it can still write drafts, which you review and schedule yourself.} other {Without this, it can still read the workspace, and nothing more.}}"
     }
   },
   "Notices": {
@@ -1185,6 +1192,7 @@
       "listTitle": "Keys",
       "empty": "The workspace has no API key.",
       "startsWith": "Starts with {start}",
+      "publishing": "{allowed, select, yes {Can schedule and publish posts} other {Cannot schedule or publish posts}}",
       "dates": "Created {created} · {expires, select, never {never expires} other {expires {expires}}}",
       "revoke": "Revoke",
       "revoking": "Revoking…",

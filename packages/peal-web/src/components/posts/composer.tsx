@@ -34,6 +34,7 @@ import { ComposerActions } from "#components/posts/composer-actions.tsx";
 import type { ComposerAction } from "#components/posts/composer-actions.tsx";
 import { ComposerErrors } from "#components/posts/composer-errors.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
+import { PostOrigins } from "#components/posts/post-origins.tsx";
 import {
   instantOfChoice,
   ScheduleFields,
@@ -444,6 +445,9 @@ export const Composer = ({
               </Badge>
             )}
           </div>
+        )}
+        {post === undefined ? null : (
+          <PostOrigins post={post} viewerId={userId} />
         )}
       </CardHeader>
       <CardContent>
