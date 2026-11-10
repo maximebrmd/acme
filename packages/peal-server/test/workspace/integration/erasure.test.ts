@@ -529,6 +529,17 @@ layer(RetainingLive, {
         // them, and leaves the workspace and its content to Ben.
         const before = yield* countsOf(userRows, ana.id);
 
+        // The audit events about her, by id: once she is gone they name
+        // nobody, and other suites' events, which never named anyone, are
+        // not hers to count.
+        const aboutHer = (yield* sql<{
+          readonly id: string;
+        }>`SELECT id FROM staff.audit_events WHERE target_id = ${ana.id}`.pipe(
+          Effect.orDie
+        )).map(({ id }) => id);
+
+        assert.isAbove(aboutHer.length, 0);
+
         for (const [table, rows] of Object.entries(before)) {
           assert.isAbove(rows, 0, `${table} holds a row of the user`);
         }
@@ -584,7 +595,7 @@ layer(RetainingLive, {
         // which stays with a keyed pseudonym of her address instead, so
         // Peal can show a court what it did and why.
         const reasons = yield* count(
-          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND reason IS NOT NULL AND action NOT IN ('ban', 'unban', 'legalDisclosure')`
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE id IN ${sql.in(aboutHer)} AND (target_id IS NOT NULL OR (reason IS NOT NULL AND action NOT IN ('ban', 'unban')))`
         );
 
         assert.strictEqual(reasons, 0);
@@ -606,7 +617,7 @@ layer(RetainingLive, {
         // So did the workspace and the ids of what staff changed as her,
         // which would tie the events back to her.
         const linked = yield* count(
-          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND (workspace_id IS NOT NULL OR object_ids <> '{}'::jsonb)`
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE id IN ${sql.in(aboutHer)} AND (workspace_id IS NOT NULL OR object_ids <> '{}'::jsonb)`
         );
 
         assert.strictEqual(linked, 0);
