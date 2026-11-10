@@ -128,7 +128,9 @@ CREATE TABLE "ads"."audit_events" (
 );
 --> statement-breakpoint
 CREATE TABLE "ads"."boosts" (
+	"account_external_id" text NOT NULL,
 	"account_id" uuid NOT NULL,
+	"account_network" text NOT NULL,
 	"activated_at" timestamp with time zone,
 	"ad_id" text,
 	"ad_set_id" text,
@@ -1286,6 +1288,7 @@ CREATE INDEX "audit_events_at" ON "ads"."audit_events" ("at");--> statement-brea
 CREATE INDEX "boosts_workspace" ON "ads"."boosts" ("workspace_id","id");--> statement-breakpoint
 CREATE INDEX "boosts_post" ON "ads"."boosts" ("workspace_id","post_id");--> statement-breakpoint
 CREATE INDEX "boosts_account" ON "ads"."boosts" ("account_id","state");--> statement-breakpoint
+CREATE INDEX "boosts_network_account" ON "ads"."boosts" ("workspace_id","account_network","account_external_id");--> statement-breakpoint
 CREATE INDEX "boosts_ending" ON "ads"."boosts" ("ends_at");--> statement-breakpoint
 CREATE INDEX "campaigns_workspace" ON "ads"."campaigns" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "grants_platform_user" ON "ads"."grants" ("network","platform_user_id");--> statement-breakpoint
@@ -1422,7 +1425,6 @@ CREATE INDEX "verification_identifier_idx" ON "auth"."verification" ("identifier
 ALTER TABLE "ads"."accounts" ADD CONSTRAINT "accounts_grant_id_grants_id_fkey" FOREIGN KEY ("grant_id") REFERENCES "ads"."grants"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "ads"."ad_sets" ADD CONSTRAINT "ad_sets_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "ads"."ads" ADD CONSTRAINT "ads_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
-ALTER TABLE "ads"."boosts" ADD CONSTRAINT "boosts_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "ads"."campaigns" ADD CONSTRAINT "campaigns_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "ads"."insight_days" ADD CONSTRAINT "insight_days_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "ads"."spend_calls" ADD CONSTRAINT "spend_calls_boost_id_boosts_id_fkey" FOREIGN KEY ("boost_id") REFERENCES "ads"."boosts"("id") ON DELETE CASCADE;--> statement-breakpoint

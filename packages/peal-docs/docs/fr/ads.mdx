@@ -59,7 +59,7 @@ Les dépenses sont désactivées sur tout compte nouvellement connecté. Un comp
 
 Lorsque le réseau refuse le jeton d’une connexion, ses comptes indiquent qu’ils sont à reconnecter, les membres qui gèrent les comptes publicitaires sont [prévenus](#notices), et rien n’est lu de ces comptes, ni mis en avant sur eux, tant que la personne qui s’était connectée ne l’a pas refait.
 
-Déconnecter un compte publicitaire retire ce que Peal en a lu et les traces de ses mises en avant ; retirer une connexion retire son jeton et tous les comptes qu’elle relie. Les deux sont refusés tant qu’une de leurs mises en avant est diffusée, peut l’être ou est en cours de création (`AdAccountBusy`) : arrêtez-la d’abord. Ce qui est diffusé sur le réseau sans avoir été créé par Peal reste tel quel.
+Déconnecter un compte publicitaire retire ce que Peal en a lu ; retirer une connexion retire son jeton et tous les comptes qu’elle relie. Les traces de leurs mises en avant restent avec l’espace de travail, et ce qu’elles engagent sur un mois compte encore dans le plafond quand le même compte est reconnecté. Les deux sont refusés tant qu’une de leurs mises en avant est diffusée, peut l’être, est en pause ou en cours de création (`AdAccountBusy`), car une campagne en pause peut reprendre : arrêtez-la d’abord. Ce qui est diffusé sur le réseau sans avoir été créé par Peal reste tel quel.
 
 ## Ce que Peal lit [#reading]
 
@@ -318,7 +318,7 @@ Les erreurs viennent au format de l’API, chacune avec un `code` en snake case 
 | 404    | `AdAccountNotFound`         | Aucun compte publicitaire de ce nom, ou la connexion n’atteint pas le compte demandé.                                                                                  |
 | 404    | `BoostNotFound`             | Aucune mise en avant de ce nom.                                                                                                                                        |
 | 503    | `AdNetworkUnavailable`      | Le réseau n’a pas répondu, a demandé de ralentir, ou n’a pas pu confirmer un changement. Rien n’a changé à notre connaissance ; `retryAfterSeconds`, quand il l’a dit. |
-| 409    | `AdAccountBusy`             | `boosts` mises en avant du compte sont diffusées, peuvent l’être ou sont en cours de création : arrêtez-les d’abord.                                                   |
+| 409    | `AdAccountBusy`             | `boosts` mises en avant du compte sont diffusées, peuvent l’être, sont en cours de création ou, pour une déconnexion, en pause : arrêtez-les d’abord.                  |
 | 409    | `AdAccountUnusable`         | Le compte ne peut pas recevoir de mise en avant pour le moment. `reason` : `status`, `reconnectNeeded` ou `permission`.                                                |
 | 409    | `AdSpendingNotEnabled`      | Aucun propriétaire n’a autorisé ce compte publicitaire à dépenser avec Peal.                                                                                           |
 | 409    | `SpendCeilingExceeded`      | La mise en avant dépasserait le plafond mensuel : `ceiling`, `committed`, `requested`, en unités mineures de `currency`.                                               |

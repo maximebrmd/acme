@@ -96,6 +96,13 @@ export class BoostStore extends Context.Service<
       accountId: AdAccountId,
       except: Option.Option<BoostId>
     ) => Effect.Effect<number, DatabaseError>;
+    /**
+     * How many boosts of the accounts are being made, run, may run or are
+     * paused: those whose campaign may run again at the network.
+     */
+    readonly heldOn: (
+      accountIds: readonly AdAccountId[]
+    ) => Effect.Effect<number, DatabaseError>;
     /** How many boosts of the accounts are being made, run or may run. */
     readonly openOn: (
       accountIds: readonly AdAccountId[]

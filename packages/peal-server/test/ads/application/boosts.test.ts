@@ -1313,6 +1313,52 @@ layer(AdsTest, { excludeTestServices: true })(
 );
 
 layer(AdsTest, { excludeTestServices: true })("pausing and stopping", (it) => {
+  it.effect(
+    "keeps an account a paused boost may still run on, and a boost's commitment through a disconnect and a reconnect",
+    () =>
+      Effect.gen(function* disconnected() {
+        yield* onMeta();
+        const { account, owner } = yield* spendingOwner(8000);
+        const boosts = yield* Boosts;
+        const connections = yield* AdConnections;
+        const spending = yield* SpendAuthorizations;
+        const { boost } = yield* placed(owner, account);
+
+        yield* boosts.control(owner, boost.id, "pause");
+
+        // Paused, its campaign can run again at the network.
+        assert.strictEqual(
+          yield* tagOf(connections.removeAccount(owner, account.id)),
+          "AdAccountBusy"
+        );
+
+        yield* boosts.control(owner, boost.id, "stop");
+        yield* connections.removeAccount(owner, account.id);
+
+        // The boost, and what it commits, outlive the account.
+        assert.strictEqual(
+          (yield* boosts.get(owner, boost.id)).boost.state._tag,
+          "stopped"
+        );
+
+        const again = yield* connectedAccount(owner);
+
+        yield* spending.decide(owner, again.id, {
+          _tag: "on",
+          monthlyCeiling: eur(8000),
+        });
+
+        // The month's 50.00 still counts on the same account at the
+        // network: 30.00 is left, not 80.00.
+        assert.strictEqual(
+          yield* tagOf(
+            requested(owner, again, { budget: { _tag: "total", amount: 5000 } })
+          ),
+          "SpendCeilingExceeded"
+        );
+      }).pipe(Effect.scoped)
+  );
+
   it.effect("pause and stop, asked twice as once", () =>
     Effect.gen(function* twice() {
       const api = yield* onMeta();

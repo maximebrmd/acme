@@ -568,8 +568,8 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO ads.insight_days (account_id, workspace_id, ad_external_id, day, spend, impressions, reach, clicks)
     VALUES (${adAccountId}, ${workspaceId}, '4001', current_date, 1250, 1000, 800, 12)`;
 
-  yield* sql`INSERT INTO ads.boosts (id, workspace_id, account_id, channel_id, post_id, target_id, platform, objective, audience, budget_kind, budget_amount, committed, currency, starts_at, ends_at, state, state_at, idempotency_key, requested_by_kind, requested_by_id, created_at, updated_at)
-    VALUES (${boostId}, ${workspaceId}, ${adAccountId}, ${uuid7()}, ${uuid7()}, ${uuid7()}, 'facebook', 'engagement', ${JSON.stringify({ ageMax: 65, ageMin: 18, countries: ["US"] })}::jsonb, 'total', 5000, 5000, 'EUR', now() - interval '2 days', now() + interval '5 days', 'stopped', now(), ${uuid7()}, 'user', ${person.id}, now(), now())`;
+  yield* sql`INSERT INTO ads.boosts (id, workspace_id, account_id, account_network, account_external_id, channel_id, post_id, target_id, platform, objective, audience, budget_kind, budget_amount, committed, currency, starts_at, ends_at, state, state_at, idempotency_key, requested_by_kind, requested_by_id, created_at, updated_at)
+    VALUES (${boostId}, ${workspaceId}, ${adAccountId}, 'meta', '1001', ${uuid7()}, ${uuid7()}, ${uuid7()}, 'facebook', 'engagement', ${JSON.stringify({ ageMax: 65, ageMin: 18, countries: ["US"] })}::jsonb, 'total', 5000, 5000, 'EUR', now() - interval '2 days', now() + interval '5 days', 'stopped', now(), ${uuid7()}, 'user', ${person.id}, now(), now())`;
 
   yield* sql`INSERT INTO ads.spend_calls (id, workspace_id, boost_id, step, started_at, finished_at, outcome)
     VALUES (${uuid7()}, ${workspaceId}, ${boostId}, 'createCampaign', now(), now(), 'done')`;

@@ -724,7 +724,7 @@ export class AdsApi extends HttpApiGroup.make("ads")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Removes a sign-in, its token, the ad accounts it connects, what was read of them and their boosts' records. Refused while one of their boosts runs, may run or is being made (`AdAccountBusy`): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.",
+          "Removes a sign-in, its token, the ad accounts it connects and what was read of them; their boosts' records stay with the workspace, and what they committed still counts once the same account is connected again. Refused while one of their boosts runs, may run, is paused or is being made (`AdAccountBusy`): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.",
         summary: "Remove an ad network sign-in",
       })
     ),
@@ -757,7 +757,7 @@ export class AdsApi extends HttpApiGroup.make("ads")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Disconnects an ad account: what was read of it and its boosts' records go with it. Refused while one of its boosts runs, may run or is being made (`AdAccountBusy`). Needs ads:manage.",
+          "Disconnects an ad account: what was read of it goes with it, and its boosts' records stay with the workspace, so what they committed still counts against the ceiling once the same account is connected again. Refused while one of its boosts runs, may run, is paused or is being made (`AdAccountBusy`), as a paused campaign may run again. Needs ads:manage.",
         summary: "Disconnect an ad account",
       })
     ),

@@ -112,7 +112,7 @@
       "remove": "Remove the sign-in",
       "removing": "Removing…",
       "removeTitle": "Remove this sign-in to {network}?",
-      "removeDescription": "Its ad accounts are disconnected with it, and what Peal read of them and the records of their boosts are deleted. Campaigns that run at the ad network are left as they are.",
+      "removeDescription": "Its ad accounts are disconnected with it, and what Peal read of them is deleted. The records of their boosts stay, and what they committed this month still counts if the same account is connected again. Campaigns that run at the ad network are left as they are.",
       "removed": "The sign-in is removed."
     },
     "accounts": {
@@ -136,7 +136,7 @@
       "disconnect": "Disconnect",
       "disconnecting": "Disconnecting…",
       "disconnectTitle": "Disconnect {name}?",
-      "disconnectDescription": "What Peal read of this ad account and the records of its boosts are deleted. Campaigns that run at the ad network are left as they are.",
+      "disconnectDescription": "What Peal read of this ad account is deleted. The records of its boosts stay, and what they committed this month still counts if the same account is connected again. Campaigns that run at the ad network are left as they are.",
       "disconnected": "{name} is disconnected."
     },
     "spending": {
@@ -314,7 +314,7 @@
       "boostNotFound": "This boost no longer exists.",
       "spendingNotEnabled": "No owner has allowed this ad account to spend through Peal. An owner turns spending on, with a monthly ceiling, on the ads page.",
       "keyReused": "This confirmation was already used for another boost. Close this window and start again.",
-      "accountBusy": "{boosts, plural, one {# boost of this ad account runs, may run or is being made: stop it first.} other {# boosts of this ad account run, may run or are being made: stop them first.}}",
+      "accountBusy": "{boosts, plural, one {# boost of this ad account runs, may run, is paused or is being made: stop it first.} other {# boosts of this ad account run, may run, are paused or are being made: stop them first.}}",
       "accountUnusable": "{reason, select, reconnectNeeded {The ad network refused the sign-in this ad account goes through. The person who signed in connects again.} permission {The sign-in this ad account goes through did not allow making and running ads. Its person signs in again and allows it.} other {The ad network does not let this ad account run ads now: it is disabled, unpaid, in review or closed.}}",
       "boostInvalid": "{violation, select, currencyMismatch {The budget’s currency is not the ad account’s.} budgetEmpty {The budget is zero.} endsBeforeStart {The run ends before it starts, or has already ended.} runTooShort {The run is too short: it lasts at least a day, and more than a day with a daily budget.} runTooLong {The run is longer than {maxDays, number} days.} startsTooFarAhead {The run starts more than {maxAhead, number} days ahead.} ageRange {The youngest age is above the oldest.} specialCategory {Peal does not boost ads about housing, employment, financial products or services, or social issues, elections or politics.} beneficiaryRequired {For an audience in the European Union, say who benefits from the ad and who pays for it.} other {The boost breaks one of Peal’s rules.}}",
       "ceilingExceeded": "This boost would commit {requested}, and this ad account’s other boosts already commit {committed} of its monthly ceiling of {ceiling}. Nothing was reserved or sent. Make the boost smaller, or ask an owner to raise the ceiling: Peal never raises it on its own.",

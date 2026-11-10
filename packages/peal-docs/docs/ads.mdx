@@ -57,7 +57,7 @@ Spending is off on every newly connected account. An account whose time zone Pea
 
 When the network refuses a sign-in's token, its accounts show that they need reconnecting, the members who manage ad accounts are [told](#notices), and nothing is read of those accounts, nor boosted there, until the person who signed in does it again.
 
-Disconnecting an ad account removes what Peal read of it and its boosts' records; removing a sign-in removes its token and every account it connects. Both are refused while a boost of theirs runs, may run or is being made (`AdAccountBusy`): stop it first. What runs at the network that Peal did not make is left as it is.
+Disconnecting an ad account removes what Peal read of it; removing a sign-in removes its token and every account it connects. Their boosts' records stay with the workspace, and what they committed in a month still counts against the ceiling when the same account is connected again. Both are refused while a boost of theirs runs, may run, is paused or is being made (`AdAccountBusy`), as a paused campaign can run again: stop it first. What runs at the network that Peal did not make is left as it is.
 
 ## What Peal reads [#reading]
 
@@ -316,7 +316,7 @@ Errors come in the API's format, each with a `code` in snake case beside its nam
 | 404    | `AdAccountNotFound`         | No such ad account, or the sign-in does not reach the account asked for.                                                                            |
 | 404    | `BoostNotFound`             | No such boost.                                                                                                                                      |
 | 503    | `AdNetworkUnavailable`      | The network did not answer, asked to slow down, or could not confirm a change. Nothing is known to have changed; `retryAfterSeconds`, when it said. |
-| 409    | `AdAccountBusy`             | `boosts` boosts of the account run, may run or are being made: stop them first.                                                                     |
+| 409    | `AdAccountBusy`             | `boosts` boosts of the account run, may run, are being made or, for a disconnection, are paused: stop them first.                                   |
 | 409    | `AdAccountUnusable`         | The account cannot take a boost now. `reason`: `status`, `reconnectNeeded` or `permission`.                                                         |
 | 409    | `AdSpendingNotEnabled`      | No owner allowed this ad account to spend through Peal.                                                                                             |
 | 409    | `SpendCeilingExceeded`      | The boost would pass the monthly ceiling: `ceiling`, `committed`, `requested`, in minor units of `currency`.                                        |

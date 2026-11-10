@@ -244,13 +244,17 @@ export const insightDays = adsSchema.table(
  * - `beneficiary` and `payer` are who benefits from the ad and who pays,
  *   which the law has an ad shown in the European Union carry.
  * - `idempotency_key` is the caller's: one boost per key and workspace.
+ * - `account_id` names the ad account row it was asked on, with no foreign
+ *   key: a boost outlives its account's disconnection, so what the month
+ *   committed still counts once the same account is connected again,
+ *   which `account_network` and `account_external_id` name.
  */
 export const boosts = adsSchema.table(
   "boosts",
   {
-    accountId: uuid("account_id")
-      .notNull()
-      .references(() => accounts.id, { onDelete: "cascade" }),
+    accountExternalId: text("account_external_id").notNull(),
+    accountId: uuid("account_id").notNull(),
+    accountNetwork: text("account_network").notNull(),
     activatedAt: instant("activated_at"),
     adId: text("ad_id"),
     adSetId: text("ad_set_id"),
@@ -290,6 +294,12 @@ export const boosts = adsSchema.table(
     index("boosts_post").on(table.workspaceId, table.postId),
     // What an account's boosts commit, and those to end.
     index("boosts_account").on(table.accountId, table.state),
+    // What the same account at the network commits, across reconnections.
+    index("boosts_network_account").on(
+      table.workspaceId,
+      table.accountNetwork,
+      table.accountExternalId
+    ),
     index("boosts_ending").on(table.endsAt),
     check(
       "boosts_state",

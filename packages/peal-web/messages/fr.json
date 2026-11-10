@@ -112,7 +112,7 @@
       "remove": "Supprimer la connexion",
       "removing": "Suppression…",
       "removeTitle": "Supprimer cette connexion à {network} ?",
-      "removeDescription": "Ses comptes publicitaires sont déconnectés avec elle, et ce que Peal en a lu ainsi que l’historique de leurs mises en avant sont supprimés. Les campagnes en cours auprès du réseau publicitaire restent telles quelles.",
+      "removeDescription": "Ses comptes publicitaires sont déconnectés avec elle, et ce que Peal en a lu est supprimé. L’historique de leurs mises en avant reste, et ce qu’elles ont engagé ce mois-ci compte encore si le même compte est reconnecté. Les campagnes en cours auprès du réseau publicitaire restent telles quelles.",
       "removed": "La connexion est supprimée."
     },
     "accounts": {
@@ -136,7 +136,7 @@
       "disconnect": "Déconnecter",
       "disconnecting": "Déconnexion…",
       "disconnectTitle": "Déconnecter {name} ?",
-      "disconnectDescription": "Ce que Peal a lu de ce compte publicitaire et l’historique de ses mises en avant sont supprimés. Les campagnes en cours auprès du réseau publicitaire restent telles quelles.",
+      "disconnectDescription": "Ce que Peal a lu de ce compte publicitaire est supprimé. L’historique de ses mises en avant reste, et ce qu’elles ont engagé ce mois-ci compte encore si le même compte est reconnecté. Les campagnes en cours auprès du réseau publicitaire restent telles quelles.",
       "disconnected": "{name} est déconnecté."
     },
     "spending": {
@@ -314,7 +314,7 @@
       "boostNotFound": "Cette mise en avant n’existe plus.",
       "spendingNotEnabled": "Aucun propriétaire n’a autorisé ce compte publicitaire à dépenser via Peal. Un propriétaire active les dépenses, avec un plafond mensuel, sur la page Publicité.",
       "keyReused": "Cette confirmation a déjà servi pour une autre mise en avant. Fermez cette fenêtre et recommencez.",
-      "accountBusy": "{boosts, plural, one {# mise en avant de ce compte publicitaire est en cours, peut l’être ou est en cours de création : arrêtez-la d’abord.} other {# mises en avant de ce compte publicitaire sont en cours, peuvent l’être ou sont en cours de création : arrêtez-les d’abord.}}",
+      "accountBusy": "{boosts, plural, one {# mise en avant de ce compte publicitaire est en cours, peut l’être, est en pause ou en cours de création : arrêtez-la d’abord.} other {# mises en avant de ce compte publicitaire sont en cours, peuvent l’être, sont en pause ou en cours de création : arrêtez-les d’abord.}}",
       "accountUnusable": "{reason, select, reconnectNeeded {Le réseau publicitaire a refusé la connexion par laquelle passe ce compte publicitaire. La personne qui s’était connectée doit le refaire.} permission {La connexion par laquelle passe ce compte publicitaire n’a pas autorisé la création et la diffusion de publicités. La personne concernée se connecte de nouveau et l’autorise.} other {Le réseau publicitaire ne laisse pas ce compte publicitaire diffuser de publicités pour le moment : il est désactivé, impayé, en cours d’examen ou fermé.}}",
       "boostInvalid": "{violation, select, currencyMismatch {La devise du budget n’est pas celle du compte publicitaire.} budgetEmpty {Le budget est nul.} endsBeforeStart {La mise en avant se termine avant de commencer, ou est déjà terminée.} runTooShort {La durée est trop courte : au moins un jour, et plus d’un jour avec un budget quotidien.} runTooLong {La durée dépasse {maxDays, number} jours.} startsTooFarAhead {La mise en avant commence dans plus de {maxAhead, number} jours.} ageRange {L’âge le plus jeune est supérieur au plus élevé.} specialCategory {Peal ne met pas en avant les publicités sur le logement, l’emploi, les produits ou services financiers, les enjeux sociaux, les élections ou la politique.} beneficiaryRequired {Pour une audience dans l’Union européenne, indiquez à qui profite la publicité et qui la paie.} other {La mise en avant enfreint l’une des règles de Peal.}}",
       "ceilingExceeded": "Cette mise en avant engagerait {requested}, et les autres mises en avant de ce compte publicitaire engagent déjà {committed} sur son plafond mensuel de {ceiling}. Rien n’a été réservé ni envoyé. Réduisez la mise en avant, ou demandez à un propriétaire de relever le plafond : Peal ne le relève jamais de lui-même.",

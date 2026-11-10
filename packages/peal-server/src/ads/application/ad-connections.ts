@@ -330,9 +330,11 @@ export class AdConnections extends Context.Service<
 
       // Refuses while a boost of one of the accounts may still spend, or
       // is being made.
+      // Nothing may run again at the network: a paused campaign may be
+      // resumed, and once its account is gone nobody in Peal could stop it.
       const ensureIdle = (accountIds: readonly AdAccountId[]) =>
         boosts
-          .openOn(accountIds)
+          .heldOn(accountIds)
           .pipe(
             Effect.flatMap((open) =>
               open > 0

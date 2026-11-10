@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "f57be135-97c5-464a-9f27-9a809187dd6b",
+  "id": "fdc96161-f856-4b08-89da-f53586d7cbf3",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -2225,6 +2225,28 @@
         "n|sch|ads",
         "n|col|ads.boosts.account_id",
         "n|col|ads.boosts.state"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "boosts",
+        "boosts_network_account"
+      ],
+      "writes": [
+        "s|idx|ads.boosts_network_account",
+        "n|idx|ads.boosts_network_account",
+        "e|idx|ads.boosts_network_account",
+        "n|rel|ads.boosts_network_account"
+      ],
+      "reads": [
+        "n|tbl|ads.boosts",
+        "n|sch|ads",
+        "n|col|ads.boosts.workspace_id",
+        "n|col|ads.boosts.account_network",
+        "n|col|ads.boosts.account_external_id"
       ]
     },
     {
@@ -5006,29 +5028,6 @@
       "statementTarget": [
         "table",
         "ads",
-        "boosts"
-      ],
-      "writes": [
-        "s|fk|ads.boosts.boosts_account_id_accounts_id_fkey",
-        "n|fk|ads.boosts.boosts_account_id_accounts_id_fkey",
-        "e|fk|ads.boosts.boosts_account_id_accounts_id_fkey",
-        "n|con|ads.boosts.boosts_account_id_accounts_id_fkey"
-      ],
-      "reads": [
-        "n|tbl|ads.boosts",
-        "n|sch|ads",
-        "n|tbl|ads.accounts",
-        "n|sch|ads",
-        "n|col|ads.boosts.account_id",
-        "n|col|ads.accounts.id",
-        "e|uniqueness|ads.accounts.id"
-      ]
-    },
-    {
-      "statementType": "create_fk",
-      "statementTarget": [
-        "table",
-        "ads",
         "campaigns"
       ],
       "writes": [
@@ -7392,8 +7391,34 @@
     {
       "schema": "ads",
       "table": "boosts",
+      "name": "account_external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
       "name": "account_id",
       "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "account_network",
+      "type": "text",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -18745,6 +18770,41 @@
     {
       "schema": "ads",
       "table": "boosts",
+      "name": "boosts_network_account",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "account_network",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "account_external_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
       "name": "boosts_ending",
       "nameExplicit": true,
       "columns": [
@@ -21888,23 +21948,6 @@
       "schema": "ads",
       "table": "ads",
       "name": "ads_account_id_accounts_id_fkey",
-      "nameExplicit": false,
-      "columns": [
-        "account_id"
-      ],
-      "schemaTo": "ads",
-      "tableTo": "accounts",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "entityType": "fks"
-    },
-    {
-      "schema": "ads",
-      "table": "boosts",
-      "name": "boosts_account_id_accounts_id_fkey",
       "nameExplicit": false,
       "columns": [
         "account_id"

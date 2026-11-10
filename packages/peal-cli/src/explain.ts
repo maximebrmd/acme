@@ -263,7 +263,7 @@ const reasonOf =
     Match.valueTags(failure, {
       AdAccountBusy: ({ boosts }) =>
         refused(
-          `The ad account has ${String(boosts)} ${boosts === 1 ? "boost that runs, may run or is being made" : "boosts that run, may run or are being made"}: stop them first, with peal ads boost stop, so nothing spends that Peal no longer follows.`
+          `The ad account has ${String(boosts)} ${boosts === 1 ? "boost that runs, may run, is paused or is being made" : "boosts that run, may run, are paused or are being made"}: stop them first, with peal ads boost stop, so nothing spends that Peal no longer follows.`
         ),
       AdAccountNotFound: () =>
         refused(

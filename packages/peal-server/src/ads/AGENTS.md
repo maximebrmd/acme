@@ -45,7 +45,11 @@ weaken a rule below to make something pass.
   (`countsAgainstCeiling`); `committed` only ever goes down. A ceiling may
   always be lowered, under running boosts too; turning spending off, and
   disconnecting an account, are refused while a boost is requested, active
-  or unconfirmed (`AdAccountBusy`), and a workspace is not erased then
+  or unconfirmed, and disconnecting while one is paused too (`heldOn`), as
+  a paused campaign can run again (`AdAccountBusy`). Boosts have no
+  foreign key to their account: they outlive a disconnection, and what
+  they commit counts by the account at the network (`account_network`,
+  `account_external_id`), so a reconnection resets nothing, and a workspace is not erased then
   (`BoostsRunning`). Peal never raises a budget or a ceiling on its own.
 - `ensureRoom` (`spend-guards.ts`) checks the owner's decision, the
   ceiling and the account's own spend cap, and is called only inside

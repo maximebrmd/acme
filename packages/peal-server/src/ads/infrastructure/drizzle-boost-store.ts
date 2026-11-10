@@ -197,6 +197,19 @@ const counted = ne(boosts.state, "failed");
 // The boosts being made, running or that may run.
 const open = inArray(boosts.state, ["requested", "active", "unconfirmed"]);
 
+// Those whose campaign may run again at the network: open, or paused.
+const held = inArray(boosts.state, [
+  "requested",
+  "active",
+  "paused",
+  "unconfirmed",
+]);
+
+// The boosts asked on the same ad account at the network as `accountId`,
+// in its workspace, under this row or one it had before a reconnection.
+const sameAccountAs = (accountId: string) =>
+  sql`(${boosts.workspaceId}, ${boosts.accountNetwork}, ${boosts.accountExternalId}) IN (SELECT workspace_id, network, external_id FROM ads.accounts WHERE id = ${accountId})`;
+
 const decodeAmounts = Schema.decodeUnknownSync(
   Schema.Record(Schema.String, Schema.Int)
 );
@@ -320,7 +333,7 @@ export const DrizzleBoostStore = Layer.effect(
           .from(boosts)
           .where(
             and(
-              eq(boosts.accountId, accountId),
+              sameAccountAs(accountId),
               counted,
               // Runs that overlap the window.
               lte(boosts.startsAt, date(window.to)),
@@ -397,6 +410,17 @@ export const DrizzleBoostStore = Layer.effect(
           .from(boosts)
           .where(eq(boosts.id, boostId))
           .pipe(Effect.mapError(failed), Effect.flatMap(some)),
+      heldOn: (accountIds) =>
+        accountIds.length === 0
+          ? Effect.succeed(0)
+          : db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(boosts)
+              .where(and(inArray(boosts.accountId, [...accountIds]), held))
+              .pipe(
+                Effect.mapError(failed),
+                Effect.map(([row]) => row?.count ?? 0)
+              ),
       insert: (boost) => {
         const by = subjectColumns(boost.requestedBy);
 
@@ -404,7 +428,10 @@ export const DrizzleBoostStore = Layer.effect(
           .insert(boosts)
           .values({
             ...changing(boost),
+            // The account at the network, as its row names it now.
+            accountExternalId: sql`(SELECT external_id FROM ads.accounts WHERE id = ${boost.adAccountId})`,
             accountId: boost.adAccountId,
+            accountNetwork: sql`(SELECT network FROM ads.accounts WHERE id = ${boost.adAccountId})`,
             audience: Schema.encodeSync(Boost.fields.audience)(boost.audience),
             beneficiary: Option.getOrNull(boost.beneficiary),
             budgetAmount: boost.budget.amount,
@@ -480,7 +507,7 @@ export const DrizzleBoostStore = Layer.effect(
           .from(boosts)
           .where(
             and(
-              eq(boosts.accountId, accountId),
+              sameAccountAs(accountId),
               inArray(boosts.state, [
                 "requested",
                 "active",
