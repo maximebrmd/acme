@@ -38,6 +38,7 @@ import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload
 import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
+import { ListedChannelConnections } from "#publishing/infrastructure/listed-channel-connections.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
 import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
@@ -159,7 +160,11 @@ export const PublishingLive = publishingOver(
           PlatformLookupsLive.pipe(Layer.provide(ChannelAccessCredentials))
         )
       )
-    ).pipe(Layer.provide(ListedWorkspaceChannels))
+    ).pipe(
+      Layer.provide(
+        Layer.merge(ListedWorkspaceChannels, ListedChannelConnections)
+      )
+    )
   ),
   Layer.provideMerge(
     TikTokCreatorsLive.pipe(Layer.provide(ChannelAccessCredentials))

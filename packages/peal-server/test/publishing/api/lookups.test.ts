@@ -18,6 +18,7 @@ import {
 import type { Member } from "peal-contract";
 
 import { LookupsHandlers } from "#publishing/api/lookups.ts";
+import { ChannelConnections } from "#publishing/application/channel-connections.ts";
 import { ChannelLookups } from "#publishing/application/channel-lookups.ts";
 import { LookupInputRejected } from "#publishing/application/lookup-input-rejected.ts";
 import { PlatformLookups } from "#publishing/application/platform-lookups.ts";
@@ -32,6 +33,7 @@ import type { LookupQuery, LookupResult } from "#publishing/domain/lookup.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { TikTokCreator } from "#publishing/domain/tiktok-creator.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
@@ -49,6 +51,30 @@ const onYouTube = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c1");
 const onTikTok = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c2");
 
 const onMastodon = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c3");
+
+const onLinkedInPage = ChannelIdSchema.make(
+  "01900000-0000-7000-8000-0000000000e5"
+);
+
+const onLinkedInProfile = ChannelIdSchema.make(
+  "01900000-0000-7000-8000-0000000000e6"
+);
+
+// The way in each LinkedIn channel came through.
+const connections = Layer.succeed(
+  ChannelConnections,
+  ChannelConnections.of({
+    of: (_actor, channelId) =>
+      Effect.succeed(
+        Option.fromUndefinedOr(
+          new Map<string, ChannelConnection>([
+            [onLinkedInPage, "linkedinPage"],
+            [onLinkedInProfile, "linkedinProfile"],
+          ]).get(channelId)
+        )
+      ),
+  })
+);
 
 const onPinterest = ChannelIdSchema.make(
   "01900000-0000-7000-8000-0000000000c4"
@@ -170,10 +196,19 @@ const clientWith = Effect.fn("test.lookupsClient")(function* clientWith(
                               channelId: onPinterest,
                               platform: "pinterest" as const,
                             },
+                            {
+                              channelId: onLinkedInPage,
+                              platform: "linkedin" as const,
+                            },
+                            {
+                              channelId: onLinkedInProfile,
+                              platform: "linkedin" as const,
+                            },
                           ].filter(({ channelId }) => ids.includes(channelId))
                         ),
                     })
-                  )
+                  ),
+                  connections
                 )
               )
             )
@@ -426,6 +461,54 @@ describe("running a channel's lookup", () => {
       assert.lengthOf(errors, 2);
       assert.deepStrictEqual(yield* asked, []);
     })
+  );
+
+  it.effect(
+    "has the lookup of pages to mention on a LinkedIn company page, which needs the page's name",
+    () =>
+      Effect.gen(function* page() {
+        const { asked, client } = yield* clientWith(viewer);
+        const params = { channelId: onLinkedInPage, workspaceId };
+        const [described] = yield* client.lookups.list({ params });
+
+        assert.strictEqual(described?.name, "linkedinOrganizations");
+        assert.deepStrictEqual(described?.fills, ["mentions"]);
+        assert.deepStrictEqual(
+          described?.input.map(({ name, required }) => [name, required]),
+          [["vanityName", true]]
+        );
+
+        const found = yield* client.lookups.run({
+          params: { ...params, name: "linkedinOrganizations" },
+          payload: { vanityName: "example-bakery" },
+        });
+
+        assert.strictEqual(found._tag, "linkedinOrganizations");
+        assert.deepStrictEqual(yield* asked, [
+          { _tag: "linkedinOrganizations", vanityName: "example-bakery" },
+        ]);
+      })
+  );
+
+  it.effect(
+    "has no lookup on a LinkedIn profile, whose token reads no page",
+    () =>
+      Effect.gen(function* profile() {
+        const { asked, client } = yield* clientWith(viewer);
+        const params = { channelId: onLinkedInProfile, workspaceId };
+
+        assert.deepStrictEqual(yield* client.lookups.list({ params }), []);
+
+        const refused = yield* client.lookups
+          .run({
+            params: { ...params, name: "linkedinOrganizations" },
+            payload: { vanityName: "example-bakery" },
+          })
+          .pipe(Effect.flip);
+
+        assert.instanceOf(refused, LookupNotFound);
+        assert.deepStrictEqual(yield* asked, []);
+      })
   );
 
   it.effect("refuses a lookup the channel's platform has not, unasked", () =>

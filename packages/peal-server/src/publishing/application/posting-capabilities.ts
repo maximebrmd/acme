@@ -16,6 +16,7 @@ import type { ChannelId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import { AccountStandings } from "./account-standings.ts";
+import { ChannelConnections } from "./channel-connections.ts";
 import { CountedPlatforms } from "./counted-platforms.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
 import { WorkspaceChannels } from "./workspace-channels.ts";
@@ -30,7 +31,9 @@ export interface DescribedChannel extends ChannelCapabilities {
 /**
  * What a post may hold, told to clients as data: on every platform
  * (`platforms`), and on one channel of the workspace (`channel`), where the
- * account's own restrictions are read from the platform now. Both need
+ * account's own restrictions are read from the platform now, and the
+ * counts and lookups are those of the way in the channel came through (a
+ * LinkedIn profile has neither; a company page has both). Both need
  * channel:read; a channel the workspace does not have is UnknownChannels.
  */
 export class PostingCapabilities extends Context.Service<
@@ -54,6 +57,7 @@ export class PostingCapabilities extends Context.Service<
       const channels = yield* WorkspaceChannels;
       const standings = yield* AccountStandings;
       const counted = yield* CountedPlatforms;
+      const connections = yield* ChannelConnections;
 
       const platforms = Effect.fn("PostingCapabilities.platforms")(
         function* platforms(actor: Actor) {
@@ -79,11 +83,14 @@ export class PostingCapabilities extends Context.Service<
             return yield* new UnknownChannels({ channelIds: [channelId] });
           }
 
+          const connection = yield* connections.of(actor, found.channelId);
+
           const described: DescribedChannel = {
             account: yield* standings.read(found),
             capabilities: capabilitiesOf(
               found.platform,
-              counted.includes(found.platform)
+              counted.onChannel(found.platform, connection),
+              connection
             ),
             channelId: found.channelId,
           };

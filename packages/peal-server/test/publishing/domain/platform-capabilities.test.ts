@@ -2,12 +2,17 @@ import { describe, expect, it } from "@effect/vitest";
 import { Duration, Option } from "effect";
 
 import {
+  countsChannel,
+  isCounted,
+} from "#analytics/domain/counted-platforms.ts";
+import {
   describeFields,
   isDescribed,
 } from "#publishing/domain/field-description.ts";
 import {
   defaultCategoryRegion,
   defaultLookupPageSize,
+  describeLookup,
   lookupNamed,
   lookupNames,
   lookups,
@@ -42,14 +47,15 @@ import {
 } from "#publishing/domain/youtube-options.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 import { platforms } from "#shared/domain/platform.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 import { mediaFile } from "#test/publishing/support.ts";
 
-const fieldNamed = (platform: "tiktok" | "youtube", name: string) =>
+const fieldNamed = (platform: Platform, name: string) =>
   describeOptionsOn(platform)
     .filter(isDescribed)
     .find((field) => field.name === name);
 
-const required = (platform: "tiktok" | "youtube") =>
+const required = (platform: Platform) =>
   describeOptionsOn(platform)
     .filter(isDescribed)
     .flatMap((field) => (field.required ? [field.name] : []));
@@ -92,6 +98,29 @@ describe("a platform's options, described", () => {
   it("say what scheduling needs, from the classes' own problems", () => {
     expect(required("youtube")).toStrictEqual(["madeForKids", "title"]);
     expect(required("tiktok")).toStrictEqual(["privacyLevel"]);
+    expect(required("pinterest")).toStrictEqual(["boardId"]);
+    // Nothing whatever the post: an event's title and dates, a link's
+    // title, are needed only with what they go with.
+    expect(required("linkedin")).toStrictEqual([]);
+    expect(required("googleBusiness")).toStrictEqual([]);
+  });
+
+  it("name the lookup that answers a field's values, on every platform", () => {
+    expect(
+      optionsPlatforms.flatMap((platform) =>
+        describeOptionsOn(platform)
+          .filter(isDescribed)
+          .flatMap(({ lookup, name }) =>
+            lookup === undefined ? [] : [[platform, name, lookup]]
+          )
+      )
+    ).toStrictEqual([
+      ["linkedin", "mentions", "linkedinOrganizations"],
+      ["tiktok", "privacyLevel", "tiktokCreator"],
+      ["youtube", "categoryId", "youtubeVideoCategories"],
+      ["pinterest", "boardId", "pinterestBoards"],
+      ["pinterest", "boardSectionId", "pinterestBoardSections"],
+    ]);
   });
 
   it("take types and values from the schemas", () => {
@@ -302,7 +331,88 @@ describe("a platform's capabilities", () => {
   });
 });
 
+describe("a channel's capabilities, by the way in it came through", () => {
+  const page = Option.some("linkedinPage" as const);
+  const profile = Option.some("linkedinProfile" as const);
+
+  it("give a LinkedIn company page the lookup of pages, and a profile none", () => {
+    expect(
+      capabilitiesOf("linkedin", true).lookups.map(({ name }) => name)
+    ).toStrictEqual(["linkedinOrganizations"]);
+    expect(
+      capabilitiesOf("linkedin", true, page).lookups.map(({ name }) => name)
+    ).toStrictEqual(["linkedinOrganizations"]);
+    expect(capabilitiesOf("linkedin", false, profile).lookups).toStrictEqual(
+      []
+    );
+    expect(
+      lookupNamed("linkedin", "linkedinOrganizations", profile)
+    ).toStrictEqual(Option.none());
+    expect(
+      lookupNamed("linkedin", "linkedinOrganizations", page)
+    ).toStrictEqual(Option.some("linkedinOrganizations"));
+  });
+
+  it("leave every other platform's lookups as they are, whatever the way in", () => {
+    for (const platform of platforms.filter((name) => name !== "linkedin")) {
+      for (const connection of [
+        Option.none(),
+        Option.some("instagramLogin" as const),
+        Option.some("facebookLogin" as const),
+      ]) {
+        expect(lookupsOn(platform, connection)).toStrictEqual(
+          lookupsOn(platform)
+        );
+      }
+    }
+  });
+
+  it("count a LinkedIn company page's posts, never a profile's", () => {
+    expect(isCounted("linkedin")).toBeTruthy();
+    expect(countsChannel("linkedin", page)).toBeTruthy();
+    expect(countsChannel("linkedin", profile)).toBeFalsy();
+    expect(countsChannel("linkedin", Option.none())).toBeFalsy();
+
+    for (const platform of platforms.filter((name) => name !== "linkedin")) {
+      expect(countsChannel(platform, Option.none())).toBe(isCounted(platform));
+    }
+  });
+
+  it("count posts on the platforms with a reader, and no other", () => {
+    expect(platforms.filter(isCounted)).toStrictEqual([
+      "linkedin",
+      "bluesky",
+      "mastodon",
+      "instagram",
+      "tiktok",
+      "youtube",
+      "pinterest",
+    ]);
+  });
+});
+
 describe("the lookups of a platform", () => {
+  it("need the fields they cannot run without", () => {
+    expect(
+      lookupNames.map((name) => [
+        name,
+        describeLookup(name).input.flatMap((field) =>
+          field.required ? [field.name] : []
+        ),
+      ])
+    ).toStrictEqual([
+      ["youtubeVideoCategories", []],
+      ["youtubePlaylists", []],
+      ["tiktokCreator", []],
+      ["pinterestBoards", []],
+      ["pinterestBoardSections", ["boardId"]],
+      ["linkedinOrganizations", ["vanityName"]],
+    ]);
+    // What is marked needed is what the lookup refuses to run without.
+    expect(queryOf("linkedinOrganizations", {})).toStrictEqual(Option.none());
+    expect(queryOf("pinterestBoardSections", {})).toStrictEqual(Option.none());
+  });
+
   it("describe the input each takes, from its schema", () => {
     for (const name of lookupNames) {
       const described = describeFields(lookups[name].input.fields, {

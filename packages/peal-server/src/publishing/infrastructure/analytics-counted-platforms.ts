@@ -9,6 +9,9 @@ export const AnalyticsCountedPlatforms = Layer.effect(
   Effect.gen(function* AnalyticsCountedPlatforms() {
     const coverage = yield* AnalyticsCoverage;
 
-    return CountedPlatforms.of({ includes: coverage.counts });
+    return CountedPlatforms.of({
+      includes: coverage.counts,
+      onChannel: coverage.countsChannel,
+    });
   })
 ).pipe(Layer.provide(AnalyticsCoverage.layer));

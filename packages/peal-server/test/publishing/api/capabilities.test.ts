@@ -16,9 +16,11 @@ import {
 import type { MediaContentType, Member } from "peal-contract";
 import * as ContractText from "peal-contract/post-text";
 
+import { countsChannel } from "#analytics/domain/counted-platforms.ts";
 import { platformCapabilitiesView } from "#publishing/api/capabilities-view.ts";
 import { CapabilitiesHandlers } from "#publishing/api/capabilities.ts";
 import { AccountStandings } from "#publishing/application/account-standings.ts";
+import { ChannelConnections } from "#publishing/application/channel-connections.ts";
 import { CountedPlatforms } from "#publishing/application/counted-platforms.ts";
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
 import { TikTokCreators } from "#publishing/application/tiktok-creators.ts";
@@ -32,6 +34,7 @@ import {
 import { TikTokCreator } from "#publishing/domain/tiktok-creator.ts";
 import type { TikTokPosting } from "#publishing/domain/tiktok-creator.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { platforms } from "#shared/domain/platform.ts";
@@ -48,6 +51,30 @@ const workspaceId = WorkspaceIdSchema.make(
 const onTikTok = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c1");
 
 const onMastodon = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c2");
+
+const onLinkedInPage = ChannelIdSchema.make(
+  "01900000-0000-7000-8000-0000000000c3"
+);
+
+const onLinkedInProfile = ChannelIdSchema.make(
+  "01900000-0000-7000-8000-0000000000c4"
+);
+
+// The way in each LinkedIn channel came through.
+const connections = Layer.succeed(
+  ChannelConnections,
+  ChannelConnections.of({
+    of: (_actor, channelId) =>
+      Effect.succeed(
+        Option.fromUndefinedOr(
+          new Map<string, ChannelConnection>([
+            [onLinkedInPage, "linkedinPage"],
+            [onLinkedInProfile, "linkedinProfile"],
+          ]).get(channelId)
+        )
+      ),
+  })
+);
 
 const creator = new TikTokCreator({
   avatarUrl: Option.none(),
@@ -70,13 +97,16 @@ const workspaceChannels = Layer.succeed(
         [
           { channelId: onTikTok, platform: "tiktok" as const },
           { channelId: onMastodon, platform: "mastodon" as const },
+          { channelId: onLinkedInPage, platform: "linkedin" as const },
+          { channelId: onLinkedInProfile, platform: "linkedin" as const },
         ].filter(({ channelId }) => ids.includes(channelId))
       ),
   })
 );
 
-// The endpoints over the workspace's two channels, TikTok answering `read`
-// for the TikTok one, on a server that counts posts on Mastodon only.
+// The endpoints over the workspace's channels, TikTok answering `read` for
+// the TikTok one, on a server whose platforms list counts posts on Mastodon
+// only, and whose channels are counted as analytics counts them.
 const clientWith = (
   member: Member,
   read: Effect.Effect<TikTokPosting, CreatorFailure> = ready
@@ -104,8 +134,12 @@ const clientWith = (
                     CountedPlatforms,
                     CountedPlatforms.of({
                       includes: (platform) => platform === "mastodon",
+                      onChannel: (platform, connection) =>
+                        platform === "mastodon" ||
+                        countsChannel(platform, connection),
                     })
                   ),
+                  connections,
                   workspaceChannels
                 )
               )
@@ -405,6 +439,35 @@ describe("a channel's capabilities endpoint", () => {
         perPost: true,
       });
     })
+  );
+
+  it.effect(
+    "tells a LinkedIn company page from a profile: only the page has counts and the lookup of pages to mention",
+    () =>
+      Effect.gen(function* linkedin() {
+        const client = yield* clientWith(viewer, Effect.die("not asked"));
+
+        const [page, profile] = yield* Effect.forEach(
+          [onLinkedInPage, onLinkedInProfile],
+          (channelId) =>
+            client.capabilities.channel({ params: { channelId, workspaceId } })
+        );
+
+        assert.deepStrictEqual(page?.capabilities.analytics, { perPost: true });
+        assert.deepStrictEqual(
+          page?.capabilities.lookups.map(({ name }) => name),
+          ["linkedinOrganizations"]
+        );
+        assert.deepStrictEqual(profile?.capabilities.analytics, {
+          perPost: false,
+        });
+        assert.deepStrictEqual(profile?.capabilities.lookups, []);
+        // The options are the platform's, whichever way in.
+        assert.deepStrictEqual(
+          profile?.capabilities.options,
+          page?.capabilities.options
+        );
+      })
   );
 
   it.effect("knows only the workspace's channels", () =>

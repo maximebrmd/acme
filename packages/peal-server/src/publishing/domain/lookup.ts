@@ -1,5 +1,6 @@
 import { Option, Schema } from "effect";
 
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 import { describeFields, isDescribed } from "./field-description.ts";
@@ -223,6 +224,11 @@ export type LookupQueryOf<Name extends LookupName> = Extract<
 >;
 
 interface LookupDefinition<Name extends LookupName> {
+  /**
+   * The one way in whose channels have the lookup (a LinkedIn company
+   * page); every channel of the platform when left out.
+   */
+  readonly connection?: ChannelConnection;
   /** The input's fields, as clients send them. */
   readonly input: Schema.Struct<Readonly<Record<string, Schema.Top>>>;
   readonly notes: Readonly<Record<string, FieldNotes<LookupName>>>;
@@ -277,6 +283,8 @@ const decodeOrganizations = Schema.decodeUnknownOption(
 /** Every lookup, by name. */
 export const lookups = {
   linkedinOrganizations: {
+    // A profile's token cannot read organizations.
+    connection: "linkedinPage",
     input: LinkedInOrganizationsInputSchema,
     notes: { vanityName: { pattern: vanityName.source } },
     paged: false,
@@ -290,6 +298,7 @@ export const lookups = {
           vanityName: name,
         }))
       ),
+    required: ["vanityName"],
   },
   pinterestBoardSections: {
     input: PinterestBoardSectionsInputSchema,
@@ -402,21 +411,49 @@ export const describeLookup = (name: LookupName): LookupDescription => {
   };
 };
 
-/** The lookups the platform's channels have. */
-export const lookupsOn = (platform: Platform): readonly LookupDescription[] =>
+// Whether a channel of the platform has the lookup: every channel when no
+// way in is given, as a platform is described; otherwise those that came
+// the way the lookup needs, when it needs one.
+const isOn = (
+  name: LookupName,
+  platform: Platform,
+  connection: Option.Option<ChannelConnection> | undefined
+): boolean => {
+  const definition: LookupDefinition<LookupName> = lookups[name];
+
+  return (
+    definition.platform === platform &&
+    (connection === undefined ||
+      definition.connection === undefined ||
+      Option.contains(connection, definition.connection))
+  );
+};
+
+/**
+ * The lookups the platform's channels have; with `connection`, those a
+ * channel that came that way has.
+ */
+export const lookupsOn = (
+  platform: Platform,
+  connection?: Option.Option<ChannelConnection>
+): readonly LookupDescription[] =>
   lookupNames.flatMap((name) =>
-    lookups[name].platform === platform ? [describeLookup(name)] : []
+    isOn(name, platform, connection) ? [describeLookup(name)] : []
   );
 
 const decodeName = Schema.decodeUnknownOption(LookupNameSchema);
 
-/** The platform's lookup of that name, if it has one. */
+/**
+ * The platform's lookup of that name, if it has one; with `connection`, if
+ * a channel that came that way has it.
+ */
 export const lookupNamed = (
   platform: Platform,
-  name: string
+  name: string,
+  connection?: Option.Option<ChannelConnection>
 ): Option.Option<LookupName> =>
   decodeName(name).pipe(
-    Option.filter((known) => lookups[known].platform === platform)
+    Option.filter((known) => isOn(known, platform, connection))
   );
 
 /** The query the lookup runs for `input`; none when it refuses the input. */

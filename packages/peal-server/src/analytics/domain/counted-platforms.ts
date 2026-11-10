@@ -1,3 +1,6 @@
+import { Option } from "effect";
+
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 /**
@@ -19,3 +22,14 @@ export const countedPlatforms = [
 /** Whether Peal reads counts on the platform. */
 export const isCounted = (platform: Platform): boolean =>
   countedPlatforms.some((counted) => counted === platform);
+
+/**
+ * Whether Peal reads the counts of a channel's posts, from its platform and
+ * the way in it came through: on LinkedIn, a company page's only.
+ */
+export const countsChannel = (
+  platform: Platform,
+  connection: Option.Option<ChannelConnection>
+): boolean =>
+  isCounted(platform) &&
+  (platform !== "linkedin" || Option.contains(connection, "linkedinPage"));

@@ -10,6 +10,7 @@ import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import { ChannelConnections } from "./channel-connections.ts";
 import { LookupInputRejected } from "./lookup-input-rejected.ts";
 import { PlatformLookups } from "./platform-lookups.ts";
 import type { LookupFailure } from "./platform-lookups.ts";
@@ -57,6 +58,7 @@ export class ChannelLookups extends Context.Service<
     Effect.gen(function* ChannelLookupsLive() {
       const channels = yield* WorkspaceChannels;
       const platforms = yield* PlatformLookups;
+      const connections = yield* ChannelConnections;
 
       const channelOf = Effect.fn("ChannelLookups.channel")(function* channelOf(
         actor: Actor,
@@ -76,7 +78,10 @@ export class ChannelLookups extends Context.Service<
           return yield* new UnknownChannels({ channelIds: [channelId] });
         }
 
-        return channel;
+        return {
+          ...channel,
+          connection: yield* connections.of(actor, channel.channelId),
+        };
       });
 
       const run = Effect.fn("ChannelLookups.run")(function* run(
@@ -86,7 +91,7 @@ export class ChannelLookups extends Context.Service<
         input: LookupInput
       ) {
         const channel = yield* channelOf(actor, channelId);
-        const lookup = lookupNamed(channel.platform, name);
+        const lookup = lookupNamed(channel.platform, name, channel.connection);
 
         if (Option.isNone(lookup)) {
           return yield* new UnknownLookup({ name });
@@ -104,7 +109,9 @@ export class ChannelLookups extends Context.Service<
       return ChannelLookups.of({
         list: (actor, channelId) =>
           channelOf(actor, channelId).pipe(
-            Effect.map(({ platform }) => optionLookupsOn(platform))
+            Effect.map(({ connection, platform }) =>
+              optionLookupsOn(platform, connection)
+            )
           ),
         run,
       });

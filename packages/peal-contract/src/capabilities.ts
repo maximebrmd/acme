@@ -139,7 +139,9 @@ export type OptionConstraint = typeof OptionConstraintSchema.Type;
  * post goes out; the platform may refuse more.
  */
 export const PlatformCapabilitiesSchema = Schema.Struct({
-  // Whether Peal reads the counts of each post published there.
+  // Whether Peal reads the counts of each post published there: for a
+  // platform, on any of its channels; for a channel, on that one (a LinkedIn
+  // company page, not a profile).
   analytics: Schema.Struct({ perPost: Schema.Boolean }),
   // What the platform tells about an account, for the options that refer
   // to it.

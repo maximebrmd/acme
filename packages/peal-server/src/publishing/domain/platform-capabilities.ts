@@ -1,3 +1,6 @@
+import type { Option } from "effect";
+
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { platforms } from "#shared/domain/platform.ts";
 
@@ -66,9 +69,15 @@ export const ownTextLimit: TextLimit = {
 const describedOptionsOn = (platform: Platform) =>
   describeOptionsOn(platform).filter(isDescribed);
 
-/** The platform's lookups, each with the options it fills. */
-export const optionLookupsOn = (platform: Platform): readonly OptionLookup[] =>
-  lookupsOn(platform).map((lookup) => ({
+/**
+ * The platform's lookups, each with the options it fills; with
+ * `connection`, those a channel that came that way has.
+ */
+export const optionLookupsOn = (
+  platform: Platform,
+  connection?: Option.Option<ChannelConnection>
+): readonly OptionLookup[] =>
+  lookupsOn(platform, connection).map((lookup) => ({
     ...lookup,
     fills: describedOptionsOn(platform).flatMap((field) =>
       field.lookup === lookup.name ? [field.name] : []
@@ -83,17 +92,22 @@ export interface ChannelCapabilities {
 
 /**
  * The platform's capabilities. `countsPosts` comes from the analytics
- * context, which knows where it reads counts.
+ * context, which knows where it reads counts. A platform's own are those of
+ * any of its channels: on LinkedIn, the counts and the lookup only company
+ * pages have are there. With `connection`, they are a channel's that came
+ * that way, with the lookups it has, and `countsPosts` is the caller's
+ * answer for that channel.
  */
 export const capabilitiesOf = (
   platform: Platform,
-  countsPosts: boolean
+  countsPosts: boolean,
+  connection?: Option.Option<ChannelConnection>
 ): PlatformCapabilities => {
   const rules = platformRules[platform];
 
   return {
     countsPosts,
-    lookups: optionLookupsOn(platform),
+    lookups: optionLookupsOn(platform, connection),
     maxAltTextLength: Math.min(
       rules.media?.maxAltTextLength ?? maxAltTextLength,
       maxAltTextLength

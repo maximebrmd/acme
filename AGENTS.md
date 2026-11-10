@@ -1028,6 +1028,16 @@ and no socket, for tests.
   which `AnalyticsCoverage` backs). The description has a version
   (`capabilitiesVersion`): add fields, platforms, lookups and restrictions
   under it, and raise it only when a field changes meaning or leaves.
+- A platform's description is that of any of its channels; a channel's
+  follows the way in it came through (`ChannelConnections`, which
+  `ListedChannelConnections` backs from the channels context). A lookup
+  only one way in has names it (`connection` on its definition:
+  `linkedinOrganizations` on `linkedinPage`), so `lookupsOn` and
+  `lookupNamed` leave it out for the others (404 `LookupNotFound`), and
+  `CountedPlatforms.onChannel` (`countsChannel` in analytics' domain) says
+  a LinkedIn profile's posts are not counted while `countedPlatforms`
+  lists LinkedIn. A lookup that cannot run without a field says so
+  (`required`).
 - Nothing in a description is written twice. A field's type and values come
   from its schema (`describeFields`), `required` from what `problems()`
   misses in options with nothing chosen, and the rest (`maxLength`,
