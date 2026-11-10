@@ -96,6 +96,10 @@ export class AccountStore extends Context.Service<
       readonly { readonly account: AdAccount; readonly dueAt: DateTime.Utc }[],
       DatabaseError
     >;
+    /** How many accounts are due for a sync by `now`. */
+    readonly countDueForSync: (
+      now: DateTime.Utc
+    ) => Effect.Effect<number, DatabaseError>;
     /** Says when the account is next read, and that it was read now if so. */
     readonly scheduleSync: (
       accountId: AdAccountId,

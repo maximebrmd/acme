@@ -140,6 +140,10 @@ export class BoostStore extends Context.Service<
       boostId: BoostId
     ) => Effect.Effect<readonly SpendCall[], DatabaseError>;
     readonly audit: (entry: AuditEntry) => Effect.Effect<void, DatabaseError>;
+    /** Deletes the audit trail's lines before an instant; says how many. */
+    readonly purgeAudit: (
+      before: DateTime.Utc
+    ) => Effect.Effect<number, DatabaseError>;
     /** The workspace's audit trail, newest first. */
     readonly auditTrail: (
       workspaceId: WorkspaceId,

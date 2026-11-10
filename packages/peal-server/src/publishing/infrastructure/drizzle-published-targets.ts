@@ -1,4 +1,5 @@
-import { and, asc, eq, gte, isNotNull, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { PublishedTargets } from "#publishing/application/published-targets.ts";
@@ -13,6 +14,7 @@ import {
   PostTargetIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -33,6 +35,16 @@ const decodeRows = Schema.decodeUnknownEffect(Schema.Array(PublishedRowSchema));
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
+const columns = {
+  channelId: postTargets.channelId,
+  permalink: postTargets.permalink,
+  platformPostId: postTargets.platformPostId,
+  postId: postTargets.postId,
+  publishedAt: postTargets.finishedAt,
+  targetId: postTargets.id,
+  workspaceId: posts.workspaceId,
+};
+
 /** The published targets in the publishing schema, through Drizzle. */
 export const DrizzlePublishedTargets = Layer.effect(
   PublishedTargets,
@@ -46,15 +58,7 @@ export const DrizzlePublishedTargets = Layer.effect(
       const since = DateTime.toDateUtc(cursor.publishedAt);
 
       const rows = yield* db
-        .select({
-          channelId: postTargets.channelId,
-          permalink: postTargets.permalink,
-          platformPostId: postTargets.platformPostId,
-          postId: postTargets.postId,
-          publishedAt: postTargets.finishedAt,
-          targetId: postTargets.id,
-          workspaceId: posts.workspaceId,
-        })
+        .select(columns)
         .from(postTargets)
         .innerJoin(posts, eq(posts.id, postTargets.postId))
         .where(
@@ -81,6 +85,44 @@ export const DrizzlePublishedTargets = Layer.effect(
       return published;
     });
 
-    return PublishedTargets.of({ from });
+    // The published targets of one workspace that `where` keeps.
+    const within = Effect.fn("PublishedTargets.within")(function* within(
+      workspaceId: WorkspaceId,
+      where: SQL | undefined
+    ) {
+      const rows = yield* db
+        .select(columns)
+        .from(postTargets)
+        .innerJoin(posts, eq(posts.id, postTargets.postId))
+        .where(
+          and(
+            eq(posts.workspaceId, workspaceId),
+            eq(postTargets.status, "published"),
+            isNotNull(postTargets.platformPostId),
+            where
+          )
+        )
+        .orderBy(asc(postTargets.finishedAt), asc(postTargets.id))
+        .pipe(Effect.mapError(failed));
+
+      const published: readonly PublishedTarget[] = yield* decodeRows(
+        rows
+      ).pipe(Effect.orDie);
+
+      return published;
+    });
+
+    return PublishedTargets.of({
+      byPlatformPostIds: (workspaceId, platformPostIds) =>
+        platformPostIds.length === 0
+          ? Effect.succeed([])
+          : within(
+              workspaceId,
+              inArray(postTargets.platformPostId, [...platformPostIds])
+            ),
+      from,
+      ofPost: (workspaceId, postId) =>
+        within(workspaceId, eq(postTargets.postId, postId)),
+    });
   })
 );

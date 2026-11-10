@@ -18,3 +18,13 @@ export const insightCutoff = (now: DateTime.Utc): DateTime.Utc =>
  */
 export const firstSyncDays = 90;
 export const resyncDays = 7;
+
+/**
+ * How long a line of the ads audit trail is kept: 13 months, as the days
+ * are, so a year's spending can be read with who decided it. The
+ * data-processing registry (`adAuditTrail`) states it too.
+ */
+export const auditRetention = Duration.days(396);
+
+/** How long a sign-in that connected no account is kept. */
+export const unusedGrantLifetime = Duration.days(1);

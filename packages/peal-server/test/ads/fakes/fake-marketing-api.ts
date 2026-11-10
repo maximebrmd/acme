@@ -644,7 +644,15 @@ export const fakeMarketingApi = (options: FakeMarketingOptions = {}) =>
 
     return {
       /** The account as the fake holds it, to change what it says. */
-      account: (id: string) => accounts.get(id),
+      account: (id: string) => {
+        const account = accounts.get(id);
+
+        if (account === undefined) {
+          throw new Error(`The fake holds no ad account ${id}`);
+        }
+
+        return account;
+      },
       /** Adds days of numbers for ads the fake holds. */
       addInsights: (rows: readonly FakeInsight[]) => {
         insights.push(...rows);

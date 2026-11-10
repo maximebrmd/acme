@@ -1,19 +1,25 @@
 import { Context, Effect, Layer, Option, Ref } from "effect";
 
+import { AdConnections } from "#ads/application/ad-connections.ts";
 import { AdNetworks } from "#ads/application/ports/ad-network.ts";
 import type { AdNetworkClient } from "#ads/application/ports/ad-network.ts";
 import { AdNotices } from "#ads/application/ports/ad-notices.ts";
+import { SpendAuthorizations } from "#ads/application/spend-authorizations.ts";
 import { adsWith } from "#ads/container.ts";
 import type { AdsMode } from "#ads/domain/ads-mode.ts";
 import type { BoostId } from "#ads/domain/ids.ts";
+import { CurrencySchema, Money } from "#ads/domain/money.ts";
 import { CipherGrantSecrets } from "#ads/infrastructure/cipher-grant-secrets.ts";
+import { DirectAds } from "#ads/infrastructure/direct-ads.ts";
 import { DrizzleAccountStore } from "#ads/infrastructure/drizzle-account-store.ts";
 import { DrizzleBoostStore } from "#ads/infrastructure/drizzle-boost-store.ts";
 import { DrizzleGrantStore } from "#ads/infrastructure/drizzle-grant-store.ts";
+import { DrizzleReadModel } from "#ads/infrastructure/drizzle-read-model.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import { TestPosts } from "#test/ads/fakes/test-posts.ts";
 import {
   DatabaseTest,
   freshWorkspace,
@@ -118,9 +124,12 @@ export const AdsTest = adsWith(
     DrizzleGrantStore,
     DrizzleAccountStore,
     DrizzleBoostStore,
+    DrizzleReadModel,
     CipherGrantSecrets.pipe(Layer.provide(TokenCipherTest)),
-    TestNetworks.layer
-  )
+    TestNetworks.layer,
+    TestPosts.layer
+  ),
+  DirectAds
 ).pipe(Layer.provideMerge(TransactionsTest), Layer.provideMerge(DatabaseTest));
 
 /**
@@ -204,3 +213,67 @@ export const tagOf = <E extends { readonly _tag: string }, R>(
       onSuccess: () => "succeeded",
     })
   );
+
+const stateOf = (url: string) => new URL(url).searchParams.get("state") ?? "";
+
+/** What the network's page sends back after a sign-in that went through. */
+export const returnedWith = (url: string) => ({
+  code: Option.some("good-code"),
+  error: Option.none(),
+  network: "meta" as const,
+  state: stateOf(url),
+});
+
+/** Signs the actor in to the fake, and answers what the sign-in reaches. */
+export const signIn = Effect.fn("test.signIn")(function* signIn(actor: Actor) {
+  const connections = yield* AdConnections;
+  const url = yield* connections.begin(actor, "meta");
+
+  return yield* connections.complete(actor, returnedWith(url));
+});
+
+/** The actor's sign-in with accounts connected. */
+export const connected = Effect.fn("test.connected")(function* connected(
+  actor: Actor,
+  externalIds: readonly string[] = ["1001"]
+) {
+  const connections = yield* AdConnections;
+  const { connection } = yield* signIn(actor);
+
+  const accounts = yield* connections.connect(
+    actor,
+    connection.grant.id,
+    externalIds
+  );
+
+  return { accounts, connection };
+});
+
+/** The actor's sign-in with the euro account connected: that account. */
+export const connectedAccount = (actor: Actor) =>
+  connected(actor).pipe(
+    Effect.flatMap(({ accounts }) =>
+      Effect.fromNullishOr(accounts[0]?.account).pipe(Effect.orDie)
+    )
+  );
+
+export const eur = (amount: number) =>
+  new Money({ amount, currency: CurrencySchema.make("EUR") });
+
+/**
+ * An owner with the euro account connected and allowed to spend up to
+ * `ceiling` a month.
+ */
+export const spendingOwner = (ceiling = 100_000) =>
+  Effect.gen(function* allowing() {
+    const owner = yield* freshOwner;
+    const spending = yield* SpendAuthorizations;
+    const account = yield* connectedAccount(owner);
+
+    yield* spending.decide(owner, account.id, {
+      _tag: "on",
+      monthlyCeiling: eur(ceiling),
+    });
+
+    return { account, owner };
+  });

@@ -44,5 +44,19 @@ export class PublishedTargets extends Context.Service<
       cursor: PublishedCursor,
       limit: number
     ) => Effect.Effect<readonly PublishedTarget[], DatabaseError>;
+    /** The channels a post of the workspace went live on, oldest first. */
+    readonly ofPost: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<readonly PublishedTarget[], DatabaseError>;
+    /**
+     * The workspace's published targets the platforms know under these
+     * ids, for the contexts that are handed a platform's id of a post and
+     * ask whether it is one Peal published (an ad that promotes it).
+     */
+    readonly byPlatformPostIds: (
+      workspaceId: WorkspaceId,
+      platformPostIds: readonly string[]
+    ) => Effect.Effect<readonly PublishedTarget[], DatabaseError>;
   }
 >()("peal-server/publishing/application/PublishedTargets") {}

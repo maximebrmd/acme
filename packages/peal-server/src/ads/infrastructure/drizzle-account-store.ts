@@ -134,6 +134,21 @@ export const DrizzleAccountStore = Layer.effect(
             Effect.mapError(failed),
             Effect.map(([row]) => row?.count ?? 0)
           ),
+      countDueForSync: (now) =>
+        db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(accounts)
+          .innerJoin(grants, eq(grants.id, accounts.grantId))
+          .where(
+            and(
+              eq(grants.access, "working"),
+              lte(accounts.nextSyncAt, date(now))
+            )
+          )
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map(([row]) => row?.count ?? 0)
+          ),
       dueForSync: (now, limit, after) =>
         joined()
           .where(

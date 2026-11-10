@@ -5,7 +5,6 @@ import { AdConnections } from "#ads/application/ad-connections.ts";
 import { GrantStore } from "#ads/application/ports/grant-store.ts";
 import { SpendAuthorizations } from "#ads/application/spend-authorizations.ts";
 import { CurrencySchema, Money } from "#ads/domain/money.ts";
-import type { Actor } from "#shared/domain/access.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
 import {
   euroAccount,
@@ -15,7 +14,11 @@ import {
 import type { fakeMarketingApi } from "#test/ads/fakes/fake-marketing-api.ts";
 import {
   AdsTest,
+  connected,
+  eur,
   freshOwner,
+  returnedWith,
+  signIn,
   member,
   onMeta,
   tagOf,
@@ -25,49 +28,6 @@ import {
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 type Api = Effect.Success<ReturnType<typeof fakeMarketingApi>>;
-
-const stateOf = (url: string) => new URL(url).searchParams.get("state") ?? "";
-
-// Signs the actor in to the fake, and answers what the sign-in reaches.
-const signIn = Effect.fn("test.signIn")(function* signIn(actor: Actor) {
-  const connections = yield* AdConnections;
-  const url = yield* connections.begin(actor, "meta");
-
-  return yield* connections.complete(actor, {
-    code: Option.some("good-code"),
-    error: Option.none(),
-    network: "meta",
-    state: stateOf(url),
-  });
-});
-
-// The actor's sign-in with the account connected.
-const connected = Effect.fn("test.connected")(function* connected(
-  actor: Actor,
-  externalIds: readonly string[] = ["1001"]
-) {
-  const connections = yield* AdConnections;
-  const { connection } = yield* signIn(actor);
-
-  const accounts = yield* connections.connect(
-    actor,
-    connection.grant.id,
-    externalIds
-  );
-
-  return { accounts, connection };
-});
-
-// What the network's page sends back after a sign-in that went through.
-const returnedWith = (url: string) => ({
-  code: Option.some("good-code"),
-  error: Option.none(),
-  network: "meta" as const,
-  state: stateOf(url),
-});
-
-const eur = (amount: number) =>
-  new Money({ amount, currency: CurrencySchema.make("EUR") });
 
 layer(AdsTest, { excludeTestServices: true })(
   "connecting ad accounts",

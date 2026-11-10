@@ -482,6 +482,15 @@ export const DrizzleBoostStore = Layer.effect(
             Effect.mapError(failed),
             Effect.map(([row]) => row?.total ?? 0)
           ),
+      purgeAudit: (before) =>
+        db
+          .delete(auditEvents)
+          .where(lt(auditEvents.at, date(before)))
+          .returning({ id: auditEvents.id })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length)
+          ),
       runningOn: (accountId) =>
         db
           .select()

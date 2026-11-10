@@ -416,9 +416,18 @@ export const metaAdsClient = Effect.fn("MetaAds.client")(
           complete: campaigns.complete && adSets.complete && ads.complete,
           facts: factsOf(facts.value),
           haltedFor: insights.halted,
-          insights: insights.items.flatMap((row) =>
-            Option.toArray(insightOf(row, currency))
-          ),
+          // A day listed twice is kept once, as last listed: one statement
+          // never writes a row twice.
+          insights: [
+            ...new Map(
+              insights.items.flatMap((row) =>
+                Option.toArray(insightOf(row, currency)).map(
+                  (day) =>
+                    [`${day.adExternalId}/${row.date_start}`, day] as const
+                )
+              )
+            ).values(),
+          ],
         };
       }
     );
