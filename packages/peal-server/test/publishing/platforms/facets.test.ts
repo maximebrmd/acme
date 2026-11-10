@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { facetsOf } from "#publishing/infrastructure/platforms/bluesky/facets.ts";
+import { facetsOf } from "#shared/infrastructure/platforms/bluesky/facets.ts";
 
 // The links a text's facets mark, in order.
 const linked = (text: string) =>

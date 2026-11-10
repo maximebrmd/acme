@@ -3,7 +3,7 @@ import { DateTime, Duration, Effect, Option, Redacted, Schema } from "effect";
 
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
 
-// What publishing reads of the channel's credential: the AT Protocol OAuth
+// What platform calls read of the channel's credential: the AT Protocol OAuth
 // client's saved session, as the channels context stores it (JSON). Its
 // access token and DPoP key sign each call; its refresh token is the
 // channels context's alone, which renews the session when a call is refused.
