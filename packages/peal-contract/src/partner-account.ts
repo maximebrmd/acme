@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 import {
   HttpApiEndpoint,
+  HttpApiError,
   HttpApiGroup,
   HttpApiSchema,
   OpenApi,
@@ -216,7 +217,7 @@ export class PartnerAccountApi extends HttpApiGroup.make("partnerAccount")
       })
     ),
     HttpApiEndpoint.get("listWorkspaces", "/workspaces", {
-      error: [Forbidden, PartnerNotFound],
+      error: [Forbidden, PartnerNotFound, HttpApiError.BadRequest],
       params: workspace,
       query: workspaceListQuery,
       success: CustomerWorkspacePageSchema,

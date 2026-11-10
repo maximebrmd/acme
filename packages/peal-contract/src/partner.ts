@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 import {
   HttpApiEndpoint,
+  HttpApiError,
   HttpApiGroup,
   HttpApiSchema,
   OpenApi,
@@ -172,12 +173,12 @@ export class PartnerApi extends HttpApiGroup.make("partner")
       })
     ),
     HttpApiEndpoint.get("listWorkspaces", "/workspaces", {
-      error: Forbidden,
+      error: [Forbidden, HttpApiError.BadRequest],
       query: workspaceListQuery,
       success: CustomerWorkspacePageSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Lists the workspaces the partner owns, newest first, each with the number of channels connected in it, ${defaultWorkspacePageSize} a page unless \`limit\` (at most ${maxWorkspacePageSize}) says otherwise. \`externalId\` finds the one workspace with that external id, exactly; \`name\` those whose name holds the text, whatever its case. \`total\` counts what the filters find; pass the page's \`next\` as \`before\` for the next page. Needs the scope workspaces:read. ${keyOnly}`,
+        description: `Lists the workspaces the partner owns, newest first, each with the number of channels connected in it, ${defaultWorkspacePageSize} a page unless \`limit\` (at most ${maxWorkspacePageSize}) says otherwise. \`externalId\` finds the one workspace with that external id, exactly; \`name\` those whose name holds the text, whatever its case. \`total\` counts what the filters find; pass the page's \`next\` as \`before\` for the next page, as it is: it is a position in the list, which stays good when workspaces before it are offboarded, and anything else is refused (400). Needs the scope workspaces:read. ${keyOnly}`,
         summary: "List the partner's workspaces",
       })
     ),

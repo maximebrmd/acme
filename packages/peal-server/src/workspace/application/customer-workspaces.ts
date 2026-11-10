@@ -1,16 +1,32 @@
-import { Context } from "effect";
+import { Context, Schema } from "effect";
 import type { DateTime, Effect, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { CustomerWorkspace } from "#workspace/domain/customer-workspace.ts";
 import type { ExternalIdTaken } from "#workspace/domain/external-id-taken.ts";
 import type { PartnerId } from "#workspace/domain/partner-id.ts";
 
+/**
+ * Where a page of a partner's workspaces ended: its last workspace's
+ * creation and id. A position and no row, so a page read after its
+ * workspaces were offboarded still continues from there.
+ */
+export const WorkspacePositionSchema = Schema.Struct({
+  createdAt: Schema.DateTimeUtcFromMillis,
+  id: WorkspaceIdSchema,
+});
+
+export type WorkspacePosition = typeof WorkspacePositionSchema.Type;
+
 /** Which of a partner's workspaces a list holds. */
 export interface CustomerWorkspaceFilter {
-  /** Those created before this one, to read the next page. */
-  readonly before: Option.Option<WorkspaceId>;
+  /**
+   * Those after this position, newest first: created earlier, or at the
+   * same instant with a smaller id.
+   */
+  readonly before: Option.Option<WorkspacePosition>;
   /** The one with this external id, exactly. */
   readonly externalId: Option.Option<string>;
   readonly limit: number;

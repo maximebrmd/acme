@@ -104,7 +104,7 @@ Une création peut être renvoyée sans risque, de deux façons :
 | `PATCH /api/partner/workspaces/{workspaceId}`  | Change son nom ou son identifiant externe (`null` le retire)                                                                                                                 |
 | `DELETE /api/partner/workspaces/{workspaceId}` | Le supprime, avec tout ce qu’il contient ([Retirer un client](#offboard))                                                                                                    |
 
-Une liste répond `total`, ce que les filtres trouvent en tout, et `next` : passez-le comme `before` pour la page suivante, jusqu’à ce qu’il soit null.
+Une liste répond `total`, ce que les filtres trouvent en tout, et `next` : passez-le tel quel comme `before` pour la page suivante, jusqu’à ce qu’il soit null. C’est une position dans la liste, pas l’identifiant d’un espace de travail : il reste valable quand les espaces qui le précèdent sont supprimés, et toute autre valeur de `before` répond 400.
 
 ```typescript
 const { workspaces } = await peal.partner.listWorkspaces({

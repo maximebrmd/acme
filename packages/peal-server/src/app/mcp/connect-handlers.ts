@@ -140,6 +140,10 @@ export const ConnectToolsLive = ConnectTools.toLayer(
             .pipe(
               Effect.catchTags({
                 DatabaseError: Effect.die,
+                InvalidWorkspaceCursor: () =>
+                  refuse(
+                    "That `before` is not what a page gave as its `next`: pass a page's `next` as it is, or leave it out for the first page."
+                  ),
                 MissingPermission: notAllowed("read the partner account"),
                 PartnerNotFound: noPartner,
               })

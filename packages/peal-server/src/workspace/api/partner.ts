@@ -1,5 +1,5 @@
 import { Effect, Option } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
+import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
   BillingUnavailable,
@@ -206,6 +206,8 @@ export const PartnerHandlers = HttpApiBuilder.group(
           const page = yield* workspaces.list(key, listRequestOf(query)).pipe(
             Effect.catchTags({
               DatabaseError: Effect.die,
+              InvalidWorkspaceCursor: () =>
+                Effect.fail(new HttpApiError.BadRequest()),
               MissingPartnerScope: withoutScope,
             })
           );

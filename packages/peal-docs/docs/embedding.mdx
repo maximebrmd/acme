@@ -104,7 +104,7 @@ A creation is safe to send again, two ways:
 | `PATCH /api/partner/workspaces/{workspaceId}`  | Changes its name or its external id (`null` removes it)                                                                                     |
 | `DELETE /api/partner/workspaces/{workspaceId}` | Deletes it, with everything in it ([Offboard a customer](#offboard))                                                                        |
 
-A list answers `total`, what the filters find in all, and `next`: pass it as `before` for the next page, until it is null.
+A list answers `total`, what the filters find in all, and `next`: pass it as `before` for the next page, as it is, until it is null. It is a position in the list, not a workspace's id: it stays good when the workspaces before it are offboarded, and anything else in `before` answers 400.
 
 ```typescript
 const { workspaces } = await peal.partner.listWorkspaces({

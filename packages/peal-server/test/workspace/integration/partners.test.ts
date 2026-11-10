@@ -574,6 +574,27 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             3
           );
 
+          // A cursor is a position a page gave, never a workspace's id:
+          // anything else is refused, rather than start over or tell
+          // whether an id is a workspace.
+          for (const before of [
+            "nonsense",
+            one.workspaces[0]?.id ?? "",
+            "5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60",
+          ]) {
+            const refused = yield* app.request(
+              `/api/partner/workspaces?limit=2&before=${before}`,
+              { headers: bearer(key) }
+            );
+
+            assert.strictEqual(refused.status, 400, before);
+          }
+
+          assert.notInclude(
+            one.workspaces.map(({ id }) => id),
+            one.next
+          );
+
           // Changed: its name, and an external id no other workspace has.
           const taken = yield* app.request(
             `/api/partner/workspaces/${first.id}`,
@@ -869,6 +890,40 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
           );
 
           assert.strictEqual(closing.status, 409);
+
+          // A page's cursor is a position, not a row: offboarding the
+          // workspaces of a page as they are read still reaches the rest.
+          const later = yield* customerOf(key, "Later customer");
+
+          const first = yield* bodyOf(
+            PageSchema,
+            yield* app.request("/api/partner/workspaces?limit=1", {
+              headers: bearer(key),
+            })
+          );
+
+          assert.deepStrictEqual(
+            first.workspaces.map(({ id }) => id),
+            [later.id]
+          );
+
+          yield* app.request(`/api/partner/workspaces/${later.id}`, {
+            headers: bearer(key),
+            method: "DELETE",
+          });
+
+          const rest = yield* bodyOf(
+            PageSchema,
+            yield* app.request(
+              `/api/partner/workspaces?limit=1&before=${first.next ?? ""}`,
+              { headers: bearer(key) }
+            )
+          );
+
+          assert.deepStrictEqual(
+            rest.workspaces.map(({ id }) => id),
+            [customer.id]
+          );
 
           const offboarded = yield* app.request(
             `/api/partner/workspaces/${customer.id}`,

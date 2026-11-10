@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt, ilike, lte, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, ilike, lt, lte, or, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { Digest } from "effect/crypto";
 import { SqlClient } from "effect/sql";
@@ -342,10 +342,17 @@ export const DrizzleCustomerWorkspaces = Layer.effect(
                 matching,
                 Option.getOrUndefined(
                   filter.before.pipe(
-                    Option.map(
-                      (before) =>
-                        sql`(${partnerWorkspaces.createdAt}, ${partnerWorkspaces.workspaceId}) < (SELECT cursor.created_at, cursor.workspace_id FROM ${partnerWorkspaces} AS cursor WHERE cursor.workspace_id = ${before})`
-                    )
+                    Option.map(({ createdAt, id }) => {
+                      const at = DateTime.toDateUtc(createdAt);
+
+                      return or(
+                        lt(partnerWorkspaces.createdAt, at),
+                        and(
+                          eq(partnerWorkspaces.createdAt, at),
+                          lt(partnerWorkspaces.workspaceId, id)
+                        )
+                      );
+                    })
                   )
                 )
               )

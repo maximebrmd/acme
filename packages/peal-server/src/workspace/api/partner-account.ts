@@ -1,5 +1,5 @@
 import { Effect, Option, Redacted } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
+import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
   CurrentMember,
@@ -133,6 +133,8 @@ export const PartnerAccountHandlers = HttpApiBuilder.group(
             .pipe(
               Effect.catchTags({
                 DatabaseError: Effect.die,
+                InvalidWorkspaceCursor: () =>
+                  Effect.fail(new HttpApiError.BadRequest()),
                 MissingPermission: forbidden,
                 PartnerNotFound: noPartner,
               })

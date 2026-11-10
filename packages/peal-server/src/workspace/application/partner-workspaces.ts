@@ -5,7 +5,6 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import {
   CustomerWorkspace,
@@ -23,8 +22,12 @@ import type { Partner } from "#workspace/domain/partner.ts";
 import { CreationKeyClaimed } from "./creation-key-claimed.ts";
 import { CreationKeyReused } from "./creation-key-reused.ts";
 import { CustomerWorkspaceNotFound } from "./customer-workspace-not-found.ts";
-import { CustomerWorkspaces } from "./customer-workspaces.ts";
+import {
+  CustomerWorkspaces,
+  WorkspacePositionSchema,
+} from "./customer-workspaces.ts";
 import type { CreationKeyUse, KeyedCreation } from "./customer-workspaces.ts";
+import { InvalidWorkspaceCursor } from "./invalid-workspace-cursor.ts";
 import { InvalidWorkspaceDetails } from "./invalid-workspace-details.ts";
 import { PartnerNotFound } from "./partner-not-found.ts";
 import { PartnerStore } from "./partner-store.ts";
@@ -32,6 +35,16 @@ import type { PartnerUsageDay } from "./partner-store.ts";
 import { WorkspaceChannelCounts } from "./workspace-channel-counts.ts";
 
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
+
+// A cursor is a position, written so that clients keep it as it is: they
+// are told nothing of what it holds, which may change.
+const CursorSchema = Schema.StringFromBase64Url.pipe(
+  Schema.decodeTo(Schema.fromJsonString(WorkspacePositionSchema))
+);
+
+const decodeCursor = Schema.decodeUnknownEffect(CursorSchema);
+
+const encodeCursor = Schema.encodeEffect(CursorSchema);
 
 const decodeName = Schema.decodeUnknownOption(WorkspaceNameSchema);
 
@@ -50,7 +63,7 @@ export interface CountedWorkspace {
 /** A page of a partner's workspaces, newest first. */
 export interface CountedWorkspacePage {
   /** The workspace to read the next page before; none on the last page. */
-  readonly next: Option.Option<WorkspaceId>;
+  readonly next: Option.Option<string>;
   readonly total: number;
   readonly workspaces: readonly CountedWorkspace[];
 }
@@ -169,7 +182,7 @@ export class PartnerWorkspaces extends Context.Service<
       request: WorkspaceListRequest
     ) => Effect.Effect<
       CountedWorkspacePage,
-      DatabaseError | MissingPartnerScope
+      DatabaseError | InvalidWorkspaceCursor | MissingPartnerScope
     >;
     readonly change: (
       key: PartnerKeyPrincipal,
@@ -196,7 +209,10 @@ export class PartnerWorkspaces extends Context.Service<
       request: WorkspaceListRequest
     ) => Effect.Effect<
       CountedWorkspacePage,
-      DatabaseError | MissingPermission | PartnerNotFound
+      | DatabaseError
+      | InvalidWorkspaceCursor
+      | MissingPermission
+      | PartnerNotFound
     >;
     /** What the actor's partner account holds, for its people. */
     readonly usageFor: (
@@ -261,7 +277,14 @@ export class PartnerWorkspaces extends Context.Service<
         const limit = limitOf(request.limit);
 
         const found = yield* workspaces.list(partnerId, {
-          before: request.before.pipe(Option.flatMap(decodeWorkspaceId)),
+          before: yield* Option.match(request.before, {
+            onNone: () => Effect.succeed(Option.none()),
+            onSome: (cursor) =>
+              decodeCursor(cursor).pipe(
+                Effect.mapError(() => new InvalidWorkspaceCursor()),
+                Effect.asSome
+              ),
+          }),
           externalId: request.externalId,
           // One more than asked, to know whether another page follows.
           limit: limit + 1,
@@ -276,7 +299,13 @@ export class PartnerWorkspaces extends Context.Service<
         const listed: CountedWorkspacePage = {
           next:
             found.workspaces.length > limit
-              ? Option.fromUndefinedOr(shown.at(-1)?.id)
+              ? yield* Effect.transposeOption(
+                  Option.fromUndefinedOr(shown.at(-1)).pipe(
+                    Option.map(({ createdAt, id }) =>
+                      encodeCursor({ createdAt, id }).pipe(Effect.orDie)
+                    )
+                  )
+                )
               : Option.none(),
           total: found.total,
           workspaces: yield* counted(shown),
