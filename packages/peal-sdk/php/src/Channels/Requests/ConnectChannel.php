@@ -3,13 +3,13 @@
 namespace Peal\Channels\Requests;
 
 use Peal\Core\Json\JsonSerializableType;
-use Peal\Types\InstagramConnection;
+use Peal\Types\ChannelConnection;
 use Peal\Core\Json\JsonProperty;
 
 class ConnectChannel extends JsonSerializableType
 {
     /**
-     * @var ?value-of<InstagramConnection> $connection
+     * @var ?value-of<ChannelConnection> $connection
      */
     #[JsonProperty('connection')]
     public ?string $connection;
@@ -28,7 +28,7 @@ class ConnectChannel extends JsonSerializableType
 
     /**
      * @param array{
-     *   connection?: ?value-of<InstagramConnection>,
+     *   connection?: ?value-of<ChannelConnection>,
      *   handle?: ?string,
      *   instance?: ?string,
      * } $values

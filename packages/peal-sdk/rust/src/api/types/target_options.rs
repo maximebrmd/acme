@@ -56,6 +56,30 @@ pub enum TargetOptions {
         privacy_level: Option<TikTokPrivacyLevel>,
     },
 
+    #[serde(rename = "linkedin")]
+    #[non_exhaustive]
+    Linkedin {
+        #[serde(rename = "disableReshare")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        disable_reshare: Option<bool>,
+        #[serde(rename = "documentTitle")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        document_title: Option<String>,
+        #[serde(rename = "linkDescription")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        link_description: Option<String>,
+        #[serde(rename = "linkTitle")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        link_title: Option<String>,
+        #[serde(rename = "linkUrl")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        link_url: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        mentions: Option<Vec<LinkedInMention>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        visibility: Option<LinkedInVisibility>,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -86,6 +110,18 @@ impl TargetOptions {
             disable_duet: None,
             disable_stitch: None,
             privacy_level: None,
+        }
+    }
+
+    pub fn linkedin() -> Self {
+        Self::Linkedin {
+            disable_reshare: None,
+            document_title: None,
+            link_description: None,
+            link_title: None,
+            link_url: None,
+            mentions: None,
+            visibility: None,
         }
     }
 
@@ -402,6 +438,146 @@ impl TargetOptions {
             disable_duet,
             disable_stitch,
             privacy_level: Some(privacy_level),
+        }
+    }
+
+    pub fn linkedin_with_disable_reshare(
+        disable_reshare: bool,
+        document_title: Option<String>,
+        link_description: Option<String>,
+        link_title: Option<String>,
+        link_url: Option<String>,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare: Some(disable_reshare),
+            document_title,
+            link_description,
+            link_title,
+            link_url,
+            mentions,
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_document_title(
+        disable_reshare: Option<bool>,
+        document_title: String,
+        link_description: Option<String>,
+        link_title: Option<String>,
+        link_url: Option<String>,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title: Some(document_title),
+            link_description,
+            link_title,
+            link_url,
+            mentions,
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_link_description(
+        disable_reshare: Option<bool>,
+        document_title: Option<String>,
+        link_description: String,
+        link_title: Option<String>,
+        link_url: Option<String>,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title,
+            link_description: Some(link_description),
+            link_title,
+            link_url,
+            mentions,
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_link_title(
+        disable_reshare: Option<bool>,
+        document_title: Option<String>,
+        link_description: Option<String>,
+        link_title: String,
+        link_url: Option<String>,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title,
+            link_description,
+            link_title: Some(link_title),
+            link_url,
+            mentions,
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_link_url(
+        disable_reshare: Option<bool>,
+        document_title: Option<String>,
+        link_description: Option<String>,
+        link_title: Option<String>,
+        link_url: String,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title,
+            link_description,
+            link_title,
+            link_url: Some(link_url),
+            mentions,
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_mentions(
+        disable_reshare: Option<bool>,
+        document_title: Option<String>,
+        link_description: Option<String>,
+        link_title: Option<String>,
+        link_url: Option<String>,
+        mentions: Vec<LinkedInMention>,
+        visibility: Option<LinkedInVisibility>,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title,
+            link_description,
+            link_title,
+            link_url,
+            mentions: Some(mentions),
+            visibility,
+        }
+    }
+
+    pub fn linkedin_with_visibility(
+        disable_reshare: Option<bool>,
+        document_title: Option<String>,
+        link_description: Option<String>,
+        link_title: Option<String>,
+        link_url: Option<String>,
+        mentions: Option<Vec<LinkedInMention>>,
+        visibility: LinkedInVisibility,
+    ) -> Self {
+        Self::Linkedin {
+            disable_reshare,
+            document_title,
+            link_description,
+            link_title,
+            link_url,
+            mentions,
+            visibility: Some(visibility),
         }
     }
 

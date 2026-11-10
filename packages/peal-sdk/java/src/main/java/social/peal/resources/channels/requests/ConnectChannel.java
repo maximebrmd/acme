@@ -16,12 +16,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import social.peal.core.ObjectMappers;
-import social.peal.types.InstagramConnection;
+import social.peal.types.ChannelConnection;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ConnectChannel.Builder.class)
 public final class ConnectChannel {
-    private final Optional<InstagramConnection> connection;
+    private final Optional<ChannelConnection> connection;
 
     private final Optional<String> handle;
 
@@ -30,7 +30,7 @@ public final class ConnectChannel {
     private final Map<String, Object> additionalProperties;
 
     private ConnectChannel(
-            Optional<InstagramConnection> connection,
+            Optional<ChannelConnection> connection,
             Optional<String> handle,
             Optional<String> instance,
             Map<String, Object> additionalProperties) {
@@ -41,7 +41,7 @@ public final class ConnectChannel {
     }
 
     @JsonProperty("connection")
-    public Optional<InstagramConnection> getConnection() {
+    public Optional<ChannelConnection> getConnection() {
         return connection;
     }
 
@@ -86,7 +86,7 @@ public final class ConnectChannel {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
-        private Optional<InstagramConnection> connection = Optional.empty();
+        private Optional<ChannelConnection> connection = Optional.empty();
 
         private Optional<String> handle = Optional.empty();
 
@@ -104,12 +104,12 @@ public final class ConnectChannel {
         }
 
         @JsonSetter(value = "connection", nulls = Nulls.SKIP)
-        public Builder connection(Optional<InstagramConnection> connection) {
+        public Builder connection(Optional<ChannelConnection> connection) {
             this.connection = connection;
             return this;
         }
 
-        public Builder connection(InstagramConnection connection) {
+        public Builder connection(ChannelConnection connection) {
             this.connection = Optional.ofNullable(connection);
             return this;
         }

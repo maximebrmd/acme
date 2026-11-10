@@ -5,7 +5,8 @@ import * as Peal from "../index.js";
 export type LookupResult = 
     | Peal.LookupResult.YoutubeVideoCategories
     | Peal.LookupResult.YoutubePlaylists
-    | Peal.LookupResult.TiktokCreator;
+    | Peal.LookupResult.TiktokCreator
+    | Peal.LookupResult.LinkedinOrganizations;
 
 export namespace LookupResult {
     export interface YoutubeVideoCategories extends Peal.LookupResultYoutubeVideoCategories {
@@ -18,5 +19,9 @@ export namespace LookupResult {
 
     export interface TiktokCreator extends Peal.LookupResultTiktokCreator {
         _tag: "tiktokCreator";
+    }
+
+    export interface LinkedinOrganizations extends Peal.LookupResultLinkedinOrganizations {
+        _tag: "linkedinOrganizations";
     }
 }

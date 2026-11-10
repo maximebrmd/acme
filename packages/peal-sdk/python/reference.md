@@ -664,7 +664,7 @@ client.channels.connect(
 <dl>
 <dd>
 
-**connection:** `typing.Optional[InstagramConnection]` 
+**connection:** `typing.Optional[ChannelConnection]` 
     
 </dd>
 </dl>
@@ -4374,7 +4374,7 @@ client.lookups.list(
 </dl>
 </details>
 
-<details><summary><code>client.lookups.<a href="src/peal/lookups/client.py#L65-L127">run</a>(...) -> LookupResult</code></summary>
+<details><summary><code>client.lookups.<a href="src/peal/lookups/client.py#L65-L131">run</a>(...) -> LookupResult</code></summary>
 <dl>
 <dd>
 
@@ -4478,6 +4478,14 @@ client.lookups.run(
 <dd>
 
 **region_code:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**vanity_name:** `typing.Optional[str]` 
     
 </dd>
 </dl>

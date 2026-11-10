@@ -575,7 +575,7 @@ client.channels.connect(
 <dl>
 <dd>
 
-**connection:** `Peal::Types::InstagramConnection` 
+**connection:** `Peal::Types::ChannelConnection` 
     
 </dd>
 </dl>
@@ -3953,6 +3953,14 @@ client.lookups.run(
 <dd>
 
 **region_code:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**vanity_name:** `String` 
     
 </dd>
 </dl>

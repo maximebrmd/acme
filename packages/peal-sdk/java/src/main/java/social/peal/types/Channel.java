@@ -26,7 +26,7 @@ import social.peal.core.ObjectMappers;
 public final class Channel {
     private final Optional<String> avatarUrl;
 
-    private final Optional<InstagramConnection> connection;
+    private final Optional<ChannelConnection> connection;
 
     private final Optional<String> displayName;
 
@@ -44,7 +44,7 @@ public final class Channel {
 
     private Channel(
             Optional<String> avatarUrl,
-            Optional<InstagramConnection> connection,
+            Optional<ChannelConnection> connection,
             Optional<String> displayName,
             String handle,
             String id,
@@ -72,7 +72,7 @@ public final class Channel {
     }
 
     @JsonIgnore
-    public Optional<InstagramConnection> getConnection() {
+    public Optional<ChannelConnection> getConnection() {
         if (connection == null) {
             return Optional.empty();
         }
@@ -123,7 +123,7 @@ public final class Channel {
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("connection")
-    private Optional<InstagramConnection> _getConnection() {
+    private Optional<ChannelConnection> _getConnection() {
         return connection;
     }
 
@@ -214,11 +214,11 @@ public final class Channel {
 
         _FinalStage avatarUrl(Nullable<String> avatarUrl);
 
-        _FinalStage connection(Optional<InstagramConnection> connection);
+        _FinalStage connection(Optional<ChannelConnection> connection);
 
-        _FinalStage connection(InstagramConnection connection);
+        _FinalStage connection(ChannelConnection connection);
 
-        _FinalStage connection(Nullable<InstagramConnection> connection);
+        _FinalStage connection(Nullable<ChannelConnection> connection);
 
         _FinalStage displayName(Optional<String> displayName);
 
@@ -247,7 +247,7 @@ public final class Channel {
 
         private Optional<String> displayName = Optional.empty();
 
-        private Optional<InstagramConnection> connection = Optional.empty();
+        private Optional<ChannelConnection> connection = Optional.empty();
 
         private Optional<String> avatarUrl = Optional.empty();
 
@@ -347,7 +347,7 @@ public final class Channel {
         }
 
         @java.lang.Override
-        public _FinalStage connection(Nullable<InstagramConnection> connection) {
+        public _FinalStage connection(Nullable<ChannelConnection> connection) {
             if (connection.isNull()) {
                 this.connection = null;
             } else if (connection.isEmpty()) {
@@ -359,14 +359,14 @@ public final class Channel {
         }
 
         @java.lang.Override
-        public _FinalStage connection(InstagramConnection connection) {
+        public _FinalStage connection(ChannelConnection connection) {
             this.connection = Optional.ofNullable(connection);
             return this;
         }
 
         @java.lang.Override
         @JsonSetter(value = "connection", nulls = Nulls.SKIP)
-        public _FinalStage connection(Optional<InstagramConnection> connection) {
+        public _FinalStage connection(Optional<ChannelConnection> connection) {
             this.connection = connection;
             return this;
         }

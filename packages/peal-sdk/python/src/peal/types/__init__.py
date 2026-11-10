@@ -67,6 +67,7 @@ if typing.TYPE_CHECKING:
     from .channel_cannot_post_encoded_reason import ChannelCannotPostEncodedReason
     from .channel_cannot_post_encoded_tag import ChannelCannotPostEncodedTag
     from .channel_capabilities import ChannelCapabilities
+    from .channel_connection import ChannelConnection
     from .channel_metrics import ChannelMetrics
     from .channel_not_found_encoded import ChannelNotFoundEncoded
     from .channel_options import ChannelOptions
@@ -166,6 +167,11 @@ if typing.TYPE_CHECKING:
     from .invalid_time_zone_encoded_tag import InvalidTimeZoneEncodedTag
     from .invitation import Invitation
     from .invitation_not_found_encoded import InvitationNotFoundEncoded
+    from .linked_in_connection import LinkedInConnection
+    from .linked_in_mention import LinkedInMention
+    from .linked_in_options import LinkedInOptions
+    from .linked_in_organization import LinkedInOrganization
+    from .linked_in_visibility import LinkedInVisibility
     from .lookup_description import LookupDescription
     from .lookup_input_invalid_encoded import LookupInputInvalidEncoded
     from .lookup_input_invalid_encoded_tag import LookupInputInvalidEncodedTag
@@ -173,10 +179,12 @@ if typing.TYPE_CHECKING:
     from .lookup_not_found_encoded import LookupNotFoundEncoded
     from .lookup_result import (
         LookupResult,
+        LookupResult_LinkedinOrganizations,
         LookupResult_TiktokCreator,
         LookupResult_YoutubePlaylists,
         LookupResult_YoutubeVideoCategories,
     )
+    from .lookup_result_linkedin_organizations import LookupResultLinkedinOrganizations
     from .lookup_result_tiktok_creator import LookupResultTiktokCreator
     from .lookup_result_youtube_playlists import LookupResultYoutubePlaylists
     from .lookup_result_youtube_video_categories import LookupResultYoutubeVideoCategories
@@ -301,7 +309,7 @@ if typing.TYPE_CHECKING:
     from .target_confirmation_not_published import TargetConfirmationNotPublished
     from .target_confirmation_published import TargetConfirmationPublished
     from .target_metrics import TargetMetrics
-    from .target_options import TargetOptions, TargetOptions_Tiktok, TargetOptions_Youtube
+    from .target_options import TargetOptions, TargetOptions_Linkedin, TargetOptions_Tiktok, TargetOptions_Youtube
     from .target_status_conflict_encoded import TargetStatusConflictEncoded
     from .text_capabilities import TextCapabilities
     from .text_limit import TextLimit
@@ -404,6 +412,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ChannelCannotPostEncodedReason": ".channel_cannot_post_encoded_reason",
     "ChannelCannotPostEncodedTag": ".channel_cannot_post_encoded_tag",
     "ChannelCapabilities": ".channel_capabilities",
+    "ChannelConnection": ".channel_connection",
     "ChannelMetrics": ".channel_metrics",
     "ChannelNotFoundEncoded": ".channel_not_found_encoded",
     "ChannelOptions": ".channel_options",
@@ -504,15 +513,22 @@ _dynamic_imports: typing.Dict[str, str] = {
     "InvalidTimeZoneEncodedTag": ".invalid_time_zone_encoded_tag",
     "Invitation": ".invitation",
     "InvitationNotFoundEncoded": ".invitation_not_found_encoded",
+    "LinkedInConnection": ".linked_in_connection",
+    "LinkedInMention": ".linked_in_mention",
+    "LinkedInOptions": ".linked_in_options",
+    "LinkedInOrganization": ".linked_in_organization",
+    "LinkedInVisibility": ".linked_in_visibility",
     "LookupDescription": ".lookup_description",
     "LookupInputInvalidEncoded": ".lookup_input_invalid_encoded",
     "LookupInputInvalidEncodedTag": ".lookup_input_invalid_encoded_tag",
     "LookupName": ".lookup_name",
     "LookupNotFoundEncoded": ".lookup_not_found_encoded",
     "LookupResult": ".lookup_result",
+    "LookupResultLinkedinOrganizations": ".lookup_result_linkedin_organizations",
     "LookupResultTiktokCreator": ".lookup_result_tiktok_creator",
     "LookupResultYoutubePlaylists": ".lookup_result_youtube_playlists",
     "LookupResultYoutubeVideoCategories": ".lookup_result_youtube_video_categories",
+    "LookupResult_LinkedinOrganizations": ".lookup_result",
     "LookupResult_TiktokCreator": ".lookup_result",
     "LookupResult_YoutubePlaylists": ".lookup_result",
     "LookupResult_YoutubeVideoCategories": ".lookup_result",
@@ -638,6 +654,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TargetConfirmation_Published": ".target_confirmation",
     "TargetMetrics": ".target_metrics",
     "TargetOptions": ".target_options",
+    "TargetOptions_Linkedin": ".target_options",
     "TargetOptions_Tiktok": ".target_options",
     "TargetOptions_Youtube": ".target_options",
     "TargetStatusConflictEncoded": ".target_status_conflict_encoded",
@@ -768,6 +785,7 @@ __all__ = [
     "ChannelCannotPostEncodedReason",
     "ChannelCannotPostEncodedTag",
     "ChannelCapabilities",
+    "ChannelConnection",
     "ChannelMetrics",
     "ChannelNotFoundEncoded",
     "ChannelOptions",
@@ -868,15 +886,22 @@ __all__ = [
     "InvalidTimeZoneEncodedTag",
     "Invitation",
     "InvitationNotFoundEncoded",
+    "LinkedInConnection",
+    "LinkedInMention",
+    "LinkedInOptions",
+    "LinkedInOrganization",
+    "LinkedInVisibility",
     "LookupDescription",
     "LookupInputInvalidEncoded",
     "LookupInputInvalidEncodedTag",
     "LookupName",
     "LookupNotFoundEncoded",
     "LookupResult",
+    "LookupResultLinkedinOrganizations",
     "LookupResultTiktokCreator",
     "LookupResultYoutubePlaylists",
     "LookupResultYoutubeVideoCategories",
+    "LookupResult_LinkedinOrganizations",
     "LookupResult_TiktokCreator",
     "LookupResult_YoutubePlaylists",
     "LookupResult_YoutubeVideoCategories",
@@ -1002,6 +1027,7 @@ __all__ = [
     "TargetConfirmation_Published",
     "TargetMetrics",
     "TargetOptions",
+    "TargetOptions_Linkedin",
     "TargetOptions_Tiktok",
     "TargetOptions_Youtube",
     "TargetStatusConflictEncoded",

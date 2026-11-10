@@ -118,6 +118,7 @@ class RawLookupsClient:
         language: typing.Optional[str] = OMIT,
         limit: typing.Optional[int] = OMIT,
         region_code: typing.Optional[str] = OMIT,
+        vanity_name: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[LookupResult]:
         """
@@ -139,6 +140,8 @@ class RawLookupsClient:
 
         region_code : typing.Optional[str]
 
+        vanity_name : typing.Optional[str]
+
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
 
@@ -158,6 +161,7 @@ class RawLookupsClient:
                 "language": language,
                 "limit": limit,
                 "regionCode": region_code,
+                "vanityName": vanity_name,
             },
             headers={
                 "content-type": "application/json",
@@ -353,6 +357,7 @@ class AsyncRawLookupsClient:
         language: typing.Optional[str] = OMIT,
         limit: typing.Optional[int] = OMIT,
         region_code: typing.Optional[str] = OMIT,
+        vanity_name: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[LookupResult]:
         """
@@ -374,6 +379,8 @@ class AsyncRawLookupsClient:
 
         region_code : typing.Optional[str]
 
+        vanity_name : typing.Optional[str]
+
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
 
@@ -393,6 +400,7 @@ class AsyncRawLookupsClient:
                 "language": language,
                 "limit": limit,
                 "regionCode": region_code,
+                "vanityName": vanity_name,
             },
             headers={
                 "content-type": "application/json",

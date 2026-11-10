@@ -28,6 +28,7 @@ public class ListTest : BaseMockServerTest
                   "durationMs": 1,
                   "id": "id",
                   "kind": "image",
+                  "pageCount": 1,
                   "status": {
                     "_tag": "pending"
                   },
@@ -47,6 +48,7 @@ public class ListTest : BaseMockServerTest
                   "durationMs": 1,
                   "id": "id",
                   "kind": "image",
+                  "pageCount": 1,
                   "status": {
                     "_tag": "pending"
                   },
@@ -97,6 +99,7 @@ public class ListTest : BaseMockServerTest
                   "durationMs": 1,
                   "id": "id",
                   "kind": "image",
+                  "pageCount": 1,
                   "status": {
                     "_tag": "pending"
                   },

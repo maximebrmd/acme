@@ -597,7 +597,7 @@ async fn main() {
 <dl>
 <dd>
 
-**connection:** `Option<InstagramConnection>` 
+**connection:** `Option<ChannelConnection>` 
     
 </dd>
 </dl>
@@ -4176,6 +4176,14 @@ async fn main() {
 <dd>
 
 **region_code:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**vanity_name:** `Option<String>` 
     
 </dd>
 </dl>

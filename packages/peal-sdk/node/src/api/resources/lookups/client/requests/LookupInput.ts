@@ -16,4 +16,5 @@ export interface LookupInput {
     language?: string;
     limit?: number;
     regionCode?: string;
+    vanityName?: string;
 }

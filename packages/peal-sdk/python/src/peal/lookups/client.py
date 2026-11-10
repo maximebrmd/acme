@@ -72,6 +72,7 @@ class LookupsClient:
         language: typing.Optional[str] = OMIT,
         limit: typing.Optional[int] = OMIT,
         region_code: typing.Optional[str] = OMIT,
+        vanity_name: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> LookupResult:
         """
@@ -92,6 +93,8 @@ class LookupsClient:
         limit : typing.Optional[int]
 
         region_code : typing.Optional[str]
+
+        vanity_name : typing.Optional[str]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -122,6 +125,7 @@ class LookupsClient:
             language=language,
             limit=limit,
             region_code=region_code,
+            vanity_name=vanity_name,
             request_options=request_options,
         )
         return _response.data
@@ -195,6 +199,7 @@ class AsyncLookupsClient:
         language: typing.Optional[str] = OMIT,
         limit: typing.Optional[int] = OMIT,
         region_code: typing.Optional[str] = OMIT,
+        vanity_name: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> LookupResult:
         """
@@ -215,6 +220,8 @@ class AsyncLookupsClient:
         limit : typing.Optional[int]
 
         region_code : typing.Optional[str]
+
+        vanity_name : typing.Optional[str]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -253,6 +260,7 @@ class AsyncLookupsClient:
             language=language,
             limit=limit,
             region_code=region_code,
+            vanity_name=vanity_name,
             request_options=request_options,
         )
         return _response.data

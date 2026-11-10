@@ -40,6 +40,15 @@ public record TargetOptions
     }
 
     /// <summary>
+    /// Create an instance of TargetOptions with <see cref="TargetOptions.Linkedin"/>.
+    /// </summary>
+    public TargetOptions(TargetOptions.Linkedin value)
+    {
+        Platform = "linkedin";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("platform")]
@@ -61,6 +70,11 @@ public record TargetOptions
     public bool IsTiktok => Platform == "tiktok";
 
     /// <summary>
+    /// Returns true if <see cref="Platform"/> is "linkedin"
+    /// </summary>
+    public bool IsLinkedin => Platform == "linkedin";
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.YouTubeOptions"/> if <see cref="Platform"/> is 'youtube', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'youtube'.</exception>
@@ -78,9 +92,19 @@ public record TargetOptions
             ? (Peal.TikTokOptions)Value!
             : throw new global::System.Exception("TargetOptions.Platform is not 'tiktok'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.LinkedInOptions"/> if <see cref="Platform"/> is 'linkedin', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'linkedin'.</exception>
+    public Peal.LinkedInOptions AsLinkedin() =>
+        IsLinkedin
+            ? (Peal.LinkedInOptions)Value!
+            : throw new global::System.Exception("TargetOptions.Platform is not 'linkedin'");
+
     public T Match<T>(
         Func<Peal.YouTubeOptions, T> onYoutube,
         Func<Peal.TikTokOptions, T> onTiktok,
+        Func<Peal.LinkedInOptions, T> onLinkedin,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -88,6 +112,7 @@ public record TargetOptions
         {
             "youtube" => onYoutube(AsYoutube()),
             "tiktok" => onTiktok(AsTiktok()),
+            "linkedin" => onLinkedin(AsLinkedin()),
             _ => onUnknown_(Platform, Value),
         };
     }
@@ -95,6 +120,7 @@ public record TargetOptions
     public void Visit(
         Action<Peal.YouTubeOptions> onYoutube,
         Action<Peal.TikTokOptions> onTiktok,
+        Action<Peal.LinkedInOptions> onLinkedin,
         Action<string, object?> onUnknown_
     )
     {
@@ -105,6 +131,9 @@ public record TargetOptions
                 break;
             case "tiktok":
                 onTiktok(AsTiktok());
+                break;
+            case "linkedin":
+                onLinkedin(AsLinkedin());
                 break;
             default:
                 onUnknown_(Platform, Value);
@@ -140,11 +169,27 @@ public record TargetOptions
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.LinkedInOptions"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsLinkedin(out Peal.LinkedInOptions? value)
+    {
+        if (Platform == "linkedin")
+        {
+            value = (Peal.LinkedInOptions)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator TargetOptions(TargetOptions.Youtube value) => new(value);
 
     public static implicit operator TargetOptions(TargetOptions.Tiktok value) => new(value);
+
+    public static implicit operator TargetOptions(TargetOptions.Linkedin value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<TargetOptions>
@@ -191,6 +236,8 @@ public record TargetOptions
                     ?? throw new JsonException("Failed to deserialize Peal.YouTubeOptions"),
                 "tiktok" => jsonWithoutDiscriminator.Deserialize<Peal.TikTokOptions?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.TikTokOptions"),
+                "linkedin" => jsonWithoutDiscriminator.Deserialize<Peal.LinkedInOptions?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.LinkedInOptions"),
                 _ => json.Deserialize<object?>(options),
             };
             return new TargetOptions(discriminator, value);
@@ -207,6 +254,7 @@ public record TargetOptions
                 {
                     "youtube" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tiktok" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "linkedin" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["platform"] = value.Platform;
@@ -270,6 +318,25 @@ public record TargetOptions
         public override string ToString() => Value.ToString() ?? "null";
 
         public static implicit operator TargetOptions.Tiktok(Peal.TikTokOptions value) =>
+            new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for linkedin
+    /// </summary>
+    [Serializable]
+    public struct Linkedin
+    {
+        public Linkedin(Peal.LinkedInOptions value)
+        {
+            Value = value;
+        }
+
+        internal Peal.LinkedInOptions Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator TargetOptions.Linkedin(Peal.LinkedInOptions value) =>
             new(value);
     }
 }

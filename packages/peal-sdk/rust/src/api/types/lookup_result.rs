@@ -34,6 +34,16 @@ pub enum LookupResult {
         next_cursor: Option<String>,
     },
 
+    #[serde(rename = "linkedinOrganizations")]
+    #[non_exhaustive]
+    LinkedinOrganizations {
+        #[serde(default)]
+        items: Vec<LinkedInOrganization>,
+        #[serde(rename = "nextCursor")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        next_cursor: Option<String>,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -63,6 +73,13 @@ impl LookupResult {
         }
     }
 
+    pub fn linkedin_organizations(items: Vec<LinkedInOrganization>) -> Self {
+        Self::LinkedinOrganizations {
+            items,
+            next_cursor: None,
+        }
+    }
+
     pub fn youtube_video_categories_with_next_cursor(
         items: Vec<YouTubeVideoCategory>,
         next_cursor: String,
@@ -85,6 +102,16 @@ impl LookupResult {
 
     pub fn tiktok_creator_with_next_cursor(items: Vec<TikTokAccount>, next_cursor: String) -> Self {
         Self::TiktokCreator {
+            items,
+            next_cursor: Some(next_cursor),
+        }
+    }
+
+    pub fn linkedin_organizations_with_next_cursor(
+        items: Vec<LinkedInOrganization>,
+        next_cursor: String,
+    ) -> Self {
+        Self::LinkedinOrganizations {
             items,
             next_cursor: Some(next_cursor),
         }

@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public final class MediaTooLargeEncodedKind {
     public static final MediaTooLargeEncodedKind IMAGE = new MediaTooLargeEncodedKind(Value.IMAGE, "image");
 
+    public static final MediaTooLargeEncodedKind DOCUMENT = new MediaTooLargeEncodedKind(Value.DOCUMENT, "document");
+
     public static final MediaTooLargeEncodedKind VIDEO = new MediaTooLargeEncodedKind(Value.VIDEO, "video");
 
     private final Value value;
@@ -46,6 +48,8 @@ public final class MediaTooLargeEncodedKind {
         switch (value) {
             case IMAGE:
                 return visitor.visitImage();
+            case DOCUMENT:
+                return visitor.visitDocument();
             case VIDEO:
                 return visitor.visitVideo();
             case UNKNOWN:
@@ -59,6 +63,8 @@ public final class MediaTooLargeEncodedKind {
         switch (value) {
             case "image":
                 return IMAGE;
+            case "document":
+                return DOCUMENT;
             case "video":
                 return VIDEO;
             default:
@@ -71,6 +77,8 @@ public final class MediaTooLargeEncodedKind {
 
         VIDEO,
 
+        DOCUMENT,
+
         UNKNOWN
     }
 
@@ -78,6 +86,8 @@ public final class MediaTooLargeEncodedKind {
         T visitImage();
 
         T visitVideo();
+
+        T visitDocument();
 
         T visitUnknown(String unknownType);
     }

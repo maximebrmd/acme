@@ -516,7 +516,7 @@ client.channels().connect(
 <dl>
 <dd>
 
-**connection:** `Optional<InstagramConnection>` 
+**connection:** `Optional<ChannelConnection>` 
     
 </dd>
 </dl>
@@ -3733,6 +3733,14 @@ client.lookups().run(
 <dd>
 
 **regionCode:** `Optional<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**vanityName:** `Optional<String>` 
     
 </dd>
 </dl>

@@ -59,6 +59,7 @@ public class RunTest : BaseMockServerTest
                 Language = null,
                 Limit = null,
                 RegionCode = null,
+                VanityName = null,
             }
         );
         JsonAssert.AreEqual(response, mockResponse);

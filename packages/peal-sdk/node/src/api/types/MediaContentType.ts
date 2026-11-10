@@ -6,6 +6,7 @@ export const MediaContentType = {
         ImagePng: "image/png",
         ImageWebp: "image/webp",
         VideoMp4: "video/mp4",
-        VideoQuicktime: "video/quicktime"
+        VideoQuicktime: "video/quicktime",
+        ApplicationPdf: "application/pdf"
     } as const;
 export type MediaContentType = typeof MediaContentType[keyof typeof MediaContentType];

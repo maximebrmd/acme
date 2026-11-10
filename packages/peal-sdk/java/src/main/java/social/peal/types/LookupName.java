@@ -7,6 +7,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class LookupName {
+    public static final LookupName LINKEDIN_ORGANIZATIONS =
+            new LookupName(Value.LINKEDIN_ORGANIZATIONS, "linkedinOrganizations");
+
     public static final LookupName TIKTOK_CREATOR = new LookupName(Value.TIKTOK_CREATOR, "tiktokCreator");
 
     public static final LookupName YOUTUBE_VIDEO_CATEGORIES =
@@ -45,6 +48,8 @@ public final class LookupName {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
+            case LINKEDIN_ORGANIZATIONS:
+                return visitor.visitLinkedinOrganizations();
             case TIKTOK_CREATOR:
                 return visitor.visitTiktokCreator();
             case YOUTUBE_VIDEO_CATEGORIES:
@@ -60,6 +65,8 @@ public final class LookupName {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static LookupName valueOf(String value) {
         switch (value) {
+            case "linkedinOrganizations":
+                return LINKEDIN_ORGANIZATIONS;
             case "tiktokCreator":
                 return TIKTOK_CREATOR;
             case "youtubeVideoCategories":
@@ -78,6 +85,8 @@ public final class LookupName {
 
         TIKTOK_CREATOR,
 
+        LINKEDIN_ORGANIZATIONS,
+
         UNKNOWN
     }
 
@@ -87,6 +96,8 @@ public final class LookupName {
         T visitYoutubePlaylists();
 
         T visitTiktokCreator();
+
+        T visitLinkedinOrganizations();
 
         T visitUnknown(String unknownType);
     }

@@ -7,6 +7,7 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .instagram_connection import InstagramConnection
+from .linked_in_connection import LinkedInConnection
 from .platform import Platform
 
 
@@ -15,6 +16,11 @@ class ConnectablePlatforms(UniversalBaseModel):
         typing.List[InstagramConnection],
         FieldMetadata(alias="instagramConnections"),
         pydantic.Field(alias="instagramConnections"),
+    ]
+    linkedin_connections: typing_extensions.Annotated[
+        typing.List[LinkedInConnection],
+        FieldMetadata(alias="linkedinConnections"),
+        pydantic.Field(alias="linkedinConnections"),
     ]
     platforms: typing.List[Platform]
 

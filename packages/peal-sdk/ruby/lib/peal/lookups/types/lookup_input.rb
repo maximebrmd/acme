@@ -17,6 +17,8 @@ module Peal
         field :limit, -> { Integer }, optional: true, nullable: false
 
         field :region_code, -> { String }, optional: true, nullable: false, api_name: "regionCode"
+
+        field :vanity_name, -> { String }, optional: true, nullable: false, api_name: "vanityName"
       end
     end
   end

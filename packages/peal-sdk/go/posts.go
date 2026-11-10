@@ -797,6 +797,316 @@ func (d *DraftPage) String() string {
 }
 
 var (
+	linkedInMentionFieldName = big.NewInt(1 << 0)
+	linkedInMentionFieldUrn  = big.NewInt(1 << 1)
+)
+
+type LinkedInMention struct {
+	Name string `json:"name" url:"name"`
+	Urn  string `json:"urn" url:"urn"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LinkedInMention) GetName() string {
+	if l == nil {
+		return ""
+	}
+	return l.Name
+}
+
+func (l *LinkedInMention) GetUrn() string {
+	if l == nil {
+		return ""
+	}
+	return l.Urn
+}
+
+func (l *LinkedInMention) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LinkedInMention) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInMention) SetName(name string) {
+	l.Name = name
+	l.require(linkedInMentionFieldName)
+}
+
+// SetUrn sets the Urn field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInMention) SetUrn(urn string) {
+	l.Urn = urn
+	l.require(linkedInMentionFieldUrn)
+}
+
+func (l *LinkedInMention) UnmarshalJSON(data []byte) error {
+	type unmarshaler LinkedInMention
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LinkedInMention(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LinkedInMention) MarshalJSON() ([]byte, error) {
+	type embed LinkedInMention
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LinkedInMention) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+var (
+	linkedInOptionsFieldDisableReshare  = big.NewInt(1 << 0)
+	linkedInOptionsFieldDocumentTitle   = big.NewInt(1 << 1)
+	linkedInOptionsFieldLinkDescription = big.NewInt(1 << 2)
+	linkedInOptionsFieldLinkTitle       = big.NewInt(1 << 3)
+	linkedInOptionsFieldLinkURL         = big.NewInt(1 << 4)
+	linkedInOptionsFieldMentions        = big.NewInt(1 << 5)
+	linkedInOptionsFieldVisibility      = big.NewInt(1 << 6)
+)
+
+// How a post goes out on a LinkedIn profile or company page. Scheduling needs none of them; a link (`linkUrl`) needs its `linkTitle`.
+type LinkedInOptions struct {
+	DisableReshare  *bool               `json:"disableReshare,omitempty" url:"disableReshare,omitempty"`
+	DocumentTitle   *string             `json:"documentTitle,omitempty" url:"documentTitle,omitempty"`
+	LinkDescription *string             `json:"linkDescription,omitempty" url:"linkDescription,omitempty"`
+	LinkTitle       *string             `json:"linkTitle,omitempty" url:"linkTitle,omitempty"`
+	LinkURL         *string             `json:"linkUrl,omitempty" url:"linkUrl,omitempty"`
+	Mentions        []*LinkedInMention  `json:"mentions,omitempty" url:"mentions,omitempty"`
+	Visibility      *LinkedInVisibility `json:"visibility,omitempty" url:"visibility,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LinkedInOptions) GetDisableReshare() *bool {
+	if l == nil {
+		return nil
+	}
+	return l.DisableReshare
+}
+
+func (l *LinkedInOptions) GetDocumentTitle() *string {
+	if l == nil {
+		return nil
+	}
+	return l.DocumentTitle
+}
+
+func (l *LinkedInOptions) GetLinkDescription() *string {
+	if l == nil {
+		return nil
+	}
+	return l.LinkDescription
+}
+
+func (l *LinkedInOptions) GetLinkTitle() *string {
+	if l == nil {
+		return nil
+	}
+	return l.LinkTitle
+}
+
+func (l *LinkedInOptions) GetLinkURL() *string {
+	if l == nil {
+		return nil
+	}
+	return l.LinkURL
+}
+
+func (l *LinkedInOptions) GetMentions() []*LinkedInMention {
+	if l == nil {
+		return nil
+	}
+	return l.Mentions
+}
+
+func (l *LinkedInOptions) GetVisibility() *LinkedInVisibility {
+	if l == nil {
+		return nil
+	}
+	return l.Visibility
+}
+
+func (l *LinkedInOptions) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LinkedInOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetDisableReshare sets the DisableReshare field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetDisableReshare(disableReshare *bool) {
+	l.DisableReshare = disableReshare
+	l.require(linkedInOptionsFieldDisableReshare)
+}
+
+// SetDocumentTitle sets the DocumentTitle field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetDocumentTitle(documentTitle *string) {
+	l.DocumentTitle = documentTitle
+	l.require(linkedInOptionsFieldDocumentTitle)
+}
+
+// SetLinkDescription sets the LinkDescription field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetLinkDescription(linkDescription *string) {
+	l.LinkDescription = linkDescription
+	l.require(linkedInOptionsFieldLinkDescription)
+}
+
+// SetLinkTitle sets the LinkTitle field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetLinkTitle(linkTitle *string) {
+	l.LinkTitle = linkTitle
+	l.require(linkedInOptionsFieldLinkTitle)
+}
+
+// SetLinkURL sets the LinkURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetLinkURL(linkURL *string) {
+	l.LinkURL = linkURL
+	l.require(linkedInOptionsFieldLinkURL)
+}
+
+// SetMentions sets the Mentions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetMentions(mentions []*LinkedInMention) {
+	l.Mentions = mentions
+	l.require(linkedInOptionsFieldMentions)
+}
+
+// SetVisibility sets the Visibility field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetVisibility(visibility *LinkedInVisibility) {
+	l.Visibility = visibility
+	l.require(linkedInOptionsFieldVisibility)
+}
+
+func (l *LinkedInOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler LinkedInOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LinkedInOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LinkedInOptions) MarshalJSON() ([]byte, error) {
+	type embed LinkedInOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LinkedInOptions) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+type LinkedInVisibility string
+
+const (
+	LinkedInVisibilityPublic      LinkedInVisibility = "public"
+	LinkedInVisibilityConnections LinkedInVisibility = "connections"
+	LinkedInVisibilityLoggedIn    LinkedInVisibility = "loggedIn"
+)
+
+func NewLinkedInVisibilityFromString(s string) (LinkedInVisibility, error) {
+	switch s {
+	case "public":
+		return LinkedInVisibilityPublic, nil
+	case "connections":
+		return LinkedInVisibilityConnections, nil
+	case "loggedIn":
+		return LinkedInVisibilityLoggedIn, nil
+	}
+	var t LinkedInVisibility
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (l LinkedInVisibility) Ptr() *LinkedInVisibility {
+	return &l
+}
+
+var (
 	mediaAttachmentFieldAltText = big.NewInt(1 << 0)
 	mediaAttachmentFieldMediaID = big.NewInt(1 << 1)
 )
@@ -2264,6 +2574,7 @@ type TargetOptions struct {
 	Platform string
 	Youtube  *YouTubeOptions
 	Tiktok   *TikTokOptions
+	Linkedin *LinkedInOptions
 
 	rawJSON json.RawMessage
 }
@@ -2287,6 +2598,13 @@ func (t *TargetOptions) GetTiktok() *TikTokOptions {
 		return nil
 	}
 	return t.Tiktok
+}
+
+func (t *TargetOptions) GetLinkedin() *LinkedInOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Linkedin
 }
 
 func (t *TargetOptions) UnmarshalJSON(data []byte) error {
@@ -2313,6 +2631,12 @@ func (t *TargetOptions) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		t.Tiktok = value
+	case "linkedin":
+		value := new(LinkedInOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Linkedin = value
 	}
 	t.rawJSON = json.RawMessage(data)
 	return nil
@@ -2328,6 +2652,9 @@ func (t TargetOptions) MarshalJSON() ([]byte, error) {
 	if t.Tiktok != nil {
 		return internal.MarshalJSONWithExtraProperty(t.Tiktok, "platform", "tiktok")
 	}
+	if t.Linkedin != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Linkedin, "platform", "linkedin")
+	}
 	if len(t.rawJSON) > 0 {
 		return t.rawJSON, nil
 	}
@@ -2337,6 +2664,7 @@ func (t TargetOptions) MarshalJSON() ([]byte, error) {
 type TargetOptionsVisitor interface {
 	VisitYoutube(*YouTubeOptions) error
 	VisitTiktok(*TikTokOptions) error
+	VisitLinkedin(*LinkedInOptions) error
 }
 
 func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
@@ -2345,6 +2673,9 @@ func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
 	}
 	if t.Tiktok != nil {
 		return visitor.VisitTiktok(t.Tiktok)
+	}
+	if t.Linkedin != nil {
+		return visitor.VisitLinkedin(t.Linkedin)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", t)
 }
@@ -2359,6 +2690,9 @@ func (t *TargetOptions) validate() error {
 	}
 	if t.Tiktok != nil {
 		fields = append(fields, "tiktok")
+	}
+	if t.Linkedin != nil {
+		fields = append(fields, "linkedin")
 	}
 	if len(fields) == 0 {
 		if t.Platform != "" {

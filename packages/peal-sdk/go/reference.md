@@ -528,7 +528,7 @@ _, err := client.Channels.Connect(
 <dl>
 <dd>
 
-**connection:** `*peal.InstagramConnection` 
+**connection:** `*peal.ChannelConnection` 
     
 </dd>
 </dl>
@@ -3750,6 +3750,14 @@ _, err := client.Lookups.Run(
 <dd>
 
 **regionCode:** `*string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**vanityName:** `*string` 
     
 </dd>
 </dl>

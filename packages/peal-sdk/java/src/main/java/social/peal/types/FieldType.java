@@ -15,6 +15,8 @@ public final class FieldType {
 
     public static final FieldType CHOICE = new FieldType(Value.CHOICE, "choice");
 
+    public static final FieldType MENTION_LIST = new FieldType(Value.MENTION_LIST, "mentionList");
+
     public static final FieldType TEXT_LIST = new FieldType(Value.TEXT_LIST, "textList");
 
     private final Value value;
@@ -56,6 +58,8 @@ public final class FieldType {
                 return visitor.visitBoolean();
             case CHOICE:
                 return visitor.visitChoice();
+            case MENTION_LIST:
+                return visitor.visitMentionList();
             case TEXT_LIST:
                 return visitor.visitTextList();
             case UNKNOWN:
@@ -75,6 +79,8 @@ public final class FieldType {
                 return BOOLEAN;
             case "choice":
                 return CHOICE;
+            case "mentionList":
+                return MENTION_LIST;
             case "textList":
                 return TEXT_LIST;
             default:
@@ -89,6 +95,8 @@ public final class FieldType {
 
         INTEGER,
 
+        MENTION_LIST,
+
         TEXT,
 
         TEXT_LIST,
@@ -102,6 +110,8 @@ public final class FieldType {
         T visitChoice();
 
         T visitInteger();
+
+        T visitMentionList();
 
         T visitText();
 

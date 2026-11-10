@@ -14,6 +14,8 @@ public readonly record struct LookupName : IStringEnum
 
     public static readonly LookupName TiktokCreator = new(Values.TiktokCreator);
 
+    public static readonly LookupName LinkedinOrganizations = new(Values.LinkedinOrganizations);
+
     public LookupName(string value)
     {
         Value = value;
@@ -114,5 +116,7 @@ public readonly record struct LookupName : IStringEnum
         public const string YoutubePlaylists = "youtubePlaylists";
 
         public const string TiktokCreator = "tiktokCreator";
+
+        public const string LinkedinOrganizations = "linkedinOrganizations";
     }
 }

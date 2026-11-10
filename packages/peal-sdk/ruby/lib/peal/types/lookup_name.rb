@@ -10,6 +10,7 @@ module Peal
       YOUTUBE_VIDEO_CATEGORIES = "youtubeVideoCategories"
       YOUTUBE_PLAYLISTS = "youtubePlaylists"
       TIKTOK_CREATOR = "tiktokCreator"
+      LINKEDIN_ORGANIZATIONS = "linkedinOrganizations"
     end
   end
 end

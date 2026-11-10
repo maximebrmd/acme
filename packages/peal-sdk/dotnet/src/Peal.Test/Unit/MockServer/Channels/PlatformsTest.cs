@@ -18,6 +18,10 @@ public class PlatformsTest : BaseMockServerTest
                 "instagramLogin",
                 "instagramLogin"
               ],
+              "linkedinConnections": [
+                "linkedinProfile",
+                "linkedinProfile"
+              ],
               "platforms": [
                 "x",
                 "x"
@@ -52,6 +56,9 @@ public class PlatformsTest : BaseMockServerTest
             {
               "instagramConnections": [
                 "instagramLogin"
+              ],
+              "linkedinConnections": [
+                "linkedinProfile"
               ],
               "platforms": [
                 "x"

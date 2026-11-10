@@ -17226,6 +17226,13 @@ func TestEnumFieldType(t *testing.T) {
 		assert.Equal(t, FieldType("integer"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_mentionList", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFieldTypeFromString("mentionList")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FieldType("mentionList"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_text", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewFieldTypeFromString("text")
@@ -17386,6 +17393,13 @@ func TestEnumLookupName(t *testing.T) {
 		assert.Equal(t, LookupName("tiktokCreator"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_linkedinOrganizations", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLookupNameFromString("linkedinOrganizations")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LookupName("linkedinOrganizations"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewLookupNameFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)
@@ -17443,6 +17457,13 @@ func TestEnumMediaContentType(t *testing.T) {
 		assert.Equal(t, MediaContentType("video/quicktime"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_application_pdf", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewMediaContentTypeFromString("application/pdf")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, MediaContentType("application/pdf"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewMediaContentTypeFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)
@@ -17494,6 +17515,13 @@ func TestEnumMediaKind(t *testing.T) {
 		assert.Equal(t, MediaKind("video"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_document", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewMediaKindFromString("document")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, MediaKind("document"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewMediaKindFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)
@@ -17543,6 +17571,13 @@ func TestEnumMediaTooLargeEncodedKind(t *testing.T) {
 		val, err := NewMediaTooLargeEncodedKindFromString("video")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, MediaTooLargeEncodedKind("video"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_document", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewMediaTooLargeEncodedKindFromString("document")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, MediaTooLargeEncodedKind("document"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_Invalid", func(t *testing.T) {

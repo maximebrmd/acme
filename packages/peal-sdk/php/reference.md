@@ -3590,6 +3590,14 @@ $client->lookups->run(
     
 </dd>
 </dl>
+
+<dl>
+<dd>
+
+**$vanityName:** `?string` 
+    
+</dd>
+</dl>
 </dd>
 </dl>
 

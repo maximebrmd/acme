@@ -34,12 +34,20 @@ public final class TargetOptions {
         return new TargetOptions(new TiktokValue(value));
     }
 
+    public static TargetOptions linkedin(LinkedInOptions value) {
+        return new TargetOptions(new LinkedinValue(value));
+    }
+
     public boolean isYoutube() {
         return value instanceof YoutubeValue;
     }
 
     public boolean isTiktok() {
         return value instanceof TiktokValue;
+    }
+
+    public boolean isLinkedin() {
+        return value instanceof LinkedinValue;
     }
 
     public boolean _isUnknown() {
@@ -56,6 +64,13 @@ public final class TargetOptions {
     public Optional<TikTokOptions> getTiktok() {
         if (isTiktok()) {
             return Optional.of(((TiktokValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<LinkedInOptions> getLinkedin() {
+        if (isLinkedin()) {
+            return Optional.of(((LinkedinValue) value).value);
         }
         return Optional.empty();
     }
@@ -93,11 +108,17 @@ public final class TargetOptions {
 
         T visitTiktok(TikTokOptions tiktok);
 
+        T visitLinkedin(LinkedInOptions linkedin);
+
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "platform", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(YoutubeValue.class), @JsonSubTypes.Type(TiktokValue.class)})
+    @JsonSubTypes({
+        @JsonSubTypes.Type(YoutubeValue.class),
+        @JsonSubTypes.Type(TiktokValue.class),
+        @JsonSubTypes.Type(LinkedinValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
@@ -169,6 +190,46 @@ public final class TargetOptions {
         }
 
         private boolean equalTo(TiktokValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("linkedin")
+    @JsonIgnoreProperties("platform")
+    private static final class LinkedinValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private LinkedInOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private LinkedinValue() {}
+
+        private LinkedinValue(LinkedInOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitLinkedin(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof LinkedinValue && equalTo((LinkedinValue) other);
+        }
+
+        private boolean equalTo(LinkedinValue other) {
             return value.equals(other.value);
         }
 

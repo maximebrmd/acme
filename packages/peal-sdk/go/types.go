@@ -6183,11 +6183,12 @@ func (f *FieldDescription) String() string {
 type FieldType string
 
 const (
-	FieldTypeBoolean  FieldType = "boolean"
-	FieldTypeChoice   FieldType = "choice"
-	FieldTypeInteger  FieldType = "integer"
-	FieldTypeText     FieldType = "text"
-	FieldTypeTextList FieldType = "textList"
+	FieldTypeBoolean     FieldType = "boolean"
+	FieldTypeChoice      FieldType = "choice"
+	FieldTypeInteger     FieldType = "integer"
+	FieldTypeMentionList FieldType = "mentionList"
+	FieldTypeText        FieldType = "text"
+	FieldTypeTextList    FieldType = "textList"
 )
 
 func NewFieldTypeFromString(s string) (FieldType, error) {
@@ -6198,6 +6199,8 @@ func NewFieldTypeFromString(s string) (FieldType, error) {
 		return FieldTypeChoice, nil
 	case "integer":
 		return FieldTypeInteger, nil
+	case "mentionList":
+		return FieldTypeMentionList, nil
 	case "text":
 		return FieldTypeText, nil
 	case "textList":
@@ -6975,6 +6978,7 @@ const (
 	LookupNameYoutubeVideoCategories LookupName = "youtubeVideoCategories"
 	LookupNameYoutubePlaylists       LookupName = "youtubePlaylists"
 	LookupNameTiktokCreator          LookupName = "tiktokCreator"
+	LookupNameLinkedinOrganizations  LookupName = "linkedinOrganizations"
 )
 
 func NewLookupNameFromString(s string) (LookupName, error) {
@@ -6985,6 +6989,8 @@ func NewLookupNameFromString(s string) (LookupName, error) {
 		return LookupNameYoutubePlaylists, nil
 	case "tiktokCreator":
 		return LookupNameTiktokCreator, nil
+	case "linkedinOrganizations":
+		return LookupNameLinkedinOrganizations, nil
 	}
 	var t LookupName
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -7070,6 +7076,7 @@ const (
 	MediaContentTypeImageWebp      MediaContentType = "image/webp"
 	MediaContentTypeVideoMp4       MediaContentType = "video/mp4"
 	MediaContentTypeVideoQuicktime MediaContentType = "video/quicktime"
+	MediaContentTypeApplicationPdf MediaContentType = "application/pdf"
 )
 
 func NewMediaContentTypeFromString(s string) (MediaContentType, error) {
@@ -7086,6 +7093,8 @@ func NewMediaContentTypeFromString(s string) (MediaContentType, error) {
 		return MediaContentTypeVideoMp4, nil
 	case "video/quicktime":
 		return MediaContentTypeVideoQuicktime, nil
+	case "application/pdf":
+		return MediaContentTypeApplicationPdf, nil
 	}
 	var t MediaContentType
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -7219,8 +7228,9 @@ func (m MediaInUseEncodedTag) Ptr() *MediaInUseEncodedTag {
 type MediaKind string
 
 const (
-	MediaKindImage MediaKind = "image"
-	MediaKindVideo MediaKind = "video"
+	MediaKindImage    MediaKind = "image"
+	MediaKindVideo    MediaKind = "video"
+	MediaKindDocument MediaKind = "document"
 )
 
 func NewMediaKindFromString(s string) (MediaKind, error) {
@@ -7229,6 +7239,8 @@ func NewMediaKindFromString(s string) (MediaKind, error) {
 		return MediaKindImage, nil
 	case "video":
 		return MediaKindVideo, nil
+	case "document":
+		return MediaKindDocument, nil
 	}
 	var t MediaKind
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -7531,8 +7543,9 @@ func (m *MediaTooLargeEncoded) String() string {
 type MediaTooLargeEncodedKind string
 
 const (
-	MediaTooLargeEncodedKindImage MediaTooLargeEncodedKind = "image"
-	MediaTooLargeEncodedKindVideo MediaTooLargeEncodedKind = "video"
+	MediaTooLargeEncodedKindImage    MediaTooLargeEncodedKind = "image"
+	MediaTooLargeEncodedKindVideo    MediaTooLargeEncodedKind = "video"
+	MediaTooLargeEncodedKindDocument MediaTooLargeEncodedKind = "document"
 )
 
 func NewMediaTooLargeEncodedKindFromString(s string) (MediaTooLargeEncodedKind, error) {
@@ -7541,6 +7554,8 @@ func NewMediaTooLargeEncodedKindFromString(s string) (MediaTooLargeEncodedKind, 
 		return MediaTooLargeEncodedKindImage, nil
 	case "video":
 		return MediaTooLargeEncodedKindVideo, nil
+	case "document":
+		return MediaTooLargeEncodedKindDocument, nil
 	}
 	var t MediaTooLargeEncodedKind
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

@@ -2,4 +2,6 @@
 
 import typing
 
-LookupName = typing.Union[typing.Literal["youtubeVideoCategories", "youtubePlaylists", "tiktokCreator"], typing.Any]
+LookupName = typing.Union[
+    typing.Literal["youtubeVideoCategories", "youtubePlaylists", "tiktokCreator", "linkedinOrganizations"], typing.Any
+]

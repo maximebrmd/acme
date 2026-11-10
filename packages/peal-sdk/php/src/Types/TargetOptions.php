@@ -14,6 +14,7 @@ class TargetOptions extends JsonSerializableType
      * @var (
      *    'youtube'
      *   |'tiktok'
+     *   |'linkedin'
      *   |'_unknown'
      * ) $platform
      */
@@ -23,6 +24,7 @@ class TargetOptions extends JsonSerializableType
      * @var (
      *    YouTubeOptions
      *   |TikTokOptions
+     *   |LinkedInOptions
      *   |mixed
      * ) $value
      */
@@ -33,11 +35,13 @@ class TargetOptions extends JsonSerializableType
      *   platform: (
      *    'youtube'
      *   |'tiktok'
+     *   |'linkedin'
      *   |'_unknown'
      * ),
      *   value: (
      *    YouTubeOptions
      *   |TikTokOptions
+     *   |LinkedInOptions
      *   |mixed
      * ),
      * } $values
@@ -70,6 +74,18 @@ class TargetOptions extends JsonSerializableType
         return new TargetOptions([
             'platform' => 'tiktok',
             'value' => $tiktok,
+        ]);
+    }
+
+    /**
+     * @param LinkedInOptions $linkedin
+     * @return TargetOptions
+     */
+    public static function linkedin(LinkedInOptions $linkedin): TargetOptions
+    {
+        return new TargetOptions([
+            'platform' => 'linkedin',
+            'value' => $linkedin,
         ]);
     }
 
@@ -118,6 +134,28 @@ class TargetOptions extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isLinkedin(): bool
+    {
+        return $this->value instanceof LinkedInOptions && $this->platform === 'linkedin';
+    }
+
+    /**
+     * @return LinkedInOptions
+     */
+    public function asLinkedin(): LinkedInOptions
+    {
+        if (!($this->value instanceof LinkedInOptions && $this->platform === 'linkedin')) {
+            throw new Exception(
+                "Expected linkedin; got " . $this->platform . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -143,6 +181,10 @@ class TargetOptions extends JsonSerializableType
                 break;
             case 'tiktok':
                 $value = $this->asTiktok()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'linkedin':
+                $value = $this->asLinkedin()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -186,6 +228,9 @@ class TargetOptions extends JsonSerializableType
                 break;
             case 'tiktok':
                 $args['value'] = TikTokOptions::jsonDeserialize($data);
+                break;
+            case 'linkedin':
+                $args['value'] = LinkedInOptions::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

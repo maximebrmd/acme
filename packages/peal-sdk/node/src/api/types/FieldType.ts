@@ -4,6 +4,7 @@ export const FieldType = {
         Boolean: "boolean",
         Choice: "choice",
         Integer: "integer",
+        MentionList: "mentionList",
         Text: "text",
         TextList: "textList"
     } as const;

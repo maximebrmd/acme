@@ -2,4 +2,4 @@
 
 import typing
 
-FieldType = typing.Union[typing.Literal["boolean", "choice", "integer", "text", "textList"], typing.Any]
+FieldType = typing.Union[typing.Literal["boolean", "choice", "integer", "mentionList", "text", "textList"], typing.Any]

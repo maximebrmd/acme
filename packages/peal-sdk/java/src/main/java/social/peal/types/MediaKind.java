@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public final class MediaKind {
     public static final MediaKind IMAGE = new MediaKind(Value.IMAGE, "image");
 
+    public static final MediaKind DOCUMENT = new MediaKind(Value.DOCUMENT, "document");
+
     public static final MediaKind VIDEO = new MediaKind(Value.VIDEO, "video");
 
     private final Value value;
@@ -44,6 +46,8 @@ public final class MediaKind {
         switch (value) {
             case IMAGE:
                 return visitor.visitImage();
+            case DOCUMENT:
+                return visitor.visitDocument();
             case VIDEO:
                 return visitor.visitVideo();
             case UNKNOWN:
@@ -57,6 +61,8 @@ public final class MediaKind {
         switch (value) {
             case "image":
                 return IMAGE;
+            case "document":
+                return DOCUMENT;
             case "video":
                 return VIDEO;
             default:
@@ -69,6 +75,8 @@ public final class MediaKind {
 
         VIDEO,
 
+        DOCUMENT,
+
         UNKNOWN
     }
 
@@ -76,6 +84,8 @@ public final class MediaKind {
         T visitImage();
 
         T visitVideo();
+
+        T visitDocument();
 
         T visitUnknown(String unknownType);
     }

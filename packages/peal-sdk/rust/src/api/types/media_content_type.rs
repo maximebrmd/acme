@@ -9,6 +9,7 @@ pub enum MediaContentType {
     ImageWebp,
     VideoMp4,
     VideoQuicktime,
+    ApplicationPdf,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -23,6 +24,7 @@ impl Serialize for MediaContentType {
             Self::ImageWebp => serializer.serialize_str("image/webp"),
             Self::VideoMp4 => serializer.serialize_str("video/mp4"),
             Self::VideoQuicktime => serializer.serialize_str("video/quicktime"),
+            Self::ApplicationPdf => serializer.serialize_str("application/pdf"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -38,6 +40,7 @@ impl<'de> Deserialize<'de> for MediaContentType {
             "image/webp" => Ok(Self::ImageWebp),
             "video/mp4" => Ok(Self::VideoMp4),
             "video/quicktime" => Ok(Self::VideoQuicktime),
+            "application/pdf" => Ok(Self::ApplicationPdf),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -52,6 +55,7 @@ impl fmt::Display for MediaContentType {
             Self::ImageWebp => write!(f, "image/webp"),
             Self::VideoMp4 => write!(f, "video/mp4"),
             Self::VideoQuicktime => write!(f, "video/quicktime"),
+            Self::ApplicationPdf => write!(f, "application/pdf"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

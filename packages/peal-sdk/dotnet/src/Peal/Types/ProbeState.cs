@@ -20,6 +20,8 @@ public readonly record struct ProbeState : IStringEnum
 
     public static readonly ProbeState ToolFailed = new(Values.ToolFailed);
 
+    public static readonly ProbeState TooManyPages = new(Values.TooManyPages);
+
     public ProbeState(string value)
     {
         Value = value;
@@ -126,5 +128,7 @@ public readonly record struct ProbeState : IStringEnum
         public const string TooLarge = "tooLarge";
 
         public const string ToolFailed = "toolFailed";
+
+        public const string TooManyPages = "tooManyPages";
     }
 }
