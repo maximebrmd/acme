@@ -41,7 +41,7 @@ const tooLarge = () =>
 
 // The headers that carry the client's address: those sign-in rate limits
 // read (AUTH_IP_HEADERS), which the edge sets and overwrites.
-const addressHeadersConfig = requiredInProduction(
+export const addressHeadersConfig = requiredInProduction(
   Config.Array(Schema.String, "AUTH_IP_HEADERS"),
   ["x-forwarded-for"]
 ).pipe(

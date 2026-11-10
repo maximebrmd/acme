@@ -105,10 +105,22 @@ layer(DatabaseTest)("the assistant endpoints", (it) => {
         .suggest({ params, payload: translate })
         .pipe(Effect.flip);
 
-      assert.instanceOf(refused, AssistantQuotaExceeded);
-      assert.strictEqual(
-        refused instanceof AssistantQuotaExceeded ? refused.dailyLimit : 0,
-        1
+      // With the plan that allows more, and where to order it.
+      assert.deepStrictEqual(
+        refused instanceof AssistantQuotaExceeded
+          ? {
+              billingUrl: refused.billingUrl,
+              dailyLimit: refused.dailyLimit,
+              plan: refused.plan,
+              planWithRoom: refused.planWithRoom,
+            }
+          : refused,
+        {
+          billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
+          dailyLimit: 1,
+          plan: "free",
+          planWithRoom: "starter",
+        }
       );
     }).pipe(Effect.provide(assistantTest({ dailyRequests: 1 })))
   );

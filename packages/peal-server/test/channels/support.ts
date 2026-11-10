@@ -242,6 +242,8 @@ export class RecordedNotices extends Context.Service<
  * queries, which scan every workspace: suites running at once, and channels
  * left by earlier runs, stay out of a test's way.
  */
+const everything = 1_000_000;
+
 export const repositoryScopedTo = (workspaceId: WorkspaceId) => {
   const own = (found: readonly Channel[]) =>
     found.filter((channel) => channel.workspaceId === workspaceId);
@@ -251,16 +253,22 @@ export const repositoryScopedTo = (workspaceId: WorkspaceId) => {
     Effect.gen(function* scopedRepository() {
       const channels = yield* ChannelRepository;
 
+      // Each page is cut from the workspace's own channels, as the jobs'
+      // paging would cut it from every workspace's.
       return ChannelRepository.of({
         ...channels,
+        countDueForRefresh: (cutoffs) =>
+          channels
+            .dueForRefresh({ after: Option.none(), cutoffs, limit: everything })
+            .pipe(Effect.map((found) => own(found).length)),
         dueForRefresh: (request) =>
           channels
-            .dueForRefresh({ ...request, limit: 100_000 })
-            .pipe(Effect.map(own)),
+            .dueForRefresh({ ...request, limit: everything })
+            .pipe(Effect.map((found) => own(found).slice(0, request.limit))),
         needingReconnect: (request) =>
           channels
-            .needingReconnect({ ...request, limit: 100_000 })
-            .pipe(Effect.map(own)),
+            .needingReconnect({ ...request, limit: everything })
+            .pipe(Effect.map((found) => own(found).slice(0, request.limit))),
       });
     })
   ).pipe(Layer.provide(DrizzleChannelRepository));

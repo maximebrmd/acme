@@ -32,6 +32,8 @@ pub enum Permission {
     PostSchedule,
     PostApprove,
     PostPublish,
+    WebhookRead,
+    WebhookManage,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -68,6 +70,8 @@ impl Serialize for Permission {
             Self::PostSchedule => serializer.serialize_str("post:schedule"),
             Self::PostApprove => serializer.serialize_str("post:approve"),
             Self::PostPublish => serializer.serialize_str("post:publish"),
+            Self::WebhookRead => serializer.serialize_str("webhook:read"),
+            Self::WebhookManage => serializer.serialize_str("webhook:manage"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -105,6 +109,8 @@ impl<'de> Deserialize<'de> for Permission {
             "post:schedule" => Ok(Self::PostSchedule),
             "post:approve" => Ok(Self::PostApprove),
             "post:publish" => Ok(Self::PostPublish),
+            "webhook:read" => Ok(Self::WebhookRead),
+            "webhook:manage" => Ok(Self::WebhookManage),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -141,6 +147,8 @@ impl fmt::Display for Permission {
             Self::PostSchedule => write!(f, "post:schedule"),
             Self::PostApprove => write!(f, "post:approve"),
             Self::PostPublish => write!(f, "post:publish"),
+            Self::WebhookRead => write!(f, "webhook:read"),
+            Self::WebhookManage => write!(f, "webhook:manage"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

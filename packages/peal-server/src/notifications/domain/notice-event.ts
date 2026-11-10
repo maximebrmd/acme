@@ -1,4 +1,4 @@
-import { Match, Option, Schema } from "effect";
+import { Effect, Match, Option, Schema } from "effect";
 
 import type { Permission } from "#shared/domain/access.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
@@ -22,6 +22,18 @@ export const NoticeMoneySchema = Schema.Struct({
 });
 
 export type NoticeMoney = typeof NoticeMoneySchema.Type;
+
+/**
+ * A workspace holds `used` of something a plan allows `allowed` of:
+ * channels, members, or bytes of media stored.
+ */
+export const NoticeExcessSchema = Schema.Struct({
+  allowed: Schema.Int,
+  limit: Schema.Literals(["channels", "members", "mediaStorage"]),
+  used: Schema.Int,
+});
+
+export type NoticeExcess = typeof NoticeExcessSchema.Type;
 
 /** Why a post did not go out on a channel, as publishing records it. */
 export const PostFailureReasonSchema = Schema.Literals([
@@ -89,19 +101,27 @@ export const NoticeEventSchema = Schema.Union([
     interval: Schema.Literals(["month", "year"]),
     plan: PaidPlanSchema,
     price: NoticeMoneySchema,
+    // The contract's number, since contracts have one.
+    reference: Schema.optionalKey(Schema.String),
     startedAt: Schema.DateTimeUtc,
     trialEnd: Schema.Option(Schema.DateTimeUtc),
   }),
   // The workspace's trial ends at `endsAt`; it then moves to the free plan
-  // unless someone orders a plan.
+  // unless someone orders a plan. `over` is what it held beyond the free
+  // plan when it was told; notices stored before it list nothing.
   Schema.TaggedStruct("TrialEnding", {
     endsAt: Schema.DateTimeUtc,
+    over: Schema.Array(NoticeExcessSchema).pipe(
+      Schema.withDecodingDefault(Effect.succeed([]))
+    ),
     plan: PaidPlanSchema,
   }),
   // A yearly plan renews at `renewsAt`, for `price`, VAT included.
   Schema.TaggedStruct("SubscriptionRenewing", {
     plan: PaidPlanSchema,
     price: NoticeMoneySchema,
+    // The contract's number, since contracts have one.
+    reference: Schema.optionalKey(Schema.String),
     renewsAt: Schema.DateTimeUtc,
   }),
   // The subscription was cancelled, and ends at `endsAt`.
@@ -115,6 +135,16 @@ export const NoticeEventSchema = Schema.Union([
     plan: PaidPlanSchema,
     refunded: NoticeMoneySchema,
     withdrawnAt: Schema.DateTimeUtc,
+  }),
+  // Peal turned a webhook endpoint off, after days of failed deliveries
+  // (`failing`) or because its receiver answered 410 Gone (`gone`): nothing
+  // is sent to it until someone turns it back on. Named by its id and the
+  // host its deliveries went to, never its whole address, whose path may
+  // hold a secret.
+  Schema.TaggedStruct("WebhookEndpointDisabled", {
+    endpointId: Schema.NonEmptyString,
+    host: Schema.NonEmptyString,
+    reason: Schema.Literals(["failing", "gone"]),
   }),
 ]);
 
@@ -130,7 +160,8 @@ export type EmailKind =
 /**
  * Which email preference covers the event: none for billing's reminders and
  * confirmations, always emailed, as consumer law asks them on a durable
- * medium.
+ * medium, and none for a webhook endpoint turned off, as the systems that
+ * listened on it hear nothing more until someone acts.
  */
 export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
   Match.valueTags(event, {
@@ -144,13 +175,15 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     SubscriptionStarted: () => Option.none<EmailKind>(),
     SubscriptionWithdrawn: () => Option.none<EmailKind>(),
     TrialEnding: () => Option.none<EmailKind>(),
+    WebhookEndpointDisabled: () => Option.none<EmailKind>(),
   });
 
 /**
  * Who may act on the event: those who may schedule posts can repost one, or
  * confirm whether it went out; those who may connect channels can reconnect
- * one; those who manage billing can order, cancel or withdraw. Who hears
- * about it follows from it (`recipientsOf`).
+ * one; those who manage billing can order, cancel or withdraw; those who
+ * manage webhooks can turn an endpoint back on. Who hears about it follows
+ * from it (`recipientsOf`).
  */
 export const audienceOf = (event: NoticeEvent): Permission =>
   Match.valueTags(event, {
@@ -164,6 +197,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     SubscriptionStarted: (): Permission => "billing:manage",
     SubscriptionWithdrawn: (): Permission => "billing:manage",
     TrialEnding: (): Permission => "billing:manage",
+    WebhookEndpointDisabled: (): Permission => "webhook:manage",
   });
 
 /** Whether the event is about a post rather than a channel or billing. */
@@ -179,13 +213,14 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     SubscriptionStarted: () => false,
     SubscriptionWithdrawn: () => false,
     TrialEnding: () => false,
+    WebhookEndpointDisabled: () => false,
   });
 
 /**
  * What a reader must still be allowed when the notice's email goes out: to
  * read posts, for a post's notice, which went to its author whatever their
  * role; to act on the channel, for a channel's; to manage billing, for
- * billing's.
+ * billing's; to manage webhooks, for an endpoint's.
  */
 export const readerPermissionOf = (event: NoticeEvent): Permission =>
   isAboutPost(event) ? "post:read" : audienceOf(event);
@@ -249,4 +284,5 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     SubscriptionStarted: () => `/app/${workspaceId}/billing`,
     SubscriptionWithdrawn: () => `/app/${workspaceId}/billing`,
     TrialEnding: () => `/app/${workspaceId}/billing`,
+    WebhookEndpointDisabled: () => `/app/${workspaceId}/settings/webhooks`,
   });

@@ -1,12 +1,16 @@
-import { Effect } from "effect";
+import { DateTime, Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   BillingNotEnabled,
   BillingUnavailable,
   CurrentMember,
+  DesiredDayTooFar,
+  desiredDayHorizonDays,
   Forbidden,
   NothingToCancel,
+  PlanTooSmall,
+  ReductionRefused,
   TrialUnavailable,
   WithdrawalUnavailable,
 } from "peal-contract";
@@ -14,8 +18,12 @@ import type { Member } from "peal-contract";
 
 import { CancelSubscription } from "#billing/application/cancel-subscription.ts";
 import { PlaceOrder } from "#billing/application/place-order.ts";
+import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
+import { withinHorizon } from "#billing/domain/desired-day.ts";
 import { actorOf } from "#shared/api/actor.ts";
+
+import { standingView } from "./billing-view.ts";
 
 const forbidden = () => Effect.fail(new Forbidden());
 
@@ -49,6 +57,7 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
     const orders = yield* PlaceOrder;
     const cancellations = yield* CancelSubscription;
     const withdrawals = yield* Withdraw;
+    const reductions = yield* ReduceWorkspace;
 
     const withdrawalErrors = {
       BillingOff: notEnabled,
@@ -80,6 +89,14 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
                 DatabaseError: Effect.die,
                 MissingPermission: forbidden,
                 PersonRequired: forbidden,
+                PlanTooSmall: ({ over, plan, planWithRoom }) =>
+                  Effect.fail(
+                    new PlanTooSmall({
+                      over,
+                      plan,
+                      planWithRoom: Option.getOrNull(planWithRoom),
+                    })
+                  ),
                 StripeUnreachable: unreachable,
                 TrialUnavailable: ({ reason }) =>
                   Effect.fail(new TrialUnavailable({ reason })),
@@ -95,11 +112,23 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
           };
         })
       )
-      .handle("cancel", () =>
+      .handle("cancel", ({ payload }) =>
         Effect.gen(function* cancel() {
           const actor = yield* inPerson(yield* CurrentMember);
 
-          return yield* cancellations.cancel(actor).pipe(
+          // The end of the day asked for, UTC.
+          const desiredAt = Option.fromNullishOr(payload.desiredOn).pipe(
+            Option.flatMap((day) => DateTime.make(`${day}T00:00:00Z`)),
+            Option.map((start) => DateTime.add(start, { days: 1 }))
+          );
+
+          if (!withinHorizon(desiredAt, yield* DateTime.now)) {
+            return yield* new DesiredDayTooFar({
+              horizonDays: desiredDayHorizonDays,
+            });
+          }
+
+          return yield* cancellations.cancel(actor, desiredAt).pipe(
             Effect.catchTags({
               BillingOff: notEnabled,
               DatabaseError: Effect.die,
@@ -118,6 +147,24 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
           return yield* withdrawals
             .preview(actor)
             .pipe(Effect.catchTags(withdrawalErrors));
+        })
+      )
+      .handle("reduce", ({ payload }) =>
+        Effect.gen(function* reduce() {
+          const actor = yield* inPerson(yield* CurrentMember);
+
+          const reduced = yield* reductions.keep(actor, payload).pipe(
+            Effect.catchTags({
+              BillingOff: notEnabled,
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+              PersonRequired: forbidden,
+              ReductionRefused: ({ reason }) =>
+                Effect.fail(new ReductionRefused({ reason })),
+            })
+          );
+
+          return { ...reduced, standing: standingView(reduced.standing) };
         })
       )
       .handle("withdraw", () =>

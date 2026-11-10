@@ -3,8 +3,11 @@ import {
   DateTime,
   Duration,
   Effect,
+  Function,
   Layer,
+  Metric,
   Option,
+  Ref,
   Schedule,
 } from "effect";
 
@@ -16,13 +19,15 @@ import {
   refreshDueBefore,
   tokenLifetimeOf,
 } from "#channels/domain/token-policy.ts";
+import type { RefreshSweep } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 
 import { ChannelLocks } from "./channel-locks.ts";
 import { ChannelNotices } from "./channel-notices.ts";
-import { ChannelRepository } from "./channel-repository.ts";
+import { ChannelRepository, refreshCursorOf } from "./channel-repository.ts";
+import type { RefreshCursor, RefreshCutoff } from "./channel-repository.ts";
 import { decryptTokens, encryptTokens } from "./channel-tokens.ts";
 import { PlatformAuthorizers } from "./platform-authorizer.ts";
 import type {
@@ -44,18 +49,55 @@ export type RefreshOutcome =
 
 /** How many channels a sweep refreshed, and how it went. */
 export interface SweepReport {
+  /** Channels the run took, refreshed or not. */
   readonly due: number;
   readonly failed: number;
+  /**
+   * Channels still due when the run stopped at its budget, which the next
+   * run takes; none when it finished.
+   */
+  readonly left: number;
   readonly reconnectRequired: number;
   readonly refreshed: number;
   readonly unavailable: number;
 }
 
 // Channels refreshed at once: refreshes wait on platforms, not on Peal.
-const concurrency = 4;
+// Each holds a channel lock, of which a process holds four at a time
+// (`sqlChannelLocks`): the sweep leaves one free, so a post whose token
+// must be renewed never queues behind it.
+const concurrency = 3;
 
-// The most channels one sweep takes; the next takes the rest.
-const sweepLimit = 200;
+// Channels read from the database at a time. A run takes page after page
+// until none is due: it has no cap that would leave channels behind.
+const pageSize = 100;
+
+/** How long the last refresh run took, in seconds. */
+export const tokenSweepDuration = Metric.gauge(
+  "peal.channels.token_sweep.duration",
+  {
+    description: "How long the last token refresh run took, in seconds",
+  }
+);
+
+/**
+ * The channels the last refresh run left due because it ran out of time:
+ * 0 while runs finish. Above 0 run after run, tokens are renewed later
+ * than their policy says.
+ */
+export const tokenSweepLeft = Metric.gauge("peal.channels.token_sweep.left", {
+  description:
+    "Channels still due for a token refresh when the last run stopped at its budget",
+});
+
+/** Refresh runs that stopped at their budget with channels still due. */
+export const tokenSweepsUnfinished = Metric.counter(
+  "peal.channels.token_sweep.unfinished",
+  {
+    description: "Token refresh runs that could not finish within their budget",
+    incremental: true,
+  }
+);
 
 // A refresh that rotated the token must be saved, or the session is lost:
 // the save is retried a few times before giving up.
@@ -66,6 +108,10 @@ const saveRetries = 3;
 // The longest a refresh may wait on the platform: past what an answer takes,
 // headers and body, short of how long another refresh waits for the lock.
 const renewalTimeout = Duration.seconds(45);
+
+// How a run dealt with a channel: what refreshing it came to, that it
+// failed unexpectedly, or that the run was out of time before its turn.
+type Swept = RefreshOutcome | "failed" | "left";
 
 interface Locked {
   readonly outcome: RefreshOutcome;
@@ -78,10 +124,25 @@ const done = (outcome: RefreshOutcome): Locked => ({
   outcome,
 });
 
+// Whether the channel comes no later than `until` in the order the due
+// channels are listed in: by expiry, then id, as Postgres compares them.
+const withinLeg = (channel: Channel, until: Option.Option<RefreshCursor>) =>
+  Option.match(
+    Option.zipWith(refreshCursorOf(channel), until, (at, end) => {
+      const order = DateTime.Order(at.expiresAt, end.expiresAt);
+
+      return order < 0 || (order === 0 && at.channelId <= end.channelId);
+    }),
+    { onNone: () => true, onSome: (within) => within }
+  );
+
 /**
- * Renews channels' tokens before they expire, through each platform's
- * authorizer and under each channel's lock, so a rotating refresh token is
- * never used twice. A refresh the platform refuses for good marks the channel
+ * Renews the tokens that only a refresh keeps working, through each
+ * platform's authorizer and under each channel's lock, so a rotating refresh
+ * token is never used twice. A token a call needs is renewed by that call
+ * (`ChannelAccess`), sweep or no sweep: the sweep is for the channels
+ * nothing calls, whose token would otherwise lapse (renewed ahead of its
+ * expiry) or whose refresh token would go stale (kept alive). A refresh the platform refuses for good marks the channel
  * `refreshNeeded` and tells the workspace once; one it could not answer is
  * tried again by the next sweep.
  */
@@ -92,8 +153,17 @@ export class RefreshChannelTokens extends Context.Service<
     readonly refresh: (
       channelId: ChannelId
     ) => Effect.Effect<RefreshOutcome, DatabaseError>;
-    /** Refreshes every channel due now, a few at a time. Never fails. */
-    readonly sweep: Effect.Effect<SweepReport>;
+    /**
+     * Refreshes every channel due now, a few at a time, those whose token
+     * is about to lapse before those only kept alive, for at most `budget`:
+     * past it, it starts no refresh and says how many channels it left.
+     * The run after one that stopped starts where it stopped, then comes
+     * back to the channels before, so channels whose platform hangs never
+     * keep the same others waiting. Never fails.
+     */
+    readonly sweep: (options: {
+      readonly budget: Duration.Duration;
+    }) => Effect.Effect<SweepReport>;
   }
 >()("peal-server/channels/application/RefreshChannelTokens") {
   static readonly layer = Layer.effect(
@@ -245,65 +315,230 @@ export class RefreshChannelTokens extends Context.Service<
         }
       );
 
-      const sweep = Effect.gen(function* sweep() {
-        const now = yield* DateTime.now;
-
-        // Each platform's cutoff from the authorizer that connects it: for
-        // Instagram, Instagram Login's, whose tokens alone renew; channels
-        // whose tokens never expire are not due whatever the cutoff.
-        const cutoffs = platforms.flatMap((platform) =>
-          Option.toArray(
-            Option.flatMap(authorizers.for(platform), (authorizer) =>
-              refreshDueBefore(authorizer.policy, now)
-            )
-          ).map((before) => ({ before, platform }))
-        );
-
-        const due = yield* channels.dueForRefresh({
-          cutoffs,
-          limit: sweepLimit,
-        });
-
-        const outcomes = yield* Effect.forEach(
-          due,
-          (channel) =>
-            refresh(channel.id).pipe(
-              Effect.catchCause((cause) =>
-                Effect.logWarning("Refreshing a channel failed", cause).pipe(
-                  Effect.annotateLogs({ channelId: channel.id }),
-                  Effect.as<RefreshOutcome | "failed">("failed")
-                )
+      // The platforms' cutoffs at `now`, from the authorizer that connects
+      // each: for Instagram, Instagram Login's, whose tokens alone renew;
+      // channels whose tokens never expire are not due whatever the cutoff.
+      // Those renewed ahead of their expiry come apart from those kept
+      // alive: the first lapse if the run is late, the second have weeks.
+      const cutoffsAt = (now: DateTime.Utc) => {
+        const of = (sweep: RefreshSweep["_tag"]): readonly RefreshCutoff[] =>
+          platforms.flatMap((platform) =>
+            Option.toArray(
+              authorizers.for(platform).pipe(
+                Option.filter(
+                  ({ policy }) =>
+                    policy.refresh._tag === "refreshToken" &&
+                    policy.refresh.sweep._tag === sweep
+                ),
+                Option.flatMap(({ policy }) => refreshDueBefore(policy, now)),
+                Option.map((before) => ({ before, platform }))
               )
-            ),
-          { concurrency }
+            )
+          );
+
+        return { ahead: of("beforeExpiry"), idle: of("keepAlive") };
+      };
+
+      // Refreshes the channel unless the run is out of time: it then
+      // starts nothing more, and waits only for the refreshes under way.
+      const refreshBy = (deadline: DateTime.Utc) => (channel: Channel) =>
+        DateTime.now.pipe(
+          Effect.flatMap((now): Effect.Effect<Swept> =>
+            DateTime.isGreaterThanOrEqualTo(now, deadline)
+              ? Effect.succeed("left")
+              : refresh(channel.id).pipe(
+                  Effect.catchCause((cause) =>
+                    Effect.logWarning(
+                      "Refreshing a channel failed",
+                      cause
+                    ).pipe(
+                      Effect.annotateLogs({ channelId: channel.id }),
+                      Effect.as<Swept>("failed")
+                    )
+                  )
+                )
+          )
         );
 
-        const count = (outcome: RefreshOutcome | "failed") =>
-          outcomes.filter((value) => value === outcome).length;
+      // Where the last run of each sweep stopped at its budget, in this
+      // process: the next one starts after it. Without it, channels whose
+      // platform hangs, due first run after run, would take every run
+      // whole, and those after them would lapse unrefreshed.
+      const stoppedAt = {
+        ahead: yield* Ref.make(Option.none<RefreshCursor>()),
+        idle: yield* Ref.make(Option.none<RefreshCursor>()),
+      };
 
-        const report: SweepReport = {
-          due: due.length,
-          failed: count("failed"),
-          reconnectRequired: count("reconnectRequired"),
-          refreshed: count("refreshed"),
-          unavailable: count("unavailable"),
-        };
+      // The channels due before the cutoffs that come after `from`,
+      // soonest first, a page at a time, up to `until` when given. Stops
+      // at the deadline, and says after which channel.
+      const sweepLeg = Effect.fn("RefreshChannelTokens.sweepLeg")(
+        function* sweepLeg(
+          cutoffs: readonly RefreshCutoff[],
+          deadline: DateTime.Utc,
+          from: Option.Option<RefreshCursor>,
+          until: Option.Option<RefreshCursor>
+        ) {
+          const outcomes: Swept[] = [];
+          let after = from;
 
-        return report;
-      }).pipe(
-        Effect.catchCause((cause) =>
-          Effect.logWarning("The token refresh sweep failed", cause).pipe(
-            Effect.as<SweepReport>({
-              due: 0,
-              failed: 0,
-              reconnectRequired: 0,
-              refreshed: 0,
-              unavailable: 0,
-            })
-          )
-        ),
-        Effect.withSpan("RefreshChannelTokens.sweep")
+          while (cutoffs.length > 0) {
+            const listed = yield* channels.dueForRefresh({
+              after,
+              cutoffs,
+              limit: pageSize,
+            });
+
+            const page = listed.filter((channel) => withinLeg(channel, until));
+
+            const swept = yield* Effect.forEach(page, refreshBy(deadline), {
+              concurrency,
+            });
+
+            outcomes.push(...swept);
+
+            // The run is out of time: the next one starts after the last
+            // channel this one took.
+            if (swept.includes("left")) {
+              const taken = page[swept.indexOf("left") - 1];
+
+              return {
+                outcomes,
+                stopped: Option.some(
+                  taken === undefined
+                    ? after
+                    : Option.orElse(
+                        refreshCursorOf(taken),
+                        Function.constant(after)
+                      )
+                ),
+              };
+            }
+
+            after = Option.flatMap(
+              Option.fromUndefinedOr(listed.at(-1)),
+              refreshCursorOf
+            );
+
+            if (
+              listed.length < pageSize ||
+              page.length < listed.length ||
+              Option.isNone(after)
+            ) {
+              break;
+            }
+          }
+
+          return {
+            outcomes,
+            stopped: Option.none<Option.Option<RefreshCursor>>(),
+          };
+        }
       );
+
+      // Every channel due before the cutoffs, each once: those after where
+      // the last run stopped, then, from the soonest due, those up to
+      // there. A channel whose platform did not answer stays due, and is
+      // tried again by the next run, not this one. Stops at the deadline.
+      const sweepDue = Effect.fn("RefreshChannelTokens.sweepDue")(
+        function* sweepDue(
+          cutoffs: readonly RefreshCutoff[],
+          deadline: DateTime.Utc,
+          resume: Ref.Ref<Option.Option<RefreshCursor>>
+        ) {
+          const from = yield* Ref.get(resume);
+          const rest = yield* sweepLeg(cutoffs, deadline, from, Option.none());
+
+          if (Option.isSome(rest.stopped) || Option.isNone(from)) {
+            yield* Ref.set(resume, Option.flatten(rest.stopped));
+
+            return rest.outcomes;
+          }
+
+          const start = yield* sweepLeg(cutoffs, deadline, Option.none(), from);
+
+          yield* Ref.set(resume, Option.flatten(start.stopped));
+
+          return [...rest.outcomes, ...start.outcomes];
+        }
+      );
+
+      const sweepWithin = Effect.fn("RefreshChannelTokens.sweep")(
+        function* sweepWithin(budget: Duration.Duration) {
+          const startedAt = yield* DateTime.now;
+          const deadline = DateTime.addDuration(startedAt, budget);
+          const cutoffs = cutoffsAt(startedAt);
+
+          const ahead = yield* sweepDue(
+            cutoffs.ahead,
+            deadline,
+            stoppedAt.ahead
+          );
+
+          const idle = ahead.includes("left")
+            ? []
+            : yield* sweepDue(cutoffs.idle, deadline, stoppedAt.idle);
+
+          const outcomes = [...ahead, ...idle];
+          const unfinished = outcomes.includes("left");
+
+          // What a run that stopped leaves: everything still due, the
+          // channels it could not refresh included.
+          const left = unfinished
+            ? yield* channels.countDueForRefresh([
+                ...cutoffs.ahead,
+                ...cutoffs.idle,
+              ])
+            : 0;
+
+          const count = (outcome: Swept) =>
+            outcomes.filter((value) => value === outcome).length;
+
+          const report: SweepReport = {
+            due: outcomes.length - count("left"),
+            failed: count("failed"),
+            left,
+            reconnectRequired: count("reconnectRequired"),
+            refreshed: count("refreshed"),
+            unavailable: count("unavailable"),
+          };
+
+          const took = DateTime.distance(startedAt, yield* DateTime.now);
+
+          yield* Metric.update(tokenSweepDuration, Duration.toSeconds(took));
+          yield* Metric.update(tokenSweepLeft, left);
+
+          if (unfinished) {
+            yield* Metric.update(tokenSweepsUnfinished, 1);
+            yield* Effect.logWarning(
+              "The token refresh run could not finish before the next one: the channels left are refreshed by the runs that follow, later than their policy says"
+            ).pipe(
+              Effect.annotateLogs({
+                ...report,
+                seconds: Duration.toSeconds(took),
+              })
+            );
+          }
+
+          return report;
+        }
+      );
+
+      const sweep = (options: { readonly budget: Duration.Duration }) =>
+        sweepWithin(options.budget).pipe(
+          Effect.catchCause((cause) =>
+            Effect.logWarning("The token refresh sweep failed", cause).pipe(
+              Effect.as<SweepReport>({
+                due: 0,
+                failed: 0,
+                left: 0,
+                reconnectRequired: 0,
+                refreshed: 0,
+                unavailable: 0,
+              })
+            )
+          )
+        );
 
       return RefreshChannelTokens.of({ refresh, sweep });
     })

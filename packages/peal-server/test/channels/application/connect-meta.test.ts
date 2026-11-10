@@ -685,7 +685,12 @@ layer(FreePlanMetaTest)("choosing Meta accounts on the free plan", (it) => {
 
         assert.deepStrictEqual(
           refused,
-          new PlanLimitReached({ allowed: 3, limit: "channels" })
+          new PlanLimitReached({
+            allowed: 3,
+            limit: "channels",
+            needed: 4,
+            used: 1,
+          })
         );
         assert.lengthOf(yield* repository.list(workspaceId), 1);
 
@@ -817,7 +822,12 @@ layer(DowngradingMetaTest)(
 
           assert.deepStrictEqual(
             refused,
-            new PlanLimitReached({ allowed: 3, limit: "channels" })
+            new PlanLimitReached({
+              allowed: 3,
+              limit: "channels",
+              needed: 4,
+              used: 3,
+            })
           );
           assert.lengthOf(yield* repository.list(workspaceId), 3);
 

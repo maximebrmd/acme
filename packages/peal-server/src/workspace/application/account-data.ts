@@ -1,9 +1,16 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { AuthoredPostRecord } from "#shared/application/personal-data.ts";
+import type {
+  AuthoredPostRecord,
+  LegalRemainsRecord,
+} from "#shared/application/personal-data.ts";
 import type { ApiKey } from "#workspace/domain/api-key.ts";
-import { ownSessionOrCommandLine } from "#workspace/domain/own-session.ts";
+import type { OperatorDeclaration } from "#workspace/domain/operator-declaration.ts";
+import {
+  ownSession,
+  ownSessionOrCommandLine,
+} from "#workspace/domain/own-session.ts";
 import type { SessionRequired } from "#workspace/domain/session-required.ts";
 import type { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
@@ -17,6 +24,7 @@ import { ConnectedAppStore } from "./connected-app-store.ts";
 import { ContextRecords } from "./context-records.ts";
 import type { UserContent, WorkspaceContent } from "./context-records.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
+import { PrivacyDeclaration } from "./privacy-declaration.ts";
 
 /** A workspace that is the user's alone, with what it holds. */
 export interface OwnWorkspace extends WorkspaceContent, WorkspaceSummary {
@@ -28,7 +36,11 @@ export interface AccountExport extends UserContent {
   readonly account: AccountRecords;
   /** The posts the user wrote in the workspaces they share. */
   readonly authoredPosts: readonly AuthoredPostRecord[];
+  /** Whether the server bills, so billing's records are described. */
+  readonly bills: boolean;
   readonly connectedApps: readonly ConnectedAppRecord[];
+  /** What the operator declared about the processing. */
+  readonly declaration: OperatorDeclaration;
   readonly exportedAt: DateTime.Utc;
   readonly workspaces: readonly OwnWorkspace[];
 }
@@ -52,6 +64,16 @@ export class AccountData extends Context.Service<
       AccountExport,
       AuthUnavailable | DatabaseError | NotSignedIn | SessionRequired
     >;
+    /**
+     * What the law has the server keep of the user's account once they
+     * close it, for them in person before they do; null when nothing.
+     */
+    readonly afterClosure: (
+      principal: UserPrincipal
+    ) => Effect.Effect<
+      LegalRemainsRecord | null,
+      DatabaseError | SessionRequired
+    >;
   }
 >()("peal-server/workspace/application/AccountData") {
   static readonly layer = Layer.effect(
@@ -62,6 +84,7 @@ export class AccountData extends Context.Service<
       const apps = yield* ConnectedAppStore;
       const keys = yield* ApiKeyIssuer;
       const mail = yield* AccountMail;
+      const privacy = yield* PrivacyDeclaration;
 
       const ownWorkspace = Effect.fn("AccountData.ownWorkspace")(
         function* ownWorkspace(summary: WorkspaceSummary) {
@@ -114,7 +137,9 @@ export class AccountData extends Context.Service<
             ...(yield* records.exportUser(userId)),
             account,
             authoredPosts: yield* records.exportAuthoredPosts(userId, shared),
+            bills: privacy.bills,
             connectedApps: yield* apps.list(userId, now),
+            declaration: privacy.declared,
             exportedAt: now,
             workspaces,
           };
@@ -129,7 +154,15 @@ export class AccountData extends Context.Service<
         }
       );
 
-      return AccountData.of({ export: exportAccount });
+      const afterClosure = Effect.fn("AccountData.afterClosure")(
+        function* afterClosure(principal: UserPrincipal) {
+          const userId = yield* Effect.fromResult(ownSession(principal));
+
+          return yield* records.legalRemains(userId);
+        }
+      );
+
+      return AccountData.of({ afterClosure, export: exportAccount });
     })
   );
 }

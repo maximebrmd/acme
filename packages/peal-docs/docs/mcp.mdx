@@ -1,11 +1,11 @@
 ---
 title: Connect an MCP client
-description: Connect an AI assistant or any other MCP client to Peal, sign it in to one workspace, and see what its tools read and change.
+description: Connect an AI assistant or any other MCP client to Peal, sign it in to one workspace, choose whether it may publish, and see what its tools read and change.
 sidebar:
   order: 9
 ---
 
-Peal serves the Model Context Protocol (MCP), so an AI assistant, or any other MCP client, can work in a workspace for you: read its posts, analytics, billing and members, write drafts, follow up on posts that went out, and invite people. The client signs in as you, in a browser, and acts in the one workspace you pick, with no more than your role allows.
+Peal serves the Model Context Protocol (MCP), so an AI assistant, or any other MCP client, can work in a workspace for you: read its posts, media, analytics, billing and members, write drafts, schedule and publish posts when you allow it, follow up on posts that went out, and invite people. The client signs in as you, in a browser, and acts in the one workspace you pick, with no more than your role allows. [Posting from an AI agent](/agents) walks through a whole post.
 
 ## The endpoint [#endpoint]
 
@@ -32,7 +32,7 @@ Peal signs MCP clients in with OAuth. You give the client no key: on its first r
 
 1. The client registers itself with Peal, then opens a browser on Peal's sign-in page. Sign in if you are not signed in yet.
 2. **Pick a workspace.** The client acts in that one workspace only. To use it in another, connect it again and pick the other one.
-3. Peal shows what the client asks for, and where it sends you back afterwards. Check both, then choose **Allow**, or **Deny**. Peal does not check who made a client that registered itself, and says so: allow one only if you trust it and started the connection yourself.
+3. Peal shows what the client asks for, and where it sends you back afterwards. When it asks to publish, that has a line of its own, with a box you may untick to let it write drafts only ([What the client may do](#scopes)). Check both, then choose **Allow**, or **Deny**. Peal does not check who made a client that registered itself, and says so: allow one only if you trust it and started the connection yourself.
 
 Back in the client, its tools work. Peal remembers your answer for that client and workspace, so connecting it again skips the question.
 
@@ -46,49 +46,70 @@ Back in the client, its tools work. Peal remembers your answer for that client a
 
 The consent page lists what the client asks for:
 
-| Permission                                                 | What it allows                                                   |
-| ---------------------------------------------------------- | ---------------------------------------------------------------- |
-| Know that it is you                                        | Your account's id                                                |
-| See your name and picture, see your email address          | Your profile                                                     |
-| Stay connected while you are away, until you disconnect it | Renew its access without you                                     |
-| Read the workspace: posts, channels, media and analytics   | Read, and change nothing                                         |
-| Do what your role allows in the workspace                  | Anything your [role](/scheduling#roles) allows, reading included |
+| Permission                                                                                                                      | Scope               | What it allows                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Know that it is you                                                                                                             | `openid`            | Your account's id                                                                                                                                                          |
+| See your name and picture, see your email address                                                                               | `profile`, `email`  | Your profile                                                                                                                                                               |
+| Stay connected while you are away, until you disconnect it                                                                      | `offline_access`    | Renew its access without you                                                                                                                                               |
+| Read the workspace: posts, channels, media and analytics                                                                        | `workspace:read`    | Read, and change nothing                                                                                                                                                   |
+| Do what your role allows in the workspace, such as writing drafts and managing media, without scheduling or publishing anything | `workspace:write`   | Anything your [role](/scheduling#roles) allows, reading included, but what puts posts out: nothing it does reaches a platform                                              |
+| Let it schedule and publish posts to your connected accounts, where everyone can see them                                       | `workspace:publish` | What your role allows of what puts posts out, and reading: scheduling, moving, publishing and reposting a post, unscheduling it, cancelling it, and confirming how it went |
 
-A client that has neither of the two workspace permissions can do nothing. Its access lasts 15 minutes at a time, and the client renews it on its own. Every request checks that you still belong to the workspace and are not banned.
+Publishing is a permission of its own. The consent page shows it on its own line, with a box that starts ticked: untick it, and the client gets the rest of what it asked for, and no more. Without it, a client that may write still writes drafts, which you review and schedule yourself; one that may only read still reads.
+
+A client connected before publishing had its own permission holds the writing one alone: it publishes nothing, and no longer unschedules, reposts or confirms, until you connect it again and allow publishing. A connection keeps the permissions it was given until then.
+
+A client that has none of the three workspace permissions can do nothing. Its access lasts 15 minutes at a time, and the client renews it on its own. Every request checks that you still belong to the workspace and are not banned.
 
 ## Tools [#tools]
 
-Each tool acts as you, in the workspace the client signed in to, through the same checks as the web app: your role decides what it may do, and a client you let read only is refused every change, with a message saying so. To let it change things, connect it again and allow it to do what your role allows.
+Each tool acts as you, in the workspace the client signed in to, through the same checks as the web app: your role decides what it may do, and a client is refused what you did not allow it, with a message naming the permission it lacks: every change for a client you let read only, and whatever puts posts out for one you did not let publish. To grant more, connect it again and allow it there.
 
 These tools read, and change nothing:
 
-| Tool                 | What it answers                                                                                                                                                                  |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `whoami`             | You, and the workspace the client acts in, with your role and what the client may do there                                                                                       |
-| `list_workspaces`    | Your workspaces and your role in each, marking the one the client acts in                                                                                                        |
-| `list_channels`      | The workspace's [channels](/channels), with whether each one posts or must be reconnected. Never their tokens.                                                                   |
-| `list_drafts`        | The workspace's drafts, newest first, a page at a time                                                                                                                           |
-| `get_post`           | A post: what it says, when it goes out, and how it went on each channel, with the ids of its targets, their platform options, and why one failed                                 |
-| `get_tiktok_creator` | A TikTok channel's settings, fresh from TikTok: who it posts as, the audiences a post may choose, the interactions turned off, its longest video. It reads TikTok, outside Peal. |
-| `analytics_summary`  | The counts of the posts published over a range of days, in a time zone, as [Analytics](/analytics) shows them                                                                    |
-| `post_analytics`     | A post's counts on each channel it went out on, over time                                                                                                                        |
-| `get_billing`        | The workspace's plan, its limits, how much of each the workspace uses, and every plan with its prices                                                                            |
-| `list_members`       | The workspace's members, with their name and role, as every member sees them; their email addresses only with `includeEmails`                                                    |
-| `list_invitations`   | The pending invitations, for those who may invite; invitations to the owner role for owners only                                                                                 |
-| `server_health`      | Whether the Peal server is up and reaches its database                                                                                                                           |
+| Tool                      | What it answers                                                                                                                                                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `whoami`                  | You, and the workspace the client acts in, with your role and what the client may do there                                                                                                                                |
+| `list_workspaces`         | Your workspaces and your role in each, marking the one the client acts in                                                                                                                                                 |
+| `list_channels`           | The workspace's [channels](/channels), with whether each one posts or must be reconnected. Never their tokens.                                                                                                            |
+| `list_drafts`             | The workspace's drafts, newest first, a page at a time                                                                                                                                                                    |
+| `list_posts`              | The posts scheduled between two instants, at most 62 days apart: those still to go out, those that went out, with how each went on every channel, and cancelled ones. Drafts are not among them.                          |
+| `get_post`                | A post: what it says, when it goes out, and how it went on each channel, with the ids of its targets, their platform options, and why one failed                                                                          |
+| `list_post_attempts`      | Every attempt Peal made at publishing a post, by channel, with how each ended and when Peal tried again                                                                                                                   |
+| `list_media`              | The workspace's images and videos, newest first, a page at a time, with their type, size, dimensions, duration and description, and an address that shows each for an hour. Only `ready` media can be attached to a post. |
+| `get_tiktok_creator`      | A TikTok channel's settings, fresh from TikTok: who it posts as, the audiences a post may choose, the interactions turned off, its longest video. It reads TikTok, outside Peal.                                          |
+| `analytics_summary`       | The counts of the posts published over a range of days, in a time zone, as [Analytics](/analytics) shows them                                                                                                             |
+| `post_analytics`          | A post's counts on each channel it went out on, over time                                                                                                                                                                 |
+| `get_billing`             | The workspace's plan, its limits, how much of each the workspace uses, and every plan with its prices                                                                                                                     |
+| `list_members`            | The workspace's members, with their name and role, as every member sees them; their email addresses only with `includeEmails`                                                                                             |
+| `list_invitations`        | The pending invitations, for those who may invite; invitations to the owner role for owners only                                                                                                                          |
+| `list_webhooks`           | The workspace's [webhook](/webhooks) endpoints, with whether each is on and since when its deliveries fail, for owners and admins; never their signing secrets                                                            |
+| `list_webhook_deliveries` | A webhook endpoint's recent deliveries: each event's type, whether it was delivered, the receiver's last status code, the attempts made and the next one                                                                  |
+| `server_health`           | Whether the Peal server is up and reaches its database                                                                                                                                                                    |
 
 These tools change something. Each one tells the client, through MCP's tool annotations, whether it destroys or overwrites (`destructiveHint`), whether calling it again changes nothing more (`idempotentHint`), and whether its effect reaches outside Peal (`openWorldHint`), so a client can ask you before it calls one:
 
-| Tool                | What it does                                                                                                                                                               | Destroys or overwrites | Again changes nothing | Outside Peal |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | --------------------- | ------------ |
-| `create_draft`      | Saves a new draft, with the [platform options](/scheduling#options) of its YouTube and TikTok channels. It goes out at no time: scheduling stays with you, in the web app. | no                     | no                    | no           |
-| `update_draft`      | Replaces a draft's text, media and channels with those given. Its options stay on the channels it keeps unless the call gives others.                                      | yes                    | yes                   | no           |
-| `discard_draft`     | Deletes a draft for good.                                                                                                                                                  | yes                    | yes                   | no           |
-| `unschedule_post`   | Takes a scheduled post back to draft: it loses its time.                                                                                                                   | yes                    | yes                   | no           |
-| `repost_target`     | Publishes a post again, now, on one channel where it failed or is unconfirmed.                                                                                             | no                     | no                    | yes          |
-| `confirm_target`    | Records what you found on the platform for an unconfirmed post: published, or not published, which fails it there.                                                         | yes                    | yes                   | no           |
-| `invite_member`     | Emails someone an invitation to the workspace, with a role. A pending invitation to the same address is replaced.                                                          | yes                    | no                    | yes          |
-| `revoke_invitation` | Revokes a pending invitation: its link stops working.                                                                                                                      | yes                    | yes                   | no           |
+| Tool                | What it does                                                                                                                                                                                                                                  | Destroys or overwrites | Again changes nothing | Outside Peal |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | --------------------- | ------------ |
+| `create_draft`      | Saves a new draft, with the [platform options](/scheduling#options) of its YouTube and TikTok channels. It goes out at no time until it is scheduled, by you in the web app or with `schedule_post`.                                          | no                     | no                    | no           |
+| `update_draft`      | Replaces a draft's text, media and channels with those given. Its options stay on the channels it keeps unless the call gives others.                                                                                                         | yes                    | yes                   | no           |
+| `discard_draft`     | Deletes a draft for good.                                                                                                                                                                                                                     | yes                    | yes                   | no           |
+| `import_media`      | Fetches an image or a video from a public HTTPS address and adds it to the workspace's media: within 90 seconds, images up to 16 MiB, videos up to 1 GiB. It publishes nothing. Each call adds a new file.                                    | no                     | no                    | yes          |
+| `schedule_post`     | Schedules a draft to go out at an instant, in an IANA time zone, on the channels it has or on those given. It is checked against every channel's platform first. Needs publishing.                                                            | no                     | no                    | yes          |
+| `publish_post`      | Publishes a draft, or a post scheduled for later, now, on the channels it has: it goes out within seconds, and cannot be stopped once it started. Needs publishing.                                                                           | no                     | no                    | yes          |
+| `create_post`       | Creates a post and sends it in one call, now or at an instant. With an `idempotencyKey`, calling again within 24 hours with the same arguments answers the first post and makes no second one. Needs publishing.                              | no                     | no                    | yes          |
+| `reschedule_post`   | Moves a scheduled post to another instant; what it says and where it goes stay. Needs publishing.                                                                                                                                             | yes                    | yes                   | yes          |
+| `unschedule_post`   | Takes a scheduled post back to draft: it loses its time. A post already publishing is refused. Needs publishing.                                                                                                                              | yes                    | yes                   | no           |
+| `cancel_post`       | Cancels a draft or a scheduled post for good: it goes out at no time and cannot be scheduled again. A post already publishing finishes with what its channels did, and those not yet sent are cancelled. Needs publishing.                    | yes                    | yes                   | no           |
+| `repost_target`     | Publishes a post again, now, on one channel where it failed or is unconfirmed. Needs publishing.                                                                                                                                              | no                     | no                    | yes          |
+| `confirm_target`    | Records what you found on the platform for an unconfirmed post: published, or not published, which fails it there. Needs publishing.                                                                                                          | yes                    | yes                   | no           |
+| `invite_member`     | Emails someone an invitation to the workspace, with a role. A pending invitation to the same address is replaced.                                                                                                                             | yes                    | no                    | yes          |
+| `revoke_invitation` | Revokes a pending invitation: its link stops working.                                                                                                                                                                                         | yes                    | yes                   | no           |
+| `create_webhook`    | Adds a [webhook](/webhooks) endpoint: Peal then sends the events it subscribes to to its address, a server outside Peal. The answer holds its signing secret, shown that once. Changing and deleting endpoints stay with you, in the web app. | no                     | no                    | yes          |
+
+"Needs publishing" means the permission to schedule and publish (`workspace:publish`), and a role that schedules posts: owner, admin or editor. What `schedule_post`, `publish_post`, `create_post` and `repost_target` send is public on the platforms, and Peal cannot take it back once it is out.
+
+Before a post is scheduled, it is checked against every channel's platform: text length, media types, sizes and counts, required options, and what the account itself refuses. When anything is wrong, nothing is scheduled, and the refusal lists every violation at once, each with its channel, and its field or media ([How refusals read](/agents#refusals)).
 
 Annotations are hints a client may show you; the permission checks are the server's.
 

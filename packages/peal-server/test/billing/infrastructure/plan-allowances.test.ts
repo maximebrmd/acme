@@ -13,6 +13,7 @@ import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allo
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { Plan } from "#shared/domain/plan.ts";
 import { everyWorkspaceOn, UnmeteredTest } from "#test/billing/support.ts";
+import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
   "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d"
@@ -34,6 +35,12 @@ const allowancesWith = (
         ChannelUsage.of({ connected: () => Effect.succeed(4) })
       )
     ),
+    Layer.provide(
+      Layer.succeed(
+        WorkspaceSeats,
+        WorkspaceSeats.of({ taken: () => Effect.succeed(3) })
+      )
+    ),
     Layer.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))
   );
 
@@ -47,6 +54,7 @@ const readAll = Effect.gen(function* readAll() {
     channels: yield* channels.channels(workspaceId),
     scheduledPosts: yield* posts.scheduledPerMonth(workspaceId),
     scheduling: yield* posts.channels(workspaceId),
+    seats: yield* posts.members(workspaceId),
   };
 });
 
@@ -61,6 +69,7 @@ describe("the plan allowances", () => {
         channels: Option.some(3),
         scheduledPosts: Option.some(30),
         scheduling: { allowed: Option.some(3), connected: 4 },
+        seats: { allowed: Option.some(2), taken: 3 },
       });
 
       assert.deepStrictEqual(yield* onPlan("business"), {
@@ -68,6 +77,7 @@ describe("the plan allowances", () => {
         channels: Option.some(30),
         scheduledPosts: Option.none(),
         scheduling: { allowed: Option.some(30), connected: 4 },
+        seats: { allowed: Option.none(), taken: 3 },
       });
     })
   );
@@ -83,6 +93,7 @@ describe("the plan allowances", () => {
             channels: Option.none(),
             scheduledPosts: Option.none(),
             scheduling: { allowed: Option.none(), connected: 4 },
+            seats: { allowed: Option.none(), taken: 3 },
           }
         );
 

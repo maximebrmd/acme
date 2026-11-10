@@ -1,0 +1,693 @@
+// What Peal does with personal data, in one place: each category it
+// processes, why, on which legal basis, for how long and where it came
+// from; who receives it; and the rights over it. The export's `about` block
+// (GET /api/me/export), the privacy policy's retention table (peal-site)
+// and the docs' retention figures (peal-docs) are all written from it, and
+// tests compare each period with the rule that enforces it
+// (packages/peal-server/test/workspace/api/data-processing.test.ts,
+// packages/peal-docker/test/compose.test.ts), so none can drift.
+//
+// It describes the software. What depends on who runs it (the controller,
+// its sub-processors, its supervisory authority) is the operator's to
+// declare: see `PEAL_PRIVACY_DECLARATION_FILE`.
+
+/** The languages the registry is written in: the app's. */
+export const processingLocales = ["en", "fr"] as const;
+
+export type ProcessingLocale = (typeof processingLocales)[number];
+
+/** A sentence in each language. */
+export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
+
+/**
+ * How long each kind of record is kept. Each is the figure a rule or a
+ * setting enforces, which a test compares it with:
+ *
+ * - `auditLog`, `banRecords`, `banPastEnd`: the staff audit log
+ *   (`staff/domain/audit-retention.ts`);
+ * - `legalIdentity`, `legalAccount`, `legalConnections`,
+ *   `legalDisclosures`: what French law has a host keep
+ *   (`legal/domain/legal-retention.ts`);
+ * - `contracts`, `trialMemory`: orders, withdrawals, requests to cancel
+ *   or withdraw, and trials (`billing/domain/contract-retention.ts`,
+ *   `trial-memory.ts`);
+ * - `webhookDeliveries`: a webhook endpoint's delivery log
+ *   (`webhooks/domain/delivery-policy.ts`);
+ * - `idempotencyKeys`: the keys of the requests that make a post in one
+ *   call (`publishing/domain/idempotency.ts`);
+ * - `erasureLedger`: the record of deletions kept outside the database
+ *   (`workspace/domain/erasure-ledger.ts`), a little longer than `backups`;
+ * - `exportLinks`: the links an export gives to media files;
+ * - `serverLogs`, `traces`, `metrics`, `backups`: the production stack
+ *   (`packages/peal-docker`: Loki, Tempo, Prometheus, and pgBackRest's
+ *   four weekly full backups, which hold deleted data 5 weeks at most).
+ */
+export const retentionPeriods = {
+  auditLog: { months: 12 },
+  backups: { weeks: 5 },
+  banPastEnd: { months: 12 },
+  banRecords: { years: 5 },
+  contracts: { years: 5 },
+  erasureLedger: { days: 42 },
+  exportLinks: { days: 7 },
+  idempotencyKeys: { hours: 24 },
+  invoices: { years: 10 },
+  legalAccount: { years: 1 },
+  legalConnections: { years: 1 },
+  legalDisclosures: { years: 5 },
+  legalIdentity: { years: 5 },
+  metrics: { days: 30 },
+  serverLogs: { days: 31 },
+  traces: { days: 14 },
+  trialMemory: { years: 2 },
+  webhookDeliveries: { days: 30 },
+} as const;
+
+const p = retentionPeriods;
+
+// "1 year", "5 years"; "1 an", "5 ans".
+const years = (count: number): ProcessingText => ({
+  en: count === 1 ? "1 year" : `${count} years`,
+  fr: count === 1 ? "1 an" : `${count} ans`,
+});
+
+/**
+ * When a category applies: on every server, on one that bills (Stripe is
+ * set), or on one that keeps what French law has a host keep
+ * (`PEAL_LEGAL_RETENTION`).
+ */
+export type ProcessingCondition = "always" | "billing" | "legalRetention";
+
+/** A category of personal data, and what GDPR Article 15(1) says of it. */
+export interface ProcessingCategory {
+  /** When the server processes it at all. */
+  readonly applies: ProcessingCondition;
+  /** What it holds. */
+  readonly data: ProcessingText;
+  readonly id: string;
+  /** The legal basis of the processing (GDPR Article 6(1)). */
+  readonly legalBasis: ProcessingText;
+  /** What the category is called, as the policy's tables head it. */
+  readonly name: ProcessingText;
+  /**
+   * Whether its period is the production stack's rather than the server's
+   * own: an operator who runs another stack states its own instead.
+   */
+  readonly operatorSet: boolean;
+  /** What it is processed for. */
+  readonly purposes: ProcessingText;
+  /** How long it is kept, or what decides it. */
+  readonly retention: ProcessingText;
+  /** Where it came from. */
+  readonly source: ProcessingText;
+}
+
+const contract: ProcessingText = {
+  en: "Performance of a contract (GDPR Article 6(1)(b))",
+  fr: "Exécution d’un contrat (RGPD, article 6, paragraphe 1, point b)",
+};
+
+/**
+ * Every category of personal data the software processes. The privacy
+ * policy's retention table has one row for each, `name` then `retention`,
+ * in this order.
+ */
+export const processingRegister: readonly ProcessingCategory[] = [
+  {
+    applies: "always",
+    data: {
+      en: "Your name, email address, language, sign-in methods and sessions; the workspaces you belong to, your role in each, and the invitations you send or receive",
+      fr: "Vos nom, adresse e-mail, langue, moyens de connexion et sessions ; les espaces de travail dont vous êtes membre, votre rôle dans chacun et les invitations envoyées ou reçues",
+    },
+    id: "account",
+    legalBasis: contract,
+    name: {
+      en: "Account and workspace data",
+      fr: "Données de compte et d’espace de travail",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Provide the service: your account, your workspaces and their members",
+      fr: "Fournir le service : votre compte, vos espaces de travail et leurs membres",
+    },
+    retention: {
+      en: "As long as your account exists: closing it erases them at once. A workspace’s own data is erased when the workspace is deleted",
+      fr: "Tant que votre compte existe : sa fermeture les efface aussitôt. Les données propres à un espace de travail sont effacées à sa suppression",
+    },
+    source: {
+      en: "You, when you sign up and use the service; for an invitation, the member who invited you, who gave your email address",
+      fr: "Vous, à l’inscription et en utilisant le service ; pour une invitation, le membre qui vous a invité, qui a donné votre adresse e-mail",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "The posts, media and schedules of your workspaces, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts; for a post made in one call with an idempotency key, a digest of that key and of its request, never either",
+      fr: "Les publications, médias et planifications de vos espaces de travail, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre",
+    },
+    id: "content",
+    legalBasis: contract,
+    name: {
+      en: "Content and performance data",
+      fr: "Contenus et données de performance",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Schedule and publish your posts, and show how they perform",
+      fr: "Planifier et mettre en ligne vos publications, et montrer leurs résultats",
+    },
+    retention: {
+      en: `Drafts and media files: until a member deletes them, or the workspace is deleted. Posts that were scheduled, published or cancelled, their publication history and their figures: until the workspace is deleted. The posts you wrote or scheduled in a workspace you share stay with it when you close your account, without your name. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
+      fr: `Brouillons et fichiers média : jusqu’à leur suppression par un membre, ou celle de l’espace de travail. Publications programmées, mises en ligne ou annulées, leur historique de mise en ligne et leurs chiffres : jusqu’à la suppression de l’espace de travail. Les publications que vous avez écrites ou programmées dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
+    },
+    source: {
+      en: "You and the other members of your workspaces; the platforms you connected, for the figures",
+      fr: "Vous et les autres membres de vos espaces de travail ; les plateformes que vous avez connectées, pour les chiffres",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "The social media accounts you connect, their identifiers on each platform, and the access tokens the platforms issue, stored encrypted",
+      fr: "Les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme, et les jetons d’accès que les plateformes délivrent, stockés chiffrés",
+    },
+    id: "channels",
+    legalBasis: contract,
+    name: {
+      en: "Connected accounts",
+      fr: "Comptes connectés",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Publish to the accounts you connect, and read the figures of your posts there",
+      fr: "Publier sur les comptes que vous connectez, et y lire les chiffres de vos publications",
+    },
+    retention: {
+      en: "Until the account is disconnected or its workspace is deleted",
+      fr: "Jusqu’à la déconnexion du compte ou la suppression de son espace de travail",
+    },
+    source: {
+      en: "The platform, when you connect the account",
+      fr: "La plateforme, lorsque vous connectez le compte",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "The notices about your posts and channels, and your notification preferences",
+      fr: "Les avis concernant vos publications et vos canaux, et vos préférences de notification",
+    },
+    id: "notifications",
+    legalBasis: contract,
+    name: {
+      en: "Notifications",
+      fr: "Notifications",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Tell you how your posts went and when a channel needs you, in the app and by the emails you turn on",
+      fr: "Vous dire ce que sont devenues vos publications et quand un canal a besoin de vous, dans l’application et par les e-mails que vous activez",
+    },
+    retention: {
+      en: "Until you close your account, or the workspace they concern is deleted",
+      fr: "Jusqu’à la fermeture de votre compte, ou la suppression de l’espace de travail qu’elles concernent",
+    },
+    source: {
+      en: "The service, from what happens to your posts and channels; you, for your preferences",
+      fr: "Le service, d’après ce qui arrive à vos publications et à vos canaux ; vous, pour vos préférences",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "How many requests each of your workspaces made each day. The text you ask it to change is sent to the AI provider, and this server does not keep it",
+      fr: "Le nombre de demandes de chacun de vos espaces de travail, par jour. Le texte que vous lui demandez de modifier est envoyé au fournisseur d’IA, et ce serveur ne le conserve pas",
+    },
+    id: "assistant",
+    legalBasis: contract,
+    name: {
+      en: "Writing assistant usage",
+      fr: "Usage de l’assistant de rédaction",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Suggest changes to a post’s text when you ask, within a daily limit",
+      fr: "Proposer des modifications du texte d’une publication à votre demande, dans une limite quotidienne",
+    },
+    retention: {
+      en: "Until the workspace is deleted",
+      fr: "Jusqu’à la suppression de l’espace de travail",
+    },
+    source: {
+      en: "Your use of the assistant",
+      fr: "Votre usage de l’assistant",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "The addresses a workspace has Peal call when something happens in it, with their description, the events each wants and its signing secret, stored encrypted; the events sent (identifiers, states and times, never what a post says) and, for each delivery, its attempts, the receiver’s status code and the start of its answer",
+      fr: "Les adresses qu’un espace de travail fait appeler par Peal quand il s’y passe quelque chose, avec leur description, les événements que chacune veut recevoir et son secret de signature, stocké chiffré ; les événements envoyés (identifiants, états et dates, jamais le texte d’une publication) et, pour chaque livraison, ses tentatives, le code de réponse du destinataire et le début de sa réponse",
+    },
+    id: "webhooks",
+    legalBasis: contract,
+    name: {
+      en: "Webhook endpoints and delivery logs",
+      fr: "Points de terminaison de webhooks et journaux de livraison",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Tell the systems a workspace names what happens in it, and show its owners and admins whether each delivery arrived",
+      fr: "Prévenir les systèmes qu’un espace de travail désigne de ce qui s’y passe, et montrer à ses propriétaires et administrateurs si chaque livraison est arrivée",
+    },
+    retention: {
+      en: `Endpoints: until an owner or admin deletes them, or the workspace is deleted. Deliveries: ${p.webhookDeliveries.days} days from each, then deleted within a day; an event, as long as one of its deliveries, so one sent again stays that long after it was last sent`,
+      fr: `Points de terminaison : jusqu’à leur suppression par un propriétaire ou un administrateur, ou celle de l’espace de travail. Livraisons : ${p.webhookDeliveries.days} jours à compter de chacune, puis supprimées dans la journée ; un événement, aussi longtemps que l’une de ses livraisons, donc autant après son dernier renvoi`,
+    },
+    source: {
+      en: "The owners and admins of your workspaces, for the endpoints; the service, from what happens to posts, channels and media; the receiving server, for its answers",
+      fr: "Les propriétaires et administrateurs de vos espaces de travail, pour les points de terminaison ; le service, d’après ce qui arrive aux publications, aux canaux et aux médias ; le serveur destinataire, pour ses réponses",
+    },
+  },
+  {
+    applies: "billing",
+    data: {
+      en: "Each workspace’s plan and the status of its subscription. Payment details and invoices are held by the payment provider",
+      fr: "L’offre de chaque espace de travail et l’état de son abonnement. Les moyens de paiement et les factures sont détenus par le prestataire de paiement",
+    },
+    id: "billing",
+    legalBasis: {
+      en: "Performance of a contract (GDPR Article 6(1)(b)); legal obligation (Article 6(1)(c)) for accounting records",
+      fr: "Exécution d’un contrat (RGPD, article 6, paragraphe 1, point b) ; obligation légale (point c) pour les pièces comptables",
+    },
+    name: {
+      en: "Billing records",
+      fr: "Pièces de facturation",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Bill your subscription and keep accounting records",
+      fr: "Facturer votre abonnement et tenir la comptabilité",
+    },
+    retention: {
+      en: `Plan and subscription status: until the workspace is deleted. Invoices are held by the payment provider, not by this service, which deletes none of them: French accounting law has them kept ${years(p.invoices.years).en} (Code de commerce, Article L123-22)`,
+      fr: `Offre et état de l’abonnement : jusqu’à la suppression de l’espace de travail. Les factures sont détenues par le prestataire de paiement, non par ce service, qui n’en supprime aucune : le droit comptable français impose de les conserver ${years(p.invoices.years).fr} (Code de commerce, article L123-22)`,
+    },
+    source: {
+      en: "You, when you subscribe; the payment provider, for the status of your subscription",
+      fr: "Vous, lorsque vous vous abonnez ; le prestataire de paiement, pour l’état de votre abonnement",
+    },
+  },
+  {
+    applies: "billing",
+    data: {
+      en: "Each order placed before paying, with the consent given and the version of its words; the trial each account and workspace started; each withdrawal and what it refunded; each request to cancel a contract or to withdraw from it, with the date and time it was received, what became of it and its acknowledgement, and, when it came through the form that needs no account, what was written there (the name, the email address for the acknowledgement, the contract, the day wanted)",
+      fr: "Chaque commande passée avant de payer, avec le consentement donné et la version de ses termes ; l’essai que chaque compte et chaque espace de travail a commencé ; chaque rétractation et ce qu’elle a remboursé ; chaque demande de résiliation ou de rétractation, avec la date et l’heure de sa réception, la suite qui lui a été donnée et son accusé de réception, et, lorsqu’elle a été envoyée par le formulaire accessible sans compte, ce qui y a été indiqué (le nom, l’adresse e-mail de l’accusé de réception, le contrat, la date souhaitée)",
+    },
+    id: "contracts",
+    legalBasis: {
+      en: "Legal obligation (GDPR Article 6(1)(c)): proving the request to start at once and the information on withdrawal (Directive 2011/83/EU, Articles 7(3) and 8(8)), and receiving and acknowledging requests to cancel or withdraw (French Consumer Code, articles L215-1-1 and L221-21); performance of a contract (point (b)); legitimate interests (point (f)): giving each person one trial, keeping strangers from ending a contract, and proving what was asked and when",
+      fr: "Obligation légale (RGPD, article 6, paragraphe 1, point c) : prouver la demande de commencer immédiatement et l’information sur la rétractation (directive 2011/83/UE, articles 7, paragraphe 3, et 8, paragraphe 8), et recevoir les demandes de résiliation ou de rétractation et en accuser réception (Code de la consommation, articles L215-1-1 et L221-21) ; exécution d’un contrat (point b) ; intérêts légitimes (point f) : n’accorder qu’un essai par personne, empêcher un tiers de mettre fin à un contrat, et prouver ce qui a été demandé et quand",
+    },
+    name: {
+      en: "Orders, trials, withdrawals and contract requests",
+      fr: "Commandes, essais, rétractations et demandes sur les contrats",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Record each order and its consent, handle the trial and withdrawals, and receive, acknowledge and apply requests to cancel a contract or withdraw from it",
+      fr: "Consigner chaque commande et son consentement, gérer l’essai et les rétractations, et recevoir les demandes de résiliation ou de rétractation, en accuser réception et les appliquer",
+    },
+    retention: {
+      en: `Orders, withdrawals and requests to cancel or withdraw: while their workspace exists, then ${years(p.contracts.years).en} after it is deleted if it had a subscription, the period in which a claim about the contract can be brought; a request no contract was found for, ${years(p.contracts.years).en} from its receipt; closing your account removes you from them, with the name and the address you wrote in a request. That an account or a workspace had its trial: as long as either exists, and ${years(p.trialMemory.years).en} after the account closes, by a keyed pseudonym of its email address, so the same address gets no second trial`,
+      fr: `Commandes, rétractations et demandes de résiliation ou de rétractation : tant que leur espace de travail existe, puis ${years(p.contracts.years).fr} après sa suppression s’il avait un abonnement, le délai pour agir en justice au sujet du contrat ; une demande pour laquelle aucun contrat n’a été trouvé, ${years(p.contracts.years).fr} à compter de sa réception ; la fermeture de votre compte vous en retire, avec le nom et l’adresse indiqués dans une demande. Le fait qu’un compte ou un espace de travail a eu son essai : tant que l’un des deux existe, et ${years(p.trialMemory.years).fr} après la fermeture du compte, par un pseudonyme chiffré de son adresse e-mail, pour que la même adresse n’ait pas de second essai`,
+    },
+    source: {
+      en: "You, when you order, start a trial, withdraw, or ask to cancel or withdraw, signed in or through the form that needs no account",
+      fr: "Vous, lorsque vous commandez, commencez un essai, vous rétractez, ou demandez une résiliation ou une rétractation, connecté ou par le formulaire accessible sans compte",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "IP addresses, browser details and the logs, traces and metrics produced when you use the service",
+      fr: "Adresses IP, informations sur le navigateur et les journaux, traces et métriques produits lorsque vous utilisez le service",
+    },
+    id: "technicalLogs",
+    legalBasis: {
+      en: "Legitimate interests (GDPR Article 6(1)(f)): keeping the service secure and working",
+      fr: "Intérêts légitimes (RGPD, article 6, paragraphe 1, point f) : assurer la sécurité et le fonctionnement du service",
+    },
+    name: {
+      en: "Technical logs",
+      fr: "Journaux techniques",
+    },
+    operatorSet: true,
+    purposes: {
+      en: "Keep the service secure, prevent abuse and find faults",
+      fr: "Assurer la sécurité du service, prévenir les abus et trouver les pannes",
+    },
+    retention: {
+      en: `Server logs ${p.serverLogs.days} days, traces ${p.traces.days} days, metrics ${p.metrics.days} days`,
+      fr: `Journaux du serveur ${p.serverLogs.days} jours, traces ${p.traces.days} jours, métriques ${p.metrics.days} jours`,
+    },
+    source: {
+      en: "Your use of the service",
+      fr: "Votre utilisation du service",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "The action, its time and reason, and for each change staff make while acting as an account, the operation, workspace and ids it named, never its content",
+      fr: "L’action, sa date et son motif, et pour chaque modification faite par l’équipe en agissant au nom d’un compte, l’opération, l’espace de travail et les identifiants visés, jamais le contenu",
+    },
+    id: "staffActions",
+    legalBasis: {
+      en: "Legitimate interests (GDPR Article 6(1)(f)): accountability for staff’s access to accounts",
+      fr: "Intérêts légitimes (RGPD, article 6, paragraphe 1, point f) : répondre de l’accès de l’équipe aux comptes",
+    },
+    name: {
+      en: "Record of staff actions on accounts",
+      fr: "Registre des actions de l’équipe sur les comptes",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Record what the operator’s staff do to accounts, and answer for it",
+      fr: "Consigner ce que l’équipe de l’exploitant fait aux comptes, et en répondre",
+    },
+    retention: {
+      en: `${p.auditLog.months} months; a ban and its lifting ${years(p.banRecords.years).en}, the period in which a claim about it can be brought, or ${p.banPastEnd.months} months after a longer ban ends, and a ban until lifted as long as it holds. Closing an account removes it from the record at once, but from a ban or its lifting, which keeps its reason with a keyed pseudonym of the email address for those ${years(p.banRecords.years).en}`,
+      fr: `${p.auditLog.months} mois ; un bannissement et sa levée ${years(p.banRecords.years).fr}, le délai pour agir en justice à son sujet, ou ${p.banPastEnd.months} mois après la fin d’un bannissement plus long, et un bannissement jusqu’à la levée tant qu’il s’applique. La fermeture d’un compte l’en retire aussitôt, sauf d’un bannissement ou de sa levée, qui garde son motif avec un pseudonyme chiffré de l’adresse e-mail pendant ces ${years(p.banRecords.years).fr}`,
+    },
+    source: {
+      en: "The operator’s staff, when they act on your account",
+      fr: "L’équipe de l’exploitant, lorsqu’elle agit sur votre compte",
+    },
+  },
+  {
+    applies: "legalRetention",
+    data: {
+      en: "Name and email address; sign-in identifiers (never a password); references of payments (the payment provider’s customer ids)",
+      fr: "Nom et adresse e-mail ; identifiants de connexion (jamais un mot de passe) ; références des paiements (les identifiants client du prestataire de paiement)",
+    },
+    id: "legalIdentification",
+    legalBasis: {
+      en: "Legal obligation (GDPR Article 6(1)(c)): loi n° 2004-575 du 21 juin 2004 (LCEN), Article 6, V, and décret n° 2021-1362 du 20 octobre 2021",
+      fr: "Obligation légale (RGPD, article 6, paragraphe 1, point c) : loi n° 2004-575 du 21 juin 2004 (LCEN), article 6, V, et décret n° 2021-1362 du 20 octobre 2021",
+    },
+    name: {
+      en: "Identification data, once an account is closed",
+      fr: "Données d’identification, après la fermeture d’un compte",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Keep the data that identifies who contributed content, as French law requires of a host, and answer judicial authorities’ requests",
+      fr: "Conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu, comme la loi française l’impose à un hébergeur, et répondre aux réquisitions judiciaires",
+    },
+    retention: {
+      en: `Name and email address: ${years(p.legalIdentity.years).en} after closing. Sign-in identifiers and payment references: ${years(p.legalAccount.years).en} after closing. Kept apart from the service, read only to answer a judicial authority’s request, then deleted`,
+      fr: `Nom et adresse e-mail : ${years(p.legalIdentity.years).fr} après la fermeture. Identifiants de connexion et références des paiements : ${years(p.legalAccount.years).fr} après la fermeture. Conservées à l’écart du service, lues uniquement pour répondre à une réquisition judiciaire, puis supprimées`,
+    },
+    source: {
+      en: "Your account, when you close it",
+      fr: "Votre compte, lorsque vous le fermez",
+    },
+  },
+  {
+    applies: "legalRetention",
+    data: {
+      en: "For each, its time, IP address and protocol, and how it signed in",
+      fr: "Pour chacune, sa date, son adresse IP et son protocole, et son moyen de connexion",
+    },
+    id: "legalConnections",
+    legalBasis: {
+      en: "Legal obligation (GDPR Article 6(1)(c)): loi n° 2004-575 du 21 juin 2004 (LCEN), Article 6, V, and décret n° 2021-1362 du 20 octobre 2021",
+      fr: "Obligation légale (RGPD, article 6, paragraphe 1, point c) : loi n° 2004-575 du 21 juin 2004 (LCEN), article 6, V, et décret n° 2021-1362 du 20 octobre 2021",
+    },
+    name: {
+      en: "Connections that create, change or delete content",
+      fr: "Connexions qui créent, modifient ou suppriment un contenu",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Keep the data that identifies who contributed content, as French law requires of a host, and answer judicial authorities’ requests",
+      fr: "Conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu, comme la loi française l’impose à un hébergeur, et répondre aux réquisitions judiciaires",
+    },
+    retention: {
+      en: `${years(p.legalConnections.years).en} from each connection, whether or not the account is closed`,
+      fr: `${years(p.legalConnections.years).fr} à compter de chaque connexion, que le compte soit fermé ou non`,
+    },
+    source: {
+      en: "Your requests that create, change or delete posts or media",
+      fr: "Vos requêtes qui créent, modifient ou suppriment des publications ou des médias",
+    },
+  },
+  {
+    applies: "legalRetention",
+    data: {
+      // A point for counsel: whether, and when, Article 15 has the person
+      // told of a request about them. Until then no export lists one.
+      en: "Who answered, which authority asked, on what legal basis, about which account or workspace, and how many records were returned, never the data handed over. A copy of your data does not say whether an authority asked about you: the law can forbid telling you",
+      fr: "Qui a répondu, quelle autorité demandait, sur quel fondement juridique, au sujet de quel compte ou espace de travail, et combien de données ont été renvoyées, jamais les données remises. Une copie de vos données ne dit pas si une autorité a fait une demande vous concernant : la loi peut interdire de vous le dire",
+    },
+    id: "legalDisclosures",
+    legalBasis: {
+      en: "Legal obligation (GDPR Article 6(1)(c)): accountability (GDPR Article 5(2)) for what is handed to authorities under the LCEN, Article 6, V",
+      fr: "Obligation légale (RGPD, article 6, paragraphe 1, point c) : rendre compte (RGPD, article 5, paragraphe 2) de ce qui est remis aux autorités en application de la LCEN, article 6, V",
+    },
+    name: {
+      en: "Record of answers to authorities’ requests",
+      fr: "Registre des réponses aux réquisitions",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Show what was handed to which authority, and on what grounds",
+      fr: "Établir ce qui a été remis à quelle autorité, et sur quel fondement",
+    },
+    retention: {
+      en: `${years(p.legalDisclosures.years).en} from each answer`,
+      fr: `${years(p.legalDisclosures.years).fr} à compter de chaque réponse`,
+    },
+    source: {
+      en: "The operator’s staff, from the authority’s written request",
+      fr: "L’équipe de l’exploitant, d’après la demande écrite de l’autorité",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "Encrypted copies of the database",
+      fr: "Des copies chiffrées de la base de données",
+    },
+    id: "backups",
+    legalBasis: {
+      en: "Legitimate interests (GDPR Article 6(1)(f)) and security of processing (Article 32): recovering the service after an incident",
+      fr: "Intérêts légitimes (RGPD, article 6, paragraphe 1, point f) et sécurité du traitement (article 32) : rétablir le service après un incident",
+    },
+    name: {
+      en: "Backups",
+      fr: "Sauvegardes",
+    },
+    operatorSet: true,
+    purposes: {
+      en: "Recover the service and its data after an incident",
+      fr: "Rétablir le service et ses données après un incident",
+    },
+    retention: {
+      en: `Deleted data leaves the encrypted backups once four newer weekly backups were made: within ${p.backups.weeks} weeks while backups run as scheduled. A backup is restored only to recover from an incident; the deletions of accounts and workspaces made since that backup are then applied again before the service reopens`,
+      fr: `Les données supprimées disparaissent des sauvegardes chiffrées une fois quatre sauvegardes hebdomadaires plus récentes faites : sous ${p.backups.weeks} semaines tant que les sauvegardes se font comme prévu. Une sauvegarde n’est restaurée que pour se remettre d’un incident ; les suppressions de comptes et d’espaces de travail faites depuis cette sauvegarde sont alors appliquées de nouveau avant la réouverture du service`,
+    },
+    source: {
+      en: "The service’s database",
+      fr: "La base de données du service",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "The id of each deleted account and workspace, and the time, kept apart from the database. No name, address or content",
+      fr: "L’identifiant de chaque compte et espace de travail supprimé, et la date, conservés à l’écart de la base de données. Ni nom, ni adresse, ni contenu",
+    },
+    id: "erasureLedger",
+    legalBasis: {
+      en: "Legal obligation (GDPR Article 6(1)(c)): erasure (Article 17) and accountability (Article 5(2))",
+      fr: "Obligation légale (RGPD, article 6, paragraphe 1, point c) : effacement (article 17) et responsabilité (article 5, paragraphe 2)",
+    },
+    name: {
+      en: "Record of deletions",
+      fr: "Registre des suppressions",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Apply deletions again when a backup is restored",
+      fr: "Appliquer de nouveau les suppressions lorsqu’une sauvegarde est restaurée",
+    },
+    retention: {
+      en: `${p.erasureLedger.days} days from each deletion, a little longer than the backups keep deleted data`,
+      fr: `${p.erasureLedger.days} jours à compter de chaque suppression, un peu plus longtemps que les sauvegardes ne gardent les données supprimées`,
+    },
+    source: {
+      en: "Your deletion of an account or a workspace",
+      fr: "Votre suppression d’un compte ou d’un espace de travail",
+    },
+  },
+];
+
+/** Who receives personal data because of how the service works. */
+export interface RecipientCategory {
+  readonly applies: ProcessingCondition;
+  readonly recipient: ProcessingText;
+}
+
+/**
+ * The recipients the service has by design. The providers the operator
+ * uses to run it (its sub-processors) are the operator's to declare.
+ */
+export const recipientCategories: readonly RecipientCategory[] = [
+  {
+    applies: "always",
+    recipient: {
+      en: "The other members of your workspaces, who see your name, email address and role",
+      fr: "Les autres membres de vos espaces de travail, qui voient vos nom, adresse e-mail et rôle",
+    },
+  },
+  {
+    applies: "always",
+    recipient: {
+      en: "The platforms you publish to, which receive what you publish there and process it as controllers, under their own privacy policies",
+      fr: "Les plateformes sur lesquelles vous publiez, qui reçoivent ce que vous y publiez et le traitent en tant que responsables de traitement, selon leurs propres politiques de confidentialité",
+    },
+  },
+  {
+    applies: "always",
+    recipient: {
+      en: "The applications you or another member connect, such as an AI assistant through MCP, which read what that member can see in a workspace, under their provider’s terms",
+      fr: "Les applications que vous ou un autre membre connectez, comme un assistant d’IA par MCP, qui lisent ce que ce membre peut voir dans un espace de travail, selon les conditions de leur fournisseur",
+    },
+  },
+  {
+    applies: "always",
+    recipient: {
+      en: "The operator’s staff, when they help you or enforce the terms: each action is recorded",
+      fr: "L’équipe de l’exploitant, lorsqu’elle vous aide ou fait respecter les conditions : chaque action est consignée",
+    },
+  },
+  {
+    applies: "legalRetention",
+    recipient: {
+      en: "Judicial authorities, and the other authorities French law empowers, on their written request, for the identification data only: each answer is recorded",
+      fr: "L’autorité judiciaire, et les autres autorités que la loi française habilite, sur leur demande écrite, pour les seules données d’identification : chaque réponse est consignée",
+    },
+  },
+  {
+    applies: "always",
+    recipient: {
+      en: "The providers the operator uses to run the service (its sub-processors), which the operator lists",
+      fr: "Les prestataires auxquels l’exploitant recourt pour faire fonctionner le service (ses sous-traitants), dont l’exploitant donne la liste",
+    },
+  },
+];
+
+/** A right over personal data, and how to exercise it here. */
+export interface DataRight {
+  /** The GDPR article that gives it. */
+  readonly article: string;
+  readonly how: ProcessingText;
+  readonly id: string;
+  readonly right: ProcessingText;
+}
+
+/** The rights the GDPR gives, and what exercises each in the service. */
+export const dataRights: readonly DataRight[] = [
+  {
+    article: "15",
+    how: {
+      en: "Download this copy at any time from your account settings, or with the command line",
+      fr: "Téléchargez cette copie à tout moment depuis les paramètres de votre compte, ou avec la ligne de commande",
+    },
+    id: "access",
+    right: {
+      en: "Access the personal data held about you",
+      fr: "Accéder aux données personnelles qui vous concernent",
+    },
+  },
+  {
+    article: "16",
+    how: {
+      en: "Change your name, language and password in your account settings; for anything else, write to the contact",
+      fr: "Modifiez vos nom, langue et mot de passe dans les paramètres de votre compte ; pour le reste, écrivez au contact",
+    },
+    id: "rectification",
+    right: {
+      en: "Have it corrected",
+      fr: "Les faire rectifier",
+    },
+  },
+  {
+    article: "17",
+    how: {
+      en: "Delete your account in your account settings, and a workspace in its settings: both take effect at once",
+      fr: "Supprimez votre compte dans ses paramètres, et un espace de travail dans les siens : l’effet est immédiat",
+    },
+    id: "erasure",
+    right: {
+      en: "Have it erased",
+      fr: "Les faire effacer",
+    },
+  },
+  {
+    article: "18",
+    how: {
+      en: "Write to the contact",
+      fr: "Écrivez au contact",
+    },
+    id: "restriction",
+    right: {
+      en: "Restrict its processing",
+      fr: "En limiter le traitement",
+    },
+  },
+  {
+    article: "20",
+    how: {
+      en: `This copy is JSON, a structured, machine-readable format; each media file comes with a link that downloads it for ${p.exportLinks.days} days`,
+      fr: `Cette copie est en JSON, un format structuré et lisible par machine ; chaque fichier média est accompagné d’un lien qui le télécharge pendant ${p.exportLinks.days} jours`,
+    },
+    id: "portability",
+    right: {
+      en: "Receive it in a structured, machine-readable format",
+      fr: "Les recevoir dans un format structuré et lisible par machine",
+    },
+  },
+  {
+    article: "21",
+    how: {
+      en: "Write to the contact, saying which processing based on legitimate interests you object to",
+      fr: "Écrivez au contact, en indiquant le traitement fondé sur des intérêts légitimes auquel vous vous opposez",
+    },
+    id: "objection",
+    right: {
+      en: "Object to processing based on legitimate interests",
+      fr: "Vous opposer à un traitement fondé sur des intérêts légitimes",
+    },
+  },
+];
+
+/** The right to complain to a supervisory authority (GDPR Article 77). */
+export const complaintRight: ProcessingText = {
+  en: "You can lodge a complaint with a data protection supervisory authority, in particular in the EU country where you live, where you work or where you think the infringement took place (GDPR Article 77)",
+  fr: "Vous pouvez introduire une réclamation auprès d’une autorité de contrôle de la protection des données, notamment dans le pays de l’UE où vous résidez, où vous travaillez ou où vous estimez que la violation a eu lieu (RGPD, article 77)",
+};
+
+/**
+ * The privacy policy's retention table in `locale`: a row for each
+ * category, its name then how long it is kept.
+ */
+export const retentionTable = (
+  locale: ProcessingLocale
+): readonly (readonly [data: string, keptFor: string])[] =>
+  processingRegister.map(({ name, retention }) => [
+    name[locale],
+    retention[locale],
+  ]);

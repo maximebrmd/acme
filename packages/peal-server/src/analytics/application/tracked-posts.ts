@@ -3,12 +3,18 @@ import type { DateTime, Effect, Option } from "effect";
 
 import type { TrackedPost } from "#analytics/domain/tracked-post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostTargetId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostTargetId } from "#shared/domain/ids.ts";
 
 /** The post followed that went live last, and when. */
 export interface LatestPublication {
   readonly publishedAt: DateTime.Utc;
   readonly targetId: PostTargetId;
+}
+
+/** A channel with posts due, and since when its first one is. */
+export interface DueChannel {
+  readonly channelId: ChannelId;
+  readonly dueSince: DateTime.Utc;
 }
 
 /**
@@ -34,20 +40,49 @@ export class TrackedPosts extends Context.Service<
       posts: readonly TrackedPost[]
     ) => Effect.Effect<number, DatabaseError>;
     /**
-     * `limit` of the posts due to be read by `at`, taking turns between
-     * channels: every channel's longest due before any channel's second,
-     * and so on, so posts put off on one channel, or on a platform that was
-     * down, never crowd the other channels out.
+     * `limit` of the channels with posts due to be read by `at`, the one
+     * whose post has been due longest first, after `after`: a run takes
+     * them a page at a time, each channel once, so the channels that waited
+     * longest are read first, and a run cut short leaves the others, which
+     * come first at the next.
      */
-    readonly due: (
+    readonly dueChannels: (
       at: DateTime.Utc,
-      limit: number
+      limit: number,
+      after: Option.Option<DueChannel>
+    ) => Effect.Effect<readonly DueChannel[], DatabaseError>;
+    /**
+     * The posts of these channels due to be read by `at`, each channel's
+     * in the order they came due, `perChannel` at most.
+     */
+    readonly dueOn: (
+      at: DateTime.Utc,
+      channelIds: readonly ChannelId[],
+      perChannel: number
     ) => Effect.Effect<readonly TrackedPost[], DatabaseError>;
-    /** Saves the post with the counts just read, kept as a snapshot. */
+    /** How many posts are due to be read by `at`. */
+    readonly countDue: (
+      at: DateTime.Utc
+    ) => Effect.Effect<number, DatabaseError>;
+    /**
+     * Saves the posts with the counts just read, each kept as a snapshot,
+     * in one transaction and one statement per table, however many.
+     */
+    readonly saveReadings: (
+      posts: readonly TrackedPost[]
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Saves when the posts are read next, or that they are not any more,
+     * in one statement.
+     */
+    readonly saveSchedules: (
+      posts: readonly TrackedPost[]
+    ) => Effect.Effect<void, DatabaseError>;
+    /** `saveReadings` for one post. */
     readonly saveReading: (
       post: TrackedPost
     ) => Effect.Effect<void, DatabaseError>;
-    /** Saves when the post is read next, or that it is not any more. */
+    /** `saveSchedules` for one post. */
     readonly saveSchedule: (
       post: TrackedPost
     ) => Effect.Effect<void, DatabaseError>;

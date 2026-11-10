@@ -1,11 +1,11 @@
 ---
 title: Command line
-description: Build the peal command line, sign in with peal login, then work in a workspace from a terminal (drafts, posts, analytics, billing, members and invitations) and copy out your own data.
+description: Build the peal command line, sign in with peal login, then work in a workspace from a terminal (drafts, posts and their scheduling, media, analytics, billing, members and invitations) and copy out your own data.
 sidebar:
   order: 8
 ---
 
-`peal` works with a Peal instance from a terminal. It signs in as you, in a browser, and then acts with your role in each of your workspaces: it writes and discards drafts, follows up on posts that went out, reads analytics, billing, members and invitations, invites people, and saves a copy of your data. Scheduling, connecting channels and changing roles stay in the web app.
+`peal` works with a Peal instance from a terminal. It signs in as you, in a browser, and then acts with your role in each of your workspaces: it writes and discards drafts, uploads and imports media, schedules, publishes, moves and cancels posts, follows up on those that went out, reads analytics, billing, members and invitations, invites people, and saves a copy of your data. Connecting channels and changing roles stay in the web app.
 
 ## Get it [#install]
 
@@ -50,7 +50,7 @@ Waiting for you to approve the sign-in (the code works for 10m)…
 
 The code works for 10 minutes. **Deny** refuses the sign-in, and `peal login` stops.
 
-`peal` asks to do what your role allows in your workspaces, and to stay signed in. It saves the sign-in for that instance in `credentials.json`, which only you may read, in the first of these folders that is set:
+`peal` asks to do what your role allows in your workspaces, to schedule and publish posts, and to stay signed in. A sign-in made before `peal` asked for publishing does not hold it: the commands that put posts out then say so, and ask you to run `peal login` again and approve it. It saves the sign-in for that instance in `credentials.json`, which only you may read, in the first of these folders that is set:
 
 - `PEAL_CONFIG_DIR`;
 - `$XDG_CONFIG_HOME/peal`;
@@ -100,7 +100,7 @@ peal drafts list
 peal drafts list --workspace clients
 ```
 
-Each command does what your role allows there, as the web app does: a viewer reads, an editor writes and follows up, an owner or an admin invites. When the instance refuses, `peal` says why (your role, the post's status, the plan) and exits with 1.
+Each command does what your role allows there, as the web app does: a viewer reads, an editor writes, schedules, publishes and follows up, an owner or an admin invites. When the instance refuses, `peal` says why (your role, the post's status, the plan) and exits with 1.
 
 ## Channels [#channels]
 
@@ -109,7 +109,7 @@ peal channels list
 peal channels tiktok <channel-id>
 ```
 
-`peal channels list` lists the workspace's channels with their ids, which drafts take, and whether each one posts or must be reconnected. Connecting a channel is for the web app.
+`peal channels list` lists the workspace's channels with their ids, which drafts and posts take, and whether each one posts or must be reconnected. Connecting a channel is for the web app.
 
 `peal channels tiktok` reads a TikTok channel's settings from TikTok, as TikTok asks before a post: who it posts as, the audiences a post may choose (its `privacyLevel`, with no default), the interactions the account turned off, which stay off, and its longest video, or why it cannot post today. Posting to TikTok means agreeing to its Music Usage Confirmation, and to its Branded Content Policy for branded content.
 
@@ -125,23 +125,78 @@ peal drafts discard <post-id>
 
 - `peal drafts save` without `--post` writes a new draft, for the channels `--channel` names (none yet is fine). With `--post`, it changes that draft: the text, when `--text` is given, and the channels, when any `--channel` is. What you leave out stays as it was, its media and its [platform options](/scheduling#options) on the channels it keeps included.
 - `--options <channel-id>=<json>` sets a channel's platform options, as JSON with its `platform`: for YouTube, `title` and `madeForKids` (both needed to schedule), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia`; for TikTok, `privacyLevel` (needed, one `peal channels tiktok` lists), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated`. Repeat it for several channels; it replaces that channel's options whole.
-- A draft goes out at no time. Its text is checked against each platform's limits when it is scheduled, in the web app.
+- A draft goes out at no time. Its text, media and options are checked against each platform's rules when it is scheduled, with `peal posts schedule` or in the web app.
 - `peal drafts discard` deletes a draft for good. A post that is scheduled or went out is not a draft: unschedule or cancel it instead.
+
+## Write and send a post [#post]
+
+```sh
+peal post "Spring catalogue is out" --channel <channel-id> --at 2026-11-20T10:00 --time-zone Europe/Paris
+peal post "Spring catalogue is out" --channels <channel-id>,<channel-id> --now
+peal post "Spring catalogue is out" --channel <channel-id> --at 2026-11-20T09:00:00Z \
+  --media ./cover.jpg --alt "A paper catalogue open on a wooden table" \
+  --idempotency-key spring-catalogue-2026-11-20
+```
+
+`peal post` writes a post and sends it in one command, to the public of the accounts its channels connect. What goes out cannot be taken back from Peal.
+
+- **When.** `--at` schedules it, `--now` publishes it at once, and one of the two is required: publishing is never the default. `--at` takes an instant with its offset, such as `2026-11-20T09:00:00Z` or `2026-11-20T10:00:00+01:00`, or a local time without one, such as `2026-11-20T10:00`, read in `--time-zone` (or `--zone`), an IANA zone such as `Europe/Paris`. Without the flag, the zone is `TZ`, then your computer's. A local time the clocks skip or repeat in that zone is refused: give the instant with its offset.
+- **Where.** `--channel` (or `--channels`) names a channel by its id; repeat it, or separate ids with commas. At least one.
+- **Media.** Each `--media` is a file, uploaded first; an `https://` address, which the server imports; or the id of a media the workspace has, as `peal media list` shows it. They show in the order given, 20 at most. The first `--alt` describes the first `--media`, the second the second.
+- **Options.** `--options <channel-id>=<json>` sets a channel's [platform options](/scheduling#options), as `peal drafts save` takes them.
+- **Running it again.** `--idempotency-key` takes any text of your choosing, of 255 characters at most, such as a UUID: within 24 hours, the same key with the same post answers the post the first run made, and makes no other; with another post it is refused. Without it, `peal` sends no key. To run a post with media again, give `--media` as media ids: files and addresses are stored anew on each run, which makes it another post.
+
+The post is checked against every channel's platform first. When it breaks a rule, nothing is posted, and `peal` lists every violation on a line of its own, with its channel, platform, option or media, and the limit.
 
 ## Posts [#posts]
 
 ```sh
 peal posts show <post-id>
+peal posts schedule <post-id> --at 2026-11-20T10:00 --time-zone Europe/Paris
+peal posts schedule <post-id> --at 2026-11-20T09:00:00Z --channels <channel-id>,<channel-id>
+peal posts publish <post-id>
+peal posts reschedule <post-id> --at 2026-11-21T10:00 --time-zone Europe/Paris
 peal posts unschedule <post-id>
+peal posts cancel <post-id>
 peal posts repost <post-id> <target-id>
 peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
 peal posts confirm <post-id> <target-id> not-published
 ```
 
 - `peal posts show` prints the post's status and time, then one line per channel, starting with its target id, with how it went there: failed and why, unconfirmed and why, or published at its address (and kept private, when YouTube kept a public or unlisted video private), then the post's options on each channel that has some.
+- `peal posts schedule` schedules a draft for `--at`, read as `peal post` reads it, on the channels it has, or on those `--channel` names. Its text, media and options must fit each platform's rules, or nothing is scheduled.
+- `peal posts publish` publishes a draft, or a scheduled post, now, on the channels it has. It reaches the accounts' public, and cannot be taken back from Peal once it is out.
+- `peal posts reschedule` moves a scheduled post to another time. A draft is scheduled then, on the channels it has.
 - `peal posts unschedule` takes a scheduled post back to draft, so it goes out at no time until it is scheduled again. A post already publishing cannot be unscheduled.
+- `peal posts cancel` cancels a draft or a scheduled post for good: it goes out on no channel. A post already publishing finishes with what its channels did, and those not yet sent are cancelled. To change a scheduled post and keep it, unschedule it instead.
 - `peal posts repost` sends the post again, now, on one channel where it failed or is unconfirmed. When it is unconfirmed, check the platform first: it may be live already.
 - `peal posts confirm` records what you found on the platform for a post Peal could not confirm: `published`, with its address if you have it, or `not-published`, which fails it there so `peal posts repost` can send it again. See [Scheduling](/scheduling) for how posts end.
+
+## Media [#media]
+
+```sh
+peal media upload ./cover.jpg --alt "A paper catalogue open on a wooden table"
+peal media import https://files.example/spring/cover.jpg --alt "A paper catalogue open on a wooden table"
+peal media list                   # newest first; --limit and --cursor page through them
+```
+
+- `peal media upload` sends a file to the workspace's media: JPEG, PNG, GIF or WebP up to 16 MiB, MP4 or QuickTime up to 1 GiB, told by its extension. The file goes straight to the media store, then Peal checks and reads it.
+- `peal media import` has the server fetch an image or a video from a public `https://` address, without credentials, within 90 seconds ([Images and videos](/media#import)). Upload larger or slower files instead.
+- `peal media list` lists the workspace's images and videos, newest first, with the ids posts attach and whether each is ready. `--limit` takes 100 at most.
+- `--alt` says what the file shows, for people who cannot see it.
+
+Each command prints the media's id. Only a media that is `ready` goes in a post.
+
+## Output for scripts [#json]
+
+`--json` prints the API's answer as one JSON document on stdout, and nothing else there, with instants in ISO 8601, in UTC. A refusal still goes to stderr, and the command exits with a status other than 0. It works on `peal post`, every `peal posts` and `peal media` command, `peal channels list`, `peal drafts list` and `peal drafts save`.
+
+```sh
+peal post "Spring catalogue is out" --channel <channel-id> --now --json
+peal posts show <post-id> --json
+```
+
+An agent that runs commands rather than MCP tools works the same way: [Posting from an AI agent](/agents#cli).
 
 ## Analytics [#analytics]
 
@@ -175,6 +230,24 @@ peal invitations revoke <invitation-id>
 - `peal invitations revoke` stops an invitation's link at once.
 - Changing a member's role, or removing someone, is for the workspace's **Settings**.
 
+## Webhooks [#webhooks]
+
+```sh
+peal webhooks list
+peal webhooks create --url https://hooks.example.com/peal --events post.published,post.failed
+peal webhooks update <endpoint-id> --events all --disable
+peal webhooks rotate-secret <endpoint-id>
+peal webhooks test <endpoint-id>
+peal webhooks deliveries <endpoint-id>
+peal webhooks redeliver <endpoint-id> <delivery-id>
+peal webhooks delete <endpoint-id>
+```
+
+- Owners and admins read and manage the workspace's [webhook](/webhooks) endpoints. `peal webhooks show <endpoint-id>` prints one.
+- `--events` takes event types separated by commas, or `all`. `create` also takes `--description` and `--disabled`; `update` sends only what you give it, with `--enable` or `--disable` to turn the endpoint on or off.
+- `create` and `rotate-secret` print the signing secret, once: save it then. After a rotation the old secret still signs for 24 hours, beside the new one.
+- `test` sends a `webhook.test` event; `deliveries` shows how each delivery ended, newest first, and `redeliver` sends one again.
+
 ## Your data [#account]
 
 ```sh
@@ -198,14 +271,14 @@ peal account apps
 
 ## Settings [#settings]
 
-| Variable          | What it does                                                                           |
-| ----------------- | -------------------------------------------------------------------------------------- |
-| `PEAL_API_URL`    | The instance's address, unless `--api-url` is given. Default: `http://localhost:3000`. |
-| `PEAL_WORKSPACE`  | The workspace commands act in, by slug or id, unless `--workspace` is given.           |
-| `TZ`              | The zone `peal analytics summary` runs days in, unless `--time-zone` is given.         |
-| `PEAL_CONFIG_DIR` | The folder `credentials.json` is saved in.                                             |
-| `XDG_CONFIG_HOME` | Without `PEAL_CONFIG_DIR`, the sign-in goes in its `peal` folder.                      |
-| `APPDATA`         | Without either, on Windows, the sign-in goes in its `peal` folder.                     |
-| `HOME`            | Otherwise, the sign-in goes in `~/.config/peal`.                                       |
+| Variable          | What it does                                                                                                   |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `PEAL_API_URL`    | The instance's address, unless `--api-url` is given. Default: `http://localhost:3000`.                         |
+| `PEAL_WORKSPACE`  | The workspace commands act in, by slug or id, unless `--workspace` is given.                                   |
+| `TZ`              | The zone `peal analytics summary` runs days in, and the zone `--at` is read in, unless `--time-zone` is given. |
+| `PEAL_CONFIG_DIR` | The folder `credentials.json` is saved in.                                                                     |
+| `XDG_CONFIG_HOME` | Without `PEAL_CONFIG_DIR`, the sign-in goes in its `peal` folder.                                              |
+| `APPDATA`         | Without either, on Windows, the sign-in goes in its `peal` folder.                                             |
+| `HOME`            | Otherwise, the sign-in goes in `~/.config/peal`.                                                               |
 
 `peal --help` lists the commands, and `peal <command> --help` describes one.

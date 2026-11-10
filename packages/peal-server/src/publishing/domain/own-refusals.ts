@@ -32,8 +32,9 @@ export const platformRefusalCodes = {
 /**
  * The codes of a PlatformUnavailable that the server's operator must fix:
  * the platform refuses every call of the server's app until its account
- * with the platform is paid for. They are retried as the platform being
- * unavailable, and a target that gave up fails as appBillingLimit, never
+ * with the platform is paid for. The policy keeps the post waiting, tried
+ * again at a gentle pace until a day after its time, as the operator can
+ * pay at any moment; a target that gave up fails as appBillingLimit, never
  * as the post's fault. Stored in the journal too, so never change one.
  */
 export const operatorRefusalCodes = {
@@ -48,7 +49,7 @@ const operatorRefusals: ReadonlySet<string> = new Set(
 );
 
 /** Whether an unavailable platform's code is the operator's to fix. */
-export const isOperatorRefusal = (code: string | undefined): boolean =>
+export const isOperatorRefusal = (code: string | undefined): code is string =>
   code !== undefined && operatorRefusals.has(code);
 
 /**

@@ -75,6 +75,7 @@ const onStarter: Billing = {
   subscription: {
     cancelAtPeriodEnd: false,
     currentPeriodEnd: DateTime.makeUnsafe("2026-12-09T10:00:00Z"),
+    endsAt: null,
     interval: "month",
     plan: "starter",
     startedAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),
@@ -128,6 +129,7 @@ const render = async (
         interval="month"
         pending={null}
         step={{ _tag: "idle" }}
+        tooSmall={null}
         termsUrl="https://site.example.test/terms"
         onBack={ignore}
         onCancel={ignore}
@@ -200,8 +202,8 @@ describe(BillingView, () => {
         "Commander avec obligation de paiement",
         "9,00\u00A0€ TTC par mois",
         "7,50\u00A0€ HT",
-        "Résilier l’abonnement",
-        "Se rétracter du contrat ici",
+        "Résilier votre contrat",
+        "Renoncer au contrat ici",
         "Jusqu’au 23 novembre 2026",
         "Renouvelé le 9 décembre 2026, chaque mois",
       ])
@@ -218,7 +220,7 @@ describe(BillingView, () => {
     expect(
       missing(asking, [
         "L’abonnement Starter prend fin le 9 décembre 2026",
-        "Confirmer la résiliation",
+        "Notification de la résiliation",
         "Garder l’abonnement",
       ])
     ).toStrictEqual([]);
@@ -294,5 +296,14 @@ describe(BillingView, () => {
 
     expect(html).toContain("The plan changes as soon as Stripe confirms");
     expect(html).toContain("already had its trial");
+  });
+
+  it("keeps the invoices of past plans within reach once the plan has ended", async () => {
+    const html = await render("en", { billing: onFree });
+
+    expect(html).toContain(">Invoices and receipts</button>");
+    await expect(
+      render("en", { billing: onFree, canManage: false })
+    ).resolves.not.toContain("Invoices and receipts");
   });
 });

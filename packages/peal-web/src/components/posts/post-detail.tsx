@@ -50,6 +50,7 @@ import { Label } from "peal-ui/components/label";
 import { useCallback, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { PostOrigins } from "#components/posts/post-origins.tsx";
 import { useRefreshWhileVisible } from "#notices/use-refresh-while-visible.ts";
 import {
   confirmTarget,
@@ -401,6 +402,8 @@ interface PostDetailViewProps {
   readonly channels: readonly Channel[];
   readonly onRequest: (request: TargetRequest) => void;
   readonly post: Post;
+  /** The signed-in user, named in how the post came to be. */
+  readonly viewerId: string | null;
 }
 
 /**
@@ -415,6 +418,7 @@ export const PostDetailView = ({
   channels,
   onRequest,
   post,
+  viewerId,
 }: PostDetailViewProps) => {
   const t = useTranslations("PostDetail");
   const tPosts = useTranslations("Posts");
@@ -442,6 +446,7 @@ export const PostDetailView = ({
             </Badge>
           )}
         </div>
+        <PostOrigins post={post} viewerId={viewerId} />
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-6">
@@ -519,11 +524,14 @@ export const PostDetail = ({
   channels,
   permissions,
   post,
+  userId,
   workspaceId,
 }: {
   readonly channels: readonly Channel[];
   readonly permissions: readonly Permission[];
   readonly post: Post;
+  /** The signed-in user. */
+  readonly userId: string;
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("PostDetail");
@@ -611,6 +619,7 @@ export const PostDetail = ({
       canAct={permissions.includes("post:schedule")}
       channels={channels}
       post={post}
+      viewerId={userId}
       onRequest={handleRequest}
     />
   );

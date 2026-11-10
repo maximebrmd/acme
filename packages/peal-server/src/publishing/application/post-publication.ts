@@ -1,5 +1,6 @@
 import { DateTime, Effect, Match, Option, Result, Schedule } from "effect";
 
+import { isOperatorRefusal } from "#publishing/domain/own-refusals.ts";
 import type { PostOutcome } from "#publishing/domain/post-status.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import {
@@ -33,6 +34,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 
 import { ChannelHealth } from "./channel-health.ts";
+import { OperatorAlerts } from "./operator-alerts.ts";
 import { PlatformPublisher } from "./platform-publisher.ts";
 import { PostRepository } from "./post-repository.ts";
 import { PublicationJournal } from "./publication-journal.ts";
@@ -437,6 +439,18 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
       attempt,
       isCancelRequested(target)
     );
+
+    // The platform refuses the server's app until its operator pays: the
+    // post waits, and the operator hears of it.
+    if (outcome._tag === "PlatformUnavailable") {
+      const { code } = outcome;
+
+      if (isOperatorRefusal(code)) {
+        yield* OperatorAlerts.use((alerts) =>
+          alerts.appRefused({ channelId: attempt.channelId, code })
+        );
+      }
+    }
 
     // Read from the journal, so a run after a crash decides as the first did.
     const earlier = yield* journal.earlierRefusals(attempt);

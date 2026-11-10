@@ -18,6 +18,9 @@ class BillingSubscription(UniversalBaseModel):
     current_period_end: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="currentPeriodEnd"), pydantic.Field(alias="currentPeriodEnd")
     ] = None
+    ends_at: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="endsAt"), pydantic.Field(alias="endsAt")
+    ] = None
     interval: BillingInterval
     plan: PaidPlan
     started_at: typing_extensions.Annotated[

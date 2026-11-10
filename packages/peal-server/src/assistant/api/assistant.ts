@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
@@ -12,6 +12,7 @@ import {
 
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 
 const forbidden = () => Effect.fail(new Forbidden());
 
@@ -22,6 +23,7 @@ export const AssistantHandlers = HttpApiBuilder.group(
   "assistant",
   Effect.fn(function* assistantHandlers(handlers) {
     const assistant = yield* WritingAssistant;
+    const paths = yield* UpgradePaths;
 
     return handlers.handleAll({
       status: () =>
@@ -41,9 +43,25 @@ export const AssistantHandlers = HttpApiBuilder.group(
               AnswerRejected: () =>
                 Effect.fail(new AssistantFailed({ reason: "invalidAnswer" })),
               AssistantQuotaExceeded: ({ dailyLimit, resetsAt }) =>
-                Effect.fail(
-                  new AssistantQuotaExceeded({ dailyLimit, resetsAt })
-                ),
+                paths
+                  .from(actor.workspaceId, "assistantRequests", dailyLimit + 1)
+                  .pipe(
+                    Effect.flatMap((path) =>
+                      Effect.fail(
+                        new AssistantQuotaExceeded({
+                          // A server that does not bill has no billing page
+                          // to send anyone to.
+                          billingUrl: Option.isSome(path.plan)
+                            ? path.billingUrl
+                            : null,
+                          dailyLimit,
+                          plan: Option.getOrNull(path.plan),
+                          planWithRoom: Option.getOrNull(path.planWithRoom),
+                          resetsAt,
+                        })
+                      )
+                    )
+                  ),
               AssistantUnavailable: () =>
                 Effect.fail(new AssistantUnavailable()),
               DraftRejected: ({ maxLength, reason }) =>

@@ -4,6 +4,7 @@ namespace Peal\Types;
 
 use Peal\Core\Json\JsonSerializableType;
 use Peal\Core\Json\JsonProperty;
+use Peal\Core\Types\ArrayType;
 
 class NoticeEventTrialEnding extends JsonSerializableType
 {
@@ -14,6 +15,12 @@ class NoticeEventTrialEnding extends JsonSerializableType
     public string $endsAt;
 
     /**
+     * @var array<Excess> $over
+     */
+    #[JsonProperty('over'), ArrayType([Excess::class])]
+    public array $over;
+
+    /**
      * @var value-of<PaidPlan> $plan
      */
     #[JsonProperty('plan')]
@@ -22,6 +29,7 @@ class NoticeEventTrialEnding extends JsonSerializableType
     /**
      * @param array{
      *   endsAt: string,
+     *   over: array<Excess>,
      *   plan: value-of<PaidPlan>,
      * } $values
      */
@@ -29,6 +37,7 @@ class NoticeEventTrialEnding extends JsonSerializableType
         array $values,
     ) {
         $this->endsAt = $values['endsAt'];
+        $this->over = $values['over'];
         $this->plan = $values['plan'];
     }
 

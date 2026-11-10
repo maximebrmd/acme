@@ -51,9 +51,12 @@ const target = (
 const post: Post = {
   authorId: null,
   content: { media: [], overrides: [], text: "Our field note." },
+  createdVia: null,
   id: "00000000-0000-7000-8000-000000000001",
   outcome: "unconfirmed",
   schedule: { at: utc("2026-06-15T08:00:00Z"), timeZone: "Europe/Paris" },
+  scheduledBy: null,
+  scheduledVia: null,
   status: "finished",
   targets: [
     target("t1", "c1", {
@@ -114,6 +117,7 @@ const render = async (locale: "en" | "fr", canAct: boolean) => {
         canAct={canAct}
         channels={channels}
         post={post}
+        viewerId={null}
         onRequest={() => {
           // Nothing is asked while rendering to markup.
         }}
@@ -135,6 +139,7 @@ const renderPost = async (locale: "en" | "fr", shown: Post) =>
         canAct
         channels={[channel("c4", "@pealexample")]}
         post={shown}
+        viewerId={null}
         onRequest={() => {
           // Nothing is asked while rendering to markup.
         }}

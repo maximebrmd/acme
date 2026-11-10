@@ -64,6 +64,29 @@ export class WorkspacePeople extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly Invitation[], DirectoryUnavailable>;
     /**
+     * Removes these users from the workspace's members, and says how many
+     * were: the member alone goes, as when Better Auth removes one. What
+     * they wrote stays.
+     */
+    readonly removeMembers: (
+      workspaceId: WorkspaceId,
+      userIds: readonly UserId[]
+    ) => Effect.Effect<number, DirectoryUnavailable>;
+    /** Revokes every pending invitation of the workspace: how many. */
+    readonly revokeAll: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<number, DirectoryUnavailable>;
+    /**
+     * Runs `change` alone on the workspace's seats, in one transaction: no
+     * invitation, acceptance or other change of its members goes on
+     * meanwhile, and what `change` reads is what it then writes over. All
+     * of it is kept, or none.
+     */
+    readonly reseating: <A, E, R>(
+      workspaceId: WorkspaceId,
+      change: Effect.Effect<A, E, R>
+    ) => Effect.Effect<A, DirectoryUnavailable | E, R>;
+    /**
      * Revokes a pending invitation of the workspace, and says whether there
      * was one.
      */

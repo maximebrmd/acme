@@ -25,6 +25,7 @@ import { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import type { AttachableMedia } from "./attachable-media.ts";
 import type { PostNotFound } from "./post-not-found.ts";
+import { PostOrigins } from "./post-origins.ts";
 import { channelsFor, mediaFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets } from "./post-repository.ts";
@@ -52,7 +53,12 @@ type DraftFailure =
   | UnknownChannels
   | UnknownMedia;
 
-type Ports = AttachableMedia | Ids | PostRepository | WorkspaceChannels;
+type Ports =
+  | AttachableMedia
+  | Ids
+  | PostOrigins
+  | PostRepository
+  | WorkspaceChannels;
 
 const applied = (written: boolean) =>
   written ? Effect.void : Effect.die("A post changed under its row lock");
@@ -65,7 +71,7 @@ const applied = (written: boolean) =>
  *
  * Creating a draft needs post:create, changing one post:update; both read
  * the workspace's channels, which needs channel:read. Its creator is its
- * author. Discarding a draft deletes it, and needs post:delete, unless the
+ * author, and it keeps how they reached Peal (`PostOrigins`). Discarding a draft deletes it, and needs post:delete, unless the
  * actor is its author and has post:update (`mayDiscard`).
  */
 export class PostDrafts extends Context.Service<
@@ -126,11 +132,16 @@ export class PostDrafts extends Context.Service<
         const channels = yield* checked(actor, "post:create", request);
         const postId = yield* newId(PostIdSchema).pipe(withPorts);
 
+        const via = yield* PostOrigins.use((origins) => origins.of(actor)).pipe(
+          withPorts
+        );
+
         const post = createDraft(
           postId,
           actor.workspaceId,
           request.content,
-          authorOf(actor)
+          authorOf(actor),
+          Option.some(via)
         );
 
         const targets = yield* targetsOn(

@@ -5,7 +5,10 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum NotFoundErrorBody {
     #[non_exhaustive]
-    ChannelNotFound {},
+    WebhookEndpointNotFound {},
+
+    #[non_exhaustive]
+    WebhookDeliveryNotFound {},
 
     #[non_exhaustive]
     WorkspaceNotFound {},
@@ -18,8 +21,12 @@ pub enum NotFoundErrorBody {
 }
 
 impl NotFoundErrorBody {
-    pub fn channel_not_found() -> Self {
-        Self::ChannelNotFound {}
+    pub fn webhook_endpoint_not_found() -> Self {
+        Self::WebhookEndpointNotFound {}
+    }
+
+    pub fn webhook_delivery_not_found() -> Self {
+        Self::WebhookDeliveryNotFound {}
     }
 
     pub fn workspace_not_found() -> Self {

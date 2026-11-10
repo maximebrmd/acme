@@ -9,6 +9,8 @@ module Peal
 
       field :current_period_end, -> { String }, optional: false, nullable: true, api_name: "currentPeriodEnd"
 
+      field :ends_at, -> { String }, optional: false, nullable: true, api_name: "endsAt"
+
       field :interval, -> { Peal::Types::BillingInterval }, optional: false, nullable: false
 
       field :plan, -> { Peal::Types::PaidPlan }, optional: false, nullable: false

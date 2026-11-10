@@ -2,6 +2,11 @@ import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import type { Money } from "#billing/domain/billing-notice.ts";
 import { BillingOff } from "#billing/domain/billing-off.ts";
+import {
+  ContractRequest,
+  ContractRequestIdSchema,
+} from "#billing/domain/contract-request.ts";
+import type { RequestIntent } from "#billing/domain/contract-request.ts";
 import { inPerson } from "#billing/domain/in-person.ts";
 import type { PersonRequired } from "#billing/domain/person-required.ts";
 import { currency } from "#billing/domain/prices.ts";
@@ -9,14 +14,18 @@ import type { Subscription } from "#billing/domain/subscription.ts";
 import { WithdrawalUnavailable } from "#billing/domain/withdrawal-unavailable.ts";
 import { mayWithdraw, refundOf } from "#billing/domain/withdrawal.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { newId } from "#shared/application/ids.ts";
+import type { Ids } from "#shared/application/ids.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
-import { currentSubscription } from "./current-subscription.ts";
+import { contractAt, subscriptionNamed } from "./current-subscription.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
+import { ContractRequests } from "./ports/contract-requests.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import type { InvoiceCredit, PaidInvoice } from "./ports/stripe-contracts.ts";
 import type { Subscriptions } from "./ports/subscriptions.ts";
@@ -40,13 +49,41 @@ export interface WithdrawalDone {
   readonly withdrawnAt: DateTime.Utc;
 }
 
-type WithdrawalFailure =
+/**
+ * What applying a withdrawal received earlier did, and the subscription it
+ * ended.
+ */
+export interface ReceivedWithdrawal extends WithdrawalDone {
+  readonly stripeSubscriptionId: string;
+}
+
+/** A withdrawal that came some time ago, to apply now. */
+export interface WithdrawalReceived {
+  /**
+   * Keeps what was decided for it, before Stripe is asked anything: a try
+   * that stops after Stripe is then taken up as decided.
+   */
+  readonly decided: (
+    intent: RequestIntent
+  ) => Effect.Effect<void, DatabaseError>;
+  /** What an earlier try decided for it, if one got that far. */
+  readonly intent: Option.Option<RequestIntent>;
+  /** When it came: the day that counts, for the 14 days and the refund. */
+  readonly receivedAt: DateTime.Utc;
+  /** The subscription it named, when it named one. */
+  readonly stripeSubscriptionId: Option.Option<string>;
+  /** The member who sent it, or the account its address signs in to. */
+  readonly userId: Option.Option<UserId>;
+  readonly workspaceId: WorkspaceId;
+}
+
+type ReceivedFailure =
   | BillingOff
   | DatabaseError
-  | MissingPermission
-  | PersonRequired
   | StripeUnreachable
   | WithdrawalUnavailable;
+
+type WithdrawalFailure = ReceivedFailure | MissingPermission | PersonRequired;
 
 // What goes back of each paid invoice at `at`: the part of the period it
 // paid for not supplied yet, that period read from its lines, or else the
@@ -96,8 +133,11 @@ const totalOf = (
  * contract started, what each paid for the part of its period not supplied
  * yet, to the second, within the 14 days the law gives. A subscription
  * already cancelled can still be withdrawn from. A customer who gave a VAT number
- * Stripe verified buys as a business and cannot. Needs billing:manage and
- * the member in person.
+ * Stripe verified buys as a business and cannot. `preview` and `confirm`
+ * are the member's, in person, with billing:manage, the withdrawal recorded
+ * as a request received and applied then; `received` applies one that came
+ * earlier, from the form anyone reaches, as of the moment it came: the 14
+ * days and the refund count from then (Directive 2011/83/EU art. 11a(5)).
  */
 export class Withdraw extends Context.Service<
   Withdraw,
@@ -108,6 +148,9 @@ export class Withdraw extends Context.Service<
     readonly confirm: (
       actor: Actor
     ) => Effect.Effect<WithdrawalDone, WithdrawalFailure>;
+    readonly received: (
+      withdrawal: WithdrawalReceived
+    ) => Effect.Effect<ReceivedWithdrawal, ReceivedFailure>;
   }
 >()("peal-server/billing/application/Withdraw") {
   static readonly layer = Layer.effect(
@@ -117,23 +160,35 @@ export class Withdraw extends Context.Service<
       const stripe = yield* StripeContracts;
       const withdrawals = yield* Withdrawals;
       const notices = yield* BillingNotices;
-      const context = yield* Effect.context<Subscriptions>();
+      const requests = yield* ContractRequests;
+      const context = yield* Effect.context<Ids | Subscriptions>();
 
-      // The subscription the actor may withdraw from now, with what it
+      // The subscription that may be withdrawn from at `at`, with what it
       // took and what goes back.
-      const withdrawable = Effect.fn("Withdraw.withdrawable")(
-        function* withdrawable(actor: Actor) {
-          yield* Effect.fromResult(authorize(actor, "billing:manage"));
-
-          const userId = yield* Effect.fromResult(inPerson(actor));
-
+      const withdrawableAt = Effect.fn("Withdraw.withdrawableAt")(
+        function* withdrawableAt(
+          workspaceId: WorkspaceId,
+          at: DateTime.Utc,
+          named: Option.Option<string>,
+          intent: Option.Option<RequestIntent> = Option.none()
+        ) {
           if (!enabled) {
             return yield* new BillingOff();
           }
 
-          const { workspaceId } = actor;
-          const now = yield* DateTime.now;
-          const current = yield* currentSubscription(workspaceId);
+          // As an earlier try decided, whatever became of the subscription
+          // since; or the contract the statement speaks of, checked now.
+          const decided = yield* Option.match(intent, {
+            onNone: () => Effect.succeedNone,
+            onSome: ({ stripeSubscriptionId }) =>
+              subscriptionNamed(workspaceId, stripeSubscriptionId),
+          });
+
+          const current = yield* Option.match(decided, {
+            onNone: () => contractAt(workspaceId, named, at),
+            onSome: (subscription) =>
+              Effect.succeed(Option.some({ endedSince: true, subscription })),
+          });
 
           if (Option.isNone(current)) {
             return yield* new WithdrawalUnavailable({
@@ -141,17 +196,28 @@ export class Withdraw extends Context.Service<
             });
           }
 
-          const subscription: Subscription = current.value;
+          const { endedSince, subscription } = current.value;
 
-          const endsAt = yield* Effect.fromResult(
-            mayWithdraw(subscription, now)
-          );
+          const endsAt = yield* Option.match(decided, {
+            onNone: Effect.fnUntraced(function* check() {
+              const until = yield* Effect.fromResult(
+                mayWithdraw(subscription, at, endedSince)
+              );
 
-          if (
-            yield* stripe.isBusiness(workspaceId, subscription.stripeCustomerId)
-          ) {
-            return yield* new WithdrawalUnavailable({ reason: "business" });
-          }
+              if (
+                yield* stripe.isBusiness(
+                  workspaceId,
+                  subscription.stripeCustomerId
+                )
+              ) {
+                return yield* new WithdrawalUnavailable({ reason: "business" });
+              }
+
+              return until;
+            }),
+            // Decided then: the 14 days are not counted again.
+            onSome: () => Effect.succeed(at),
+          });
 
           // Every payment since the contract started, a change of plan's
           // included, each less the part of its period already supplied.
@@ -165,18 +231,33 @@ export class Withdraw extends Context.Service<
 
           const refund = totalOf(
             invoices,
-            creditsAt(invoices, subscription, now)
+            creditsAt(invoices, subscription, at)
           );
 
-          return { endsAt, invoices, now, refund, subscription, userId };
+          return { endsAt, invoices, now: at, refund, subscription };
         },
         Effect.provide(context)
       );
 
+      // The member in person, with billing:manage.
+      const member = Effect.fn("Withdraw.member")(function* member(
+        actor: Actor
+      ) {
+        yield* Effect.fromResult(authorize(actor, "billing:manage"));
+
+        return yield* Effect.fromResult(inPerson(actor));
+      });
+
       const preview = Effect.fn("Withdraw.preview")(function* preview(
         actor: Actor
       ) {
-        const found = yield* withdrawable(actor);
+        yield* member(actor);
+
+        const found = yield* withdrawableAt(
+          actor.workspaceId,
+          yield* DateTime.now,
+          Option.none()
+        );
 
         const shown: WithdrawalPreview = {
           endsAt: found.endsAt,
@@ -191,13 +272,28 @@ export class Withdraw extends Context.Service<
         return shown;
       });
 
-      const confirm = Effect.fn("Withdraw.confirm")(function* confirm(
-        actor: Actor
+      const received = Effect.fn("Withdraw.received")(function* received(
+        withdrawal: WithdrawalReceived
       ) {
-        const found = yield* withdrawable(actor);
+        const { workspaceId } = withdrawal;
+
+        const found = yield* withdrawableAt(
+          workspaceId,
+          withdrawal.receivedAt,
+          withdrawal.stripeSubscriptionId,
+          withdrawal.intent
+        );
+
         const { subscription } = found;
-        const { workspaceId } = actor;
         const id = subscription.stripeSubscriptionId;
+
+        if (Option.isNone(withdrawal.intent)) {
+          yield* withdrawal.decided({
+            effect: null,
+            plan: subscription.plan,
+            stripeSubscriptionId: id,
+          });
+        }
 
         // Recorded first: a withdrawal tried again refunds what the first
         // try computed, under the same idempotency key.
@@ -205,7 +301,7 @@ export class Withdraw extends Context.Service<
           refunded: found.refund,
           requestedAt: found.now,
           stripeSubscriptionId: id,
-          userId: found.userId,
+          userId: withdrawal.userId,
           workspaceId,
         });
 
@@ -215,21 +311,28 @@ export class Withdraw extends Context.Service<
           yield* stripe.credit(
             workspaceId,
             id,
-            creditsAt(found.invoices, subscription, recorded.requestedAt)
+            creditsAt(found.invoices, subscription, recorded.requestedAt),
+            { _tag: "withdrawal" }
           );
         }
 
         yield* stripe.endNow(workspaceId, id, "withdrawn");
 
-        const done: WithdrawalDone = {
+        const done: ReceivedWithdrawal = {
           plan: subscription.plan,
           refunded: recorded.refunded,
+          stripeSubscriptionId: id,
           withdrawnAt: recorded.requestedAt,
         };
 
         yield* notices.tell({
           key: `subscription:${id}:withdrawn`,
-          notice: { _tag: "SubscriptionWithdrawn", ...done },
+          notice: {
+            _tag: "SubscriptionWithdrawn",
+            plan: done.plan,
+            refunded: done.refunded,
+            withdrawnAt: done.withdrawnAt,
+          },
           workspaceId,
         });
 
@@ -244,7 +347,60 @@ export class Withdraw extends Context.Service<
         return done;
       });
 
-      return Withdraw.of({ confirm, preview });
+      const confirm = Effect.fn("Withdraw.confirm")(function* confirm(
+        actor: Actor
+      ) {
+        const userId = yield* member(actor);
+        const { workspaceId } = actor;
+        const receivedAt = yield* DateTime.now;
+
+        // The withdrawals record keeps what was decided: tried again, it
+        // answers the same.
+        const done = yield* received({
+          decided: () => Effect.void,
+          intent: Option.none(),
+          receivedAt,
+          stripeSubscriptionId: Option.none(),
+          userId: Option.some(userId),
+          workspaceId,
+        });
+
+        // The proof of what was asked, and when: tried again, the same
+        // withdrawal is recorded as asked again.
+        yield* requests.save(
+          new ContractRequest({
+            acknowledgedAt: Option.none(),
+            acknowledgement: "none",
+            channel: "session",
+            contract: Option.none(),
+            desiredAt: Option.none(),
+            effectiveAt: Option.some(done.withdrawnAt),
+            email: Option.none(),
+            id: yield* newId(ContractRequestIdSchema),
+            kind: "withdrawal",
+            locale: "en",
+            name: Option.none(),
+            receivedAt,
+            refunded: Option.some(done.refunded),
+            refusal: Option.none(),
+            settledAt: Option.some(receivedAt),
+            status: "applied",
+            stripeSubscriptionId: Option.some(done.stripeSubscriptionId),
+            userId: Option.some(userId),
+            workspaceId: Option.some(workspaceId),
+          })
+        );
+
+        const withdrawn: WithdrawalDone = {
+          plan: done.plan,
+          refunded: done.refunded,
+          withdrawnAt: done.withdrawnAt,
+        };
+
+        return withdrawn;
+      }, Effect.provide(context));
+
+      return Withdraw.of({ confirm, preview, received });
     })
   );
 }

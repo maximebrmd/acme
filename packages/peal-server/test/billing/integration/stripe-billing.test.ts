@@ -23,6 +23,7 @@ import {
   workspaceOf,
 } from "#test/workspace/integration/harness.ts";
 import type { Person } from "#test/workspace/integration/harness.ts";
+import { seedChannel } from "#test/workspace/integration/seed.ts";
 
 const stripeMockUrl = Config.String("STRIPE_MOCK_URL").pipe(
   Config.withDefault("http://127.0.0.1:12111")
@@ -170,6 +171,30 @@ const recordedEvents = Effect.fn("recordedEvents")(function* recordedEvents(
 
 const ErrorSchema = Schema.Struct({ code: Schema.String });
 
+// The statuses of replies to requests sent together, smallest first.
+const statusesOf = (replies: readonly { readonly status: number }[]) =>
+  replies.map(({ status }) => status).toSorted((left, right) => left - right);
+
+// The way out of a limit the sign-in service's refusals carry.
+const upgradeFields = {
+  billingUrl: Schema.String,
+  code: Schema.String,
+  plan: Schema.String,
+  planWithRoom: Schema.NullOr(Schema.String),
+};
+
+const LimitErrorSchema = Schema.Struct({
+  ...upgradeFields,
+  allowed: Schema.Number,
+  limit: Schema.String,
+  used: Schema.Number,
+});
+
+const FreeWorkspaceErrorSchema = Schema.Struct({
+  ...upgradeFields,
+  workspaceId: Schema.String,
+});
+
 // The subscriptions a refused deletion lists, as JSON carries them.
 const decodeSubscribed = Schema.decodeUnknownSync(
   Schema.Struct({
@@ -259,7 +284,9 @@ const trialFor = (payload: string, userId: string, days: number) =>
     );
 
 // A JSON body of plain values, as the billing endpoints take.
-type JsonBody = Readonly<Record<string, boolean | number | string>>;
+type JsonBody = Readonly<
+  Record<string, boolean | number | string | readonly string[]>
+>;
 
 // A POST as the person, with a body or none.
 const post = (person: Person, route: string, body?: JsonBody) =>
@@ -867,15 +894,126 @@ layer(BillingIntegration, {
       const second = yield* invite(newEmail("second"));
 
       assert.strictEqual(second.status, 402);
-      assert.strictEqual(
-        (yield* bodyOf(ErrorSchema, second)).code,
-        "MEMBER_LIMIT_REACHED"
-      );
+
+      // With what a client needs to offer the way out.
+      assert.deepStrictEqual(yield* bodyOf(LimitErrorSchema, second), {
+        allowed: 2,
+        billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
+        code: "MEMBER_LIMIT_REACHED",
+        limit: "members",
+        plan: "free",
+        planWithRoom: "starter",
+        used: 2,
+      });
 
       // Inviting the same person again replaces their invitation.
       assert.strictEqual((yield* invite(first)).status, 200);
     })
   );
+  it.effect(
+    "keeps a member when two owners each choose to keep only themselves, at once",
+    () =>
+      Effect.gen(function* together() {
+        const sql = yield* SqlClient.SqlClient;
+        const first = yield* signedUp("keeper-a");
+        const second = yield* signedUp("keeper-b");
+        const editor = yield* signedUp("keeper-c");
+
+        const outcomes = yield* Effect.forEach(
+          Array.from({ length: 8 }),
+          Effect.fnUntraced(function* once() {
+            // Over the free plan's two members, as after a trial: put
+            // there directly, since no route lets a workspace get there.
+            const workspaceId = randomUUID();
+
+            yield* sql`INSERT INTO auth.organization (id, name, slug, created_at) VALUES (${workspaceId}, 'Keepers', ${`keepers-${workspaceId}`}, now())`;
+            yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${first.id}, 'owner', now()), (${workspaceId}, ${second.id}, 'owner', now()), (${workspaceId}, ${editor.id}, 'editor', now())`;
+
+            const keepOnly = (who: typeof first) =>
+              post(who, `/api/workspaces/${workspaceId}/billing/reduction`, {
+                keepChannelIds: [],
+                keepMemberIds: [who.id],
+              });
+
+            const answers = yield* Effect.all(
+              [keepOnly(first), keepOnly(second)],
+              { concurrency: 2 }
+            );
+
+            const left =
+              yield* sql`SELECT count(*)::int AS count FROM auth.member WHERE organization_id = ${workspaceId} AND role = 'owner'`;
+
+            return {
+              left,
+              served: answers.filter(({ status }) => status === 200).length,
+            };
+          })
+        );
+
+        // One choice is made, and the other finds its chooser gone: an
+        // owner stays, whoever came first.
+        assert.deepStrictEqual(
+          outcomes,
+          outcomes.map(() => ({ left: [{ count: 1 }], served: 1 }))
+        );
+      })
+  );
+
+  it.effect(
+    "counts an invitation or a member whatever the case its ids are written in",
+    () =>
+      Effect.gen(function* written() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const owner = yield* signedUp("shouting");
+        const guest = yield* signedUp("shouting-guest");
+        const workspaceId = yield* workspaceOf(owner, "Shouting");
+
+        const invite = (email: string, organizationId: string) =>
+          app.request("/api/auth/organization/invite-member", {
+            body: { email, organizationId, role: "editor" },
+            headers: { cookie: owner.cookies },
+          });
+
+        // Postgres reads a UUID in any case: an id written in capitals
+        // names the same workspace, and takes no way around its plan.
+        const shouted = yield* Effect.forEach([1, 2, 3], (index) =>
+          invite(
+            newEmail(`shouted-${String(index)}`),
+            workspaceId.toUpperCase()
+          )
+        );
+
+        assert.deepStrictEqual(
+          shouted.map(({ status }) => status),
+          [400, 400, 400]
+        );
+
+        const invited = yield* invite(guest.email, workspaceId);
+
+        assert.strictEqual(invited.status, 200);
+
+        const { id } = yield* bodyOf(
+          Schema.Struct({ id: Schema.String }),
+          invited
+        );
+
+        const accept = (invitationId: string) =>
+          app.request("/api/auth/organization/accept-invitation", {
+            body: { invitationId },
+            headers: { cookie: guest.cookies },
+          });
+
+        assert.strictEqual((yield* accept(id.toUpperCase())).status, 400);
+        assert.strictEqual((yield* accept(id)).status, 200);
+
+        const held =
+          yield* sql`SELECT ((SELECT count(*) FROM auth.member WHERE organization_id = ${workspaceId}) + (SELECT count(*) FROM auth.invitation WHERE organization_id = ${workspaceId} AND status = 'pending'))::int AS count`;
+
+        assert.deepStrictEqual(held, [{ count: 2 }]);
+      })
+  );
+
   it.effect(
     "takes an order only from a member who manages billing, in person, who asked to start now",
     () =>
@@ -1003,9 +1141,17 @@ layer(BillingIntegration, {
         });
 
         assert.strictEqual(another.status, 402);
-        assert.strictEqual(
-          (yield* bodyOf(ErrorSchema, another)).code,
-          "FREE_WORKSPACE_LIMIT_REACHED"
+
+        // Ordering the plan it tries is the way out.
+        assert.deepStrictEqual(
+          yield* bodyOf(FreeWorkspaceErrorSchema, another),
+          {
+            billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
+            code: "FREE_WORKSPACE_LIMIT_REACHED",
+            plan: "pro",
+            planWithRoom: "pro",
+            workspaceId,
+          }
         );
 
         // The same account, admin of another workspace: no second trial.
@@ -1130,7 +1276,7 @@ layer(BillingIntegration, {
       const app = yield* TestApp;
       const owner = yield* signedUp("one-free");
 
-      yield* workspaceOf(owner, "First");
+      const first = yield* workspaceOf(owner, "First");
 
       const refused = yield* app.request("/api/auth/organization/create", {
         body: { name: "Second", slug: `second-${randomUUID()}` },
@@ -1138,10 +1284,15 @@ layer(BillingIntegration, {
       });
 
       assert.strictEqual(refused.status, 402);
-      assert.strictEqual(
-        (yield* bodyOf(ErrorSchema, refused)).code,
-        "FREE_WORKSPACE_LIMIT_REACHED"
-      );
+
+      // Names the free workspace, and the plan that makes room for another.
+      assert.deepStrictEqual(yield* bodyOf(FreeWorkspaceErrorSchema, refused), {
+        billingUrl: `http://localhost:3001/app/${first}/billing`,
+        code: "FREE_WORKSPACE_LIMIT_REACHED",
+        plan: "free",
+        planWithRoom: "starter",
+        workspaceId: first,
+      });
     })
   );
 
@@ -1161,7 +1312,7 @@ layer(BillingIntegration, {
         );
 
         const cancellation = `/api/workspaces/${workspaceId}/billing/cancellation`;
-        const nothing = yield* post(owner, cancellation);
+        const nothing = yield* post(owner, cancellation, {});
 
         assert.strictEqual(nothing.status, 409);
         assert.deepInclude(nothing.body, { _tag: "NothingToCancel" });
@@ -1175,7 +1326,7 @@ layer(BillingIntegration, {
 
         yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${editor.id}, 'editor', now())`;
 
-        assert.strictEqual((yield* post(editor, cancellation)).status, 403);
+        assert.strictEqual((yield* post(editor, cancellation, {})).status, 403);
         assert.strictEqual(
           (yield* post(
             editor,
@@ -1268,11 +1419,286 @@ layer(BillingIntegration, {
       );
 
       assert.strictEqual(refused.status, 402);
-      assert.deepInclude(refused.body, {
+      assert.deepStrictEqual(refused.body, {
         _tag: "PlanLimitReached",
         allowed: 500_000_000,
+        billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
         limit: "mediaStorage",
+        plan: "free",
+        planWithRoom: "starter",
+        used: 0,
       });
     })
+  );
+  // Requests sent together count in turn: none passes a limit because
+  // another had not written yet.
+  it.effect(
+    "lets one of two invitations sent together take the last seat",
+    () =>
+      Effect.gen(function* invitedTogether() {
+        const app = yield* TestApp;
+        const owner = yield* signedUp("invited-together");
+        const workspaceId = yield* workspaceOf(owner, "Together");
+
+        const invite = (email: string) =>
+          app.request("/api/auth/organization/invite-member", {
+            body: { email, organizationId: workspaceId, role: "editor" },
+            headers: { cookie: owner.cookies },
+          });
+
+        // The free plan has two members: the owner, and one invited.
+        const replies = yield* Effect.all(
+          [invite(newEmail("one")), invite(newEmail("two"))],
+          { concurrency: "unbounded" }
+        );
+
+        assert.deepStrictEqual(statusesOf(replies), [200, 402]);
+      })
+  );
+
+  it.effect(
+    "lets one of two invitations accepted together take the last seat",
+    () =>
+      Effect.gen(function* acceptedTogether() {
+        const app = yield* TestApp;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "accepted-together",
+          delivery.customerId
+        );
+
+        // On a paid plan, which has room for both invitations.
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.updated", delivery)),
+          200
+        );
+
+        const guests = [
+          yield* signedUp("guest-one"),
+          yield* signedUp("guest-two"),
+        ];
+
+        const invitations = yield* Effect.all(
+          guests.map((guest) =>
+            app
+              .request("/api/auth/organization/invite-member", {
+                body: {
+                  email: guest.email,
+                  organizationId: workspaceId,
+                  role: "editor",
+                },
+                headers: { cookie: owner.cookies },
+              })
+              .pipe(
+                Effect.flatMap((reply) =>
+                  bodyOf(Schema.Struct({ id: Schema.String }), reply)
+                )
+              )
+          )
+        );
+
+        // Back on the free plan, which has one seat left.
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.deleted", delivery)),
+          200
+        );
+
+        const replies = yield* Effect.all(
+          guests.map((guest, index) =>
+            app.request("/api/auth/organization/accept-invitation", {
+              body: { invitationId: invitations[index]?.id },
+              headers: { cookie: guest.cookies },
+            })
+          ),
+          { concurrency: "unbounded" }
+        );
+
+        assert.deepStrictEqual(statusesOf(replies), [200, 402]);
+        assert.strictEqual(
+          (yield* billingOf(owner, workspaceId)).usage.members,
+          2
+        );
+      })
+  );
+
+  it.effect(
+    "lets one of two workspaces created together be the account's free one",
+    () =>
+      Effect.gen(function* createdTogether() {
+        const app = yield* TestApp;
+        const owner = yield* signedUp("created-together");
+
+        const create = (name: string) =>
+          app.request("/api/auth/organization/create", {
+            body: { name, slug: `${name}-${randomUUID()}` },
+            headers: { cookie: owner.cookies },
+          });
+
+        const replies = yield* Effect.all([create("first"), create("second")], {
+          concurrency: "unbounded",
+        });
+
+        assert.deepStrictEqual(statusesOf(replies), [200, 402]);
+      })
+  );
+  // A plan that shrinks under a workspace deletes nothing: the workspace
+  // says what it holds beyond the plan, and comes back within it by
+  // keeping what a member who manages billing chose.
+  it.effect(
+    "has a workspace over its plan after its subscription ends choose what stays",
+    () =>
+      Effect.gen(function* overPlan() {
+        const app = yield* TestApp;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "over-plan",
+          delivery.customerId
+        );
+
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.updated", delivery)),
+          200
+        );
+
+        // On the paid plan: five channels, and three members.
+        const channelIds = yield* Effect.all(
+          ["one", "two", "three", "four", "five"].map((handle) =>
+            seedChannel(workspaceId, `@${handle}@social.example`)
+          )
+        );
+
+        const guests = [yield* signedUp("stays"), yield* signedUp("leaves")];
+
+        for (const guest of guests) {
+          const invited = yield* app.request(
+            "/api/auth/organization/invite-member",
+            {
+              body: {
+                email: guest.email,
+                organizationId: workspaceId,
+                role: "editor",
+              },
+              headers: { cookie: owner.cookies },
+            }
+          );
+
+          const accepted = yield* app.request(
+            "/api/auth/organization/accept-invitation",
+            {
+              body: {
+                invitationId: (yield* bodyOf(
+                  Schema.Struct({ id: Schema.String }),
+                  invited
+                )).id,
+              },
+              headers: { cookie: guest.cookies },
+            }
+          );
+
+          assert.strictEqual(accepted.status, 200);
+        }
+
+        const standing = (cookies: string) =>
+          app
+            .request(`/api/workspaces/${workspaceId}/billing/standing`, {
+              headers: { cookie: cookies },
+            })
+            .pipe(Effect.map(({ body }) => body));
+
+        const within = {
+          mustReduce: false,
+          over: [],
+          plan: "pro",
+          planWithRoom: null,
+          scheduledPosts: 0,
+        };
+
+        assert.deepStrictEqual(yield* standing(owner.cookies), within);
+
+        // The subscription ends: the workspace is on the free plan, with
+        // everything it had.
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.deleted", delivery)),
+          200
+        );
+
+        const over = {
+          mustReduce: true,
+          over: [
+            { allowed: 3, limit: "channels", used: 5 },
+            { allowed: 2, limit: "members", used: 3 },
+          ],
+          plan: "free",
+          // Starter holds five channels and three members.
+          planWithRoom: "starter",
+          scheduledPosts: 0,
+        };
+
+        // Every member is told, whatever their role.
+        assert.deepStrictEqual(yield* standing(owner.cookies), over);
+        assert.deepStrictEqual(yield* standing(guests[0]?.cookies ?? ""), over);
+
+        const reduce = (
+          person: Person,
+          keep: {
+            readonly channels: readonly string[];
+            readonly members: readonly string[];
+          }
+        ) =>
+          post(person, `/api/workspaces/${workspaceId}/billing/reduction`, {
+            keepChannelIds: keep.channels,
+            keepMemberIds: keep.members,
+          });
+
+        const kept = {
+          channels: channelIds.slice(0, 3),
+          members: [owner.id, guests[0]?.id ?? ""],
+        };
+
+        // Only those who manage billing choose.
+        assert.strictEqual(
+          (yield* reduce(guests[0] ?? owner, kept)).status,
+          403
+        );
+
+        // A choice the plan cannot hold changes nothing.
+        const tooMany = yield* reduce(owner, {
+          ...kept,
+          channels: channelIds.slice(0, 4),
+        });
+
+        assert.strictEqual(tooMany.status, 409);
+        assert.deepInclude(tooMany.body, {
+          _tag: "ReductionRefused",
+          reason: "tooManyChannels",
+        });
+        assert.deepStrictEqual(yield* standing(owner.cookies), over);
+
+        const reduced = yield* reduce(owner, kept);
+
+        assert.strictEqual(reduced.status, 200);
+        assert.deepStrictEqual(reduced.body, {
+          disconnectedChannels: 2,
+          removedMembers: 1,
+          revokedInvitations: 0,
+          standing: { ...within, plan: "free" },
+        });
+
+        const billing = yield* billingOf(owner, workspaceId);
+
+        assert.strictEqual(billing.usage.channels, 3);
+        assert.strictEqual(billing.usage.members, 2);
+
+        // Whoever was removed no longer reaches the workspace.
+        assert.strictEqual(
+          (yield* app.request(
+            `/api/workspaces/${workspaceId}/billing/standing`,
+            { headers: { cookie: guests[1]?.cookies ?? "" } }
+          )).status,
+          404
+        );
+      })
   );
 });

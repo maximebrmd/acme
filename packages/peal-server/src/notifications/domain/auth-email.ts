@@ -9,6 +9,27 @@ const link = {
   url: Schema.NonEmptyString,
 };
 
+/**
+ * What became of a request to cancel a contract or withdraw from one, as
+ * its acknowledgement says it: `confirm`, it waits for the link to be
+ * followed; `review`, a person will look at it; `cancelled` or `withdrawn`,
+ * it was applied; or why its contract refused it.
+ */
+export const ContractRequestOutcomeSchema = Schema.Literals([
+  "confirm",
+  "review",
+  "cancelled",
+  "withdrawn",
+  "nothingToCancel",
+  "notSubscribed",
+  "expired",
+  "business",
+]);
+
+export type ContractRequestOutcome = typeof ContractRequestOutcomeSchema.Type;
+
+const instant = Schema.DateTimeUtc;
+
 /** An email that signing in depends on. */
 export const AuthEmailSchema = Schema.Union([
   // Confirms the address of a new account.
@@ -23,10 +44,19 @@ export const AuthEmailSchema = Schema.Union([
     workspaceName: Schema.String,
   }),
   // Confirms, to the address it had, that an account was deleted with its
-  // data, as its owner asked, and how many subscriptions of the workspaces
-  // it deleted were cancelled. Its link opens Peal.
+  // data, as its owner asked, how many subscriptions of the workspaces
+  // it deleted were cancelled, and what the law has the server keep of it,
+  // in years: null when nothing, and without the identity and the account's
+  // years on a server that stopped keeping them. Its link opens Peal.
   Schema.TaggedStruct("AccountDeleted", {
     ...link,
+    legalHold: Schema.NullOr(
+      Schema.Struct({
+        accountYears: Schema.NullOr(Schema.Int),
+        connectionYears: Schema.Int,
+        identityYears: Schema.NullOr(Schema.Int),
+      })
+    ),
     subscriptionsCancelled: Schema.Int,
   }),
   // Confirms, to the owner who deleted it, that a workspace is deleted, and
@@ -41,6 +71,24 @@ export const AuthEmailSchema = Schema.Union([
   Schema.TaggedStruct("DataExported", {
     ...link,
     via: Schema.Literals(["commandLine", "web"]),
+  }),
+  // Acknowledges, to the address its sender gave, a request to cancel a
+  // contract or withdraw from it: when it was received and what it said
+  // (the name, the contract as written, empty when not given, the day
+  // wanted), then what became of it. Its link applies it (`confirm`), or
+  // opens Peal.
+  Schema.TaggedStruct("ContractRequestAcknowledged", {
+    ...link,
+    contract: Schema.String,
+    desiredAt: Schema.NullOr(instant),
+    effectiveAt: Schema.NullOr(instant),
+    kind: Schema.Literals(["cancellation", "withdrawal"]),
+    name: Schema.String,
+    outcome: ContractRequestOutcomeSchema,
+    receivedAt: instant,
+    refunded: Schema.NullOr(
+      Schema.Struct({ amount: Schema.Int, currency: Schema.NonEmptyString })
+    ),
   }),
 ]);
 

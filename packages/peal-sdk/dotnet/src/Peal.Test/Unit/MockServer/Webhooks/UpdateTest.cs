@@ -1,0 +1,114 @@
+using NUnit.Framework;
+using Peal;
+using Peal.Test.Unit.MockServer;
+using Peal.Test.Utils;
+
+namespace Peal.Test.Unit.MockServer.Webhooks;
+
+[TestFixture]
+[Parallelizable(ParallelScope.Self)]
+public class UpdateTest : BaseMockServerTest
+{
+    [NUnit.Framework.Test]
+    public async Task MockServerTest_1()
+    {
+        const string requestJson = """
+            {}
+            """;
+
+        const string mockResponse = """
+            {
+              "createdAt": "createdAt",
+              "description": "description",
+              "disabledAt": "disabledAt",
+              "disabledReason": "manual",
+              "enabled": true,
+              "eventTypes": [
+                "post.scheduled",
+                "post.scheduled"
+              ],
+              "failingSince": "failingSince",
+              "id": "id",
+              "previousSecretExpiresAt": "previousSecretExpiresAt",
+              "updatedAt": "updatedAt",
+              "url": "url"
+            }
+            """;
+
+        Server
+            .Given(
+                WireMock
+                    .RequestBuilders.Request.Create()
+                    .WithPath("/api/workspaces/workspaceId/webhooks/endpointId")
+                    .WithHeader("Content-Type", "application/json")
+                    .UsingPatch()
+                    .WithBodyAsJson(requestJson)
+            )
+            .RespondWith(
+                WireMock
+                    .ResponseBuilders.Response.Create()
+                    .WithStatusCode(200)
+                    .WithBody(mockResponse)
+            );
+
+        var response = await Client.Webhooks.UpdateAsync(
+            new WebhookEndpointChange
+            {
+                WorkspaceId = "workspaceId",
+                EndpointId = "endpointId",
+                Description = null,
+                Enabled = null,
+                EventTypes = null,
+                Url = null,
+            }
+        );
+        JsonAssert.AreEqual(response, mockResponse);
+    }
+
+    [NUnit.Framework.Test]
+    public async Task MockServerTest_2()
+    {
+        const string requestJson = """
+            {}
+            """;
+
+        const string mockResponse = """
+            {
+              "createdAt": "createdAt",
+              "description": "description",
+              "disabledAt": "disabledAt",
+              "disabledReason": "manual",
+              "enabled": true,
+              "eventTypes": [
+                "post.scheduled"
+              ],
+              "failingSince": "failingSince",
+              "id": "id",
+              "previousSecretExpiresAt": "previousSecretExpiresAt",
+              "updatedAt": "updatedAt",
+              "url": "url"
+            }
+            """;
+
+        Server
+            .Given(
+                WireMock
+                    .RequestBuilders.Request.Create()
+                    .WithPath("/api/workspaces/workspaceId/webhooks/endpointId")
+                    .WithHeader("Content-Type", "application/json")
+                    .UsingPatch()
+                    .WithBodyAsJson(requestJson)
+            )
+            .RespondWith(
+                WireMock
+                    .ResponseBuilders.Response.Create()
+                    .WithStatusCode(200)
+                    .WithBody(mockResponse)
+            );
+
+        var response = await Client.Webhooks.UpdateAsync(
+            new WebhookEndpointChange { WorkspaceId = "workspaceId", EndpointId = "endpointId" }
+        );
+        JsonAssert.AreEqual(response, mockResponse);
+    }
+}

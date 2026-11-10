@@ -19,6 +19,14 @@ admin_user: ops
 admin_ssh_public_keys:
   - ssh-ed25519 REPLACE-WITH-AN-ADMIN-PUBLIC-KEY ops@example.com
 
+# The account a new server's image lets in with your key, which
+# bootstrap.yml logs in as, once, to create the admin user: root, or the
+# account the image comes with (ubuntu on Ubuntu's own cloud images), which
+# has sudo. Set it for a group whose provider's image does not take root.
+# The ssh role then removes that account, with its sudo rule, once the admin
+# user works (README.md, "A new server").
+bootstrap_user: root
+
 # false only while bootstrapping a server, before the tunnel serves SSH:
 # port 22 is then open, rate limited, and Ansible connects to ansible_host.
 ssh_via_tunnel: true
@@ -68,6 +76,37 @@ peal_required_credentials:
   - TELEGRAM_CHAT_ID
 peal_mail_credentials: [RESEND_API_KEY, SMTP_URL]
 
+# Peal is a host established in France: the law has it keep what identifies
+# whoever contributed content (loi n° 2004-575, art. 6, V, A; décret
+# n° 2021-1362), which the software does only when told to
+# (PEAL_LEGAL_RETENTION). Both environments are Peal's, and keep it.
+peal_legal_retention: true
+
+# The hosts of object stores other than Cloudflare R2 whose buckets the
+# owner checked are in the EU: nothing in such a store's endpoint says where
+# it keeps them, so peal_runtime refuses one that is not listed here. R2's
+# EU endpoints need no entry, and its others are refused whatever this says.
+peal_storage_eu_hosts: []
+
+# Where the server keeps its ledger of erasures (the id and time of each
+# deleted account and workspace, which a restore replays): empty keeps it
+# in the media bucket, under erasures/, which suits a media bucket nothing
+# serves publicly. Name a private bucket of its own here, on the same R2
+# account and reachable with the media token, before giving the media
+# bucket a public domain (PEAL_MEDIA_PUBLIC_BASE_URL): peal_runtime refuses
+# one without the other.
+peal_erasure_ledger_bucket: ""
+
+# What Peal declares about its processing, which each user's copy of their
+# data repeats (GDPR Article 15): the controller, the privacy policy's
+# address, the supervisory authority and every provider that processes
+# users' data (the docs' self-hosting page, "Privacy declaration", gives
+# the shape). Empty until the owner confirms the legal entity and the
+# providers: declare none on a guess, as users are told it as a fact. The
+# server reads it when it starts: site.yml restarts the server that runs
+# when it changes.
+peal_privacy_declaration: {}
+
 # The uptime server's address that Grafana sends its heartbeat to, every few
 # minutes, so the uptime server says when this server's alerting goes silent
 # (README.md, "Uptime"). Empty: no heartbeat.
@@ -96,12 +135,15 @@ peal_access_paths:
 # outside services call, which stay open, each with an Access application of
 # its own that bypasses Access (README.md): Bluesky reads the client metadata
 # and keys under /api/channels/oauth/, Stripe posts its events to the
-# webhook, and Meta its data deletion requests. Each request to the last two
-# is signed, and the server checks the signature.
+# webhook, and Meta its data deletion and deauthorize requests, for each of
+# its three apps. Each request to the last two is signed, and the server
+# checks the signature. tests/test_cloudflared.py checks them against the
+# addresses the server lists as called by the platforms' servers
+# (peal-server:platform-addresses): a platform's new route joins them here.
 peal_access_bypass_paths:
   - path: ^/+api/+channels/+oauth/
     to: server
   - path: ^/+api/+auth/+stripe/+webhook/*$
     to: server
-  - path: ^/+api/+data-deletion/+(facebook|threads)/*$
+  - path: ^/+api/+data-deletion/+(facebook|instagram|threads)(/+deauthorize)?/*$
     to: server

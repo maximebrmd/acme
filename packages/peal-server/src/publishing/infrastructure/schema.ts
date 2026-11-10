@@ -34,12 +34,20 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * alt text) and `text_overrides`, the text it has instead on some channels.
  * `author_id` is the member who created it (a Better Auth user id), null
  * when an API key did, or for posts from before authors were kept.
+ *
+ * `created_via` and `scheduled_via` say how its creator, and whoever last
+ * scheduled or moved it, reached Peal (the web app, an API key, an OAuth
+ * application, with the key's or the application's id and name: JSON the
+ * domain's `PostOriginSchema` decodes), and `scheduled_by` which member
+ * scheduled it. All null on posts from before they were kept, the last two
+ * on a draft too, and `scheduled_by` when an API key scheduled it.
  */
 export const posts = publishing.table(
   "posts",
   {
     authorId: uuid("author_id"),
     cancelledAt: instant("cancelled_at"),
+    createdVia: jsonb("created_via"),
     executionId: text("execution_id"),
     finishedAt: instant("finished_at"),
     id: uuid("id").primaryKey(),
@@ -48,6 +56,8 @@ export const posts = publishing.table(
     scheduleRevision: integer("schedule_revision").notNull().default(0),
     scheduleZone: text("schedule_zone"),
     scheduledAt: instant("scheduled_at"),
+    scheduledBy: uuid("scheduled_by"),
+    scheduledVia: jsonb("scheduled_via"),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
     text: text("text").notNull().default(""),
@@ -59,6 +69,11 @@ export const posts = publishing.table(
       table.workspaceId,
       table.scheduledAt
     ),
+    // The posts waiting to go out, in every workspace, by their time: what
+    // the staff console counts as due and overdue.
+    index("posts_scheduled")
+      .on(table.scheduledAt)
+      .where(sql`${table.status} = 'scheduled'`),
     // A workspace's drafts, newest first: ids are UUIDv7s.
     index("posts_workspace_drafts")
       .on(table.workspaceId, table.id)
@@ -187,6 +202,29 @@ export const uploadSessions = publishing.table("upload_sessions", {
   sessionUrl: text("session_url"),
   videoId: text("video_id"),
 });
+
+/**
+ * The idempotency keys of the requests that made posts in one call
+ * (`posts.send`), by workspace: the SHA-256 of the key its client chose and
+ * of the request it came with, never either, and the post it made. A key
+ * is free again 24 hours after `created_at`; the
+ * `publishing.idempotency-retention` cron deletes those past it. Rows go
+ * with their workspace, and name nobody.
+ */
+export const idempotencyKeys = publishing.table(
+  "idempotency_keys",
+  {
+    createdAt: instant("created_at").notNull(),
+    keyDigest: text("key_digest").notNull(),
+    postId: uuid("post_id").notNull(),
+    requestDigest: text("request_digest").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.keyDigest] }),
+    index("idempotency_keys_created_at").on(table.createdAt),
+  ]
+);
 
 /**
  * Units of a platform's daily quota this server spent, by bucket and day,

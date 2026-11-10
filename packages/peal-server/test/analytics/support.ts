@@ -148,6 +148,20 @@ export const seedPost = Effect.fn("test.seedPost")(function* seedPost(
   return publication;
 });
 
+/**
+ * Has Postgres count the analytics tables again, after a test put tens of
+ * thousands of rows in them at once. Autovacuum does it within a minute,
+ * as in production; until then the planner takes the tables for as small
+ * as they were, and every suite sharing the database pays for it: a join
+ * of the two reads one whole table for each row of the other, and the
+ * cascade from a post to its snapshots, planned once a session, reads
+ * every snapshot for each post deleted. Seconds become minutes, and tests
+ * elsewhere time out.
+ */
+export const countTablesAgain = SqlClient.SqlClient.use(
+  (sql) => sql`ANALYZE analytics.tracked_posts, analytics.metric_snapshots`
+).pipe(Effect.orDie, Effect.asVoid);
+
 /** Deletes what analytics stored for the workspace, snapshots included. */
 export const forgetWorkspace = (workspaceId: WorkspaceId) =>
   SqlClient.SqlClient.use((sql) =>

@@ -17,6 +17,9 @@ public record BillingSubscription : IJsonOnDeserialized
     [JsonPropertyName("currentPeriodEnd")]
     public string? CurrentPeriodEnd { get; set; }
 
+    [JsonPropertyName("endsAt")]
+    public string? EndsAt { get; set; }
+
     [JsonPropertyName("interval")]
     public required BillingInterval Interval { get; set; }
 

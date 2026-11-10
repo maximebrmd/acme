@@ -81,6 +81,11 @@ const toStored = (row: PostRow) =>
   Effect.all({
     execution: decodeExecution(row.executionId),
     post: decodePost({
+      attribution: {
+        createdVia: Option.fromNullOr(row.createdVia),
+        scheduledBy: Option.fromNullOr(row.scheduledBy),
+        scheduledVia: Option.fromNullOr(row.scheduledVia),
+      },
       authorId: Option.fromNullOr(row.authorId),
       content: {
         media: row.media,
@@ -141,12 +146,20 @@ const contentColumns = ({ content }: Post) => ({
   })),
 });
 
+// How the post was created and scheduled, as its columns hold it.
+const attributionColumns = ({ attribution }: Post) => ({
+  createdVia: Option.getOrNull(attribution.createdVia),
+  scheduledBy: Option.getOrNull(attribution.scheduledBy),
+  scheduledVia: Option.getOrNull(attribution.scheduledVia),
+});
+
 // Every column a status decides, so a write leaves no stale value behind.
 const postColumns = (post: Post) => {
   const { status } = post;
 
   const cleared = {
     ...contentColumns(post),
+    ...attributionColumns(post),
     cancelledAt: null,
     finishedAt: null,
     outcome: null,

@@ -125,6 +125,7 @@ const workspaceView = Effect.fn("StaffWorkspace.view")(function* workspaceView(
         Effect.map((status) => ({
           cancelAtPeriodEnd: bought.cancelAtPeriodEnd,
           currentPeriodEnd: orNull(bought.currentPeriodEnd),
+          endsAt: orNull(bought.endsAt),
           interval: bought.interval,
           plan: bought.plan,
           startedAt: orNull(bought.startedAt),
@@ -144,6 +145,14 @@ const workspaceView = Effect.fn("StaffWorkspace.view")(function* workspaceView(
     name: workspace.name,
     posts: workspace.posts,
     slug: workspace.slug,
+    webhooks: workspace.webhooks.map((endpoint) => ({
+      disabledReason: orNull(endpoint.disabledReason),
+      enabled: endpoint.enabled,
+      eventTypes: endpoint.eventTypes,
+      failingSince: orNull(endpoint.failingSince),
+      host: endpoint.host,
+      id: endpoint.id,
+    })),
   };
 
   return view;

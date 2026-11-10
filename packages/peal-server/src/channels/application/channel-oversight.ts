@@ -1,4 +1,4 @@
-import { Context, DateTime, Duration, Effect, Layer } from "effect";
+import { Context, DateTime, Duration, Effect, Layer, Option } from "effect";
 
 import type { Channel } from "#channels/domain/channel.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -43,6 +43,7 @@ export class ChannelOversight extends Context.Service<
         const now = yield* DateTime.now;
 
         const found = yield* channels.needingReconnect({
+          after: Option.none(),
           leadTime: reconnectLookahead,
           limit,
           now,

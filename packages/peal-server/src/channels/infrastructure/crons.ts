@@ -5,6 +5,10 @@ import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
 
+// How long a refresh run may take: it stops with time to spare before the
+// next one, ten minutes after it, and says what it left.
+const sweepBudget = Duration.minutes(8);
+
 /**
  * Every ten minutes: refreshes the tokens due (each platform's policy says
  * when: how long before expiry, or, for those renewed as they are used, how
@@ -14,9 +18,11 @@ import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channel
 export const TokenRefreshCron = ClusterCron.make({
   cron: Cron.parseUnsafe("*/10 * * * *", "UTC"),
   execute: Effect.gen(function* refreshTokens() {
-    const report = yield* RefreshChannelTokens.use((refresh) => refresh.sweep);
+    const report = yield* RefreshChannelTokens.use((refresh) =>
+      refresh.sweep({ budget: sweepBudget })
+    );
 
-    if (report.due > 0) {
+    if (report.due > 0 || report.left > 0) {
       yield* Effect.logInfo("Refreshed channel tokens", report);
     }
 

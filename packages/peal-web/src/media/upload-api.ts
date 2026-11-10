@@ -55,7 +55,17 @@ export const failureOf = (error: ApiFailure): UploadFailed => {
   }
 
   if (error instanceof PlanLimitReached && error.limit === "mediaStorage") {
-    return new UploadFailed({ limit: error.allowed, reason: "storageFull" });
+    return new UploadFailed({
+      limit: error.allowed,
+      reached: {
+        allowed: error.allowed,
+        limit: error.limit,
+        plan: error.plan,
+        planWithRoom: error.planWithRoom,
+        used: error.used,
+      },
+      reason: "storageFull",
+    });
   }
 
   if (error instanceof UploadRejected) {

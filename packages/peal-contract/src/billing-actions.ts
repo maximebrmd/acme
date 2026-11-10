@@ -6,13 +6,19 @@ import { BillingNotEnabled } from "./billing-not-enabled.ts";
 import { BillingUnavailable } from "./billing-unavailable.ts";
 import {
   CancellationSchema,
+  CancelPayloadSchema,
   OrderPayloadSchema,
   OrderSchema,
+  ReductionPayloadSchema,
+  ReductionSchema,
   WithdrawalPreviewSchema,
   WithdrawalSchema,
 } from "./billing.ts";
+import { DesiredDayTooFar } from "./desired-day-too-far.ts";
 import { Forbidden } from "./forbidden.ts";
 import { NothingToCancel } from "./nothing-to-cancel.ts";
+import { PlanTooSmall } from "./plan-too-small.ts";
+import { ReductionRefused } from "./reduction-refused.ts";
 import { TrialUnavailable } from "./trial-unavailable.ts";
 import { WithdrawalUnavailable } from "./withdrawal-unavailable.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
@@ -33,6 +39,7 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
         BillingNotEnabled,
         BillingUnavailable,
         Forbidden,
+        PlanTooSmall,
         TrialUnavailable,
       ],
       params: workspaceParams,
@@ -41,7 +48,7 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Records the order a checkout then needs: the plan and interval, or the trial, and the member's request to start now, knowing their right to withdraw. Ordering a paid plan during the trial ends the trial at once, without charge.",
+          "Records the order a checkout then needs: the plan and interval, or the trial, and the member's request to start now, knowing their right to withdraw. Ordering a paid plan during the trial ends the trial once the plan is paid for, without charge for the trial. A plan too small for what the workspace holds, as when moving down, is refused with what to remove first (PlanTooSmall).",
         summary: "Order a plan",
       })
     )
@@ -51,15 +58,17 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
       error: [
         BillingNotEnabled,
         BillingUnavailable,
+        DesiredDayTooFar,
         Forbidden,
         NothingToCancel,
       ],
       params: workspaceParams,
+      payload: CancelPayloadSchema,
       success: CancellationSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Cancels the subscription: a paid one ends when its period does, without further charge; a trial ends now. The members who manage billing are told by email.",
+          "Cancels the subscription: a paid one ends when its period does, without further charge, or on `desiredOn` when that is later, the last period then charged only up to that day; a trial ends now. The members who manage billing are told by email.",
         summary: "Cancel the subscription",
       })
     )
@@ -97,6 +106,20 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
         description:
           "Withdraws from the contract within 14 days of it, as a consumer may: the subscription ends now and the rest of the period is refunded within 14 days. The members who manage billing get an acknowledgement by email.",
         summary: "Withdraw from the contract",
+      })
+    )
+  )
+  .add(
+    HttpApiEndpoint.post("reduce", "/reduction", {
+      error: [BillingNotEnabled, Forbidden, ReductionRefused],
+      params: workspaceParams,
+      payload: ReductionPayloadSchema,
+      success: ReductionSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Brings a workspace over its plan back within it by keeping what the member chose: the other channels are disconnected, as each would be one at a time (the platforms that take it are asked to forget Peal), the other members are removed, and the pending invitations revoked. Only what is over the plan is touched. The whole choice is checked first: refused, it changes nothing. Posts scheduled on a channel disconnected fail when due. Needs billing:manage, channel:disconnect, member:delete and invitation:cancel.",
+        summary: "Choose what stays in a workspace over its plan",
       })
     )
   )

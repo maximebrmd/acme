@@ -1,7 +1,8 @@
-import { Context, Effect, Layer, Option } from "effect";
+import { Context, Effect, Layer, Option, Schema } from "effect";
 
 import type { Actor, Permission } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
+import { UserIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
@@ -10,6 +11,8 @@ import {
   invitableRoles,
   visibleInvitations,
 } from "#workspace/domain/invitation.ts";
+import { membersToRemove } from "#workspace/domain/member-removal.ts";
+import { MembersNotRemovable } from "#workspace/domain/members-not-removable.ts";
 import { NotAMember } from "#workspace/domain/not-a-member.ts";
 import { RoleNotInvitable } from "#workspace/domain/role-not-invitable.ts";
 import type { Role } from "#workspace/domain/roles.ts";
@@ -24,6 +27,16 @@ import { MemberDirectory } from "./member-directory.ts";
 import type { TooManyInvitations } from "./too-many-invitations.ts";
 import { WorkspacePeople } from "./workspace-people.ts";
 import type { PersonInWorkspace } from "./workspace-people.ts";
+
+/** What keeping only some members did. */
+export interface SeatsFreed {
+  /** The members removed. */
+  readonly removed: number;
+  /** The pending invitations revoked. */
+  readonly revoked: number;
+}
+
+const decodeUserId = Schema.decodeUnknownOption(UserIdSchema);
 
 /** Whom to invite, and as what. */
 export interface NewInvitation {
@@ -86,12 +99,35 @@ export class WorkspaceMembers extends Context.Service<
       | TooManyInvitations
       | UserRequired
     >;
+    /**
+     * Removes every member but those kept, and revokes every pending
+     * invitation: what someone chooses for a workspace that must come back
+     * within its plan's members (`membersToRemove`). Needs member:delete
+     * and invitation:cancel, and the member in person.
+     */
+    readonly keepOnly: (
+      actor: Actor,
+      kept: readonly string[]
+    ) => Effect.Effect<
+      SeatsFreed,
+      | DirectoryUnavailable
+      | MembersNotRemovable
+      | MissingPermission
+      | UserRequired
+    >;
     readonly list: (
       actor: Actor
     ) => Effect.Effect<
       readonly PersonInWorkspace[],
       DirectoryUnavailable | UserRequired
     >;
+    /**
+     * Whether the actor is a member of its workspace now, read again: none
+     * but a user is one.
+     */
+    readonly present: (
+      actor: Actor
+    ) => Effect.Effect<boolean, DirectoryUnavailable>;
     readonly revokeInvitation: (
       actor: Actor,
       invitationId: string
@@ -175,10 +211,59 @@ export class WorkspaceMembers extends Context.Service<
         }
       );
 
+      const keepOnly = Effect.fn("WorkspaceMembers.keepOnly")(
+        function* keepOnly(actor: Actor, kept: readonly string[]) {
+          const userId = yield* changing(actor, "member:delete");
+
+          yield* Effect.fromResult(authorize(actor, "invitation:cancel"));
+
+          const staying = kept.map((id) => decodeUserId(id));
+
+          if (staying.some(Option.isNone)) {
+            return yield* new MembersNotRemovable({ reason: "unknownMember" });
+          }
+
+          // Read, decided and written alone on the workspace's seats: of
+          // two members choosing at once, the second finds what the first
+          // left, itself gone included, and never removes on top of it.
+          return yield* people.reseating(
+            actor.workspaceId,
+            Effect.gen(function* choosing() {
+              const leaving = yield* Effect.fromResult(
+                membersToRemove(
+                  userId,
+                  yield* people.members(actor.workspaceId),
+                  staying.flatMap(Option.toArray)
+                )
+              );
+
+              const freed: SeatsFreed = {
+                removed: yield* people.removeMembers(
+                  actor.workspaceId,
+                  leaving
+                ),
+                revoked: yield* people.revokeAll(actor.workspaceId),
+              };
+
+              return freed;
+            })
+          );
+        }
+      );
+
+      const present = (actor: Actor) =>
+        actor.subject._tag === "user"
+          ? directory
+              .membership(actor.subject.userId, actor.workspaceId)
+              .pipe(Effect.map(Option.isSome))
+          : Effect.succeed(false);
+
       return WorkspaceMembers.of({
         invitations,
         invite,
+        keepOnly,
         list,
+        present,
         revokeInvitation,
       });
     })

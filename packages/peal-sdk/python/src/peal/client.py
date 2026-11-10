@@ -24,6 +24,7 @@ if typing.TYPE_CHECKING:
     from .session.client import AsyncSessionClient, SessionClient
     from .system.client import AsyncSystemClient, SystemClient
     from .tiktok.client import AsyncTiktokClient, TiktokClient
+    from .webhooks.client import AsyncWebhooksClient, WebhooksClient
 
 
 class Peal:
@@ -124,6 +125,7 @@ class Peal:
         self._billing: typing.Optional[BillingClient] = None
         self._analytics: typing.Optional[AnalyticsClient] = None
         self._tiktok: typing.Optional[TiktokClient] = None
+        self._webhooks: typing.Optional[WebhooksClient] = None
 
     @property
     def system(self):
@@ -236,6 +238,14 @@ class Peal:
 
             self._tiktok = TiktokClient(client_wrapper=self._client_wrapper)
         return self._tiktok
+
+    @property
+    def webhooks(self):
+        if self._webhooks is None:
+            from .webhooks.client import WebhooksClient  # noqa: E402
+
+            self._webhooks = WebhooksClient(client_wrapper=self._client_wrapper)
+        return self._webhooks
 
 
 def _make_default_async_client(
@@ -357,6 +367,7 @@ class AsyncPeal:
         self._billing: typing.Optional[AsyncBillingClient] = None
         self._analytics: typing.Optional[AsyncAnalyticsClient] = None
         self._tiktok: typing.Optional[AsyncTiktokClient] = None
+        self._webhooks: typing.Optional[AsyncWebhooksClient] = None
 
     @property
     def system(self):
@@ -469,6 +480,14 @@ class AsyncPeal:
 
             self._tiktok = AsyncTiktokClient(client_wrapper=self._client_wrapper)
         return self._tiktok
+
+    @property
+    def webhooks(self):
+        if self._webhooks is None:
+            from .webhooks.client import AsyncWebhooksClient  # noqa: E402
+
+            self._webhooks = AsyncWebhooksClient(client_wrapper=self._client_wrapper)
+        return self._webhooks
 
 
 def _get_base_url(*, base_url: typing.Optional[str] = None, environment: PealEnvironment) -> str:

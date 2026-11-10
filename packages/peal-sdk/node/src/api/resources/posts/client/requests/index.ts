@@ -6,6 +6,7 @@ export type { DiscardPostsRequest } from "./DiscardPostsRequest.js";
 export type { DraftsPostsRequest } from "./DraftsPostsRequest.js";
 export type { GetPostsRequest } from "./GetPostsRequest.js";
 export type { ListPostsRequest } from "./ListPostsRequest.js";
+export type { NewPost } from "./NewPost.js";
 export type { RepostPostsRequest } from "./RepostPostsRequest.js";
 export type { ReschedulePostsRequest } from "./ReschedulePostsRequest.js";
 export type { SchedulePost } from "./SchedulePost.js";

@@ -34,6 +34,8 @@ export const PermissionSchema = Schema.Literals([
   "post:schedule",
   "post:approve",
   "post:publish",
+  "webhook:read",
+  "webhook:manage",
 ]).annotate({
   description: "One action on one resource of a workspace.",
   // One named schema in the OpenAPI document, which every SDK reads as one

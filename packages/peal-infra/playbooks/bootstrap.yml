@@ -1,13 +1,20 @@
 ---
-# Run once on a new server, as root over its public address, before
-# anything else:
-#   ansible-playbook playbooks/bootstrap.yml --limit production -e ansible_user=root -e ssh_via_tunnel=false
-#   ansible-playbook playbooks/bootstrap.yml --limit uptime -e ansible_user=root
-# It creates the admin account every other playbook logs in with; site.yml,
-# or uptime.yml, then turns root logins off.
+# Run once on a new server, over its public address, before anything else:
+#   ansible-playbook playbooks/bootstrap.yml --limit production -e ssh_via_tunnel=false
+#   ansible-playbook playbooks/bootstrap.yml --limit uptime
+# It logs in as bootstrap_user, the account the server's image lets in with
+# your key: root, or the image's own account (ubuntu…), which then uses
+# sudo. It creates the admin account every other playbook logs in with;
+# site.yml, or uptime.yml, then turns root logins off and removes the
+# image's own account.
 - name: Create the admin account
   hosts: servers:uptime
   gather_facts: false
+  # Above the inventory's ansible_user, the admin user, which does not exist
+  # yet; `-e ansible_user=root` still names it.
+  vars:
+    ansible_user: "{{ bootstrap_user }}"
+  become: "{{ ansible_user != 'root' }}"
   roles:
     - peal_preflight
   tasks:

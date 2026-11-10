@@ -1,0 +1,157 @@
+using global::System.Text.Json;
+using global::System.Text.Json.Serialization;
+using Peal.Core;
+
+namespace Peal;
+
+[JsonConverter(typeof(WebhookEventType.WebhookEventTypeSerializer))]
+[Serializable]
+public readonly record struct WebhookEventType : IStringEnum
+{
+    public static readonly WebhookEventType PostScheduled = new(Values.PostScheduled);
+
+    public static readonly WebhookEventType PostUnscheduled = new(Values.PostUnscheduled);
+
+    public static readonly WebhookEventType PostPublished = new(Values.PostPublished);
+
+    public static readonly WebhookEventType PostFailed = new(Values.PostFailed);
+
+    public static readonly WebhookEventType PostUnconfirmed = new(Values.PostUnconfirmed);
+
+    public static readonly WebhookEventType PostCancelled = new(Values.PostCancelled);
+
+    public static readonly WebhookEventType ChannelConnected = new(Values.ChannelConnected);
+
+    public static readonly WebhookEventType ChannelDisconnected = new(Values.ChannelDisconnected);
+
+    public static readonly WebhookEventType ChannelReconnectNeeded = new(
+        Values.ChannelReconnectNeeded
+    );
+
+    public static readonly WebhookEventType MediaReady = new(Values.MediaReady);
+
+    public static readonly WebhookEventType MediaFailed = new(Values.MediaFailed);
+
+    public static readonly WebhookEventType WebhookTest = new(Values.WebhookTest);
+
+    public WebhookEventType(string value)
+    {
+        Value = value;
+    }
+
+    /// <summary>
+    /// The string value of the enum.
+    /// </summary>
+    public string Value { get; }
+
+    /// <summary>
+    /// Create a string enum with the given value.
+    /// </summary>
+    public static WebhookEventType FromCustom(string value)
+    {
+        return new WebhookEventType(value);
+    }
+
+    public bool Equals(string? other)
+    {
+        return Value.Equals(other);
+    }
+
+    /// <summary>
+    /// Returns the string value of the enum.
+    /// </summary>
+    public override string ToString()
+    {
+        return Value;
+    }
+
+    public static bool operator ==(WebhookEventType value1, string value2) =>
+        value1.Value.Equals(value2);
+
+    public static bool operator !=(WebhookEventType value1, string value2) =>
+        !value1.Value.Equals(value2);
+
+    public static explicit operator string(WebhookEventType value) => value.Value;
+
+    public static explicit operator WebhookEventType(string value) => new(value);
+
+    internal class WebhookEventTypeSerializer : JsonConverter<WebhookEventType>
+    {
+        public override WebhookEventType Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        )
+        {
+            var stringValue =
+                reader.GetString()
+                ?? throw new global::System.Exception(
+                    "The JSON value could not be read as a string."
+                );
+            return new WebhookEventType(stringValue);
+        }
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            WebhookEventType value,
+            JsonSerializerOptions options
+        )
+        {
+            writer.WriteStringValue(value.Value);
+        }
+
+        public override WebhookEventType ReadAsPropertyName(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        )
+        {
+            var stringValue =
+                reader.GetString()
+                ?? throw new global::System.Exception(
+                    "The JSON property name could not be read as a string."
+                );
+            return new WebhookEventType(stringValue);
+        }
+
+        public override void WriteAsPropertyName(
+            Utf8JsonWriter writer,
+            WebhookEventType value,
+            JsonSerializerOptions options
+        )
+        {
+            writer.WritePropertyName(value.Value);
+        }
+    }
+
+    /// <summary>
+    /// Constant strings for enum values
+    /// </summary>
+    [Serializable]
+    public static class Values
+    {
+        public const string PostScheduled = "post.scheduled";
+
+        public const string PostUnscheduled = "post.unscheduled";
+
+        public const string PostPublished = "post.published";
+
+        public const string PostFailed = "post.failed";
+
+        public const string PostUnconfirmed = "post.unconfirmed";
+
+        public const string PostCancelled = "post.cancelled";
+
+        public const string ChannelConnected = "channel.connected";
+
+        public const string ChannelDisconnected = "channel.disconnected";
+
+        public const string ChannelReconnectNeeded = "channel.reconnect_needed";
+
+        public const string MediaReady = "media.ready";
+
+        public const string MediaFailed = "media.failed";
+
+        public const string WebhookTest = "webhook.test";
+    }
+}

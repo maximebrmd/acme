@@ -31,7 +31,6 @@ import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
 import social.peal.resources.assistant.requests.StatusAssistantRequest;
 import social.peal.resources.assistant.requests.SuggestionRequest;
-import social.peal.types.AssistantQuotaExceededEncoded;
 import social.peal.types.AssistantStatus;
 import social.peal.types.ForbiddenEncoded;
 import social.peal.types.Suggestion;
@@ -205,9 +204,7 @@ public class RawAssistantClient {
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 429:
                         throw new TooManyRequestsError(
-                                ObjectMappers.JSON_MAPPER.readValue(
-                                        responseBodyString, AssistantQuotaExceededEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 502:
                         throw new BadGatewayError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

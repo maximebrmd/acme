@@ -18,6 +18,62 @@ export interface EmailCatalog {
     readonly workspace: string;
   };
   /**
+   * The acknowledgement of a request to cancel a contract or withdraw from
+   * one, to the address its sender gave. Its body is, in order: `received`
+   * for its kind (`{receivedAt}`), `content` (`{name}`, `{contract}`,
+   * `{email}`), `desired` when a day was asked for (`{desiredAt}`), then
+   * what became of it, from `outcomes` (`{receivedAt}`, `{effectiveAt}`,
+   * `{refunded}`), and `renewalRefunded` when a renewal went back
+   * (`{refunded}`).
+   */
+  readonly contractRequest: {
+    readonly actions: { readonly confirm: string; readonly open: string };
+    readonly content: string;
+    /** `{contract}` when the request named none. */
+    readonly contractNotGiven: string;
+    readonly desired: string;
+    readonly ignore: string;
+    /**
+     * `cancelledLater` for a contract that ends on a later day its sender
+     * asked for, and renews until then; `withdrawnUnpaid` for a withdrawal
+     * from a contract that had charged nothing.
+     */
+    readonly outcomes: {
+      readonly business: string;
+      readonly cancelled: string;
+      readonly cancelledLater: string;
+      readonly confirm: string;
+      readonly expired: string;
+      readonly notSubscribed: string;
+      readonly nothingToCancel: string;
+      readonly review: string;
+      readonly withdrawn: string;
+      readonly withdrawnUnpaid: string;
+    };
+    readonly received: {
+      readonly cancellation: string;
+      readonly withdrawal: string;
+    };
+    readonly renewalRefunded: string;
+    readonly subjects: {
+      readonly cancellation: string;
+      readonly withdrawal: string;
+    };
+  };
+  /**
+   * Added to an account deletion's body on a server that keeps what French
+   * law has a host keep: `identification`, what stays and for how long
+   * (`{identity}`, `{account}`: each a number of `years`); `connections`,
+   * on a server that stopped keeping these, for the connections it already
+   * holds, each `{connections}` from when it was made.
+   */
+  readonly legalHold: {
+    readonly connections: string;
+    readonly identification: string;
+    /** A number of years, `{count}`: one, or more. */
+    readonly years: { readonly one: string; readonly other: string };
+  };
+  /**
    * A copy of the account's data was downloaded `{via}`, one of
    * `exportChannels`.
    */
@@ -73,13 +129,40 @@ export interface EmailCatalog {
   readonly trialStarted: EmailMessages;
   /** "month" or "year", as `{interval}`. */
   readonly intervals: { readonly month: string; readonly year: string };
-  /** A trial of `{plan}` in `{workspaceName}` ends at `{endsAt}`. */
+  /**
+   * A trial of `{plan}` in `{workspaceName}` ends at `{endsAt}`, and
+   * `{standing}` says what the workspace then holds beyond the free plan
+   * (`overFreePlan`, with its `{over}` list) or that it holds nothing
+   * beyond it (`withinFreePlan`).
+   */
   readonly trialEnding: EmailMessages;
+  /** What is held beyond the free plan: `{over}` lists it. */
+  readonly overFreePlan: string;
+  readonly withinFreePlan: string;
+  /**
+   * One thing held beyond a plan, `{used}` against `{allowed}`; media in
+   * the units plans are sold in.
+   */
+  readonly excess: {
+    readonly channels: string;
+    readonly mediaStorage: string;
+    readonly members: string;
+  };
   /**
    * A yearly `{plan}` renews at `{renewsAt}` for `{price}`, what Stripe
    * will charge, VAT included.
    */
   readonly subscriptionRenewing: EmailMessages;
+  /**
+   * The last day to refuse a yearly plan's renewal, `{renewsAt}`, which
+   * the reminder sets apart in a box, as French law asks.
+   */
+  readonly renewalDeadline: string;
+  /**
+   * Added to a confirmation's and a reminder's body once the contract has
+   * a number, `{reference}`: what it is for.
+   */
+  readonly contractNumber: string;
   /** The `{plan}` subscription was cancelled, and ends at `{endsAt}`. */
   readonly subscriptionCancelled: EmailMessages;
   /**
@@ -100,6 +183,15 @@ export interface EmailCatalog {
   };
   /** `{channel}` for a post whose channel was disconnected since. */
   readonly unknownChannel: string;
+  /**
+   * Peal turned off the webhook endpoint at `{host}` in `{workspaceName}`,
+   * for `{reason}`, one of `webhookTurnOffReasons`.
+   */
+  readonly webhookEndpointDisabled: EmailMessages;
+  readonly webhookTurnOffReasons: {
+    readonly failing: string;
+    readonly gone: string;
+  };
   readonly verifyEmail: EmailMessages;
   /** The workspace `{workspaceName}` was deleted by its owner. */
   readonly workspaceDeleted: EmailMessages;

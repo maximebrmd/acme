@@ -2,7 +2,7 @@
 title: Auto-hébergement
 description: Les services nécessaires à une instance Peal auto-hébergée, comment faire tourner le serveur et l’application web derrière une seule adresse, et comment configurer l’e-mail, les médias, les canaux, l’assistant de rédaction et MCP.
 sidebar:
-  order: 11
+  order: 13
 ---
 
 Peal accède à chaque service extérieur par un port doté d’une option par défaut auto-hébergeable. Une instance auto-hébergée fait tourner deux programmes à elle, le serveur et l’application web, et a besoin de Postgres, d’un stockage objet compatible S3 et d’un moyen d’envoyer des e-mails. Tout le reste est facultatif et reste désactivé tant que vous ne le configurez pas.
@@ -140,7 +140,7 @@ Les pages montrent les médias par des liens signés de courte durée. Si le buc
 
 ## Canaux [#channels]
 
-Le serveur chiffre les jetons des comptes connectés avec les clés de `PEAL_TOKEN_KEYS`. Sans elle, le serveur démarre, et la connexion d’un compte échoue. Créez une clé avec :
+Le serveur chiffre les jetons des comptes connectés, et les secrets de signature des [webhooks](/webhooks#self-hosting), avec les clés de `PEAL_TOKEN_KEYS`. Sans elle, le serveur démarre, et la connexion d’un compte ou l’ajout d’un point de terminaison de webhook échoue. Créez une clé avec :
 
 ```sh
 echo "k1:$(openssl rand -base64 32)"
@@ -152,6 +152,26 @@ Le serveur joint lui-même les plateformes, en HTTPS : il doit donc accéder à 
 
 Pour publier une image ou une vidéo, le serveur la lit dans le stockage des médias, en entier, en mémoire, puis l’envoie : une vidéo Bluesky peut prendre jusqu’à 300 Mo. LinkedIn et X prennent les vidéos par parties de 4 Mio : le serveur n’en garde qu’une à la fois. Donnez au serveur la mémoire nécessaire aux plus gros fichiers que publient vos membres.
 
+### Adresses à enregistrer [#platform-addresses]
+
+L’application de chaque plateforme reçoit des adresses de votre serveur : celle où la plateforme renvoie les personnes après leur connexion et, pour Meta, celles où ses serveurs appellent le vôtre. Une commande les affiche toutes pour votre `PUBLIC_URL`, chacune à côté du réglage où elle va, à partir des chemins que le serveur sert et envoie lui-même. Depuis le dépôt :
+
+```sh
+PUBLIC_URL=https://peal.example.com bun nx run peal-server:platform-addresses
+```
+
+Ou sur un serveur qui tourne, qui répond pour sa propre `PUBLIC_URL`, avec les fichiers et les réglages de la pile comme dans [Avec Docker Compose et Caddy](#compose) :
+
+```sh
+docker compose --project-name peal --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/peal/peal.env \
+  exec server bun packages/peal-server/scripts/platform-addresses.ts
+```
+
+Enregistrez ce qu’elle affiche, par copie, plutôt que des adresses écrites à la main : une plateforme refuse une connexion dont l’adresse de redirection diffère d’un seul caractère de celle enregistrée, barre oblique finale comprise. Relancez-la après avoir changé `PUBLIC_URL`, et après une mise à jour qui ajoute une plateforme. Avec `--json`, elle affiche la même liste pour un programme.
+
+Les adresses qu’elle signale comme appelées par les serveurs de la plateforme, les deux rappels de Meta et les documents du client Bluesky, doivent répondre à Internet sans connexion devant elles : laissez-les passer toute page de connexion ou liste d’autorisation placée devant le serveur. Les autres sont ouvertes par le navigateur des personnes.
+
 ### Bluesky [#bluesky]
 
 Un serveur en production ne connecte des comptes Bluesky qu’avec des clés à lui, qui l’identifient auprès de Bluesky. `PUBLIC_URL` doit être en HTTPS, sans port. Créez une clé, depuis le dépôt :
@@ -160,7 +180,7 @@ Un serveur en production ne connecte des comptes Bluesky qu’avec des clés à 
 bun nx run peal-server:bluesky-key
 ```
 
-Mettez la ligne qu’elle affiche dans `BLUESKY_CLIENT_KEYS`. Les entrées sont séparées par des virgules : pour en changer, placez une nouvelle clé en tête, et gardez les anciennes jusqu’à ce que les sessions qu’elles ont signées aient été rafraîchies. Bluesky lit la description du client de Peal à `PUBLIC_URL/api/channels/oauth/bluesky/client-metadata.json`, et ses clés publiques à côté.
+Mettez la ligne qu’elle affiche dans `BLUESKY_CLIENT_KEYS`. Les entrées sont séparées par des virgules : pour en changer, placez une nouvelle clé en tête, et gardez les anciennes jusqu’à ce que les sessions qu’elles ont signées aient été rafraîchies. Rien n’est enregistré auprès de Bluesky : ses serveurs lisent la description du client de Peal, et ses clés publiques à côté, aux adresses que [la commande](#platform-addresses) affiche pour Bluesky.
 
 Sans clés, un serveur lancé depuis les sources sur `localhost` utilise le client de développement de Bluesky, dont les sessions durent deux semaines, et tout autre serveur ne peut pas connecter Bluesky.
 
@@ -169,7 +189,7 @@ Sans clés, un serveur lancé depuis les sources sur `localhost` utilise le clie
 Un serveur connecte des membres LinkedIn une fois que vous lui avez enregistré une application sur le portail développeurs de LinkedIn, qui demande une page LinkedIn pour la détenir :
 
 1. Ajoutez les produits **Sign In with LinkedIn using OpenID Connect** et **Share on LinkedIn**. Les deux sont accordés tout de suite, sans examen.
-2. Sous **Auth**, ajoutez `PUBLIC_URL/connect/linkedin/callback` comme URL de redirection autorisée, comme `https://peal.example.com/connect/linkedin/callback`.
+2. Sous **Auth**, ajoutez l’adresse que [la commande](#platform-addresses) affiche pour LinkedIn comme URL de redirection autorisée.
 3. Mettez l’identifiant client de l’application dans `LINKEDIN_CLIENT_ID` et son secret client principal dans `LINKEDIN_CLIENT_SECRET`.
 
 Ces applications n’obtiennent pas de jeton de rafraîchissement : les membres reconnectent leur canal tous les 60 jours, et en sont prévenus une semaine avant. Peal appelle l’API de LinkedIn dans la version que nomme `LINKEDIN_API_VERSION`, une version récente si elle n’est pas définie ; LinkedIn retire chaque version un an après sa sortie, et une version retirée fait échouer chaque publication.
@@ -179,10 +199,10 @@ Ces applications n’obtiennent pas de jeton de rafraîchissement : les membres 
 Un serveur connecte des comptes X une fois que vous lui avez enregistré une application dans la console développeurs de X :
 
 1. Dans les réglages d’authentification des utilisateurs de l’application, activez OAuth 2.0, comme **Web App, Automated App or Bot**, avec les permissions **Read and write**.
-2. Ajoutez `PUBLIC_URL/connect/x/callback` comme URI de rappel, exactement, comme `https://peal.example.com/connect/x/callback`. X refuse `localhost` : en développement, utilisez `http://127.0.0.1` et son port.
+2. Ajoutez l’adresse que [la commande](#platform-addresses) affiche pour X comme URI de rappel, exactement. X refuse `localhost` : en développement, utilisez `http://127.0.0.1` et son port.
 3. Mettez l’identifiant client OAuth 2.0 dans `X_CLIENT_ID` et son secret client dans `X_CLIENT_SECRET`.
 
-X facture chaque requête de l’API à l’application, sur des crédits achetés d’avance ([tarifs](https://docs.x.com/x-api/getting-started/pricing)), et une publication avec un lien coûte environ 13 fois plus qu’une sans. Achetez des crédits et fixez une limite de dépenses dans la console de X. Une fois les crédits épuisés (X répond `402`) ou la limite atteinte (`usage-capped`), X refuse toutes les publications de l’application jusqu’à ce que vous ajoutiez des crédits ou releviez la limite : les publications n’y sont pour rien, alors Peal journalise une erreur, que l’alerte du serveur sur les journaux d’erreurs signale, et attend comme pour une panne, plus de deux heures, avant qu’une publication échoue avec la raison « la plateforme refuse l’application de ce serveur tant que son opérateur ne l’a pas réglée ».
+X facture chaque requête de l’API à l’application, sur des crédits achetés d’avance ([tarifs](https://docs.x.com/x-api/getting-started/pricing)), et une publication avec un lien coûte environ 13 fois plus qu’une sans. Achetez des crédits et fixez une limite de dépenses dans la console de X. Une fois les crédits épuisés (X répond `402`) ou la limite atteinte (`usage-capped`), X refuse toutes les publications de l’application jusqu’à ce que vous ajoutiez des crédits ou releviez la limite : les publications n’y sont pour rien, alors Peal les garde en attente et réessaie chacune toutes les demi-heures : elles partent dès que vous avez réglé. Une publication encore refusée un jour après son heure échoue avec la raison « la plateforme refuse l’application de ce serveur tant que son opérateur ne l’a pas réglée ». Peal journalise une erreur au premier refus, puis une fois par heure tant qu’il dure, quel que soit le nombre de publications en attente (`event.name` `peal.app_refused`), que signale l’alerte « A platform refuses the server's app until it is paid for », et compte chaque tentative refusée dans la métrique `peal.publishing.app_refusals`.
 
 Peal compte les publications de chaque espace de travail sur X, et combien contenaient un lien, par mois civil (UTC), dans `billing.metered_posts`, pour que vous voyiez qui dépense quoi ; les offres ne les limitent pas encore. Les comptes suivent l’export de l’espace de travail et sa suppression.
 
@@ -194,7 +214,7 @@ Pour LinkedIn comme pour X, l’un des deux réglages sans l’autre arrête le 
 
 Un serveur connecte des créateurs TikTok une fois que vous lui avez enregistré une application sur TikTok for Developers :
 
-1. Ajoutez le produit **Login Kit**, avec `PUBLIC_URL/connect/tiktok/callback` comme URI de redirection pour le web, comme `https://peal.example.com/connect/tiktok/callback`. TikTok n’accepte que des URI de redirection en HTTPS : en développement, passez par un tunnel HTTPS.
+1. Ajoutez le produit **Login Kit**, avec l’adresse que [la commande](#platform-addresses) affiche pour TikTok comme URI de redirection pour le web. TikTok n’accepte que des URI de redirection en HTTPS : en développement, passez par un tunnel HTTPS.
 2. Ajoutez la **Content Posting API**, avec **Direct Post** activé, et la **Display API**, pour les statistiques. Ajoutez les scopes `user.info.basic`, `user.info.profile`, `video.publish` et `video.list`.
 3. Mettez la clé client de l’application dans `TIKTOK_CLIENT_KEY` et son secret client dans `TIKTOK_CLIENT_SECRET`.
 
@@ -217,15 +237,13 @@ Une plateforme dont les paramètres manquent n’est pas proposée. Instagram l�
 | Connexion Instagram (`INSTAGRAM_APP_ID`)    | Un compte professionnel, sans Page     | 60 jours, renouvelé par Peal une semaine avant | La publication (images, reels, carrousels), les statistiques ; appelle `graph.instagram.com`                                                                                     |
 | Facebook Login via une Page (`META_APP_ID`) | Un compte professionnel lié à une Page | Celui de la Page, qui n’expire pas             | La même chose, plus ce que seule cette API a (identification de produits, collaborateurs, recherche de hashtags), dont Peal ne se sert pas encore ; appelle `graph.facebook.com` |
 
-Dans le tableau de bord, enregistrez ces adresses :
+Dans le tableau de bord, donnez à chaque cas d’usage les adresses que [la commande](#platform-addresses) affiche pour lui :
 
-| Paramètre                                                          | Adresse                                                                                                                                                 |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| URI de redirection OAuth valides de Facebook Login                 | `PUBLIC_URL/connect/facebook/callback` et `PUBLIC_URL/connect/instagram/callback`                                                                       |
-| URI de redirection OAuth de la connexion professionnelle Instagram | `PUBLIC_URL/connect/instagram/callback`                                                                                                                 |
-| URL de rappel de redirection de Threads                            | `PUBLIC_URL/connect/threads/callback`                                                                                                                   |
-| URL de demande de suppression des données                          | `PUBLIC_URL/api/data-deletion/facebook` ; `PUBLIC_URL/api/data-deletion/instagram` pour Instagram ; `PUBLIC_URL/api/data-deletion/threads` pour Threads |
-| URL de rappel d’annulation d’autorisation                          | `PUBLIC_URL/api/data-deletion/facebook/deauthorize`, et de même avec `instagram` et `threads` dans leurs cas d’usage                                    |
+| Cas d’usage    | Paramètres où vont les adresses                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Facebook Login | Ses URI de redirection OAuth valides, deux, pour les Pages Facebook et pour Instagram ; son URL de demande de suppression des données ; son URL de rappel d’annulation d’autorisation |
+| Instagram      | Les URI de redirection OAuth de sa connexion professionnelle ; son URL de demande de suppression des données ; son URL de rappel d’annulation d’autorisation                          |
+| Threads        | Son URL de rappel de redirection ; son URL de demande de suppression des données ; son URL de rappel d’annulation d’autorisation                                                      |
 
 Quand l’une de ses utilisatrices ou l’un de ses utilisateurs demande à Meta de supprimer ce que Peal détient sur elle ou lui, Meta appelle l’adresse de suppression des données avec une demande signée avec le secret de ce cas d’usage. Peal vérifie la signature, supprime, dans chaque espace de travail, les canaux que la personne a connectés par là et leurs jetons, ainsi que les comptes que sa connexion propose encore à un membre de choisir, et répond avec un code de confirmation et la page où s’affiche son état, `PUBLIC_URL/data-deletion/<code>`. La même demande envoyée à nouveau, comme Meta peut la renvoyer, reçoit la même réponse et ne supprime rien de plus. Une demande d’Instagram désigne le compte par son identifiant propre à l’application ou par le sien : Peal prend l’un comme l’autre.
 
@@ -241,10 +259,10 @@ Un serveur connecte des chaînes YouTube une fois que vous lui avez créé un cl
 
 1. Dans la console Google Cloud, créez un projet, et activez la **YouTube Data API v3** sous API et services.
 2. Sous **Google Auth Platform**, configurez l’écran de consentement pour des utilisateurs **Externes**, et ajoutez les champs d’application `https://www.googleapis.com/auth/youtube.upload` et `https://www.googleapis.com/auth/youtube.readonly`.
-3. Sous **Clients**, créez un client **Application Web**, avec `PUBLIC_URL/connect/youtube/callback` comme URI de redirection autorisée, comme `https://peal.example.com/connect/youtube/callback`.
+3. Sous **Clients**, créez un client **Application Web**, avec l’adresse que [la commande](#platform-addresses) affiche pour YouTube comme URI de redirection autorisée.
 4. Mettez l’identifiant client dans `YOUTUBE_CLIENT_ID` et son secret dans `YOUTUBE_CLIENT_SECRET`.
 
-L’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas YouTube. Les membres se connectent avec Google et choisissent la chaîne, celle d’un compte de marque comprise, dans le sélecteur de comptes de Google : une connexion est une chaîne. Peal demande à mettre en ligne des vidéos et à lire la chaîne et ses vidéos, rien de plus, et renouvelle son accès toutes les heures. Déconnecter une chaîne révoque cet accès chez Google, sauf si un autre espace de travail connecte encore la même chaîne.
+L’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas YouTube. Les membres se connectent avec Google et choisissent la chaîne, celle d’un compte de marque comprise, dans le sélecteur de comptes de Google : une connexion est une chaîne. Peal demande à mettre en ligne des vidéos et à lire la chaîne et ses vidéos, rien de plus, et renouvelle son accès, qui dure une heure, quand il met en ligne ou lit des chiffres, et une fois par mois pour une chaîne dont il ne fait rien. Déconnecter une chaîne révoque cet accès chez Google, sauf si un autre espace de travail connecte encore la même chaîne.
 
 Tant que l’écran de consentement du projet est en **Test**, seuls les utilisateurs test que vous listez peuvent se connecter, et Google met fin à leur accès sept jours après la connexion : leurs chaînes doivent alors être reconnectées, et Peal prévient l’espace de travail. Publiez l’écran de consentement, et faites vérifier l’application par Google pour ses champs d’application, pour servir tout le monde durablement.
 
@@ -273,9 +291,13 @@ Les publications comptent dans le mois civil (UTC) où elles partent, une fois p
 
 1. Dans Stripe, créez un produit pour chaque abonnement payant, avec un prix mensuel et un prix annuel en euros, tous deux hors taxes, et donnez-leur les clés de recherche (lookup keys) `peal_<plan>_monthly` et `peal_<plan>_yearly` (`peal_starter_monthly`, `peal_pro_yearly`…), ou un autre préfixe défini dans `STRIPE_LOOKUP_KEY_PREFIX`. Leurs montants sont ceux d’[Abonnements et facturation](/billing#plans) : Peal les affiche avant le paiement, gardez-les égaux.
 2. Ajoutez un webhook vers `PUBLIC_URL/api/auth/stripe/webhook` avec les événements `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` et `checkout.session.completed`, et définissez `STRIPE_WEBHOOK_SECRET` à son secret de signature. Laissez ce chemin ouvert à Stripe si quelque chose protège le reste de `/api/auth`.
-3. Activez Stripe Tax : le paiement lui fait toujours ajouter la TVA, car les prix sont hors taxes et Peal les affiche TVA comprise. Activez l’espace client, où les membres changent de moyen de paiement et téléchargent leurs factures, sans offre de rétention, et avec le changement d’abonnement (mises à jour d’abonnement) et la résiliation désactivés : les abonnements changent et prennent fin depuis la page de facturation seulement, où chaque changement demande une commande. Définissez `PEAL_TERMS_URL` de l’application web à vos conditions d’utilisation, vers lesquelles la page de facturation renvoie avant une commande.
+3. Activez Stripe Tax : le paiement lui fait toujours ajouter la TVA, car les prix sont hors taxes et Peal les affiche TVA comprise. Activez l’espace client, où les membres changent de moyen de paiement et téléchargent leurs factures, sans offre de rétention, et avec le changement d’abonnement (mises à jour d’abonnement) et la résiliation désactivés : les abonnements changent et prennent fin depuis la page de facturation seulement, où chaque changement demande une commande. Définissez `PEAL_TERMS_URL` de l’application web à vos conditions d’utilisation, vers lesquelles la page de facturation renvoie avant une commande, et `PEAL_CONTACT_URL` à l’adresse où écrire pour davantage que le plus grand abonnement. Au démarrage, un serveur qui facture vérifie que chaque prix existe chez Stripe, est actif, coûte ce que Peal publie à la bonne périodicité et est hors taxes ; sinon il s’arrête en énumérant les écarts. Si Stripe ne répond pas, il démarre et consigne un avertissement.
+4. Réglez Stripe selon vos obligations fiscales et de facturation, que Peal laisse à Stripe. Dans Stripe Tax : votre adresse d’origine, une immatriculation pour chaque territoire où vous collectez la taxe (pour un vendeur de l’UE, son pays et le guichet unique OSS), et le code de taxe du produit de chaque abonnement (logiciel en tant que service, `txcd_10103001` pour un usage professionnel ou `txcd_10103000` pour un usage personnel). Le paiement demande alors à chaque client une adresse de facturation et propose un champ pour le numéro fiscal d’une entreprise, que Stripe imprime sur la facture et utilise pour l’autoliquidation. Dans les paramètres de facturation : vos mentions légales (identifiants de la société, numéro de TVA, pied de page), une numérotation, et l’envoi par e-mail des factures et des reçus aux clients. Dans l’espace client : l’historique des factures, pour que les membres téléchargent leurs factures depuis **Facturation**.
+5. Définissez `SITE_APP_URL` à la construction du site vitrine, pour que son pied de page renvoie vers les pages de l’application qui permettent de résilier un contrat et de s’en rétracter ([variables d’environnement](/environment-variables)).
 
-Les propriétaires et les administrateurs commandent, résilient et se rétractent depuis la page de facturation de l’espace de travail, dans leur propre session ; l’équipe qui se fait passer pour eux, les clés d’API et les clients OAuth ne le peuvent pas. Un paiement ne commence que pour une commande passée là dans les 30 dernières minutes, qui enregistre la demande de commencer immédiatement. L’état d’un abonnement ne vient que de ses événements de webhook, vérifiés avec le secret de signature : un événement envoyé deux fois n’est enregistré qu’une fois, et un événement plus ancien ne remplace jamais un plus récent. Un abonnement reste payé tant que Stripe retente un paiement échoué ; impayé, suspendu ou résilié, l’espace de travail revient à l’offre gratuite. Un essai est programmé pour prendre fin, résilié, avec son essai, même si un moyen de paiement est ajouté, si bien qu’il ne devient jamais payant : son espace de travail revient alors à l’offre gratuite, et un abonnement payant commandé pendant l’essai y met fin une fois payé. Un espace de travail dont un abonnement peut encore être facturé par Stripe, impayé ou suspendu compris, ne peut pas être supprimé, ni le compte de son seul membre, tant que l’abonnement n’est pas résilié. La tâche `billing.reminders` rappelle chaque matin les essais qui se terminent dans les trois jours et les abonnements annuels qui se renouvellent dans les 45 jours.
+Les propriétaires et les administrateurs commandent, résilient et se rétractent depuis la page de facturation de l’espace de travail, dans leur propre session ; l’équipe qui se fait passer pour eux, les clés d’API et les clients OAuth ne le peuvent pas. Un paiement ne commence que pour une commande passée là dans les 30 dernières minutes, qui enregistre la demande de commencer immédiatement. L’état d’un abonnement ne vient que de ses événements de webhook, vérifiés avec le secret de signature : un événement envoyé deux fois n’est enregistré qu’une fois, et un événement plus ancien ne remplace jamais un plus récent. Un abonnement reste payé tant que Stripe retente un paiement échoué ; impayé, suspendu ou résilié, l’espace de travail revient à l’offre gratuite. Un essai est programmé pour prendre fin, résilié, avec son essai, même si un moyen de paiement est ajouté, si bien qu’il ne devient jamais payant : son espace de travail revient alors à l’offre gratuite, et un abonnement payant commandé pendant l’essai y met fin une fois payé. Un espace de travail dont un abonnement peut encore être facturé par Stripe, impayé ou suspendu compris, ne peut pas être supprimé, ni le compte de son seul membre, tant que l’abonnement n’est pas résilié. La tâche `billing.reminders` rappelle chaque heure les essais qui se terminent dans les trois jours et les abonnements annuels qui se renouvellent dans les 45 jours, toujours plus d’un mois à l’avance.
+
+Chacun peut résilier un contrat ou s’en rétracter sans se connecter, depuis **Résilier votre contrat** et **Renoncer au contrat ici** au pied de chaque page de l’application web (`/fr/cancel` et `/fr/withdraw`), qu’un serveur qui ne facture pas n’affiche pas. `POST /api/contract-requests` enregistre chaque demande avec le moment de sa réception, qui fait foi quel que soit le moment où elle est appliquée, et en accuse réception par e-mail ; il accepte 5 demandes par heure d’une même adresse (lue dans `AUTH_IP_HEADERS`), un jeton Turnstile quand Turnstile est activé, et n’écrit à une même adresse e-mail que 5 fois par jour. Une demande qui indique le numéro de contrat est appliquée immédiatement ; une demande dont l’adresse gère la facturation d’un espace de travail l’est depuis le lien de son accusé de réception ; les autres attendent dans la console d’équipe ([Console d’équipe](/staff#contract-requests)). La tâche `billing.contract-requests` reprend, toutes les cinq minutes, ce que la messagerie ou Stripe n’ont pas pu traiter. Les demandes sont conservées avec leur espace de travail, puis 5 ans après sa suppression, comme celles pour lesquelles aucun contrat n’a été trouvé le sont à compter de leur réception.
 
 ## Captcha [#captcha]
 
@@ -301,14 +323,57 @@ En se faisant passer pour un membre, l’équipe ne peut ni connecter de canaux,
 
 ## Conservation légale [#legal-retention]
 
-La loi française impose à un hébergeur de conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu, afin que l’autorité judiciaire puisse les requérir (loi n° 2004-575, article 6, V, et décret n° 2021-1362). Peal le fait par défaut, dans le schéma `legal`, que rien d’autre dans le serveur ne lit :
+La loi française impose à un hébergeur de conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu, afin que l’autorité judiciaire puisse les requérir (loi n° 2004-575, article 6, V, et décret n° 2021-1362). Peal sait le faire, et ne le fait pas par défaut : `PEAL_LEGAL_RETENTION` vaut `false` tant que vous ne le définissez pas.
 
-- chaque requête qui crée, modifie ou supprime des publications ou des médias, depuis l’application web, une clé d’API, la ligne de commande ou un client MCP : quand, depuis quelle adresse (lue comme la connexion la lit, depuis `AUTH_IP_HEADERS`), par quel protocole et avec quel moyen de connexion, conservée 1 an ;
-- à la fermeture d’un compte, les nom et adresse e-mail de son titulaire, conservés 5 ans, et ses moyens de connexion (l’identifiant de chaque méthode de connexion, jamais le mot de passe ni son empreinte) et ses clients Stripe, conservés 1 an.
+**Qui doit l’activer.** Vous, si ces deux conditions sont réunies :
 
-Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donnée une fois sa durée écoulée. L’équipe ne lit ces données qu’en répondant à une réquisition dans la [console de l’équipe](/staff#legal-requests), et chaque réponse est consignée. L’export de chaque utilisateur liste ses connexions et ce que la fermeture de son compte laisserait.
+- vous êtes établi en France, ou vous proposez votre Peal à des personnes qui s’y trouvent ;
+- votre Peal stocke des contenus pour d’autres que vous : des clients, le public, toute personne extérieure à votre organisation.
 
-Si vous exploitez Peal hors de France et qu’aucune loi ne vous oblige à les conserver, définissez `PEAL_LEGAL_RETENTION=false` : le serveur n’en conserve alors aucune, et la fermeture d’un compte ne laisse rien. Votre propre politique de confidentialité doit dire ce que vous avez choisi.
+Définissez alors `PEAL_LEGAL_RETENTION=true`. Ne pas conserver ces données est un délit (même article 6, V, B). Si vous n’êtes pas certain que la loi s’applique à vous, consultez un avocat avant d’ouvrir votre serveur à d’autres.
+
+**Qui doit la laisser désactivée.** Tous les autres : une équipe qui exploite Peal pour ses propres publications, ou un exploitant sans lien avec la France. Le droit de la protection des données (RGPD, article 5, paragraphe 1, point c) interdit de conserver ces données sans y être obligé.
+
+**Ce qu’elle conserve**, dans le schéma `legal`, que rien d’autre dans le serveur ne lit :
+
+- chaque requête qui crée, modifie ou supprime des publications ou des médias, depuis l’application web, une clé d’API, la ligne de commande ou un client MCP : quand, depuis quelle adresse (lue comme la connexion la lit, depuis `AUTH_IP_HEADERS`), par quel protocole et avec quel moyen de connexion, conservée {{keep-legal-connections-fr}}. Jamais ce que la requête contenait ;
+- à la fermeture d’un compte, les nom et adresse e-mail de son titulaire, conservés {{keep-legal-identity-fr}}, et ses moyens de connexion (l’identifiant de chaque méthode de connexion, jamais le mot de passe ni son empreinte) et ses clients Stripe, conservés {{keep-legal-account-fr}}.
+
+Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donnée une fois sa durée écoulée. L’équipe ne lit ces données qu’en répondant à une réquisition dans la [console de l’équipe](/staff#legal-requests), et chaque réponse est consignée et conservée {{keep-legal-disclosures-fr}}. L’export de chaque utilisateur liste ses connexions et ce que la fermeture de son compte laisserait. Votre propre politique de confidentialité doit dire que vous les conservez.
+
+**Désactivée**, le serveur n’écrit rien dans le schéma `legal`, et la fermeture d’un compte efface tout.
+
+**La désactiver après l’avoir activée** ne conserve plus rien de nouveau, et ne supprime rien sur-le-champ : ce que le serveur détient déjà reste jusqu’à son terme, puisque la loi vous imposait de le conserver aussi longtemps, et la tâche quotidienne continue de le supprimer. D’ici là, l’équipe dotée du rôle juridique peut encore répondre à une réquisition qui le concerne, et l’export de chaque utilisateur liste encore les connexions conservées à son sujet.
+
+## Suppressions et sauvegardes [#erasure-ledger]
+
+Une sauvegarde contient ce qui a été supprimé après elle. La restaurer fait revenir les comptes et les espaces de travail que leurs utilisateurs ont supprimés depuis, et la loi vous impose de les supprimer de nouveau avant que quiconque puisse s’en servir. Peal conserve ce qu’il faut pour cela hors de la base de données, qu’une restauration ferait reculer elle aussi : à chaque suppression d’un espace de travail ou fermeture d’un compte, le serveur écrit une petite entrée dans le stockage d’objets, sous `erasures/`, avec les identifiants et la date, et rien d’autre (ni nom, ni adresse, ni contenu). L’entrée est écrite avant que la suppression soit définitive, pour qu’aucune ne passe sans trace : si le stockage est injoignable, la suppression est refusée et peut être retentée.
+
+Après toute restauration, et avant de démarrer le serveur, appliquez de nouveau ce registre :
+
+```sh
+docker compose … run --rm --no-deps server packages/peal-server/src/replay-erasures.ts
+```
+
+Depuis une copie du dépôt, `bun nx run peal-server:erasures:replay` fait de même. La commande supprime de nouveau ce que la restauration a fait revenir, affiche ce qu’elle a fait par identifiant, et peut être relancée sans risque : ce qui a disparu reste disparu. Elle ne résilie rien chez Stripe et n’envoie aucun e-mail, puisque c’était fait lors de la suppression d’origine. Une suppression refusée, par exemple à cause d’une publication en cours d’envoi, la fait sortir en erreur : gardez le serveur arrêté tant qu’elle ne passe pas. Une entrée que le serveur n’a jamais confirmée, parce qu’il s’est arrêté au milieu d’une suppression, est listée et laissée telle quelle ; `--apply-unconfirmed` applique aussi celles-là, une fois que vous avez établi que chacune avait bien été demandée.
+
+Le registre se trouve par défaut dans le bucket des médias. Rien n’y est servi : le serveur ne signe aucun lien vers `erasures/`. Si votre bucket des médias est public (`PEAL_MEDIA_PUBLIC_BASE_URL`), nommez un bucket privé avec `PEAL_ERASURE_LEDGER_BUCKET`, sur le même stockage et accessible avec la même clé : le serveur vous en avertit au démarrage tant que ce n’est pas fait. N’utilisez pas le bucket de vos sauvegardes : un serveur qui peut y écrire peut les supprimer.
+
+Les entrées sont conservées {{keep-erasure-ledger-fr}}, un peu plus longtemps que les sauvegardes ne gardent les données supprimées ({{keep-backups-fr}} avec les quatre sauvegardes complètes hebdomadaires de la pile) : une tâche quotidienne (`workspace.erasure-ledger-retention`, à 04 h 17 UTC) retire les plus anciennes. Gardez vos sauvegardes moins longtemps que cela. Si le stockage propose des règles de cycle de vie, ajoutez-en une en seconde protection, sur le bucket du registre ou sur son seul préfixe : avec Cloudflare R2, `wrangler r2 bucket lifecycle add <bucket> expire-erasures erasures/ --expire-days 42`. Une règle qui vise le mauvais préfixe supprimerait vos médias : vérifiez-la avant de l’enregistrer.
+
+## Déclaration de confidentialité [#privacy-declaration]
+
+Chaque utilisateur peut télécharger une copie de ses données (**Compte**, **Vos données**, ou `peal account export`). Elle s’accompagne de ce que le RGPD, article 15, impose au responsable de traitement d’indiquer : pour chaque catégorie de données, sa finalité, sa base légale, sa durée de conservation et son origine ; qui la reçoit ; et les droits qui s’y attachent. Peal en écrit l’essentiel à partir d’un registre unique dans son code, d’où vient aussi le tableau des durées de sa propre politique de confidentialité : les deux ne peuvent pas diverger.
+
+Ce qui dépend de vous, Peal ne peut pas le savoir, et ne le devine jamais. Déclarez-le dans un fichier JSON, comme le montre `self-host/privacy-declaration.example.json`, et nommez ce fichier avec `PEAL_PRIVACY_DECLARATION` (la pile Compose le monte ; un serveur lancé autrement lit `PEAL_PRIVACY_DECLARATION_FILE`) :
+
+- `controller` : qui décide des finalités du traitement, c’est-à-dire vous : `name`, et si vous le souhaitez `address`, `contact` (où adresser les demandes) et `dataProtectionOfficer` ;
+- `policyUrl` : l’adresse de votre politique de confidentialité ;
+- `supervisoryAuthority` : l’autorité de protection des données dont vous relevez, `name` et `url` ;
+- `recipients` : chaque prestataire qui traite pour vous les données de vos utilisateurs (hébergement, stockage des médias, e-mail, paiements, protection contre les robots, IA, alertes), avec son `name`, le `service` rendu, le `country` où il traite les données, et le `safeguard` d’un transfert hors de l’Espace économique européen, ou `null` ;
+- `retention` : seulement si vous exploitez une autre pile que celle de ce dépôt, la durée pendant laquelle la vôtre conserve `technicalLogs` et `backups`, en anglais (`en`) et en français (`fr`). Le registre indique sinon celles de la pile de production : journaux {{keep-logs-fr}}, traces {{keep-traces-fr}}, métriques {{keep-metrics-fr}}, et données supprimées disparues des sauvegardes sous {{keep-backups-fr}}.
+
+Chaque partie est facultative. Ce que vous omettez apparaît comme non déclaré dans chaque export, qui en dit alors moins aux utilisateurs que ce que la loi vous impose : renseignez-le avant d’ouvrir votre serveur à d’autres. Le serveur lit le fichier au démarrage, et s’arrête s’il ne peut pas le lire : redémarrez-le après avoir modifié le fichier (`docker compose restart server`), sinon les exports gardent l’ancienne déclaration.
 
 ## Télémétrie [#telemetry]
 

@@ -36,6 +36,17 @@ describe(mayWithdraw, () => {
     ).toStrictEqual(Option.some("expired"));
   });
 
+  it("refuses a statement that came before the contract started", () => {
+    // A statement sent on 30 October withdraws from nothing ordered on
+    // 1 November: applied to it, it would refund the whole of it.
+    expect(
+      mayWithdraw(started, at("2026-10-30T00:00:00Z")).pipe(
+        Result.getFailure,
+        Option.map(({ reason }) => reason)
+      )
+    ).toStrictEqual(Option.some("notSubscribed"));
+  });
+
   it("counts the trial as the contract's start", () => {
     const trial = subscriptionOf({
       ...startedFields,

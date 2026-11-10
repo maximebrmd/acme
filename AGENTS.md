@@ -196,6 +196,7 @@ them:
 | `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
 | `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
 | `staff`         | the staff console: what staff read and do, and the audit log of it          |
+| `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log   |
 | `legal`         | what French law has a host keep, and the legal requests that read it        |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
@@ -410,7 +411,7 @@ and no socket, for tests.
   hands its records of a workspace or a user to the workspace context
   through an application port (`ChannelRecords`, `PostRecords`,
   `MediaRecords`, `NoticeRecords`, `UsageRecords`, `AnalyticsRecords`,
-  `BillingRecords`, `StaffRecords`, in the shapes of
+  `BillingRecords`, `StaffRecords`, `WebhookRecords`, in the shapes of
   `#shared/application/personal-data.ts`),
   which `ContextRecords` reaches. The rows go in one TransactionRunner
   transaction, Better Auth's included (the server's Drizzle on the `auth`
@@ -452,10 +453,34 @@ and no socket, for tests.
   no workspace and is left alone. Stripe not answering is
   `BillingUnavailable` (503). A failure after settling, as the transaction
   failing, leaves the workspaces, on the free plan once Stripe's events
-  come, and is logged; deleting them again cancels nothing more. The owner is emailed
+  come, is logged, and answers `DeletionIncomplete` (500, how many
+  subscriptions were cancelled; `reportCancelledFirst`) rather than the
+  bare failure; deleting them again cancels nothing more. The owner is emailed
   (`AccountMail.workspaceDeleted`, `deleted`), saying what was cancelled,
-  and each erasure is logged by id (`event.name` `peal.erasure`) for the
-  restore runbook. Closing an account leaves the
+  and each erasure is logged by id (`event.name` `peal.erasure`). Each is
+  also written to the erasure ledger (`ErasureLedger`, `S3ErasureLedger`:
+  one JSON object under `erasures/` in the media bucket, or the bucket
+  `PEAL_ERASURE_LEDGER_BUCKET` names; never the backups', whose
+  credentials the server must not hold), as a restore of the database
+  brings erased data back and rewinds whatever the database recorded: ids
+  and the time only (`workspace/domain/erasure-ledger.ts`, persisted
+  contract), unconfirmed as the last step of the erasure's transaction
+  (`recordErasure`: no ledger, no erasure, 503 `MediaStoreUnavailable`),
+  confirmed once it commits (`confirmErasure`), discarded when it fails
+  (`discardOnFailure`), so no entry names what was not erased.
+  `ReplayErasures` (`bun src/replay-erasures.ts`, `nx run
+  peal-server:erasures:replay`, in the image too) applies it again after a
+  restore, before the server starts: what the ledger names and the
+  database still holds, each entry in its own transaction, without
+  settling Stripe or emailing anyone, holding a closed account's identity
+  as closed at the entry's time, leaving unconfirmed entries unless
+  `--apply-unconfirmed`, and failing when one is refused. Run twice, it
+  changes nothing more. A new way to erase a workspace or an account goes
+  through the ledger; an erasure the ledger does not cover (a platform's
+  data deletion callback, a single post) comes back with a restore. The
+  `workspace.erasure-ledger-retention` cron drops entries after 42 days,
+  longer than backups hold deleted data: keep it so
+  (`data-processing.test.ts`). Closing an account leaves the
   posts its user wrote in the workspaces that remain without an author
   (`PostRecords.forgetAuthor`: `author_id` has no foreign key), and drops the
   connections and account choices they had in progress
@@ -501,14 +526,26 @@ and no socket, for tests.
   for staff who also hold the legal role (`legal` beside `admin` in Better
   Auth's comma-separated `role`, `LegalOfficers` from `StaffStanding`;
   other staff get 404 too) (`POST /api/admin/legal-requests`, `LegalApi`,
-  StaffAccess), recording the answer (staff, authority, reference,
-  subject, counts) in the transaction that reads it, and in the staff
-  audit log (`legalDisclosure`, through the staff context's
-  `LegalDisclosureAudit`), so the rest of staff see it. The export carries the user's connections
-  and what closing would leave (`legalHold`). `PEAL_LEGAL_RETENTION=false`
-  (`LegalRecords.layerOff`) keeps nothing, for an operator outside France;
-  `legalHold` is then null. A new way to change content (a group, a tool)
-  goes through the journal too.
+  StaffAccess), recording the answer (staff, authority, reference, legal
+  basis, subject, what it covers, counts) in the transaction that reads
+  it, and in the staff audit log (`legalDisclosure`, through the staff
+  context's `LegalDisclosureAudit`), so the rest of staff see it. A
+  request names what it asks for (`covers`: identity, signIn, payments,
+  connections, and the connections' period), and the answer holds nothing
+  else (`disclosedOf`, `legal/domain/legal-scope.ts`): a category not
+  covered is null. `GET …/legal-requests` lists the answers given, never
+  what was handed over, and `…/standing` tells the console who answers
+  them. The export carries the user's connections
+  and what closing would leave (`legalHold`). The software keeps none of
+  it unless `PEAL_LEGAL_RETENTION=true`: only an operator the law obliges
+  may hold it (GDPR minimisation), so the default is off
+  (`LegalRecords.layerOff`: nothing is written to the `legal` schema, and
+  `legalHold` is null), and `peal-infra` turns it on for Peal's servers
+  (`peal_legal_retention`). A server that turns it off after it was on
+  keeps what it holds until its term: the purge cron and `LegalRequests`
+  run whatever the setting, and `legalHold` still lists the connections
+  held. A new way to change content (a group, a tool) goes through the
+  journal too.
 - `AccountData` exports what is tied to the user, the posts they wrote in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and
@@ -517,7 +554,10 @@ and no socket, for tests.
   platform options and whether YouTube kept the video private, and the
   export lists what staff did to the account (action, time, reason, and
   for changes made as it the operation, workspace and object ids),
-  without who did it. Sessions staff opened to impersonate
+  without who did it, and never a legal request answered about it
+  (`legalDisclosure`): telling the person can be forbidden, so nothing the
+  user sees says one was made, until counsel says when Article 15 requires
+  it. Sessions staff opened to impersonate
   the user are left out, as Better Auth's own list leaves them out: their
   browser and address are staff's. Each media file the store holds comes
   with a link that downloads it for 7 days (`downloadUrl`), and each export
@@ -528,6 +568,27 @@ and no socket, for tests.
   confirmation is emailed in their language. `PasswordCheck` checks a
   password three times within 10 seconds per account at most, as Better
   Auth's own routes do.
+- The export carries what GDPR Article 15(1) lists (`about`): each
+  category's purposes, legal basis, retention and source, the recipients,
+  the rights and how to exercise them, in the account's language. It is
+  written (`workspace/api/about.ts`) from one registry,
+  `peal-contract/data-processing` (`processingRegister`,
+  `retentionPeriods`), which the privacy policy's retention table
+  (peal-site, en and fr, row for row: `test/privacy-retention.test.ts`),
+  the docs' figures (`{{keep-…}}` variables, `retention-variables.ts`) and
+  the production stack (`peal-docker/test/retention.test.ts`) follow too;
+  `test/workspace/api/data-processing.test.ts` compares each period with
+  the rule that enforces it. Change a period in its rule and the registry
+  together, then the policy's table; a new kind of personal data gets a
+  category there, or joins one: webhook endpoints and their delivery log
+  have theirs (`webhooks`), how a post was created and scheduled and the
+  idempotency keys' digests are in `content`, and requests to cancel or
+  withdraw in `contracts`. What only the operator knows (controller, policy URL,
+  sub-processors, supervisory authority, its own logs' and backups'
+  retention) comes from the JSON file `PEAL_PRIVACY_DECLARATION_FILE`
+  names (`PrivacyDeclaration`, `workspace/domain/operator-declaration.ts`),
+  null in the export until declared: never write a provider on a guess,
+  in the software, the policy or `peal_privacy_declaration` (peal-infra).
 - Better Auth is also the OAuth authorization server for the CLI (device
   grant, the `peal-cli` public client registered at startup) and MCP clients
   (authorization code with PKCE, and dynamic registration when
@@ -536,8 +597,15 @@ and no socket, for tests.
   within 30 seconds gets the same answer, while later reuse revokes that user
   and client's refresh tokens.
 - An MCP token is bound to the workspace the user picked (`workspace_id`
-  claim). Access tokens must carry `workspace:read` (reading only) or
-  `workspace:write` (what the role allows).
+  claim). Access tokens must carry a workspace scope
+  (`workspace/domain/oauth-grant.ts`): `workspace:read` (reading only),
+  `workspace:write` (what the role allows, but what puts posts out) or
+  `workspace:publish` (reading, and `publishingPermissions`: post:schedule,
+  post:approve, post:publish, so scheduling, moving, publishing, reposting,
+  cancelling, unscheduling and confirming). Publishing is a grant of its
+  own: the consent page lets the person leave it out, a token issued before
+  it existed publishes nothing, and `scopeFor` names the scope a permission
+  takes. Never fold it back into `workspace:write`.
 - When `PUBLIC_URL` is neither HTTPS nor a loopback host, the server runs the
   plain OAuth provider without the MCP resource: the CLI signs in, the MCP
   endpoint refuses every request, and startup logs a warning.
@@ -547,6 +615,20 @@ and no socket, for tests.
   changing those options or upgrading Better Auth, then `db:generate`.
   `auth-schema-check`, a dependency of the server's tests, fails when the file
   is stale.
+- Better Auth's routes that count members or invitations
+  (`workspace/infrastructure/auth/routes.ts`) answer 400 `INVALID_ID` to an
+  `organizationId` or `invitationId` that is not a lower-case UUID, and
+  `checkMemberRoom` fails closed: an id the limit cannot be read for is
+  never let through. `WorkspacePeople.reseating` reads, decides and removes
+  under the workspace's invitations lock, so two owners keeping only
+  themselves never empty a workspace.
+- `DeleteWorkspace` and `CloseAccount` write the erasure ledger before
+  settling at Stripe, and run everything after settling uninterruptibly: a
+  client that goes away never leaves subscriptions cancelled and nothing
+  deleted, or rows deleted and their files kept. `ErasureLedger` skips
+  entries it cannot decode and counts them (`unreadable`); the replay then
+  exits non-zero. Replaying an account's erasure runs `planClosure` on what
+  the restore brought back, and refuses with `LastOwner`.
 
 ### Channels
 
@@ -584,8 +666,20 @@ and no socket, for tests.
   refreshable policy's `sweep` renews tokens `beforeExpiry` (`ahead` of it)
   or keeps them alive (`keepAlive`: only once `unused` that long past their
   expiry, the access being renewed when a call needs it, through
-  `ChannelAccess`). X's keep alive after 30 days, rather than rotating every
-  two hours: its refresh tokens have no stated lifetime.
+  `ChannelAccess`). X's, TikTok's and YouTube's keep alive after 30 days,
+  rather than being renewed ahead of every expiry: a hours-long token is
+  never swept `beforeExpiry`, which would refresh every channel a dozen
+  times a day (a test lists each policy's sweep).
+- `RefreshChannelTokens.sweep` (every 10 minutes) and
+  `WarnChannelsNeedingReconnect` (daily) page through what is due by
+  cursor (`dueForRefresh`, `needingReconnect`: `after`), never with a cap,
+  which would leave the same channels behind at every run. The sweep takes
+  the tokens about to lapse before the keep-alives, three channels at a
+  time (one channel lock stays free for a post's renewal), and stops
+  starting refreshes at its budget (8 minutes): it then logs a warning and
+  sets `peal.channels.token_sweep.left` (with `.duration` and
+  `.unfinished`). No publish depends on it: `ChannelAccess` renews an
+  expired refreshable token however long ago it ran out.
 - TikTok's Login Kit for Web takes no PKCE (TikTok asks it of desktop and
   mobile apps only): the state, bound to member and workspace, guards the
   callback, and a token answer naming an `error` is a refusal whatever its
@@ -594,6 +688,16 @@ and no socket, for tests.
   channel is deleted and no other channel, in any workspace, connects the
   same account (`ChannelRepository.accountInUse`), waiting 10 seconds at
   most and logging any failure.
+- `platformRegistrations` (`infrastructure/platforms/platform-addresses.ts`)
+  lists every address a platform is given or reads (redirect URIs, Meta's
+  data deletion and deauthorize callbacks, Bluesky's documents), from the
+  authorizers' callback paths and the contract's routes;
+  `nx run peal-server:platform-addresses` prints it, in the image too. A
+  platform that gains a sign-in or a route its servers call joins it, with
+  the settings that hold its app: `test/channels/container.test.ts` and
+  `platform-addresses.test.ts` fail otherwise, and the infra's
+  `test_cloudflared.py` when the sandbox's `peal_access_bypass_paths`
+  would stop one. Docs point at the command rather than list addresses.
 - `GET …/channels/platforms` (`ConnectChannel.connectable`, channel:connect)
   lists the platforms the server has an authorizer for, every platform's
   through the one registry; the web app's connect forms offer only those.
@@ -692,10 +796,24 @@ and no socket, for tests.
   once its pay-per-use credits are used up, `usage-capped` at its spending
   cap) is the operator's problem, never the post's or the account's: the
   adapter fails with `PlatformUnavailable` and a code of
-  `operatorRefusalCodes` (`#publishing/domain/own-refusals.ts`) and logs an
-  error, which the error-log alert reports; the attempt is retried as an
-  outage, and a target that gave up fails as `appBillingLimit`. A refresh
-  answered so leaves the channel's token alone.
+  `operatorRefusalCodes` (`#publishing/domain/own-refusals.ts`), and the
+  policy keeps the target waiting, retried every 30 minutes until 24 hours
+  after its scheduled time (`operatorRefusal`), then fails it as
+  `appBillingLimit`. These attempts use none of an outage's retries
+  (`earlierRefusalsOf`). `publishAttemptRun` tells `OperatorAlerts` of
+  each: `LoggedOperatorAlerts` counts it (`peal.publishing.app_refusals`)
+  and logs an error (`event.name` `peal.app_refused`) at the first, then
+  once an hour per code, never per post, which Grafana's `peal-app-refused`
+  rule reports. A refresh answered so leaves the channel's token alone.
+- A platform's data deletion request disconnects channels as a member does:
+  `DrizzleDataDeletions` tells `ChannelEvents.disconnected` in its
+  transaction, once per signed request. `channel.reconnect_needed` is
+  published for a week after a channel enters `refreshNeeded` (`toldFor`),
+  not each time the daily check tells it: its key is purged with its event.
+- A token refresh run that stops at its budget makes the next one start
+  after where it stopped, then come back to the channels before (in this
+  process): channels whose platform hangs never take every run.
+  `CollectMetrics` does the same between channels.
 
 ### Publishing and the cluster
 
@@ -722,6 +840,27 @@ and no socket, for tests.
   the user checks the platform before reposting.
 - Erasing a workspace's posts (`PostRecords`) stops its scheduled jobs in the
   same transaction, and is refused while one of its posts is publishing.
+- A post keeps how it was created and last scheduled (`PostAttribution`,
+  `#publishing/domain/post-origin.ts`): in the web app, with an API key or
+  through an OAuth application (`Actor.subject.clientId`), with the key's or
+  the application's id and the name it had then (`PostOrigins`, backed by
+  the workspace context's `CredentialNames`), and which member scheduled it
+  (`scheduled_by`). `created_via` and `scheduled_via` are JSON the domain
+  decodes: persisted contract (`fixtures/persisted/posts/origins.json`).
+  The post view shows it, the export holds it without who, `forgetAuthor`
+  clears `scheduled_by`, and no adapter is handed any of it.
+- `PostScheduling.send` (`posts.send`, `create_post`, `peal post`) creates
+  and schedules in one call; "now" is the current instant, through every
+  rule a later time goes through. With an `Idempotency-Key`
+  (`IdempotencyKeys`, `publishing.idempotency_keys`: SHA-256 of the key and
+  of the request's canonical JSON, per workspace, never either), the same
+  key and body within 24 hours (`idempotencyKeyLifetime`) answer the first
+  post, checked before anything else so a retry after the post went out is
+  not told its time passed; another body is `IdempotencyKeyReused`. The key
+  is claimed in the transaction that saves the post, so requests sent
+  together make one. The `publishing.idempotency-retention` cron purges.
+- Scheduling answers every violation at once: the platforms' rules and the
+  accounts' own (`AccountRules`) in one `PostContentRejected`.
 - A post's author is the member who created it (`authorId`, none for an API
   key). Drafts are listed newest first (`PostQueries.listDrafts`) and
   discarded by deleting them, which needs post:delete, or post:update for
@@ -785,9 +924,20 @@ and no socket, for tests.
   (`dailyLimitCodes`) until Pacific midnight, which the policy ends as
   `quotaExceeded`. A video YouTube made private against the options is
   `Published.keptPrivate`, kept on the target and shown on its page.
-- Large uploads go in parts read one at a time from the media stream
-  (`inParts` in `platforms/byte-parts.ts`): LinkedIn's video parts, X's
-  4 MiB appends. LinkedIn calls name `Linkedin-Version`
+- No adapter holds a whole file: large uploads go in parts read one at a
+  time from the media stream (`inParts` in `platforms/byte-parts.ts`:
+  LinkedIn's video parts, X's 4 MiB appends, TikTok's and YouTube's
+  chunks), and a file a platform takes in one request is streamed with
+  `streamedBody` (`#shared/infrastructure/platforms/public-http.ts`), in a
+  form with `multipartBody` (Mastodon), never `Stream.mkUint8Array` or
+  `FormData` (only Bluesky's images, 2 MB at most, are read whole).
+  `streamedBody` names the length, which the public client's fetch sends
+  as Content-Length: Effect's fetch client drops that header, and a body
+  sent chunked is refused by some servers. `limitedUploads`
+  (`publishing/infrastructure/upload-slots.ts`) opens so many files above
+  16 MiB at once (`PEAL_MAX_CONCURRENT_UPLOADS`, by default one per GiB of
+  memory, 2 to 8); the others wait inside their gate, where no timeout
+  runs before the upload begins. LinkedIn calls name `Linkedin-Version`
   (`LINKEDIN_API_VERSION`, a default a test keeps within ten months), and
   send the member's token to LinkedIn's hosts only.
 - Meta's adapters hand Meta public media URLs (`MediaForPublishing.publicUrl`,
@@ -887,6 +1037,12 @@ and no socket, for tests.
   use cases and workflows on an in-memory cluster. `AppLive` gives publishing
   an engine that runs no job, so scheduling through it fails. Only
   `test/app/cluster.test.ts` runs a SQL runner.
+- A time asked for is judged as of when the request came (`asReceived`):
+  account-rule checks that take minutes never turn "now" into
+  `ScheduleInPast`.
+- An adapter that streams a large file takes its upload slot before the
+  request is opened (`MediaForPublishing.held`), never inside it: a platform
+  drops a request left waiting.
 
 ### Media
 
@@ -918,12 +1074,25 @@ and no socket, for tests.
   permissions; publishing jobs through `MediaForPlatforms`, which checks
   none, as they act for the workspace once a post is scheduled, and hands out
   only ready assets of that workspace (`MediaNotPublishable` otherwise).
+- `POST …/media/import` (`importMedia`, media:upload) fetches a file through
+  `RemoteMedia` (`HttpRemoteMedia`: `publicHttpClientWith`, so the
+  OutboundGuard checks the address and each of three redirects at most, no
+  credentials, never logging the address), reads its format from its first
+  bytes (`sniffContentType`), never the host's content type, counts bytes as
+  they arrive against the kind's limit and the plan's storage, stores them
+  in parts (`MediaStorage.store`, one part in memory), records the asset
+  under the workspace's lock, then completes and probes it as an upload.
+  The whole import has `importTimeout` (90 seconds, under the proxy's 120).
+  Tests reach a loopback host with `mediaWith` and an open guard.
 - Deleting an asset asks the `MediaUsage` port first, which publishing's
   `MediaInPosts` backs (`PublishingMediaUsage`; the composition root
   provides `MediaInPostsLive`): a post scheduled or publishing that shows it
   refuses the deletion (`MediaInUse`, listing the posts), and drafts lose
   the attachment in one transaction. `GET …/media/:id/usage` tells clients
   beforehand.
+- Imports from a link run two at once per workspace and eight per process
+  (`ImportSlots`, `importsAtOnce`); past it the answer is `MediaImportBusy`
+  (429), to retry.
 
 ### Notifications
 
@@ -1064,13 +1233,69 @@ and no socket, for tests.
   their URLs included: `MediaAssets.insertWithin`, under the workspace's
   advisory lock), and members in Better Auth's organization hooks
   (`workspace/infrastructure/auth/billing.ts`: pending invitations count when
-  inviting). Channels and posts are counted and added under a transaction's
-  advisory lock (`ChannelRepository.addingTo`, `PostRepository.claimMonth`),
-  so requests sent together never pass a limit. A workspace over a smaller
-  plan's limits keeps what it has. Each context also counts for the billing
+  inviting, and members again when an invitation is accepted). Channels
+  and posts are counted and added under a transaction's advisory lock
+  (`ChannelRepository.addingTo`, `PostRepository.claimMonth`), so requests
+  sent together never pass a limit. Better Auth's routes count, then write,
+  without a lock: `AuthRoutesLive` runs `/organization/invite-member`,
+  `/accept-invitation` and `/create` one at a time per workspace or account
+  (`makeTurns` in `auth/turns.ts`: a session advisory lock on a reserved
+  connection, the invitations' key shared with `WorkspacePeopleLive`, four
+  held at once at most). A route of Better Auth's that adds to a limit
+  joins `counted` in `routes.ts`. An upload completed after its room lapsed
+  (`partUploadExpiry`) is counted again (`MediaAssets.updateWithin`), its
+  file deleted when the plan has no room. "Never above the plan" is the
+  invariant: a new path that adds to a limited resource checks under a
+  lock, with a test that sends requests together. Each context also counts
+  for the billing
   page (`ChannelUsage`, `PostUsage`, `WorkspaceSeats`, `AssistantRequests`,
   `MediaStorageUsage`), so `BillingOverviewLive` is built after the
   contexts it reads.
+- A refusal tells every client the way out. The domain's
+  `PlanLimitReached` carries `limit`, `allowed`, `used` and `needed`;
+  `UpgradePaths` (`#shared/application/upgrade-paths.ts`, backed by
+  billing's `PlanUpgradePathsLive`) gives the plan, the smallest larger
+  plan with room (`planWithRoom` in `plans.ts`; none on the largest) and
+  the billing page under `PUBLIC_URL`. Handlers answer the contract's
+  `PlanLimitReached` through `limitRefusal` (`#shared/api/limit-reached.ts`,
+  built with the group: handlers take services when the group is built,
+  never per request), the assistant's `AssistantQuotaExceeded` carries the
+  same plan fields (null on a server that does not bill), Better Auth's
+  `MEMBER_LIMIT_REACHED` and `FREE_WORKSPACE_LIMIT_REACHED` bodies too
+  (`memberUpgrade`, `freeWorkspace` hooks), MCP tools refuse with
+  `planRefusal` (`app/mcp/refusals.ts`, after what the call left undone:
+  inviting, `import_media`, and every tool that schedules) and the CLI
+  explains with `planLimitReason`. Change them together. `securityTest` provides
+  `UpgradePaths.layerTest`.
+- A plan can shrink under a workspace (a trial ends, a subscription is
+  cancelled or unpaid): nothing is deleted, and `excessesOf`
+  (`billing/domain/standing.ts`) lists what it holds beyond the plan
+  (channels, members, media). Over its channels or members (`mustReduce`),
+  it schedules and publishes nothing (`PostAllowance.channels` and
+  `.members`, at scheduling and again in `RoutedPlatformPublisher`); posts
+  already scheduled fail when due as `planLimit` and are reposted
+  afterwards, never moved to drafts. `GET …/billing/standing`
+  (`WorkspaceStanding`) tells every member; `POST …/billing/reduction`
+  (`ReduceWorkspace`, in `billingActions`) keeps the channels and members a
+  manager chose: the whole choice is checked first, members go before
+  channels (`WorkspaceMembers.keepOnly`, `membersToRemove`: whoever chooses
+  stays, only an owner removes an owner, pending invitations are revoked),
+  and channels go through `DisconnectChannel`, with its revocations. Only
+  what is over is touched. Over its media, a workspace only uploads
+  nothing. The `TrialEnding` notice lists `over` the free plan.
+- `PlaceOrder` refuses a plan that does not hold what the workspace has
+  (`PlanTooSmall`, with what to remove first and the plan that holds it):
+  an order never puts a workspace above its plan, moving down included.
+  The trial is one per email address too: `trialOffered` (the billing page
+  and `PlaceOrder`) checks the pseudonym of the member's address
+  (`MemberAddresses`), as checkout does with the session's.
+- A server that bills checks Stripe's prices when it starts
+  (`StripePricesCheckedLive`, in `ServerLive` only: `AppLive` serves tests
+  against stripe-mock, whose one price is none of Peal's): each lookup key
+  must name an active price at the amount, currency and interval of
+  `prices.ts`, tax-exclusive, or the server stops listing what differs
+  (`StripePricesMismatch`). Stripe not answering is a warning, and the
+  server starts.
 - An account owns one workspace on the free plan at most: Better Auth's
   `beforeCreateOrganization` (`checkFreeWorkspace`) refuses another with
   402 `FREE_WORKSPACE_LIMIT_REACHED` while one it owns is on the free plan
@@ -1139,10 +1364,11 @@ and no socket, for tests.
   OAuth client or staff impersonating them (403; the use cases refuse an
   impersonated actor too, `PersonRequired`). The SDKs leave the group out
   (`ownSessionTags`).
-- Cancelling (`CancelSubscription`, French law's few clicks: the button,
-  then the confirmation) sets `cancel_at_period_end`, or ends a trial at
-  once. Withdrawing (`Withdraw`, CRD art. 11a: **Withdraw from contract
-  here**, then **Confirm withdrawal**) is open 14 days from the contract's
+- Cancelling (`CancelSubscription`) sets `cancel_at_period_end`, ends a
+  trial at once, or, for a day asked for after the period paid for
+  (D215-2, 4°), sets Stripe's `cancel_at`, which charges the last period
+  only up to that day (`cancellationEffect`). Withdrawing (`Withdraw`) is
+  open 14 days from the contract's
   start (`mayWithdraw`), cancelled or not, refused to a customer with a
   verified `eu_vat` id (`StripeContracts.isBusiness`), and refunds each
   paid invoice since the start for the part of its own period not
@@ -1151,14 +1377,82 @@ and no socket, for tests.
   the withdrawal is recorded first (`billing.withdrawals`), then credited,
   computed at the time recorded, and ended under idempotency keys, so
   trying again refunds the same amounts once.
+- The words of the two functions are the law's, in every catalogue,
+  email, doc and legal page: **Cancel your contract** / **Résilier votre
+  contrat**, then **Notify the cancellation** / **Notification de la
+  résiliation** (Code de la consommation D215-1, D215-3); **Withdraw from
+  contract here** / **Renoncer au contrat ici**, then **Confirm
+  withdrawal** / **Confirmer la rétractation**, alone on its button
+  (D221-5; Directive 2011/83/EU art. 11a). Never reword them, and change
+  the order box's words only with `consentVersion`.
+- Both functions are reached without signing in: `/cancel` and
+  `/withdraw` in the web app (`ContractFunctionPage`), linked at the foot
+  of every page (`ContractLinks` in `AppShell`, only on a server that
+  bills) and of the marketing site (`SITE_APP_URL`). They ask what
+  D215-2 and D221-5 list and nothing else (name, address for the
+  acknowledgement, the contract, the day wanted), show a summary, then
+  the one action. Never add a field, an offer or a reason to them. A
+  member who manages billing, signed in, picks their contract there and
+  is applied at once through `billingActions`; the billing page keeps
+  the same two steps for its own workspace.
+- A request is a `ContractRequest` (`billing.contract_requests`), recorded
+  with `receivedAt` before anything else: the moment that counts whenever
+  it is applied. `CancelSubscription.received` and `Withdraw.received`
+  apply one as of that moment (a renewal charged since goes back and the
+  plan ends, `cancelledLate`; a withdrawal's 14 days and refund are
+  computed at it); the member's own `cancel` and `confirm` record theirs
+  as received and applied at once (`channel` `session`).
+- Who may end a contract through the form (`ReceiveContractRequest`,
+  `POST /api/contract-requests`, group `contractRequests`, no
+  credentials): one that gives the contract's number is applied at once,
+  whatever its address; one whose address manages a subscribed
+  workspace's billing (`ContractHolders`, the workspace context's
+  `AccountLookup`) waits for the link in its acknowledgement
+  (`ConfirmContractRequest`: the token kept as its SHA-256, 30 days,
+  once; `/contract-request?token=`, sent in a body, applied on a click);
+  any other waits for staff. Never apply on an email address alone: a
+  stranger who knows it would end the contract. The answer is the same
+  whatever was found (`receivedAt` only), and the request is looked at
+  on a fiber after it (`process`), so neither its content nor its time
+  tells whether an address has an account.
+- The contract's number (`ContractReferences`, `referenceFrom`: 60 bits
+  of an HMAC of the subscription's id under `BETTER_AUTH_SECRET`, kept in
+  `billing.contract_references`) is "une référence préalablement
+  communiquée" (D215-2, 3°): the confirmation and the renewal reminder
+  give it (`reference` on those notices, an optional key older notices
+  lack), to the members who manage billing only. Never show it to anyone
+  else, nor in a view of the API.
+- Each form request is acknowledged by email to the address it gave
+  (`RequestMail`, the `ContractRequestAcknowledged` account email): when
+  it came, to the minute, what it said, and what became of it. Its name
+  and contract take letters, digits, spaces and `' , & ( ) -` only
+  (`RequestTextSchema`), as the email quotes them to an address nobody
+  checked. `ContractRequestIntake` (`src/app/contract-requests/`) takes 5
+  requests an hour per client address and a Turnstile token when the
+  server has Turnstile (`CaptchaChallenge.passes`, which lets through
+  what Cloudflare cannot answer: the functions stay reachable); an
+  address is written to 5 times a day (`acknowledgementsPerDay`), the
+  rest left to staff. The `billing.contract-requests` cron
+  (`catchUp`, every five minutes) takes up what the mail or Stripe could
+  not take.
+- Staff handle what the form could not apply (`ContractRequestDesk`,
+  group `contractRequestsDesk` under `/api/admin`, the console's
+  `admin/contract-requests`): apply one to a workspace's contract, as of
+  its receipt, or close it, each recorded first through
+  `ContractRequestAudit` (`applyContractRequest`, `closeContractRequest`:
+  the request's id and the workspace's, never its name or address).
 - Billing tells the members with billing:manage through `BillingNotices`
   (`Notify`), in the app and by email whatever their email choices
   (`emailKindOf` is none for these): `SubscriptionStarted`, the contract's
   confirmation; `SubscriptionCancelled`; `SubscriptionWithdrawn`, with its
   date and time; and, from the hourly `billing.reminders` cron
   (`SendBillingReminders`), `TrialEnding` three days before and
-  `SubscriptionRenewing` 45 days before a yearly plan renews (Code de la
-  consommation L215-1). Each once, by key. A confirmation and a renewal
+  (with what the workspace holds beyond the free plan) and
+  `SubscriptionRenewing` 45 days before a yearly plan renews, and never
+  later than 32 days before (`renewalWindow`: "one month" before a 31st
+  is 31 days), in an email of its own with the last day to refuse in a
+  box (`renewalDeadline`), as Code de la consommation L215-1 asks; the
+  terms reproduce L215-1 to L215-3 and L241-3 (L215-4). Each once, by key. A confirmation and a renewal
   quote what Stripe charges, VAT included (the first paid invoice, the
   next invoice's preview, `StripeContracts.upcomingTotal`), never the
   catalogue: one Stripe cannot price yet waits for the next run.
@@ -1174,12 +1468,16 @@ and no socket, for tests.
   Accounts and access); it also expires its open checkouts. Better Auth's
   `/organization/delete` is disabled, so its hook refuses nothing. Erasing
   a workspace deletes the orders no contract followed; those of a
-  workspace that had a subscription, and its withdrawals, stay without
+  workspace that had a subscription, its withdrawals and its requests to
+  cancel or withdraw, stay without
   it, by their Stripe customer and subscription (`erased_at`), for
   `contractRetention` (5 years, Code civil art. 2224), then the daily
   `billing.contract-retention` cron (`PurgeContractRecords`) deletes them,
-  and the trial pseudonyms past `trialMemory`. A user's orders and
-  withdrawals are in their export (`contracts`, `ContractRecords`).
+  with the requests no contract was found for, 5 years after their
+  receipt, and the trial pseudonyms past `trialMemory`. A user's orders,
+  withdrawals and requests are in their export (`contracts`,
+  `ContractRecords`, `ContractRequests.ofUser`); closing the account
+  leaves its requests without the user, the name and the address.
   Erasing leaves the trial to the account; closing an account leaves
   orders, trials and withdrawals without the user
   (`Subscriptions.forgetUser`).
@@ -1189,6 +1487,30 @@ and no socket, for tests.
   `test/billing/fixtures/webhooks`, signed in the test. The app's engine
   in tests runs no workflow, so what notifies (cancelling, withdrawing) is
   tested at the use cases and with `NoticesTest`.
+- Contract requests (cancel, withdraw) save their intent
+  (`contract_requests.intent`) before Stripe is called, and every Stripe
+  call they make carries a key of the request, never of the subscription
+  alone: a retry finds what was decided and finishes it, and a second
+  request after an undo is a new one. Credit notes carry `metadata.key` and
+  are looked for before one is made. A request Stripe refuses for good
+  (`StripeUnreachable.permanent`), or not applied within `applyingPatience`
+  (24 hours), is left to staff, who see it; one whose subscription ended
+  since it was received is settled against that contract (`contractAt`). A
+  desired end day is at most `desiredDayHorizonDays` ahead
+  (`DesiredDayTooFar`), and can be brought forward.
+- Refunds follow invoice lines: only lines whose period starts on or after
+  the request, on a paid invoice (`renewalRefund`); a subscription that
+  started after the request is not its contract (`NothingToCancel`).
+- `RecordSubscription` keeps the stored plan when an event's price is
+  unknown (a price since replaced), and never drops the event. The startup
+  price check fails the server on a refusal or an answer it cannot decode
+  (`StripePricesUnchecked`); only Stripe not answering is a warning.
+- An order is checked against the workspace's usage when it is taken
+  (`UsageAtCheckout`, bound once the contexts it reads are built): a plan
+  the workspace outgrew during its trial is `OrderRequired` again.
+- The contract form's intake decides by the matched endpoint, never the
+  path as written, and counts acknowledgements per address without case,
+  under a lock (`ContractRequests.claimAcknowledgement`).
 
 ### Analytics
 
@@ -1253,10 +1575,18 @@ and no socket, for tests.
   channel's posts, and a post still unread a day past its window, end.
 - Each run follows the publications after the latest one it follows, then
   looks back 15 minutes for those that settled late, 20 pages of 500 each
-  at most, so it moves on however many went live together. It reads 5000
-  due posts at most, taking turns between channels (`TrackedPosts.due`
-  numbers each channel's with `row_number()`), so posts put off on a
-  platform that is down never crowd the other channels out.
+  at most, so it moves on however many went live together. It then reads
+  every post due, with no cap: a page of 500 channels at a time, those
+  whose post waited longest first and each channel once a run
+  (`TrackedPosts.dueChannels`, then `dueOn`: 1,000 posts a channel at
+  most), so a channel put off, or a platform that is down, never holds the
+  others back. `CollectionPaceRef` paces it: 16 channels at once
+  (`PEAL_ANALYTICS_CONCURRENCY`), each one call at a time through its
+  gate, and no read starts later than 50 minutes after the run's scheduled
+  time. What a read found is saved in one statement a table
+  (`saveReadings`, `saveSchedules`), never a transaction a post. A run
+  sets `peal.analytics.collection.duration` and `.left`, and one out of
+  time logs a warning and counts in `.unfinished`.
 - Summaries take the posts published over a range of days in an IANA zone:
   the domain computes each day's start with `fromWallClock`, and Postgres
   buckets snapshots with those instants (`width_bucket`), never its zones.
@@ -1264,6 +1594,92 @@ and no socket, for tests.
   (`test/analytics/fakes/memory-tracked-posts.ts`). Postgres tests write under
   a workspace of their own, at instants no other suite uses, and delete it
   after (`forgetWorkspace`): the collection reads every row that is due.
+  Run it on Postgres on the real clock, at an instant earlier than every
+  other suite's (`collection-scale.test.ts`): a virtual clock set decades
+  back replays every tick of the pool's timers and never returns.
+
+### Webhooks
+
+- A workspace's endpoints (`WebhookEndpoints`, `WebhookDeliveries`) hear
+  what happens in it: reading needs `webhook:read`, changing
+  `webhook:manage` (owners and admins; API keys and OAuth clients follow
+  the permission; staff impersonating a member only read). 10 endpoints a
+  workspace, whatever the plan and on a server that does not bill
+  (`delivery-policy.ts`, counted under `EndpointStore.addingTo`'s advisory
+  lock). The contract copies the vocabulary and the limits, kept equal by
+  `test/webhooks/api/contract.test.ts`, which also decodes every example of
+  the docs' Webhooks page, en and fr: change them together.
+- Events (`#webhooks/domain/webhook-event.ts`, `WebhookPayloadSchema` in the
+  contract) are public contract, stored until delivered: add a type or a
+  field, never rename or remove one; a change receivers could not read is a
+  new `version` sent beside the old. They carry ids, states, codes, instants
+  and permalinks, never a post's text, a file, a handle or a name: the
+  receiver reads those through the API. Keep
+  `fixtures/persisted/events/stored.json` decoding.
+- Contexts publish through `WebhookEvents.publish({ event, key })`, which
+  joins the caller's transaction (as `Notify` does): the event, one delivery
+  per endpoint that is on and subscribes, and the start of each job commit
+  with the fact, or not at all, once per key (ids and instants, never
+  content). A workspace where nobody listens keeps nothing. Publishing
+  tells through `PostEvents` (schedule, unschedule, cancel, confirm, in
+  `PostScheduling`'s and `PostFollowUp`'s transactions) and
+  `webhookOutcomes` around `PublicationOutcomes`; channels through
+  `ChannelEvents` (connect, reconnect, disconnect, in
+  `ChannelRepository.addingTo`'s transaction) and `webhookChannelNotices`
+  (reconnect needed, which the daily check tells again); media through
+  `webhookMediaAssets`, around `MediaAssets.update`. A bug in telling is
+  logged and never stops the fact; the database failing rolls both back.
+  A new event is told from the transaction that records its fact.
+- Deliveries follow the Standard Webhooks specification
+  (`#webhooks/domain/signature.ts`): `webhook-id` is the event's id, the
+  same on every attempt and on "send again", `webhook-timestamp` the
+  attempt's time, `webhook-signature` one `v1,<base64 HMAC-SHA256>` per
+  secret over `<id>.<timestamp>.<body>`, the body being `bodyOf`'s text
+  byte for byte. Order is not guaranteed and deliveries repeat: the docs
+  say so.
+- Secrets are `whsec_` and 32 random bytes, issued and used behind
+  `EndpointSecrets`, on the channels context's `TokenCipher`
+  (`webhook:<endpoint id>`), so without `PEAL_TOKEN_KEYS` creating an
+  endpoint answers `WebhooksNotConfigured` (503). The plain secret leaves
+  once, in the answer to create or rotate; a rotated one signs beside the
+  new one for 24 hours. Never log one, nor an endpoint's URL, whose path
+  or query may hold the receiver's secret: logs, notices and the staff
+  console name an endpoint by id and host.
+- `WebhookTransport` sends through `publicHttpClient` only (HTTPS on 443,
+  public addresses checked before every request, no redirect followed, no
+  trace context), with its spans off and 15 seconds for the whole exchange.
+  Any 2xx is success; of another answer the log keeps the status and
+  `excerptOf` its body (one cleaned line, 256 characters), nothing else.
+- `DeliverWebhookV1` (payload `deliveryId`, activities `attempt/<n>`, clocks
+  `retry/<n>`, results `retry` or `settled`) is persisted contract, with
+  fixtures in `test/webhooks/infrastructure/fixtures/persisted`. It makes 8
+  attempts over about a day (`retryDelays`), each recorded by
+  `DeliverWebhook.attempt` with its number, so one made twice counts once.
+  `410 Gone` fails the delivery and turns the endpoint off; so do 5 days of
+  failed attempts (`failing_since`, cleared by a success or by turning it
+  back on). Turning off happens once (`EndpointStore.disable`), and tells
+  the members with `webhook:manage` through the `WebhookEndpointDisabled`
+  notice, always emailed. A delivery whose endpoint is off fails without a
+  request.
+- The log keeps a delivery 30 days (`webhooks.delivery-retention` cron,
+  `PurgeDeliveries`), and an event while a delivery refers to it: the docs
+  say 30 days, change them together. Tests of the purge set the clock long
+  before any other suite's rows.
+- Tests use `WebhooksTest` (`test/webhooks/support.ts`): Postgres, real
+  secrets with the synthetic keyring, `FakeTransport` (hosts ending in
+  `.internal.example` are not public, `.invalid` unknown), `StartedJobs`
+  and `ToldNotices`; `eventsSentTo` reads what an endpoint was sent. The
+  transport itself is tested against a loopback receiver
+  (`fakes/fake-receiver.ts`).
+- `EndpointStore.update(endpoint, from)` writes the status and
+  `failingSince` only when the member toggled them: a change of description
+  never turns back on an endpoint a delivery just turned off. Test events
+  and resends are capped per workspace (`ManualSends`,
+  `manualSendsPerHour`, `TooManyWebhookSends` 429).
+- An attempt the database fails past its own retries is `unrecorded`: the
+  workflow sleeps `recoveryDelay` and makes the same attempt again
+  (`attempt/<n>/again/<k>`, `recover/<n>/<k>`, persisted contract),
+  `maxRecoveries` times.
 
 ### MCP endpoint
 
@@ -1278,13 +1694,23 @@ and no socket, for tests.
 - The use cases' permission checks refuse a client the user let read only.
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
-  `reports-tools.ts`, `people-tools.ts`) and its handlers beside it, merged
+  `media-tools.ts`, `reports-tools.ts`, `people-tools.ts`, `webhooks-tools.ts`)
+  and its handlers beside it, merged
   into `PealTools`. Annotate every tool with `reading`, or
   `changing({ destructive, idempotent, openWorld })` from `annotations.ts`,
   and say in its description what it changes. `list_members` answers
   members' email addresses only with `includeEmails`: hand an AI model no
   more personal data than the task needs. Refusals are `ToolRefused`,
-  with a message the user can act on (`refusals.ts`). The account's own
+  with a message the user can act on (`refusals.ts`): `notAllowed` names
+  the scope the client lacks and how the user grants it, or says the role
+  refuses; a refused post lists every violation as JSON. Tools that put
+  posts out (`schedule_post`, `publish_post`, `reschedule_post`,
+  `create_post`, `repost_target`) are `openWorld`, say in their description
+  that what goes out is public and cannot be taken back, and check
+  post:schedule before reading the post. Instants are
+  `Schema.DateTimeUtcFromString` in tool parameters. The tools of
+  `PostTools` and `MediaTools` that change something are `contentTools`,
+  whose calls the ConnectionJournal keeps. The account's own
   data (its export, its applications) has no tool.
 - What the web app's composer sends, the CLI and the tools send too: a
   draft's per-channel `options` (`create_draft`, `update_draft`, `peal
@@ -1294,7 +1720,11 @@ and no socket, for tests.
   channels it keeps unless told otherwise, so a rewrite never drops them.
   Every failure reason has its words in the CLI (`posts.ts`
   `failureReasons`, typed by the contract) and in `get_post`'s
-  description: add a reason there with the others. Neither schedules.
+  description: add a reason there with the others. Both schedule and
+  publish (`schedule_post`, `publish_post`, `create_post`; `peal posts
+  schedule|publish|reschedule|cancel`, `peal post`), for a sign-in that
+  holds `workspace:publish`: `peal post` takes `--at` or `--now`, never a
+  default.
 
 ### Database
 
@@ -1306,13 +1736,20 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`, `legal`; the workspace context's are Better
-  Auth's, in `auth`). Effect creates its `cluster_*` tables in `public`; drizzle-kit
-  never manages them.
+  `analytics`, `billing`, `staff`, `legal`, `webhooks`; the workspace
+  context's are Better Auth's, in `auth`). Effect creates its `cluster_*`
+  tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
   run `nx run peal-server:db:generate`, which writes a migration folder under
   `packages/peal-server/drizzle/`. Commit the folder as drizzle-kit wrote it;
   never edit a migration that has shipped.
+- A query on a hot path (the calendar, a job that scans every workspace)
+  gets its plan read on a database of the size it will meet:
+  `packages/peal-server/scripts/seed-scale.ts` fills an empty, migrated
+  database whose name ends in `scale` with synthetic rows for so many users
+  (10,000 by default: 40,000 channels, 900,000 posts, 2.25 million targets).
+  A job that takes "everything due" pages by cursor and says what it left;
+  it never stops at a fixed count.
 - The server applies pending migrations before it listens, under an advisory
   lock, so servers starting together take turns. `nx run peal-server:db:migrate`
   applies them without starting the server.
@@ -1333,7 +1770,15 @@ self-hoster needs only Postgres and an S3-compatible store:
 - telemetry: OTLP export of logs, metrics and traces only when
   `OTEL_EXPORTER_OTLP_ENDPOINT` is set (`src/app/observability.ts` defaults
   each `OTEL_<SIGNAL>_EXPORTER` to `otlp`; set one to `none` to turn that
-  signal off).
+  signal off). Traces are head-sampled as `OTEL_TRACES_SAMPLER` and
+  `OTEL_TRACES_SAMPLER_ARG` say (`src/app/trace-sampling.ts`): one in ten
+  in production, all elsewhere. Whatever the ratio, the spans in
+  `alwaysSampledSpans` (each publishing attempt) are sampled, and a span of
+  an unsampled trace is still exported when it ended in a defect, when the
+  server failed the request (5xx) or when it lasted `slowSpan` (10 s), with
+  its parents (`SampledSpan`). Never alert or count on spans, which are a
+  sample: count in a metric (`peal.http.requests`, which the request alerts
+  read) or a log.
 
 - Images read `PORT` and plain environment variables and run anywhere.
 - Self-hosters run `compose.production.yaml` with `compose.self-host.yaml`:
@@ -1360,6 +1805,9 @@ self-hoster needs only Postgres and an S3-compatible store:
   operating system (`prefers-color-scheme`).
 - Pages live under `src/app/[locale]/`: the auth pages (`sign-up`, `sign-in`,
   `verify-email`, `forgot-password`, `reset-password`, `invitations/[id]`),
+  the contract functions anyone reaches (`cancel`, `withdraw`, and
+  `contract-request`, the page of the link emailed to a request's
+  address),
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
   platforms' redirect URI `connect/[platform]/callback` (which shows the
   account picker when a sign-in reached several accounts), Meta's data
@@ -1370,12 +1818,20 @@ self-hoster needs only Postgres and an S3-compatible store:
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/settings` (with `members`,
-  `invitations` and `api-keys`) and `…/billing`. The staff console is
+  `invitations`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
-  `admin/workspaces`, `admin/workspaces/[workspaceId]` and `admin/audit`:
-  its layout and pages read the staff endpoints with the visitor's cookies
-  through `staffRead` (`#staff/server.ts`), which shows the not-found page
-  for any 404, and its actions are mutations from `#staff/atoms.ts`.
+  `admin/workspaces`, `admin/workspaces/[workspaceId]`,
+  `admin/contract-requests` (through `deskRead`), `admin/audit` and
+  `admin/legal`: its layout and pages read the staff endpoints with the
+  visitor's cookies through `staffRead` (`#staff/server.ts`), which shows
+  the not-found page for any 404, and its actions are mutations from
+  `#staff/atoms.ts`. `admin/legal` (legal requests, `legalRead`) is linked
+  and served for staff with the legal role only (`answersLegalRequests`):
+  its form (`LegalRequestForm`, `#staff/legal-request.ts`) sends nothing
+  without the authority, the reference, the legal basis and what the
+  request covers, `LegalAnswerView` shows what came back, and the page
+  says before anything is entered that each answer is recorded, as staff
+  must be told (Code du travail, art. L1222-4): keep that notice.
   `ImpersonationBanner`, in `AppShell`, shows while staff act as someone.
 - The web app reports its errors to `POST /api/client-errors`:
   `src/instrumentation-client.ts` (uncaught errors, unhandled rejections),
@@ -1460,6 +1916,22 @@ self-hoster needs only Postgres and an S3-compatible store:
   only while `GET …/assistant` answers `available`; refresh that status after
   every request, which can change the requests left. Show each suggestion in
   a preview the person accepts or discards: never apply one unasked.
+- A plan's refusal opens the one upgrade dialog (`UpgradeDialog`, its view
+  `UpgradeView`): the limit with usage and plan, the smallest plan with
+  room priced with VAT first (`offerOf`, from the contract's catalogue),
+  the consent and the order button of the billing page, then checkout
+  (`useCheckout`), back to the page the person was on; who can order, for
+  a member who cannot; how to ask for more on the largest plan
+  (`PEAL_CONTACT_URL`). `UpgradePrompts` puts it around a workspace's pages
+  (`app/[workspaceId]/layout.tsx`), the workspaces list and the connect
+  callback. A place that sends something a plan can refuse calls
+  `useOfferUpgrade()(exit)` (`useOfferAuthUpgrade` for Better Auth's
+  errors), or renders `OfferUpgrade` with the failure it keeps in state,
+  beside its own message: add it to every new such place. The same layout's
+  `PlanGate` shows `OverPlanScreen` instead of the page, billing's aside,
+  while the workspace must come back within its plan
+  (`standingOfWorkspace`, read with the visitor's cookies). The billing
+  page orders smaller plans too, and lists what a `PlanTooSmall` names.
 - The billing page shows `GET …/billing` (`BillingView` renders each state,
   `BillingStep` the cancellation and withdrawal steps) with prices
   including VAT first and excluding VAT beside them, a monthly and yearly
@@ -1503,7 +1975,8 @@ self-hoster needs only Postgres and an S3-compatible store:
   `http://localhost:3000`.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `analytics`, `billing`, `members` and `invitations`, which act in the
+  `post`, `media`, `analytics`, `billing`, `members`, `invitations` and
+  `webhooks`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read
@@ -1648,6 +2121,13 @@ self-hoster needs only Postgres and an S3-compatible store:
   up through the API with `confirmedAccount`, and `makeStaff`
   (`tests/support/accounts.ts`) gives one the staff role in the database, as
   self-hosters do; it signs in again afterwards.
+- The run's server bills, against a stand-in for Stripe that lists Peal's
+  prices (`scripts/stripe.ts`): a new workspace is on the free plan, so a
+  journey stays within three channels, two members and one workspace per
+  account, or tests the refusal (`upgrade-prompt.e2e.ts`). No test pays.
+  So the functions to cancel and withdraw are on
+  (`contract-functions.e2e.ts`): a journey there sends requests no
+  contract answers, and reads their acknowledgement in Mailpit.
 - No platform can be connected in a run, so a test that needs a channel
   inserts a synthetic one with `seedChannel` (`tests/support/channels.ts`).
   Update it when `channels.channels` changes. Publish nothing, and cancel any
@@ -1675,13 +2155,17 @@ self-hoster needs only Postgres and an S3-compatible store:
   documents in `src/content/legal/<locale>/<document>.md`. Keep a legal
   document `draft: true` (banner and noindex) until legal review approves it,
   and never replace a [bracketed placeholder] with a guess.
+- The privacy policy's retention table is the registry's
+  (`peal-contract/data-processing`), which `nx run peal-site:test` checks
+  in both languages: change the registry, then the table.
 - TypeScript 7 does not read `.astro` files, and `astro check` refuses it: keep
   page logic in typed `.ts` modules and `.astro` files thin. Name files in
   kebab-case.
 - `nx run peal-docs:build` and `nx run peal-site:build` write each package's
   `dist/`, cached. Their settings are optional, and unset or empty turns the
   feature off: docs `DOCS_SITE_URL`, `DOCS_PLAUSIBLE_DOMAIN`,
-  `DOCS_PLAUSIBLE_HOST`; site `SITE_URL`, `SITE_DOCS_URL`,
+  `DOCS_PLAUSIBLE_HOST`; site `SITE_URL`, `SITE_DOCS_URL`, `SITE_APP_URL`
+  (the footer's links to the app's contract functions),
   `SITE_PLAUSIBLE_DOMAIN`, `SITE_PLAUSIBLE_HOST`. Nx hashes them from the
   process environment only, not `.env` files: export them, or build with
   `--skip-nx-cache`.
@@ -1700,8 +2184,12 @@ self-hoster needs only Postgres and an S3-compatible store:
 
 ## Infrastructure
 
-- Production runs on a Hetzner server managed with Ansible from `peal-infra`,
-  reachable only through a Cloudflare Tunnel: no inbound ports, SSH included.
+- Production runs on a server at a European provider, managed with Ansible
+  from `peal-infra`, reachable only through a Cloudflare Tunnel: no inbound
+  ports, SSH included. No provider is chosen yet, and the repository names
+  none: each group's `hosting_provider` and `hosting_location` (a city) are
+  placeholders `peal_preflight` refuses, and the infra README's "Choosing a
+  provider and a size" says what the stack needs of any of them.
   Cloudflare Zero Trust Access guards Grafana, the admin (`/api/auth/admin`,
   the staff console's `/api/admin`, `/admin`, `/en/admin` and `/fr/admin`) and the
   sandbox, and cloudflared checks the Access token on those routes too. Caddy fronts the
@@ -1717,6 +2205,12 @@ self-hoster needs only Postgres and an S3-compatible store:
   --diff` before applying it, and keep every task idempotent: a second run
   reports no change. The inventory holds placeholders that `peal_preflight`
   refuses; nothing has been applied yet.
+- `bootstrap.yml` logs in as `bootstrap_user`, the account a server's image
+  lets in: root, or the image's own (then with sudo), which the `ssh` role
+  removes once `ops` works. Where cloud-init rewrites `/etc/hosts`
+  (`manage_etc_hosts`), the `system` role turns it off in
+  `cloud.cfg.d/zz-peal.cfg` and writes its line in cloud-init's template
+  too, as a provider's own settings at boot override files on the server.
 - Keep check mode working on a new server: a task that needs what an earlier
   one would make (a folder, a package, a unit) skips in check mode when that
   one reports a change.
@@ -1732,8 +2226,10 @@ self-hoster needs only Postgres and an S3-compatible store:
   of their own, and the server's error-log alert leaves them out. The
   heartbeat rule (`alerting/heartbeat.yaml`) is apart: it always fires, to
   its own contact point, never to Telegram.
-- A separate Hetzner server checks uptime (`uptime.yml`, inventory group
-  `uptime`): Gatus, its configuration generated from the inventory, checks
+- A separate server checks uptime (`uptime.yml`, inventory group
+  `uptime`), at another provider and in another city than production and
+  the sandbox, which the `uptime` role refuses to run without and
+  `tests/test_hosting.py` checks: Gatus, its configuration generated from the inventory, checks
   the public endpoints of production and the sandbox and alerts on a
   Telegram bot of its own; Caddy is its only public entry, for the heartbeat
   production's Grafana posts every few minutes, on `uptime_hostname`, and
@@ -1760,13 +2256,27 @@ self-hoster needs only Postgres and an S3-compatible store:
   policy says: change both together.
 - Postgres archives its write-ahead log and is backed up to R2 with
   pgBackRest; the backup passphrase is the one secret kept outside the server
-  too. R2 buckets are in its EU jurisdiction (`<account>.eu.r2…`). A restore
-  brings back deletions made since its point in time: the runbook lists them
-  from the `peal.erasure` logs, which nothing yet applies again. `runbooks/restore-database.md` restores it. The server migrates when it
+  too. R2 buckets are in its EU jurisdiction (`<account>.eu.r2…`).
+  `peal_runtime` refuses an R2 endpoint without `.eu.`; any other S3 store in
+  the EU does, with its region in `peal_settings`. A restore
+  brings back deletions made since its point in time:
+  `runbooks/restore-database.md` restores the database, then replays the
+  erasure ledger before the stack starts. The ledger stays in the media
+  bucket while nothing serves that bucket publicly; `peal_runtime` refuses
+  `PEAL_MEDIA_PUBLIC_BASE_URL` without `peal_erasure_ledger_bucket`. The server migrates when it
   starts, so write migrations that the previous release can still run
   against, and roll back by releasing the previous commit.
 - Changing a server's size or adding any paid resource needs the owner's
   explicit approval.
+- `site.yml` restarts the server when the privacy declaration changes (the
+  server reads it at startup), refuses to remove the image's account while
+  connected as it, and takes a storage endpoint only in the EU: R2's `.eu.`
+  endpoints, or another store's host listed in `peal_storage_eu_hosts` once
+  the owner checked it; hosts are compared without case or port. A ledger
+  bucket that is the media bucket is not one of its own.
+- Every metric that says a job falls behind has an alert rule
+  (`packages/peal-docker/test/alerting.test.ts`): add the rule with the
+  metric.
 
 ## Public repository
 

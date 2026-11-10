@@ -30,6 +30,7 @@ import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
 
 import {
@@ -413,28 +414,41 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
           return yield* new MediaRejected({ code: "tooLarge" });
         }
 
-        const bytes = yield* Stream.mkUint8Array(
-          media.open(post.workspaceId, attachment.mediaId)
-        );
-
-        const status = yield* withSession(post, (session) =>
-          serviceToken(session).pipe(
-            Effect.flatMap((token) =>
-              uploads.execute(
-                HttpClientRequest.post(
-                  new URL("/xrpc/app.bsky.video.uploadVideo", videoService)
-                ).pipe(
-                  HttpClientRequest.setUrlParams({
-                    did: session.did,
-                    name: described.fileName,
-                  }),
-                  HttpClientRequest.bearerToken(token),
-                  HttpClientRequest.bodyUint8Array(bytes, "video/mp4")
+        // Up to 300 MB: streamed from the store to the video service,
+        // never held whole.
+        // The file's turn among the large uploads is waited for before
+        // the request opens, so the video service never waits on an open
+        // request for its bytes.
+        const status = yield* Effect.scoped(
+          media.held(post.workspaceId, attachment.mediaId).pipe(
+            Effect.flatMap((bytes) =>
+              withSession(post, (session) =>
+                serviceToken(session).pipe(
+                  Effect.flatMap((token) =>
+                    uploads.execute(
+                      HttpClientRequest.post(
+                        new URL(
+                          "/xrpc/app.bsky.video.uploadVideo",
+                          videoService
+                        )
+                      ).pipe(
+                        HttpClientRequest.setUrlParams({
+                          did: session.did,
+                          name: described.fileName,
+                        }),
+                        HttpClientRequest.bearerToken(token),
+                        streamedBody(bytes, {
+                          contentLength: described.byteSize,
+                          contentType: "video/mp4",
+                        })
+                      )
+                    )
+                  ),
+                  Effect.flatMap(jobAnswer),
+                  Effect.catchTags(mediaUnanswered)
                 )
               )
-            ),
-            Effect.flatMap(jobAnswer),
-            Effect.catchTags(mediaUnanswered)
+            )
           )
         );
 

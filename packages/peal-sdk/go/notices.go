@@ -471,6 +471,7 @@ type NoticeEvent struct {
 	SubscriptionRenewing     *NoticeEventSubscriptionRenewing
 	SubscriptionCancelled    *NoticeEventSubscriptionCancelled
 	SubscriptionWithdrawn    *NoticeEventSubscriptionWithdrawn
+	WebhookEndpointDisabled  *NoticeEventWebhookEndpointDisabled
 
 	rawJSON json.RawMessage
 }
@@ -552,6 +553,13 @@ func (n *NoticeEvent) GetSubscriptionWithdrawn() *NoticeEventSubscriptionWithdra
 	return n.SubscriptionWithdrawn
 }
 
+func (n *NoticeEvent) GetWebhookEndpointDisabled() *NoticeEventWebhookEndpointDisabled {
+	if n == nil {
+		return nil
+	}
+	return n.WebhookEndpointDisabled
+}
+
 func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -624,6 +632,12 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.SubscriptionWithdrawn = value
+	case "WebhookEndpointDisabled":
+		value := new(NoticeEventWebhookEndpointDisabled)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.WebhookEndpointDisabled = value
 	}
 	n.rawJSON = json.RawMessage(data)
 	return nil
@@ -663,6 +677,9 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.SubscriptionWithdrawn != nil {
 		return internal.MarshalJSONWithExtraProperty(n.SubscriptionWithdrawn, "_tag", "SubscriptionWithdrawn")
 	}
+	if n.WebhookEndpointDisabled != nil {
+		return internal.MarshalJSONWithExtraProperty(n.WebhookEndpointDisabled, "_tag", "WebhookEndpointDisabled")
+	}
 	if len(n.rawJSON) > 0 {
 		return n.rawJSON, nil
 	}
@@ -680,6 +697,7 @@ type NoticeEventVisitor interface {
 	VisitSubscriptionRenewing(*NoticeEventSubscriptionRenewing) error
 	VisitSubscriptionCancelled(*NoticeEventSubscriptionCancelled) error
 	VisitSubscriptionWithdrawn(*NoticeEventSubscriptionWithdrawn) error
+	VisitWebhookEndpointDisabled(*NoticeEventWebhookEndpointDisabled) error
 }
 
 func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
@@ -712,6 +730,9 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.SubscriptionWithdrawn != nil {
 		return visitor.VisitSubscriptionWithdrawn(n.SubscriptionWithdrawn)
+	}
+	if n.WebhookEndpointDisabled != nil {
+		return visitor.VisitWebhookEndpointDisabled(n.WebhookEndpointDisabled)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", n)
 }
@@ -750,6 +771,9 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.SubscriptionWithdrawn != nil {
 		fields = append(fields, "SubscriptionWithdrawn")
+	}
+	if n.WebhookEndpointDisabled != nil {
+		fields = append(fields, "WebhookEndpointDisabled")
 	}
 	if len(fields) == 0 {
 		if n.Type != "" {
@@ -1842,12 +1866,14 @@ func (n *NoticeEventSubscriptionWithdrawn) String() string {
 
 var (
 	noticeEventTrialEndingFieldEndsAt = big.NewInt(1 << 0)
-	noticeEventTrialEndingFieldPlan   = big.NewInt(1 << 1)
+	noticeEventTrialEndingFieldOver   = big.NewInt(1 << 1)
+	noticeEventTrialEndingFieldPlan   = big.NewInt(1 << 2)
 )
 
 type NoticeEventTrialEnding struct {
-	EndsAt string   `json:"endsAt" url:"endsAt"`
-	Plan   PaidPlan `json:"plan" url:"plan"`
+	EndsAt string    `json:"endsAt" url:"endsAt"`
+	Over   []*Excess `json:"over" url:"over"`
+	Plan   PaidPlan  `json:"plan" url:"plan"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1861,6 +1887,13 @@ func (n *NoticeEventTrialEnding) GetEndsAt() string {
 		return ""
 	}
 	return n.EndsAt
+}
+
+func (n *NoticeEventTrialEnding) GetOver() []*Excess {
+	if n == nil {
+		return nil
+	}
+	return n.Over
 }
 
 func (n *NoticeEventTrialEnding) GetPlan() PaidPlan {
@@ -1891,6 +1924,13 @@ func (n *NoticeEventTrialEnding) require(field *big.Int) {
 func (n *NoticeEventTrialEnding) SetEndsAt(endsAt string) {
 	n.EndsAt = endsAt
 	n.require(noticeEventTrialEndingFieldEndsAt)
+}
+
+// SetOver sets the Over field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventTrialEnding) SetOver(over []*Excess) {
+	n.Over = over
+	n.require(noticeEventTrialEndingFieldOver)
 }
 
 // SetPlan sets the Plan field and marks it as non-optional;
@@ -1928,6 +1968,124 @@ func (n *NoticeEventTrialEnding) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NoticeEventTrialEnding) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventWebhookEndpointDisabledFieldEndpointID = big.NewInt(1 << 0)
+	noticeEventWebhookEndpointDisabledFieldHost       = big.NewInt(1 << 1)
+	noticeEventWebhookEndpointDisabledFieldReason     = big.NewInt(1 << 2)
+)
+
+type NoticeEventWebhookEndpointDisabled struct {
+	EndpointID string               `json:"endpointId" url:"endpointId"`
+	Host       string               `json:"host" url:"host"`
+	Reason     WebhookTurnOffReason `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventWebhookEndpointDisabled) GetEndpointID() string {
+	if n == nil {
+		return ""
+	}
+	return n.EndpointID
+}
+
+func (n *NoticeEventWebhookEndpointDisabled) GetHost() string {
+	if n == nil {
+		return ""
+	}
+	return n.Host
+}
+
+func (n *NoticeEventWebhookEndpointDisabled) GetReason() WebhookTurnOffReason {
+	if n == nil {
+		return ""
+	}
+	return n.Reason
+}
+
+func (n *NoticeEventWebhookEndpointDisabled) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventWebhookEndpointDisabled) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetEndpointID sets the EndpointID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventWebhookEndpointDisabled) SetEndpointID(endpointID string) {
+	n.EndpointID = endpointID
+	n.require(noticeEventWebhookEndpointDisabledFieldEndpointID)
+}
+
+// SetHost sets the Host field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventWebhookEndpointDisabled) SetHost(host string) {
+	n.Host = host
+	n.require(noticeEventWebhookEndpointDisabledFieldHost)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventWebhookEndpointDisabled) SetReason(reason WebhookTurnOffReason) {
+	n.Reason = reason
+	n.require(noticeEventWebhookEndpointDisabledFieldReason)
+}
+
+func (n *NoticeEventWebhookEndpointDisabled) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventWebhookEndpointDisabled
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventWebhookEndpointDisabled(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventWebhookEndpointDisabled) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventWebhookEndpointDisabled
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventWebhookEndpointDisabled) String() string {
 	if n == nil {
 		return "<nil>"
 	}
@@ -2140,4 +2298,26 @@ func (u *UnreadNotices) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", u)
+}
+
+type WebhookTurnOffReason string
+
+const (
+	WebhookTurnOffReasonFailing WebhookTurnOffReason = "failing"
+	WebhookTurnOffReasonGone    WebhookTurnOffReason = "gone"
+)
+
+func NewWebhookTurnOffReasonFromString(s string) (WebhookTurnOffReason, error) {
+	switch s {
+	case "failing":
+		return WebhookTurnOffReasonFailing, nil
+	case "gone":
+		return WebhookTurnOffReasonGone, nil
+	}
+	var t WebhookTurnOffReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (w WebhookTurnOffReason) Ptr() *WebhookTurnOffReason {
+	return &w
 }

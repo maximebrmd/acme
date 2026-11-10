@@ -1,4 +1,4 @@
-import { Duration, Effect, Option, Schema, Stream } from "effect";
+import { Duration, Effect, Option, Schema } from "effect";
 import type { Redacted } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 import type { HttpClient, HttpClientError } from "effect/http";
@@ -28,7 +28,12 @@ import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
+import {
+  formBoundary,
+  multipartBody,
+} from "#shared/infrastructure/platforms/multipart-stream.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
+import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 
 import { mediaRefusal, statusRefusal } from "./mastodon-refusal.ts";
 
@@ -258,41 +263,51 @@ export const mastodonClient = Effect.fn("MastodonClient.make")(
 
       yield* checkLimits(limits, described);
 
-      const bytes = yield* Stream.mkUint8Array(
-        media.open(post.workspaceId, attachment.mediaId)
-      );
+      // The file's turn among the large uploads is waited for before the
+      // request opens: an instance, or a proxy before it, times out a
+      // request whose body does not come.
+      return yield* Effect.scoped(
+        Effect.gen(function* sendingFile() {
+          const bytes = yield* media.held(post.workspaceId, attachment.mediaId);
 
-      const form = new FormData();
+          // The form is streamed: the file's bytes pass from the store to the
+          // instance as they are read, never held whole.
+          const form = multipartBody({
+            boundary: formBoundary(post.idempotencyKey),
+            fields:
+              attachment.altText.trim() === ""
+                ? []
+                : [{ name: "description", value: attachment.altText }],
+            file: {
+              byteSize: described.byteSize,
+              bytes,
+              contentType: described.contentType,
+              fileName: described.fileName,
+              name: "file",
+            },
+          });
 
-      form.append(
-        "file",
-        new Blob([bytes], { type: described.contentType }),
-        described.fileName
-      );
-
-      if (attachment.altText.trim() !== "") {
-        form.append("description", attachment.altText);
-      }
-
-      return yield* mediaCall(
-        post,
-        uploads,
-        (token) =>
-          HttpClientRequest.post(new URL("/api/v2/media", instance)).pipe(
-            HttpClientRequest.bearerToken(token),
-            HttpClientRequest.bodyFormData(form)
-          ),
-        (response) =>
-          response.status === 200 || response.status === 202
-            ? HttpClientResponse.schemaBodyJson(MediaAttachmentSchema)(
-                response
-              ).pipe(
-                Effect.map(({ id }) => ({
-                  id,
-                  processing: response.status === 202,
-                }))
-              )
-            : mediaRefusal(response)
+          return yield* mediaCall(
+            post,
+            uploads,
+            (token) =>
+              HttpClientRequest.post(new URL("/api/v2/media", instance)).pipe(
+                HttpClientRequest.bearerToken(token),
+                streamedBody(form.bytes, form)
+              ),
+            (response) =>
+              response.status === 200 || response.status === 202
+                ? HttpClientResponse.schemaBodyJson(MediaAttachmentSchema)(
+                    response
+                  ).pipe(
+                    Effect.map(({ id }) => ({
+                      id,
+                      processing: response.status === 202,
+                    }))
+                  )
+                : mediaRefusal(response)
+          );
+        })
       );
     });
 

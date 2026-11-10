@@ -11,6 +11,8 @@ import { OAuthClientDocuments } from "#channels/application/oauth-client-documen
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import { TokenCipher } from "#channels/application/token-cipher.ts";
 import { ChannelsLive } from "#channels/container.ts";
+import { platforms } from "#channels/domain/platform.ts";
+import { platformRegistrations } from "#channels/infrastructure/platforms/platform-addresses.ts";
 import { Notify } from "#notifications/application/notify.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
 import {
@@ -20,6 +22,7 @@ import {
   freshWorkspace,
   syntheticKeyring,
 } from "#test/channels/support.ts";
+import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
 
 // What the context needs from the rest of the server: names to resolve,
 // notices to send, which nothing here sends, and plans, which limit nothing.
@@ -28,6 +31,10 @@ const Neighbours = Layer.mergeAll(
   Layer.succeed(
     Notify,
     Notify.of({ notify: () => Effect.void, resolve: () => Effect.void })
+  ),
+  Layer.succeed(
+    WebhookEvents,
+    WebhookEvents.of({ publish: () => Effect.void })
   ),
   UnmeteredTest
 );
@@ -307,3 +314,139 @@ layer(DatabaseTest)("the channels context's Bluesky settings", (it) => {
     })
   );
 });
+
+// A value the server takes for a setting that holds an app's credentials:
+// the Bluesky key, digits for Meta's app ids, any text for the rest.
+const syntheticSetting = (name: string, blueskyKey: string) => {
+  if (name === "BLUESKY_CLIENT_KEYS") {
+    return blueskyKey;
+  }
+
+  return name.endsWith("_APP_ID")
+    ? "1234567890123456"
+    : `synthetic-${name.toLowerCase()}`;
+};
+
+// The address the sign-in asks the platform to send the member back to.
+const redirectOf = (authorizationUrl: string) =>
+  new URL(authorizationUrl).searchParams.get("redirect_uri");
+
+layer(DatabaseTest)(
+  "the channels context with every platform's app, and the addresses to register",
+  (it) => {
+    const publicUrl = "https://peal.example";
+    const registrations = platformRegistrations(publicUrl);
+
+    const registered = (platform: string) =>
+      registrations.filter((registration) =>
+        registration.platforms.some((listed) => listed === platform)
+      );
+
+    // The server with the settings the list names, and nothing more: a
+    // setting it names wrongly leaves its platform without an app.
+    const everyApp = Effect.gen(function* everyApp() {
+      const entry = yield* blueskyKeyEntry;
+
+      return channelsWithSettings({
+        ...Object.fromEntries(
+          registrations
+            .flatMap(({ settings }) => settings)
+            .map((name) => [name, syntheticSetting(name, entry)])
+        ),
+        PEAL_TOKEN_KEYS: syntheticKeyring,
+        PUBLIC_URL: publicUrl,
+      });
+    });
+
+    it.effect("list every platform this server can connect, and no other", () =>
+      Effect.gen(function* lists() {
+        const authorizers = yield* PlatformAuthorizers.pipe(
+          Effect.provide(yield* everyApp)
+        );
+
+        // A platform that gains a sign-in gets its settings from the list
+        // above, so it must be in the list to be connected here.
+        assert.deepStrictEqual([...authorizers.unconfigured], []);
+
+        for (const platform of platforms) {
+          assert.strictEqual(
+            registered(platform).length > 0,
+            Option.isSome(authorizers.for(platform)),
+            platform
+          );
+        }
+      }).pipe(Effect.scoped)
+    );
+
+    it.effect("hold the redirect address each sign-in sends its platform", () =>
+      Effect.gen(function* redirects() {
+        const layers = yield* everyApp;
+
+        const { authorizers, documents } = yield* Effect.all({
+          authorizers: PlatformAuthorizers,
+          documents: OAuthClientDocuments,
+        }).pipe(Effect.provide(layers));
+
+        const request = {
+          handle: Option.none<string>(),
+          instance: Option.none<string>(),
+          reconnecting: Option.none(),
+        };
+
+        const sent: string[] = [];
+
+        for (const registration of registrations) {
+          // Mastodon and Bluesky take their redirect address from the
+          // server itself, over the network: Bluesky's is read below, from
+          // the client it publishes.
+          const signIns =
+            registration.registeredBy === "server"
+              ? []
+              : registration.platforms.map((platform) =>
+                  authorizers.for(
+                    platform,
+                    platform === "instagram"
+                      ? Option.some(
+                          registration.id === "instagramLogin"
+                            ? ("instagramLogin" as const)
+                            : ("facebookLogin" as const)
+                        )
+                      : Option.none()
+                  )
+                );
+
+          const listed = registration.addresses
+            .filter(({ calledBy }) => calledBy === "browser")
+            .map(({ url }) => url);
+
+          for (const signIn of signIns) {
+            const pending = yield* Option.getOrThrow(signIn).begin(request);
+            const redirect = redirectOf(pending.authorizationUrl);
+
+            assert.isNotNull(redirect, registration.id);
+            assert.include(listed, redirect, registration.id);
+            sent.push(redirect ?? "");
+          }
+
+          // Nothing is listed that no sign-in sends.
+          if (registration.registeredBy === "operator") {
+            assert.deepStrictEqual(
+              listed.toSorted(),
+              sent.slice(-signIns.length).toSorted(),
+              registration.id
+            );
+          }
+        }
+
+        const bluesky = Option.getOrThrow(documents.bluesky).metadata;
+
+        assert.deepStrictEqual(
+          registered("bluesky").flatMap(({ addresses }) =>
+            addresses.map(({ url }) => url)
+          ),
+          [bluesky.client_id, bluesky.jwks_uri, ...bluesky.redirect_uris]
+        );
+      }).pipe(Effect.scoped)
+    );
+  }
+);

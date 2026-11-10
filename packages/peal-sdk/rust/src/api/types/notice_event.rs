@@ -64,6 +64,8 @@ pub enum NoticeEvent {
         #[serde(rename = "endsAt")]
         #[serde(default)]
         ends_at: String,
+        #[serde(default)]
+        over: Vec<Excess>,
         plan: PaidPlan,
     },
 
@@ -93,6 +95,16 @@ pub enum NoticeEvent {
         #[serde(rename = "withdrawnAt")]
         #[serde(default)]
         withdrawn_at: String,
+    },
+
+    #[non_exhaustive]
+    WebhookEndpointDisabled {
+        #[serde(rename = "endpointId")]
+        #[serde(default)]
+        endpoint_id: String,
+        #[serde(default)]
+        host: String,
+        reason: WebhookTurnOffReason,
     },
 
     /// Catch-all variant for unrecognized discriminant values.
@@ -152,8 +164,12 @@ impl NoticeEvent {
         }
     }
 
-    pub fn trial_ending(ends_at: String, plan: PaidPlan) -> Self {
-        Self::TrialEnding { ends_at, plan }
+    pub fn trial_ending(ends_at: String, over: Vec<Excess>, plan: PaidPlan) -> Self {
+        Self::TrialEnding {
+            ends_at,
+            over,
+            plan,
+        }
     }
 
     pub fn subscription_renewing(plan: PaidPlan, price: Money, renews_at: String) -> Self {
@@ -173,6 +189,18 @@ impl NoticeEvent {
             plan,
             refunded,
             withdrawn_at,
+        }
+    }
+
+    pub fn webhook_endpoint_disabled(
+        endpoint_id: String,
+        host: String,
+        reason: WebhookTurnOffReason,
+    ) -> Self {
+        Self::WebhookEndpointDisabled {
+            endpoint_id,
+            host,
+            reason,
         }
     }
 

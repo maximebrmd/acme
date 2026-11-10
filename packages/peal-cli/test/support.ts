@@ -18,7 +18,10 @@ import { TestConsole } from "effect/testing";
 import {
   Api,
   Authentication,
+  BillingNotEnabled,
   ClientErrorIntake,
+  ContractRequestIntake,
+  ContractRequestNotFound,
   CurrentPrincipal,
   DataDeletionNotFound,
   MetaAppNotConfigured,
@@ -31,7 +34,13 @@ import type { Me } from "peal-contract";
 
 import { makeAuthorizationServer } from "./authorization-server.ts";
 import type { AuthorizationServer } from "./authorization-server.ts";
-import { makeStudio, studioAccessLive, studioGroupsLive } from "./studio.ts";
+import {
+  makeStudio,
+  storeHost,
+  storePut,
+  studioAccessLive,
+  studioGroupsLive,
+} from "./studio.ts";
 import type { Studio } from "./studio.ts";
 
 const unused = Effect.die("not used by the CLI tests");
@@ -136,6 +145,11 @@ const securityLive = (authorization: AuthorizationServer, studio: Studio) =>
               Effect.provideService(CurrentPrincipal, {
                 _tag: "user",
                 impersonatedBy: null,
+                oauth: {
+                  clientId: "peal-cli",
+                  scopes: authorization.scopes,
+                  workspaceId: null,
+                },
                 userId: syntheticMe.user.id,
               })
             );
@@ -158,17 +172,6 @@ const signedInGroupsLive = (
         create: () => refusing,
         list: () => refusing,
         revoke: () => refusing,
-      })
-    ),
-    HttpApiBuilder.group(Api, "media", (handlers) =>
-      handlers.handleAll({
-        complete: () => refusing,
-        create: () => refusing,
-        delete: () => refusing,
-        describe: () => refusing,
-        get: () => refusing,
-        list: () => refusing,
-        usage: () => refusing,
       })
     ),
     HttpApiBuilder.group(Api, "notices", (handlers) =>
@@ -195,6 +198,7 @@ const signedInGroupsLive = (
       handlers.handleAll({
         cancel: () => refusing,
         order: () => refusing,
+        reduce: () => refusing,
         withdraw: () => refusing,
         withdrawal: () => refusing,
       })
@@ -243,10 +247,47 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
 
 // Nor are legal requests answered.
 const LegalLive = HttpApiBuilder.group(Api, "legal", (handlers) =>
-  handlers.handleAll({ answer: () => notStaff })
+  handlers.handleAll({
+    answer: () => notStaff,
+    answered: () => notStaff,
+    standing: () => notStaff,
+  })
 ).pipe(
   Layer.provideMerge(
     Layer.succeed(StaffAccess, StaffAccess.of({ session: () => notStaff }))
+  )
+);
+
+// This server sells no subscription: it has no contract to cancel or
+// withdraw from, and no request waits for staff.
+const noContract = Effect.fail(new BillingNotEnabled());
+
+const ContractRequestsLive = Layer.mergeAll(
+  HttpApiBuilder.group(Api, "contractRequests", (handlers) =>
+    handlers.handleAll({
+      confirm: () => noContract,
+      functions: () =>
+        Effect.succeed({ enabled: false, turnstileSiteKey: null }),
+      preview: () => Effect.fail(new ContractRequestNotFound()),
+      send: () => noContract,
+    })
+  ),
+  HttpApiBuilder.group(Api, "contractRequestsDesk", (handlers) =>
+    handlers.handleAll({
+      apply: () => notStaff,
+      close: () => notStaff,
+      list: () => notStaff,
+    })
+  )
+).pipe(
+  Layer.provideMerge(
+    Layer.mergeAll(
+      Layer.succeed(
+        ContractRequestIntake,
+        ContractRequestIntake.of((httpEffect) => httpEffect)
+      ),
+      Layer.succeed(StaffAccess, StaffAccess.of({ session: () => notStaff }))
+    )
   )
 );
 
@@ -305,7 +346,8 @@ export const inMemoryServer = (
                 Layer.provide(DataDeletionLive),
                 Layer.provide(StaffLive),
                 Layer.provide(LegalLive),
-                Layer.provide(ClientErrorsLive)
+                Layer.provide(ClientErrorsLive),
+                Layer.provide(ContractRequestsLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(
                 Layer.provide(server.handlers)
@@ -320,7 +362,13 @@ export const inMemoryServer = (
           })
       );
 
-      return fetching(async (request) => await app.handler(request));
+      // The media store is another host: signed requests go to it, never
+      // to the API.
+      return fetching(async (request) =>
+        new URL(request.url).host === storeHost
+          ? await storePut(workspaces, request)
+          : await app.handler(request)
+      );
     })
   );
 

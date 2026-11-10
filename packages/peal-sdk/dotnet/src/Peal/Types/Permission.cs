@@ -64,6 +64,10 @@ public readonly record struct Permission : IStringEnum
 
     public static readonly Permission PostPublish = new(Values.PostPublish);
 
+    public static readonly Permission WebhookRead = new(Values.WebhookRead);
+
+    public static readonly Permission WebhookManage = new(Values.WebhookManage);
+
     public Permission(string value)
     {
         Value = value;
@@ -214,5 +218,9 @@ public readonly record struct Permission : IStringEnum
         public const string PostApprove = "post:approve";
 
         public const string PostPublish = "post:publish";
+
+        public const string WebhookRead = "webhook:read";
+
+        public const string WebhookManage = "webhook:manage";
     }
 }

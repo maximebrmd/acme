@@ -16,7 +16,7 @@ import {
 } from "peal-ui/components/alert-dialog";
 import { Button } from "peal-ui/components/button";
 import { useState, useTransition } from "react";
-import type { SubmitEvent } from "react";
+import type { ReactNode, SubmitEvent } from "react";
 import { toast } from "sonner";
 
 import { authClient } from "#auth/client.ts";
@@ -74,9 +74,14 @@ export const LastOwnerOf = ({
  * then signs out. The server refuses while the user alone owns a workspace
  * others use, which the dialog lists, and while a workspace it deletes has
  * a subscription, which the dialog describes until the user agrees to
- * cancel it.
+ * cancel it. `legalHold` says what the law has this server keep of the
+ * account once it is closed, if anything (`LegalHoldNotice`).
  */
-export const DeleteAccount = () => {
+export const DeleteAccount = ({
+  legalHold,
+}: {
+  readonly legalHold: ReactNode;
+}) => {
   const t = useTranslations("AccountSettings.delete");
   const fields = useTranslations("Auth");
   const settings = useTranslations("Settings");
@@ -154,7 +159,7 @@ export const DeleteAccount = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("confirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("confirmDescription")}
+              {t("confirmDescription")} {legalHold}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {owned.length > 0 ? (

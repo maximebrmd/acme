@@ -3,6 +3,7 @@ import type { DateTime, Effect, Option } from "effect";
 
 import type { StripeUnreachable } from "#billing/application/stripe-unreachable.ts";
 import type { Money } from "#billing/domain/billing-notice.ts";
+import type { InvoiceLine } from "#billing/domain/cancellation-effect.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 /**
@@ -11,6 +12,8 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
  */
 export interface PaidInvoice {
   readonly invoiceId: string;
+  /** Its lines: what each charged before tax, and from when. */
+  readonly lines: readonly InvoiceLine[];
   readonly paid: Money;
   readonly periodEnd: Option.Option<DateTime.Utc>;
   readonly periodStart: Option.Option<DateTime.Utc>;
@@ -22,8 +25,19 @@ export interface InvoiceCredit {
   readonly invoiceId: string;
 }
 
+/**
+ * Why money goes back: a consumer's withdrawal, once per subscription, or
+ * the renewals a cancellation received before them should have stopped,
+ * once per request.
+ */
+export type CreditReason =
+  | { readonly _tag: "lateCancellation"; readonly requestKey: string }
+  | { readonly _tag: "withdrawal" };
+
 /** Why a subscription is ended at once. */
 export type EndReason =
+  // A cancellation applied after the period it was received in had ended.
+  | "cancelledLate"
   | "duplicateTrial"
   | "orderedDuringTrial"
   | "trialCancelled"
@@ -38,20 +52,40 @@ export type EndReason =
 export class StripeContracts extends Context.Service<
   StripeContracts,
   {
-    /** Sets the subscription to end when its period does. */
-    readonly cancelAtPeriodEnd: (
+    /**
+     * Sets the subscription to end at `at`, after the period paid for: it
+     * renews until then, and Stripe charges its last period only up to
+     * `at`.
+     */
+    readonly cancelAt: (
       workspaceId: WorkspaceId,
-      subscriptionId: string
+      subscriptionId: string,
+      at: DateTime.Utc,
+      requestKey: string
     ) => Effect.Effect<void, StripeUnreachable>;
     /**
-     * Refunds the consumer through a credit note on each invoice, so the
-     * invoice and the tax Stripe reports match the refund, once per
-     * subscription and invoice.
+     * Sets the subscription to end when its period does. `requestKey`
+     * names the request that asks, in Stripe's idempotency key: the same
+     * request asked again changes nothing more, and another one, as after
+     * the cancellation was undone, is carried out.
+     */
+    readonly cancelAtPeriodEnd: (
+      workspaceId: WorkspaceId,
+      subscriptionId: string,
+      requestKey: string
+    ) => Effect.Effect<void, StripeUnreachable>;
+    /**
+     * Refunds the customer through a credit note on each invoice, so the
+     * invoice and the tax Stripe reports match the refund: once per
+     * invoice for `reason` (a withdrawal's subscription, a cancellation's
+     * request), however long after it is asked again, as each note
+     * carries its key and one found is not made again.
      */
     readonly credit: (
       workspaceId: WorkspaceId,
       subscriptionId: string,
-      credits: readonly InvoiceCredit[]
+      credits: readonly InvoiceCredit[],
+      reason: CreditReason
     ) => Effect.Effect<void, StripeUnreachable>;
     /**
      * Sets a trial to end, cancelled, when its trial does, so it never

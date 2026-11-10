@@ -6,13 +6,14 @@
 import { randomUUID } from "node:crypto";
 
 import { assert, layer } from "@effect/vitest";
-import { Effect, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
+
+import { SqlLive } from "#shared/infrastructure/database.ts";
 
 import {
   apiKeyOf,
   bodyOf,
-  IntegrationLive,
   password,
   signedUp,
   TestApp,
@@ -53,6 +54,7 @@ const schemas = [
   "notifications",
   "publishing",
   "staff",
+  "webhooks",
 ];
 
 // The rows of each table that name a workspace: none may be left once it is
@@ -83,6 +85,13 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM auth.session WHERE active_organization_id = ${id}`,
   "auth.subscription": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.subscription WHERE reference_id = ${id}`,
+  // Its contract numbers find nothing more.
+  "billing.contract_references": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.contract_references WHERE workspace_id = ${id}`,
+  // Requests to cancel or withdraw stay without the workspace, as its
+  // orders do.
+  "billing.contract_requests": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.contract_requests WHERE workspace_id = ${id}`,
   "billing.metered_posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.metered_posts WHERE workspace_id = ${id}`,
   "billing.orders": (sql, id) =>
@@ -105,6 +114,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM media.media_assets WHERE workspace_id = ${id}`,
   "notifications.notices": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE workspace_id = ${id}`,
+  "publishing.idempotency_keys": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.idempotency_keys WHERE workspace_id = ${id}`,
   "publishing.post_targets": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.post_targets t JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.posts": (sql, id) =>
@@ -115,6 +126,12 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.publication_calls c JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.upload_sessions": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.upload_sessions u JOIN publishing.publication_calls c ON c.idempotency_key = u.idempotency_key JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
+  "webhooks.deliveries": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM webhooks.deliveries WHERE workspace_id = ${id}`,
+  "webhooks.endpoints": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM webhooks.endpoints WHERE workspace_id = ${id}`,
+  "webhooks.events": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM webhooks.events WHERE workspace_id = ${id}`,
 } satisfies Readonly<Record<string, Count>>;
 
 // The rows of each table that name a user: none may be left once their
@@ -146,8 +163,11 @@ const userRows = {
   // Password reset tokens hold their user's id.
   "auth.verification": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.verification WHERE value = ${id}`,
-  // Orders, trials and withdrawals stay with their workspaces, without the
-  // user.
+  // Orders, trials, withdrawals and requests to cancel or withdraw stay
+  // with their workspaces, without the user, nor, for requests, the name
+  // and the address they wrote.
+  "billing.contract_requests": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.contract_requests WHERE user_id = ${id}`,
   "billing.orders": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.orders WHERE user_id = ${id}`,
   "billing.trials": (sql, id) =>
@@ -162,8 +182,10 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE user_id = ${id}`,
   "notifications.notification_preferences": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notification_preferences WHERE user_id = ${id}`,
+  // Their posts stay with the workspace, without who wrote or scheduled
+  // them.
   "publishing.posts": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id}`,
+    sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id} OR scheduled_by = ${id}`,
   // What staff did to them: the events stay, without them and without the
   // reason given about them. What they did as staff keeps their id (below).
   // An id the user is named by in a change staff made as someone else goes
@@ -271,6 +293,13 @@ const fill = Effect.fn("fill")(function* fill(
     person.id
   );
 
+  // As a post the person scheduled in the web app keeps it.
+  yield* sql`UPDATE publishing.posts SET created_via = '{"_tag":"web"}'::jsonb, scheduled_via = '{"_tag":"web"}'::jsonb, scheduled_by = ${person.id} WHERE id = ${postId}`;
+
+  // The key of the request that made it, as `posts.send` keeps it.
+  yield* sql`INSERT INTO publishing.idempotency_keys (workspace_id, key_digest, request_digest, post_id, created_at)
+    VALUES (${workspaceId}, ${randomUUID()}, 'synthetic-digest', ${postId}, now())`;
+
   const [target] =
     yield* sql`SELECT id FROM publishing.post_targets WHERE post_id = ${postId}`.pipe(
       Effect.flatMap(Schema.decodeUnknownEffect(IdsSchema)),
@@ -307,6 +336,14 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO billing.withdrawals (stripe_subscription_id, workspace_id, user_id, refunded, currency, requested_at)
     VALUES (${`sub_${randomUUID()}`}, ${workspaceId}, ${person.id}, 0, 'eur', now())`;
 
+  // A request to cancel, from the form, tied to the workspace, and the
+  // contract number that found it.
+  yield* sql`INSERT INTO billing.contract_requests (id, kind, channel, status, acknowledgement, locale, name, email, received_at, user_id, workspace_id)
+    VALUES (${uuid7()}, 'cancellation', 'form', 'applied', 'sent', 'en', 'Synthetic Holder', ${person.email}, now(), ${person.id}, ${workspaceId})`;
+
+  yield* sql`INSERT INTO billing.contract_references (reference, stripe_subscription_id, workspace_id, issued_at)
+    VALUES (${randomUUID()}, ${`sub_${randomUUID()}`}, ${workspaceId}, now())`;
+
   yield* sql`INSERT INTO media.media_assets (id, workspace_id, storage_key, content_type, byte_size, status, created_at, updated_at)
     VALUES (${randomUUID()}, ${workspaceId}, ${`media/${workspaceId}/${randomUUID()}.png`}, 'image/png', 128, 'pending', now(), now())`;
 
@@ -318,6 +355,19 @@ const fill = Effect.fn("fill")(function* fill(
   yield* seedOAuthGrant(person.id, workspaceId, "Synthetic erasure client");
   yield* seedConnectChoice(workspaceId, person.id);
   yield* seedNotice(person.id, workspaceId, "@erasure@social.example");
+
+  // A webhook endpoint, with an event on its way to it.
+  const endpointId = uuid7();
+  const eventId = uuid7();
+
+  yield* sql`INSERT INTO webhooks.endpoints (id, workspace_id, url, description, event_types, status, secret, created_at, updated_at)
+    VALUES (${endpointId}, ${workspaceId}, 'https://hooks.example.com/erasure', '', ARRAY['post.published'], 'enabled', 'synthetic.iv.ciphertext', now(), now())`;
+
+  yield* sql`INSERT INTO webhooks.events (id, workspace_id, type, key, data, occurred_at)
+    VALUES (${eventId}, ${workspaceId}, 'webhook.test', ${`webhook-test:${eventId}`}, ${JSON.stringify({ endpointId, workspaceId })}::jsonb, now())`;
+
+  yield* sql`INSERT INTO webhooks.deliveries (id, endpoint_id, event_id, workspace_id, event_type, status, attempts, created_at)
+    VALUES (${uuid7()}, ${endpointId}, ${eventId}, ${workspaceId}, 'webhook.test', 'pending', 0, now())`;
 
   yield* sql`INSERT INTO channels.connect_attempts (state_hash, workspace_id, started_by, platform, secret, created_at, expires_at)
     VALUES (${randomUUID().replaceAll("-", "")}, ${workspaceId}, ${`user:${person.id}`}, 'mastodon', 'synthetic.iv.ciphertext', now(), now() + interval '15 minutes')`;
@@ -399,7 +449,14 @@ const countsOf = Effect.fn("countsOf")(function* countsOf(
 const none = (rows: Readonly<Record<string, Count>>) =>
   Object.fromEntries(Object.keys(rows).map((table) => [table, 0]));
 
-layer(IntegrationLive, {
+// On a server that keeps what French law has a host keep, so the legal
+// records are covered too.
+const RetainingLive = Layer.mergeAll(
+  TestApp.layerWith({ PEAL_LEGAL_RETENTION: "true" }),
+  SqlLive
+);
+
+layer(RetainingLive, {
   excludeTestServices: true,
   timeout: "180 seconds",
 })("erasing workspaces and accounts", (it) => {
@@ -472,6 +529,17 @@ layer(IntegrationLive, {
         // them, and leaves the workspace and its content to Ben.
         const before = yield* countsOf(userRows, ana.id);
 
+        // The audit events about her, by id: once she is gone they name
+        // nobody, and other suites' events, which never named anyone, are
+        // not hers to count.
+        const aboutHer = (yield* sql<{
+          readonly id: string;
+        }>`SELECT id FROM staff.audit_events WHERE target_id = ${ana.id}`.pipe(
+          Effect.orDie
+        )).map(({ id }) => id);
+
+        assert.isAbove(aboutHer.length, 0);
+
         for (const [table, rows] of Object.entries(before)) {
           assert.isAbove(rows, 0, `${table} holds a row of the user`);
         }
@@ -518,7 +586,7 @@ layer(IntegrationLive, {
         ]);
 
         const posts = yield* count(
-          sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${shared} AND author_id IS NULL`
+          sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${shared} AND author_id IS NULL AND scheduled_by IS NULL AND scheduled_via ->> '_tag' = 'web'`
         );
 
         assert.strictEqual(posts, 1);
@@ -527,7 +595,7 @@ layer(IntegrationLive, {
         // which stays with a keyed pseudonym of her address instead, so
         // Peal can show a court what it did and why.
         const reasons = yield* count(
-          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND reason IS NOT NULL AND action NOT IN ('ban', 'unban', 'legalDisclosure')`
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE id IN ${sql.in(aboutHer)} AND (target_id IS NOT NULL OR (reason IS NOT NULL AND action NOT IN ('ban', 'unban')))`
         );
 
         assert.strictEqual(reasons, 0);
@@ -549,7 +617,7 @@ layer(IntegrationLive, {
         // So did the workspace and the ids of what staff changed as her,
         // which would tie the events back to her.
         const linked = yield* count(
-          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND (workspace_id IS NOT NULL OR object_ids <> '{}'::jsonb)`
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE id IN ${sql.in(aboutHer)} AND (workspace_id IS NOT NULL OR object_ids <> '{}'::jsonb)`
         );
 
         assert.strictEqual(linked, 0);

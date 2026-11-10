@@ -9,7 +9,8 @@ class NotFoundErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'ChannelNotFound'
+     *    'WebhookEndpointNotFound'
+     *   |'WebhookDeliveryNotFound'
      *   |'WorkspaceNotFound'
      *   |'_unknown'
      * ) $type
@@ -18,7 +19,8 @@ class NotFoundErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    ChannelNotFoundEncoded
+     *    WebhookEndpointNotFoundEncoded
+     *   |WebhookDeliveryNotFoundEncoded
      *   |WorkspaceNotFoundEncoded
      *   |mixed
      * ) $value
@@ -28,12 +30,14 @@ class NotFoundErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'ChannelNotFound'
+     *    'WebhookEndpointNotFound'
+     *   |'WebhookDeliveryNotFound'
      *   |'WorkspaceNotFound'
      *   |'_unknown'
      * ),
      *   value: (
-     *    ChannelNotFoundEncoded
+     *    WebhookEndpointNotFoundEncoded
+     *   |WebhookDeliveryNotFoundEncoded
      *   |WorkspaceNotFoundEncoded
      *   |mixed
      * ),
@@ -47,14 +51,26 @@ class NotFoundErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param ChannelNotFoundEncoded $channelNotFound
+     * @param WebhookEndpointNotFoundEncoded $webhookEndpointNotFound
      * @return NotFoundErrorBody
      */
-    public static function channelNotFound(ChannelNotFoundEncoded $channelNotFound): NotFoundErrorBody
+    public static function webhookEndpointNotFound(WebhookEndpointNotFoundEncoded $webhookEndpointNotFound): NotFoundErrorBody
     {
         return new NotFoundErrorBody([
-            'type' => 'ChannelNotFound',
-            'value' => $channelNotFound,
+            'type' => 'WebhookEndpointNotFound',
+            'value' => $webhookEndpointNotFound,
+        ]);
+    }
+
+    /**
+     * @param WebhookDeliveryNotFoundEncoded $webhookDeliveryNotFound
+     * @return NotFoundErrorBody
+     */
+    public static function webhookDeliveryNotFound(WebhookDeliveryNotFoundEncoded $webhookDeliveryNotFound): NotFoundErrorBody
+    {
+        return new NotFoundErrorBody([
+            'type' => 'WebhookDeliveryNotFound',
+            'value' => $webhookDeliveryNotFound,
         ]);
     }
 
@@ -73,19 +89,41 @@ class NotFoundErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isChannelNotFound(): bool
+    public function isWebhookEndpointNotFound(): bool
     {
-        return $this->value instanceof ChannelNotFoundEncoded && $this->type === 'ChannelNotFound';
+        return $this->value instanceof WebhookEndpointNotFoundEncoded && $this->type === 'WebhookEndpointNotFound';
     }
 
     /**
-     * @return ChannelNotFoundEncoded
+     * @return WebhookEndpointNotFoundEncoded
      */
-    public function asChannelNotFound(): ChannelNotFoundEncoded
+    public function asWebhookEndpointNotFound(): WebhookEndpointNotFoundEncoded
     {
-        if (!($this->value instanceof ChannelNotFoundEncoded && $this->type === 'ChannelNotFound')) {
+        if (!($this->value instanceof WebhookEndpointNotFoundEncoded && $this->type === 'WebhookEndpointNotFound')) {
             throw new Exception(
-                "Expected ChannelNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected WebhookEndpointNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isWebhookDeliveryNotFound(): bool
+    {
+        return $this->value instanceof WebhookDeliveryNotFoundEncoded && $this->type === 'WebhookDeliveryNotFound';
+    }
+
+    /**
+     * @return WebhookDeliveryNotFoundEncoded
+     */
+    public function asWebhookDeliveryNotFound(): WebhookDeliveryNotFoundEncoded
+    {
+        if (!($this->value instanceof WebhookDeliveryNotFoundEncoded && $this->type === 'WebhookDeliveryNotFound')) {
+            throw new Exception(
+                "Expected WebhookDeliveryNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,8 +172,12 @@ class NotFoundErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'ChannelNotFound':
-                $value = $this->asChannelNotFound()->jsonSerialize();
+            case 'WebhookEndpointNotFound':
+                $value = $this->asWebhookEndpointNotFound()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'WebhookDeliveryNotFound':
+                $value = $this->asWebhookDeliveryNotFound()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case 'WorkspaceNotFound':
@@ -178,8 +220,11 @@ class NotFoundErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'ChannelNotFound':
-                $args['value'] = ChannelNotFoundEncoded::jsonDeserialize($data);
+            case 'WebhookEndpointNotFound':
+                $args['value'] = WebhookEndpointNotFoundEncoded::jsonDeserialize($data);
+                break;
+            case 'WebhookDeliveryNotFound':
+                $args['value'] = WebhookDeliveryNotFoundEncoded::jsonDeserialize($data);
                 break;
             case 'WorkspaceNotFound':
                 $args['value'] = WorkspaceNotFoundEncoded::jsonDeserialize($data);

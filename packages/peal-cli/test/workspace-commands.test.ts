@@ -585,6 +585,39 @@ describe("peal billing, members and invitations", () => {
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect(
+    "says what a workspace holds beyond its plan, and the way out",
+    () =>
+      Effect.gen(function* over() {
+        const session = yield* signedIn();
+
+        assert.notInclude(
+          yield* session.printed(["billing", ...inStudio]),
+          "more than its plan allows"
+        );
+
+        yield* Ref.update(session.studio.state, (state) => ({
+          ...state,
+          overPlan: true,
+        }));
+
+        const shown = yield* session.printed(["billing", ...inStudio]);
+
+        assert.include(
+          shown,
+          "The workspace holds more than its plan allows: 8 channels of 3, 5 members of 2, 1.2 GB of media of 500.0 MB."
+        );
+        assert.include(
+          shown,
+          "Until it is back within its plan, nothing is scheduled or published: the 7 posts going out this month each fail when due, and can be posted again afterwards."
+        );
+        assert.include(
+          shown,
+          "The pro plan holds everything: an owner or an admin orders it, or chooses which channels and members stay, in the web app."
+        );
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("lists the channels, with Instagram's way in", () =>
     Effect.gen(function* lists() {
       const session = yield* signedIn();

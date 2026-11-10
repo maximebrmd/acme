@@ -14,6 +14,9 @@ public record NoticeEventTrialEnding : IJsonOnDeserialized
     [JsonPropertyName("endsAt")]
     public required string EndsAt { get; set; }
 
+    [JsonPropertyName("over")]
+    public IEnumerable<Excess> Over { get; set; } = new List<Excess>();
+
     [JsonPropertyName("plan")]
     public required PaidPlan Plan { get; set; }
 

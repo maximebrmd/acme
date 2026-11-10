@@ -9,10 +9,9 @@ import type {
   RecordedAttempt,
 } from "#publishing/application/publication-journal.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
-import { AttemptOutcomeSchema } from "#publishing/domain/publication-policy.ts";
-import type {
-  AttemptOutcome,
-  EarlierRefusals,
+import {
+  AttemptOutcomeSchema,
+  earlierRefusalsOf,
 } from "#publishing/domain/publication-policy.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
@@ -57,16 +56,6 @@ const recordedAttempt = (row: AttemptRow) =>
 
     return attempt;
   }).pipe(Effect.orDie);
-
-// publication_attempts.outcome holds the outcome's tag.
-const rateLimited: AttemptOutcome["_tag"] = "RateLimited";
-
-const unavailable: AttemptOutcome["_tag"] = "PlatformUnavailable";
-
-const refusalsIn = (outcomes: readonly string[]): EarlierRefusals => ({
-  rateLimited: outcomes.filter((outcome) => outcome === rateLimited).length,
-  unavailable: outcomes.filter((outcome) => outcome === unavailable).length,
-});
 
 const begunCall = (row: CallRow) =>
   Effect.gen(function* decodingCall() {
@@ -174,7 +163,7 @@ export const DrizzlePublicationJournal = Layer.effect(
       begin,
       earlierRefusals: (call) =>
         db
-          .select({ outcome: publicationAttempts.outcome })
+          .select({ detail: publicationAttempts.detail })
           .from(publicationAttempts)
           .where(
             and(
@@ -185,7 +174,12 @@ export const DrizzlePublicationJournal = Layer.effect(
           )
           .pipe(
             Effect.mapError(failed),
-            Effect.map((rows) => refusalsIn(rows.map(({ outcome }) => outcome)))
+            Effect.flatMap(
+              Effect.forEach(({ detail }) =>
+                decodeOutcome(detail).pipe(Effect.orDie)
+              )
+            ),
+            Effect.map(earlierRefusalsOf)
           ),
       find,
       finish: (idempotencyKey, outcome, finishedAt) =>

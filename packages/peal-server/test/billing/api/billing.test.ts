@@ -2,6 +2,7 @@ import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
+import { TestClock } from "effect/testing";
 import { Api, Forbidden, Unauthenticated } from "peal-contract";
 import type { Member } from "peal-contract";
 
@@ -9,11 +10,14 @@ import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
+import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
 import { BillingApiLive } from "#billing/container.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import {
+  NoAddressesTest,
   NoTrialsTest,
+  PlainPseudonymsTest,
   subscriptionOf,
   subscriptionsHolding,
 } from "#test/billing/support.ts";
@@ -64,11 +68,12 @@ const UsageTest = Layer.succeed(
 );
 
 const overviewOn = (enabled: boolean) =>
-  BillingOverview.layer.pipe(
+  Layer.mergeAll(BillingOverview.layer, WorkspaceStanding.layer).pipe(
     Layer.provide(UsageTest),
     Layer.provide(WorkspaceEntitlements.layer),
     Layer.provide(SubscriptionsTest),
     Layer.provide(NoTrialsTest),
+    Layer.provide(Layer.mergeAll(NoAddressesTest, PlainPseudonymsTest)),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
   );
 
@@ -104,6 +109,9 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
     "show a member with billing:read the plan, its limits, the usage and every plan",
     () =>
       Effect.gen(function* shows() {
+        // The day the subscription started.
+        yield* TestClock.setTime(startedAt.epochMilliseconds);
+
         const client = yield* as(permissionsFor("admin"));
         const billing = yield* client.billing.get({ params });
 
@@ -112,6 +120,7 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
         assert.deepStrictEqual(billing.subscription, {
           cancelAtPeriodEnd: false,
           currentPeriodEnd: periodEnd,
+          endsAt: null,
           interval: "month",
           plan: "pro",
           startedAt,
@@ -158,6 +167,20 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
         assert.notInclude(JSON.stringify(billing), "cus_synthetic");
         assert.notInclude(JSON.stringify(billing), "sub_synthetic");
       })
+  );
+
+  it.effect("tell every member where the workspace stands", () =>
+    Effect.gen(function* stands() {
+      const client = yield* as(permissionsFor("viewer"));
+
+      assert.deepStrictEqual(yield* client.billing.standing({ params }), {
+        mustReduce: false,
+        over: [],
+        plan: "pro",
+        planWithRoom: null,
+        scheduledPosts: 12,
+      });
+    })
   );
 
   it.effect("answer 403 to a member without billing:read", () =>

@@ -10,6 +10,7 @@ import social.peal.resources.media.requests.DeleteMediaRequest;
 import social.peal.resources.media.requests.GetMediaRequest;
 import social.peal.resources.media.requests.ListMediaRequest;
 import social.peal.resources.media.requests.MediaDescription;
+import social.peal.resources.media.requests.MediaImport;
 import social.peal.resources.media.requests.NewUpload;
 import social.peal.resources.media.requests.UsageMediaRequest;
 import social.peal.types.Media;
@@ -74,6 +75,22 @@ public class MediaClient {
      */
     public PreparedUpload create(String workspaceId, NewUpload request, RequestOptions requestOptions) {
         return this.rawClient.create(workspaceId, request, requestOptions).body();
+    }
+
+    /**
+     * Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable <code>tooSlow</code>): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
+     */
+    public Media importFromUrl(String workspaceId, MediaImport request) {
+        return this.rawClient.importFromUrl(workspaceId, request).body();
+    }
+
+    /**
+     * Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable <code>tooSlow</code>): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
+     */
+    public Media importFromUrl(String workspaceId, MediaImport request, RequestOptions requestOptions) {
+        return this.rawClient
+                .importFromUrl(workspaceId, request, requestOptions)
+                .body();
     }
 
     /**
@@ -149,28 +166,28 @@ public class MediaClient {
     }
 
     /**
-     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public Media complete(String workspaceId, String mediaId) {
         return this.rawClient.complete(workspaceId, mediaId).body();
     }
 
     /**
-     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public Media complete(String workspaceId, String mediaId, RequestOptions requestOptions) {
         return this.rawClient.complete(workspaceId, mediaId, requestOptions).body();
     }
 
     /**
-     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public Media complete(String workspaceId, String mediaId, CompleteMediaRequest request) {
         return this.rawClient.complete(workspaceId, mediaId, request).body();
     }
 
     /**
-     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public Media complete(
             String workspaceId, String mediaId, CompleteMediaRequest request, RequestOptions requestOptions) {

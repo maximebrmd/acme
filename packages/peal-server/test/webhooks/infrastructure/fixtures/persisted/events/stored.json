@@ -1,0 +1,132 @@
+[
+  {
+    "data": {
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
+      "scheduledAt": "2026-11-12T08:00:00.000Z",
+      "targets": [
+        {
+          "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+          "platform": "mastodon",
+          "targetId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c04"
+        },
+        {
+          "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c05",
+          "platform": null,
+          "targetId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c06"
+        }
+      ],
+      "timeZone": "Europe/Paris",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "post.scheduled"
+  },
+  {
+    "data": {
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "post.unscheduled"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "permalink": "https://social.example/@peal_example/1",
+      "platform": "mastodon",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
+      "publishedAt": "2026-11-12T08:00:02.000Z",
+      "round": 1,
+      "targetId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c04",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "post.published"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "failedAt": "2026-11-12T08:00:02.000Z",
+      "platform": "mastodon",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
+      "reason": "mediaRejected",
+      "round": 2,
+      "targetId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c04",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "post.failed"
+  },
+  {
+    "data": {
+      "attemptedAt": "2026-11-12T08:00:02.000Z",
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "platform": "linkedin",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
+      "reason": "noResponse",
+      "round": 1,
+      "targetId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c04",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "post.unconfirmed"
+  },
+  {
+    "data": {
+      "cancelledAt": "2026-11-12T07:30:00.000Z",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
+      "targets": [
+        {
+          "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+          "platform": "mastodon",
+          "targetId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c04"
+        }
+      ],
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "post.cancelled"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "platform": "bluesky",
+      "reconnected": false,
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "channel.connected"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "platform": "bluesky",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "channel.disconnected"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "platform": "x",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "channel.reconnect_needed"
+  },
+  {
+    "data": {
+      "contentType": "image/png",
+      "mediaId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c07",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "media.ready"
+  },
+  {
+    "data": {
+      "mediaId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c07",
+      "reason": "unreadable",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "media.failed"
+  },
+  {
+    "data": {
+      "endpointId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c08",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "webhook.test"
+  }
+]

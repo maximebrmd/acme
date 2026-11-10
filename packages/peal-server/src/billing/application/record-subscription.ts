@@ -23,9 +23,15 @@ export interface SubscriptionEvent {
   readonly currentPeriodEnd: Option.Option<DateTime.Utc>;
   readonly currentPeriodStart: Option.Option<DateTime.Utc>;
   readonly eventId: string;
-  readonly interval: BillingInterval;
+  /** How often it is paid for; null with `plan`. */
+  readonly interval: BillingInterval | null;
   readonly occurredAt: DateTime.Utc;
-  readonly plan: PaidPlan;
+  /**
+   * The plan its price buys; null when its price is none this server
+   * lists now, as for the subscribers of a price since replaced: it stays
+   * on the plan recorded for it.
+   */
+  readonly plan: PaidPlan | null;
   /** The member whose checkout started it, as its metadata names them. */
   readonly startedBy: Option.Option<UserId>;
   readonly startedAt: Option.Option<DateTime.Utc>;
@@ -87,7 +93,37 @@ export class RecordSubscription extends Context.Service<
       const record = Effect.fn("RecordSubscription.record")(function* record(
         event: SubscriptionEvent
       ) {
-        const { eventId, occurredAt, startedBy, ...subscription } = event;
+        const { eventId, occurredAt, startedBy, ...described } = event;
+
+        // A price this server no longer lists: the plan and the interval
+        // recorded for the subscription stand, so its cancellation, or a
+        // payment that failed, is still followed. One never recorded is
+        // none of this server's: it is left alone, and said so loudly.
+        const priced =
+          described.plan === null || described.interval === null
+            ? (yield* subscriptions.ofWorkspace(event.workspaceId)).find(
+                ({ stripeSubscriptionId }) =>
+                  stripeSubscriptionId === event.stripeSubscriptionId
+              )
+            : { interval: described.interval, plan: described.plan };
+
+        if (priced === undefined) {
+          yield* Effect.logError(
+            "A subscription's price is none this server lists, and billing never recorded it: its workspace's plan does not follow it"
+          ).pipe(
+            Effect.annotateLogs({ eventId, workspaceId: event.workspaceId })
+          );
+
+          const unpriced: RecordedEvent = "ignored";
+
+          return unpriced;
+        }
+
+        const subscription = {
+          ...described,
+          interval: priced.interval,
+          plan: priced.plan,
+        };
 
         const change = decodeChange({ eventId, occurredAt, subscription });
 

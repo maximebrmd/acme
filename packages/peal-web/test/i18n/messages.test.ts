@@ -4,6 +4,7 @@ import {
   AttemptResultSchema,
   FailureReasonSchema,
   UnconfirmedReasonSchema,
+  WebhookEventTypeSchema,
 } from "peal-contract";
 
 import { loadMessages } from "#i18n/messages.ts";
@@ -34,6 +35,28 @@ describe("message catalogues", () => {
     }
   );
 
+  it.each(routing.locales)(
+    "%s gives example addresses on reserved domains only",
+    async (locale) => {
+      // example.com, .org, .net and the .example and .test names belong
+      // to nobody (RFC 2606): any other domain is someone's.
+      // A Mastodon handle is shown on Mastodon's own first instance,
+      // which is where people know the form from: not an email address.
+      const reserved =
+        /@(?:(?:[\w-]+\.)*(?:example\.(?:com|org|net)|example|test)|mastodon\.social)$/u;
+
+      const elsewhere = entries(await loadMessages(locale)).flatMap(
+        ([key, text]) =>
+          (text.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/gu) ?? [])
+            .map((address) => address.replace(/\.$/u, ""))
+            .filter((address) => !reserved.test(address))
+            .map((address) => `${key}: ${address}`)
+      );
+
+      expect(elsewhere).toStrictEqual([]);
+    }
+  );
+
   it.each(routing.locales)("%s has no empty message", async (locale) => {
     const empty = entries(await loadMessages(locale)).filter(
       ([, text]) => text.trim() === ""
@@ -41,6 +64,19 @@ describe("message catalogues", () => {
 
     expect(empty).toStrictEqual([]);
   });
+
+  it.each(routing.locales)(
+    "%s names every event a webhook endpoint is sent",
+    async (locale) => {
+      const messages = new Map(entries(await loadMessages(locale)));
+
+      expect(
+        WebhookEventTypeSchema.literals.filter(
+          (type) => !messages.has(`Webhooks.events.${type}`)
+        )
+      ).toStrictEqual([]);
+    }
+  );
 
   // A reason a select leaves out reads as its raw code, as `other` does.
   it.each(routing.locales)(

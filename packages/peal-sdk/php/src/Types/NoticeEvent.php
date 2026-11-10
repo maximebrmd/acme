@@ -19,6 +19,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'SubscriptionRenewing'
      *   |'SubscriptionCancelled'
      *   |'SubscriptionWithdrawn'
+     *   |'WebhookEndpointDisabled'
      *   |'_unknown'
      * ) $type
      */
@@ -36,6 +37,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventSubscriptionRenewing
      *   |NoticeEventSubscriptionCancelled
      *   |NoticeEventSubscriptionWithdrawn
+     *   |NoticeEventWebhookEndpointDisabled
      *   |mixed
      * ) $value
      */
@@ -54,6 +56,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'SubscriptionRenewing'
      *   |'SubscriptionCancelled'
      *   |'SubscriptionWithdrawn'
+     *   |'WebhookEndpointDisabled'
      *   |'_unknown'
      * ),
      *   value: (
@@ -67,6 +70,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventSubscriptionRenewing
      *   |NoticeEventSubscriptionCancelled
      *   |NoticeEventSubscriptionWithdrawn
+     *   |NoticeEventWebhookEndpointDisabled
      *   |mixed
      * ),
      * } $values
@@ -195,6 +199,18 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'SubscriptionWithdrawn',
             'value' => $subscriptionWithdrawn,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventWebhookEndpointDisabled $webhookEndpointDisabled
+     * @return NoticeEvent
+     */
+    public static function webhookEndpointDisabled(NoticeEventWebhookEndpointDisabled $webhookEndpointDisabled): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'WebhookEndpointDisabled',
+            'value' => $webhookEndpointDisabled,
         ]);
     }
 
@@ -419,6 +435,28 @@ class NoticeEvent extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isWebhookEndpointDisabled(): bool
+    {
+        return $this->value instanceof NoticeEventWebhookEndpointDisabled && $this->type === 'WebhookEndpointDisabled';
+    }
+
+    /**
+     * @return NoticeEventWebhookEndpointDisabled
+     */
+    public function asWebhookEndpointDisabled(): NoticeEventWebhookEndpointDisabled
+    {
+        if (!($this->value instanceof NoticeEventWebhookEndpointDisabled && $this->type === 'WebhookEndpointDisabled')) {
+            throw new Exception(
+                "Expected WebhookEndpointDisabled; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -476,6 +514,10 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'SubscriptionWithdrawn':
                 $value = $this->asSubscriptionWithdrawn()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'WebhookEndpointDisabled':
+                $value = $this->asWebhookEndpointDisabled()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -543,6 +585,9 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'SubscriptionWithdrawn':
                 $args['value'] = NoticeEventSubscriptionWithdrawn::jsonDeserialize($data);
+                break;
+            case 'WebhookEndpointDisabled':
+                $args['value'] = NoticeEventWebhookEndpointDisabled::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

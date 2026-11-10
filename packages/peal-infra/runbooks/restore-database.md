@@ -95,6 +95,8 @@ the backup passphrase, which you kept outside the server.
 
 1. Set up a new server as `README.md` says, through `site.yml`, with the same
    credentials, the backup passphrase included. It generates new secrets.
+   Take one of the architecture the backups were made on, x86-64 or Arm64:
+   PostgreSQL restores its files on that architecture and no other.
 2. Release the commit that ran before, with `release.yml`. The new database is
    empty; stop the server and the web app, and Postgres, as in steps 2 and 4
    above.
@@ -120,30 +122,60 @@ reconnect their channels.
 
 A restore brings back the accounts and workspaces their users deleted after
 the restore point, which the law asks to delete again before anyone can use
-them. Peal does not record them outside the database yet, nor apply them
-again by itself. Until it does:
+them. The server records each such deletion outside the database, in the
+media bucket under `erasures/`: its id, the ids it deleted and the time,
+nothing else, for 42 days, which is longer than any backup holds deleted
+data. A restore does not touch that ledger, on the same server or a new one.
 
-1. Keep the server and the web app stopped once Postgres is restored.
-2. In Grafana's Explore, on Loki, list the deletions since the restore point,
-   by id only:
+After every restore, to the latest state or to a time, once Postgres
+answers (step 5) and before the stack starts (step 7):
 
-   ```logql
-   {service_name="peal-server"} | event_name="peal.erasure"
+1. Keep the server and the web app stopped.
+2. Apply the ledger again. The command migrates the database as the server
+   would, starts no server, worker or scheduled job, and publishes nothing:
+
+   ```sh
+   sudo peal-compose run --rm --no-deps server packages/peal-server/src/replay-erasures.ts
    ```
 
-   Loki keeps 31 days of logs, which covers a restore to the latest state and
-   most restores to a time, but not all of them: the backups keep deleted
-   data up to 5 weeks, so a restore to a point 32 to 35 days back brings
-   back deletions no log lists any more. Loki runs on the same server, so a
-   server lost with its disk, the likeliest reason to restore, takes the
-   list with it: there is then no list at all. In either case, tell the
-   owner before the server takes requests: the deletions cannot be found
-   again, and the incident's record must say so.
+   It prints one line of totals, then one line for each entry it acted on,
+   by id only:
 
-3. Each must be deleted again before the server takes requests, and noted
-   in the incident's record. No command does it yet: tell the owner, with
-   the list, before starting the server. Their Stripe subscriptions were
-   already cancelled.
+   - `erased again`: the restore had brought the account or workspaces
+     back, and they are deleted again. Their Stripe subscriptions were
+     cancelled when they were first deleted, and Stripe is not restored.
+   - `unconfirmed`: a deletion whose end the server never recorded, as it
+     stopped in between. It is left alone. If the account or workspace is
+     in the restored database, its owner asked for the deletion and passed
+     every check, but nothing says whether it had taken effect before the
+     incident: tell the owner, who decides. `--apply-unconfirmed` after the
+     file name applies them too.
+   - `unreadable`: an object of the ledger that is no entry, by its key,
+     as one cut short: what it asked to erase is unknown and was not
+     applied. The command exits with an error. Read the object in the
+     store, tell the owner, and apply by hand what it can still be read to
+     name before starting the stack.
+   - `refused`: the deletion could not be applied, with why
+     (`WorkspaceBusy`: a post marked as publishing, see step 6;
+     `WorkspaceSubscribed` or `BillingUnavailable`: Stripe still bills it,
+     or did not answer; `LastOwner`: the restore made the account the only
+     member, or the only owner, of a workspace others had joined before it
+     closed, so erasing it would leave that workspace to nobody: tell the
+     owner, who decides what becomes of the workspace, as its other
+     members' joining was lost with the restore). The command then exits
+     with an error. Keep the
+     stack stopped, fix the cause and run it again: it is safe to repeat,
+     and what is gone stays gone.
+
+3. Copy its output into the incident's record: it is the proof that the
+   deletions were applied again.
+4. Start the stack (step 7) only once the command exits without error.
+
+On a new server, the command needs the media bucket's credentials, which
+`site.yml` put back from the vault: nothing else. What the ledger cannot
+cover: single posts, files or channels deleted since the restore point come
+back with the restore, as only whole accounts and workspaces are recorded;
+and a restore to a point more than 42 days back, which no backup allows.
 
 ## Practise
 

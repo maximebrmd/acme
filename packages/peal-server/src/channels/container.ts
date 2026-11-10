@@ -26,6 +26,10 @@ import { PlatformAuthorizersLive } from "#channels/infrastructure/platforms/plat
 import { PublicDataDeletionLinks } from "#channels/infrastructure/public-data-deletion-links.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-cipher.ts";
+import {
+  WebhookChannelEvents,
+  webhookChannelNotices,
+} from "#channels/infrastructure/webhook-channel-events.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 // The platforms' sign-in flows, the documents that identify Peal's
@@ -57,10 +61,11 @@ const AdaptersLive = Layer.mergeAll(
   DrizzleChannelRepository,
   DrizzleConnectAttempts,
   DrizzleConnectChoices,
-  DrizzleDataDeletions,
+  DrizzleDataDeletions.pipe(Layer.provide(WebhookChannelEvents)),
   PublicDataDeletionLinks,
   SqlChannelLocks,
-  NotifiedChannelNotices,
+  webhookChannelNotices(NotifiedChannelNotices),
+  WebhookChannelEvents,
   PlanChannelAllowanceLive,
   PlatformsLive
 ).pipe(Layer.provideMerge(TokenCipherLive));
@@ -84,7 +89,8 @@ const UseCasesLive = Layer.mergeAll(
  * workers share, ChannelRecords for the workspace context, and
  * ChannelOversight for the staff console. Needs the
  * database (Drizzle and SqlClient), migrated, Ids, Dns, the notifications
- * context's Notify and the billing context's WorkspaceEntitlements.
+ * context's Notify, the webhooks context's WebhookEvents and the billing
+ * context's WorkspaceEntitlements.
  */
 export const ChannelsLive = UseCasesLive.pipe(Layer.provideMerge(AdaptersLive));
 
@@ -101,6 +107,12 @@ export {
  * without signing in.
  */
 export { DataDeletionHandlers as DataDeletionApiLive } from "#channels/api/data-deletion.ts";
+
+/**
+ * The cipher that encrypts channel tokens with the server's keyring, for
+ * the webhooks context's signing secrets too.
+ */
+export { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-cipher.ts";
 
 /** The token refresh sweep and the daily reconnect warnings. */
 export { ChannelsCronsLive } from "#channels/infrastructure/crons.ts";

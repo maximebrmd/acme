@@ -40,11 +40,22 @@ public class DraftsTest : BaseMockServerTest
                     ],
                     "text": "text"
                   },
+                  "createdVia": {
+                    "id": "id",
+                    "name": "name",
+                    "via": "web"
+                  },
                   "id": "id",
                   "outcome": "published",
                   "schedule": {
                     "at": "at",
                     "timeZone": "timeZone"
+                  },
+                  "scheduledBy": "scheduledBy",
+                  "scheduledVia": {
+                    "id": "id",
+                    "name": "name",
+                    "via": "web"
                   },
                   "status": "draft",
                   "targets": [
@@ -123,11 +134,22 @@ public class DraftsTest : BaseMockServerTest
                     ],
                     "text": "text"
                   },
+                  "createdVia": {
+                    "id": "id",
+                    "name": "name",
+                    "via": "web"
+                  },
                   "id": "id",
                   "outcome": "published",
                   "schedule": {
                     "at": "at",
                     "timeZone": "timeZone"
+                  },
+                  "scheduledBy": "scheduledBy",
+                  "scheduledVia": {
+                    "id": "id",
+                    "name": "name",
+                    "via": "web"
                   },
                   "status": "draft",
                   "targets": [
@@ -229,11 +251,18 @@ public class DraftsTest : BaseMockServerTest
                     ],
                     "text": "text"
                   },
+                  "createdVia": {
+                    "via": "web"
+                  },
                   "id": "id",
                   "outcome": "published",
                   "schedule": {
                     "at": "at",
                     "timeZone": "timeZone"
+                  },
+                  "scheduledBy": "scheduledBy",
+                  "scheduledVia": {
+                    "via": "web"
                   },
                   "status": "draft",
                   "targets": [

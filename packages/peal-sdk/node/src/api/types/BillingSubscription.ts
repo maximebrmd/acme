@@ -5,6 +5,7 @@ import * as Peal from "../index.js";
 export interface BillingSubscription {
     cancelAtPeriodEnd: boolean;
     currentPeriodEnd: string | null;
+    endsAt: string | null;
     interval: Peal.BillingInterval;
     plan: Peal.PaidPlan;
     startedAt: string | null;

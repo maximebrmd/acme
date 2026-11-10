@@ -123,6 +123,13 @@ export interface FacebookLoginProduct {
 }
 
 /**
+ * Where Facebook Login sends a member back, for the platform they connect:
+ * the web app's callback page for it.
+ */
+export const facebookLoginCallbackPath = (platform: Platform) =>
+  `/connect/${platform}/callback`;
+
+/**
  * Facebook Login, as Facebook Pages and Instagram use it: the dialog asks
  * for the product's permissions, the callback's code becomes a long-lived
  * user token, and the user's Pages, each with its token, become the
@@ -148,7 +155,7 @@ export const facebookLogin = Effect.fn("FacebookLogin.make")(
     const { platform, scopes } = product;
 
     const redirectUri = new URL(
-      `/connect/${platform}/callback`,
+      facebookLoginCallbackPath(platform),
       options.publicUrl
     ).href;
 

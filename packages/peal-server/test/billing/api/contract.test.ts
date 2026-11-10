@@ -1,7 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Option } from "effect";
+import { Duration, Option } from "effect";
 import {
   billingCurrency,
+  desiredDayHorizonDays,
   BillingIntervalSchema as ContractIntervalSchema,
   displayVatRate as contractVatRate,
   planCatalogue,
@@ -13,6 +14,7 @@ import {
 } from "peal-contract";
 
 import { BillingIntervalSchema } from "#billing/domain/billing-interval.ts";
+import { desiredDayHorizon } from "#billing/domain/desired-day.ts";
 import {
   planAllowances,
   plans,
@@ -74,5 +76,11 @@ describe("the contract", () => {
     expect(billingCurrency).toBe(currency);
     expect(contractVatRate).toBe(displayVatRate);
     expect(trialOffer).toStrictEqual({ days: trialDays, plan: trialPlan });
+  });
+
+  it("publishes how far ahead a cancellation may ask its contract to end", () => {
+    expect(Duration.days(desiredDayHorizonDays)).toStrictEqual(
+      desiredDayHorizon
+    );
   });
 });

@@ -21,7 +21,7 @@ import type { Person } from "./harness.ts";
 
 const apiResource = `${origin}/api`;
 
-const scope = "offline_access workspace:read workspace:write";
+const scope = "offline_access workspace:read workspace:write workspace:publish";
 
 class OAuth extends Context.Service<
   OAuth,

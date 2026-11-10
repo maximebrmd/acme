@@ -25,6 +25,7 @@ import { CloseAccount } from "#workspace/application/close-account.ts";
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
+import { ReplayErasures } from "#workspace/application/replay-erasures.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
@@ -41,13 +42,17 @@ import { PasswordCheckLive } from "#workspace/infrastructure/auth/password-check
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
 import { WorkspacePeopleLive } from "#workspace/infrastructure/auth/workspace-people.ts";
 import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts";
+import { ErasureLedgerRetentionCron } from "#workspace/infrastructure/crons.ts";
 import { AccountDirectoryLive } from "#workspace/infrastructure/drizzle-account-directory.ts";
 import { DrizzleAccountStore } from "#workspace/infrastructure/drizzle-account-store.ts";
 import { DrizzleConnectedAppStore } from "#workspace/infrastructure/drizzle-connected-app-store.ts";
+import { DrizzleCredentialNames } from "#workspace/infrastructure/drizzle-credential-names.ts";
 import { DrizzleImpersonationSessions } from "#workspace/infrastructure/drizzle-impersonation-sessions.ts";
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 import { EmailedAccountMail } from "#workspace/infrastructure/emailed-account-mail.ts";
+import { PrivacyDeclarationLive } from "#workspace/infrastructure/privacy-declaration-file.ts";
+import { S3ErasureLedger } from "#workspace/infrastructure/s3-erasure-ledger.ts";
 import { StaffImpersonationLog } from "#workspace/infrastructure/staff-impersonation-log.ts";
 
 const AdaptersLive = Layer.mergeAll(
@@ -78,6 +83,10 @@ const StaffToolsLive = Layer.mergeAll(
   AccountModerationLive
 );
 
+// The account an email address signs in to, which billing asks for when a
+// contract's cancellation comes without a session.
+export { DrizzleAccountLookup as AccountLookupLive } from "#workspace/infrastructure/drizzle-account-lookup.ts";
+
 // What every request in a session staff act as someone in goes through,
 // from Peal's API and Better Auth's routes alike: the staff member's
 // standing, read fresh, and the audit log, the staff context's.
@@ -102,9 +111,10 @@ const ImpersonationGuardLive = ImpersonationGuard.layer.pipe(
  * context's WorkspaceEntitlements and RecordSubscription, the staff
  * context's ImpersonationAudit and the legal context's LegalRecords.
  */
-export const WorkspaceLive = Layer.merge(
+export const WorkspaceLive = Layer.mergeAll(
   UseCasesLive,
-  CaptchaChallengeLive
+  CaptchaChallengeLive,
+  DrizzleCredentialNames
 ).pipe(
   Layer.provide(AdaptersLive),
   Layer.provideMerge(StaffToolsLive),
@@ -136,9 +146,34 @@ export const WorkspaceSettingsLive = Layer.mergeAll(
       DrizzleAccountStore,
       DrizzleConnectedAppStore,
       EmailedAccountMail,
-      PasswordCheckLive
+      PasswordCheckLive,
+      PrivacyDeclarationLive,
+      S3ErasureLedger
     )
   )
+);
+
+/**
+ * Applying the erasure ledger again after a restore (ReplayErasures), over
+ * the same records and ledger as the settings' erasures. Needs what
+ * WorkspaceSettingsLive needs of the other contexts.
+ */
+export const ErasureReplayLive = ReplayErasures.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ContextRecordsLive.pipe(Layer.provide(KeyedPseudonymsLive)),
+      DrizzleAccountStore,
+      S3ErasureLedger
+    )
+  )
+);
+
+/**
+ * The erasure ledger's daily retention, on the object store the settings
+ * name: without them, in production, the server does not start.
+ */
+export const WorkspaceCronsLive = ErasureLedgerRetentionCron.pipe(
+  Layer.provide(S3ErasureLedger.pipe(Layer.orDie))
 );
 
 /**

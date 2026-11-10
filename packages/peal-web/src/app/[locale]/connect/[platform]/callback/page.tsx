@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ConnectCallbackSchema, PlatformSchema } from "peal-contract";
 
 import { AuthCard } from "#components/auth/auth-card.tsx";
+import { UpgradePrompts } from "#components/billing/upgrade-prompts.tsx";
 import { CompleteConnection } from "#components/channels/complete-connection.tsx";
 
 const decodePlatform = Schema.decodeUnknownOption(PlatformSchema);
@@ -29,10 +30,12 @@ const ConnectCallbackPage = async ({
 
   return (
     <AuthCard title={t("title")} description={t("description")}>
-      <CompleteConnection
-        platform={known.value}
-        callback={Option.getOrNull(callback)}
-      />
+      <UpgradePrompts current={null}>
+        <CompleteConnection
+          platform={known.value}
+          callback={Option.getOrNull(callback)}
+        />
+      </UpgradePrompts>
     </AuthCard>
   );
 };

@@ -51,6 +51,10 @@ export const LibraryMediaForPublishing = Layer.effect(
         media
           .describe(workspaceId, mediaId)
           .pipe(Effect.map(publishableOf), Effect.catch(logged)),
+      held: (workspaceId, mediaId) =>
+        Effect.succeed(
+          media.read(workspaceId, mediaId).pipe(Stream.catch(loggedStream))
+        ),
       open: (workspaceId, mediaId) =>
         media.read(workspaceId, mediaId).pipe(Stream.catch(loggedStream)),
       publicUrl: (workspaceId, mediaId, expiresIn) =>

@@ -11,6 +11,8 @@ import path from "node:path";
 
 import { Schema } from "effect";
 
+import { startStripe } from "./stripe.ts";
+
 const packages = path.join(import.meta.dirname, "..", "..");
 
 const PortSchema = Schema.Int.check(
@@ -41,12 +43,22 @@ const freePort = async (): Promise<number> => {
 
 const serverPort = await freePort();
 
+// Billing is on, against a stand-in for Stripe (scripts/stripe.ts), with
+// synthetic secrets: plans limit workspaces as they do on Peal Cloud.
+const stripe = await startStripe();
+
 // The server gets every variable the runner passed (DATABASE_URL, PUBLIC_URL
 // and the rest); the web app gets PATH, HOME and where the server is. Bun
 // runs this script, and runs the server as `nx run peal-server:dev` does.
 const server = spawn(process.execPath, ["src/main.ts"], {
   cwd: path.join(packages, "peal-server"),
-  env: { ...process.env, PORT: String(serverPort) },
+  env: {
+    ...process.env,
+    PORT: String(serverPort),
+    STRIPE_API_URL: stripe.url,
+    STRIPE_SECRET_KEY: "sk_test_0123456789syntheticendtoend",
+    STRIPE_WEBHOOK_SECRET: "whsec_synthetic_end_to_end",
+  },
   stdio: "inherit",
 });
 
@@ -101,3 +113,7 @@ process.exitCode = stopping ? 0 : 1;
 stopAll();
 
 await Promise.all(exited);
+
+stripe.server.closeAllConnections();
+
+stripe.server.close();

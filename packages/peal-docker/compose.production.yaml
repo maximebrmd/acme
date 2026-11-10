@@ -163,8 +163,10 @@ services:
       PEAL_S3_FORCE_PATH_STYLE:
       PEAL_S3_KEY_PREFIX:
       PEAL_MEDIA_PUBLIC_BASE_URL:
+      PEAL_ERASURE_LEDGER_BUCKET:
       TIKTOK_MEDIA_URL_PREFIX:
       PEAL_FFPROBE_PATH:
+      PEAL_MAX_CONCURRENT_UPLOADS:
       PEAL_AI_PROVIDER:
       PEAL_AI_API_KEY:
       PEAL_AI_MODEL:
@@ -179,10 +181,20 @@ services:
       TURNSTILE_VERIFY_URL:
       OTEL_SERVICE_NAME:
       OTEL_TRACES_EXPORTER:
+      OTEL_TRACES_SAMPLER:
+      OTEL_TRACES_SAMPLER_ARG:
       OTEL_METRICS_EXPORTER:
       OTEL_LOGS_EXPORTER:
       PEAL_CLUSTER_RETENTION:
+      PEAL_ANALYTICS_CONCURRENCY:
       PEAL_LEGAL_RETENTION:
+      # What the operator declares about its processing, for each user's
+      # export: the file PEAL_PRIVACY_DECLARATION names, mounted below.
+      PEAL_PRIVACY_DECLARATION_FILE: /etc/peal/privacy-declaration.json
+    volumes:
+      # Declares nothing unless PEAL_PRIVACY_DECLARATION names a file of
+      # the operator's, as self-host/privacy-declaration.example.json shows.
+      - ${PEAL_PRIVACY_DECLARATION:-./config/production/privacy-declaration.json}:/etc/peal/privacy-declaration.json:ro
     ports:
       - 127.0.0.1:${PEAL_SERVER_PORT:-3000}:3000
     depends_on:
@@ -215,6 +227,8 @@ services:
       PEAL_RELEASE: ${PEAL_VERSION:-local}
       # The terms of service the billing page links to before an order.
       PEAL_TERMS_URL:
+      # Where to write for more than the largest plan allows.
+      PEAL_CONTACT_URL:
       # Longer than the edge keeps idle connections (90 s for the tunnel, 2
       # minutes for Caddy), so it never reuses one Node has closed.
       KEEP_ALIVE_TIMEOUT: "125000"
@@ -241,6 +255,7 @@ services:
       dockerfile: packages/peal-docker/static.Dockerfile
       args:
         SITE_URL: ${SITE_URL:-}
+        SITE_APP_URL: ${SITE_APP_URL:-}
         SITE_DOCS_URL: ${SITE_DOCS_URL:-}
         SITE_PLAUSIBLE_DOMAIN: ${SITE_PLAUSIBLE_DOMAIN:-}
         SITE_PLAUSIBLE_HOST: ${SITE_PLAUSIBLE_HOST:-}

@@ -5,15 +5,20 @@ package social.peal.types;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
+import social.peal.core.Nullable;
+import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -21,7 +26,13 @@ import social.peal.core.ObjectMappers;
 public final class AssistantQuotaExceededEncoded {
     private final AssistantQuotaExceededEncodedTag tag;
 
+    private final Optional<String> billingUrl;
+
     private final int dailyLimit;
+
+    private final Optional<Plan> plan;
+
+    private final Optional<PaidPlan> planWithRoom;
 
     private final String resetsAt;
 
@@ -29,11 +40,17 @@ public final class AssistantQuotaExceededEncoded {
 
     private AssistantQuotaExceededEncoded(
             AssistantQuotaExceededEncodedTag tag,
+            Optional<String> billingUrl,
             int dailyLimit,
+            Optional<Plan> plan,
+            Optional<PaidPlan> planWithRoom,
             String resetsAt,
             Map<String, Object> additionalProperties) {
         this.tag = tag;
+        this.billingUrl = billingUrl;
         this.dailyLimit = dailyLimit;
+        this.plan = plan;
+        this.planWithRoom = planWithRoom;
         this.resetsAt = resetsAt;
         this.additionalProperties = additionalProperties;
     }
@@ -43,14 +60,56 @@ public final class AssistantQuotaExceededEncoded {
         return tag;
     }
 
+    @JsonIgnore
+    public Optional<String> getBillingUrl() {
+        if (billingUrl == null) {
+            return Optional.empty();
+        }
+        return billingUrl;
+    }
+
     @JsonProperty("dailyLimit")
     public int getDailyLimit() {
         return dailyLimit;
     }
 
+    @JsonIgnore
+    public Optional<Plan> getPlan() {
+        if (plan == null) {
+            return Optional.empty();
+        }
+        return plan;
+    }
+
+    @JsonIgnore
+    public Optional<PaidPlan> getPlanWithRoom() {
+        if (planWithRoom == null) {
+            return Optional.empty();
+        }
+        return planWithRoom;
+    }
+
     @JsonProperty("resetsAt")
     public String getResetsAt() {
         return resetsAt;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("billingUrl")
+    private Optional<String> _getBillingUrl() {
+        return billingUrl;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("plan")
+    private Optional<Plan> _getPlan() {
+        return plan;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("planWithRoom")
+    private Optional<PaidPlan> _getPlanWithRoom() {
+        return planWithRoom;
     }
 
     @java.lang.Override
@@ -65,12 +124,17 @@ public final class AssistantQuotaExceededEncoded {
     }
 
     private boolean equalTo(AssistantQuotaExceededEncoded other) {
-        return tag.equals(other.tag) && dailyLimit == other.dailyLimit && resetsAt.equals(other.resetsAt);
+        return tag.equals(other.tag)
+                && billingUrl.equals(other.billingUrl)
+                && dailyLimit == other.dailyLimit
+                && plan.equals(other.plan)
+                && planWithRoom.equals(other.planWithRoom)
+                && resetsAt.equals(other.resetsAt);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.dailyLimit, this.resetsAt);
+        return Objects.hash(this.tag, this.billingUrl, this.dailyLimit, this.plan, this.planWithRoom, this.resetsAt);
     }
 
     @java.lang.Override
@@ -102,6 +166,24 @@ public final class AssistantQuotaExceededEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage billingUrl(Optional<String> billingUrl);
+
+        _FinalStage billingUrl(String billingUrl);
+
+        _FinalStage billingUrl(Nullable<String> billingUrl);
+
+        _FinalStage plan(Optional<Plan> plan);
+
+        _FinalStage plan(Plan plan);
+
+        _FinalStage plan(Nullable<Plan> plan);
+
+        _FinalStage planWithRoom(Optional<PaidPlan> planWithRoom);
+
+        _FinalStage planWithRoom(PaidPlan planWithRoom);
+
+        _FinalStage planWithRoom(Nullable<PaidPlan> planWithRoom);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -112,6 +194,12 @@ public final class AssistantQuotaExceededEncoded {
 
         private String resetsAt;
 
+        private Optional<PaidPlan> planWithRoom = Optional.empty();
+
+        private Optional<Plan> plan = Optional.empty();
+
+        private Optional<String> billingUrl = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -119,7 +207,10 @@ public final class AssistantQuotaExceededEncoded {
         @java.lang.Override
         public Builder from(AssistantQuotaExceededEncoded other) {
             tag(other.getTag());
+            billingUrl(other.getBillingUrl());
             dailyLimit(other.getDailyLimit());
+            plan(other.getPlan());
+            planWithRoom(other.getPlanWithRoom());
             resetsAt(other.getResetsAt());
             return this;
         }
@@ -146,14 +237,93 @@ public final class AssistantQuotaExceededEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage planWithRoom(Nullable<PaidPlan> planWithRoom) {
+            if (planWithRoom.isNull()) {
+                this.planWithRoom = null;
+            } else if (planWithRoom.isEmpty()) {
+                this.planWithRoom = Optional.empty();
+            } else {
+                this.planWithRoom = Optional.of(planWithRoom.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage planWithRoom(PaidPlan planWithRoom) {
+            this.planWithRoom = Optional.ofNullable(planWithRoom);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "planWithRoom", nulls = Nulls.SKIP)
+        public _FinalStage planWithRoom(Optional<PaidPlan> planWithRoom) {
+            this.planWithRoom = planWithRoom;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage plan(Nullable<Plan> plan) {
+            if (plan.isNull()) {
+                this.plan = null;
+            } else if (plan.isEmpty()) {
+                this.plan = Optional.empty();
+            } else {
+                this.plan = Optional.of(plan.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage plan(Plan plan) {
+            this.plan = Optional.ofNullable(plan);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "plan", nulls = Nulls.SKIP)
+        public _FinalStage plan(Optional<Plan> plan) {
+            this.plan = plan;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage billingUrl(Nullable<String> billingUrl) {
+            if (billingUrl.isNull()) {
+                this.billingUrl = null;
+            } else if (billingUrl.isEmpty()) {
+                this.billingUrl = Optional.empty();
+            } else {
+                this.billingUrl = Optional.of(billingUrl.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage billingUrl(String billingUrl) {
+            this.billingUrl = Optional.ofNullable(billingUrl);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "billingUrl", nulls = Nulls.SKIP)
+        public _FinalStage billingUrl(Optional<String> billingUrl) {
+            this.billingUrl = billingUrl;
+            return this;
+        }
+
+        @java.lang.Override
         public AssistantQuotaExceededEncoded build() {
-            return new AssistantQuotaExceededEncoded(tag, dailyLimit, resetsAt, additionalProperties);
+            return new AssistantQuotaExceededEncoded(
+                    tag, billingUrl, dailyLimit, plan, planWithRoom, resetsAt, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("billingUrl")
                     || key.equalsIgnoreCase("dailyLimit")
+                    || key.equalsIgnoreCase("plan")
+                    || key.equalsIgnoreCase("planWithRoom")
                     || key.equalsIgnoreCase("resetsAt")) {
                 return;
             }

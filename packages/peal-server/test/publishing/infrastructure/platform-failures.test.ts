@@ -31,6 +31,7 @@ import {
   settle,
   targetsOf,
 } from "./harness.ts";
+import { AppRefusals } from "./recorded-app-refusals.ts";
 
 const timeout = 60_000;
 
@@ -331,6 +332,135 @@ describe("PublishTargetV1 when the platform refuses", () => {
             [media, "mediaRejected", "too_large"],
             [text, "contentRejected", "duplicate"],
           ]);
+        })
+      ),
+    timeout
+  );
+});
+
+describe("PublishTargetV1 when the platform refuses the server's app", () => {
+  const unpaid = {
+    _tag: "fail",
+    failure: new PlatformUnavailable({ code: "creditsDepleted" }),
+  } as const;
+
+  const halfHour = Duration.minutes(30);
+
+  it.effect(
+    "keeps the post waiting past an outage's retries, and sends it once the app is paid for",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* waitsForTheOperator() {
+          // Refused for three and a half hours, where an outage gives up
+          // after two hours and 21 minutes; then a real outage, which
+          // still has its first, one-minute retry.
+          const { channel, post } = yield* scriptedPost([
+            ...Array.from({ length: 7 }, () => unpaid),
+            { _tag: "fail", failure: new PlatformUnavailable() },
+          ]);
+
+          const target = yield* onlyTarget(post.id);
+
+          yield* setTime(scheduledAt);
+
+          for (let call = 1; call <= 7; call += 1) {
+            yield* eventually(`call ${call}`, callCount(channel, call));
+            yield* eventually(
+              `the job waits after call ${call}`,
+              isTargetWaiting(target.id)
+            );
+            yield* TestClock.adjust(halfHour);
+          }
+
+          yield* eventually("the outage", callCount(channel, 8));
+          yield* eventually("the job waits", isTargetWaiting(target.id));
+          yield* TestClock.adjust(Duration.minutes(1));
+          yield* eventually("the post finishes", isFinished(post.id));
+
+          assert.strictEqual(yield* outcomeOf(post.id), "published");
+          assert.deepStrictEqual(
+            (yield* attemptsOf(target.id)).map((attempt) => [
+              attempt.outcome,
+              attempt.decision,
+              attempt.retry_delay_millis,
+            ]),
+            [
+              ...Array.from({ length: 7 }, () => [
+                "PlatformUnavailable",
+                "retry",
+                1_800_000,
+              ]),
+              ["PlatformUnavailable", "retry", 60_000],
+              ["published", "settle", null],
+            ]
+          );
+
+          // The operator hears of each refused attempt, never of the outage.
+          assert.deepStrictEqual(
+            yield* AppRefusals.use(({ told }) => told),
+            Array.from({ length: 7 }, () => "creditsDepleted")
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "fails the post as the app's billing a day after its scheduled time",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* givesUpAfterADay() {
+          const { channel, post } = yield* scriptedPost(
+            Array.from({ length: 60 }, () => unpaid)
+          );
+
+          const target = yield* onlyTarget(post.id);
+
+          yield* setTime(scheduledAt);
+
+          const waitingOrDone = Effect.all([
+            isTargetWaiting(target.id),
+            isFinished(post.id),
+          ]).pipe(Effect.map(([waiting, finished]) => waiting || finished));
+
+          // 08:00, 08:30… until no retry would start within the day.
+          for (let call = 1; call <= 60; call += 1) {
+            yield* eventually(`call ${call}`, callCount(channel, call));
+            yield* eventually(`call ${call} is decided`, waitingOrDone);
+
+            if (yield* isFinished(post.id)) {
+              break;
+            }
+
+            yield* TestClock.adjust(halfHour);
+          }
+
+          const calls = yield* callsOn(channel);
+          const last = calls.at(-1);
+          const day = Duration.hours(24);
+
+          assert(last !== undefined);
+
+          const waited = DateTime.distance(
+            DateTime.makeUnsafe(scheduledAt),
+            last.at
+          );
+
+          // The last call was made within the day, and the one after it
+          // would not have been: 48 or 49 calls, half an hour apart.
+          assert.isTrue(Duration.isLessThanOrEqualTo(waited, day));
+          assert.isTrue(
+            Duration.isGreaterThan(Duration.sum(waited, halfHour), day)
+          );
+          assert.isAtLeast(calls.length, 48);
+          assert.strictEqual(yield* outcomeOf(post.id), "failed");
+
+          const failed = yield* onlyTarget(post.id);
+
+          assert(failed.status._tag === "failed");
+          assert.strictEqual(failed.status.reason, "appBillingLimit");
         })
       ),
     timeout

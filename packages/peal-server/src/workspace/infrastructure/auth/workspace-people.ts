@@ -1,4 +1,4 @@
-import { and, asc, count, eq, gt, ne } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, ne } from "drizzle-orm";
 import {
   DateTime,
   Effect,
@@ -14,7 +14,7 @@ import { WorkspaceEntitlements } from "#billing/application/workspace-entitlemen
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { roomForOneMore } from "#shared/domain/allowance.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { defaultLocale, LocaleSchema } from "#shared/domain/locale.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { AlreadyMember } from "#workspace/application/already-member.ts";
@@ -328,11 +328,75 @@ export const WorkspacePeopleLive = Layer.effect(
       return revoked.length > 0;
     });
 
+    const removeMembers = Effect.fn("WorkspacePeople.removeMembers")(
+      function* removeMembers(
+        workspaceId: WorkspaceId,
+        userIds: readonly UserId[]
+      ) {
+        if (userIds.length === 0) {
+          return 0;
+        }
+
+        const removed = yield* db
+          .delete(member)
+          .where(
+            and(
+              eq(member.organizationId, workspaceId),
+              inArray(member.userId, [...userIds])
+            )
+          )
+          .returning({ id: member.id })
+          .pipe(unavailable);
+
+        return removed.length;
+      }
+    );
+
+    const revokeAll = Effect.fn("WorkspacePeople.revokeAll")(
+      function* revokeAll(workspaceId: WorkspaceId) {
+        const revoked = yield* db
+          .update(invitation)
+          .set({ status: "canceled" })
+          .where(
+            and(
+              eq(invitation.organizationId, workspaceId),
+              eq(invitation.status, "pending")
+            )
+          )
+          .returning({ id: invitation.id })
+          .pipe(unavailable);
+
+        return revoked.length;
+      }
+    );
+
+    // Under the lock invitations and Better Auth's counted routes take
+    // their turn on (`turns.ts`, the same key), for the transaction.
+    const reseating = <A, E, R>(
+      workspaceId: WorkspaceId,
+      change: Effect.Effect<A, E, R>
+    ): Effect.Effect<A, DirectoryUnavailable | E, R> =>
+      client
+        .withTransaction(
+          client`SELECT pg_advisory_xact_lock(hashtext('peal-server/workspace/invitations'), hashtext(${workspaceId}))`.pipe(
+            unavailable,
+            Effect.andThen(change)
+          )
+        )
+        .pipe(
+          Effect.catchIf(SqlError.isSqlError, (cause) =>
+            Effect.fail(new DirectoryUnavailable({ cause }))
+          )
+        );
+
     return WorkspacePeople.of({
       invite,
       members,
       pendingInvitations,
+      removeMembers,
+      reseating,
       revoke,
+      revokeAll,
     });
   })
 );

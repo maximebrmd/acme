@@ -11,11 +11,13 @@ import {
 } from "peal-ui/components/card";
 import type { ReactNode } from "react";
 
+import { accountClosure } from "#auth/closure.ts";
 import { currentUser } from "#auth/session.ts";
 import { ConnectedAppsList } from "#components/account/connected-apps-list.tsx";
 import { DeleteAccount } from "#components/account/delete-account.tsx";
 import { ExportData } from "#components/account/export-data.tsx";
 import { LanguageForm } from "#components/account/language-form.tsx";
+import { LegalHoldNotice } from "#components/account/legal-hold-notice.tsx";
 import { PasswordForm } from "#components/account/password-form.tsx";
 import { ProfileForm } from "#components/account/profile-form.tsx";
 import { SessionsList } from "#components/account/sessions-list.tsx";
@@ -59,6 +61,8 @@ const AccountPage = async ({ params }: PageProps<"/[locale]/app/account">) => {
 
   const { user } = me.value;
   const t = await getTranslations("AccountSettings");
+  // What this server keeps of a closed account for the law, if anything.
+  const { legalHold } = await accountClosure();
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
@@ -95,11 +99,18 @@ const AccountPage = async ({ params }: PageProps<"/[locale]/app/account">) => {
       <Section title={t("apps.title")} description={t("apps.description")}>
         <ConnectedAppsList />
       </Section>
-      <Section title={t("export.title")} description={t("export.description")}>
+      <Section
+        title={t("export.title")}
+        description={
+          legalHold === null
+            ? t("export.description")
+            : `${t("export.description")} ${t("legalHold.exported")}`
+        }
+      >
         <ExportData />
       </Section>
       <Section title={t("delete.title")} description={t("delete.description")}>
-        <DeleteAccount />
+        <DeleteAccount legalHold={<LegalHoldNotice legalHold={legalHold} />} />
       </Section>
     </div>
   );

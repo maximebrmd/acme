@@ -20,7 +20,7 @@ import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import { roomForOneMore } from "#shared/domain/allowance.ts";
+import { roomFor, roomForOneMore } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -32,6 +32,7 @@ import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import { AuthorizationDenied } from "./authorization-denied.ts";
 import { AuthorizationFailed } from "./authorization-failed.ts";
 import { ChannelAllowance } from "./channel-allowance.ts";
+import { ChannelEvents } from "./channel-events.ts";
 import { ChannelLocks } from "./channel-locks.ts";
 import { ChannelNotFound } from "./channel-not-found.ts";
 import { ChannelRepository } from "./channel-repository.ts";
@@ -252,6 +253,7 @@ export class ConnectChannel extends Context.Service<
       const channels = yield* ChannelRepository;
       const cipher = yield* TokenCipher;
       const locks = yield* ChannelLocks;
+      const events = yield* ChannelEvents;
       const allowance = yield* ChannelAllowance;
       const ids = yield* Ids;
       const tokenServices = Effect.provideService(TokenCipher, cipher);
@@ -356,9 +358,8 @@ export class ConnectChannel extends Context.Service<
             return;
           }
 
-          // The last one added must still be one more the plan has room for.
           yield* Effect.fromResult(
-            roomForOneMore("channels", allowed, connected.length + added - 1)
+            roomFor("channels", allowed, connected.length, added)
           );
         }
       );
@@ -492,7 +493,18 @@ export class ConnectChannel extends Context.Service<
                 channel.id
               ).pipe(tokenServices);
 
-              yield* channels.update(channel, Option.some(credentials));
+              // In one transaction, the workspace's additions': the tokens
+              // are saved with what tells of it, or neither.
+              yield* channels.addingTo(
+                actor.workspaceId,
+                channels
+                  .update(channel, Option.some(credentials))
+                  .pipe(
+                    Effect.flatMap((saved) =>
+                      saved ? events.connected(channel, true) : Effect.void
+                    )
+                  )
+              );
 
               return channel;
             })
@@ -533,7 +545,8 @@ export class ConnectChannel extends Context.Service<
           yield* channels.addingTo(
             actor.workspaceId,
             roomForChannel(actor.workspaceId).pipe(
-              Effect.andThen(channels.insert(channel, credentials))
+              Effect.andThen(channels.insert(channel, credentials)),
+              Effect.andThen(events.connected(channel, false))
             )
           );
 

@@ -16,14 +16,28 @@ export interface ChannelRecord {
   readonly status: string;
 }
 
+/**
+ * How a post was created or scheduled: in the web app (`web`), with an API
+ * key (`apiKey`) or through an OAuth application (`application`), with the
+ * key's or the application's name then, never who.
+ */
+export interface PostOriginRecord {
+  readonly name: string | null;
+  readonly via: string;
+}
+
 /** A post of a workspace, with where it went. */
 export interface PostRecord {
+  /** How it was created; null on a post from before this was kept. */
+  readonly createdVia: PostOriginRecord | null;
   readonly id: string;
   readonly media: readonly {
     readonly altText: string | null;
     readonly mediaId: string;
   }[];
   readonly scheduledAt: DateTime.Utc | null;
+  /** How it was last scheduled; null on a draft, or when not kept. */
+  readonly scheduledVia: PostOriginRecord | null;
   readonly status: string;
   readonly targets: readonly {
     readonly channelId: string;
@@ -67,6 +81,19 @@ export interface MediaRecord {
   readonly id: string;
   readonly status: string;
   readonly width: number | null;
+}
+
+/**
+ * A webhook endpoint of a workspace: where it is told what happens in it,
+ * without the secret that signs what it is sent.
+ */
+export interface WebhookRecord {
+  readonly createdAt: DateTime.Utc;
+  readonly description: string;
+  readonly enabled: boolean;
+  readonly eventTypes: readonly string[];
+  readonly id: string;
+  readonly url: string;
 }
 
 /** A post's counts on a channel as analytics read them at one moment. */
@@ -126,8 +153,9 @@ export interface BillingRecord {
 }
 
 /**
- * The orders and withdrawals a user made, kept as the proof of each
- * contract; the workspace is null once it is erased. No Stripe id.
+ * The orders and withdrawals a user made, and their requests to cancel a
+ * contract or withdraw from it, kept as the proof of each contract; the
+ * workspace is null once it is erased. No Stripe id.
  */
 export interface ContractsRecord {
   readonly orders: readonly {
@@ -137,6 +165,23 @@ export interface ContractsRecord {
     readonly plan: string;
     readonly trial: boolean;
     readonly usedAt: DateTime.Utc | null;
+    readonly workspaceId: string | null;
+  }[];
+  readonly requests: readonly {
+    readonly channel: string;
+    readonly contract: string | null;
+    readonly desiredAt: DateTime.Utc | null;
+    readonly effectiveAt: DateTime.Utc | null;
+    readonly email: string | null;
+    readonly kind: string;
+    readonly name: string | null;
+    readonly receivedAt: DateTime.Utc;
+    readonly refunded: {
+      readonly amount: number;
+      readonly currency: string;
+    } | null;
+    readonly refusal: string | null;
+    readonly status: string;
     readonly workspaceId: string | null;
   }[];
   readonly withdrawals: readonly {
@@ -208,7 +253,19 @@ export type NoticeEventRecord =
   | {
       readonly _tag: "TrialEnding";
       readonly endsAt: DateTime.Utc;
+      /** What the workspace held beyond the free plan when it was told. */
+      readonly over: readonly {
+        readonly allowed: number;
+        readonly limit: string;
+        readonly used: number;
+      }[];
       readonly plan: string;
+    }
+  | {
+      readonly _tag: "WebhookEndpointDisabled";
+      readonly endpointId: string;
+      readonly host: string;
+      readonly reason: string;
     };
 
 /** An amount in cents of its currency. */
@@ -267,7 +324,6 @@ export interface StaffActionRecord {
  * 2023, n° 459724), a session, a token, or content.
  */
 export interface IdentificationRecord {
-  readonly accountCreatedAt: DateTime.Utc;
   readonly email: string;
   readonly name: string;
   /** Each way it signed in: the provider, and the id it knew the account by. */
@@ -321,4 +377,18 @@ export interface LegalHoldRecord {
     readonly data: readonly string[];
     readonly years: number;
   }[];
+}
+
+/**
+ * What the law has the server keep of an account once it is closed, in
+ * years, for whoever is about to close theirs: who held it
+ * (`identityYears`), how they signed in and paid (`accountYears`), and the
+ * connections that made content, each from when it was made. The first two
+ * are null on a server that stopped keeping them, where only the
+ * connections it already holds stay.
+ */
+export interface LegalRemainsRecord {
+  readonly accountYears: number | null;
+  readonly connectionYears: number;
+  readonly identityYears: number | null;
 }

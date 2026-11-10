@@ -1,6 +1,6 @@
 ---
 title: Workspaces and your account
-description: Rename a workspace, manage its members, invitations and API keys, or delete it; change your name, language and password, see your sessions and connected applications, download your data or delete your account.
+description: Rename a workspace, manage its members, invitations, API keys and webhooks, or delete it; change your name, language and password, see your sessions and connected applications, download your data or delete your account.
 sidebar:
   order: 7
 ---
@@ -9,15 +9,15 @@ A workspace's settings belong to its members, as their roles allow. Your account
 
 ## Workspace settings [#workspace]
 
-Choose **Settings** on a workspace's card. Every member sees **General** and **Members**; members who may invite people see **Invitations**, and those who may handle keys see **API keys**.
+Choose **Settings** on a workspace's card. Every member sees **General** and **Members**; members who may invite people see **Invitations**, those who may handle keys see **API keys**, and those who may manage webhooks see **Webhooks**.
 
-| Role        | In the settings                                                                         |
-| ----------- | --------------------------------------------------------------------------------------- |
-| Owner       | Everything: rename, members, owners included, invitations, API keys, and deleting it    |
-| Admin       | Rename, members other than owners, invitations and API keys; never owners, nor deleting |
-| Editor      | Sees the members                                                                        |
-| Contributor | Sees the members                                                                        |
-| Viewer      | Sees the members                                                                        |
+| Role        | In the settings                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------- |
+| Owner       | Everything: rename, members, owners included, invitations, API keys, webhooks, and deleting it    |
+| Admin       | Rename, members other than owners, invitations, API keys and webhooks; never owners, nor deleting |
+| Editor      | Sees the members                                                                                  |
+| Contributor | Sees the members                                                                                  |
+| Viewer      | Sees the members                                                                                  |
 
 ### Members [#members]
 
@@ -30,6 +30,12 @@ Under **Invitations**, enter an email address and a role, then **Send the invita
 ### API keys [#api-keys]
 
 Under **API keys**, give a new key a name, how long it works (30, 90 or 365 days, or until revoked) and what it may do, out of the permissions your role gives you. The key appears once, right after: copy it then, as Peal keeps only a hash of it. [The API overview](/api-overview#authentication) tells how to send it. **Revoke** stops a key at once. Staff acting as a member cannot see or handle keys.
+
+The list says of each key whether it **can schedule and publish posts**: it can when it holds `post:schedule`, `post:publish` or `post:approve`, and writes drafts at most without them. Give a key those permissions only when what uses it must publish: what it sends is public on the platforms ([Posting from an AI agent](/agents#api)). A post created or scheduled with a key says so on its page, with the key's name.
+
+### Webhooks [#webhooks]
+
+Under **Webhooks**, owners and admins add the addresses Peal calls when something happens in the workspace, 10 at most: each has the events it wants, a description, and a signing secret that appears once, right after it is created or rotated. Each endpoint keeps a log of its deliveries for 30 days, from which a delivery can be sent again, and takes a test event. [Webhooks](/webhooks) lists the events, and tells how to verify a delivery. Staff acting as a member cannot change webhooks.
 
 ### Delete a workspace [#delete-workspace]
 
@@ -75,7 +81,7 @@ Each time a copy is downloaded, from the web app or the [command line](/cli#acco
 
 ### Delete your account [#delete-account]
 
-**Delete my account…** asks for your password, then deletes the account for good. The workspaces where you are the only member go with everything in them, as [deleting a workspace](#delete-workspace) does; you leave the others, where the posts you wrote stay, without your name, as do the channels you connected, which belong to the workspace. Connections you had started and not finished, your sessions, notifications, preferences, invitations and connected applications go too, and a confirmation goes to your address, in your language. Only what French law has a host keep is left, apart from everything else and read only to answer a judicial authority's written request: your name and email address for 5 years, how you signed in (each sign-in method's identifier, never your password) and your Stripe customer for 1 year, and each connection that created content for 1 year after it was made; a daily job then deletes them ([Self-hosting](/self-hosting#legal-retention) says how a server outside France turns this off). As when signing in, after three passwords tried within 10 seconds, wait a few seconds before trying another.
+**Delete my account…** asks for your password, then deletes the account for good. The workspaces where you are the only member go with everything in them, as [deleting a workspace](#delete-workspace) does; you leave the others, where the posts you wrote stay, without your name, as do the channels you connected, which belong to the workspace. Connections you had started and not finished, your sessions, notifications, preferences, invitations and connected applications go too, and a confirmation goes to your address, in your language. On Peal Cloud, and on any server whose operator French law obliges, only what that law has a host keep is left, apart from everything else and read only to answer a judicial authority's written request: your name and email address for {{keep-legal-identity-en}}, how you signed in (each sign-in method's identifier, never your password) and your Stripe customer for {{keep-legal-account-en}}, and each connection that created content for {{keep-legal-connections-en}} after it was made; a daily job then deletes them. The dialog and the confirmation say so when the server keeps them; on any other server, nothing is left ([Self-hosting](/self-hosting#legal-retention) says which operators must keep them). As when signing in, after three passwords tried within 10 seconds, wait a few seconds before trying another.
 
 While you are the only owner of a workspace that other members use, the account cannot be deleted: Peal lists those workspaces. Make another member an owner of each, or delete them, first. When a workspace it would delete has a subscription Stripe may still bill, the dialog says what that ends and waits until you tick **Cancel the subscription now**, as [deleting a workspace](#delete-workspace) does: those subscriptions are cancelled at once, without a refund of the period paid for, and the confirmation email says so.
 

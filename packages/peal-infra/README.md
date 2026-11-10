@@ -1,10 +1,12 @@
 # Infrastructure
 
 Ansible for the servers Peal runs on, production and the sandbox, each a
-Hetzner Cloud server reachable only through a Cloudflare Tunnel, and for the
-uptime server that watches them from outside. Nothing here has been applied
-yet: the inventory names the hosts on `peal.social` but holds placeholders for
-the rest (`203.0.113.0/24`, `example-team`, `REPLACE…`), and every playbook
+server at a European provider reachable only through a Cloudflare Tunnel,
+and for the uptime server that watches them from outside, at another
+provider and in another city. Nothing here has been applied yet, and no
+provider is chosen: the inventory names the hosts on `peal.social` but holds
+placeholders for the rest (`203.0.113.0/24`, `example-team`, `REPLACE…`,
+each server's `hosting_provider` and `hosting_location`), and every playbook
 refuses to run until they are replaced.
 
 Self-hosters do not need this folder: Caddy and Compose are enough (the docs'
@@ -12,16 +14,16 @@ self-hosting page, and [`peal-docker`](../peal-docker)).
 
 ## How it fits together
 
-| Piece     | What it is                                                                                                                         |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Server    | Ubuntu LTS on Hetzner Cloud, security updates daily, the `ops` account with an SSH key                                             |
-| Edge      | `cloudflared` on the host dials out to Cloudflare; no inbound port is open, SSH included                                           |
-| Access    | Cloudflare Zero Trust Access guards Grafana, SSH, the admin and the whole sandbox                                                  |
-| Stack     | [`compose.production.yaml`](../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1         |
-| Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                                     |
-| Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                                     |
-| Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                                     |
-| Uptime    | Gatus on a server of its own checks the public endpoints, hears Grafana's heartbeat and serves the status page ([Uptime](#uptime)) |
+| Piece     | What it is                                                                                                                                  |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Server    | Ubuntu LTS at a European provider ([which one](#choosing-a-provider-and-a-size)), security updates daily, the `ops` account with an SSH key |
+| Edge      | `cloudflared` on the host dials out to Cloudflare; no inbound port is open, SSH included                                                    |
+| Access    | Cloudflare Zero Trust Access guards Grafana, SSH, the admin and the whole sandbox                                                           |
+| Stack     | [`compose.production.yaml`](../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1                  |
+| Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                                              |
+| Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                                              |
+| Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                                              |
+| Uptime    | Gatus on a server of its own checks the public endpoints, hears Grafana's heartbeat and serves the status page ([Uptime](#uptime))          |
 
 The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`):
 
@@ -38,9 +40,12 @@ The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`
 The sandbox has the same routes on its own names (`sandbox.peal.social`,
 `sandbox-grafana.peal.social`…), all behind Access but for what outside
 services call: `/api/channels/oauth/*`, which Bluesky's servers fetch, and
-Stripe's webhook (`/api/auth/stripe/webhook`) and Meta's data deletion
-requests (`/api/data-deletion/facebook` and `/threads`), which the server
-checks the signature of. Cloudflare's free certificate covers the zone and
+Stripe's webhook (`/api/auth/stripe/webhook`) and Meta's data deletion and
+deauthorize requests (`/api/data-deletion/<app>` and
+`/api/data-deletion/<app>/deauthorize`, for its three apps), which the
+server checks the signature of. A test keeps those paths equal to the
+addresses the server lists as called by the platforms' servers
+([The platforms' apps](#the-platforms-apps)). Cloudflare's free certificate covers the zone and
 its first-level subdomains only, so no name goes deeper than that.
 
 A rule with Access needs an Access application at Cloudflare's edge, and
@@ -61,24 +66,24 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 
 ### Roles
 
-| Role             | What it does                                                                                         |
-| ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `peal_preflight` | Stops every playbook while the inventory holds placeholders                                          |
-| `system`         | Host name, UTC, updates, unattended upgrades with reboots at 03:30 UTC, swap, journal size           |
-| `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone, without port forwarding       |
-| `docker`         | Docker Engine and Compose from Docker's repository, at exact versions, with rotated logs             |
-| `cloudflared`    | cloudflared from its GitHub release (checked by digest), the tunnel's routes and its systemd service |
-| `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                        |
-| `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`      |
-| `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days            |
-| `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                        |
-| `uptime`         | Gatus and Caddy on the uptime server, their configuration from the inventory (`uptime.yml`)          |
+| Role             | What it does                                                                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `peal_preflight` | Stops every playbook while the inventory holds placeholders                                                                                            |
+| `system`         | Host name (kept across boots where cloud-init manages the hosts file), UTC, updates, unattended upgrades with reboots at 03:30 UTC, swap, journal size |
+| `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone, without port forwarding; the image's own account removed                        |
+| `docker`         | Docker Engine and Compose from Docker's repository, at exact versions, with rotated logs                                                               |
+| `cloudflared`    | cloudflared from its GitHub release (checked by digest), the tunnel's routes and its systemd service                                                   |
+| `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                                                                          |
+| `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`                                                        |
+| `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days                                                              |
+| `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                                                                          |
+| `uptime`         | Gatus and Caddy on the uptime server, their configuration from the inventory (`uptime.yml`)                                                            |
 
 ### Playbooks
 
 | Playbook        | When                                                                            |
 | --------------- | ------------------------------------------------------------------------------- |
-| `bootstrap.yml` | Once on a new server, as root: it creates `ops`                                 |
+| `bootstrap.yml` | Once on a new server, as the account its image lets in: it creates `ops`        |
 | `site.yml`      | Any time; it converges the server to this folder                                |
 | `release.yml`   | To deploy `main`, or another branch, tag or commit with `-e peal_version=<ref>` |
 | `uptime.yml`    | Any time, on the uptime server alone; it converges it to this folder            |
@@ -116,6 +121,112 @@ Host ssh.peal.social sandbox-ssh.peal.social
   User ops
   ProxyCommand cloudflared access ssh --hostname %h
 ```
+
+## Choosing a provider and a size
+
+No provider is chosen, and nothing in this folder depends on one: the roles
+use no provider's API, module or collection, and the servers are created by
+hand in a console. What a choice changes is the inventory: each server's
+address in `hosts.yml`, and its `hosting_provider` and `hosting_location`
+(the city) in its group's `main.yml`, placeholders until then. Production
+and the sandbox may share a provider; the uptime server shares neither a
+provider nor a city with them ([Uptime](#uptime)).
+
+### What the stack needs of a provider
+
+| Need                         | Why                                                                                                                                                                                                                                                                        |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A European company           | Production holds customers' data: the provider is a processor, with a data processing agreement, and its data centres are in the EU                                                                                                                                        |
+| An Ubuntu LTS image          | The roles are written for it: apt, unattended upgrades, ufw, sshd's drop-in folder, and Docker's packages, pinned for the release the server runs (`docker_packages`: 24.04 or 26.04)                                                                                      |
+| x86-64 or Arm64              | Either: `release.yml` builds the images for each server's own architecture, and cloudflared's package is pinned for both ([Architecture](#architecture))                                                                                                                   |
+| A public IPv4 address        | The servers dial out over it: GitHub, which cloudflared's package comes from, has no IPv6 address. The uptime server is reached on it                                                                                                                                      |
+| An IPv6 address              | For the uptime server, whose name has an AAAA record beside its A record. Production and the sandbox need none                                                                                                                                                             |
+| A firewall in front          | Beside ufw on the server: no inbound rule for production and the sandbox, but port 22 from your address while one is bootstrapped; for the uptime server, port 443 from anywhere and port 22 from the addresses you work from                                              |
+| Snapshots                    | Before a change that is hard to undo, such as a Docker Engine or Ubuntu upgrade. A snapshot holds the server's secrets: keep it at the provider, and delete it after. It replaces no backup ([Backups](#backups))                                                          |
+| A rescue system or a console | The way in when the tunnel stops carrying SSH, with port 22 closed. Neither root nor `ops` has a password, so a console that only offers a login prompt lets nobody in: it takes a rescue system that mounts the server's disk ([Without the tunnel](#without-the-tunnel)) |
+| A disk that grows            | Postgres's and the telemetry's volumes are on the root disk, under `/var/lib/docker`; media are in the bucket                                                                                                                                                              |
+
+Nothing else: no load balancer, as the tunnel is the one entry; no private
+network while one server runs the stack; no managed database, as Postgres
+runs in the stack with its own backups. Outgoing connections are all the
+servers open, to the tunnel, the platforms, the bucket, the mail service
+and the package repositories.
+
+### Architecture
+
+`release.yml` builds each image on the machine running Ansible for the
+server it goes to, from the server's facts: `linux/amd64` on an x86-64
+server, `linux/arm64` on an Arm one. Built on a machine of the same
+architecture, as an Apple silicon Mac for an Arm server, the build is
+native. For the other architecture, Buildx emulates it, more slowly: Docker
+Desktop and OrbStack ship the emulation, and on Linux
+`docker run --privileged --rm tonistiigi/binfmt --install arm64` (or
+`amd64`) installs it. `-e peal_image_platform=linux/arm64`, or the same in
+the inventory, builds for a platform whatever the server's facts say. Each
+platform has its own archive under `.ansible/release`, so one built for the
+other is never uploaded.
+
+Choose the architecture for good. PostgreSQL restores a backup on the
+hardware architecture it was taken on and no other
+([its documentation](https://www.postgresql.org/docs/18/warm-standby.html#STANDBY-PLANNING)),
+so [the runbook](runbooks/restore-database.md#a-new-server) carries a
+database to a new server of the same architecture only. Moving to the other
+one takes a dump of the database (`pg_dump`) loaded into a new server, with
+the stack stopped meanwhile, which nothing here does yet.
+
+### Size
+
+These sizes come from a model of the load the code puts on a server, not
+from measurements: each account, idle ones included, counted as four
+channels and thirty posts a month to two or three of them, read by the
+hourly analytics for thirty days. The model gives a database of about 15 GB
+after a year for 1,000 users, 45 GB for 3,000 and 150 GB for 10,000, and a
+few requests a second at most: memory and the disk fill long before the
+processors do. Check a provider's current plans against the shapes, and
+measure before moving up.
+
+| Users        | Production                                          | Postgres                                                                                                                            |
+| ------------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| About 1,000  | One server: 4 vCPUs, 16 GB of memory, a 100 GB disk | On it, with the rest of the stack                                                                                                   |
+| About 3,000  | One server: 8 vCPUs, 32 GB of memory, a 200 GB disk | On it                                                                                                                               |
+| About 10,000 | The app's server: 8 vCPUs, 32 GB, a 100 GB disk     | A machine of its own: 6 dedicated cores or more, 32 GB, two local NVMe disks mirrored, and a standby like it in another data centre |
+
+The sandbox is a small copy at any size, 2 vCPUs, 8 GB and a 50 GB disk,
+and the uptime server needs 1 vCPU, 1 GB and 10 GB. Shared vCPUs do for the
+first two sizes. Going from the first to the second is a resize in the
+provider's console, a few minutes down, with nothing to change here but
+`swap_size_mb` if you want more.
+
+Move up when one of these holds for days:
+
+- the hourly analytics run takes more than 30 minutes;
+- Postgres reads from disk more than 1 time in 100, or the database is
+  larger than half the memory;
+- memory stays above 80%, or swap is used every day;
+- the disk is 70% full (Grafana alerts at 85%);
+- the processors lose more than 10% of their time to other tenants
+  (steal): take dedicated vCPUs.
+
+One process runs every job, so the app grows by taking a bigger server, not
+a second one.
+
+**The third size is not built yet.** Everything here runs one server per
+environment: `compose.production.yaml` starts Postgres beside the server,
+the inventory has one host for each environment, `release.yml` stops and
+starts both on that host, and `peal_backup` runs where Postgres does.
+Putting Postgres on its own machine takes, before any is ordered:
+
+- the stack's Compose file split, so a database host runs Postgres alone,
+  and the app's `DATABASE_URL` naming it;
+- a `database` group in the inventory, a private network between the two
+  hosts, and a firewall rule that opens Postgres's port to it alone;
+- `release.yml` stopping the old server on one host before Postgres
+  restarts on the other;
+- a standby that follows the primary, built from the backups, and a runbook
+  to promote it.
+
+Until then, a larger single server, with more memory than the second size,
+is the way past 3,000 users.
 
 ## Run the playbooks
 
@@ -194,7 +305,9 @@ the owner's approval.
    cloudflared tunnel token peal-production              # the token for the vault
    ```
 
-4. **R2**: a media bucket and a backup bucket per environment, created in
+4. **Object storage in the EU** ([Object storage](#object-storage) says what
+   any S3 store needs). On Cloudflare R2, which the inventory's placeholders
+   name: a media bucket and a backup bucket per environment, created in
    R2's EU jurisdiction (their endpoint is
    `<account>.eu.r2.cloudflarestorage.com`), which cannot be changed once a
    bucket exists: a bucket made without it is deleted while empty and made
@@ -208,7 +321,18 @@ the owner's approval.
    wrangler r2 bucket create peal-production-media --jurisdiction eu
    wrangler r2 bucket info peal-production-media --jurisdiction eu   # check its jurisdiction
    wrangler r2 bucket lifecycle add peal-production-media abort-incomplete-uploads --abort-multipart-days 1 --jurisdiction eu
+   wrangler r2 bucket lifecycle add peal-production-media expire-erasures erasures/ --expire-days 42 --jurisdiction eu
    ```
+
+   The second rule is for the erasure ledger, which the server keeps under
+   `erasures/` in the media bucket (the id and time of each deleted account
+   and workspace, for [restores](#backups)): entries go after 42 days, a
+   little longer than backups hold deleted data. The server drops them
+   itself each day; the rule is a second guard. Its prefix must be exactly
+   `erasures/`: a rule on another prefix, or on none, would delete media.
+   Check it with `wrangler r2 bucket lifecycle list`. Before the media
+   bucket ever gets a public domain, give the ledger a private bucket of
+   its own (`peal_erasure_ledger_bucket`, with a token that reaches both).
 
    Put the upload CORS rule on the media bucket with
    `bun nx run peal-server:media-cors`, from your machine, with a token that
@@ -216,12 +340,116 @@ the owner's approval.
    dashboard (R2 › the bucket › Settings › CORS policy), which needs no such
    token.
 
-5. **Telegram**: a bot from @BotFather per environment, each writing to a
-   private channel, and that chat's id. Read the id from Telegram Web's
-   address bar rather than calling `getUpdates`, which puts the bot's token
-   in a URL. The uptime server has a bot of its own.
+5. **Telegram** ([Telegram](#telegram)): three bots from @BotFather, one for
+   each server that alerts, and two private channels.
 6. **Email**: a Resend key for the verified sending domain `mail.peal.social`,
    which sends as `notifications@mail.peal.social` (`peal_mail_from`).
+7. **The platforms' apps**, a set of its own for each environment
+   ([The platforms' apps](#the-platforms-apps)).
+
+### The platforms' apps
+
+Each environment has its own apps on the platforms (LinkedIn, X, Meta's
+three use cases, TikTok, a Google OAuth client for YouTube), each given
+that environment's addresses: where the platform sends people back and,
+for Meta, where its servers call. Print them, and copy them from what is
+printed, never by hand:
+
+```sh
+# From the repository root, before a server exists:
+PUBLIC_URL=https://app.peal.social bun nx run peal-server:platform-addresses
+# On a server that runs, for its own PUBLIC_URL:
+ssh ops@ssh.peal.social sudo peal-compose exec server bun packages/peal-server/scripts/platform-addresses.ts
+```
+
+The command builds the list from the paths the server's sign-ins send and
+its routes answer, and the server's tests fail when a platform gains one
+that the list lacks, so it is the one place to read them from. It reads
+`PUBLIC_URL` and nothing else. Each app's id goes in `peal_settings`, and
+its secret in the vault (`inventory/vault.example.yml` names them); the
+docs' self-hosting page says what each platform asks of an app besides.
+
+The addresses it marks as called by the platform's servers must answer
+without Access. Production is public. On the sandbox, they are
+`peal_access_bypass_paths` (`group_vars/all/main.yml`), each with its
+Bypass application at Cloudflare's edge (step 2 above):
+`tests/test_cloudflared.py` runs the command for the sandbox's name and
+fails when cloudflared would stop one of them.
+
+### Object storage
+
+Media and the database's backups go to two buckets of any store that
+speaks the S3 API, in the EU, each with a key that reads and writes its
+bucket alone:
+
+| What                   | Inventory                                                                                              | Reaches the stack as                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| The media bucket       | `peal_media_endpoint`, an `https://` URL; `peal_media_bucket`                                          | `PEAL_S3_ENDPOINT`, `PEAL_S3_BUCKET`                                                  |
+| Its key                | the vault: `PEAL_S3_ACCESS_KEY_ID`, `PEAL_S3_SECRET_ACCESS_KEY`                                        | the same                                                                              |
+| The backup repository  | `peal_backup_endpoint`, a host without a scheme; `peal_backup_bucket`; `peal_backup_path`              | `PGBACKREST_REPO1_S3_ENDPOINT`, `PGBACKREST_REPO1_S3_BUCKET`, `PGBACKREST_REPO1_PATH` |
+| Its key and passphrase | the vault: `PGBACKREST_REPO1_S3_KEY`, `PGBACKREST_REPO1_S3_KEY_SECRET`, `PGBACKREST_REPO1_CIPHER_PASS` | the same                                                                              |
+
+A store that asks for more takes it in `peal_settings`: the region
+requests are signed for, `PEAL_S3_REGION` and `PGBACKREST_REPO1_S3_REGION`
+(both `auto` unless set, which suits R2; elsewhere the store's region,
+such as `eu-west-1`), and where the bucket's name goes,
+`PEAL_S3_FORCE_PATH_STYLE: true` for the path rather than the host name,
+and `PGBACKREST_REPO1_S3_URI_STYLE` (`path` unless set, or `host`). Browsers
+upload straight to the media bucket, so it needs the upload CORS rule
+(`bun nx run peal-server:media-cors`), and a rule that aborts unfinished
+multipart uploads after a day where the store has one. Never put an expiry
+rule on the backup bucket.
+
+On Cloudflare R2, a bucket's jurisdiction is chosen when it is created and
+cannot change: an EU bucket is reached at
+`<account>.eu.r2.cloudflarestorage.com` alone, and the account's plain
+endpoint does not find it. `site.yml` refuses an R2 endpoint without `.eu.`,
+a media endpoint that is not an `https://` URL, and a backup endpoint with a
+scheme. Nothing in another store's endpoint says where its buckets are: once
+you have checked they are in the EU, list its host in
+`peal_storage_eu_hosts`, or `site.yml` refuses it too. The account's id is part of the endpoint and no secret; it goes in
+each environment's `main.yml`, in place of the placeholder.
+
+### Telegram
+
+Alerts go to Telegram from three senders, each with a bot of its own, so a
+token that leaks or is revoked silences one server, and the uptime server
+holds no secret of the servers it watches:
+
+| Sender                | Writes to                    | Its token and chat id go in                                                                  |
+| --------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
+| Production's Grafana  | A channel for alerts         | `group_vars/production/vault.yml`: `peal_credentials.TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
+| The sandbox's Grafana | A channel for the sandbox's  | `group_vars/sandbox/vault.yml`: the same two names                                           |
+| The uptime server     | The channel production's use | `group_vars/uptime/vault.yml`: `uptime_credentials.TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`   |
+
+Two bots are the least: one for both Grafanas and one for the uptime
+server. The sandbox then holds the token production's alerts depend on, so
+prefer three. `site.yml` requires both names on production and on the
+sandbox, and `uptime.yml` on the uptime server.
+
+1. Create two private channels, where only admins post. A channel's id does
+   not change; a group's does when Telegram upgrades it.
+2. For each bot, send `/newbot` to @BotFather (check its verified mark),
+   then a name, then a username that ends in `bot`. Its answer holds the
+   token: copy it straight into the vault, with
+   `EDITOR=nano uv run ansible-vault edit inventory/group_vars/<group>/vault.yml`,
+   and delete BotFather's message. `/token` issues a new one, which ends the
+   old one.
+3. `/setjoingroups`, **Disable**, for each bot, so nobody adds it elsewhere.
+4. Make each bot an administrator of its channel, with the right to post
+   messages and no other.
+5. Read each channel's id in Telegram Web's address bar
+   (`web.telegram.org/a/`, the number after `#`, `-100…` with its minus
+   sign), rather than by calling `getUpdates`, which puts the bot's token in
+   a URL, or through a third party's bot. Quote it in the vault:
+   `TELEGRAM_CHAT_ID: "-100…"`.
+6. After the first release, send a test from Grafana (Alerting › Contact
+   points › Telegram › Test) on production and on the sandbox. Gatus has no
+   test button: the uptime server's first alert, when a check fails, is its
+   test.
+
+Alerts carry rule names and labels, never log lines: Telegram is outside
+the EU, so keep personal data out of any rule you add.
 
 ### Credentials
 
@@ -247,12 +475,14 @@ password manager: the backups cannot be read without it.
 
 ### A new server
 
-1. Create it in the Hetzner console, with your SSH key for root, a Hetzner
-   firewall with no inbound rule, and its address in `inventory/hosts.yml`.
-2. `uv run ansible-playbook playbooks/bootstrap.yml --limit production -e ansible_user=root -e ssh_via_tunnel=false`
+1. Create it in the provider's console, from its Ubuntu LTS image, with
+   your SSH key, the provider's firewall with no inbound rule, and its
+   address in `inventory/hosts.yml`. See which account the image lets your
+   key into ([The image's account](#the-images-account)).
+2. `uv run ansible-playbook playbooks/bootstrap.yml --limit production -e ssh_via_tunnel=false`
 3. `uv run ansible-playbook playbooks/site.yml --limit production -e ssh_via_tunnel=false`:
-   port 22 stays open while the tunnel comes up. With a Hetzner firewall in
-   front, open 22 there for your address for these two runs.
+   port 22 stays open while the tunnel comes up. With the provider's
+   firewall in front, open 22 there for your address for these two runs.
 4. Check SSH through the tunnel: `ssh ops@ssh.peal.social true`.
 5. `uv run ansible-playbook playbooks/site.yml --limit production`: Ansible
    now connects through the tunnel, and port 22 closes.
@@ -265,7 +495,55 @@ password manager: the backups cannot be read without it.
    `""` in `group_vars/production/main.yml`: while it names the uptime
    server, `site.yml` requires the credential `PEAL_HEARTBEAT_TOKEN`.
 
-If the tunnel ever stops carrying SSH, use the Hetzner console.
+### The image's account
+
+`bootstrap.yml` logs in once, with your key, as the account the server's
+image lets in, `bootstrap_user`, and creates `ops`, which every other
+playbook logs in as. Images come in two kinds:
+
+| The image lets your key into                                | Set                            | Then                                                                                                                                         |
+| ----------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| root                                                        | nothing: `root` is the default | `site.yml`, or `uptime.yml`, turns root's logins over SSH off                                                                                |
+| an account of its own with sudo, such as `ubuntu`, not root | `bootstrap_user: ubuntu`       | The bootstrap uses sudo, which that account has without a password. `site.yml`, or `uptime.yml`, removes it, with its home and its sudo rule |
+
+Set `bootstrap_user` in the group's `main.yml`, so every later run knows
+which account to remove, rather than with `-e`. The provider's page for
+the image names the account it lets your key into.
+
+The image's own account holds your key and sudo without a password, so it
+goes once `ops` works: the `ssh` role, which runs as `ops` with sudo,
+removes it right after it has confirmed `ops`'s keys and sudo rule, then
+lets `ops` alone in over SSH. cloud-init makes that account once per
+instance, not at each boot. A server made again from a snapshot is a new
+instance, where it comes back: run `site.yml`, or `uptime.yml`, after
+restoring one.
+
+Some images also have cloud-init write `/etc/hosts` again at every boot
+(`manage_etc_hosts`), with the name the provider gave the server. The
+`system` role turns that off in a settings file cloud-init reads after the
+image's own, `/etc/cloud/cloud.cfg.d/zz-peal.cfg`, and writes the server's
+line in cloud-init's template for the file too, since a provider that sends
+the setting at boot overrides any file on the server: the hosts file then
+names the server the same either way, and a run after a reboot reports no
+change. On an image without cloud-init, both steps are skipped.
+
+### Without the tunnel
+
+Once the tunnel carries SSH, port 22 is closed, and no account has a
+password: when the tunnel stops for good (its token revoked, cloudflared
+broken), the provider's rescue system is the way back in.
+
+1. Open port 22 to your address alone in the provider's firewall.
+2. Boot the server into the rescue system, mount its disk, and set
+   `ENABLED=no` in its `etc/ufw/ufw.conf`: ufw then stays off when the
+   server starts. Boot the server from its disk again.
+3. `ssh ops@<address>` answers, with your key. Run
+   `site.yml --limit production -e ssh_via_tunnel=false`, which turns ufw
+   back on with port 22 open, rate limited, and writes the tunnel's routes
+   again, and its token when the vault holds a new one.
+4. Once `ssh ops@ssh.peal.social true` works again, run `site.yml` without
+   the setting, which closes port 22, and close it in the provider's
+   firewall.
 
 ## Releases
 
@@ -318,9 +596,10 @@ hand-kept digests; it releases more often (2.60.0 in October 2026); and its
 
 Deleted data leaves the backups once the oldest backup that holds it expires,
 within five weeks. A restore brings back the accounts and workspaces deleted
-after its point in time, and nothing records them outside the database yet:
+after its point in time. The server records each of those deletions outside
+the database, by id, in the media bucket (`erasures/`, kept 42 days), and
 [the runbook](runbooks/restore-database.md#deletions-since-the-restore-point)
-says what to do until it does.
+applies them again before the server starts.
 
 Media live in R2 and are not backed up again; telemetry is not backed up. The
 secrets are on the server only: [restoring onto a new server](runbooks/restore-database.md#a-new-server)
@@ -331,10 +610,16 @@ database, to its latest state or to a time.
 
 ## Uptime
 
-A separate Hetzner server watches production and the sandbox from outside,
-as people reach them, with [Gatus](https://github.com/TwiN/gatus): if
+A separate server watches production and the sandbox from outside, as
+people reach them, with [Gatus](https://github.com/TwiN/gatus): if
 Cloudflare, the tunnel or a server is down, its alerts still go out. It is
 not linked to them: no tunnel, no private network, and no secret of theirs.
+It is at another provider than theirs, and in another city: another
+company's network, console and account, which an outage or a suspension
+takes whole, and another power supply. The `uptime` role refuses to run
+while its `hosting_provider` or `hosting_location` is one production or the
+sandbox has, and [`tests/test_hosting.py`](tests/test_hosting.py) checks
+the inventory.
 `uptime.yml` sets it up with the same roles (`ops`, key-only SSH, ufw,
 unattended upgrades, Docker), then the `uptime` role runs Gatus and Caddy in
 Docker, each pinned by digest, as the Compose project `uptime` in
@@ -369,19 +654,28 @@ successes; of a certificate, a host name or a heartbeat at once.
 The server costs money, so it needs the owner's approval, like any paid
 resource. Then:
 
-1. Create it in the Hetzner console, with your SSH key for root and a
-   Hetzner firewall that lets in port 443 from anywhere and port 22 from the
-   addresses you work from, and put its address in `inventory/hosts.yml`.
+1. Create it in the console of a provider other than production's, in
+   another city, with your SSH key and a firewall that lets in
+   port 443 from anywhere and port 22 from the addresses you work from. Put
+   its address in `inventory/hosts.yml`, and its provider and city in
+   `group_vars/uptime/main.yml`.
    Give it a name, `uptime_hostname`, with A and AAAA records that Cloudflare
    does not proxy, so it answers even when Cloudflare does not, and the
    status page its own, `uptime_status_hostname` ([The status
    page](#the-status-page)).
 2. Make its credentials, which are its own:
-   - a Telegram bot from @BotFather, and the chat it writes to, which may be
-     the one production's alerts go to;
-   - a Cloudflare Access service token (Zero Trust › Access › Service
-     credentials), and a Service Auth policy for it on the sandbox's Access
-     application.
+   - its Telegram bot, and the id of the channel it writes to, which may be
+     the one production's alerts go to ([Telegram](#telegram)):
+     `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`;
+   - a Cloudflare Access service token for the sandbox's checks (Zero Trust ›
+     Access › Service credentials), valid a year: its client id and secret,
+     shown once, are `SANDBOX_ACCESS_CLIENT_ID` and
+     `SANDBOX_ACCESS_CLIENT_SECRET`, named after the environment. Add a
+     policy with the action Service Auth that includes that token alone,
+     not any service token of the account, to the sandbox's Access
+     application, the one that covers its app, site and docs, and to no
+     other. When the token expires, every check of the sandbox fails at
+     once: refresh it before, which keeps its id and secret.
 
    Put them in `inventory/group_vars/uptime/vault.yml`, from
    `inventory/vault.uptime.example.yml` and encrypted like the others, or
@@ -392,7 +686,9 @@ resource. Then:
    ssh -t ops@uptime.peal.social 'sudo install -d -m 750 /srv/uptime && sudo install -m 600 /dev/null /srv/uptime/credentials.env && sudoedit /srv/uptime/credentials.env'
    ```
 
-3. `uv run ansible-playbook playbooks/bootstrap.yml --limit uptime -e ansible_user=root`
+3. `uv run ansible-playbook playbooks/bootstrap.yml --limit uptime`, once
+   `bootstrap_user` names the account its image lets in, if not root
+   ([The image's account](#the-images-account)).
 4. `uv run ansible-playbook playbooks/uptime.yml --check --diff`, then without
    `--check`. Caddy gets a Let's Encrypt certificate for `uptime_hostname`,
    and `uptime_status_hostname`, through the TLS-ALPN challenge, on port 443

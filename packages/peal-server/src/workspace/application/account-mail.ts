@@ -1,6 +1,7 @@
 import { Context } from "effect";
 import type { Effect } from "effect";
 
+import type { LegalRemainsRecord } from "#shared/application/personal-data.ts";
 import type { Locale } from "#shared/domain/locale.ts";
 
 /** Where a copy of the account's data was downloaded. */
@@ -12,10 +13,12 @@ export class AccountMail extends Context.Service<
   {
     /**
      * Confirms, to the address it had, that the account is deleted, with
-     * the subscriptions of the workspaces it deleted that were cancelled.
+     * the subscriptions of the workspaces it deleted that were cancelled,
+     * and what the law has the server keep of it, if anything.
      */
     readonly deleted: (to: {
       readonly email: string;
+      readonly legalHold: LegalRemainsRecord | null;
       readonly locale: Locale;
       readonly subscriptionsCancelled: number;
     }) => Effect.Effect<void>;

@@ -125,10 +125,21 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       refunded,
       withdrawnAt,
     }),
-    TrialEnding: ({ endsAt, plan }): NoticeEventView => ({
+    TrialEnding: ({ endsAt, over, plan }): NoticeEventView => ({
       _tag: "TrialEnding",
       endsAt,
+      over,
       plan,
+    }),
+    WebhookEndpointDisabled: ({
+      endpointId,
+      host,
+      reason,
+    }): NoticeEventView => ({
+      _tag: "WebhookEndpointDisabled",
+      endpointId,
+      host,
+      reason,
     }),
   });
 

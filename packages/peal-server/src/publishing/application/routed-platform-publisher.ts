@@ -45,8 +45,8 @@ const interrupted: PublishResult = {
  * that channel and with the target's options, to the platform's client.
  * Before a post goes out, the workspace's plan must have room for it now,
  * not only when it was scheduled, as a trial or a larger plan may have
- * ended since: a workspace with more channels than its plan allows sends
- * nothing, and of the posts due in a month only the first its plan allows
+ * ended since: a workspace with more channels or members than its plan
+ * allows sends nothing, and of the posts due in a month only the first its plan allows
  * go out, by their time. The others fail as `planLimit`, nothing sent. A
  * run resumed may have gone out already, and is checked no further.
  */
@@ -66,6 +66,16 @@ export const RoutedPlatformPublisher = Layer.effect(
       if (
         Result.isFailure(
           withinAllowance("channels", channels.allowed, channels.connected)
+        )
+      ) {
+        yield* overPlan;
+      }
+
+      const members = yield* allowance.members(post.workspaceId);
+
+      if (
+        Result.isFailure(
+          withinAllowance("members", members.allowed, members.taken)
         )
       ) {
         yield* overPlan;

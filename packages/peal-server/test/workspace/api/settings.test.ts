@@ -1,6 +1,8 @@
 import { assert, layer } from "@effect/vitest";
 import {
   Context,
+  Deferred,
+  Fiber,
   DateTime,
   Effect,
   Layer,
@@ -13,6 +15,8 @@ import { HttpApiTest } from "effect/http-api";
 import { Api } from "peal-contract";
 import type { Member, Principal } from "peal-contract";
 
+import { actorOf } from "#shared/api/actor.ts";
+import { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -34,12 +38,16 @@ import { ConnectedAppStore } from "#workspace/application/connected-app-store.ts
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { ContextRecords } from "#workspace/application/context-records.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
+import { ErasureLedger } from "#workspace/application/erasure-ledger.ts";
 import { PasswordCheck } from "#workspace/application/password-check.ts";
+import { PrivacyDeclaration } from "#workspace/application/privacy-declaration.ts";
 import { TooManyPasswordAttempts } from "#workspace/application/too-many-password-attempts.ts";
 import { WorkspaceBusy } from "#workspace/application/workspace-busy.ts";
 import { WorkspaceSubscribed } from "#workspace/application/workspace-subscribed.ts";
 import type { MembershipStanding } from "#workspace/domain/account-closure.ts";
+import { undeclared } from "#workspace/domain/operator-declaration.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
+import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 // The settings endpoints on their real use cases, over ports kept in memory.
 // Each request acts as a principal, as the Authentication and
@@ -62,6 +70,11 @@ const subscribed = WorkspaceIdSchema.make(
 );
 
 // Stripe does not answer when its checkouts are expired.
+// Subscribed, and a post of it starts going out once Stripe cancelled.
+const cancelledThenBusy = WorkspaceIdSchema.make(
+  "6b1c8e9f-7a5b-4c93-8edf-5a6b7c8d9e0f"
+);
+
 const unreachable = WorkspaceIdSchema.make(
   "7c2d9e1f-0a8b-4fc6-9b32-8d9eafb0c1d2"
 );
@@ -71,6 +84,7 @@ const names: ReadonlyMap<WorkspaceId, string> = new Map([
   [busy, "Busy"],
   [shared, "Shared"],
   [subscribed, "Subscribed"],
+  [cancelledThenBusy, "Late"],
   [unreachable, "Unreachable"],
 ]);
 
@@ -110,6 +124,8 @@ class Fakes extends Context.Service<
     readonly standings: Ref.Ref<
       ReadonlyMap<UserId, readonly MembershipStanding[]>
     >;
+    /** What removing a workspace's files waits for, as a test sets it. */
+    readonly whileRemovingFiles: Ref.Ref<Effect.Effect<void>>;
   }
 >()("test/workspace/api/Fakes") {
   static readonly layer = Layer.effect(
@@ -119,6 +135,7 @@ class Fakes extends Context.Service<
       standings: Ref.make<ReadonlyMap<UserId, readonly MembershipStanding[]>>(
         new Map()
       ),
+      whileRemovingFiles: Ref.make<Effect.Effect<void>>(Effect.void),
     })
   );
 }
@@ -141,7 +158,6 @@ const PortsLive = Layer.mergeAll(
             provide,
             Effect.as(
               Option.some({
-                accountCreatedAt: at,
                 email: "ana@example.test",
                 name: "Ana",
                 signInMethods: [{ accountId: id, provider: "credential" }],
@@ -176,7 +192,7 @@ const PortsLive = Layer.mergeAll(
       return ContextRecords.of({
         eraseUser: (id) => record(`eraseUser:${id}`).pipe(provide),
         eraseWorkspace: (id) => {
-          if (id === busy) {
+          if (id === busy || id === cancelledThenBusy) {
             return Effect.fail(new WorkspaceBusy({ workspaceId: id }));
           }
 
@@ -187,9 +203,11 @@ const PortsLive = Layer.mergeAll(
             provide,
             Effect.as(
               workspaceIds.map((workspaceId) => ({
+                createdVia: { name: null, via: "web" },
                 id: "019a6f10-0000-7000-8000-000000000001",
                 media: [],
                 scheduledAt: null,
+                scheduledVia: null,
                 status: "draft",
                 targets: [],
                 text: "A synthetic post of Ana's.",
@@ -201,7 +219,7 @@ const PortsLive = Layer.mergeAll(
           ),
         exportUser: () =>
           Effect.succeed({
-            contracts: { orders: [], withdrawals: [] },
+            contracts: { orders: [], requests: [], withdrawals: [] },
             legalHold: {
               basis: "Synthetic basis",
               connectionYears: 1,
@@ -247,10 +265,33 @@ const PortsLive = Layer.mergeAll(
             channels: [],
             media: [],
             posts: [],
+            webhooks: [
+              {
+                createdAt: at,
+                description: "Synthetic receiver",
+                enabled: true,
+                eventTypes: ["post.published"],
+                id: "00000000-0000-7000-8000-000000000061",
+                url: "https://hooks.example.com/peal",
+              },
+            ],
           }),
         holdIdentification: (held) =>
           record(`hold:${held.userId}:${held.email}`).pipe(provide),
-        removeWorkspaceFiles: (id) => record(`removeFiles:${id}`).pipe(provide),
+        legalRemains: () =>
+          Effect.succeed({
+            accountYears: 1,
+            connectionYears: 1,
+            identityYears: 5,
+          }),
+        removeWorkspaceFiles: (id) =>
+          Fakes.use(({ whileRemovingFiles }) =>
+            Ref.get(whileRemovingFiles)
+          ).pipe(
+            Effect.flatten,
+            Effect.andThen(record(`removeFiles:${id}`)),
+            provide
+          ),
         // Stripe may still bill one, until the person agrees to cancel:
         // nothing is cancelled while another refuses.
         settleWorkspaces: (ids, { cancelSubscriptions }) =>
@@ -265,7 +306,9 @@ const PortsLive = Layer.mergeAll(
               });
             }
 
-            const billed = ids.filter((id) => id === subscribed);
+            const billed = ids.filter(
+              (id) => id === subscribed || id === cancelledThenBusy
+            );
 
             if (billed.length > 0 && !cancelSubscriptions) {
               return yield* new WorkspaceSubscribed({
@@ -334,10 +377,10 @@ const PortsLive = Layer.mergeAll(
       const provide = Effect.provideService(Fakes, fakes);
 
       return AccountMail.of({
-        deleted: ({ email, locale, subscriptionsCancelled }) =>
-          record(`mail:${email}:${locale}:${subscriptionsCancelled}`).pipe(
-            provide
-          ),
+        deleted: ({ email, legalHold, locale, subscriptionsCancelled }) =>
+          record(
+            `mail:${email}:${locale}:${subscriptionsCancelled}:${legalHold?.identityYears ?? "nothing"}`
+          ).pipe(provide),
         exported: ({ email, locale, via }) =>
           record(`mail:exported:${email}:${locale}:${via}`).pipe(provide),
         workspaceDeleted: ({
@@ -363,6 +406,41 @@ const PortsLive = Layer.mergeAll(
   Layer.succeed(
     TransactionRunner,
     TransactionRunner.of({ transaction: (effect) => effect })
+  ),
+  // The ledger of erasures, which records what it is told.
+  Layer.effect(
+    ErasureLedger,
+    Effect.gen(function* ErasureLedgerTest() {
+      const provide = Effect.provideService(Fakes, yield* Fakes);
+
+      return ErasureLedger.of({
+        discard: () => record("ledger:discard").pipe(provide),
+        entries: Effect.succeed([]),
+        expire: () => Effect.succeed(0),
+        record: ({ confirmed, userId: closed, workspaceIds }) =>
+          record(
+            `ledger:${closed ?? "workspace"}:${workspaceIds.join(",")}:${confirmed ? "confirmed" : "pending"}`
+          ).pipe(provide),
+        unreadable: Effect.succeed([]),
+      });
+    })
+  ),
+  Ids.layerTest,
+  // A server that bills, whose operator declared who it is.
+  Layer.succeed(
+    PrivacyDeclaration,
+    PrivacyDeclaration.of({
+      bills: true,
+      declared: {
+        ...undeclared,
+        controller: {
+          address: null,
+          contact: "privacy@example.test",
+          dataProtectionOfficer: null,
+          name: "Synthetic Operator SAS",
+        },
+      },
+    })
   )
 );
 
@@ -489,6 +567,74 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             "mail:workspaceDeleted:ana@example.test:fr:Harbour:0",
           ]
         );
+
+        // The erasure is in the ledger before it commits, by id only, and
+        // confirmed once it has: a restore of the database knows to
+        // delete the workspace again.
+        const pending = done.indexOf(`ledger:workspace:${harbour}:pending`);
+
+        assert.isAbove(pending, -1);
+        assert.isBelow(pending, done.indexOf(`deleteWorkspace:${harbour}`));
+        assert.isAbove(
+          done.indexOf(`ledger:workspace:${harbour}:confirmed`),
+          done.indexOf(`deleteWorkspace:${harbour}`)
+        );
+        assert.notInclude(done, "ledger:discard");
+      })
+  );
+
+  it.effect(
+    "finish a deletion that committed when its client goes away: the files go, the ledger is confirmed and the owner is told",
+    () =>
+      Effect.gen(function* abandoned() {
+        const fakes = yield* Fakes;
+
+        yield* Ref.set(fakes.calls, []);
+
+        const reached = yield* Deferred.make<true>();
+        const released = yield* Deferred.make<true>();
+
+        // The store is slow to remove the files, and the client gives up.
+        yield* Ref.set(
+          fakes.whileRemovingFiles,
+          Deferred.succeed(reached, true).pipe(
+            Effect.andThen(Deferred.await(released))
+          )
+        );
+
+        const owner: Member = {
+          permissions: permissionsFor("owner"),
+          principal: user(),
+          workspaceId: harbour,
+        };
+
+        const deleting = yield* DeleteWorkspace.use((deletion) =>
+          deletion.delete(
+            actorOf(owner),
+            new UserPrincipal({ impersonatedBy: Option.none(), userId }),
+            "Harbour",
+            { cancelSubscriptions: false }
+          )
+        ).pipe(Effect.provide(UseCasesLive), Effect.forkChild);
+
+        yield* Deferred.await(reached);
+
+        const gone = yield* Fiber.interrupt(deleting).pipe(Effect.forkChild);
+
+        // The interruption lands while the files are still being removed.
+        yield* Effect.yieldNow.pipe(Effect.repeat({ times: 20 }));
+        yield* Deferred.succeed(released, true);
+        yield* Fiber.join(gone);
+        yield* Ref.set(fakes.whileRemovingFiles, Effect.void);
+
+        assert.includeMembers(
+          [...(yield* calls)],
+          [
+            `removeFiles:${harbour}`,
+            `ledger:workspace:${harbour}:confirmed`,
+            "mail:workspaceDeleted:ana@example.test:fr:Harbour:0",
+          ]
+        );
       })
   );
 
@@ -575,8 +721,20 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           payload: { cancelSubscriptions: true, name: "Subscribed" },
         });
 
+        // The erasure is in the ledger before Stripe is asked to cancel:
+        // a ledger that cannot be written costs nobody their paid period.
+        const made = yield* calls;
+
+        assert.isAbove(
+          made.indexOf(`ledger:workspace:${subscribed}:pending`),
+          -1
+        );
+        assert.isBelow(
+          made.indexOf(`ledger:workspace:${subscribed}:pending`),
+          made.indexOf(`cancel:${subscribed}`)
+        );
         assert.includeMembers(
-          [...(yield* calls)],
+          [...made],
           [
             `cancel:${subscribed}`,
             `eraseWorkspace:${subscribed}`,
@@ -585,6 +743,30 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             "mail:workspaceDeleted:ana@example.test:fr:Subscribed:1",
           ]
         );
+      })
+  );
+
+  it.effect(
+    "say the subscription was cancelled when the deletion then fails",
+    () =>
+      Effect.gen(function* cancelledNotDeleted() {
+        const client = yield* as(user(), cancelledThenBusy);
+
+        const failed = yield* client.workspaces
+          .delete({
+            params: { workspaceId: cancelledThenBusy },
+            payload: { cancelSubscriptions: true, name: "Late" },
+          })
+          .pipe(Effect.flip);
+
+        // Not the bare refusal: Stripe's side cannot be undone, so the
+        // person is told it happened.
+        assert.deepInclude(failed, {
+          _tag: "DeletionIncomplete",
+          subscriptionsCancelled: 1,
+        });
+        assert.include(yield* calls, `cancel:${cancelledThenBusy}`);
+        assert.notInclude(yield* calls, `deleteWorkspace:${cancelledThenBusy}`);
       })
   );
 
@@ -604,6 +786,11 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           "BillingUnavailable"
         );
         assert.notInclude(yield* calls, `deleteWorkspace:${unreachable}`);
+        // Nothing was erased, so the ledger says nothing was.
+        assert.notInclude(
+          yield* calls,
+          `ledger:workspace:${unreachable}:confirmed`
+        );
       })
   );
 
@@ -644,19 +831,36 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           `attachment; filename="peal-data-${DateTime.formatIsoDate(body.exportedAt)}.json"`
         );
         assert.strictEqual(body.user.email, "ana@example.test");
+        // With what Article 15(1) lists, in Ana's language, from what the
+        // operator declared.
+        assert.strictEqual(body.about.language, "fr");
+        assert.strictEqual(
+          body.about.controller?.contact,
+          "privacy@example.test"
+        );
+        assert.isNull(body.about.processors);
+        assert.includeMembers(
+          body.about.categories.map(({ id }) => id),
+          ["account", "content", "contracts", "legalConnections"]
+        );
         assert.deepStrictEqual(
-          body.workspaces.map(({ assistantUsage, billing, name }) => ({
-            assistantUsage,
-            name,
-            plan: billing.plan,
-            statuses: billing.subscriptions.map(({ status }) => status),
-          })),
+          body.workspaces.map(
+            ({ assistantUsage, billing, name, webhooks }) => ({
+              assistantUsage,
+              name,
+              plan: billing.plan,
+              statuses: billing.subscriptions.map(({ status }) => status),
+              // Where the workspace is told, never the secret that signs it.
+              webhooks: webhooks.map(({ url }) => url),
+            })
+          ),
           [
             {
               assistantUsage: [{ day: "2026-11-09", requests: 3 }],
               name: "Harbour",
               plan: "pro",
               statuses: ["active"],
+              webhooks: ["https://hooks.example.com/peal"],
             },
           ]
         );
@@ -696,6 +900,33 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
 
           assert.strictEqual(
             yield* failureOf(refused.account.export()),
+            "Forbidden"
+          );
+        }
+      })
+  );
+
+  it.effect(
+    "say what deleting the account would leave, to the user in person only",
+    () =>
+      Effect.gen(function* closure() {
+        const client = yield* as(user());
+
+        assert.deepStrictEqual(yield* client.account.closure(), {
+          legalHold: { accountYears: 1, connectionYears: 1, identityYears: 5 },
+        });
+
+        for (const principal of [
+          apiKey,
+          oauth,
+          mcpClient,
+          otherClient,
+          impersonated,
+        ]) {
+          const refused = yield* as(principal);
+
+          assert.strictEqual(
+            yield* failureOf(refused.account.closure()),
             "Forbidden"
           );
         }
@@ -784,7 +1015,10 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             `eraseUser:${userId}`,
             `deleteUser:${userId}`,
             `removeFiles:${harbour}`,
-            "mail:ana@example.test:fr:0",
+            "mail:ana@example.test:fr:0:5",
+            // The closure, with the workspace it deleted, by id only.
+            `ledger:${userId}:${harbour}:pending`,
+            `ledger:${userId}:${harbour}:confirmed`,
           ]
         );
 
@@ -856,7 +1090,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             `cancel:${subscribed}`,
             `eraseWorkspace:${subscribed}`,
             `deleteUser:${userId}`,
-            "mail:ana@example.test:fr:1",
+            "mail:ana@example.test:fr:1:5",
           ]
         );
       })

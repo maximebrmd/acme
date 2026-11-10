@@ -3,12 +3,20 @@ import { DateTime, Duration, Option, Schema } from "effect";
 import type { Channel, TokenLifetime } from "./channel.ts";
 
 /**
- * When the refresh sweep renews a refreshable token:
+ * When the refresh sweep renews a refreshable token. Every refreshable token
+ * is renewed by the call that needs it (`ChannelAccess`), so the sweep is
+ * only for what a channel nobody uses would lose:
  *
- * - `beforeExpiry`: `ahead` of its expiry, so it never lapses.
- * - `keepAlive`: only once it has gone `unused` past its expiry. Access is
- *   renewed when a call needs it (`ChannelAccess`); the sweep only keeps
- *   the refresh token of an account that does not post from going stale.
+ * - `beforeExpiry`: `ahead` of its expiry, so it never lapses. For a token
+ *   that renews itself, or a session, that nothing can renew once expired:
+ *   they last weeks, so a channel comes up once in thousands of runs.
+ * - `keepAlive`: only once it has gone `unused` past its expiry. For a
+ *   short access token with a refresh token of its own: the sweep only
+ *   keeps the refresh token of an account that does not post from going
+ *   stale.
+ *
+ * A token that cannot be renewed is not swept: its workspace is warned to
+ * reconnect (`WarnChannelsNeedingReconnect`).
  */
 export const RefreshSweepSchema = Schema.Union([
   Schema.TaggedStruct("beforeExpiry", { ahead: Schema.Duration }),
@@ -122,14 +130,20 @@ export const tokenPolicies = {
     },
   }),
   // Access tokens last two hours by TikTok's guide (its examples say a
-  // day: `expires_in` decides), and each refresh token works once. Refresh
-  // tokens end 180 days after the creator signed in.
+  // day: `expires_in` decides), and each refresh token works once and lasts
+  // 180 days. Access is renewed when a post or a read needs it, as X's:
+  // renewed ahead of every expiry, each channel would be refreshed a dozen
+  // times a day, posting or not. An account that does nothing is renewed
+  // after 30 days, well within the 180: its new refresh token starts over
+  // if TikTok counts from each refresh, and if it counts from the sign-in,
+  // the refusal marks the channel to reconnect within a month of the end
+  // rather than at the next post.
   tiktok: new TokenPolicy({
     lifetime: Option.some(Duration.hours(2)),
     refresh: {
       _tag: "refreshToken",
       rotates: true,
-      sweep: { _tag: "beforeExpiry", ahead: Duration.minutes(30) },
+      sweep: { _tag: "keepAlive", unused: Duration.days(30) },
     },
   }),
   // Access tokens last two hours, and each refresh token works once. X
@@ -146,13 +160,15 @@ export const tokenPolicies = {
   }),
   // Google's access tokens last an hour; its refresh tokens do not rotate,
   // and work until revoked, left unused six months, or, for a Google
-  // project in testing, seven days after the sign-in.
+  // project in testing, seven days after the sign-in. Access is renewed
+  // when an upload or a read needs it; a channel that does nothing is
+  // renewed after 30 days, so its refresh token is never six months unused.
   youtube: new TokenPolicy({
     lifetime: Option.some(Duration.hours(1)),
     refresh: {
       _tag: "refreshToken",
       rotates: false,
-      sweep: { _tag: "beforeExpiry", ahead: Duration.minutes(15) },
+      sweep: { _tag: "keepAlive", unused: Duration.days(30) },
     },
   }),
 } as const;

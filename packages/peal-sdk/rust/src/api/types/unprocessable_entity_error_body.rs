@@ -29,6 +29,19 @@ pub enum UnprocessableEntityErrorBody {
         max_length: i64,
     },
 
+    #[non_exhaustive]
+    MediaSourceNotPublic {},
+
+    #[non_exhaustive]
+    MediaSourceUnreachable {
+        reason: MediaSourceFailure,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        status: Option<i64>,
+    },
+
+    #[non_exhaustive]
+    UploadRejected { reason: RejectionReason },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -55,6 +68,28 @@ impl UnprocessableEntityErrorBody {
 
     pub fn alt_text_too_long(max_length: i64) -> Self {
         Self::AltTextTooLong { max_length }
+    }
+
+    pub fn media_source_not_public() -> Self {
+        Self::MediaSourceNotPublic {}
+    }
+
+    pub fn media_source_unreachable(reason: MediaSourceFailure) -> Self {
+        Self::MediaSourceUnreachable {
+            reason,
+            status: None,
+        }
+    }
+
+    pub fn upload_rejected(reason: RejectionReason) -> Self {
+        Self::UploadRejected { reason }
+    }
+
+    pub fn media_source_unreachable_with_status(reason: MediaSourceFailure, status: i64) -> Self {
+        Self::MediaSourceUnreachable {
+            reason,
+            status: Some(status),
+        }
     }
 
     pub fn unknown(value: serde_json::Value) -> Self {

@@ -89,5 +89,10 @@ module Peal
     def tiktok
       @tiktok ||= Peal::Tiktok::Client.new(client: @raw_client)
     end
+
+    # @return [Peal::Webhooks::Client]
+    def webhooks
+      @webhooks ||= Peal::Webhooks::Client.new(client: @raw_client)
+    end
   end
 end

@@ -115,8 +115,8 @@ const storedTokens = (channel: Channel) =>
     }))
   );
 
-// Makes the channel's token due for a refresh, as it would be within the
-// sweep's quarter of an hour.
+// Makes the channel's token due for the sweep: unused for a month, Google's
+// tokens being renewed when a call needs them.
 const makeDue = (channel: Channel) =>
   Effect.gen(function* due() {
     const now = yield* DateTime.now;
@@ -127,7 +127,7 @@ const makeDue = (channel: Channel) =>
         scopes: channel.scopes,
         token: {
           _tag: "refreshable",
-          expiresAt: DateTime.addDuration(now, Duration.minutes(5)),
+          expiresAt: DateTime.subtractDuration(now, Duration.days(31)),
         },
       },
       now

@@ -1,6 +1,7 @@
 import { Context, Effect, Layer, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
@@ -16,9 +17,16 @@ import { AccountStore } from "./account-store.ts";
 import type { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContextRecords } from "./context-records.ts";
 import type { WorkspaceErasureOptions } from "./context-records.ts";
+import type { ErasureIncomplete } from "./erasure-incomplete.ts";
+import type { ErasureLedgerUnavailable } from "./erasure-ledger-unavailable.ts";
+import type { ErasureLedger } from "./erasure-ledger.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import {
+  confirmErasure,
+  discardOnFailure,
   eraseWorkspace,
+  erasureOf,
+  recordErasure,
   removeWorkspaceFiles,
   reportCancelledFirst,
 } from "./workspace-erasure.ts";
@@ -33,8 +41,12 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
  * transaction, as Stripe's side cannot be rolled back; otherwise the
  * deletion is refused (`WorkspaceSubscribed`, with what cancelling would
  * end). Refused too while Stripe cannot be reached, or while one of its
- * posts is going out. The owner is emailed a confirmation, in their
- * language.
+ * posts is going out. The erasure is written in the ledger kept outside
+ * the database before anything is cancelled or deleted, by id only, so a
+ * restore of the database deletes the workspace again; when the ledger
+ * cannot be written, nothing is cancelled or deleted. Once Stripe is
+ * settled, the rest runs to its end even if the request is abandoned. The
+ * owner is emailed a confirmation, in their language.
  */
 export class DeleteWorkspace extends Context.Service<
   DeleteWorkspace,
@@ -48,9 +60,11 @@ export class DeleteWorkspace extends Context.Service<
       void,
       | BillingUnavailable
       | DatabaseError
+      | ErasureLedgerUnavailable
       | MissingPermission
       | NotAMember
       | SessionRequired
+      | ErasureIncomplete
       | WorkspaceBusy
       | WorkspaceNameMismatch
       | WorkspaceSubscribed
@@ -61,7 +75,7 @@ export class DeleteWorkspace extends Context.Service<
     DeleteWorkspace,
     Effect.gen(function* DeleteWorkspaceLive() {
       const ports = yield* Effect.context<
-        AccountStore | ContextRecords | TransactionRunner
+        AccountStore | ContextRecords | ErasureLedger | Ids | TransactionRunner
       >();
 
       const store = yield* AccountStore;
@@ -99,44 +113,62 @@ export class DeleteWorkspace extends Context.Service<
           yield* new WorkspaceNameMismatch({ workspaceId });
         }
 
-        const { subscriptionsCancelled } = yield* records.settleWorkspaces(
-          [workspaceId],
-          options
-        );
+        // In the ledger first, unconfirmed: one that cannot be written
+        // stops here, before Stripe is asked to cancel anything, which
+        // cannot be undone.
+        const erasure = yield* erasureOf(null, [workspaceId]);
 
-        yield* transaction(
-          Effect.gen(function* deleteInTransaction() {
-            // Locked first, as closing an account locks its workspaces
-            // before erasing them: the two wait for each other, never
-            // deadlock.
-            yield* found(workspaceId);
-            yield* eraseWorkspace(workspaceId);
+        yield* recordErasure(erasure);
+
+        const { subscriptionsCancelled } = yield* records
+          .settleWorkspaces([workspaceId], options)
+          .pipe(discardOnFailure(erasure));
+
+        // From here to the end without stopping, whatever becomes of the
+        // request: a client that goes away leaves no file behind, no
+        // entry unconfirmed and no owner untold.
+        yield* Effect.uninterruptible(
+          Effect.gen(function* erase() {
+            yield* transaction(
+              Effect.gen(function* deleteInTransaction() {
+                // Locked first, as closing an account locks its workspaces
+                // before erasing them: the two wait for each other, never
+                // deadlock.
+                yield* found(workspaceId);
+                yield* eraseWorkspace(workspaceId);
+              })
+            ).pipe(
+              discardOnFailure(erasure),
+              reportCancelledFirst(subscriptionsCancelled)
+            );
+
+            yield* confirmErasure(erasure);
+
+            yield* removeWorkspaceFiles(workspaceId);
+
+            // Ids only, as the ledger holds them.
+            yield* Effect.logInfo("Deleted a workspace").pipe(
+              Effect.annotateLogs({
+                "event.name": "peal.erasure",
+                subscriptionsCancelled,
+                workspaceId,
+              })
+            );
+
+            const owner = yield* store.records(userId);
+
+            if (Option.isSome(owner)) {
+              const { email, locale } = owner.value.user;
+
+              yield* mail.workspaceDeleted({
+                email,
+                locale,
+                subscriptionsCancelled,
+                workspaceName,
+              });
+            }
           })
-        ).pipe(reportCancelledFirst(subscriptionsCancelled));
-
-        yield* removeWorkspaceFiles(workspaceId);
-
-        // Ids only: what a restore of the database must delete again.
-        yield* Effect.logInfo("Deleted a workspace").pipe(
-          Effect.annotateLogs({
-            "event.name": "peal.erasure",
-            subscriptionsCancelled,
-            workspaceId,
-          })
         );
-
-        const owner = yield* store.records(userId);
-
-        if (Option.isSome(owner)) {
-          const { email, locale } = owner.value.user;
-
-          yield* mail.workspaceDeleted({
-            email,
-            locale,
-            subscriptionsCancelled,
-            workspaceName,
-          });
-        }
       }, Effect.provideContext(ports));
 
       return DeleteWorkspace.of({ delete: remove });

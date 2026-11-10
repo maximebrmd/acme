@@ -8,7 +8,9 @@ import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
+import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
+import { PostOrigins } from "#publishing/application/post-origins.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
@@ -22,6 +24,7 @@ import {
   GatedPlatformPublisher,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
+import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
 import { DrizzlePostOversight } from "#publishing/infrastructure/drizzle-post-oversight.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
@@ -34,11 +37,18 @@ import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attac
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
+import { LoggedOperatorAlerts } from "#publishing/infrastructure/logged-operator-alerts.ts";
 import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
+import { NamedPostOrigins } from "#publishing/infrastructure/named-post-origins.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
+import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
+import {
+  webhookOutcomes,
+  WebhookPostEvents,
+} from "#publishing/infrastructure/webhook-post-events.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
@@ -51,16 +61,29 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
  * `PublishedTargets`, which analytics follows; `PostOversight`, for the
  * staff console) and the adapters behind its
  * ports, with `references` for the channels and media posts refer to and the
- * posts a month allows. Needs the database (Drizzle), the workflow engine, a
- * TransactionRunner and Ids, and PublicationOutcomes for PostFollowUp.
+ * posts a month allows, `accounts` for what each account refuses (by
+ * default, nothing) and `origins` for the names of the keys and
+ * applications that write posts (by default, none). Needs the database
+ * (Drizzle), the workflow engine, a TransactionRunner and Ids, and
+ * PublicationOutcomes for PostFollowUp.
  */
-export const publishingWith = <E, R, E2 = never, R2 = never>(
+export const publishingWith = <
+  E,
+  R,
+  E2 = never,
+  R2 = never,
+  E3 = never,
+  R3 = never,
+  R4 = never,
+>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
     R
   >,
-  accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none
+  accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none,
+  origins: Layer.Layer<PostOrigins, E3, R3> = PostOrigins.unnamed,
+  events: Layer.Layer<PostEvents, never, R4> = PostEvents.none
 ) =>
   Layer.mergeAll(
     PostDrafts.layer,
@@ -72,15 +95,19 @@ export const publishingWith = <E, R, E2 = never, R2 = never>(
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzleIdempotencyKeys,
         DrizzlePostOversight,
         DrizzlePostRepository,
         DrizzlePublicationJournal,
         DrizzlePublishedTargets,
         DrizzleWorkspacePostStore,
         LoggedChannelHealth,
+        LoggedOperatorAlerts,
         WorkflowPublicationScheduler,
         references,
-        accounts
+        accounts,
+        origins,
+        events
       )
     )
   );
@@ -89,10 +116,14 @@ export const publishingWith = <E, R, E2 = never, R2 = never>(
  * The use cases as the server runs them: channels are those the channels
  * context lists, media the ready media its library holds, and the posts a
  * month allows the workspace's plan, which the composition root provides
- * (ListChannels, MediaLibrary, WorkspaceEntitlements). How each target ends
+ * (ListChannels, MediaLibrary, WorkspaceEntitlements), and a post names the
+ * key or application that wrote it as the workspace context does
+ * (CredentialNames). How each target ends
  * is told through the notifications context (Notify), naming channels as
  * the channels context has them (ChannelRepository), once billing counted
- * the posts that went out on platforms that bill per post (MeteredPosts).
+ * the posts that went out on platforms that bill per post (MeteredPosts),
+ * and the workspace's webhook endpoints hear what happens to its posts
+ * (WebhookEvents).
  */
 export const PublishingLive = publishingWith(
   Layer.mergeAll(
@@ -100,7 +131,9 @@ export const PublishingLive = publishingWith(
     LibraryAttachableMedia,
     PlanPostAllowanceLive
   ),
-  AccountRules.layer
+  AccountRules.layer,
+  NamedPostOrigins,
+  WebhookPostEvents
 ).pipe(
   Layer.provideMerge(
     TikTokCreatorInfo.layer.pipe(Layer.provide(ListedWorkspaceChannels))
@@ -109,7 +142,7 @@ export const PublishingLive = publishingWith(
     TikTokCreatorsLive.pipe(Layer.provide(ChannelAccessCredentials))
   ),
   Layer.provideMerge(
-    meteredOutcomes(NotifiedPublicationOutcomes).pipe(
+    webhookOutcomes(meteredOutcomes(NotifiedPublicationOutcomes)).pipe(
       Layer.provide(DrizzlePostRepository)
     )
   )
@@ -157,7 +190,8 @@ export const publishingWorkers = <E, R, E2 = never, R2 = never>(
  * The platforms the gates publish to, Mastodon, Bluesky, LinkedIn, X,
  * Threads, Instagram, Facebook Pages, TikTok and YouTube, with the tokens
  * the channels context hands out (ChannelAccess) and the files the media
- * context does (MediaForPlatforms), which the composition root provides
+ * context does (MediaForPlatforms), the large ones a few at a time
+ * (`limitedUploads`), which the composition root provides
  * with Dns, the database and the PostRepository.
  */
 export const PlatformsLive = RoutedPlatformPublisher.pipe(
@@ -165,7 +199,7 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
   Layer.provide(
     Layer.mergeAll(
       ChannelAccessCredentials,
-      LibraryMediaForPublishing,
+      limitedUploads.pipe(Layer.provide(LibraryMediaForPublishing)),
       DrizzlePublicationProgress,
       DrizzleUploadSessions,
       DrizzlePlatformQuota
@@ -194,3 +228,6 @@ export const publishingWorkersReading = <E, R>(readers: GateReaders<E, R>) =>
  * analytics' collection.
  */
 export { GatedMetricsReader } from "#publishing/infrastructure/channel-gate.ts";
+
+/** The idempotency keys' daily retention. Needs PostScheduling. */
+export { IdempotencyRetentionCron as PublishingCronsLive } from "#publishing/infrastructure/crons.ts";

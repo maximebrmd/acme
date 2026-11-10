@@ -158,7 +158,8 @@
       "MISSING_RESPONSE": "Complete the check above first.",
       "VERIFICATION_FAILED": "The check did not go through. Try it again.",
       "TOO_MANY_REQUESTS": "Too many attempts. Wait a minute, then try again.",
-      "UNKNOWN": "Something went wrong. Try again."
+      "UNKNOWN": "Something went wrong. Try again.",
+      "FREE_WORKSPACE_LIMIT_REACHED": "Your account already owns a workspace on the free plan. Another needs that one on a paid plan."
     }
   },
   "SignInPage": {
@@ -362,6 +363,10 @@
     "targetStatus": "{status, select, pending {Waiting} publishing {Publishing} published {Published} failed {Failed} unconfirmed {To check} cancelled {Cancelled} other {{status}}}",
     "outcome": "{outcome, select, published {Published} partiallyPublished {Partly published} unconfirmed {To check} failed {Failed} cancelled {Cancelled} other {{outcome}}}",
     "disconnectedChannel": "A disconnected channel",
+    "Origin": {
+      "created": "{via, select, web {Created in the web app{who, select, you { by you} other {}}} apiKey {Created with {named, select, yes {the API key “{name}”} other {an API key}}} other {Created by {named, select, yes {the application “{name}”} other {an application}}{who, select, you {, acting as you} other {}}}}",
+      "scheduled": "{via, select, web {Scheduled in the web app{who, select, you { by you} other {}}} apiKey {Scheduled with {named, select, yes {the API key “{name}”} other {an API key}}} other {Scheduled by {named, select, yes {the application “{name}”} other {an application}}{who, select, you {, acting as you} other {}}}}"
+    },
     "nav": {
       "calendar": "Calendar",
       "newPost": "New post",
@@ -800,7 +805,8 @@
       "email": "See your email address",
       "offlineAccess": "Stay connected while you are away, until you disconnect it",
       "workspaceRead": "Read the workspace: posts, channels, media and analytics",
-      "workspaceWrite": "Do what your role allows in the workspace, such as writing, scheduling and publishing posts",
+      "workspaceWrite": "Do what your role allows in the workspace, such as writing drafts and managing media, without scheduling or publishing anything",
+      "workspacePublish": "Schedule and publish posts to your connected accounts, where everyone can see them",
       "other": "Use the permission “{scope}”"
     },
     "device": {
@@ -839,7 +845,9 @@
       "unverified": "Peal has not checked this application. Allow it only if you trust it and started this connection yourself.",
       "allow": "Allow",
       "allowing": "Allowing…",
-      "deny": "Deny"
+      "deny": "Deny",
+      "publish": "Let it schedule and publish posts to your connected accounts, where everyone can see them",
+      "publishHint": "{rest, select, drafts {Without this, it can still write drafts, which you review and schedule yourself.} other {Without this, it can still read the workspace, and nothing more.}}"
     }
   },
   "Notices": {
@@ -858,10 +866,12 @@
       "SubscriptionCancelled": "The {plan} subscription of {workspace} is cancelled: it ends on {endsAt, date, long}, and nothing more is charged.",
       "SubscriptionWithdrawn": "Your withdrawal from the {plan} subscription of {workspace} was received on {withdrawnAt, date, long} at {withdrawnAt, time, short}: it has ended, and {refunded} is refunded within 14 days.",
       "SubscriptionStarted": "{workspace} is subscribed to {plan} since {startedAt, date, long}, for {price} {interval, select, month {a month} other {a year}}, VAT included. As a consumer you may withdraw within 14 days.",
-      "TrialStarted": "{workspace} is trying {plan} until {endsAt, date, long}: nothing is charged."
+      "TrialStarted": "{workspace} is trying {plan} until {endsAt, date, long}: nothing is charged.",
+      "WebhookEndpointDisabled": "{reason, select, gone {The webhook endpoint at {host} in {workspace} was turned off: it answered 410 Gone, which asks for no more deliveries.} other {The webhook endpoint at {host} in {workspace} was turned off: every delivery had failed for {days, number} days. Fix the receiver, then turn it back on.}}",
+      "TrialEndingOver": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan. It holds more than the free plan allows ({over}): from that day nothing is scheduled or published until it is back within it."
     },
     "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} other {{reason}}}",
-    "open": "{page, select, post {Open the post} billing {Open billing} other {Open the channels}}",
+    "open": "{page, select, post {Open the post} billing {Open billing} webhooks {Open the webhooks} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
       "many": "99+",
@@ -903,7 +913,9 @@
       "loadFailed": "Your preferences could not be loaded.",
       "reload": "Try again"
     },
-    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}"
+    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
+    "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
+    "excessStorage": "{used} of media, {allowed} allowed"
   },
   "Billing": {
     "open": "Billing",
@@ -926,10 +938,12 @@
       "ends": "Ends on {date}",
       "pastDue": "The last payment did not go through. Update the payment method in the billing portal to keep the plan.",
       "manage": "Manage billing",
+      "invoices": "Invoices and receipts",
+      "invoicesHint": "The invoices and receipts of the workspace’s past plans stay in Stripe’s billing portal.",
       "managing": "Opening the billing portal…",
-      "manageHint": "Change the payment method, the billing address or the VAT number, or download invoices, in Stripe’s billing portal.",
+      "manageHint": "Change the payment method, the billing address or the VAT number, or download invoices and receipts, in Stripe’s billing portal.",
       "trialEnds": "The trial ends on {date}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
-      "withdrawable": "Until {date}, as a consumer you may withdraw from the contract: it ends at once and the unused part is refunded.",
+      "withdrawable": "Until {date}, as a consumer you may withdraw from the contract, here or with “Withdraw from contract here” at the foot of every page: it ends at once and the unused part is refunded.",
       "trialHint": "A plan ordered during the trial ends it once it is paid for; nothing is charged for the trial."
     },
     "usage": {
@@ -946,7 +960,7 @@
       "allowance": "{limit, select, channels {{count, plural, one {# channel} other {# channels}}} members {{count, plural, one {# member} other {# members}}} scheduledPosts {{count, plural, one {# post a month} other {# posts a month}}} assistantRequests {{count, plural, one {# assistant request a day} other {# assistant requests a day}}} other {{count}}}",
       "unlimited": "{limit, select, channels {Unlimited channels} members {Unlimited members} scheduledPosts {Unlimited posts} assistantRequests {Unlimited assistant requests} mediaStorage {Unlimited media} other {Unlimited}}",
       "yours": "Your plan",
-      "inPortal": "To move to a smaller plan, use the billing portal.",
+      "inPortal": "Moving to a smaller plan needs the workspace to fit it first: its channels, members and media.",
       "askAdmin": "Owners and admins of the workspace order and cancel its plan.",
       "storage": "{size} of media",
       "order": "Order with obligation to pay",
@@ -960,10 +974,12 @@
     "errors": {
       "forbidden": "Only owners and admins of the workspace, in their own session, can change its billing.",
       "generic": "Stripe could not be reached. Try again in a moment.",
+      "noInvoices": "This workspace has no invoice: it never had a paid plan.",
       "nothingToCancel": "The subscription is already cancelled.",
       "trialUsed": "This workspace or your account already had its trial: order a plan instead.",
-      "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the subscription.",
-      "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the subscription."
+      "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the contract.",
+      "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the contract.",
+      "planTooSmall": "This plan does not hold what the workspace has."
     },
     "limitReached": "{limit, select, channels {The workspace’s plan allows no more channels. Move to a larger plan, or disconnect a channel first.} members {The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, cancel a post, or move to a larger plan.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} mediaStorage {The workspace’s plan has no room for this file. Delete media, or move to a larger plan.} other {The workspace’s plan allows no more of this.}}",
     "prices": {
@@ -977,9 +993,9 @@
       "intervalLabel": "Billing period"
     },
     "consent": {
-      "startNow": "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days and then pay only for the days used.",
-      "terms": "Ordering accepts the terms of service, which say how to cancel and how to withdraw.",
-      "termsLink": "Ordering accepts the terms of service, which say how to cancel and how to withdraw.",
+      "startNow": "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days, with “Withdraw from contract here”, at the foot of every page and on this one, and then pay only for the days used.",
+      "terms": "Ordering accepts the terms of service, which say how to cancel and how to withdraw, and hold the model withdrawal form.",
+      "termsLink": "Ordering accepts the terms of service, which say how to cancel and how to withdraw, and hold the model withdrawal form.",
       "needed": "Tick the box above to order a plan or start the trial."
     },
     "trial": {
@@ -989,11 +1005,11 @@
       "starting": "Opening checkout…"
     },
     "cancel": {
-      "open": "Cancel the subscription",
-      "title": "Cancel the subscription",
-      "summary": "The {plan} subscription ends on {date}, and nothing more is charged. Until then the workspace keeps its plan; it then moves to the free plan, with its content.",
+      "open": "Cancel your contract",
+      "title": "Cancel your contract",
+      "summary": "The {plan} subscription ends on {date}, and nothing more is charged. Until then the workspace keeps its plan; it then moves to the free plan, with its content. To end it on a later day instead, use “Cancel your contract” at the foot of the page.",
       "summaryNow": "The {plan} trial ends now, and nothing is charged. The workspace moves to the free plan, with its content.",
-      "confirm": "Confirm cancellation",
+      "confirm": "Notify the cancellation",
       "confirming": "Cancelling…",
       "doneTitle": "Subscription cancelled",
       "done": "It ends on {date}. A confirmation was emailed to the members who manage billing."
@@ -1009,6 +1025,150 @@
       "done": "The subscription has ended, and {refund} is refunded within 14 days. An acknowledgement with its date and time was emailed to you."
     },
     "keep": "Keep the subscription"
+  },
+  "Contract": {
+    "cancel": {
+      "title": "Cancel your contract",
+      "description": "Cancel a Peal subscription here, with or without signing in. There is no notice period and no fee: the contract ends with the period already paid for, which is not refunded, or on the later day you ask for; a trial ends at once. The workspace then moves to the free plan, with its content.",
+      "notify": "Notify the cancellation",
+      "notifying": "Notifying…",
+      "summaryTitle": "Summary of your cancellation",
+      "doneTitle": "Cancellation notified"
+    },
+    "withdraw": {
+      "title": "Withdraw from contract here",
+      "description": "As a consumer, you may withdraw from a Peal subscription within 14 days of subscribing, without giving a reason, with or without signing in. The contract ends at once, and what you paid for the rest of the period is refunded to your payment method within 14 days.",
+      "notify": "Confirm withdrawal",
+      "notifying": "Confirm withdrawal",
+      "summaryTitle": "Summary of your withdrawal",
+      "doneTitle": "Withdrawal received"
+    },
+    "fields": {
+      "name": "First and last name, or company name",
+      "email": "Email address",
+      "emailHint": "The acknowledgement of receipt is sent there.",
+      "contract": "Contract number, or the workspace’s name",
+      "contractHint": "The contract number is in the email that confirmed your subscription: with it, your request is applied at once. Without it, we email you a link to finish.",
+      "contractChoice": "Contract",
+      "contractOf": "{workspace}",
+      "contractOther": "Another contract",
+      "desiredOn": "Day you want the contract to end (optional)",
+      "desiredOnHint": "Leave empty to end it as soon as the contract allows: with the period already paid for. A later day ends it on that day, the last period charged only up to it."
+    },
+    "invalid": {
+      "name": "Give your name with letters, digits, spaces and ' , & ( ) - only, 100 characters at most.",
+      "email": "Give an email address, such as you@example.com.",
+      "contract": "Write the contract with letters, digits, spaces and ' , & ( ) - only, 100 characters at most."
+    },
+    "signedInAs": "You are signed in as {email}: your contracts are listed, and your request is applied at once.",
+    "continue": "Continue",
+    "modify": "Modify",
+    "summary": {
+      "name": "Name",
+      "email": "Acknowledgement sent to",
+      "contract": "Contract",
+      "contractNotGiven": "Not given: we will email you a link to choose it",
+      "desiredOn": "Day wanted",
+      "desiredOnNone": "As soon as the contract allows",
+      "refund": "Refunded now",
+      "effect": "{kind, select, cancellation {The contract ends with the period already paid for, or on the day wanted if it is later; a trial ends at once. Nothing more is charged.} other {The contract ends at once, and the rest of the period paid for is refunded within 14 days.}}"
+    },
+    "done": {
+      "received": "We received it on {receivedAt, date, long} at {receivedAt, time, short}: that date counts. An acknowledgement, with what you sent, is on its way to {email}. It says what happens next: with the contract number, your request is applied at once; otherwise the email holds a link to finish, or a person will write to you.",
+      "cancelled": "The contract ends on {endsAt, date, long}. Until then the workspace keeps its plan; nothing more is charged. A confirmation was emailed to the members who manage billing.",
+      "withdrawn": "The contract has ended, and {refund} is refunded to your payment method within 14 days. An acknowledgement with its date and time was emailed to you.",
+      "billing": "Open billing"
+    },
+    "errors": {
+      "generic": "Your request could not be sent. Try again in a moment.",
+      "tooMany": "Too many requests came from your connection in the last hour. Try again later, or sign in and use this page: it then needs no check.",
+      "captcha": "The check that you are a person did not pass. Try again.",
+      "desiredDayTooFar": "The day you ask the contract to end on is more than 400 days ahead. Give a nearer day, or none to end it as soon as the contract allows.",
+      "notEnabled": "This Peal server sells no subscription: there is no contract to cancel or withdraw from.",
+      "forbidden": "Only owners and admins of the workspace, in their own session, can end its contract.",
+      "nothingToCancel": "This workspace has no subscription to cancel, or it is already set to end.",
+      "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the contract.",
+      "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the contract.",
+      "withdrawalNotSubscribed": "This workspace has no subscription to withdraw from.",
+      "unavailable": "Stripe could not be reached. Nothing changed: try again in a moment."
+    },
+    "links": {
+      "label": "Your contract",
+      "cancel": "Cancel your contract",
+      "withdraw": "Withdraw from contract here"
+    },
+    "confirmation": {
+      "title": "Apply your request",
+      "description": "You followed the link we emailed you, which shows the request is yours. Choose the contract it is about.",
+      "request": "{kind, select, cancellation {Cancellation} other {Withdrawal}} received on {receivedAt, date, long} at {receivedAt, time, short}: it is applied as of that date.",
+      "desiredOn": "Day wanted for the contract to end: {date, date, long}.",
+      "contract": "{workspace}: {plan}{trial, select, true { (trial)} other {}}",
+      "none": "The account this address signs in to manages no subscription now: there is nothing to apply the request to.",
+      "apply": "{kind, select, cancellation {Notify the cancellation} other {Confirm withdrawal}}",
+      "applying": "Applying…",
+      "notFound": "This link opens nothing: it was already used, it expired after 30 days, or it is incomplete. Send your request again from the link at the foot of the page.",
+      "missing": "This page opens from the link in the email we sent you.",
+      "applied": "{kind, select, cancellation {The contract ends on {effectiveAt, date, long}. Nothing more is charged.} other {The contract has ended.}} A confirmation was emailed to the members who manage billing.",
+      "refunded": "{refund} is refunded to the payment method used.",
+      "refused": "{refusal, select, nothingToCancel {There was nothing to cancel: the subscription is already set to end, or has ended.} notSubscribed {The contract has no subscription to withdraw from.} expired {The 14 days to withdraw were over when your statement came. You can cancel the contract instead.} business {The contract was concluded by a business with a verified VAT number, which has no right to withdraw. You can cancel it instead.} other {The request could not be applied.}}"
+    }
+  },
+  "Upgrade": {
+    "title": "{limit, select, channels {This plan has no room for another channel} members {This plan has no room for another member} scheduledPosts {This plan has no room for another post that month} assistantRequests {The writing assistant’s requests for today are used} mediaStorage {This plan has no room for this file} freeWorkspace {One free workspace per account} other {The plan’s limit is reached}}",
+    "reached": "{limit, select, channels {The {plan} plan of {workspace} allows {allowed, plural, one {# channel} other {# channels}}, and it has {used, number}.} members {The {plan} plan of {workspace} allows {allowed, plural, one {# member} other {# members}}, pending invitations included, and it has {used, number}.} scheduledPosts {The {plan} plan of {workspace} allows {allowed, plural, one {# post} other {# posts}} going out in a month, and that month has {used, number}.} assistantRequests {The {plan} plan of {workspace} allows {allowed, plural, one {# request} other {# requests}} to the writing assistant a day, and today’s are used. They start again at midnight UTC.} other {The {plan} plan of {workspace} allows no more of this.}}",
+    "reachedStorage": "The {plan} plan of {workspace} allows {allowed} of media, and it stores {used}, uploads in progress included.",
+    "freeWorkspace": "Your account already owns a workspace on the free plan: {workspace}. Each account has one; another needs that one on a paid plan.",
+    "freeWorkspaceTrial": "Your account already owns a workspace in its trial, which ends on the free plan: {workspace}. Each account has one free workspace; another needs that one on a paid plan.",
+    "offer": "The {plan} plan has room:",
+    "trial": "{workspace} is in its trial: ordering starts the paid plan, and ends the trial once it is paid for. Nothing is charged for the trial.",
+    "comeBack": "Payment is by card, on Stripe’s checkout. You then come back to this page; the plan changes as soon as Stripe confirms the payment, usually within seconds.",
+    "largest": "{workspace} is on the largest plan. For more, write to us: we make an offer for larger needs.",
+    "largestOperator": "{workspace} is on the largest plan. For more, write to the people who run this server.",
+    "contact": "Write to us",
+    "orRemove": "{limit, select, channels {Or disconnect a channel to make room.} members {Or remove a member, or revoke a pending invitation, to make room.} scheduledPosts {Or pick another month, or cancel a post of that month.} assistantRequests {Or ask again tomorrow.} mediaStorage {Or delete media to make room.} other {}}",
+    "askManagers": "Owners and admins of {workspace} order its plan: {names}.",
+    "askSomeone": "An owner or an admin of the workspace orders its plan: ask one of them.",
+    "close": "Not now",
+    "tooSmall": "This plan does not hold what the workspace has. Remove these first, or order a larger plan:",
+    "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
+    "excessStorage": "{used} of media, {allowed} allowed",
+    "closeLabel": "Close"
+  },
+  "OverPlan": {
+    "title": "{workspace} holds more than its plan allows",
+    "description": "Its plan is now {plan}. Nothing was deleted, but the workspace must come back within its plan before it does anything else.",
+    "excess": "{limit, select, channels {{used, number} channels connected, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
+    "excessStorage": "{used} of media stored, {allowed} allowed: uploads are refused until media is deleted or the plan is larger",
+    "posts": "{count, plural, =0 {Until then, nothing is scheduled or published.} one {Until then, nothing is scheduled or published. The post scheduled this month fails at its time, with “plan limit” as its reason; it keeps its text and channels, and can be posted again from its page once the workspace is within its plan.} other {Until then, nothing is scheduled or published. The # posts scheduled this month each fail at their time, with “plan limit” as their reason; they keep their text and channels, and can be posted again from their page once the workspace is within its plan.}}",
+    "upgradeTitle": "Move to a plan that holds everything",
+    "noPlan": "No plan holds this much. Choose what stays below, or write to us for an offer.",
+    "chooseTitle": "Or choose what stays",
+    "chooseDescription": "Everything else is disconnected or removed at once, in one step that cannot be undone.",
+    "channels": "Channels that stay connected ({kept, number} of {allowed, number})",
+    "channelsNote": "The others are disconnected: their tokens are deleted, and the platforms that allow it are asked to forget Peal. Posts scheduled on them fail at their time.",
+    "members": "Members who stay ({kept, number} of {allowed, number})",
+    "membersNote": "The others are removed from the workspace, and pending invitations are revoked. What they wrote stays. You stay.",
+    "you": "you",
+    "role": "{role, select, owner {owner} admin {admin} editor {editor} contributor {contributor} viewer {viewer} other {{role}}}",
+    "confirm": "I understand that {channels, plural, =0 {no channel is} one {# channel is} other {# channels are}} disconnected and {members, plural, =0 {no member is} one {# member is} other {# members are}} removed, for good.",
+    "apply": "Keep these, remove the rest",
+    "applying": "Removing…",
+    "tooMany": "Keep at most what the plan allows.",
+    "done": "The workspace is back within its plan.",
+    "others": "Owners and admins of {workspace} can order a larger plan or choose what stays: {names}.",
+    "othersUnknown": "An owner or an admin of the workspace can order a larger plan or choose what stays.",
+    "billing": "Open billing",
+    "loadFailed": "The channels and members could not be loaded.",
+    "errors": {
+      "forbidden": "Only owners and admins, in their own session, choose what stays.",
+      "tooManyChannels": "More channels are kept than the plan allows.",
+      "tooManyMembers": "More members are kept than the plan allows.",
+      "unknownChannel": "A channel kept is no longer connected. Reload the page.",
+      "unknownMember": "Someone kept is no longer a member, or you no longer are: another member may have chosen meanwhile. Reload the page.",
+      "selfRequired": "You must stay among the members.",
+      "ownerRequired": "Only an owner removes an owner.",
+      "generic": "That did not work. Try again in a moment."
+    }
   },
   "Captcha": {
     "label": "Check that you are a person"
@@ -1035,7 +1195,8 @@
       "subscribed": "A workspace this would delete has a subscription. Agree to cancel it to go on.",
       "tooManyRequests": "Too many attempts. Wait a minute, then try again.",
       "unknown": "Something went wrong. Try again.",
-      "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes."
+      "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes.",
+      "storeUnavailable": "The deletion could not be recorded where backups cannot undo it, so nothing was deleted. Try again in a few minutes."
     },
     "cancellation": {
       "title": "{count, plural, one {Deleting cancels a subscription} other {Deleting cancels # subscriptions}}",
@@ -1059,7 +1220,8 @@
       "general": "General",
       "members": "Members",
       "invitations": "Invitations",
-      "apiKeys": "API keys"
+      "apiKeys": "API keys",
+      "webhooks": "Webhooks"
     },
     "general": {
       "title": "Name",
@@ -1122,6 +1284,7 @@
       "listTitle": "Keys",
       "empty": "The workspace has no API key.",
       "startsWith": "Starts with {start}",
+      "publishing": "{allowed, select, yes {Can schedule and publish posts} other {Cannot schedule or publish posts}}",
       "dates": "Created {created} · {expires, select, never {never expires} other {expires {expires}}}",
       "revoke": "Revoke",
       "revoking": "Revoking…",
@@ -1145,6 +1308,114 @@
       "copied": "Key copied.",
       "copyFailed": "The key could not be copied. Select it and copy it yourself.",
       "done": "I saved it"
+    }
+  },
+  "Webhooks": {
+    "description": "Webhooks tell another system what happens in this workspace, without it having to ask: Peal sends a signed request to each endpoint for the events it subscribes to. An event carries ids, states and links, never what a post says or shows.",
+    "rules": "A workspace has {max, number} endpoints at most. Each delivery is tried up to {attempts, number} times over about a day, and stays in its endpoint’s log for {days, number} days. Deliveries can repeat and arrive out of order: the webhook-id header, which an event keeps on every delivery, tells repeats apart.",
+    "readOnly": "You can read the endpoints and their deliveries. Changing them takes the permission to manage webhooks.",
+    "listTitle": "Endpoints",
+    "empty": "The workspace has no webhook endpoint.",
+    "status": "{enabled, select, true {On} other {Off}}",
+    "offBecause": "{reason, select, failing {Peal turned it off on {date, date, medium}: every delivery had failed for {days, number} days. Fix the receiver, then turn it back on.} gone {Peal turned it off on {date, date, medium}: the receiver answered 410 Gone, which asks for no more deliveries.} other {Turned off on {date, date, medium}. It is sent nothing, and events that happen meanwhile are not kept for it.}}",
+    "failingSince": "Every delivery has failed since {date, date, medium} at {date, time, short}. After {days, number} days of failures, Peal turns the endpoint off.",
+    "previousSecret": "The secret before the last rotation still signs deliveries until {date, date, medium} at {date, time, short}.",
+    "eventsLabel": "Events",
+    "events": {
+      "post": {
+        "scheduled": "A post is scheduled or moved",
+        "unscheduled": "A post is taken back to draft",
+        "published": "A post goes live on a channel",
+        "failed": "A post fails on a channel",
+        "unconfirmed": "A post may have gone out on a channel",
+        "cancelled": "A post is cancelled"
+      },
+      "channel": {
+        "connected": "A channel is connected or reconnected",
+        "disconnected": "A channel is disconnected",
+        "reconnect_needed": "A channel must be reconnected"
+      },
+      "media": {
+        "ready": "A file is ready for posts",
+        "failed": "A file is refused or cannot be read"
+      },
+      "webhook": {
+        "test": "Test event"
+      }
+    },
+    "edit": "Edit",
+    "save": "Save",
+    "saved": "The endpoint is saved.",
+    "turnOff": "Turn off",
+    "turnOn": "Turn on",
+    "turningOff": "Turning off…",
+    "turningOn": "Turning on…",
+    "turnedOff": "The endpoint is off: nothing is sent to it.",
+    "turnedOn": "The endpoint is back on.",
+    "sendTest": "Send a test event",
+    "sendingTest": "Sending…",
+    "testSent": "Test event sent. Its delivery is in the endpoint’s log.",
+    "rotate": "Rotate the secret",
+    "rotating": "Rotating…",
+    "rotateTitle": "Rotate the secret of {host}?",
+    "rotateDescription": "You get a new secret, shown once. For {hours, number} hours each delivery carries two signatures, one per secret, so you can change the receiver’s without missing a delivery. The old secret then signs nothing more.",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "deleteTitle": "Delete the endpoint at {host}?",
+    "deleteDescription": "Nothing more is sent to it, and its secret and its delivery log are deleted. This cannot be undone.",
+    "deleted": "The endpoint is deleted.",
+    "showDeliveries": "Show deliveries",
+    "hideDeliveries": "Hide deliveries",
+    "createTitle": "Add an endpoint",
+    "url": "Address",
+    "urlHint": "An HTTPS address on a public host, on the default port, without a user name or a password. Peal follows no redirect.",
+    "descriptionLabel": "Description",
+    "descriptionHint": "What it is for, in {max, number} characters at most. Optional.",
+    "eventsLegend": "Events to send",
+    "eventsHint": "Choose at least one.",
+    "allEvents": "All events",
+    "enabled": "Send it events as soon as it is added",
+    "create": "Add the endpoint",
+    "creating": "Adding…",
+    "secretTitle": "{rotated, select, true {The new signing secret} other {The endpoint’s signing secret}}",
+    "secretDescription": "Copy it now and keep it somewhere safe: it is not shown again. The receiver verifies the webhook-signature header of each delivery with it.",
+    "secretLabel": "The signing secret",
+    "copy": "Copy",
+    "copied": "Secret copied.",
+    "copyFailed": "The secret could not be copied. Select it and copy it yourself.",
+    "done": "I saved it",
+    "deliveriesTitle": "Deliveries to {host}",
+    "deliveriesEmpty": "Nothing was sent to this endpoint in the last {days, number} days.",
+    "refresh": "Refresh",
+    "loadMore": "Show more",
+    "columnEvent": "Event",
+    "columnStatus": "Status",
+    "columnAnswer": "Last answer",
+    "columnAttempts": "Attempts",
+    "columnCreated": "Created",
+    "columnActions": "Actions",
+    "deliveryStatus": "{status, select, pending {Pending} succeeded {Delivered} failed {Failed} other {{status}}}",
+    "notAttempted": "Not attempted yet",
+    "nextAttempt": "Next attempt {date, date, medium} at {date, time, short}",
+    "deliveryFailure": "{reason, select, exhausted {Every attempt failed} gone {The receiver answered 410 Gone} endpointDisabled {The endpoint was turned off} notConfigured {This server can no longer read the endpoint’s secret} other {{reason}}}",
+    "answerStatus": "HTTP {status}",
+    "attemptError": "{error, select, timeout {No answer in time} connection {The connection failed} refused {Not sent: the address is no longer HTTPS on a public host} other {{error}}}",
+    "duration": "{ms, number} ms",
+    "attempts": "{made, number} of {max, number}",
+    "createdAt": "{date, date, medium} at {date, time, short}",
+    "sendAgain": "Send again",
+    "sendingAgain": "Sending…",
+    "sentAgain": "Sent again, as a new delivery of the same event.",
+    "errors": {
+      "forbidden": "Your role does not allow this.",
+      "notFound": "This endpoint no longer exists.",
+      "deliveryNotFound": "This delivery is no longer in the log.",
+      "notConfigured": "This server cannot keep signing secrets: whoever runs it has not set the keys that encrypt them.",
+      "endpointDisabled": "The endpoint is off. Turn it on first.",
+      "tooManySends": "The workspace sent as many test events and deliveries again as it may in an hour. Try again later.",
+      "tooMany": "The workspace already has {allowed, number} endpoints, the most it may. Delete one first.",
+      "urlRefused": "{reason, select, malformed {This is not an address.} notHttps {The address must be HTTPS, on the default port.} credentials {The address must not carry a user name or a password.} tooLong {The address is too long.} notPublic {The address’s host is not public, so Peal does not send requests to it.} unknownHost {The address’s host does not exist.} other {Peal does not deliver to this address.}}",
+      "unknown": "Something went wrong. Try again."
     }
   },
   "AccountSettings": {
@@ -1207,7 +1478,7 @@
     },
     "export": {
       "title": "Your data",
-      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, what staff did to your account, the posts you wrote in the workspaces you share, the content of the workspaces where you are the only member, and the connections that created content, which French law has Peal keep, with what it keeps once your account is closed. It holds no password, token or key. We email you each time a copy is downloaded.",
+      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, what staff did to your account, the posts you wrote in the workspaces you share and the content of the workspaces where you are the only member. It holds no password, token or key. We email you each time a copy is downloaded.",
       "download": "Download my data"
     },
     "delete": {
@@ -1215,13 +1486,18 @@
       "description": "Deletes your account for good, with the workspaces where you are the only member and everything in them. You leave the others.",
       "open": "Delete my account…",
       "confirmTitle": "Delete your account for good?",
-      "confirmDescription": "Your profile, sessions, notifications, preferences and connected applications go, with the workspaces where you are the only member, and their subscriptions are cancelled. This cannot be undone. As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for 5 years, and how you signed in and the connections that created content for 1 year, then deletes them. Enter your password to confirm.",
+      "confirmDescription": "Your profile, sessions, notifications, preferences and connected applications go, with the workspaces where you are the only member, and their subscriptions are cancelled. This cannot be undone. Enter your password to confirm.",
       "confirm": "Delete my account",
       "deleting": "Deleting…",
       "deleted": "Your account is deleted. A confirmation is on its way to your inbox.",
       "lastOwnerTitle": "These workspaces need another owner",
       "lastOwnerDescription": "You are the only owner of workspaces other members use. Make one of them an owner, or delete the workspace, then try again:",
       "billingPage": "Open the workspace’s billing page"
+    },
+    "legalHold": {
+      "exported": "On this server, it also lists the connections that created content, which French law has a host keep, with what stays once your account is closed.",
+      "identification": "As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for {identityYears, plural, one {# year} other {# years}}, and how you signed in and the connections that created content for {accountYears, plural, one {# year} other {# years}}, then deletes them.",
+      "connections": "This server kept what French law requires of a host, and no longer does: the connections that created content, kept so far, stay {connectionYears, plural, one {# year} other {# years}} from each, apart, for judicial authorities only, then are deleted."
     }
   },
   "Staff": {
@@ -1233,7 +1509,9 @@
       "system": "System",
       "users": "Accounts",
       "workspaces": "Workspaces",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "requests": "Contract requests",
+      "legal": "Legal requests"
     },
     "search": {
       "submit": "Search",
@@ -1400,6 +1678,17 @@
       "noSubscription": "None",
       "cancelsAtEnd": "Ends",
       "renews": "Renews",
+      "webhooksTitle": "Webhooks",
+      "webhooksHint": "The host each endpoint delivers to, never its full address or its secret.",
+      "noWebhook": "No webhook endpoint.",
+      "webhookColumns": {
+        "host": "Host",
+        "state": "State",
+        "events": "Event types",
+        "failingSince": "Failing since"
+      },
+      "webhookState": "{state, select, enabled {On} manual {Turned off by a member} failing {Turned off after days of failed deliveries} gone {Turned off, its receiver answered 410 Gone} other {Off}}",
+      "notFailing": "Not failing",
       "channelsTitle": "Channels",
       "noChannel": "No channel is connected.",
       "channelColumns": {
@@ -1437,7 +1726,7 @@
       "noReason": "Not kept",
       "until": "Until",
       "workspace": "In a workspace",
-      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} other {{action}}}"
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} other {{action}}}"
     },
     "channelStatus": {
       "active": "Works",
@@ -1446,7 +1735,120 @@
       "disabledToReconnect": "Turned off, to reconnect"
     },
     "troubleStatus": "{status, select, failed {Failed} other {Unconfirmed}}",
-    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}"
+    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}",
+    "requests": {
+      "title": "Contract requests",
+      "description": "Requests to cancel a contract or withdraw from one that the form could not apply by itself: no contract was found, or their sender has not followed the link emailed to them. Apply one to a workspace only once you know its sender holds that contract; it takes effect as of the date it was received, and the sender is told.",
+      "empty": "No request waits.",
+      "kind": "{kind, select, cancellation {Cancellation} other {Withdrawal}}",
+      "status": "{status, select, awaitingConfirmation {Awaits the sender’s link} unmatched {No contract found} other {{status}}}",
+      "received": "Received",
+      "name": "Name",
+      "email": "Address",
+      "contract": "Contract, as written",
+      "desiredOn": "Day wanted",
+      "account": "Account of this address",
+      "noAccount": "None",
+      "notGiven": "Not given",
+      "workspaceId": "Workspace id",
+      "workspaceHint": "The id of the workspace whose contract the request is about, from Workspaces.",
+      "reason": "Why",
+      "reasonHint": "Kept in the audit log, with your name: how you made sure, never what the request says.",
+      "apply": "Apply to this workspace",
+      "applying": "Applying…",
+      "close": "Close without applying",
+      "closing": "Closing…",
+      "applied": "Applied: the sender is told what became of it.",
+      "refused": "The contract refused it: {refusal, select, nothingToCancel {nothing to cancel} notSubscribed {no subscription} expired {the 14 days were over when it came} business {a business has no right to withdraw} other {{refusal}}}. The sender is told.",
+      "closed": "Closed.",
+      "errors": {
+        "notFound": "No such request, or no such workspace.",
+        "settled": "This request was already applied, refused or closed.",
+        "unavailable": "Stripe could not be reached: nothing changed.",
+        "unknown": "That did not work. Try again."
+      }
+    },
+    "legal": {
+      "title": "Legal requests",
+      "description": "A judicial authority, or another authority the law empowers, may ask in writing for the data that identifies who contributed content. This page is the only way to read what a closed account left and the connections that created content.",
+      "recordedTitle": "Each answer is recorded",
+      "recorded": "Everything you submit here is recorded under your name before anything is shown, even when nothing is found: the authority, its reference, the legal basis, what was asked about and for, and how many records were returned. The record is kept {years, plural, one {# year} other {# years}}, shows in the audit log to the rest of staff, and can be reviewed by whoever answers for Peal’s compliance. Enter only a request an authority made in writing.",
+      "form": {
+        "title": "Answer a request",
+        "kind": "The request names",
+        "kinds": {
+          "email": "An email address",
+          "userId": "An account id",
+          "workspaceId": "A workspace id"
+        },
+        "identifier": "Identifier",
+        "identifierHint": "An email address finds the closed accounts that had it. An account id finds the account, closed or not. A workspace id finds the connections made in it.",
+        "authority": "Authority",
+        "authorityHint": "The court, prosecutor or service that asked, as its document names it.",
+        "reference": "Reference",
+        "referenceHint": "The request’s number, the procedure and its date.",
+        "legalBasis": "Legal basis",
+        "legalBasisHint": "The text that gives the authority the power to ask, as its document cites it.",
+        "covers": "What the request asks for",
+        "coversHint": "Tick only what the document asks for: nothing else is read or shown.",
+        "cover": {
+          "identity": "Who held the account: name, email address, creation date",
+          "signIn": "How it signed in: each sign-in method’s identifier, never a password",
+          "payments": "Payment references: the payment provider’s customer ids",
+          "connections": "Connections that created, changed or deleted content: time, IP address, protocol"
+        },
+        "since": "Connections from (UTC day)",
+        "until": "Connections to (UTC day)",
+        "periodHint": "Leave both empty when the request names no period.",
+        "submit": "Record the request and show the answer",
+        "pending": "Recording…",
+        "incomplete": "Fill in the authority, the reference, the legal basis and the identifier, and tick what the request asks for.",
+        "clear": "Clear the answer"
+      },
+      "answer": {
+        "recorded": "Answer recorded as",
+        "held": "Closed accounts",
+        "noHeld": "No closed account is held for this subject.",
+        "connections": "Connections",
+        "noConnections": "No connection is held for this subject in this period.",
+        "notCovered": "Not covered by this request",
+        "noneKept": "None kept",
+        "userId": "Account id",
+        "closedAt": "Closed",
+        "identity": "Who held it",
+        "signIn": "How it signed in",
+        "payments": "Payment references",
+        "columns": {
+          "at": "When",
+          "ipAddress": "IP address",
+          "protocol": "Protocol",
+          "access": "Signed in with",
+          "userId": "Account id",
+          "apiKeyId": "API key id",
+          "workspaceId": "Workspace id"
+        }
+      },
+      "past": {
+        "title": "Answers given",
+        "description": "Newest first. What was handed over is never kept here, only what was asked and how many records it returned.",
+        "empty": "No legal request has been answered yet.",
+        "columns": {
+          "at": "When",
+          "staff": "Answered by",
+          "authority": "Authority and reference",
+          "legalBasis": "Legal basis",
+          "subject": "About",
+          "covers": "Covered",
+          "returned": "Returned"
+        },
+        "subject": "{kind, select, email {Email address} userId {Account} workspaceId {Workspace} other {{kind}}}",
+        "cover": "{cover, select, identity {Identity} signIn {Sign-in} payments {Payments} connections {Connections} other {{cover}}}",
+        "period": "Connections from {since} to {until}",
+        "open": "the start",
+        "now": "the answer",
+        "returned": "{held, plural, =0 {No closed account} one {# closed account} other {# closed accounts}}, {connections, plural, =0 {no connection} one {# connection} other {# connections}}"
+      }
+    }
   },
   "Impersonation": {
     "label": "Acting as another account",

@@ -102,3 +102,29 @@ func TestBillingGetWithWireMock(
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestBillingGetWithWireMock", "GET", "/api/workspaces/workspaceId/billing", nil, 1)
 }
+
+func TestBillingStandingWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.StandingBillingRequest{
+		WorkspaceID: "workspaceId",
+	}
+	_, invocationErr := client.Billing.Standing(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestBillingStandingWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestBillingStandingWithWireMock", "GET", "/api/workspaces/workspaceId/billing/standing", nil, 1)
+}

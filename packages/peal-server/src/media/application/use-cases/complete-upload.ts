@@ -5,7 +5,9 @@ import {
   MediaAssets,
 } from "#media/application/ports/media-assets.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
+import { StorageAllowance } from "#media/application/ports/storage-allowance.ts";
 import { UploadIncomplete } from "#media/application/upload-incomplete.ts";
+import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import { UploadRejected } from "#media/application/upload-rejected.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import {
@@ -72,7 +74,11 @@ const settled = (
  * and an upload whose parts were joined before the asset was saved is found
  * by its stored file. When two calls overlap, the first to save wins and
  * the other returns its result. A file that does not match is deleted and
- * the asset rejected; a missing one leaves the asset pending.
+ * the asset rejected; a missing one leaves the asset pending. The room an
+ * upload was given when it started is held for it as long as its URLs
+ * work: one completed later needs room in the workspace's plan again
+ * (`PlanLimitReached` `mediaStorage` otherwise, and its file is deleted),
+ * so files sent and left unfinished never add up past the plan.
  */
 export const completeUpload = Effect.fn("Media.completeUpload")(
   function* completeUpload({ assetId, workspaceId }: CompleteUploadRequest) {
@@ -116,7 +122,33 @@ export const completeUpload = Effect.fn("Media.completeUpload")(
     }
 
     const uploaded = yield* Effect.fromResult(markUploaded(asset, now));
+    const policy = yield* CurrentUploadPolicy;
 
-    return yield* settled(yield* assets.update(uploaded, "pending"));
+    const pendingSince = DateTime.subtractDuration(
+      now,
+      policy.partUploadExpiry
+    );
+
+    // Within its URLs' life, the room it was given when it started is
+    // still held for it.
+    if (DateTime.isGreaterThan(asset.createdAt, pendingSince)) {
+      return yield* settled(yield* assets.update(uploaded, "pending"));
+    }
+
+    const allowance = yield* StorageAllowance.use((allowed) =>
+      allowed.bytes(workspaceId)
+    );
+
+    // Past it, others may have taken the room: it is counted again, and a
+    // file the plan no longer holds goes, the asset left pending.
+    return yield* settled(
+      yield* assets
+        .updateWithin(uploaded, allowance, pendingSince)
+        .pipe(
+          Effect.tapErrorTag("PlanLimitReached", () =>
+            storage.remove(asset.storageKey)
+          )
+        )
+    );
   }
 );

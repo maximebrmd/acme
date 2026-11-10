@@ -3,6 +3,7 @@ import type { Stripe } from "stripe";
 
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import type {
+  CreditReason,
   EndReason,
   InvoiceCredit,
   PaidInvoice,
@@ -18,6 +19,8 @@ const requestTimeout = 10_000;
 
 // Why Stripe ended it, in its dashboard and its events.
 const comments: Readonly<Record<EndReason, string>> = {
+  cancelledLate:
+    "Cancelled on Peal: the request came before the period renewed",
   duplicateTrial: "Second trial of the same account or workspace",
   orderedDuringTrial: "Trial ended on Peal: a paid plan was ordered",
   trialCancelled: "Trial cancelled on Peal",
@@ -42,13 +45,34 @@ const PaidInvoiceSchema = Schema.Struct({
   lines: Schema.optionalKey(
     Schema.Struct({
       data: Schema.Array(
-        Schema.Struct({ period: Schema.optionalKey(PeriodSchema) })
+        Schema.Struct({
+          amount: Schema.optionalKey(Schema.Int),
+          period: Schema.optionalKey(PeriodSchema),
+        })
       ),
     })
   ),
 });
 
 const decodeInvoice = Schema.decodeUnknownOption(PaidInvoiceSchema);
+
+const NoteSchema = Schema.Struct({
+  metadata: Schema.optionalKey(
+    Schema.NullOr(Schema.Record(Schema.String, Schema.String))
+  ),
+});
+
+const decodeNote = Schema.decodeUnknownOption(NoteSchema);
+
+// The credit notes Stripe lists, those it describes otherwise left out.
+const decodeNotes = (notes: readonly unknown[]) =>
+  notes.flatMap((note) => Option.toArray(decodeNote(note)));
+
+// What each credit note says it is for, on the invoice's page.
+const memos: Readonly<Record<CreditReason["_tag"], string>> = {
+  lateCancellation: "Renewal charged after the cancellation was received",
+  withdrawal: "Consumer withdrawal",
+};
 
 const UpcomingSchema = Schema.Struct({
   currency: Schema.NonEmptyString,
@@ -87,6 +111,14 @@ const periodOf = (
       };
 };
 
+// A credit note's key, kept in its metadata: Stripe forgets an
+// idempotency key after a day, and a request can be taken up again
+// weeks later, from its link or by staff.
+const creditKeyOf = (reason: CreditReason, id: string, invoiceId: string) =>
+  reason._tag === "withdrawal"
+    ? `withdrawal-credit-${id}-${invoiceId}`
+    : `late-cancellation-credit-${reason.requestKey}-${invoiceId}`;
+
 /**
  * Billing's calls to Stripe through the server's key: each one bounded in
  * time, each change under an idempotency key, so a member trying again
@@ -110,24 +142,54 @@ export const StripeContractsLive = Layer.effect(
         onNone: () => Effect.die("Billing is off: Stripe has no key"),
         onSome: (stripe) =>
           Effect.tryPromise({
-            catch: () => new StripeUnreachable({ workspaceId }),
+            // Stripe refusing the request itself will refuse it again.
+            catch: (cause) =>
+              new StripeUnreachable({
+                permanent: isRefused(cause),
+                workspaceId,
+              }),
             try: async () => await request(stripe),
           }),
       });
 
-    const cancelAtPeriodEnd = (workspaceId: WorkspaceId, id: string) =>
+    const cancelAtPeriodEnd = (
+      workspaceId: WorkspaceId,
+      id: string,
+      requestKey: string
+    ) =>
       call(
         workspaceId,
         async (stripe) =>
           await stripe.subscriptions.update(
             id,
             { cancel_at_period_end: true },
-            { idempotencyKey: `cancel-${id}` }
+            { idempotencyKey: `cancel-${id}-${requestKey}` }
           )
       ).pipe(
         Effect.asVoid,
         Effect.withSpan("StripeContracts.cancelAtPeriodEnd")
       );
+
+    const cancelOn = (
+      workspaceId: WorkspaceId,
+      id: string,
+      at: DateTime.Utc,
+      requestKey: string
+    ) => {
+      const seconds = Math.floor(DateTime.toEpochMillis(at) / 1000);
+
+      return call(
+        workspaceId,
+        async (stripe) =>
+          await stripe.subscriptions.update(
+            id,
+            // In a later period, Stripe always charges that period only up
+            // to this instant.
+            { cancel_at: seconds, proration_behavior: "create_prorations" },
+            { idempotencyKey: `cancel-at-${id}-${seconds}-${requestKey}` }
+          )
+      ).pipe(Effect.asVoid, Effect.withSpan("StripeContracts.cancelAt"));
+    };
 
     const endNow = (workspaceId: WorkspaceId, id: string, reason: EndReason) =>
       Option.match(client, {
@@ -194,6 +256,12 @@ export const StripeContractsLive = Layer.effect(
                 Option.filter(({ amount_paid: paid }) => paid > 0),
                 Option.map((paid): PaidInvoice => ({
                   invoiceId: paid.id,
+                  lines: (paid.lines?.data ?? []).flatMap(
+                    ({ amount, period }) =>
+                      amount === undefined || period === undefined
+                        ? []
+                        : [{ amount, start: fromStripeTime(period.start) }]
+                  ),
                   paid: { amount: paid.amount_paid, currency: paid.currency },
                   ...periodOf(paid.lines?.data ?? []),
                 }))
@@ -207,25 +275,37 @@ export const StripeContractsLive = Layer.effect(
     const credit = (
       workspaceId: WorkspaceId,
       id: string,
-      credits: readonly InvoiceCredit[]
+      credits: readonly InvoiceCredit[],
+      reason: CreditReason
     ) =>
       Effect.forEach(
         credits.filter(({ amount }) => amount > 0),
-        ({ amount, invoiceId }) =>
-          call(
-            workspaceId,
-            async (stripe) =>
-              await stripe.creditNotes.create(
-                {
-                  amount,
-                  invoice: invoiceId,
-                  memo: "Consumer withdrawal",
-                  metadata: { reason: "withdrawal", subscription: id },
-                  refund_amount: amount,
-                },
-                { idempotencyKey: `withdrawal-credit-${id}-${invoiceId}` }
-              )
-          ),
+        ({ amount, invoiceId }) => {
+          const key = creditKeyOf(reason, id, invoiceId);
+
+          return call(workspaceId, async (stripe) => {
+            const made = await stripe.creditNotes
+              .list({ invoice: invoiceId, limit: 100 })
+              .autoPagingToArray({ limit: 1000 });
+
+            if (
+              decodeNotes(made).some((note) => note.metadata?.["key"] === key)
+            ) {
+              return;
+            }
+
+            await stripe.creditNotes.create(
+              {
+                amount,
+                invoice: invoiceId,
+                memo: memos[reason._tag],
+                metadata: { key, reason: reason._tag, subscription: id },
+                refund_amount: amount,
+              },
+              { idempotencyKey: key }
+            );
+          });
+        },
         { discard: true }
       ).pipe(Effect.withSpan("StripeContracts.credit"));
 
@@ -290,6 +370,7 @@ export const StripeContractsLive = Layer.effect(
       }).pipe(Effect.withSpan("StripeContracts.upcomingTotal"));
 
     return StripeContracts.of({
+      cancelAt: cancelOn,
       cancelAtPeriodEnd,
       credit,
       endAtTrialEnd,

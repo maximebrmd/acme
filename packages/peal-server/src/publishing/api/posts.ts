@@ -5,8 +5,8 @@ import {
   CurrentMember,
   defaultDraftPageSize,
   Forbidden,
+  IdempotencyKeyReused,
   InvalidTimeRange,
-  PlanLimitReached,
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
@@ -25,6 +25,7 @@ import type { InvalidPostTransition } from "#publishing/domain/invalid-post-tran
 import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { limitRefusal } from "#shared/api/limit-reached.ts";
 
 import {
   channelIdsFrom,
@@ -33,6 +34,7 @@ import {
   postIdFrom,
   postIdOption,
   scheduleFrom,
+  sendRequestFrom,
   targetIdFrom,
 } from "./post-input.ts";
 import { attemptView, postView } from "./post-view.ts";
@@ -71,14 +73,6 @@ const followUpFailures = {
   PostNotFound: notFound,
 } as const;
 
-const limitReached = ({
-  allowed,
-  limit,
-}: {
-  readonly allowed: number;
-  readonly limit: PlanLimitReached["limit"];
-}) => Effect.fail(new PlanLimitReached({ allowed, limit }));
-
 export const PostsHandlers = HttpApiBuilder.group(
   Api,
   "posts",
@@ -87,6 +81,7 @@ export const PostsHandlers = HttpApiBuilder.group(
     const followUp = yield* PostFollowUp;
     const queries = yield* PostQueries;
     const scheduling = yield* PostScheduling;
+    const limitReached = yield* limitRefusal;
 
     return handlers.handleAll({
       attempts: ({ params }) =>
@@ -292,6 +287,32 @@ export const PostsHandlers = HttpApiBuilder.group(
             );
 
           return postView(scheduled);
+        }),
+      send: ({ headers, payload }) =>
+        Effect.gen(function* send() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const request = yield* sendRequestFrom(
+            payload,
+            headers["idempotency-key"]
+          );
+
+          const sent = yield* scheduling.send(actor, request).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              IdempotencyKeyReused: () =>
+                Effect.fail(new IdempotencyKeyReused()),
+              MissingPermission: forbidden,
+              PlanLimitReached: limitReached,
+              PostContentRejected: contentInvalid,
+              PostNotFound: notFound,
+              ScheduleInPast: inPast,
+              UnknownChannels: unknownChannels,
+              UnknownMedia: unknownMedia,
+            })
+          );
+
+          return postView(sent);
         }),
       unschedule: ({ params }) =>
         Effect.gen(function* unschedule() {

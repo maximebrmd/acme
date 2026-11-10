@@ -118,7 +118,9 @@ const WorkspacePage = async ({
                 }
               >
                 <Instant
-                  value={DateTime.formatIso(subscription.currentPeriodEnd)}
+                  value={DateTime.formatIso(
+                    subscription.endsAt ?? subscription.currentPeriodEnd
+                  )}
                 />
               </Fact>
             )}
@@ -154,6 +156,46 @@ const WorkspacePage = async ({
                     ) : (
                       <Instant
                         value={DateTime.formatIso(channel.tokenExpiresAt)}
+                      />
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Section>
+      <Section title={t("webhooksTitle")} description={t("webhooksHint")}>
+        {workspace.webhooks.length === 0 ? (
+          <p className="text-muted-foreground text-sm">{t("noWebhook")}</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("webhookColumns.host")}</TableHead>
+                <TableHead>{t("webhookColumns.state")}</TableHead>
+                <TableHead>{t("webhookColumns.events")}</TableHead>
+                <TableHead>{t("webhookColumns.failingSince")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {workspace.webhooks.map((webhook) => (
+                <TableRow key={webhook.id}>
+                  <TableCell>{webhook.host}</TableCell>
+                  <TableCell>
+                    {t("webhookState", {
+                      state: webhook.enabled
+                        ? "enabled"
+                        : (webhook.disabledReason ?? "manual"),
+                    })}
+                  </TableCell>
+                  <TableCell>{webhook.eventTypes}</TableCell>
+                  <TableCell>
+                    {webhook.failingSince === null ? (
+                      t("notFailing")
+                    ) : (
+                      <Instant
+                        value={DateTime.formatIso(webhook.failingSince)}
                       />
                     )}
                   </TableCell>

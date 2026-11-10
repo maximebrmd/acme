@@ -5,6 +5,7 @@ import typing
 from ..core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ..core.request_options import RequestOptions
 from ..types.billing import Billing
+from ..types.standing import Standing
 from .raw_client import AsyncRawBillingClient, RawBillingClient
 
 
@@ -51,6 +52,36 @@ class BillingClient:
         )
         """
         _response = self._raw_client.get(workspace_id, request_options=request_options)
+        return _response.data
+
+    def standing(self, workspace_id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Standing:
+        """
+        Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with `planLimit`), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Standing
+            Standing
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.billing.standing(
+            workspace_id="workspaceId",
+        )
+        """
+        _response = self._raw_client.standing(workspace_id, request_options=request_options)
         return _response.data
 
 
@@ -105,4 +136,42 @@ class AsyncBillingClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.get(workspace_id, request_options=request_options)
+        return _response.data
+
+    async def standing(self, workspace_id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Standing:
+        """
+        Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with `planLimit`), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Standing
+            Standing
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.billing.standing(
+                workspace_id="workspaceId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.standing(workspace_id, request_options=request_options)
         return _response.data

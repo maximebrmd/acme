@@ -109,6 +109,15 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.WebhookEndpointDisabled"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.WebhookEndpointDisabled value)
+    {
+        Type = "WebhookEndpointDisabled";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -168,6 +177,11 @@ public record NoticeEvent
     /// Returns true if <see cref="Type"/> is "SubscriptionWithdrawn"
     /// </summary>
     public bool IsSubscriptionWithdrawn => Type == "SubscriptionWithdrawn";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "WebhookEndpointDisabled"
+    /// </summary>
+    public bool IsWebhookEndpointDisabled => Type == "WebhookEndpointDisabled";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventPostPublished"/> if <see cref="Type"/> is 'PostPublished', otherwise throws an exception.
@@ -261,6 +275,17 @@ public record NoticeEvent
             ? (Peal.NoticeEventSubscriptionWithdrawn)Value!
             : throw new global::System.Exception("NoticeEvent.Type is not 'SubscriptionWithdrawn'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventWebhookEndpointDisabled"/> if <see cref="Type"/> is 'WebhookEndpointDisabled', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'WebhookEndpointDisabled'.</exception>
+    public Peal.NoticeEventWebhookEndpointDisabled AsWebhookEndpointDisabled() =>
+        IsWebhookEndpointDisabled
+            ? (Peal.NoticeEventWebhookEndpointDisabled)Value!
+            : throw new global::System.Exception(
+                "NoticeEvent.Type is not 'WebhookEndpointDisabled'"
+            );
+
     public T Match<T>(
         Func<Peal.NoticeEventPostPublished, T> onPostPublished,
         Func<Peal.NoticeEventPostFailed, T> onPostFailed,
@@ -272,6 +297,7 @@ public record NoticeEvent
         Func<Peal.NoticeEventSubscriptionRenewing, T> onSubscriptionRenewing,
         Func<Peal.NoticeEventSubscriptionCancelled, T> onSubscriptionCancelled,
         Func<Peal.NoticeEventSubscriptionWithdrawn, T> onSubscriptionWithdrawn,
+        Func<Peal.NoticeEventWebhookEndpointDisabled, T> onWebhookEndpointDisabled,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -287,6 +313,7 @@ public record NoticeEvent
             "SubscriptionRenewing" => onSubscriptionRenewing(AsSubscriptionRenewing()),
             "SubscriptionCancelled" => onSubscriptionCancelled(AsSubscriptionCancelled()),
             "SubscriptionWithdrawn" => onSubscriptionWithdrawn(AsSubscriptionWithdrawn()),
+            "WebhookEndpointDisabled" => onWebhookEndpointDisabled(AsWebhookEndpointDisabled()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -302,6 +329,7 @@ public record NoticeEvent
         Action<Peal.NoticeEventSubscriptionRenewing> onSubscriptionRenewing,
         Action<Peal.NoticeEventSubscriptionCancelled> onSubscriptionCancelled,
         Action<Peal.NoticeEventSubscriptionWithdrawn> onSubscriptionWithdrawn,
+        Action<Peal.NoticeEventWebhookEndpointDisabled> onWebhookEndpointDisabled,
         Action<string, object?> onUnknown_
     )
     {
@@ -336,6 +364,9 @@ public record NoticeEvent
                 break;
             case "SubscriptionWithdrawn":
                 onSubscriptionWithdrawn(AsSubscriptionWithdrawn());
+                break;
+            case "WebhookEndpointDisabled":
+                onWebhookEndpointDisabled(AsWebhookEndpointDisabled());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -483,6 +514,20 @@ public record NoticeEvent
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventWebhookEndpointDisabled"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsWebhookEndpointDisabled(out Peal.NoticeEventWebhookEndpointDisabled? value)
+    {
+        if (Type == "WebhookEndpointDisabled")
+        {
+            value = (Peal.NoticeEventWebhookEndpointDisabled)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator NoticeEvent(NoticeEvent.PostPublished value) => new(value);
@@ -509,6 +554,9 @@ public record NoticeEvent
         new(value);
 
     public static implicit operator NoticeEvent(NoticeEvent.SubscriptionWithdrawn value) =>
+        new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.WebhookEndpointDisabled value) =>
         new(value);
 
     [Serializable]
@@ -610,6 +658,13 @@ public record NoticeEvent
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.NoticeEventSubscriptionWithdrawn"
                         ),
+                "WebhookEndpointDisabled" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventWebhookEndpointDisabled?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventWebhookEndpointDisabled"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new NoticeEvent(discriminator, value);
@@ -637,6 +692,10 @@ public record NoticeEvent
                     "SubscriptionRenewing" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionCancelled" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionWithdrawn" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "WebhookEndpointDisabled" => JsonSerializer.SerializeToNode(
+                        value.Value,
+                        options
+                    ),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -861,6 +920,26 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.SubscriptionWithdrawn(
             Peal.NoticeEventSubscriptionWithdrawn value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for WebhookEndpointDisabled
+    /// </summary>
+    [Serializable]
+    public struct WebhookEndpointDisabled
+    {
+        public WebhookEndpointDisabled(Peal.NoticeEventWebhookEndpointDisabled value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventWebhookEndpointDisabled Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.WebhookEndpointDisabled(
+            Peal.NoticeEventWebhookEndpointDisabled value
         ) => new(value);
     }
 }

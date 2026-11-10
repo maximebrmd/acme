@@ -116,6 +116,67 @@ module Peal
         end
       end
 
+      # Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload
+      # does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself,
+      # from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or
+      # cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The
+      # file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16
+      # MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90
+      # seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it
+      # must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace
+      # imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs
+      # media:upload.
+      #
+      # @param request_options [Hash]
+      # @param params [Peal::Media::Types::MediaImport]
+      # @option request_options [String] :base_url
+      # @option request_options [Hash{String => Object}] :additional_headers
+      # @option request_options [Hash{String => Object}] :additional_query_parameters
+      # @option request_options [Hash{String => Object}] :additional_body_parameters
+      # @option request_options [Integer] :timeout_in_seconds
+      # @option params [String] :workspace_id
+      #
+      # @example
+      #   client.media.import_from_url(
+      #     workspace_id: "workspaceId",
+      #     url: "url"
+      #   )
+      #
+      # @return [Peal::Types::Media]
+      def import_from_url(request_options: {}, **params)
+        params = Peal::Internal::Types::Utils.normalize_keys(params)
+        request_data = Peal::Media::Types::MediaImport.new(params).to_h
+        non_body_param_names = %w[workspaceId]
+        body = request_data.except(*non_body_param_names)
+
+        request = Peal::Internal::JSON::Request.new(
+          base_url: request_options[:base_url],
+          method: "POST",
+          path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/media/import",
+          body: body,
+          request_options: request_options,
+          max_retries: 0
+        )
+        begin
+          response = @client.send(request)
+        rescue Net::HTTPRequestTimeout
+          raise Peal::Errors::TimeoutError
+        end
+        code = response.code.to_i
+        if code.between?(200, 299)
+          (response.body.to_s.empty? ? nil : Peal::Types::Media.load(response.body))
+        else
+          error_class = Peal::Errors::ResponseError.subclass_for_code(code)
+          error_types = {
+            401 => Peal::Types::UnauthenticatedEncoded,
+            402 => Peal::Types::PlanLimitReachedEncoded,
+            403 => Peal::Types::ForbiddenEncoded
+          }
+          error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
+          raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
+        end
+      end
+
       # Shows one of the workspace's media. Needs media:read.
       #
       # @param request_options [Hash]
@@ -264,7 +325,9 @@ module Peal
 
       # Checks that the file reached the store with the declared size and type, joining its parts first, then probes it:
       # the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an
-      # uploaded file again. Needs media:upload.
+      # uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed
+      # later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached
+      # `mediaStorage`). Needs media:upload.
       #
       # @param request_options [Hash]
       # @param params [Hash]
@@ -304,6 +367,7 @@ module Peal
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
             401 => Peal::Types::UnauthenticatedEncoded,
+            402 => Peal::Types::PlanLimitReachedEncoded,
             403 => Peal::Types::ForbiddenEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)

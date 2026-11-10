@@ -28,7 +28,6 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
 export const identificationHolds = legalSchema.table(
   "identification_holds",
   {
-    accountCreatedAt: instant("account_created_at").notNull(),
     closedAt: instant("closed_at").notNull(),
     email: text("email").notNull(),
     id: uuid("id").primaryKey(),
@@ -75,9 +74,11 @@ export const connections = legalSchema.table(
 );
 
 /**
- * Each legal request staff answered: who answered, when, the authority and
- * its reference, what it asked about (`subject`: an email, an account or a
- * workspace) and how many records it got. Kept 5 years.
+ * Each legal request staff answered: who answered, when, the authority,
+ * its reference and the text that empowers it, what it asked about
+ * (`subject`: an email, an account or a workspace), what it asked for
+ * (`covers`, and the period of the connections when it named one) and how
+ * many records it got. Kept 5 years.
  */
 export const disclosures = legalSchema.table(
   "disclosures",
@@ -85,13 +86,17 @@ export const disclosures = legalSchema.table(
     at: instant("at").notNull(),
     authority: text("authority").notNull(),
     connections: integer("connections").notNull(),
+    covers: jsonb("covers").$type<readonly string[]>().notNull(),
     held: integer("held").notNull(),
     id: uuid("id").primaryKey(),
+    legalBasis: text("legal_basis").notNull(),
     reference: text("reference").notNull(),
+    since: instant("since"),
     staffId: uuid("staff_id").notNull(),
     subject: jsonb("subject")
       .$type<Readonly<Record<string, string>>>()
       .notNull(),
+    until: instant("until"),
   },
   (table) => [index("disclosures_at").on(table.at)]
 );

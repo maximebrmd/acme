@@ -27,6 +27,12 @@ export const StaffActionSchema = Schema.Literals([
   // Answered a legal request (`legal` context): the reason holds the
   // authority and its reference, the target the account it named.
   "legalDisclosure",
+  // Applied a request to cancel a contract or withdraw from one, which
+  // the form could not tie to its contract, to a workspace's (`billing`
+  // context): the object ids hold the request's.
+  "applyContractRequest",
+  // Closed such a request without applying it.
+  "closeContractRequest",
 ]);
 
 export type StaffAction = typeof StaffActionSchema.Type;

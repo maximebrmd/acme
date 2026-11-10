@@ -19,17 +19,33 @@ export const withdrawalEndsAt = (
     Option.map((start) => DateTime.addDuration(start, withdrawalPeriod))
   );
 
+const wasEnded = ({ status }: Subscription): boolean => status === "canceled";
+
 /**
  * Whether the subscription can still be withdrawn from at `now`: one that
  * gives its plan, started less than 14 days ago, whether or not it is set to
- * end with its period, as cancelling waives no right to withdraw. Whether
- * the customer is a consumer is Stripe's to say, and checked apart.
+ * end with its period, as cancelling waives no right to withdraw. With
+ * `endedSince`, one that ended after `now`, the moment a statement came,
+ * can be withdrawn from as of then: a statement that waited to be applied
+ * loses nothing. Whether the customer is a consumer is Stripe's to say,
+ * and checked apart.
  */
 export const mayWithdraw = (
   subscription: Subscription,
-  now: DateTime.Utc
+  now: DateTime.Utc,
+  endedSince = false
 ): Result.Result<DateTime.Utc, WithdrawalUnavailable> => {
-  if (!entitles(subscription)) {
+  if (!entitles(subscription) && !(endedSince && wasEnded(subscription))) {
+    return Result.fail(new WithdrawalUnavailable({ reason: "notSubscribed" }));
+  }
+
+  // A statement that came before the contract started withdraws from an
+  // earlier one: counted from then, the whole of this one would go back.
+  if (
+    Option.exists(subscription.startedAt, (startedAt) =>
+      DateTime.isLessThan(now, startedAt)
+    )
+  ) {
     return Result.fail(new WithdrawalUnavailable({ reason: "notSubscribed" }));
   }
 

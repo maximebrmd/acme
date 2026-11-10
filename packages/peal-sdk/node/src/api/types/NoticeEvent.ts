@@ -12,7 +12,8 @@ export type NoticeEvent =
     | Peal.NoticeEvent.TrialEnding
     | Peal.NoticeEvent.SubscriptionRenewing
     | Peal.NoticeEvent.SubscriptionCancelled
-    | Peal.NoticeEvent.SubscriptionWithdrawn;
+    | Peal.NoticeEvent.SubscriptionWithdrawn
+    | Peal.NoticeEvent.WebhookEndpointDisabled;
 
 export namespace NoticeEvent {
     export interface PostPublished extends Peal.NoticeEventPostPublished {
@@ -53,5 +54,9 @@ export namespace NoticeEvent {
 
     export interface SubscriptionWithdrawn extends Peal.NoticeEventSubscriptionWithdrawn {
         _tag: "SubscriptionWithdrawn";
+    }
+
+    export interface WebhookEndpointDisabled extends Peal.NoticeEventWebhookEndpointDisabled {
+        _tag: "WebhookEndpointDisabled";
     }
 }

@@ -57,6 +57,7 @@ public class GetTest : BaseMockServerTest
               "subscription": {
                 "cancelAtPeriodEnd": true,
                 "currentPeriodEnd": "currentPeriodEnd",
+                "endsAt": "endsAt",
                 "interval": "month",
                 "plan": "starter",
                 "startedAt": "startedAt",
@@ -134,6 +135,7 @@ public class GetTest : BaseMockServerTest
               "subscription": {
                 "cancelAtPeriodEnd": true,
                 "currentPeriodEnd": "currentPeriodEnd",
+                "endsAt": "endsAt",
                 "interval": "month",
                 "plan": "starter",
                 "startedAt": "startedAt",

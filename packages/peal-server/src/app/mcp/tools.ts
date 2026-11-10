@@ -3,10 +3,12 @@ import { Tool, Toolkit } from "effect/ai";
 import { ChannelSchema, CurrentMember, PermissionSchema } from "peal-contract";
 
 import { reading } from "#app/mcp/annotations.ts";
+import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
+import { WebhookTools } from "#app/mcp/webhooks-tools.ts";
 
 const UserSchema = Schema.Struct({
   email: Schema.String,
@@ -97,6 +99,8 @@ export const BasicTools = Toolkit.make(
 export const PealTools = Toolkit.merge(
   BasicTools,
   PostTools,
+  MediaTools,
   ReportTools,
-  PeopleTools
+  PeopleTools,
+  WebhookTools
 );
