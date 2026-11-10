@@ -23,6 +23,8 @@ packages/peal-cli/dist/peal --help
 
 Point `peal` at the address you open Peal at, such as `https://peal.example.com`, with `--api-url` or `PEAL_API_URL`. The flag wins; without either, `peal` uses `http://localhost:3000`, a server running from source.
 
+`peal` sends your sign-in or an API key over HTTPS, or to this machine (`localhost`), alone: over plain HTTP anywhere else, anything on the way could read them, so the command is refused before it sends any, and `peal doctor` says so. For a self-hosted server on a network you trust that has no TLS, pass `--insecure-http`, or set `PEAL_INSECURE_HTTP=true`.
+
 ```sh
 export PEAL_API_URL=https://peal.example.com
 peal health
@@ -126,7 +128,7 @@ ok  mcp            MCP clients connect to https://peal.example.com/api/mcp: peal
 
 | Check           | What it looks at                                                                                                                                                                     |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `api-url`       | The instance's address, and whether it came from `--api-url`, `PEAL_API_URL` or the default.                                                                                         |
+| `api-url`       | The instance's address, and whether it came from `--api-url`, `PEAL_API_URL` or the default. Fails for plain HTTP beyond this machine, unless `--insecure-http` allows it.           |
 | `health`        | That the server answers, within 5 seconds.                                                                                                                                           |
 | `ready`         | That it reaches its database.                                                                                                                                                        |
 | `changelog`     | That it answers `GET /api/changelog`, with the API's latest release ([Changelog](/api-conventions#changelog)): a server that does not is older, or is not a Peal server.             |
@@ -451,15 +453,16 @@ peal account apps
 
 ## Settings [#settings]
 
-| Variable          | What it does                                                                                                         |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `PEAL_API_URL`    | The instance's address, unless `--api-url` is given. Default: `http://localhost:3000`.                               |
-| `PEAL_API_KEY`    | A workspace API key to run with instead of a saved sign-in, which it wins over ([Run it with an API key](#api-key)). |
-| `PEAL_WORKSPACE`  | The workspace commands act in, by slug or id, unless `--workspace` is given. With an API key, by id.                 |
-| `TZ`              | The zone `peal analytics summary` runs days in, and the zone `--at` is read in, unless `--time-zone` is given.       |
-| `PEAL_CONFIG_DIR` | The folder `credentials.json` is saved in.                                                                           |
-| `XDG_CONFIG_HOME` | Without `PEAL_CONFIG_DIR`, the sign-in goes in its `peal` folder.                                                    |
-| `APPDATA`         | Without either, on Windows, the sign-in goes in its `peal` folder.                                                   |
-| `HOME`            | Otherwise, the sign-in goes in `~/.config/peal`.                                                                     |
+| Variable             | What it does                                                                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PEAL_API_URL`       | The instance's address, unless `--api-url` is given. Default: `http://localhost:3000`.                                                     |
+| `PEAL_INSECURE_HTTP` | `true` lets the sign-in or the API key go over plain HTTP to a server that is not this machine, as `--insecure-http` does. Off by default. |
+| `PEAL_API_KEY`       | A workspace API key to run with instead of a saved sign-in, which it wins over ([Run it with an API key](#api-key)).                       |
+| `PEAL_WORKSPACE`     | The workspace commands act in, by slug or id, unless `--workspace` is given. With an API key, by id.                                       |
+| `TZ`                 | The zone `peal analytics summary` runs days in, and the zone `--at` is read in, unless `--time-zone` is given.                             |
+| `PEAL_CONFIG_DIR`    | The folder `credentials.json` is saved in.                                                                                                 |
+| `XDG_CONFIG_HOME`    | Without `PEAL_CONFIG_DIR`, the sign-in goes in its `peal` folder.                                                                          |
+| `APPDATA`            | Without either, on Windows, the sign-in goes in its `peal` folder.                                                                         |
+| `HOME`               | Otherwise, the sign-in goes in `~/.config/peal`.                                                                                           |
 
 `peal --help` lists the commands, and `peal <command> --help` describes one.

@@ -23,6 +23,8 @@ packages/peal-cli/dist/peal --help
 
 Pointez `peal` vers l’adresse où vous ouvrez Peal, comme `https://peal.example.com`, avec `--api-url` ou `PEAL_API_URL`. L’option l’emporte ; sans l’une ni l’autre, `peal` utilise `http://localhost:3000`, un serveur lancé depuis les sources.
 
+`peal` n’envoie votre connexion ou une clé d’API qu’en HTTPS, ou à cette machine (`localhost`) : en HTTP simple ailleurs, tout ce qui se trouve sur le trajet pourrait les lire, donc la commande est refusée avant d’en envoyer, et `peal doctor` le dit. Pour un serveur auto-hébergé sans TLS sur un réseau de confiance, passez `--insecure-http`, ou définissez `PEAL_INSECURE_HTTP=true`.
+
 ```sh
 export PEAL_API_URL=https://peal.example.com
 peal health
@@ -126,7 +128,7 @@ ok  mcp            MCP clients connect to https://peal.example.com/api/mcp: peal
 
 | Vérification    | Ce qu’elle regarde                                                                                                                                                                                                        |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api-url`       | L’adresse de l’instance, et d’où elle vient : `--api-url`, `PEAL_API_URL` ou la valeur par défaut.                                                                                                                        |
+| `api-url`       | L’adresse de l’instance, et d’où elle vient : `--api-url`, `PEAL_API_URL` ou la valeur par défaut. Échoue pour du HTTP simple hors de cette machine, sauf si `--insecure-http` l’autorise.                                |
 | `health`        | Que le serveur répond, en 5 secondes au plus.                                                                                                                                                                             |
 | `ready`         | Qu’il joint sa base de données.                                                                                                                                                                                           |
 | `changelog`     | Qu’il répond à `GET /api/changelog`, avec la dernière version de l’API ([Journal des modifications](/api-conventions#changelog)) : un serveur qui n’y répond pas est plus ancien, ou n’est pas un serveur Peal.           |
@@ -451,15 +453,16 @@ peal account apps
 
 ## Réglages [#settings]
 
-| Variable          | Rôle                                                                                                                                                         |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `PEAL_API_URL`    | L’adresse de l’instance, sauf si `--api-url` est indiqué. Par défaut : `http://localhost:3000`.                                                              |
-| `PEAL_API_KEY`    | Une clé d’API d’espace de travail à utiliser à la place d’une connexion enregistrée, sur laquelle elle l’emporte ([La lancer avec une clé d’API](#api-key)). |
-| `PEAL_WORKSPACE`  | L’espace de travail où agissent les commandes, par slug ou identifiant, sauf si `--workspace` est indiqué. Avec une clé d’API, par identifiant.              |
-| `TZ`              | Le fuseau des jours d’`peal analytics summary`, et celui où `--at` est lu, sauf si `--time-zone` est indiqué.                                                |
-| `PEAL_CONFIG_DIR` | Le dossier où est enregistré `credentials.json`.                                                                                                             |
-| `XDG_CONFIG_HOME` | Sans `PEAL_CONFIG_DIR`, la connexion va dans son dossier `peal`.                                                                                             |
-| `APPDATA`         | Sans l’une ni l’autre, sous Windows, la connexion va dans son dossier `peal`.                                                                                |
-| `HOME`            | Sinon, la connexion va dans `~/.config/peal`.                                                                                                                |
+| Variable             | Rôle                                                                                                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PEAL_API_URL`       | L’adresse de l’instance, sauf si `--api-url` est indiqué. Par défaut : `http://localhost:3000`.                                                              |
+| `PEAL_INSECURE_HTTP` | `true` laisse la connexion ou la clé d’API partir en HTTP simple vers un serveur qui n’est pas cette machine, comme `--insecure-http`. Désactivé par défaut. |
+| `PEAL_API_KEY`       | Une clé d’API d’espace de travail à utiliser à la place d’une connexion enregistrée, sur laquelle elle l’emporte ([La lancer avec une clé d’API](#api-key)). |
+| `PEAL_WORKSPACE`     | L’espace de travail où agissent les commandes, par slug ou identifiant, sauf si `--workspace` est indiqué. Avec une clé d’API, par identifiant.              |
+| `TZ`                 | Le fuseau des jours d’`peal analytics summary`, et celui où `--at` est lu, sauf si `--time-zone` est indiqué.                                                |
+| `PEAL_CONFIG_DIR`    | Le dossier où est enregistré `credentials.json`.                                                                                                             |
+| `XDG_CONFIG_HOME`    | Sans `PEAL_CONFIG_DIR`, la connexion va dans son dossier `peal`.                                                                                             |
+| `APPDATA`            | Sans l’une ni l’autre, sous Windows, la connexion va dans son dossier `peal`.                                                                                |
+| `HOME`               | Sinon, la connexion va dans `~/.config/peal`.                                                                                                                |
 
 `peal --help` liste les commandes, et `peal <commande> --help` en décrit une.

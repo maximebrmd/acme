@@ -47,8 +47,12 @@ export const login = Command.make(
   Effect.fn("login")(function* login() {
     yield* personOnly("sign in");
 
-    const { baseUrl, oauth } = yield* PealApi;
+    const { baseUrl, oauth, sendingCredentials } = yield* PealApi;
     const store = yield* CredentialStore;
+
+    // The device code goes out and the tokens come back on this channel.
+    yield* sendingCredentials;
+
     const url = display(baseUrl);
     const failed = requestFailed(url);
 

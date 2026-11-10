@@ -212,6 +212,55 @@ describe("an API key in PEAL_API_KEY", () => {
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect("is never sent in clear to a server that is not this machine", () =>
+    Effect.gen(function* inClear() {
+      const session = yield* headless();
+      const drafts = ["drafts", "list", ...inStudio];
+      const elsewhere = ["--api-url", "http://api.example.test"];
+
+      // Plain HTTP beyond this machine: refused before any request,
+      // with what to do about it.
+      const refusal = yield* session.refused([...drafts, ...elsewhere]);
+
+      assert.include(refusal, "http://api.example.test");
+      assert.include(refusal, "https://");
+      assert.include(refusal, "--insecure-http");
+      assert.strictEqual(
+        failureOf(yield* session.refused([...drafts, ...elsewhere, "--json"]))
+          .error.code,
+        "insecure_api_url"
+      );
+
+      // HTTPS, this machine under any of its names, and a server its
+      // operator vouches for all take the key.
+      for (const allowed of [
+        ["--api-url", "https://api.example.test"],
+        ["--api-url", "http://127.0.0.1:3000"],
+        ["--api-url", "http://[::1]:3000"],
+        ["--api-url", "http://peal.localhost:3000"],
+        [...elsewhere, "--insecure-http"],
+      ]) {
+        yield* session.printed([...drafts, ...allowed]);
+      }
+
+      yield* session
+        .withEnv({ ...key, PEAL_INSECURE_HTTP: "true" })
+        .printed([...drafts, ...elsewhere]);
+
+      // What sends no credential needs none of this.
+      yield* session.printed(["health", ...elsewhere]);
+
+      // And doctor says it, rather than send the key to find out.
+      const checked = yield* session.refusedAfter([
+        "doctor",
+        ...inStudio,
+        ...elsewhere,
+      ]);
+
+      assert.include(checked.logs, "--insecure-http");
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("is told when the server refuses it, not to sign in again", () =>
     Effect.gen(function* revoked() {
       const session = yield* headless();

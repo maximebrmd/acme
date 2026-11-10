@@ -15,7 +15,7 @@ export const logout = Command.make(
   "logout",
   {},
   Effect.fn("logout")(function* logout() {
-    const { baseUrl, oauth } = yield* PealApi;
+    const { baseUrl, oauth, sendingCredentials } = yield* PealApi;
     const store = yield* CredentialStore;
     const url = display(baseUrl);
 
@@ -31,16 +31,21 @@ export const logout = Command.make(
     // renewed last stops working within minutes.
     yield* Option.match(saved.value.refreshToken, {
       onNone: () => Effect.void,
+      // Never in clear: the sign-in is then forgotten here alone.
       onSome: (token) =>
-        oauth.tokens
-          .revoke({
-            payload: {
-              client_id: cliClientId,
-              token: Redacted.value(token),
-              token_type_hint: "refresh_token",
-            },
-          })
-          .pipe(Effect.timeout(revokeTimeout), Effect.ignore),
+        sendingCredentials.pipe(
+          Effect.andThen(
+            oauth.tokens.revoke({
+              payload: {
+                client_id: cliClientId,
+                token: Redacted.value(token),
+                token_type_hint: "refresh_token",
+              },
+            })
+          ),
+          Effect.timeout(revokeTimeout),
+          Effect.ignore
+        ),
     });
 
     yield* store.remove(baseUrl);

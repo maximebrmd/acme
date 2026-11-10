@@ -41,7 +41,11 @@ const renewalMargin = Duration.seconds(30);
  * tokens are rotated, so each renews the sign-in once.
  */
 export const accessToken = Effect.gen(function* accessToken() {
-  const { baseUrl, oauth } = yield* PealApi;
+  const { baseUrl, oauth, sendingCredentials } = yield* PealApi;
+
+  // Before the refresh token, or the access token after it, is sent.
+  yield* sendingCredentials;
+
   const store = yield* CredentialStore;
   const url = display(baseUrl);
 

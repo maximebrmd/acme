@@ -2680,7 +2680,11 @@ self-hoster needs only Postgres and an S3-compatible store:
   Better Auth's endpoints. Its oxlint config refuses `peal-server` imports,
   and `@effect/platform-bun` outside `src/main.ts`.
 - The API URL comes from `--api-url`, then `PEAL_API_URL`, then
-  `http://localhost:3000`.
+  `http://localhost:3000`. A key or a token goes only over HTTPS or to a
+  loopback host: whatever sends one yields `PealApi.sendingCredentials`
+  first (`signedIn` does), which refuses plain HTTP elsewhere
+  (`insecure_api_url`) unless `--insecure-http` or `PEAL_INSECURE_HTTP`
+  allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
   `post`, `media`, `approvals`, `review`, `analytics`, `billing`,

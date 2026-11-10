@@ -59,7 +59,9 @@ export const cli = peal.pipe(
     partner,
     account,
   ]),
-  Command.provide(({ apiUrl }) => PealApi.layer(apiUrl)),
+  Command.provide(({ apiUrl, insecureHttp }) =>
+    PealApi.layer(apiUrl, { insecureHttp })
+  ),
   Command.provide(CredentialStore.layer)
 );
 

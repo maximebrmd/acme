@@ -11,7 +11,11 @@ import { DoctorFailed } from "#doctor-failed.ts";
 import { publishScope } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns } from "#print.ts";
-import { defaultApiUrl } from "#root.ts";
+import {
+  defaultApiUrl,
+  insecureHttpFlag,
+  insecureHttpVariable,
+} from "#root.ts";
 import { accessToken } from "#session.ts";
 import { isWorkspaceId, whereTheIdIs, workspaceFlag } from "#workspace.ts";
 
@@ -54,6 +58,9 @@ const skipped = (name: string, detail: string): Check => ({
 
 const unanswered = "the server did not answer";
 
+const inClear =
+  "the credential is not sent over plain HTTP to a server that is not this machine";
+
 const pointAtIt =
   "Check that the server is running, or point --api-url or PEAL_API_URL at it.";
 
@@ -67,8 +74,16 @@ const sourceOf = (variable: string, value: string, flag: string) =>
   );
 
 const apiUrlCheck = Effect.gen(function* apiUrlCheck() {
-  const { baseUrl } = yield* PealApi;
+  const { baseUrl, sendingCredentials } = yield* PealApi;
   const url = display(baseUrl);
+
+  if (!(yield* sendingCredentials.pipe(Effect.isSuccess))) {
+    return failing(
+      "api-url",
+      `${url} is reached over plain HTTP, and is not this machine: a sign-in or an API key sent there could be read on the way, so the command line sends none.`,
+      `Point it at the server's https:// address with --api-url or PEAL_API_URL. For a server on a network you trust that has no TLS, pass --${insecureHttpFlag}, or set ${insecureHttpVariable}=true.`
+    );
+  }
 
   const set = yield* Config.URL("PEAL_API_URL").pipe(
     Config.option,
@@ -262,6 +277,15 @@ const personChecks = (choice: Option.Option<string>, up: boolean) =>
       ];
     }
 
+    if (!(yield* api.sendingCredentials.pipe(Effect.isSuccess))) {
+      return [
+        credential,
+        skipped("access", inClear),
+        scope,
+        skipped("workspace", inClear),
+      ];
+    }
+
     // As every command does, this renews an access token that ran out.
     const me = yield* accessToken.pipe(
       Effect.flatMap((token) => api.signedIn(token)),
@@ -343,7 +367,11 @@ const keyChecks = (choice: Option.Option<string>, up: boolean) =>
       return [credential, skipped("access", unanswered), scope, workspace];
     }
 
-    const client = yield* api.signedIn(key.value);
+    if (!(yield* api.sendingCredentials.pipe(Effect.isSuccess))) {
+      return [credential, skipped("access", inClear), scope, workspace];
+    }
+
+    const client = yield* api.signedIn(key.value).pipe(Effect.orDie);
 
     const access = yield* client.channels
       .list({ params: { workspaceId: workspaceId.value } })

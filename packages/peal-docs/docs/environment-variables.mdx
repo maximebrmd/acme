@@ -174,15 +174,17 @@ The library that runs Peal's jobs also reads its own settings from the environme
 
 ## Command line [#command-line]
 
-| Variable          | Default                 | What it does                                                                                  |
-| ----------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
-| `PEAL_API_URL`    | `http://localhost:3000` | The address of the instance, such as `https://peal.example.com`, unless `--api-url` is given. |
-| `PEAL_WORKSPACE`  | unset                   | The workspace commands act in, by slug or id, unless `--workspace` is given.                  |
-| `TZ`              | this computer's zone    | The IANA zone `peal analytics summary` runs days in, unless `--time-zone` is given.           |
-| `PEAL_CONFIG_DIR` | unset                   | The folder the sign-ins are saved in, in `credentials.json`.                                  |
-| `XDG_CONFIG_HOME` | unset                   | Without `PEAL_CONFIG_DIR`, the sign-ins go in its `peal` folder.                              |
-| `APPDATA`         | Windows sets it         | Without either, the sign-ins go in its `peal` folder.                                         |
-| `HOME`            | the system sets it      | Otherwise, the sign-ins go in `~/.config/peal`.                                               |
+| Variable             | Default                 | What it does                                                                                                                                                                |
+| -------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PEAL_API_URL`       | `http://localhost:3000` | The address of the instance, such as `https://peal.example.com`, unless `--api-url` is given.                                                                               |
+| `PEAL_INSECURE_HTTP` | `false`                 | `true` lets the sign-in or the API key go over plain HTTP to a server that is not this machine, as `--insecure-http` does: for a server without TLS on a network you trust. |
+| `PEAL_API_KEY`       | unset                   | A workspace API key to run with instead of a saved sign-in, for runs nobody attends.                                                                                        |
+| `PEAL_WORKSPACE`     | unset                   | The workspace commands act in, by slug or id, unless `--workspace` is given.                                                                                                |
+| `TZ`                 | this computer's zone    | The IANA zone `peal analytics summary` runs days in, unless `--time-zone` is given.                                                                                         |
+| `PEAL_CONFIG_DIR`    | unset                   | The folder the sign-ins are saved in, in `credentials.json`.                                                                                                                |
+| `XDG_CONFIG_HOME`    | unset                   | Without `PEAL_CONFIG_DIR`, the sign-ins go in its `peal` folder.                                                                                                            |
+| `APPDATA`            | Windows sets it         | Without either, the sign-ins go in its `peal` folder.                                                                                                                       |
+| `HOME`               | the system sets it      | Otherwise, the sign-ins go in `~/.config/peal`.                                                                                                                             |
 
 ## Docker Compose stack [#compose]
 
