@@ -3014,6 +3014,10 @@ self-hoster needs only Postgres and an S3-compatible store:
 - Everything committed is published: synthetic data only in tests and
   fixtures; no secrets, tokens or customer content in source, logs or test
   artifacts.
+- A synthetic credential in a test never has the shape of a real one:
+  write `sk_test_synthetic_…`, not a prefix followed by as many letters and
+  digits as a real key has. GitHub's push protection reads every commit
+  pushed, and refuses a branch for one such value, corrected later or not.
 - Never name a competitor or another product in this field, in code,
   comments, docs, commits, pull requests or issues. Describe the behaviour
   instead.
