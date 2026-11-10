@@ -1,6 +1,7 @@
 import { Context } from "effect";
 import { Tool } from "effect/ai";
 
+import { ConnectTools } from "#app/mcp/connect-tools.ts";
 import { ToolAreaSchema } from "#app/mcp/discovery-tools.ts";
 import type { ToolArea } from "#app/mcp/discovery-tools.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
@@ -27,6 +28,7 @@ interface ListedTool {
  */
 export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
   account: Object.values(BasicTools.tools),
+  connect: Object.values(ConnectTools.tools),
   media: Object.values(MediaTools.tools),
   people: Object.values(PeopleTools.tools),
   posts: Object.values(PostTools.tools),
@@ -45,6 +47,7 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "cancel_post",
   "confirm_target",
   "create_post",
+  "create_posts",
   "publish_post",
   "repost_target",
   "reschedule_post",

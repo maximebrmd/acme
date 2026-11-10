@@ -354,6 +354,23 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             ["list_media", "import_media"]
           );
 
+          // Connect links and the partner account are an area of their own.
+          const connecting = yield* reader.call("find_tools", FoundSchema, {
+            area: "connect",
+          });
+
+          assert.deepStrictEqual(
+            connecting.tools.map(({ name, scope }) => [name, scope]),
+            [
+              ["list_connect_links", "workspace:read"],
+              ["get_connect_link", "workspace:read"],
+              ["create_connect_link", "workspace:write"],
+              ["revoke_connect_link", "workspace:write"],
+              ["get_partner_account", "workspace:read"],
+              ["list_partner_workspaces", "workspace:read"],
+            ]
+          );
+
           const found = yield* writer.call("find_tools", FoundSchema, {
             query: "Invitation REVOKE_invitation",
           });
@@ -395,6 +412,15 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               channelIds: [fixture.channelId],
               content: content("Never sent."),
               when: { _tag: "now" },
+            },
+            create_posts: {
+              posts: [
+                {
+                  channelIds: [fixture.channelId],
+                  content: content("Never sent."),
+                  when: { _tag: "now" },
+                },
+              ],
             },
             publish_post: { postId },
             repost_target: { postId, targetId: postId },
