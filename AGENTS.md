@@ -1840,6 +1840,7 @@ and no socket, for tests.
   `workspaces.delete` records nothing: its log went with it.
 - Tests set the clock before 1970 when Postgres is in the layer (the pool's
   periodic sleeps run for every second the test clock moves forward).
+
 ### Partner accounts and connect links
 
 - A partner account lets a product use Peal for its own customers

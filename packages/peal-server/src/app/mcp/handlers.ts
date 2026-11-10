@@ -2,8 +2,8 @@ import { Array, Effect, Layer, Option } from "effect";
 import { CurrentMember } from "peal-contract";
 import type { Member } from "peal-contract";
 
-import { ConnectToolsLive } from "#app/mcp/connect-handlers.ts";
 import { findTools, summaryOf } from "#app/mcp/catalogue.ts";
+import { ConnectToolsLive } from "#app/mcp/connect-handlers.ts";
 import { MediaToolsLive } from "#app/mcp/media-handlers.ts";
 import { PeopleToolsLive } from "#app/mcp/people-handlers.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";

@@ -11,9 +11,7 @@ import type { Principal } from "./principal.ts";
  * own session, in the web app, is not counted here: Better Auth limits its
  * own routes, and the web app is Peal's own client.
  */
-export const limitSubjectOf = (
-  principal: Principal
-): Option.Option<string> => {
+export const limitSubjectOf = (principal: Principal): Option.Option<string> => {
   if (principal._tag === "ApiKeyPrincipal") {
     return Option.some(`key:${principal.apiKeyId}`);
   }
