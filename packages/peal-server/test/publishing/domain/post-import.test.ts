@@ -163,4 +163,75 @@ describe(readImport, () => {
     });
     expect(rowsOf(fileOf(maxImportRows))).toHaveLength(maxImportRows);
   });
+
+  it("never guesses a row whose cells are not the header's", () => {
+    const rows = rowsOf(
+      [
+        "channels,at,text",
+        // A comma the row did not quote: the text would be cut at it.
+        "one,now,Hello, world and the rest",
+        // A cell short.
+        "one,now",
+        // A delimiter after the last cell is a cell more.
+        "one,now,Hello,",
+        'one,now,"Hello, world"',
+      ].join("\n")
+    );
+
+    expect(
+      rows.map(({ cellCount, post }) => [
+        Option.getOrNull(cellCount),
+        Result.isSuccess(post),
+      ])
+    ).toStrictEqual([
+      [{ expected: 3, found: 4 }, false],
+      [{ expected: 3, found: 2 }, false],
+      [{ expected: 3, found: 4 }, false],
+      [null, true],
+    ]);
+    // Nothing is said of cells that were never told apart.
+    expect(rows[0]?.post).toStrictEqual(Result.fail([]));
+  });
+
+  it("refuses a quote where RFC 4180 has none", () => {
+    for (const row of [
+      // Inside a cell that did not start with one.
+      'one,now,say "hello"',
+      // After a quoted cell closed.
+      'one,now,"hello" there',
+      // After a space: the cell did not start with it.
+      'one,now, "hello"',
+    ]) {
+      expect([row, faultOf(`channels,at,text\n${row}`)]).toStrictEqual([
+        row,
+        { column: null, problem: "strayQuote" },
+      ]);
+    }
+  });
+
+  it("reads what RFC 4180 allows: a byte order mark, CRLF, quoted line breaks and commas, empty lines", () => {
+    const rows = rowsOf(
+      `${String.fromCodePoint(0xfe_ff)}channels,at,text\r\n\r\none,now,"Line one\r\nline two, with a comma and ""quotes"""\r\n\r\ntwo,now,plain\r\n`
+    );
+
+    expect(
+      rows.map(({ post, row }) => [
+        row,
+        Result.isSuccess(post) ? post.success.text : null,
+      ])
+    ).toStrictEqual([
+      [1, 'Line one\r\nline two, with a comma and "quotes"'],
+      [2, "plain"],
+    ]);
+  });
+
+  it("refuses a key that holds a character no key holds", () => {
+    const [row] = rowsOf(
+      `channels,at,text,idempotency_key\none,now,Hello,key${String.fromCodePoint(0)}1`
+    );
+
+    expect(row?.post).toStrictEqual(
+      Result.fail([{ column: "idempotency_key", problem: "invalid" }])
+    );
+  });
 });

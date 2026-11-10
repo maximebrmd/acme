@@ -435,6 +435,12 @@ export const ImportRowResultSchema = Schema.Union([
     row: Schema.Int,
   }),
   Schema.TaggedStruct("unreadable", {
+    // When the row has more or fewer cells than the first line names, as
+    // a comma its text did not quote makes it: how many were expected and
+    // found. Such a row is not read at all, and `problems` is empty.
+    cells: Schema.optionalKey(
+      Schema.Struct({ expected: Schema.Int, found: Schema.Int })
+    ),
     problems: Schema.Array(ImportCellProblemSchema),
     row: Schema.Int,
   }),
@@ -753,7 +759,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
       success: ImportResultSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Creates and sends the posts a CSV file lists, one per row, at most ${maxImportRows} rows under its first line, which names the columns, in any order: \`text\` and \`channels\` (channel ids separated by spaces, commas or semicolons) are required columns, \`at\` too (\`now\`, an instant with its offset such as 2026-11-20T09:00:00Z, or a local time without one such as 2026-11-20 10:00, read in the row's \`time_zone\`, an IANA zone, UTC if left out); \`media\` (ids of ready media of the workspace), \`allow_duplicate\` (\`true\` or \`false\`) and \`idempotency_key\` are optional. Cells follow RFC 4180: a cell with a comma, a quote or a line break is written between double quotes, a quote inside it doubled. The file is checked first, every row, as \`validate\` checks a post; unless every row is valid, nothing is made, and \`rows\` says which are \`valid\`, \`refused\` (with what \`send\` would have answered) or \`unreadable\` (with the cells at fault). \`dryRun\` stops there even when every row is valid. Otherwise the rows are then made in order as \`bulk\` makes its items, each \`created\` or, when something changed since the check or a row repeats an earlier one, \`refused\`. The answer is 200 once the file was read; a file that cannot be read at all is ImportUnreadable. An \`Idempotency-Key\` header works as on \`bulk\`, by row. Needs post:schedule and channel:read, and media:read for rows with media; an OAuth client needs the scope workspace:publish.`,
+        description: `Creates and sends the posts a CSV file lists, one per row, at most ${maxImportRows} rows under its first line, which names the columns, in any order: \`text\` and \`channels\` (channel ids separated by spaces, commas or semicolons) are required columns, \`at\` too (\`now\`, an instant with its offset such as 2026-11-20T09:00:00Z, or a local time without one such as 2026-11-20 10:00, read in the row's \`time_zone\`, an IANA zone, UTC if left out); \`media\` (ids of ready media of the workspace), \`allow_duplicate\` (\`true\` or \`false\`) and \`idempotency_key\` are optional. Cells follow RFC 4180, strictly: a cell with a comma, a quote or a line break is written between double quotes, a quote inside it doubled; a quote anywhere else is ImportUnreadable (\`strayQuote\`). Blank lines are no rows. The file is checked first, every row, as \`validate\` checks a post and as the file it is (a row an earlier row leaves no room for in its month, one that repeats an earlier row's content near its time, and one that carries an earlier row's key with another post are refused; a row with more or fewer cells than the first line names is unreadable, never guessed); unless every row is valid, nothing is made, and \`rows\` says which are \`valid\`, \`refused\` (with what \`send\` would have answered) or \`unreadable\` (with the cells at fault). \`dryRun\` stops there even when every row is valid. Otherwise the rows are then made in order as \`bulk\` makes its items, each \`created\` or, when something changed since the check or a row repeats an earlier one, \`refused\`. The answer is 200 once the file was read; a file that cannot be read at all is ImportUnreadable. An \`Idempotency-Key\` header works as on \`bulk\`, by row. Needs post:schedule and channel:read, and media:read for rows with media; an OAuth client needs the scope workspace:publish.`,
         summary: "Import posts from CSV",
       })
     ),

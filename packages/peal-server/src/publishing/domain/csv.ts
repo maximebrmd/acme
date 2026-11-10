@@ -9,25 +9,34 @@ const byteOrderMark = String.fromCodePoint(0xfe_ff);
 const isBlank = (row: readonly string[]): boolean =>
   row.length === 1 && row[0] === "";
 
+/** Why a file is not CSV as RFC 4180 writes it. */
+export type CsvFault = "strayQuote" | "unterminatedQuote";
+
 /**
  * The rows of a CSV file as RFC 4180 writes them: cells separated by
  * commas, rows by line breaks (CRLF, LF or CR); a cell between double
  * quotes may hold commas, line breaks, and quotes written twice. A leading
  * byte order mark and blank lines are left out. Fails when a quoted cell
- * never ends.
+ * never ends, and when a quote stands where the RFC has none: inside a
+ * cell that did not start with one, or after a quoted cell closed. Such a
+ * file is not guessed at: where its cells end is no longer known.
  */
 export const parseCsv = (
   file: string
-): Result.Result<readonly (readonly string[])[], "unterminatedQuote"> => {
+): Result.Result<readonly (readonly string[])[], CsvFault> => {
   const text = file.startsWith(byteOrderMark) ? file.slice(1) : file;
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";
   let quoted = false;
+  // The cell was written between quotes, which have closed: only its end
+  // may follow.
+  let closed = false;
 
   const endCell = () => {
     row.push(cell);
     cell = "";
+    closed = false;
   };
 
   const endRow = () => {
@@ -46,10 +55,15 @@ export const parseCsv = (
         at += 1;
       } else if (character === quote) {
         quoted = false;
+        closed = true;
       } else {
         cell += character;
       }
-    } else if (character === quote && cell === "") {
+    } else if (character === quote) {
+      if (closed || cell !== "") {
+        return Result.fail("strayQuote");
+      }
+
       quoted = true;
     } else if (character === ",") {
       endCell();
@@ -59,6 +73,8 @@ export const parseCsv = (
       if (character === "\r" && next === "\n") {
         at += 1;
       }
+    } else if (closed) {
+      return Result.fail("strayQuote");
     } else {
       cell += character;
     }

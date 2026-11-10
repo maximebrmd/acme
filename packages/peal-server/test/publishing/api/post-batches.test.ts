@@ -98,6 +98,19 @@ const refusalAt = (
     : undefined;
 };
 
+// A plan that takes two posts a month.
+const TwoPostsServer = postsServerWith(
+  attachableMedia(),
+  Layer.succeed(
+    PostAllowance,
+    PostAllowance.of({
+      channels: () => Effect.succeed({ allowed: Option.none(), connected: 0 }),
+      members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
+      scheduledPerMonth: () => Effect.succeed(Option.some(2)),
+    })
+  )
+);
+
 describe("the bulk endpoint", () => {
   it.effect(
     "answers each post on its own, and the same request sent again with the posts it made",
@@ -327,19 +340,6 @@ describe("the bulk endpoint", () => {
         })
       ),
     timeout
-  );
-
-  const TwoPostsServer = postsServerWith(
-    attachableMedia(),
-    Layer.succeed(
-      PostAllowance,
-      PostAllowance.of({
-        channels: () =>
-          Effect.succeed({ allowed: Option.none(), connected: 0 }),
-        members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
-        scheduledPerMonth: () => Effect.succeed(Option.some(2)),
-      })
-    )
   );
 
   it.effect(
@@ -608,6 +608,82 @@ describe("the import endpoint", () => {
 
           assert.instanceOf(denied, Forbidden);
         })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "makes nothing when the file's own rows cannot all be made: a row that repeats another, a key used twice, more than the month takes",
+    () =>
+      Effect.gen(function* acrossRows() {
+        const workspaceId = yield* freshWorkspace;
+        const channel = yield* connect(workspaceId, "mastodon");
+        const editor = yield* as("editor", workspaceId);
+        const params = { workspaceId };
+
+        const importing = (rows: readonly string[]) =>
+          editor.posts.import({
+            headers: {},
+            params,
+            payload: {
+              csv: ["text,channels,at,idempotency_key", ...rows].join("\n"),
+            },
+          });
+
+        const made = editor.posts.search({ params, query: {} });
+
+        // The second row says what the first says, an hour later.
+        const repeated = yield* importing([
+          `A synthetic row,${channel},2026-09-01T08:00:00Z,`,
+          `A synthetic row,${channel},2026-09-01T09:00:00Z,`,
+        ]);
+
+        assert.strictEqual(repeated.created, 0);
+        assert.deepStrictEqual(
+          repeated.rows.map(({ _tag }) => _tag),
+          ["valid", "refused"]
+        );
+
+        const twice = refusalAt(repeated.rows, 1);
+
+        assert.instanceOf(twice, DuplicatePost);
+        assert.include(twice.message, "Row 1 of the file");
+
+        // One key, two posts.
+        const keyed = yield* importing([
+          `A synthetic row,${channel},2026-09-01T08:00:00Z,one-key`,
+          `Another synthetic row,${channel},2026-09-02T08:00:00Z,one-key`,
+        ]);
+
+        assert.strictEqual(keyed.created, 0);
+        assert.instanceOf(refusalAt(keyed.rows, 1), IdempotencyKeyReused);
+
+        // Three posts in a month that takes two.
+        const crowded = yield* importing([
+          `September one,${channel},2026-09-01T08:00:00Z,`,
+          `September two,${channel},2026-09-02T08:00:00Z,`,
+          `September three,${channel},2026-09-03T08:00:00Z,`,
+          `October one,${channel},2026-10-01T08:00:00Z,`,
+        ]);
+
+        assert.strictEqual(crowded.created, 0);
+        assert.deepStrictEqual(
+          crowded.rows.map(({ _tag }) => _tag),
+          ["valid", "valid", "refused", "valid"]
+        );
+        assert.instanceOf(refusalAt(crowded.rows, 2), PlanLimitReached);
+        assert.lengthOf((yield* made).items, 0);
+
+        // What fits is made whole.
+        const fits = yield* importing([
+          `September one,${channel},2026-09-01T08:00:00Z,`,
+          `September two,${channel},2026-09-02T08:00:00Z,`,
+          `October one,${channel},2026-10-01T08:00:00Z,`,
+        ]);
+
+        assert.strictEqual(fits.created, 3);
+      }).pipe(Effect.provide(TwoPostsServer), (test) =>
+        setTime(start).pipe(Effect.andThen(test))
       ),
     timeout
   );

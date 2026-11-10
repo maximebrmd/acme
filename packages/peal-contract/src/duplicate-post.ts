@@ -22,7 +22,9 @@ export class DuplicatePost extends Schema.TaggedError<DuplicatePost>()(
   "DuplicatePost",
   {
     ...errorEnvelope,
-    // One per channel that has it, with the post nearest in time.
+    // One per channel that has it, with the earliest post that sends it
+    // there in that time. Empty when it is another row of the same file
+    // that has it, which is no post yet: `message` names the row.
     duplicates: Schema.Array(DuplicateOnChannelSchema),
   },
   {

@@ -39,6 +39,7 @@ export interface ImportFault {
     | "empty"
     | "missingColumn"
     | "repeatedColumn"
+    | "strayQuote"
     | "tooManyRows"
     | "unknownColumn"
     | "unterminatedQuote";
@@ -67,9 +68,22 @@ export interface ImportedPost {
 
 /** A row under the first line, counted from 1, and what it says. */
 export interface ImportRow {
+  /**
+   * How many cells the row has, when that is not as many as the first
+   * line names: such a row is not read at all, as which cell is which is
+   * no longer known. A comma the text did not quote cuts it in two.
+   */
+  readonly cellCount: Option.Option<{
+    readonly expected: number;
+    readonly found: number;
+  }>;
   readonly post: Result.Result<ImportedPost, readonly CellProblem[]>;
   readonly row: number;
 }
+
+// No key holds a control character: the keys of a file's rows are told
+// from one another, and from the request's, by one (`keyAt`).
+const controlCharacter = /\p{Cc}/u;
 
 const isColumn = Schema.is(Schema.Literals(importColumns));
 
@@ -184,7 +198,7 @@ const postOf = (
     ...(Result.isFailure(at) ? [at.failure] : []),
     ...(Option.isNone(zone) ? [invalid("time_zone")] : []),
     ...(Option.isNone(allowDuplicate) ? [invalid("allow_duplicate")] : []),
-    ...(key.length > maxIdempotencyKeyLength
+    ...(key.length > maxIdempotencyKeyLength || controlCharacter.test(key)
       ? [invalid("idempotency_key")]
       : []),
   ];
@@ -215,8 +229,10 @@ const postOf = (
  * `at` are needed). A row's `at` is `now`, an instant with its offset, or a
  * date and time to the minute read on the wall clock of its `time_zone`
  * (`fromWallClock`; UTC when the cell is empty). Each row is read on its
- * own: one that cannot be read keeps no other from being read. Fails when
- * the file as a whole cannot be read.
+ * own: one that cannot be read keeps no other from being read. A row is
+ * a line that is not blank, numbered from 1 among those; one with more or
+ * fewer cells than the first line names is unreadable (`cellCount`), never
+ * read by guessing. Fails when the file as a whole cannot be read.
  */
 export const readImport = (
   file: string
@@ -261,9 +277,21 @@ export const readImport = (
   }
 
   return Result.succeed(
-    rows.map((cells, at) => ({
-      post: postOf((column) => cells[names.indexOf(column)] ?? ""),
-      row: at + 1,
-    }))
+    rows.map((cells, at): ImportRow =>
+      cells.length === names.length
+        ? {
+            cellCount: Option.none(),
+            post: postOf((column) => cells[names.indexOf(column)] ?? ""),
+            row: at + 1,
+          }
+        : {
+            cellCount: Option.some({
+              expected: names.length,
+              found: cells.length,
+            }),
+            post: Result.fail([]),
+            row: at + 1,
+          }
+    )
   );
 };

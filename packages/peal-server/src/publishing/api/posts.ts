@@ -5,6 +5,7 @@ import {
   CurrentMember,
   defaultDraftPageSize,
   DuplicatePost,
+  duplicateWindowHours,
   IdempotencyKeyReused,
   ImportUnreadable,
   InvalidTimeRange,
@@ -340,6 +341,13 @@ export const PostsHandlers = HttpApiBuilder.group(
               : []
           );
 
+          // The rows those are, in the same order.
+          const sendableRows = read.flatMap((post, at) =>
+            Option.isSome(post) && Result.isSuccess(post.value)
+              ? [rows[at]?.row ?? at + 1]
+              : []
+          );
+
           const failures = {
             DatabaseError: Effect.die,
             MissingPermission: forbidden,
@@ -363,6 +371,17 @@ export const PostsHandlers = HttpApiBuilder.group(
                     Option.some<PostRefusal>(new IdempotencyKeyReused())
                   ),
                 made: () => Effect.succeed(Option.none<PostRefusal>()),
+                // What an earlier row of the file says: there is no post
+                // to name yet, so the refusal names the row.
+                repeats: ({ channelIds, earlier }) =>
+                  Effect.succeed(
+                    Option.some<PostRefusal>(
+                      new DuplicatePost({
+                        duplicates: [],
+                        message: `Row ${String(sendableRows[earlier] ?? earlier + 1)} of the file sends the same content to ${channelIds.length === 1 ? "channel" : "channels"} ${channelIds.join(", ")}, less than ${String(duplicateWindowHours)} hours from this row's time: nothing was made. Change one of them, or give this row allow_duplicate true when it is meant.`,
+                      })
+                    )
+                  ),
               })
             )
           );
@@ -373,34 +392,40 @@ export const PostsHandlers = HttpApiBuilder.group(
           if (payload.dryRun === true || !allValid) {
             let next = 0;
 
-            const results = rows.map(({ post, row }, at): ImportRowResult => {
-              const decoded = read[at] ?? Option.none();
+            const results = rows.map(
+              ({ cellCount, post, row }, at): ImportRowResult => {
+                const decoded = read[at] ?? Option.none();
 
-              if (Result.isFailure(post) || Option.isNone(decoded)) {
-                return {
-                  _tag: "unreadable",
-                  problems: Result.isFailure(post) ? [...post.failure] : [],
-                  row,
-                };
+                if (Result.isFailure(post) || Option.isNone(decoded)) {
+                  return {
+                    _tag: "unreadable",
+                    ...Option.match(cellCount, {
+                      onNone: () => ({}),
+                      onSome: (cells) => ({ cells }),
+                    }),
+                    problems: Result.isFailure(post) ? [...post.failure] : [],
+                    row,
+                  };
+                }
+
+                if (Result.isFailure(decoded.value)) {
+                  return {
+                    _tag: "refused",
+                    refusal: decoded.value.failure,
+                    row,
+                  };
+                }
+
+                const refusal = refusals[next] ?? Option.none();
+
+                next += 1;
+
+                return Option.match(refusal, {
+                  onNone: () => ({ _tag: "valid", row }),
+                  onSome: (found) => ({ _tag: "refused", refusal: found, row }),
+                });
               }
-
-              if (Result.isFailure(decoded.value)) {
-                return {
-                  _tag: "refused",
-                  refusal: decoded.value.failure,
-                  row,
-                };
-              }
-
-              const refusal = refusals[next] ?? Option.none();
-
-              next += 1;
-
-              return Option.match(refusal, {
-                onNone: () => ({ _tag: "valid", row }),
-                onSome: (found) => ({ _tag: "refused", refusal: found, row }),
-              });
-            });
+            );
 
             return {
               created: 0,

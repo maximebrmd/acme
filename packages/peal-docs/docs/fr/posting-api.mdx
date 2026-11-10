@@ -301,16 +301,16 @@ jq -Rs '{ csv: ., dryRun: true }' publications.csv |
 }
 ```
 
-Le fichier est d’abord vérifié, ligne par ligne, comme `validate` vérifie une publication. Si une seule ligne n’est pas valide, rien n’est créé. `dryRun: true` s’arrête là même quand toutes les lignes sont valides. Sinon, les lignes sont ensuite créées dans l’ordre, comme `bulk` crée ses éléments.
+Le fichier est d’abord vérifié, ligne par ligne, comme `validate` vérifie une publication, et comme le fichier qu’il est : une ligne à laquelle une ligne précédente ne laisse plus de place dans son mois est refusée avec `PlanLimitReached`, une ligne qui dit ce que dit une ligne précédente, sur le même canal à moins de 23 heures d’elle, avec `DuplicatePost` (son `message` nomme cette ligne, puisqu’il n’y a pas encore de publication à nommer), et une ligne qui porte l’`idempotency_key` d’une ligne précédente avec une autre publication avec `IdempotencyKeyReused`. Si une seule ligne n’est pas valide, rien n’est créé. `dryRun: true` s’arrête là même quand toutes les lignes sont valides. Sinon, les lignes sont ensuite créées dans l’ordre, comme `bulk` crée ses éléments.
 
-`rows` contient un résultat par ligne, repérée par sa place sous la première ligne, à partir de 1 :
+`rows` contient un résultat par ligne, repérée par sa place sous la première ligne, à partir de 1. Les lignes vides ne sont pas des lignes, et ne sont pas comptées. Les cellules suivent strictement la RFC 4180, pour qu’aucun texte ne soit jamais coupé : une cellule qui contient une virgule, un saut de ligne ou un guillemet s’écrit entre guillemets doubles, un guillemet à l’intérieur écrit deux fois, et une ligne finit après sa dernière cellule, sans virgule.
 
-| `_tag`       | Signification                                                                                                                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `created`    | La publication de la ligne a été créée : `post` la contient, et `replayed` dit si sa clé d’idempotence a répondu une publication créée auparavant.                                                      |
-| `valid`      | La ligne a été vérifiée, pas créée : un essai à blanc, ou une autre ligne a empêché l’import du fichier.                                                                                                |
-| `refused`    | `refusal` contient ce que `send` aurait répondu pour elle. Une ligne qui était valide est refusée aussi quand quelque chose a changé depuis la vérification, ou quand elle répète une ligne précédente. |
-| `unreadable` | `problems` nomme les cellules en cause : chaque colonne (`column`), `missing` quand la ligne en a besoin, ou `invalid` pour ce qu’elle contient.                                                        |
+| `_tag`       | Signification                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `created`    | La publication de la ligne a été créée : `post` la contient, et `replayed` dit si sa clé d’idempotence a répondu une publication créée auparavant.                                                                                                                                                                                                                                                     |
+| `valid`      | La ligne a été vérifiée, pas créée : un essai à blanc, ou une autre ligne a empêché l’import du fichier.                                                                                                                                                                                                                                                                                               |
+| `refused`    | `refusal` contient ce que `send` aurait répondu pour elle. Une ligne qui était valide est refusée aussi quand quelque chose a changé depuis la vérification, ou quand elle répète une ligne précédente.                                                                                                                                                                                                |
+| `unreadable` | `problems` nomme les cellules en cause : chaque colonne (`column`), `missing` quand la ligne en a besoin, ou `invalid` pour ce qu’elle contient. Une ligne qui a plus ou moins de cellules que la première ligne n’en nomme n’est pas lue du tout : `cells` dit combien étaient attendues (`expected`) et trouvées (`found`). Une virgule dans un texte qui n’est pas entre guillemets en produit une. |
 
 ```json
 {
@@ -329,14 +329,15 @@ Le fichier est d’abord vérifié, ligne par ligne, comme `validate` vérifie u
 
 La réponse est 200 dès que le fichier a pu être lu. Un fichier qui ne peut pas être lu du tout répond 422 `ImportUnreadable`, et rien n’est créé. `problem` dit pourquoi, et `column` quelle colonne quand il s’agit d’une colonne :
 
-| `problem`           | Le fichier                                      |
-| ------------------- | ----------------------------------------------- |
-| `empty`             | est vide                                        |
-| `unterminatedQuote` | a une cellule entre guillemets qui ne finit pas |
-| `unknownColumn`     | nomme une colonne que Peal ne connaît pas       |
-| `repeatedColumn`    | nomme deux fois la même colonne                 |
-| `missingColumn`     | n’a pas une colonne dont il a besoin            |
-| `tooManyRows`       | a plus de lignes qu’un import n’en prend        |
+| `problem`           | Le fichier                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `empty`             | est vide                                                                                               |
+| `unterminatedQuote` | a une cellule entre guillemets qui ne finit pas                                                        |
+| `strayQuote`        | a un guillemet dans une cellule qui n’est pas entre guillemets, ou du texte après un guillemet fermant |
+| `unknownColumn`     | nomme une colonne que Peal ne connaît pas                                                              |
+| `repeatedColumn`    | nomme deux fois la même colonne                                                                        |
+| `missingColumn`     | n’a pas une colonne dont il a besoin                                                                   |
+| `tooManyRows`       | a plus de lignes qu’un import n’en prend                                                               |
 
 ```json
 { "_tag": "ImportUnreadable", "problem": "missingColumn", "column": "at" }

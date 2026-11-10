@@ -156,6 +156,8 @@ const unreadableImport = ({ column, problem }: ImportUnreadable): string => {
       "The file is empty: its first line names the columns, and each line under it is a post.",
     missingColumn: `The file's first line lacks a column it needs${named}: text, channels and at are required.`,
     repeatedColumn: `The file's first line names a column twice${named}.`,
+    strayQuote:
+      'A cell of the file holds a double quote without being written between quotes, or goes on after its closing quote: write such a cell between double quotes, and each quote inside it twice ("").',
     tooManyRows: `The file has more than ${String(maxImportRows)} rows under its first line, the most one import takes: split it.`,
     unknownColumn: `The file's first line names a column Peal does not know${named}: it reads text, channels, media, at, time_zone, allow_duplicate and idempotency_key.`,
     unterminatedQuote:

@@ -1,20 +1,39 @@
-import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
+import {
+  Array as Arr,
+  Context,
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Option,
+  Result,
+} from "effect";
 
 import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
+import {
+  contentOn,
+  duplicateWindow,
+} from "#publishing/domain/duplicate-window.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
+import type { PostContent } from "#publishing/domain/post-content.ts";
+import { postingMonthOf, sameMonth } from "#publishing/domain/posting-month.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import { roomForOneMore } from "#shared/domain/allowance.ts";
+import type { ChannelId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import type { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { IdempotencyKeys } from "./idempotency-keys.ts";
 import type { KeyUse } from "./idempotency-keys.ts";
-import { PostChecks } from "./post-checks.ts";
+import { PostAllowance } from "./post-allowance.ts";
+import { isSendable, PostChecks } from "./post-checks.ts";
 import type { PostCheck } from "./post-checks.ts";
 import type { PostNotFound } from "./post-not-found.ts";
+import { PostRepository } from "./post-repository.ts";
 import { PostScheduling } from "./post-scheduling.ts";
 import type { SendPostRequest, SentPost } from "./post-scheduling.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
@@ -43,7 +62,20 @@ export type SendRefusal =
  * What checking one request of several found: its check, or that its
  * idempotency key was used already, by this request or by another.
  */
+/**
+ * A request that says what an earlier one of the same file says, on some
+ * of the same channels, near its time: sent after it, it would be refused
+ * as a duplicate.
+ */
+export interface RepeatedRequest {
+  readonly _tag: "repeats";
+  readonly channelIds: readonly ChannelId[];
+  /** The place of the earlier request among those checked, from 0. */
+  readonly earlier: number;
+}
+
 export type RequestCheck =
+  | RepeatedRequest
   | { readonly _tag: "checked"; readonly check: PostCheck }
   | { readonly _tag: "keyReused" }
   | { readonly _tag: "made" };
@@ -83,7 +115,11 @@ export class PostBatches extends Context.Service<
      * file before it makes its first post. A request whose idempotency
      * key was used already is not checked again, least of all against the
      * post it made: it is `made`, which sending answers, or its key came
-     * with another request (`keyReused`), which sending refuses. Needs
+     * with another request (`keyReused`), which sending refuses. The
+     * requests are also checked as the file they are: one that an earlier
+     * one leaves no room for in its month passes the plan's limit, one
+     * that says what an earlier one says near its time `repeats` it, and a
+     * key two of them carry with different posts is `keyReused`. Needs
      * post:schedule too, as the sending it prepares does.
      */
     readonly check: (
@@ -108,6 +144,69 @@ export class PostBatches extends Context.Service<
       const scheduling = yield* PostScheduling;
       const checks = yield* PostChecks;
       const keys = yield* IdempotencyKeys;
+      const allowance = yield* PostAllowance;
+      const posts = yield* PostRepository;
+
+      // The requests of a file found sendable so far, as the ones after
+      // them are checked against them.
+      interface Accepted {
+        readonly at: DateTime.Utc;
+        readonly channelIds: readonly ChannelId[];
+        readonly content: PostContent;
+        readonly place: number;
+      }
+
+      // The channels on which the request says what an accepted one says,
+      // less than `duplicateWindow` from its time.
+      const repeatedOn = (
+        earlier: Accepted,
+        at: DateTime.Utc,
+        channelIds: readonly ChannelId[],
+        content: PostContent
+      ): readonly ChannelId[] =>
+        Duration.isLessThan(
+          DateTime.distance(earlier.at, at).pipe(Duration.abs),
+          duplicateWindow
+        )
+          ? channelIds.filter(
+              (channelId) =>
+                earlier.channelIds.includes(channelId) &&
+                contentOn(earlier.content, channelId) ===
+                  contentOn(content, channelId)
+            )
+          : [];
+
+      // The plan's limit a post at `at` passes once the file's earlier
+      // posts of its month are made, if it does.
+      const monthFull = Effect.fn("PostBatches.monthFull")(function* monthFull(
+        actor: Actor,
+        at: DateTime.Utc,
+        accepted: readonly Accepted[]
+      ) {
+        const allowed = yield* allowance.scheduledPerMonth(actor.workspaceId);
+
+        if (Option.isNone(allowed)) {
+          return Option.none<PlanLimitReached>();
+        }
+
+        const going = yield* posts.countGoingOut(
+          actor.workspaceId,
+          postingMonthOf(at),
+          Option.none()
+        );
+
+        const before = accepted.filter((earlier) =>
+          sameMonth(earlier.at, at)
+        ).length;
+
+        return Result.match(
+          roomForOneMore("scheduledPosts", allowed, going + before),
+          {
+            onFailure: (reached) => Option.some(reached),
+            onSuccess: () => Option.none<PlanLimitReached>(),
+          }
+        );
+      });
 
       // What became of one: a refusal is its answer, and only a failure
       // of the database stops the rest.
@@ -151,19 +250,26 @@ export class PostBatches extends Context.Service<
           idempotencyKeyLifetime
         );
 
+        const now = yield* DateTime.now;
+        const accepted: Accepted[] = [];
+        const keyed = new Map<string, string>();
+
         return yield* Effect.forEach(
           requests,
-          Effect.fnUntraced(function* checkOne({
-            allowDuplicate = false,
-            at,
-            channelIds,
-            content,
-            idempotency,
-            options = [],
-          }) {
+          Effect.fnUntraced(function* checkOne(
+            {
+              allowDuplicate = false,
+              at,
+              channelIds,
+              content,
+              idempotency,
+              options = [],
+            },
+            place
+          ) {
             const used = yield* Option.match(idempotency, {
               onNone: () => Effect.succeed(Option.none<KeyUse>()),
-              onSome: (keyed) => keys.find(actor.workspaceId, keyed, since),
+              onSome: (request) => keys.find(actor.workspaceId, request, since),
             });
 
             if (Option.isSome(used)) {
@@ -174,18 +280,77 @@ export class PostBatches extends Context.Service<
               return known;
             }
 
-            const checked: RequestCheck = {
-              _tag: "checked",
-              check: yield* checks.check(actor, {
-                allowDuplicate,
-                channelIds,
-                content,
-                options,
-                when: Option.some({ at }),
-              }),
-            };
+            // A key an earlier request of the file carries: the same
+            // request again answers the post that one makes, another is
+            // refused once that one is made.
+            const carried = idempotency.pipe(
+              Option.flatMapNullishOr(({ key }) => keyed.get(key))
+            );
 
-            return checked;
+            if (Option.isSome(carried) && Option.isSome(idempotency)) {
+              const again: RequestCheck =
+                carried.value === idempotency.value.fingerprint
+                  ? { _tag: "made" }
+                  : { _tag: "keyReused" };
+
+              return again;
+            }
+
+            const found = yield* checks.check(actor, {
+              allowDuplicate,
+              channelIds,
+              content,
+              options,
+              when: Option.some({ at }),
+            });
+
+            if (!isSendable(found)) {
+              const alone: RequestCheck = { _tag: "checked", check: found };
+
+              return alone;
+            }
+
+            // Sendable alone: now as one of the file's, after the others.
+            const when = Option.getOrElse(at, () => now);
+
+            const repeated = allowDuplicate
+              ? Option.none<RepeatedRequest>()
+              : Arr.findFirst(accepted, (earlier) => {
+                  const shared = repeatedOn(earlier, when, channelIds, content);
+
+                  return shared.length === 0
+                    ? Option.none()
+                    : Option.some<RepeatedRequest>({
+                        _tag: "repeats",
+                        channelIds: shared,
+                        earlier: earlier.place,
+                      });
+                });
+
+            if (Option.isSome(repeated)) {
+              return repeated.value;
+            }
+
+            const planLimit = yield* monthFull(actor, when, accepted);
+
+            if (Option.isSome(planLimit)) {
+              const full: RequestCheck = {
+                _tag: "checked",
+                check: { ...found, planLimit },
+              };
+
+              return full;
+            }
+
+            accepted.push({ at: when, channelIds, content, place });
+
+            if (Option.isSome(idempotency)) {
+              keyed.set(idempotency.value.key, idempotency.value.fingerprint);
+            }
+
+            const fine: RequestCheck = { _tag: "checked", check: found };
+
+            return fine;
           }),
           { concurrency: 1 }
         );

@@ -301,16 +301,16 @@ jq -Rs '{ csv: ., dryRun: true }' posts.csv |
 }
 ```
 
-The file is checked first, every row, as `validate` checks a post. Unless every row is valid, nothing is made. `dryRun: true` stops there even when every row is valid. Otherwise the rows are then made in order, as `bulk` makes its items.
+The file is checked first, every row, as `validate` checks a post, and as the file it is: a row an earlier row leaves no room for in its month is refused with `PlanLimitReached`, one that says what an earlier row says, on the same channel less than 23 hours from it, with `DuplicatePost` (its `message` names that row, as there is no post to name yet), and one that carries an earlier row's `idempotency_key` with another post with `IdempotencyKeyReused`. Unless every row is valid, nothing is made. `dryRun: true` stops there even when every row is valid. Otherwise the rows are then made in order, as `bulk` makes its items.
 
-`rows` holds one result per row, by its place under the first line, from 1:
+`rows` holds one result per row, by its place under the first line, from 1. Blank lines are no rows, and are not counted. Cells follow RFC 4180 strictly, so that no text is ever cut short: a cell that holds a comma, a line break or a double quote is written between double quotes, a quote inside it twice, and a row ends after its last cell, without a comma.
 
-| `_tag`       | Meaning                                                                                                                                                                |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `created`    | The row's post was made: `post` holds it, and `replayed` says whether its idempotency key answered one made before.                                                    |
-| `valid`      | The row was checked and not made: a dry run, or another row kept the file from being imported.                                                                         |
-| `refused`    | `refusal` holds what `send` would have answered for it. A row that was valid is refused too when something changed since the check, or when it repeats an earlier row. |
-| `unreadable` | `problems` names the cells at fault: each `column`, `missing` when the row needs it, or `invalid` for what it holds.                                                   |
+| `_tag`       | Meaning                                                                                                                                                                                                                                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `created`    | The row's post was made: `post` holds it, and `replayed` says whether its idempotency key answered one made before.                                                                                                                                                                                                 |
+| `valid`      | The row was checked and not made: a dry run, or another row kept the file from being imported.                                                                                                                                                                                                                      |
+| `refused`    | `refusal` holds what `send` would have answered for it. A row that was valid is refused too when something changed since the check, or when it repeats an earlier row.                                                                                                                                              |
+| `unreadable` | `problems` names the cells at fault: each `column`, `missing` when the row needs it, or `invalid` for what it holds. A row with more or fewer cells than the first line names is not read at all: `cells` says how many were `expected` and `found`. A comma in a text that is not between double quotes makes one. |
 
 ```json
 {
@@ -329,14 +329,15 @@ The file is checked first, every row, as `validate` checks a post. Unless every 
 
 The answer is 200 once the file was read. A file that cannot be read at all answers 422 `ImportUnreadable`, and nothing is made. `problem` says why, and `column` which column when it is about one:
 
-| `problem`           | The file                            |
-| ------------------- | ----------------------------------- |
-| `empty`             | is empty                            |
-| `unterminatedQuote` | has a quoted cell that never ends   |
-| `unknownColumn`     | names a column Peal does not know   |
-| `repeatedColumn`    | names the same column twice         |
-| `missingColumn`     | lacks a column it needs             |
-| `tooManyRows`       | has more rows than one import takes |
+| `problem`           | The file                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| `empty`             | is empty                                                                                   |
+| `unterminatedQuote` | has a quoted cell that never ends                                                          |
+| `strayQuote`        | has a double quote inside a cell that is not between quotes, or text after a closing quote |
+| `unknownColumn`     | names a column Peal does not know                                                          |
+| `repeatedColumn`    | names the same column twice                                                                |
+| `missingColumn`     | lacks a column it needs                                                                    |
+| `tooManyRows`       | has more rows than one import takes                                                        |
 
 ```json
 { "_tag": "ImportUnreadable", "problem": "missingColumn", "column": "at" }

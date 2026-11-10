@@ -31,8 +31,12 @@ const byteOrderMark = String.fromCodePoint(0xfe_ff);
 // Why a row's post was refused, as its author corrects the row.
 const refusalOf = (refusal: PostRefusal): string =>
   Match.valueTags(refusal, {
-    DuplicatePost: ({ duplicates }) =>
-      `the same content already goes to ${duplicateChannels(duplicates)}, less than ${String(duplicateWindowHours)} hours from its time: set its allow_duplicate to true if you mean to post it twice`,
+    DuplicatePost: ({ duplicates, message }) =>
+      // Another row of the file, which has no post yet: the server says
+      // which.
+      duplicates.length === 0 && message !== undefined && message !== ""
+        ? message
+        : `the same content already goes to ${duplicateChannels(duplicates)}, less than ${String(duplicateWindowHours)} hours from its time: set its allow_duplicate to true if you mean to post it twice`,
     Forbidden: () =>
       "your role in this workspace does not allow it: a post with media needs the right to read the workspace's media",
     IdempotencyKeyReused: () =>
@@ -51,6 +55,17 @@ const refusalOf = (refusal: PostRefusal): string =>
       `these media are not the workspace's, or not ready: ${mediaIds.join(", ")}`,
   });
 
+// The cells of a row that could not be read, each with what is wrong.
+const cellProblems = (
+  problems: Extract<ImportRowResult, { _tag: "unreadable" }>["problems"]
+): string =>
+  problems
+    .map(
+      ({ column, problem }) =>
+        `${column} ${problem === "missing" ? "is missing" : "cannot be read"}`
+    )
+    .join(", ");
+
 // What became of a row, after its number and its result's name.
 const detailOf = (row: ImportRowResult): string =>
   Match.valueTags(row, {
@@ -59,13 +74,10 @@ const detailOf = (row: ImportRowResult): string =>
         ? `post ${post.id} (made before, under this idempotency key)`
         : `post ${post.id}`,
     refused: ({ refusal }) => refusalOf(refusal),
-    unreadable: ({ problems }) =>
-      problems
-        .map(
-          ({ column, problem }) =>
-            `${column} ${problem === "missing" ? "is missing" : "cannot be read"}`
-        )
-        .join(", "),
+    unreadable: ({ cells, problems }) =>
+      cells === undefined
+        ? cellProblems(problems)
+        : `it has ${String(cells.found)} cells where the first line names ${String(cells.expected)}: write a cell that holds a comma between double quotes`,
     valid: () => "",
   });
 
