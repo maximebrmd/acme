@@ -5,8 +5,26 @@ import { FetchHttpClient } from "effect/http";
 
 import { ChannelUnreadable } from "#analytics/application/channel-unreadable.ts";
 import { MetricsReader } from "#analytics/application/metrics-reader.ts";
-import type { MetricsRequest } from "#analytics/application/metrics-reader.ts";
+import type {
+  AccountRequest,
+  MetricsRequest,
+} from "#analytics/application/metrics-reader.ts";
 import { isCounted } from "#analytics/domain/counted-platforms.ts";
+import type { AccountReader } from "#analytics/infrastructure/platforms/accounts/account-read.ts";
+import {
+  linkedinAccounts,
+  pinterestAccounts,
+} from "#analytics/infrastructure/platforms/accounts/insight-accounts.ts";
+import { metaAccounts } from "#analytics/infrastructure/platforms/accounts/meta-accounts.ts";
+import {
+  blueskyAccounts,
+  mastodonAccounts,
+} from "#analytics/infrastructure/platforms/accounts/public-accounts.ts";
+import {
+  tiktokAccounts,
+  xAccounts,
+  youtubeAccounts,
+} from "#analytics/infrastructure/platforms/accounts/token-accounts.ts";
 import { blueskyMetrics } from "#analytics/infrastructure/platforms/bluesky/bluesky-metrics.ts";
 import {
   databaseDown,
@@ -23,6 +41,7 @@ import { tiktokMetrics } from "#analytics/infrastructure/platforms/tiktok/tiktok
 import { xMetrics } from "#analytics/infrastructure/platforms/x/x-metrics.ts";
 import { youtubeMetrics } from "#analytics/infrastructure/platforms/youtube/youtube-metrics.ts";
 import { ChannelAccess } from "#channels/application/channel-access.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
@@ -182,11 +201,63 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
         return yield* bluesky.read(request.posts);
       });
 
-      return MetricsReader.of({
-        account: () =>
-          Effect.fail(new ChannelUnreadable({ reason: "unsupported" })),
-        read,
+      const meta = yield* metaAccounts({
+        hosts: settings.metaHosts,
+        http,
+        metaAppSecret: settings.metaAppSecret,
       });
+
+      const xAccount = yield* xAccounts({
+        api: settings.xApi,
+        enabled: settings.xReads,
+        http,
+      });
+
+      // Each platform's account reader; Google Business Profile has none:
+      // Google's policy keeps its numbers 30 days at most and unaggregated.
+      const accountReaders: Partial<Record<Platform, AccountReader>> = {
+        bluesky: blueskyAccounts({ appView: settings.blueskyAppView, http }),
+        facebook: meta.facebook,
+        instagram: meta.instagram,
+        linkedin: yield* linkedinAccounts({
+          api: settings.linkedinApi,
+          http,
+          version: settings.linkedinVersion,
+        }),
+        mastodon: mastodonAccounts({ http, scheme: settings.mastodonScheme }),
+        pinterest: yield* pinterestAccounts({
+          api: settings.pinterestApi,
+          http,
+        }),
+        threads: meta.threads,
+        tiktok: yield* tiktokAccounts({ api: settings.tiktokApi, http }),
+        youtube: yield* youtubeAccounts({ api: settings.youtubeApi, http }),
+      };
+
+      const account = Effect.fn("MetricsReader.account")(function* account(
+        request: AccountRequest
+      ) {
+        const owner = yield* access.account(request.channelId).pipe(
+          Effect.catchTags({
+            ChannelUnusable: unusable,
+            DatabaseError: databaseDown,
+            TokenExpired: needsReconnect,
+          })
+        );
+
+        const reader =
+          owner.platform === "x"
+            ? xAccount(request.workspaceId)
+            : accountReaders[owner.platform];
+
+        if (reader === undefined) {
+          return yield* new ChannelUnreadable({ reason: "unsupported" });
+        }
+
+        return yield* reader(owner);
+      });
+
+      return MetricsReader.of({ account, read });
     })
   );
 
