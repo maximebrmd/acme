@@ -47,6 +47,7 @@ import {
 } from "peal-ui/components/dialog";
 import { Input } from "peal-ui/components/input";
 import { Label } from "peal-ui/components/label";
+import { cn } from "peal-ui/lib/utils";
 import { useCallback, useId, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
@@ -54,6 +55,7 @@ import { toast } from "sonner";
 import { channelName as nameOfChannel } from "#channels/channel-name.ts";
 import { BoostDialog } from "#components/ads/boost-dialog.tsx";
 import { PostPaid } from "#components/ads/post-paid.tsx";
+import { LivePostActions } from "#components/posts/live/live-post-actions.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
 import { PostTagsField } from "#components/posts/post-tags-field.tsx";
 import { PostQueueLine } from "#components/posts/queue-choice.tsx";
@@ -373,6 +375,7 @@ export const TargetView = ({
   const t = useTranslations("PostDetail");
   const tPosts = useTranslations("Posts");
   const tNotices = useTranslations("Notices");
+  const tLive = useTranslations("Posts.Live");
 
   const platform =
     channel === undefined
@@ -436,12 +439,21 @@ export const TargetView = ({
             ) : null}
             <h4 className="text-sm font-medium">{t("attemptsTitle")}</h4>
             {attempts === undefined ? null : <Attempts attempts={attempts} />}
+            {target.removedAt === null ? null : (
+              <p className="text-sm">
+                {tLive("removed", { at: at(target.removedAt), platform })}
+              </p>
+            )}
             {target.permalink === null ? null : (
               <a
                 href={target.permalink}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="text-sm underline underline-offset-4"
+                className={cn(
+                  "text-sm underline underline-offset-4",
+                  // Kept as a record: the post is no longer there.
+                  target.removedAt === null ? null : "line-through"
+                )}
               >
                 {t("viewPost", { platform })}
               </a>
@@ -749,6 +761,31 @@ export const PostDetail = ({
       />
     ) : null;
 
+  // Unpublishing, for members who may publish, on every channel the post
+  // is live on: the action, or why the platform does not let Peal.
+  const unpublishFor = (target: PostTarget, channel: Channel | undefined) =>
+    permissions.includes("post:publish") && target.status === "published" ? (
+      <LivePostActions
+        channel={channel}
+        channelName={channelNamed(channel?.id)}
+        postId={post.id}
+        target={target}
+        workspaceId={workspaceId}
+      />
+    ) : null;
+
+  const actionsOn = (target: PostTarget, channel: Channel | undefined) => {
+    const boost = boostFor(target, channel);
+    const unpublishing = unpublishFor(target, channel);
+
+    return boost === null && unpublishing === null ? null : (
+      <>
+        {boost}
+        {unpublishing}
+      </>
+    );
+  };
+
   const published = post.targets.some(({ status }) => status === "published");
 
   const handleRequest = (request: TargetRequest) => {
@@ -829,7 +866,7 @@ export const PostDetail = ({
         />
       }
       viewerId={userId}
-      actionsFor={boostFor}
+      actionsFor={actionsOn}
       onRequest={handleRequest}
     />
   );

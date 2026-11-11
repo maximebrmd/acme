@@ -728,6 +728,19 @@
     "unavailable": "The status could not be read. Try again later."
   },
   "Posts": {
+    "Live": {
+      "unpublish": "Unpublish",
+      "confirmTitle": "Delete this post from {platform}?",
+      "confirmDescription": "It is deleted from {channel} for everyone, every part of it. This cannot be undone.",
+      "keep": "Keep it",
+      "removing": "Removing…",
+      "requested": "Removing the post from {channel}.",
+      "removed": "Removed from {platform} on {at, date, medium}",
+      "failed": "The removal failed ({code}). The post may still be there.",
+      "retry": "Try again",
+      "blocked": "{by, select, noApi {{platform} offers no way for Peal to delete posts.} permission {{platform} does not let Peal delete posts yet.} unverified {Peal does not delete posts on {platform} yet.} other {Peal cannot delete posts on {platform}.}}",
+      "refused": "{reason, select, notPublished {The post is not live on this channel.} alreadyRemoved {The post was removed from this channel already.} noPlatformId {Peal has no id for this post on the platform: delete it there.} notSupported {The platform does not let Peal delete this post: delete it there.} changeInProgress {The post is being removed already.} channelUnavailable {The channel is disconnected, turned off or must be reconnected.} boostRunning {A boost shows this post: stop it first.} forbidden {Your role does not let you unpublish posts.} other {The post could not be removed. Try again.}}"
+    },
     "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {{platform}}}",
     "status": "{status, select, draft {Draft} awaitingApproval {Awaiting approval} scheduled {Scheduled} publishing {Publishing} finished {Finished} cancelled {Cancelled} other {{status}}}",
     "targetStatus": "{status, select, pending {Waiting} publishing {Publishing} published {Published} failed {Failed} unconfirmed {To check} cancelled {Cancelled} other {{status}}}",

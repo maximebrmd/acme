@@ -37,6 +37,7 @@ const draft = (text: string, channels: number, media: number): Post => ({
     parts: { count: 1, live: [] },
     permalink: null,
     publishedAt: null,
+    removedAt: null,
     round: 1,
     status: "pending",
     unconfirmedReason: null,

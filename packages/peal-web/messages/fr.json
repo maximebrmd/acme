@@ -728,6 +728,19 @@
     "unavailable": "L’état de la demande n’a pas pu être lu. Réessayez plus tard."
   },
   "Posts": {
+    "Live": {
+      "unpublish": "Dépublier",
+      "confirmTitle": "Supprimer ce post de {platform} ?",
+      "confirmDescription": "Il est supprimé de {channel} pour tout le monde, toutes ses parties. Cette action est définitive.",
+      "keep": "Le garder",
+      "removing": "Suppression en cours…",
+      "requested": "Suppression de la publication de {channel}.",
+      "removed": "Supprimé de {platform} le {at, date, medium}",
+      "failed": "La suppression a échoué ({code}). La publication est peut-être encore en ligne.",
+      "retry": "Réessayer",
+      "blocked": "{by, select, noApi {{platform} n’offre aucun moyen à Peal de supprimer des publications.} permission {{platform} ne permet pas encore à Peal de supprimer des publications.} unverified {Peal ne supprime pas encore de publications sur {platform}.} other {Peal ne peut pas supprimer de publications sur {platform}.}}",
+      "refused": "{reason, select, notPublished {La publication n’est pas en ligne sur ce canal.} alreadyRemoved {La publication a déjà été supprimée de ce canal.} noPlatformId {Peal n’a pas l’identifiant de cette publication sur la plateforme : supprimez-la là-bas.} notSupported {La plateforme ne permet pas à Peal de supprimer cette publication : supprimez-la là-bas.} changeInProgress {La publication est déjà en cours de suppression.} channelUnavailable {Le canal est déconnecté, désactivé ou doit être reconnecté.} boostRunning {Une mise en avant montre cette publication : arrêtez-la d’abord.} forbidden {Votre rôle ne vous permet pas de dépublier des publications.} other {La publication n’a pas pu être supprimée. Réessayez.}}"
+    },
     "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {{platform}}}",
     "status": "{status, select, draft {Brouillon} awaitingApproval {En attente d’approbation} scheduled {Programmé} publishing {En cours de publication} finished {Terminé} cancelled {Annulé} other {{status}}}",
     "targetStatus": "{status, select, pending {En attente} publishing {En cours} published {Publié} failed {Échec} unconfirmed {À vérifier} cancelled {Annulé} other {{status}}}",
