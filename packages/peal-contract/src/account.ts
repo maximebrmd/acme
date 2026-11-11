@@ -547,6 +547,21 @@ const ExportedSavedItemsSchema = Schema.Struct({
       options: Schema.Unknown,
     })
   ),
+  // Weekly timetables posts are put on: their slots in their time zone,
+  // for some channels and at most one channel set.
+  queues: Schema.Array(
+    Schema.Struct({
+      channelIds: Schema.Array(Schema.String),
+      channelSetId: nullable(Schema.String),
+      createdAt: instant,
+      id: Schema.String,
+      isDefault: Schema.Boolean,
+      name: Schema.String,
+      // As stored: each slot a weekday and a time of day.
+      slots: Schema.Unknown,
+      timeZone: Schema.String,
+    })
+  ),
   signatures: Schema.Array(
     Schema.Struct({
       createdAt: instant,
@@ -641,7 +656,7 @@ const ExportedWorkspaceSchema = Schema.Struct({
   name: Schema.String,
   posts: Schema.Array(ExportedPostSchema),
   review: ExportedReviewSchema,
-  // Its tags, signatures, channel sets and channels' default options.
+  // Its tags, signatures, channel sets, queues and channels' default options.
   saved: ExportedSavedItemsSchema,
   slug: Schema.String,
   webhooks: Schema.Array(ExportedWebhookSchema),

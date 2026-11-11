@@ -292,7 +292,18 @@ const PortsLive = Layer.mergeAll(
             saved: {
               channelDefaults: [],
               channelSets: [],
-              queues: [],
+              queues: [
+                {
+                  channelIds: ["019a6f10-0000-7000-8000-0000000000c1"],
+                  channelSetId: null,
+                  createdAt: at,
+                  id: "019a6f10-0000-7000-8000-0000000000b1",
+                  isDefault: true,
+                  name: "Weekdays",
+                  slots: [{ day: "monday", time: "09:30" }],
+                  timeZone: "Europe/Paris",
+                },
+              ],
               signatures: [],
               tags: [
                 {
@@ -884,10 +895,16 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
         );
         assert.deepStrictEqual(
           body.workspaces.map(
-            ({ assistantUsage, billing, name, webhooks }) => ({
+            ({ assistantUsage, billing, name, saved, webhooks }) => ({
               assistantUsage,
               name,
               plan: billing.plan,
+              // The queues it keeps, with their slots as stored.
+              queues: saved.queues.map(({ isDefault, name: queue, slots }) => ({
+                isDefault,
+                queue,
+                slots,
+              })),
               statuses: billing.subscriptions.map(({ status }) => status),
               usage: billing.usage,
               // Where the workspace is told, never the secret that signs it.
@@ -899,6 +916,13 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
               assistantUsage: [{ day: "2026-11-09", requests: 3 }],
               name: "Harbour",
               plan: "pro",
+              queues: [
+                {
+                  isDefault: true,
+                  queue: "Weekdays",
+                  slots: [{ day: "monday", time: "09:30" }],
+                },
+              ],
               statuses: ["active"],
               usage: [
                 {
