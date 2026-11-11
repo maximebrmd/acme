@@ -6,6 +6,7 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   lt,
   ne,
   notInArray,
@@ -122,7 +123,11 @@ const targetStatusOf = (row: TargetRow) => {
     startedAt: utc(row.startedAt),
   };
 
-  return row.keptPrivate ? { ...status, keptPrivate: true } : status;
+  const kept = row.keptPrivate ? { ...status, keptPrivate: true } : status;
+
+  return row.removedAt === null
+    ? kept
+    : { ...kept, removedAt: utc(row.removedAt) };
 };
 
 // The parts that went live, as their column holds them: JSON.
@@ -240,6 +245,7 @@ const targetColumns = (status: PostTargetStatus) => {
     listedAt: null,
     permalink: null,
     platformPostId: null,
+    removedAt: null,
     startedAt: null,
     status: status._tag,
     unconfirmedReason: null,
@@ -257,7 +263,13 @@ const targetColumns = (status: PostTargetStatus) => {
       finishedAt: date(failedAt),
     }),
     pending: () => cleared,
-    published: ({ keptPrivate, permalink, platformPostId, publishedAt }) => ({
+    published: ({
+      keptPrivate,
+      permalink,
+      platformPostId,
+      publishedAt,
+      removedAt,
+    }) => ({
       ...cleared,
       finishedAt: date(publishedAt),
       keptPrivate: keptPrivate === true,
@@ -266,6 +278,7 @@ const targetColumns = (status: PostTargetStatus) => {
       listedAt: date(publishedAt),
       permalink: Option.getOrNull(permalink),
       platformPostId: Option.getOrNull(platformPostId),
+      removedAt: removedAt === undefined ? null : date(removedAt),
     }),
     publishing: ({ cancelRequested, startedAt }) => ({
       ...cleared,
@@ -559,6 +572,22 @@ export const DrizzlePostRepository = Layer.effect(
           .pipe(
             Effect.mapError(failed),
             Effect.flatMap(Effect.forEach(toTarget))
+          ),
+      markRemoved: (targetId, removedAt) =>
+        db
+          .update(postTargets)
+          .set({ removedAt: date(removedAt) })
+          .where(
+            and(
+              eq(postTargets.id, targetId),
+              eq(postTargets.status, "published"),
+              isNull(postTargets.removedAt)
+            )
+          )
+          .returning({ id: postTargets.id })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length === 1)
           ),
       remove: (postId) =>
         db

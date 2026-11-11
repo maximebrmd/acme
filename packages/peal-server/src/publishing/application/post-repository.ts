@@ -99,6 +99,15 @@ export class PostRepository extends Context.Service<
       current: PostTarget
     ) => Effect.Effect<boolean, DatabaseError>;
     /**
+     * Records that a published target was deleted from its platform at
+     * `removedAt`, and nothing else of it: false when it is not published,
+     * or was removed already.
+     */
+    readonly markRemoved: (
+      targetId: PostTargetId,
+      removedAt: DateTime.Utc
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
      * Files the post under these tags, instead of those it had. Nothing
      * else of the post is written, whatever its status.
      */

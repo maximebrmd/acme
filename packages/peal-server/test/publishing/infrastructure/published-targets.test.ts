@@ -425,4 +425,77 @@ layer(ListingTest)("the published targets", (it) => {
         }).pipe(Effect.ensuring(deletePost(postId)));
       })
   );
+
+  it.effect(
+    "leave out a target deleted from its platform, which stays published",
+    () =>
+      Effect.gen(function* removed() {
+        const { ids, postId, workspaceId } = yield* insertPost([
+          {
+            finishedAt: "2045-02-05T10:00:00.000Z",
+            platformPostId: "110000000000000501",
+            status: "published",
+          },
+          {
+            finishedAt: "2045-02-05T10:05:00.000Z",
+            platformPostId: "110000000000000502",
+            status: "published",
+          },
+        ]);
+
+        const [kept, gone] = ids;
+
+        if (kept === undefined || gone === undefined) {
+          return yield* Effect.die("Two targets were made");
+        }
+
+        return yield* Effect.gen(function* checks() {
+          const published = yield* PublishedTargets;
+          const posts = yield* PostRepository;
+          const removedAt = utc("2045-02-06T08:00:00.000Z");
+
+          assert.isTrue(yield* posts.markRemoved(gone, removedAt));
+          // Once: a target removed is not removed again.
+          assert.isFalse(yield* posts.markRemoved(gone, removedAt));
+
+          const listed = (yield* published.from(
+            {
+              publishedAt: utc("2045-02-05T00:00:00.000Z"),
+              targetId: Option.none(),
+            },
+            100
+          )).filter(({ targetId }) => ids.includes(targetId));
+
+          assert.deepStrictEqual(
+            listed.map(({ targetId }) => targetId),
+            [kept]
+          );
+          assert.deepStrictEqual(
+            (yield* published.ofPost(workspaceId, postId)).map(
+              ({ targetId }) => targetId
+            ),
+            [kept]
+          );
+          assert.deepStrictEqual(
+            (yield* published.byPlatformPostIds(workspaceId, [
+              "110000000000000501",
+              "110000000000000502",
+            ])).map(({ targetId }) => targetId),
+            [kept]
+          );
+
+          const target = (yield* posts.targets(postId)).find(
+            ({ id }) => id === gone
+          );
+
+          assert.strictEqual(target?.status._tag, "published");
+          assert.deepStrictEqual(
+            target?.status._tag === "published"
+              ? target.status.removedAt
+              : undefined,
+            removedAt
+          );
+        }).pipe(Effect.ensuring(deletePost(postId)));
+      })
+  );
 });
