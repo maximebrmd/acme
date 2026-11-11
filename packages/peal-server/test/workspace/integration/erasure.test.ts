@@ -195,6 +195,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM webhooks.endpoints WHERE workspace_id = ${id}`,
   "webhooks.events": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM webhooks.events WHERE workspace_id = ${id}`,
+  "webhooks.manual_sends": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM webhooks.manual_sends WHERE workspace_id = ${id}`,
   // A partner account goes with its home workspace, and with it its keys,
   // its creations' idempotency keys and its daily counts.
   "workspace.partner_idempotency_keys": (sql, id) =>
@@ -593,6 +595,10 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO webhooks.deliveries (id, endpoint_id, event_id, workspace_id, event_type, status, attempts, created_at)
     VALUES (${uuid7()}, ${endpointId}, ${eventId}, ${workspaceId}, 'webhook.test', 'pending', 0, now())`;
+
+  // The hour's count of the test events sent by hand.
+  yield* sql`INSERT INTO webhooks.manual_sends (workspace_id, kind, window_start, sent)
+    VALUES (${workspaceId}, 'single', date_trunc('hour', now()), 1)`;
 
   // A connect link the person created, not yet used.
   yield* sql`INSERT INTO channels.connect_links (id, workspace_id, platform, channel_ids, token_digest, created_by, starts, status, created_at, expires_at)

@@ -312,3 +312,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - The consent page lets a person leave `workspace:ads` out as it does
   publishing (`mayLeaveAdsOut`, `consentAnswer` in
   `#auth/consent-scopes.ts`).
+- The webhooks settings (`components/webhooks/`) offer an endpoint's
+  channels as a picker (`workspaceChannels`) and a partner endpoint's
+  workspaces as ids, one a line (`#webhooks/endpoint-draft.ts`; an edit
+  always sends `channelIds`, an empty list hearing every channel), a status
+  and event filter on each log, a **Failed** tab across endpoints
+  (`searchPage`), "Send all failed again" naming how many and the hour's
+  budget, and a test event type (a sample). Every string is in the
+  `Webhooks` namespace, en and fr.

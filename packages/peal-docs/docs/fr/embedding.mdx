@@ -254,6 +254,10 @@ Chaque corps nomme son espace de travail deux fois : `data.workspaceId`, l’ide
 
 [Webhooks](/webhooks) dit comment les envois sont signés, vérifiés, relancés et journalisés. Un point de terminaison de l’espace de travail d’un client, avec la portée par défaut, n’entend que cet espace.
 
+### La préproduction à part, avec un filtre d’espaces de travail [#webhooks-staging]
+
+Pour séparer les clients de votre préproduction de ceux de la production, donnez à chaque environnement son propre point de terminaison partenaire et listez, dans `workspaceIds` (200 au plus), les espaces de travail qu’il doit entendre : votre point de terminaison de préproduction entend vos clients de test, et celui de production, sans liste, tous les espaces de travail. Votre espace de travail principal n’est entendu que s’il est listé. Changez la liste au fil de vos clients de test avec `PATCH …/webhooks/{endpointId}`. Les livraisons de chaque point de terminaison, avec l’espace de travail de chacune et l’identifiant que vous lui donnez, sont dans le [journal de tous les points de terminaison](/webhooks#log) de votre espace de travail principal, où celles qui ont échoué se renvoient ensemble.
+
 ## Retirer un client [#offboard]
 
 ```typescript

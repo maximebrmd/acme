@@ -11,6 +11,10 @@ module Peal
         field :cursor, -> { String }, optional: true, nullable: false
 
         field :limit, -> { String }, optional: true, nullable: false
+
+        field :event_type, -> { Peal::Types::WebhookEventType }, optional: true, nullable: false, api_name: "eventType"
+
+        field :status, -> { Peal::Types::WebhookDeliveryStatus }, optional: true, nullable: false
       end
     end
   end

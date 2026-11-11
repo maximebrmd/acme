@@ -502,19 +502,26 @@ peal inbox moderate <comment-id> --action hide
 
 ```sh
 peal webhooks list
-peal webhooks create --url https://hooks.example.com/peal --events post.published,post.failed
+peal webhooks create --url https://hooks.example.com/peal --events post.published,post.failed --channel <channel-id>
 peal webhooks update <endpoint-id> --events all --disable
+peal webhooks update <endpoint-id> --clear-channels
 peal webhooks rotate-secret <endpoint-id>
-peal webhooks test <endpoint-id>
+peal webhooks test <endpoint-id> --event post.published
 peal webhooks deliveries <endpoint-id>
-peal webhooks redeliver <endpoint-id> <delivery-id>
+peal webhooks deliveries --status failed --since 2026-11-10T00:00:00Z
+peal webhooks redeliver --endpoint <endpoint-id> <delivery-id>
+peal webhooks redeliver --failed --endpoint <endpoint-id>
+peal webhooks redeliver <delivery-id> <delivery-id>
 peal webhooks delete <endpoint-id>
 ```
 
 - Les propriétaires et administrateurs lisent et gèrent les points de terminaison de [webhook](/webhooks) de l’espace de travail. `peal webhooks show <endpoint-id>` en affiche un.
 - `--events` prend des types d’événements séparés par des virgules, ou `all`. `create` prend aussi `--description` et `--disabled` ; `update` n’envoie que ce que vous lui donnez, avec `--enable` ou `--disable` pour activer ou désactiver le point de terminaison.
 - `create` et `rotate-secret` affichent le secret de signature, une seule fois : enregistrez-le à ce moment. Après un renouvellement, l’ancien secret signe encore pendant 24 heures, à côté du nouveau.
-- `test` envoie un événement `webhook.test` ; `deliveries` montre comment chaque livraison s’est terminée, la plus récente d’abord, et `redeliver` en renvoie une.
+- `--channel` (répété, ou des identifiants séparés par des virgules) limite un point de terminaison à ces chaînes, et `--clear-channels` lui fait de nouveau entendre toutes les chaînes ; `--workspace-id`, avec `--partner` sur `create`, limite un point de terminaison partenaire à ces espaces de travail, et `--clear-workspaces` retire la liste. `update` remplace une liste qu’on lui donne.
+- `test` envoie un événement `webhook.test`, ou avec `--event` un exemple de ce type, marqué `sample: true`.
+- `deliveries` montre comment chaque livraison s’est terminée, la plus récente d’abord : celles d’un point de terminaison, ou sans lui celles de tous, avec `--status`, `--event`, `--since` et `--until` (des instants avec leur décalage).
+- `redeliver` renvoie des livraisons : une avec `--endpoint` et son identifiant, comptée comme un renvoi un à un ; plusieurs par identifiant ; ou `--failed --endpoint <endpoint-id>` pour les échouées d’un point de terminaison, les plus anciennes d’abord, 100 par appel, avec `--since`, `--until` et `--event`. Il affiche ce qu’il a ignoré et combien il en reste : relancez-le pour celles-là.
 
 ## Journal d’activité [#activity]
 

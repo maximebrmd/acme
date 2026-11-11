@@ -25,9 +25,14 @@ import {
   SecretsTest,
 } from "#test/webhooks/support.ts";
 import { DeliveryStore } from "#webhooks/application/ports/delivery-store.ts";
+import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
 import { webhooksWith, WebhooksWorkersLive } from "#webhooks/container.ts";
-import { maxAttempts, retryDelays } from "#webhooks/domain/delivery-policy.ts";
+import {
+  bulkReplaySpacing,
+  maxAttempts,
+  retryDelays,
+} from "#webhooks/domain/delivery-policy.ts";
 import type { WebhookDeliveryId } from "#webhooks/domain/webhook-delivery-id.ts";
 import { DrizzleDeliveryStore } from "#webhooks/infrastructure/drizzle-delivery-store.ts";
 import { DrizzleEndpointStore } from "#webhooks/infrastructure/drizzle-endpoint-store.ts";
@@ -232,6 +237,62 @@ describe("DeliverWebhookV1", () => {
           assert.lengthOf(yield* transport.sentTo(host), 1);
           assert.strictEqual(yield* attemptsOf(delivery.id), 1);
         }).pipe(Effect.ensuring(Ref.set(away, false)))
+      ),
+    timeout
+  );
+
+  it.effect(
+    "starts deliveries sent again together a quarter of a second apart",
+    () =>
+      onServerAt(
+        "2026-11-10T09:00:00Z",
+        Effect.gen(function* paced() {
+          const owner = yield* freshOwner;
+          const transport = yield* FakeTransport;
+          const { endpoint, host } = yield* freshEndpoint(owner);
+
+          const sent = yield* Effect.forEach([1, 2], () =>
+            WebhookEndpoints.use((endpoints) =>
+              endpoints.sendTest(owner, endpoint.id)
+            )
+          );
+
+          for (const delivery of sent) {
+            yield* eventually(
+              "the test is taken",
+              stored(delivery.id).pipe(
+                Effect.map(({ status }) => status._tag === "succeeded")
+              )
+            );
+          }
+
+          const { redelivered } = yield* WebhookDeliveries.use((deliveries) =>
+            deliveries.redeliverMany(owner, {
+              _tag: "ids",
+              deliveryIds: sent.map(({ id }) => id),
+            })
+          );
+
+          const [first, second] = redelivered;
+
+          assert(first !== undefined && second !== undefined);
+
+          yield* eventually(
+            "the first is sent at once",
+            attemptsOf(first.id).pipe(Effect.map((attempts) => attempts === 1))
+          );
+          yield* settle(10);
+
+          assert.strictEqual(yield* attemptsOf(second.id), 0);
+
+          yield* TestClock.adjust(bulkReplaySpacing);
+          yield* eventually(
+            "the second follows",
+            attemptsOf(second.id).pipe(Effect.map((attempts) => attempts === 1))
+          );
+
+          assert.lengthOf(yield* transport.sentTo(host), 4);
+        })
       ),
     timeout
   );

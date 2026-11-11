@@ -12,6 +12,9 @@ public record SendTestWebhooksRequest
     [JsonIgnore]
     public required string EndpointId { get; set; }
 
+    [JsonIgnore]
+    public SubscribableWebhookEventType? EventType { get; set; }
+
     /// <inheritdoc />
     public override string ToString()
     {

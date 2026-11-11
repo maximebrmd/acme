@@ -1,5 +1,8 @@
 import { Option, Schema } from "effect";
 
+import { ChannelIdSchema } from "#shared/domain/ids.ts";
+import type { ChannelId } from "#shared/domain/ids.ts";
+
 import type { PostContent } from "./post-content.ts";
 import type { PostTarget } from "./post-target.ts";
 import { TargetOptionsSchema } from "./target-options.ts";
@@ -68,3 +71,21 @@ export const approvalSubject = (
         }
   );
 };
+
+const SubjectChannelsSchema = Schema.fromJsonString(
+  Schema.Struct({
+    channels: Schema.Array(Schema.Struct({ channelId: ChannelIdSchema })),
+  })
+);
+
+const decodeSubjectChannels = Schema.decodeUnknownOption(SubjectChannelsSchema);
+
+/**
+ * The channels a subject (`approvalSubject`) says the post goes to, in
+ * the subject's order; none for a string that is not one.
+ */
+export const channelsOfSubject = (subject: string): readonly ChannelId[] =>
+  decodeSubjectChannels(subject).pipe(
+    Option.map(({ channels }) => channels.map(({ channelId }) => channelId)),
+    Option.getOrElse((): readonly ChannelId[] => [])
+  );

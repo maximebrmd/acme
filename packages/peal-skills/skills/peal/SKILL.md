@@ -410,6 +410,11 @@ units (5000). A sign-in spends only when made with `peal login --ads`.
 Everything else, the states of a boost, reading what ads did, and what to
 do with each error: [references/ads.md](references/ads.md).
 
+## Webhooks
+
+Endpoints, their filters, the delivery log and sending failed deliveries
+again: [references/webhooks.md](references/webhooks.md).
+
 ## What did I do
 
 The activity log lists the requests that asked to change something: when,

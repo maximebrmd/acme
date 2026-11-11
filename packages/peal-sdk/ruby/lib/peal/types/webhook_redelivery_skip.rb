@@ -4,10 +4,12 @@ require_relative "../../peal"
 
 module Peal
   module Types
-    module WebhookURLRefusedEncodedTag
+    module WebhookRedeliverySkip
       extend Peal::Internal::Types::Enum
 
-      WEBHOOK_URL_REFUSED = "WebhookUrlRefused"
+      ALREADY_SENT = "alreadySent"
+      ENDPOINT_DISABLED = "endpointDisabled"
+      NOT_FOUND = "notFound"
     end
   end
 end

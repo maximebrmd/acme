@@ -8,12 +8,6 @@ use Peal\Core\Json\JsonProperty;
 class WebhookUrlRefusedEncoded extends JsonSerializableType
 {
     /**
-     * @var value-of<WebhookUrlRefusedEncodedTag> $tag
-     */
-    #[JsonProperty('_tag')]
-    public string $tag;
-
-    /**
      * @var ?string $code
      */
     #[JsonProperty('code')]
@@ -39,7 +33,6 @@ class WebhookUrlRefusedEncoded extends JsonSerializableType
 
     /**
      * @param array{
-     *   tag: value-of<WebhookUrlRefusedEncodedTag>,
      *   reason: value-of<WebhookUrlRefusal>,
      *   code?: ?string,
      *   message?: ?string,
@@ -49,7 +42,6 @@ class WebhookUrlRefusedEncoded extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
-        $this->tag = $values['tag'];
         $this->code = $values['code'] ?? null;
         $this->message = $values['message'] ?? null;
         $this->requestId = $values['requestId'] ?? null;

@@ -1,5 +1,6 @@
-import { Schema } from "effect";
+import { Match, Schema } from "effect";
 
+import type { ChannelId } from "#shared/domain/ids.ts";
 import {
   ChannelIdSchema,
   MediaAssetIdSchema,
@@ -257,3 +258,88 @@ export type WebhookEvent = typeof WebhookEventSchema.Type;
  * version, sent beside this one.
  */
 export const eventVersion = 1;
+
+/**
+ * The types of events about a whole post whose data names none of its
+ * channels: whoever tells one gives the post's channels beside it, for
+ * the endpoints that listen to some channels only.
+ */
+export const postWideEventTypes = [
+  "post.unscheduled",
+  "post.approval_requested",
+  "post.approved",
+  "post.changes_requested",
+] as const;
+
+export type PostWideEventType = (typeof postWideEventTypes)[number];
+
+/**
+ * Which channels an event concerns, as the endpoints that listen to some
+ * channels read it:
+ *
+ * - `none`: no channel (a file, a boost, a test), so every such endpoint
+ *   hears it;
+ * - `named`: those its data names, its channel's or its post's targets';
+ * - `ofPost`: a whole post's, which its data does not name
+ *   (`postWideEventTypes`): those its teller gives.
+ *
+ * Every type says which: a new one does not compile until it does.
+ */
+export type EventChannels =
+  | { readonly _tag: "none" }
+  | { readonly _tag: "named"; readonly channelIds: readonly ChannelId[] }
+  | { readonly _tag: "ofPost" };
+
+const none: EventChannels = { _tag: "none" };
+
+const ofPost: EventChannels = { _tag: "ofPost" };
+
+const named = (channelIds: readonly ChannelId[]): EventChannels => ({
+  _tag: "named",
+  channelIds,
+});
+
+const ofTargets = ({
+  data,
+}: {
+  readonly data: { readonly targets: readonly EventTarget[] };
+}) => named(data.targets.map(({ channelId }) => channelId));
+
+const ofChannel = ({
+  data,
+}: {
+  readonly data: { readonly channelId: ChannelId };
+}) => named([data.channelId]);
+
+const noChannel = () => none;
+
+export const channelsOf: (event: WebhookEvent) => EventChannels =
+  Match.type<WebhookEvent>().pipe(
+    Match.discriminatorsExhaustive("type")({
+      "boost.budget_reached": noChannel,
+      "boost.ended": noChannel,
+      "boost.failed": noChannel,
+      "boost.paused": noChannel,
+      "boost.resumed": noChannel,
+      "boost.started": noChannel,
+      "boost.stopped": noChannel,
+      "boost.unconfirmed": noChannel,
+      "channel.connected": ofChannel,
+      "channel.disconnected": ofChannel,
+      "channel.reconnect_needed": ofChannel,
+      "comment.received": ofChannel,
+      "comment.replied": ofChannel,
+      "media.failed": noChannel,
+      "media.ready": noChannel,
+      "post.approval_requested": () => ofPost,
+      "post.approved": () => ofPost,
+      "post.cancelled": ofTargets,
+      "post.changes_requested": () => ofPost,
+      "post.failed": ofChannel,
+      "post.published": ofChannel,
+      "post.scheduled": ofTargets,
+      "post.unconfirmed": ofChannel,
+      "post.unscheduled": () => ofPost,
+      "webhook.test": noChannel,
+    })
+  );

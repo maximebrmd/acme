@@ -23,6 +23,9 @@ public record TooManyWebhookSendsEncoded : IJsonOnDeserialized
     [JsonPropertyName("allowed")]
     public required int Allowed { get; set; }
 
+    [JsonPropertyName("retryAfterSeconds")]
+    public required int RetryAfterSeconds { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

@@ -7,29 +7,53 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import social.peal.core.ObjectMappers;
+import social.peal.types.SubscribableWebhookEventType;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = SendTestWebhooksRequest.Builder.class)
 public final class SendTestWebhooksRequest {
+    private final Optional<SubscribableWebhookEventType> eventType;
+
     private final Map<String, Object> additionalProperties;
 
-    private SendTestWebhooksRequest(Map<String, Object> additionalProperties) {
+    private SendTestWebhooksRequest(
+            Optional<SubscribableWebhookEventType> eventType, Map<String, Object> additionalProperties) {
+        this.eventType = eventType;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("eventType")
+    public Optional<SubscribableWebhookEventType> getEventType() {
+        return eventType;
     }
 
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
-        return other instanceof SendTestWebhooksRequest;
+        return other instanceof SendTestWebhooksRequest && equalTo((SendTestWebhooksRequest) other);
     }
 
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() {
         return this.additionalProperties;
+    }
+
+    private boolean equalTo(SendTestWebhooksRequest other) {
+        return eventType.equals(other.eventType);
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+        return Objects.hash(this.eventType);
     }
 
     @java.lang.Override
@@ -43,20 +67,37 @@ public final class SendTestWebhooksRequest {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<SubscribableWebhookEventType> eventType = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         public Builder from(SendTestWebhooksRequest other) {
+            eventType(other.getEventType());
+            return this;
+        }
+
+        @JsonSetter(value = "eventType", nulls = Nulls.SKIP)
+        public Builder eventType(Optional<SubscribableWebhookEventType> eventType) {
+            this.eventType = eventType;
+            return this;
+        }
+
+        public Builder eventType(SubscribableWebhookEventType eventType) {
+            this.eventType = Optional.ofNullable(eventType);
             return this;
         }
 
         public SendTestWebhooksRequest build() {
-            return new SendTestWebhooksRequest(additionalProperties);
+            return new SendTestWebhooksRequest(eventType, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
+            if (key.equalsIgnoreCase("eventType")) {
+                return;
+            }
             this.additionalProperties.put(key, value);
         }
 

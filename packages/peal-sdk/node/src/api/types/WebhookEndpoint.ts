@@ -3,6 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface WebhookEndpoint {
+    channelIds: string[];
     createdAt: string;
     description: string;
     disabledAt: string | null;
@@ -15,4 +16,5 @@ export interface WebhookEndpoint {
     scope: Peal.WebhookEndpointScope;
     updatedAt: string;
     url: string;
+    workspaceIds: string[];
 }

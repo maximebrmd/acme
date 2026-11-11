@@ -130,7 +130,8 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
         references,
         accounts,
         origins,
-        events
+        // What is told of a post may name its channels.
+        events.pipe(Layer.provide(DrizzlePostRepository))
       )
     )
   );

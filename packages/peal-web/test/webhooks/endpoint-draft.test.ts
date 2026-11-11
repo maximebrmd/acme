@@ -9,13 +9,16 @@ import {
   emptyDraft,
   everyTypeChosen,
   newEndpointOf,
+  withChannel,
   withEveryType,
   withType,
+  workspaceIdsOf,
 } from "#webhooks/endpoint-draft.ts";
 
 const at = DateTime.makeUnsafe("2026-11-10T09:00:00Z");
 
 const endpoint: WebhookEndpoint = {
+  channelIds: [],
   createdAt: at,
   description: "Synthetic receiver",
   disabledAt: null,
@@ -28,6 +31,7 @@ const endpoint: WebhookEndpoint = {
   scope: "workspace",
   updatedAt: at,
   url: "https://hooks.example.com/peal",
+  workspaceIds: [],
 };
 
 describe(newEndpointOf, () => {
@@ -84,6 +88,7 @@ describe(changeOf, () => {
   it("starts from the endpoint as it is", () => {
     expect(changeOf(draftOf(endpoint))).toStrictEqual(
       Option.some({
+        channelIds: [],
         description: "Synthetic receiver",
         eventTypes: ["post.published", "post.failed"],
         url: "https://hooks.example.com/peal",
@@ -95,5 +100,62 @@ describe(changeOf, () => {
     expect(changeOf(withEveryType(draftOf(endpoint), false))).toStrictEqual(
       Option.none()
     );
+  });
+});
+
+describe("an endpoint's filters", () => {
+  const channel = "00000000-0000-7000-8000-0000000000c1";
+  const tenant = "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f";
+
+  it("sends the channels chosen, and none to hear every channel", () => {
+    const draft = withType(
+      { ...emptyDraft, url: "https://hooks.example.com/peal" },
+      "post.published",
+      true
+    );
+
+    expect(
+      Option.map(newEndpointOf(withChannel(draft, channel, true)), (made) =>
+        "channelIds" in made ? made.channelIds : []
+      )
+    ).toStrictEqual(Option.some([channel]));
+    expect(
+      Option.map(newEndpointOf(draft), (made) => "channelIds" in made)
+    ).toStrictEqual(Option.some(false));
+    expect(
+      Option.map(
+        changeOf(
+          withChannel(
+            withChannel(draftOf(endpoint), channel, true),
+            channel,
+            false
+          )
+        ),
+        (change) => change.channelIds
+      )
+    ).toStrictEqual(Option.some([]));
+  });
+
+  it("sends the workspaces of a partner endpoint only, one a line", () => {
+    const partner = draftOf({
+      ...endpoint,
+      scope: "partner",
+      workspaceIds: [tenant],
+    });
+
+    expect(partner.workspaceIds).toBe(tenant);
+    expect(
+      Option.map(
+        changeOf({ ...partner, workspaceIds: `${tenant}\n\n ${tenant} ` }),
+        (change) => change.workspaceIds
+      )
+    ).toStrictEqual(Option.some([tenant]));
+    expect(
+      Option.map(
+        changeOf(draftOf(endpoint)),
+        (change) => "workspaceIds" in change
+      )
+    ).toStrictEqual(Option.some(false));
+    expect(workspaceIdsOf("")).toStrictEqual([]);
   });
 });

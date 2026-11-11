@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class WebhookEndpoint extends JsonSerializableType
 {
     /**
+     * @var array<string> $channelIds
+     */
+    #[JsonProperty('channelIds'), ArrayType(['string'])]
+    public array $channelIds;
+
+    /**
      * @var string $createdAt
      */
     #[JsonProperty('createdAt')]
@@ -81,7 +87,14 @@ class WebhookEndpoint extends JsonSerializableType
     public string $url;
 
     /**
+     * @var array<string> $workspaceIds
+     */
+    #[JsonProperty('workspaceIds'), ArrayType(['string'])]
+    public array $workspaceIds;
+
+    /**
      * @param array{
+     *   channelIds: array<string>,
      *   createdAt: string,
      *   description: string,
      *   enabled: bool,
@@ -90,6 +103,7 @@ class WebhookEndpoint extends JsonSerializableType
      *   scope: value-of<WebhookEndpointScope>,
      *   updatedAt: string,
      *   url: string,
+     *   workspaceIds: array<string>,
      *   disabledAt?: ?string,
      *   disabledReason?: ?value-of<WebhookDisabledReason>,
      *   failingSince?: ?string,
@@ -99,6 +113,7 @@ class WebhookEndpoint extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->channelIds = $values['channelIds'];
         $this->createdAt = $values['createdAt'];
         $this->description = $values['description'];
         $this->disabledAt = $values['disabledAt'] ?? null;
@@ -111,6 +126,7 @@ class WebhookEndpoint extends JsonSerializableType
         $this->scope = $values['scope'];
         $this->updatedAt = $values['updatedAt'];
         $this->url = $values['url'];
+        $this->workspaceIds = $values['workspaceIds'];
     }
 
     /**

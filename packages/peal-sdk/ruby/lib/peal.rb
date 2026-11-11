@@ -124,6 +124,8 @@ require_relative "peal/lookups/types/lookup_input"
 require_relative "peal/webhooks/client"
 require_relative "peal/webhooks/types/list_webhooks_request"
 require_relative "peal/webhooks/types/new_webhook_endpoint"
+require_relative "peal/webhooks/types/search_deliveries_webhooks_request"
+require_relative "peal/webhooks/types/redeliver_many_webhooks_request"
 require_relative "peal/webhooks/types/get_webhooks_request"
 require_relative "peal/webhooks/types/delete_webhooks_request"
 require_relative "peal/webhooks/types/webhook_endpoint_change"
@@ -816,6 +818,9 @@ module Peal
     autoload :WebhookDeliveryStatus, ::File.join(__dir__, "peal/types/webhook_delivery_status")
     autoload :WebhookEventType, ::File.join(__dir__, "peal/types/webhook_event_type")
     autoload :WebhookDelivery, ::File.join(__dir__, "peal/types/webhook_delivery")
+    autoload :WebhookRedeliverySkip, ::File.join(__dir__, "peal/types/webhook_redelivery_skip")
+    autoload :WebhookRedeliverySkipped, ::File.join(__dir__, "peal/types/webhook_redelivery_skipped")
+    autoload :WebhookBulkRedelivery, ::File.join(__dir__, "peal/types/webhook_bulk_redelivery")
     autoload :WebhookDeliveryNotFoundEncoded, ::File.join(__dir__, "peal/types/webhook_delivery_not_found_encoded")
     autoload :WebhookDeliveryPage, ::File.join(__dir__, "peal/types/webhook_delivery_page")
     autoload :WebhookDisabledReason, ::File.join(__dir__, "peal/types/webhook_disabled_reason")
@@ -825,8 +830,12 @@ module Peal
     autoload :WebhookEndpointDisabledEncoded, ::File.join(__dir__, "peal/types/webhook_endpoint_disabled_encoded")
     autoload :WebhookEndpointNotFoundEncoded, ::File.join(__dir__, "peal/types/webhook_endpoint_not_found_encoded")
     autoload :WebhookEndpointSecret, ::File.join(__dir__, "peal/types/webhook_endpoint_secret")
+    autoload :WebhookFilterRefusedEncodedField, ::File.join(__dir__, "peal/types/webhook_filter_refused_encoded_field")
+    autoload :WebhookFilterRefusedEncoded, ::File.join(__dir__, "peal/types/webhook_filter_refused_encoded")
+    autoload :WebhookRedeliveryByIDs, ::File.join(__dir__, "peal/types/webhook_redelivery_by_ids")
+    autoload :WebhookRedeliveryOfFailed, ::File.join(__dir__, "peal/types/webhook_redelivery_of_failed")
+    autoload :WebhookRedeliveryRequest, ::File.join(__dir__, "peal/types/webhook_redelivery_request")
     autoload :WebhookURLRefusal, ::File.join(__dir__, "peal/types/webhook_url_refusal")
-    autoload :WebhookURLRefusedEncodedTag, ::File.join(__dir__, "peal/types/webhook_url_refused_encoded_tag")
     autoload :WebhookURLRefusedEncoded, ::File.join(__dir__, "peal/types/webhook_url_refused_encoded")
     autoload :WebhooksNotConfiguredEncodedTag, ::File.join(__dir__, "peal/types/webhooks_not_configured_encoded_tag")
     autoload :WebhooksNotConfiguredEncoded, ::File.join(__dir__, "peal/types/webhooks_not_configured_encoded")

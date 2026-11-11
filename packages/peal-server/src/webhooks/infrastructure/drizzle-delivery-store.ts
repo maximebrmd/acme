@@ -1,10 +1,30 @@
-import { and, desc, eq, inArray, lt, notExists, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  gt,
+  gte,
+  inArray,
+  lt,
+  notExists,
+  sql,
+} from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { DeliveryStore } from "#webhooks/application/ports/delivery-store.ts";
+import type {
+  DeliveryFilters,
+  FailedSelection,
+} from "#webhooks/application/ports/delivery-store.ts";
 import { RecordedEvent } from "#webhooks/domain/recorded-event.ts";
+import type { WebhookDeliveryId } from "#webhooks/domain/webhook-delivery-id.ts";
 import { WebhookDelivery } from "#webhooks/domain/webhook-delivery.ts";
 import { WebhookEventIdSchema } from "#webhooks/domain/webhook-event-id.ts";
 import { WebhookEventSchema } from "#webhooks/domain/webhook-event.ts";
@@ -12,6 +32,60 @@ import { WebhookEventSchema } from "#webhooks/domain/webhook-event.ts";
 import { deliveries, events } from "./schema.ts";
 
 type DeliveryRow = typeof deliveries.$inferSelect;
+
+// A delivery with what its event says of where it happened.
+interface LoggedRow {
+  readonly delivery: DeliveryRow;
+  readonly eventWorkspaceId: string;
+  readonly externalId: string | null;
+}
+
+const logged = {
+  delivery: deliveries,
+  eventWorkspaceId: events.workspaceId,
+  externalId: events.externalId,
+};
+
+const withEvent = eq(events.id, deliveries.eventId);
+
+// Another delivery of the same event to the same endpoint, made later.
+const newer = alias(deliveries, "newer");
+
+const isNewer = and(
+  eq(newer.endpointId, deliveries.endpointId),
+  eq(newer.eventId, deliveries.eventId),
+  gt(newer.id, deliveries.id)
+);
+
+const within = (
+  since: FailedSelection["since"],
+  until: FailedSelection["until"]
+): readonly (SQL | undefined)[] => [
+  since.pipe(
+    Option.map((at) => gte(deliveries.createdAt, DateTime.toDateUtc(at))),
+    Option.getOrUndefined
+  ),
+  until.pipe(
+    Option.map((at) => lt(deliveries.createdAt, DateTime.toDateUtc(at))),
+    Option.getOrUndefined
+  ),
+];
+
+const matching = (filters: DeliveryFilters): readonly (SQL | undefined)[] => [
+  filters.endpointId.pipe(
+    Option.map((id) => eq(deliveries.endpointId, id)),
+    Option.getOrUndefined
+  ),
+  filters.status.pipe(
+    Option.map((status) => eq(deliveries.status, status)),
+    Option.getOrUndefined
+  ),
+  filters.eventType.pipe(
+    Option.map((type) => eq(deliveries.eventType, type)),
+    Option.getOrUndefined
+  ),
+  ...within(filters.since, filters.until),
+];
 
 type EventRow = typeof events.$inferSelect;
 
@@ -50,6 +124,7 @@ const toEvent = (row: EventRow) =>
           externalId: Option.fromNullOr(row.externalId),
           id: WebhookEventIdSchema.make(row.id),
           occurredAt: DateTime.fromDateUnsafe(row.occurredAt),
+          sample: row.sample,
           workspaceId: event.data.workspaceId,
         })
     )
@@ -85,15 +160,22 @@ const lastAttemptOf = (row: DeliveryRow) =>
     }))
   );
 
-const toDelivery = (row: DeliveryRow) =>
+const toDelivery = ({
+  delivery: row,
+  eventWorkspaceId,
+  externalId,
+}: LoggedRow) =>
   decodeDelivery({
     attempts: row.attempts,
     createdAt: DateTime.fromDateUnsafe(row.createdAt),
     endpointId: row.endpointId,
     eventId: row.eventId,
     eventType: row.eventType,
+    eventWorkspaceId,
+    externalId: Option.fromNullOr(externalId),
     id: row.id,
     lastAttempt: lastAttemptOf(row),
+    redeliveryOf: Option.fromNullOr(row.redeliveryOf),
     status: statusOf(row),
     workspaceId: row.workspaceId,
   }).pipe(Effect.orDie);
@@ -122,7 +204,7 @@ const progressOf = (delivery: WebhookDelivery) => {
   };
 };
 
-const someDelivery = (rows: readonly DeliveryRow[]) =>
+const someDelivery = (rows: readonly LoggedRow[]) =>
   Option.fromUndefinedOr(rows[0]).pipe(
     Option.match({
       onNone: () => Effect.succeed(Option.none<WebhookDelivery>()),
@@ -152,8 +234,9 @@ export const DrizzleDeliveryStore = Layer.effect(
           ),
       findIn: (workspaceId, endpointId, deliveryId) =>
         db
-          .select()
+          .select(logged)
           .from(deliveries)
+          .innerJoin(events, withEvent)
           .where(
             and(
               eq(deliveries.id, deliveryId),
@@ -164,8 +247,9 @@ export const DrizzleDeliveryStore = Layer.effect(
           .pipe(Effect.mapError(failed), Effect.flatMap(someDelivery)),
       get: (deliveryId) =>
         db
-          .select()
+          .select(logged)
           .from(deliveries)
+          .innerJoin(events, withEvent)
           .where(eq(deliveries.id, deliveryId))
           .pipe(Effect.mapError(failed), Effect.flatMap(someDelivery)),
       insert: (delivery) =>
@@ -178,40 +262,73 @@ export const DrizzleDeliveryStore = Layer.effect(
             eventId: delivery.eventId,
             eventType: delivery.eventType,
             id: delivery.id,
+            redeliveryOf: Option.getOrNull(delivery.redeliveryOf),
             workspaceId: delivery.workspaceId,
           })
           .pipe(Effect.mapError(failed), Effect.asVoid),
-      page: Effect.fn("DeliveryStore.page")(function* page(
-        endpointId,
-        { after, limit }
-      ) {
-        const rows = yield* db
-          .select()
-          .from(deliveries)
-          .where(
-            and(
-              eq(deliveries.endpointId, endpointId),
-              after.pipe(
-                Option.map((id) => lt(deliveries.id, id)),
-                Option.getOrUndefined
-              )
+      lockFailed: Effect.fn("DeliveryStore.lockFailed")(
+        function* lockFailed(endpointId, selection, limit) {
+          const where = and(
+            eq(deliveries.endpointId, endpointId),
+            eq(deliveries.status, "failed"),
+            selection.eventType.pipe(
+              Option.map((type) => eq(deliveries.eventType, type)),
+              Option.getOrUndefined
+            ),
+            ...within(selection.since, selection.until),
+            // The last delivery of its event to the endpoint: one sent again
+            // since, however it went, stands for it.
+            notExists(
+              db
+                .select({ one: sql`1` })
+                .from(newer)
+                .where(isNewer)
             )
-          )
-          .orderBy(desc(deliveries.id))
-          .limit(limit + 1)
-          .pipe(Effect.mapError(failed));
+          );
 
-        const items = yield* Effect.forEach(rows.slice(0, limit), toDelivery);
-        const last = items.at(-1);
+          const rows = yield* db
+            .select(logged)
+            .from(deliveries)
+            .innerJoin(events, withEvent)
+            .where(where)
+            .orderBy(asc(deliveries.id))
+            .limit(limit)
+            .for("update", { of: deliveries })
+            .pipe(Effect.mapError(failed));
 
-        return {
-          items,
-          next:
-            rows.length > limit && last !== undefined
-              ? Option.some(last.id)
-              : Option.none(),
-        };
-      }),
+          const [counted] = yield* db
+            .select({ total: count() })
+            .from(deliveries)
+            .where(where)
+            .pipe(Effect.mapError(failed));
+
+          return {
+            deliveries: yield* Effect.forEach(rows, toDelivery, {
+              concurrency: 1,
+            }),
+            total: counted?.total ?? rows.length,
+          };
+        }
+      ),
+      lockIn: (workspaceId, deliveryIds) =>
+        deliveryIds.length === 0
+          ? Effect.succeed([])
+          : db
+              .select(logged)
+              .from(deliveries)
+              .innerJoin(events, withEvent)
+              .where(
+                and(
+                  eq(deliveries.workspaceId, workspaceId),
+                  inArray(deliveries.id, [...deliveryIds])
+                )
+              )
+              .orderBy(asc(deliveries.id))
+              .for("update", { of: deliveries })
+              .pipe(
+                Effect.mapError(failed),
+                Effect.flatMap(Effect.forEach(toDelivery))
+              ),
       purge: Effect.fn("DeliveryStore.purge")(function* purge(before, limit) {
         const expired = db
           .select({ id: deliveries.id })
@@ -260,6 +377,7 @@ export const DrizzleDeliveryStore = Layer.effect(
               id: recorded.id,
               key,
               occurredAt: date(recorded.occurredAt),
+              sample: recorded.sample,
               type: recorded.event.type,
               workspaceId: recorded.workspaceId,
             })
@@ -276,6 +394,77 @@ export const DrizzleDeliveryStore = Layer.effect(
           .set(progressOf(delivery))
           .where(eq(deliveries.id, delivery.id))
           .pipe(Effect.mapError(failed), Effect.asVoid),
+      search: Effect.fn("DeliveryStore.search")(function* search(
+        workspaceId,
+        filters,
+        { after, limit }
+      ) {
+        const rows = yield* db
+          .select(logged)
+          .from(deliveries)
+          .innerJoin(events, withEvent)
+          .where(
+            and(
+              eq(deliveries.workspaceId, workspaceId),
+              ...matching(filters),
+              after.pipe(
+                Option.map((id) => lt(deliveries.id, id)),
+                Option.getOrUndefined
+              )
+            )
+          )
+          .orderBy(desc(deliveries.id))
+          .limit(limit + 1)
+          .pipe(Effect.mapError(failed));
+
+        const items = yield* Effect.forEach(rows.slice(0, limit), toDelivery);
+        const last = items.at(-1);
+
+        return {
+          items,
+          next:
+            rows.length > limit && last !== undefined
+              ? Option.some(last.id)
+              : Option.none(),
+        };
+      }),
+      sentAgain: Effect.fn("DeliveryStore.sentAgain")(
+        function* sentAgain(among) {
+          if (among.length === 0) {
+            return new Set<WebhookDeliveryId>();
+          }
+
+          const rows = yield* db
+            .select({ id: deliveries.id })
+            .from(deliveries)
+            .where(
+              and(
+                inArray(
+                  deliveries.id,
+                  among.map(({ id }) => id)
+                ),
+                exists(
+                  db
+                    .select({ one: sql`1` })
+                    .from(newer)
+                    .where(
+                      and(
+                        isNewer,
+                        inArray(newer.status, ["pending", "succeeded"])
+                      )
+                    )
+                )
+              )
+            )
+            .pipe(Effect.mapError(failed));
+
+          const ids = new Set(rows.map(({ id }) => id));
+
+          return new Set(
+            among.filter(({ id }) => ids.has(id)).map(({ id }) => id)
+          );
+        }
+      ),
     });
   })
 );

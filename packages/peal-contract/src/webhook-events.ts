@@ -143,9 +143,12 @@ const comment = {
 // the `webhook-id` header, the same on every delivery of the event), when
 // it happened, the version of its data, and, for an event of a workspace a
 // partner owns, the partner's own id for that workspace as it was then:
-// null when the partner gave none, and for any other workspace.
+// null when the partner gave none, and for any other workspace. `sample`
+// is true on a made-up event a member sent to try the endpoint with its
+// type, whose ids name nothing: never act on one.
 const envelope = {
   id: Schema.String,
+  sample: Schema.optionalKey(Schema.Literal(true)),
   timestamp: Schema.DateTimeUtc,
   version: Schema.Literal(webhookEventVersion),
   workspaceExternalId: Schema.NullOr(Schema.String),

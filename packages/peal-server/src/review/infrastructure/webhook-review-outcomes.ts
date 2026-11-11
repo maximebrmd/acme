@@ -3,11 +3,17 @@ import { Effect, Layer } from "effect";
 import { ReviewOutcomes } from "#review/application/ports/review-outcomes.ts";
 import type { Reviewer } from "#review/domain/reviewer.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { ChannelId } from "#shared/domain/ids.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
 import type { EventToPublish } from "#webhooks/application/webhook-events.ts";
 
+type ReviewEvent = Extract<
+  EventToPublish,
+  { readonly postChannelIds: readonly ChannelId[] }
+>["event"];
+
 type ReviewParty = Extract<
-  EventToPublish["event"],
+  ReviewEvent,
   { readonly type: "post.approved" }
 >["data"]["by"];
 
@@ -44,8 +50,20 @@ export const webhookReviewOutcomes = <E, R>(
       const outcomes = yield* ReviewOutcomes;
       const webhooks = yield* WebhookEvents;
 
-      const publish = (key: string, event: EventToPublish["event"]) =>
-        neverStopping(webhooks.publish({ event, key: `review:${key}` }));
+      // A review's events name none of the post's channels: they are told
+      // beside them.
+      const publish = (
+        key: string,
+        channelIds: readonly ChannelId[],
+        event: ReviewEvent
+      ) =>
+        neverStopping(
+          webhooks.publish({
+            event,
+            key: `review:${key}`,
+            postChannelIds: channelIds,
+          })
+        );
 
       return ReviewOutcomes.of({
         // Under the request's key and its time: a post moved while it
@@ -54,6 +72,7 @@ export const webhookReviewOutcomes = <E, R>(
         approvalRequested: (outcome) =>
           publish(
             `${outcome.key}:${String(outcome.scheduledAt.epochMilliseconds)}`,
+            outcome.channelIds,
             {
               data: {
                 postId: outcome.postId,
@@ -64,7 +83,7 @@ export const webhookReviewOutcomes = <E, R>(
             }
           ).pipe(Effect.andThen(outcomes.approvalRequested(outcome))),
         approved: (outcome) =>
-          publish(outcome.key, {
+          publish(outcome.key, outcome.channelIds, {
             data: {
               by: partyOf(outcome.by),
               late: outcome.late,
@@ -74,7 +93,7 @@ export const webhookReviewOutcomes = <E, R>(
             type: "post.approved",
           }).pipe(Effect.andThen(outcomes.approved(outcome))),
         changesRequested: (outcome) =>
-          publish(outcome.key, {
+          publish(outcome.key, outcome.channelIds, {
             data: {
               by: partyOf(outcome.by),
               postId: outcome.postId,

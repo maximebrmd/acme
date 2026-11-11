@@ -12,6 +12,8 @@ module Peal
       field :request_id, -> { String }, optional: true, nullable: false, api_name: "requestId"
 
       field :allowed, -> { Integer }, optional: false, nullable: false
+
+      field :retry_after_seconds, -> { Integer }, optional: false, nullable: false, api_name: "retryAfterSeconds"
     end
   end
 end

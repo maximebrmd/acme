@@ -1,7 +1,9 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Option, Redacted } from "effect";
+import { DateTime, Effect, Option, Redacted, Schema } from "effect";
 import { TestClock } from "effect/testing";
+import { WebhookPayloadSchema } from "peal-contract";
 
+import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import { actorIn, freshWorkspace } from "#test/channels/support.ts";
 import { FakeTransport } from "#test/webhooks/fakes/fake-transport.ts";
 import { StartedJobs } from "#test/webhooks/fakes/started-jobs.ts";
@@ -22,6 +24,10 @@ import {
   maxEndpointsPerWorkspace,
 } from "#webhooks/domain/delivery-policy.ts";
 import { changeEndpoint } from "#webhooks/domain/webhook-endpoint.ts";
+
+const decodePayload = Schema.decodeUnknownSync(
+  Schema.fromJsonString(Schema.toCodecJson(WebhookPayloadSchema))
+);
 
 const tagOf = <E extends { readonly _tag: string }, R>(
   effect: Effect.Effect<unknown, E, R>
@@ -468,6 +474,119 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
         yield* endpoints.list(memberOf(yield* freshWorkspace, "owner")),
         0
       );
+    })
+  );
+
+  it.effect("send a sample of a type, whatever the endpoint filters", () =>
+    Effect.gen(function* samples() {
+      const owner = yield* freshOwner;
+      const endpoints = yield* WebhookEndpoints;
+      const transport = yield* FakeTransport;
+
+      // It hears neither the type nor the sample's channel.
+      const { endpoint, host } = yield* freshEndpoint(owner, {
+        channelIds: ["01900000-0000-7000-8000-0000000000f1"],
+        eventTypes: ["media.ready"],
+      });
+
+      const delivery = yield* endpoints.sendTest(
+        owner,
+        endpoint.id,
+        "post.published"
+      );
+
+      yield* DeliverWebhook.use((delivering) =>
+        delivering.attempt(delivery.id, 1)
+      );
+
+      const [request] = yield* transport.sentTo(host);
+
+      assert(request !== undefined);
+
+      // A payload of the public contract, marked as a sample.
+      const body = decodePayload(request.body);
+
+      assert.strictEqual(delivery.eventType, "post.published");
+      assert.strictEqual(body.type, "post.published");
+      assert.strictEqual(body.sample, true);
+      assert.strictEqual(body.data.workspaceId, owner.workspaceId);
+      assert.strictEqual(
+        "postId" in body.data ? body.data.postId : undefined,
+        "00000000-0000-7000-8000-000000000001"
+      );
+    })
+  );
+
+  it.effect("keep their filters as saved, each id once", () =>
+    Effect.gen(function* filters() {
+      const owner = yield* freshOwner;
+      const endpoints = yield* WebhookEndpoints;
+
+      const channel = ChannelIdSchema.make(
+        "01900000-0000-7000-8000-0000000000f2"
+      );
+
+      const { endpoint } = yield* freshEndpoint(owner, {
+        channelIds: [channel, channel],
+      });
+
+      assert.deepStrictEqual(endpoint.channelIds, [channel]);
+      assert.deepStrictEqual(
+        (yield* endpoints.get(owner, endpoint.id)).channelIds,
+        [channel]
+      );
+
+      const kept = yield* endpoints.update(owner, endpoint.id, {
+        description: "Renamed",
+      });
+
+      assert.deepStrictEqual(kept.channelIds, [channel]);
+
+      const cleared = yield* endpoints.update(owner, endpoint.id, {
+        channelIds: [],
+      });
+
+      assert.deepStrictEqual(cleared.channelIds, []);
+    })
+  );
+
+  it.effect("take a list of workspaces on a partner endpoint only", () =>
+    Effect.gen(function* workspaceFilter() {
+      const owner = yield* freshOwner;
+      const endpoints = yield* WebhookEndpoints;
+      const tenant = "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f";
+
+      assert.strictEqual(
+        yield* tagOf(
+          endpoints.create(
+            owner,
+            receiver("refused.hooks.example.com", { workspaceIds: [tenant] })
+          )
+        ),
+        "FilterRefused"
+      );
+
+      const { endpoint } = yield* freshEndpoint(owner);
+
+      assert.strictEqual(
+        yield* tagOf(
+          endpoints.update(owner, endpoint.id, { workspaceIds: [tenant] })
+        ),
+        "FilterRefused"
+      );
+      assert.strictEqual(
+        yield* tagOf(
+          endpoints.update(owner, endpoint.id, { channelIds: ["not an id"] })
+        ),
+        "FilterRefused"
+      );
+      // An empty list asks for nothing.
+      assert.deepStrictEqual(
+        (yield* endpoints.update(owner, endpoint.id, { workspaceIds: [] }))
+          .workspaceIds,
+        []
+      );
+      assert.lengthOf(yield* endpoints.list(owner), 1);
     })
   );
 });

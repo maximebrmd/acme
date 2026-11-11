@@ -21,6 +21,7 @@ class WebhookDelivery(UniversalBaseModel):
     duration_ms: typing_extensions.Annotated[
         typing.Optional[int], FieldMetadata(alias="durationMs"), pydantic.Field(alias="durationMs")
     ] = None
+    endpoint_id: typing_extensions.Annotated[str, FieldMetadata(alias="endpointId"), pydantic.Field(alias="endpointId")]
     error: typing.Optional[WebhookAttemptError] = None
     event_id: typing_extensions.Annotated[str, FieldMetadata(alias="eventId"), pydantic.Field(alias="eventId")]
     event_type: typing_extensions.Annotated[
@@ -38,6 +39,9 @@ class WebhookDelivery(UniversalBaseModel):
     next_attempt_at: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="nextAttemptAt"), pydantic.Field(alias="nextAttemptAt")
     ] = None
+    redelivery_of: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="redeliveryOf"), pydantic.Field(alias="redeliveryOf")
+    ] = None
     response_excerpt: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="responseExcerpt"), pydantic.Field(alias="responseExcerpt")
     ] = None
@@ -45,6 +49,12 @@ class WebhookDelivery(UniversalBaseModel):
         typing.Optional[int], FieldMetadata(alias="responseStatus"), pydantic.Field(alias="responseStatus")
     ] = None
     status: WebhookDeliveryStatus
+    workspace_external_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="workspaceExternalId"), pydantic.Field(alias="workspaceExternalId")
+    ] = None
+    workspace_id: typing_extensions.Annotated[
+        str, FieldMetadata(alias="workspaceId"), pydantic.Field(alias="workspaceId")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

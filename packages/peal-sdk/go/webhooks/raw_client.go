@@ -124,6 +124,105 @@ func (r *RawClient) Create(
 	}, nil
 }
 
+func (r *RawClient) SearchDeliveries(
+	ctx context.Context,
+	request *peal.SearchDeliveriesWebhooksRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*peal.WebhookDeliveryPage], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https://app.peal.social",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/workspaces/%v/webhooks/deliveries",
+		request.WorkspaceID,
+	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	var response *peal.WebhookDeliveryPage
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(peal.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*peal.WebhookDeliveryPage]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
+func (r *RawClient) RedeliverMany(
+	ctx context.Context,
+	request *peal.RedeliverManyWebhooksRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*peal.WebhookBulkRedelivery], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https://app.peal.social",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/workspaces/%v/webhooks/deliveries/redeliver",
+		request.WorkspaceID,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	headers.Add("Content-Type", "application/json")
+	var response *peal.WebhookBulkRedelivery
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  true,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(peal.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*peal.WebhookBulkRedelivery]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
 func (r *RawClient) Get(
 	ctx context.Context,
 	request *peal.GetWebhooksRequest,
@@ -324,6 +423,13 @@ func (r *RawClient) SendTest(
 		request.WorkspaceID,
 		request.EndpointID,
 	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
 	headers := internal.MergeHeaders(
 		r.options.ToHeader(),
 		options.ToHeader(),

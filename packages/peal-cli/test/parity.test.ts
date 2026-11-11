@@ -222,7 +222,9 @@ const coverage = {
   "webhooks.list": by("webhooks list"),
   "webhooks.listDeliveries": by("webhooks deliveries"),
   "webhooks.redeliver": by("webhooks redeliver"),
+  "webhooks.redeliverMany": by("webhooks redeliver"),
   "webhooks.rotateSecret": by("webhooks rotate-secret"),
+  "webhooks.searchDeliveries": by("webhooks deliveries"),
   "webhooks.sendTest": by("webhooks test"),
   "webhooks.update": by("webhooks update"),
 } satisfies Record<string, Coverage>;

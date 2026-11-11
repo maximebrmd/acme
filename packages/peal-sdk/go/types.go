@@ -17385,17 +17385,19 @@ func (t TooManyWebhookEndpointsEncodedTag) Ptr() *TooManyWebhookEndpointsEncoded
 }
 
 var (
-	tooManyWebhookSendsEncodedFieldCode      = big.NewInt(1 << 0)
-	tooManyWebhookSendsEncodedFieldMessage   = big.NewInt(1 << 1)
-	tooManyWebhookSendsEncodedFieldRequestID = big.NewInt(1 << 2)
-	tooManyWebhookSendsEncodedFieldAllowed   = big.NewInt(1 << 3)
+	tooManyWebhookSendsEncodedFieldCode              = big.NewInt(1 << 0)
+	tooManyWebhookSendsEncodedFieldMessage           = big.NewInt(1 << 1)
+	tooManyWebhookSendsEncodedFieldRequestID         = big.NewInt(1 << 2)
+	tooManyWebhookSendsEncodedFieldAllowed           = big.NewInt(1 << 3)
+	tooManyWebhookSendsEncodedFieldRetryAfterSeconds = big.NewInt(1 << 4)
 )
 
 type TooManyWebhookSendsEncoded struct {
-	Code      *string `json:"code,omitempty" url:"code,omitempty"`
-	Message   *string `json:"message,omitempty" url:"message,omitempty"`
-	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
-	Allowed   int     `json:"allowed" url:"allowed"`
+	Code              *string `json:"code,omitempty" url:"code,omitempty"`
+	Message           *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID         *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Allowed           int     `json:"allowed" url:"allowed"`
+	RetryAfterSeconds int     `json:"retryAfterSeconds" url:"retryAfterSeconds"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -17430,6 +17432,13 @@ func (t *TooManyWebhookSendsEncoded) GetAllowed() int {
 		return 0
 	}
 	return t.Allowed
+}
+
+func (t *TooManyWebhookSendsEncoded) GetRetryAfterSeconds() int {
+	if t == nil {
+		return 0
+	}
+	return t.RetryAfterSeconds
 }
 
 func (t *TooManyWebhookSendsEncoded) GetExtraProperties() map[string]interface{} {
@@ -17474,6 +17483,13 @@ func (t *TooManyWebhookSendsEncoded) SetRequestID(requestID *string) {
 func (t *TooManyWebhookSendsEncoded) SetAllowed(allowed int) {
 	t.Allowed = allowed
 	t.require(tooManyWebhookSendsEncodedFieldAllowed)
+}
+
+// SetRetryAfterSeconds sets the RetryAfterSeconds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyWebhookSendsEncoded) SetRetryAfterSeconds(retryAfterSeconds int) {
+	t.RetryAfterSeconds = retryAfterSeconds
+	t.require(tooManyWebhookSendsEncodedFieldRetryAfterSeconds)
 }
 
 func (t *TooManyWebhookSendsEncoded) UnmarshalJSON(data []byte) error {
@@ -18792,6 +18808,162 @@ func (w *WebhookEndpointNotFoundEncoded) String() string {
 	return fmt.Sprintf("%#v", w)
 }
 
+var (
+	webhookFilterRefusedEncodedFieldCode      = big.NewInt(1 << 0)
+	webhookFilterRefusedEncodedFieldMessage   = big.NewInt(1 << 1)
+	webhookFilterRefusedEncodedFieldRequestID = big.NewInt(1 << 2)
+	webhookFilterRefusedEncodedFieldField     = big.NewInt(1 << 3)
+)
+
+type WebhookFilterRefusedEncoded struct {
+	Code      *string                          `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                          `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                          `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Field     WebhookFilterRefusedEncodedField `json:"field" url:"field"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (w *WebhookFilterRefusedEncoded) GetCode() *string {
+	if w == nil {
+		return nil
+	}
+	return w.Code
+}
+
+func (w *WebhookFilterRefusedEncoded) GetMessage() *string {
+	if w == nil {
+		return nil
+	}
+	return w.Message
+}
+
+func (w *WebhookFilterRefusedEncoded) GetRequestID() *string {
+	if w == nil {
+		return nil
+	}
+	return w.RequestID
+}
+
+func (w *WebhookFilterRefusedEncoded) GetField() WebhookFilterRefusedEncodedField {
+	if w == nil {
+		return ""
+	}
+	return w.Field
+}
+
+func (w *WebhookFilterRefusedEncoded) GetExtraProperties() map[string]interface{} {
+	if w == nil {
+		return nil
+	}
+	return w.extraProperties
+}
+
+func (w *WebhookFilterRefusedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if w.explicitFields != nil {
+		next.Set(w.explicitFields)
+	}
+	next.Or(next, field)
+	w.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookFilterRefusedEncoded) SetCode(code *string) {
+	w.Code = code
+	w.require(webhookFilterRefusedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookFilterRefusedEncoded) SetMessage(message *string) {
+	w.Message = message
+	w.require(webhookFilterRefusedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookFilterRefusedEncoded) SetRequestID(requestID *string) {
+	w.RequestID = requestID
+	w.require(webhookFilterRefusedEncodedFieldRequestID)
+}
+
+// SetField sets the Field field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookFilterRefusedEncoded) SetField(field WebhookFilterRefusedEncodedField) {
+	w.Field = field
+	w.require(webhookFilterRefusedEncodedFieldField)
+}
+
+func (w *WebhookFilterRefusedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler WebhookFilterRefusedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*w = WebhookFilterRefusedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *w)
+	if err != nil {
+		return err
+	}
+	w.extraProperties = extraProperties
+	w.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (w *WebhookFilterRefusedEncoded) MarshalJSON() ([]byte, error) {
+	type embed WebhookFilterRefusedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*w),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (w *WebhookFilterRefusedEncoded) String() string {
+	if w == nil {
+		return "<nil>"
+	}
+	if len(w.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(w); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", w)
+}
+
+type WebhookFilterRefusedEncodedField string
+
+const (
+	WebhookFilterRefusedEncodedFieldChannelIDs   WebhookFilterRefusedEncodedField = "channelIds"
+	WebhookFilterRefusedEncodedFieldWorkspaceIDs WebhookFilterRefusedEncodedField = "workspaceIds"
+)
+
+func NewWebhookFilterRefusedEncodedFieldFromString(s string) (WebhookFilterRefusedEncodedField, error) {
+	switch s {
+	case "channelIds":
+		return WebhookFilterRefusedEncodedFieldChannelIDs, nil
+	case "workspaceIds":
+		return WebhookFilterRefusedEncodedFieldWorkspaceIDs, nil
+	}
+	var t WebhookFilterRefusedEncodedField
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (w WebhookFilterRefusedEncodedField) Ptr() *WebhookFilterRefusedEncodedField {
+	return &w
+}
+
 type WebhookURLRefusal string
 
 const (
@@ -18827,32 +18999,23 @@ func (w WebhookURLRefusal) Ptr() *WebhookURLRefusal {
 }
 
 var (
-	webhookURLRefusedEncodedFieldTag       = big.NewInt(1 << 0)
-	webhookURLRefusedEncodedFieldCode      = big.NewInt(1 << 1)
-	webhookURLRefusedEncodedFieldMessage   = big.NewInt(1 << 2)
-	webhookURLRefusedEncodedFieldRequestID = big.NewInt(1 << 3)
-	webhookURLRefusedEncodedFieldReason    = big.NewInt(1 << 4)
+	webhookURLRefusedEncodedFieldCode      = big.NewInt(1 << 0)
+	webhookURLRefusedEncodedFieldMessage   = big.NewInt(1 << 1)
+	webhookURLRefusedEncodedFieldRequestID = big.NewInt(1 << 2)
+	webhookURLRefusedEncodedFieldReason    = big.NewInt(1 << 3)
 )
 
 type WebhookURLRefusedEncoded struct {
-	Tag       WebhookURLRefusedEncodedTag `json:"_tag" url:"_tag"`
-	Code      *string                     `json:"code,omitempty" url:"code,omitempty"`
-	Message   *string                     `json:"message,omitempty" url:"message,omitempty"`
-	RequestID *string                     `json:"requestId,omitempty" url:"requestId,omitempty"`
-	Reason    WebhookURLRefusal           `json:"reason" url:"reason"`
+	Code      *string           `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string           `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string           `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Reason    WebhookURLRefusal `json:"reason" url:"reason"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
-}
-
-func (w *WebhookURLRefusedEncoded) GetTag() WebhookURLRefusedEncodedTag {
-	if w == nil {
-		return ""
-	}
-	return w.Tag
 }
 
 func (w *WebhookURLRefusedEncoded) GetCode() *string {
@@ -18897,13 +19060,6 @@ func (w *WebhookURLRefusedEncoded) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	w.explicitFields = next
-}
-
-// SetTag sets the Tag field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (w *WebhookURLRefusedEncoded) SetTag(tag WebhookURLRefusedEncodedTag) {
-	w.Tag = tag
-	w.require(webhookURLRefusedEncodedFieldTag)
 }
 
 // SetCode sets the Code field and marks it as non-optional;
@@ -18974,25 +19130,6 @@ func (w *WebhookURLRefusedEncoded) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", w)
-}
-
-type WebhookURLRefusedEncodedTag string
-
-const (
-	WebhookURLRefusedEncodedTagWebhookURLRefused WebhookURLRefusedEncodedTag = "WebhookUrlRefused"
-)
-
-func NewWebhookURLRefusedEncodedTagFromString(s string) (WebhookURLRefusedEncodedTag, error) {
-	switch s {
-	case "WebhookUrlRefused":
-		return WebhookURLRefusedEncodedTagWebhookURLRefused, nil
-	}
-	var t WebhookURLRefusedEncodedTag
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (w WebhookURLRefusedEncodedTag) Ptr() *WebhookURLRefusedEncodedTag {
-	return &w
 }
 
 var (

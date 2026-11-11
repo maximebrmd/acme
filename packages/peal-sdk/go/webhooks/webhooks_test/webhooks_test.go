@@ -133,6 +133,65 @@ func TestWebhooksCreateWithWireMock(
 	VerifyRequestCount(t, "TestWebhooksCreateWithWireMock", "POST", "/api/workspaces/workspaceId/webhooks", nil, 1)
 }
 
+func TestWebhooksSearchDeliveriesWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.SearchDeliveriesWebhooksRequest{
+		WorkspaceID: "workspaceId",
+	}
+	_, invocationErr := client.Webhooks.SearchDeliveries(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestWebhooksSearchDeliveriesWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestWebhooksSearchDeliveriesWithWireMock", "GET", "/api/workspaces/workspaceId/webhooks/deliveries", nil, 1)
+}
+
+func TestWebhooksRedeliverManyWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.RedeliverManyWebhooksRequest{
+		WorkspaceID: "workspaceId",
+		Body: &peal.WebhookRedeliveryRequest{
+			WebhookRedeliveryByIDs: &peal.WebhookRedeliveryByIDs{
+				DeliveryIDs: []string{
+					"deliveryIds",
+				},
+			},
+		},
+	}
+	_, invocationErr := client.Webhooks.RedeliverMany(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestWebhooksRedeliverManyWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestWebhooksRedeliverManyWithWireMock", "POST", "/api/workspaces/workspaceId/webhooks/deliveries/redeliver", nil, 1)
+}
+
 func TestWebhooksGetWithWireMock(
 	t *testing.T,
 ) {

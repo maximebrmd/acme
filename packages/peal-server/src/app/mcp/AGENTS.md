@@ -115,3 +115,10 @@
   and `boost_post` takes an `idempotencyKey`. No tool signs in to an ad
   network, connects an account or sets a ceiling: those are a person's.
   Instants in parameters are text (`boostFields`).
+- `webhooks-tools.ts`: `list_webhook_deliveries` reads one endpoint's log
+  with `endpointId`, the log across endpoints without it, by `status` and
+  `eventType`; `create_webhook` and `update_webhook` (the contract's
+  change, what is left out stays) take the filters; `send_test_webhook`
+  (`eventType` for a sample) and `redeliver_webhooks` (ids, or an
+  endpoint's failed ones) are `openWorld`, as they make Peal call
+  receivers. No tool returns a secret but `create_webhook`'s answer.

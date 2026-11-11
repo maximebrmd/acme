@@ -1,10 +1,12 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
   jsonb,
   pgSchema,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -34,10 +36,16 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  *   home workspace that hears every workspace the partner owns too.
  * - Event types are not checked here, so adding one needs no migration:
  *   the store decodes every row with the domain's schema.
+ * - `channel_ids` and `workspace_ids` are its filters, empty for none: ids
+ *   without foreign keys, kept as saved after what they name is gone.
  */
 export const endpoints = webhooksSchema.table(
   "endpoints",
   {
+    channelIds: uuid("channel_ids")
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
     createdAt: instant("created_at").notNull(),
     description: text("description").notNull(),
     disabledAt: instant("disabled_at"),
@@ -53,6 +61,10 @@ export const endpoints = webhooksSchema.table(
     updatedAt: instant("updated_at").notNull(),
     url: text("url").notNull(),
     workspaceId: uuid("workspace_id").notNull(),
+    workspaceIds: uuid("workspace_ids")
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
   },
   (table) => [
     // A workspace's endpoints, oldest first: ids are UUIDv7s.
@@ -70,7 +82,8 @@ export const endpoints = webhooksSchema.table(
  * The events on their way to endpoints, kept while a delivery refers to
  * them: `data` is the event's data as receivers get it (ids, states, codes,
  * instants and permalinks: never what a post says or shows), `key` names
- * what happened, so a fact told twice is kept once.
+ * what happened, so a fact told twice is kept once. `sample` marks the
+ * made-up event of a test of one type, which receivers are told to ignore.
  */
 export const events = webhooksSchema.table(
   "events",
@@ -81,6 +94,7 @@ export const events = webhooksSchema.table(
     id: uuid("id").primaryKey(),
     key: text("key").notNull(),
     occurredAt: instant("occurred_at").notNull(),
+    sample: boolean("sample").notNull().default(false),
     type: text("type").notNull(),
     workspaceId: uuid("workspace_id").notNull(),
   },
@@ -99,6 +113,10 @@ export const events = webhooksSchema.table(
  * - `response_status` and `response_excerpt` are the receiver's last
  *   answer: its status, and, when that was not a success, one line of 256
  *   characters at most. `attempt_error` says why an attempt got no answer.
+ * - `workspace_id` is the endpoint's, so a partner endpoint's deliveries
+ *   of its tenants' events are in its home workspace's log; the event's
+ *   own workspace is the event's.
+ * - `redelivery_of` is the delivery this one sends again, if it does.
  */
 export const deliveries = webhooksSchema.table(
   "deliveries",
@@ -119,6 +137,7 @@ export const deliveries = webhooksSchema.table(
     id: uuid("id").primaryKey(),
     lastAttemptAt: instant("last_attempt_at"),
     nextAttemptAt: instant("next_attempt_at"),
+    redeliveryOf: uuid("redelivery_of"),
     responseExcerpt: text("response_excerpt"),
     responseStatus: integer("response_status"),
     status: text("status").notNull(),
@@ -130,11 +149,39 @@ export const deliveries = webhooksSchema.table(
     index("deliveries_event").on(table.eventId),
     // The retention's scan.
     index("deliveries_created").on(table.createdAt),
-    index("deliveries_workspace").on(table.workspaceId),
+    // The workspace's log across its endpoints, newest first.
+    index("deliveries_workspace").on(table.workspaceId, table.id),
+    // An endpoint's failed deliveries, to send them again.
+    index("deliveries_endpoint_failed")
+      .on(table.endpointId, table.id)
+      .where(sql`${table.status} = 'failed'`),
     check(
       "deliveries_status",
       sql`${table.status} IN ('pending', 'succeeded', 'failed')`
     ),
     check("deliveries_attempts", sql`${table.attempts} >= 0`),
+  ]
+);
+
+/**
+ * What a workspace's members sent by hand in each hour (`window_start`,
+ * on the hour, UTC), by kind: `single` (test events and deliveries sent
+ * again one by one) and `bulk` (deliveries sent again by the many). One
+ * statement adds to the hour's row, so sends from every server take turns
+ * on it. Rows older than a day go with the delivery logs' retention.
+ */
+export const manualSends = webhooksSchema.table(
+  "manual_sends",
+  {
+    kind: text("kind").notNull(),
+    sent: integer("sent").notNull(),
+    windowStart: instant("window_start").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.kind, table.windowStart] }),
+    index("manual_sends_window_start").on(table.windowStart),
+    check("manual_sends_kind", sql`${table.kind} IN ('single', 'bulk')`),
+    check("manual_sends_sent", sql`${table.sent} > 0`),
   ]
 );

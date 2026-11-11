@@ -12,9 +12,11 @@ import * as Peal from "../../../../index.js";
  */
 export interface NewWebhookEndpoint {
     workspaceId: string;
+    channelIds?: string[];
     description?: string;
     enabled?: boolean;
     eventTypes: Peal.SubscribableWebhookEventType[];
     scope?: Peal.WebhookEndpointScope;
     url: string;
+    workspaceIds?: string[];
 }

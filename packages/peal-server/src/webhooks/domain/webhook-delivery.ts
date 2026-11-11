@@ -2,6 +2,7 @@ import { DateTime, Option, Result, Schema } from "effect";
 import type { Duration } from "effect";
 
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 import {
   DeliveryAttemptSchema,
@@ -54,7 +55,12 @@ export type DeliveryStatus = typeof DeliveryStatusSchema.Type;
 /**
  * One event on its way to one endpoint, as the endpoint's log shows it:
  * how many attempts were made, how the last one ended, and whether another
- * follows. Sending an event again is a new delivery of the same event.
+ * follows. Sending an event again is a new delivery of the same event,
+ * which names the one it repeats (`redeliveryOf`).
+ *
+ * `workspaceId` is its endpoint's, whose log it is in; the event happened
+ * in `eventWorkspaceId`, another one for a partner endpoint's delivery of
+ * a tenant's event, which the partner knows by `externalId`.
  */
 export class WebhookDelivery extends Schema.Class<WebhookDelivery>(
   "peal-server/webhooks/domain/WebhookDelivery"
@@ -64,11 +70,22 @@ export class WebhookDelivery extends Schema.Class<WebhookDelivery>(
   endpointId: WebhookEndpointIdSchema,
   eventId: WebhookEventIdSchema,
   eventType: WebhookEventTypeSchema,
+  eventWorkspaceId: WorkspaceIdSchema,
+  externalId: Schema.Option(Schema.String),
   id: WebhookDeliveryIdSchema,
   lastAttempt: Schema.Option(DeliveryAttemptSchema),
+  redeliveryOf: Schema.Option(WebhookDeliveryIdSchema),
   status: DeliveryStatusSchema,
   workspaceId: WorkspaceIdSchema,
 }) {}
+
+/** The event a delivery sends, as it was recorded. */
+export interface DeliveredEvent {
+  readonly externalId: Option.Option<string>;
+  readonly id: WebhookEventId;
+  readonly type: WebhookEventType;
+  readonly workspaceId: WorkspaceId;
+}
 
 type Transition = Result.Result<WebhookDelivery, InvalidDeliveryTransition>;
 
@@ -85,19 +102,26 @@ const withFields = (
     endpointId: delivery.endpointId,
     eventId: delivery.eventId,
     eventType: delivery.eventType,
+    eventWorkspaceId: delivery.eventWorkspaceId,
+    externalId: delivery.externalId,
     id: delivery.id,
     lastAttempt: delivery.lastAttempt,
+    redeliveryOf: delivery.redeliveryOf,
     status: delivery.status,
     workspaceId: delivery.workspaceId,
     ...changed,
   });
 
-/** A delivery of the event to the endpoint, about to be attempted. */
+/**
+ * A delivery of the event to the endpoint, about to be attempted: the
+ * event's first, or one that sends it again (`redeliveryOf`).
+ */
 export const createDelivery = (
   id: WebhookDeliveryId,
   endpoint: WebhookEndpoint,
-  event: { readonly id: WebhookEventId; readonly type: WebhookEventType },
-  now: DateTime.Utc
+  event: DeliveredEvent,
+  now: DateTime.Utc,
+  redeliveryOf: Option.Option<WebhookDeliveryId> = Option.none()
 ): WebhookDelivery =>
   new WebhookDelivery({
     attempts: 0,
@@ -105,8 +129,11 @@ export const createDelivery = (
     endpointId: endpoint.id,
     eventId: event.id,
     eventType: event.type,
+    eventWorkspaceId: event.workspaceId,
+    externalId: event.externalId,
     id,
     lastAttempt: Option.none(),
+    redeliveryOf,
     status: { _tag: "pending", nextAttemptAt: Option.none() },
     workspaceId: endpoint.workspaceId,
   });

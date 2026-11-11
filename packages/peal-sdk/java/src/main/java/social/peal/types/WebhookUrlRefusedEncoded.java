@@ -21,8 +21,6 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = WebhookUrlRefusedEncoded.Builder.class)
 public final class WebhookUrlRefusedEncoded {
-    private final WebhookUrlRefusedEncodedTag tag;
-
     private final Optional<String> code;
 
     private final Optional<String> message;
@@ -34,23 +32,16 @@ public final class WebhookUrlRefusedEncoded {
     private final Map<String, Object> additionalProperties;
 
     private WebhookUrlRefusedEncoded(
-            WebhookUrlRefusedEncodedTag tag,
             Optional<String> code,
             Optional<String> message,
             Optional<String> requestId,
             WebhookUrlRefusal reason,
             Map<String, Object> additionalProperties) {
-        this.tag = tag;
         this.code = code;
         this.message = message;
         this.requestId = requestId;
         this.reason = reason;
         this.additionalProperties = additionalProperties;
-    }
-
-    @JsonProperty("_tag")
-    public WebhookUrlRefusedEncodedTag getTag() {
-        return tag;
     }
 
     @JsonProperty("code")
@@ -85,8 +76,7 @@ public final class WebhookUrlRefusedEncoded {
     }
 
     private boolean equalTo(WebhookUrlRefusedEncoded other) {
-        return tag.equals(other.tag)
-                && code.equals(other.code)
+        return code.equals(other.code)
                 && message.equals(other.message)
                 && requestId.equals(other.requestId)
                 && reason.equals(other.reason);
@@ -94,7 +84,7 @@ public final class WebhookUrlRefusedEncoded {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.reason);
+        return Objects.hash(this.code, this.message, this.requestId, this.reason);
     }
 
     @java.lang.Override
@@ -102,18 +92,14 @@ public final class WebhookUrlRefusedEncoded {
         return ObjectMappers.stringify(this);
     }
 
-    public static TagStage builder() {
+    public static ReasonStage builder() {
         return new Builder();
-    }
-
-    public interface TagStage {
-        ReasonStage tag(@NotNull WebhookUrlRefusedEncodedTag tag);
-
-        Builder from(WebhookUrlRefusedEncoded other);
     }
 
     public interface ReasonStage {
         _FinalStage reason(@NotNull WebhookUrlRefusal reason);
+
+        Builder from(WebhookUrlRefusedEncoded other);
     }
 
     public interface _FinalStage {
@@ -137,9 +123,7 @@ public final class WebhookUrlRefusedEncoded {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements TagStage, ReasonStage, _FinalStage {
-        private WebhookUrlRefusedEncodedTag tag;
-
+    public static final class Builder implements ReasonStage, _FinalStage {
         private WebhookUrlRefusal reason;
 
         private Optional<String> requestId = Optional.empty();
@@ -154,18 +138,10 @@ public final class WebhookUrlRefusedEncoded {
 
         @java.lang.Override
         public Builder from(WebhookUrlRefusedEncoded other) {
-            tag(other.getTag());
             code(other.getCode());
             message(other.getMessage());
             requestId(other.getRequestId());
             reason(other.getReason());
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter("_tag")
-        public ReasonStage tag(@NotNull WebhookUrlRefusedEncodedTag tag) {
-            this.tag = Objects.requireNonNull(tag, "tag must not be null");
             return this;
         }
 
@@ -217,13 +193,12 @@ public final class WebhookUrlRefusedEncoded {
 
         @java.lang.Override
         public WebhookUrlRefusedEncoded build() {
-            return new WebhookUrlRefusedEncoded(tag, code, message, requestId, reason, additionalProperties);
+            return new WebhookUrlRefusedEncoded(code, message, requestId, reason, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag")
-                    || key.equalsIgnoreCase("code")
+            if (key.equalsIgnoreCase("code")
                     || key.equalsIgnoreCase("message")
                     || key.equalsIgnoreCase("requestId")
                     || key.equalsIgnoreCase("reason")) {

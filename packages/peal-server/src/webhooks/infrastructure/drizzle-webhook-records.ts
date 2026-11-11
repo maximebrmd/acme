@@ -5,7 +5,7 @@ import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { WebhookRecords } from "#webhooks/application/webhook-records.ts";
 
-import { deliveries, endpoints, events } from "./schema.ts";
+import { deliveries, endpoints, events, manualSends } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -26,6 +26,11 @@ export const DrizzleWebhookRecords = Layer.effect(
           yield* db
             .delete(events)
             .where(eq(events.workspaceId, workspaceId))
+            .pipe(Effect.mapError(failed));
+
+          yield* db
+            .delete(manualSends)
+            .where(eq(manualSends.workspaceId, workspaceId))
             .pipe(Effect.mapError(failed));
 
           // With them go their secrets, encrypted.

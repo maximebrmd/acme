@@ -459,6 +459,7 @@ describe("peal webhooks", () => {
       const again = yield* session.printed([
         "webhooks",
         "redeliver",
+        "--endpoint",
         hookId,
         exhaustedDeliveryId,
         ...inStudio,
@@ -472,6 +473,7 @@ describe("peal webhooks", () => {
         yield* session.refused([
           "webhooks",
           "redeliver",
+          "--endpoint",
           hookId,
           "0190f3a0-0000-7000-8000-00000000f999",
           ...inStudio,
@@ -508,6 +510,157 @@ describe("peal webhooks", () => {
       );
       assert.deepStrictEqual(yield* changes(session.studio), [
         `webhook:delete:${hookId}`,
+      ]);
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("narrows an endpoint to channels, and clears it", () =>
+    Effect.gen(function* filters() {
+      const session = yield* signedIn();
+      const channel = "0190f3a0-0000-7000-8000-00000000d001";
+
+      const created = yield* session.printed(
+        create(
+          "--url",
+          "https://hooks.example.com/new",
+          "--events",
+          "post.published",
+          "--channel",
+          channel,
+          "--json"
+        )
+      );
+
+      assert.match(
+        created,
+        new RegExp(`"channelIds": \\[\\s+"${channel}"\\s+\\]`, "u")
+      );
+
+      const shown = yield* session.printed([
+        "webhooks",
+        "update",
+        hookId,
+        "--channel",
+        channel,
+        ...inStudio,
+      ]);
+
+      assert.include(shown, `Channels`);
+      assert.include(shown, channel);
+
+      const cleared = yield* session.printed([
+        "webhooks",
+        "update",
+        hookId,
+        "--clear-channels",
+        ...inStudio,
+      ]);
+
+      assert.include(cleared, "every channel");
+      assert.include(
+        yield* session.refused(
+          create(
+            "--url",
+            "https://hooks.example.com/partner",
+            "--events",
+            "post.published",
+            "--workspace-id",
+            "8e3f9a97-8a3c-4dab-8d85-6c4f5a7b8293"
+          )
+        ),
+        "give --partner too"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("lists the deliveries of every endpoint, by status", () =>
+    Effect.gen(function* acrossEndpoints() {
+      const session = yield* signedIn();
+
+      const failed = yield* session.printed([
+        "webhooks",
+        "deliveries",
+        "--status",
+        "failed",
+        ...inStudio,
+      ]);
+
+      assert.include(failed, "Deliveries of Studio's endpoints, newest first:");
+      assert.match(
+        failed,
+        new RegExp(
+          `${exhaustedDeliveryId}\\s+to ${hookId}\\s+post\\.published`,
+          "u"
+        )
+      );
+      assert.notInclude(failed, pendingDeliveryId);
+      assert.include(
+        yield* session.refused([
+          "webhooks",
+          "deliveries",
+          "--since",
+          "yesterday",
+          ...inStudio,
+        ]),
+        "--since takes an instant"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("sends an endpoint's failed deliveries again, and a sample", () =>
+    Effect.gen(function* replays() {
+      const session = yield* signedIn();
+
+      const again = yield* session.printed([
+        "webhooks",
+        "redeliver",
+        "--failed",
+        "--endpoint",
+        hookId,
+        ...inStudio,
+      ]);
+
+      assert.include(
+        again,
+        "Sending 1 delivery again, as new deliveries of the same events."
+      );
+
+      const named = yield* session.printed([
+        "webhooks",
+        "redeliver",
+        exhaustedDeliveryId,
+        "0190f3a0-0000-7000-8000-00000000f999",
+        ...inStudio,
+      ]);
+
+      assert.include(
+        named,
+        "Skipped 0190f3a0-0000-7000-8000-00000000f999: not a delivery of this workspace."
+      );
+      assert.include(
+        yield* session.refused([
+          "webhooks",
+          "redeliver",
+          "--failed",
+          ...inStudio,
+        ]),
+        "give --endpoint too"
+      );
+
+      const sample = yield* session.printed([
+        "webhooks",
+        "test",
+        hookId,
+        "--event",
+        "post.published",
+        ...inStudio,
+      ]);
+
+      assert.include(sample, "Sent a sample post.published event");
+      assert.deepStrictEqual(yield* changes(session.studio), [
+        `webhook:redeliver-many:${exhaustedDeliveryId}`,
+        `webhook:redeliver-many:${exhaustedDeliveryId}`,
+        `webhook:test:${hookId}:post.published`,
       ]);
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );

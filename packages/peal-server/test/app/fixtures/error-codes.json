@@ -695,6 +695,11 @@
     "tag": "WebhookEndpointNotFound"
   },
   {
+    "code": "webhook_filter_refused",
+    "status": 422,
+    "tag": "WebhookFilterRefused"
+  },
+  {
     "code": "webhook_url_refused",
     "status": 422,
     "tag": "WebhookUrlRefused"
