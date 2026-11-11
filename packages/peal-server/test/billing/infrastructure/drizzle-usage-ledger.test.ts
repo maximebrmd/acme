@@ -115,20 +115,22 @@ layer(LedgerTest)("the usage ledger in Postgres", (it) => {
       const ledger = yield* UsageLedger;
       const workspaceId = yield* freshWorkspace;
 
-      // Days no other test of the suite writes, long past.
-      yield* ledger.add({ record: posts("2001-01-01"), workspaceId });
-      yield* ledger.add({ record: posts("2001-01-02"), workspaceId });
-      yield* ledger.set([{ record: channels("2001-01-02", 1), workspaceId }]);
+      // Days no other test of the suite writes: after the days the usage
+      // snapshot's test has its daily purge delete, before the days the
+      // other tests count, as files run at the same time.
+      yield* ledger.add({ record: posts("2026-01-01"), workspaceId });
+      yield* ledger.add({ record: posts("2026-01-02"), workspaceId });
+      yield* ledger.set([{ record: channels("2026-01-02", 1), workspaceId }]);
 
-      const purged = yield* ledger.purgeBefore(day("2001-01-02"));
+      const purged = yield* ledger.purgeBefore(day("2026-01-02"));
 
       assert.isAtLeast(purged, 1);
       assert.deepStrictEqual(
         yield* ledger.ofWorkspace(workspaceId, {
-          from: day("2001-01-01"),
-          to: day("2001-01-31"),
+          from: day("2026-01-01"),
+          to: day("2026-01-31"),
         }),
-        [channels("2001-01-02", 1), posts("2001-01-02")]
+        [channels("2026-01-02", 1), posts("2026-01-02")]
       );
 
       yield* ledger.eraseWorkspace(workspaceId);

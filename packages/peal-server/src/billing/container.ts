@@ -17,6 +17,7 @@ import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SettleContractRequest } from "#billing/application/settle-contract-request.ts";
+import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
@@ -24,6 +25,7 @@ import { AuditedRequestReviewLive } from "#billing/infrastructure/audited-reques
 import { billingReminders } from "#billing/infrastructure/billing-reminders-cron.ts";
 import { ConfiguredBillingModeLive } from "#billing/infrastructure/configured-billing-mode.ts";
 import { ContextMemberAddressesLive } from "#billing/infrastructure/context-member-addresses.ts";
+import { ContextUsageStatesLive } from "#billing/infrastructure/context-usage-states.ts";
 import { ContextWorkspaceHoldingsLive } from "#billing/infrastructure/context-workspace-holdings.ts";
 import { ContextWorkspaceUsageLive } from "#billing/infrastructure/context-workspace-usage.ts";
 import { contractRequests } from "#billing/infrastructure/contract-requests-cron.ts";
@@ -43,6 +45,7 @@ import { PartnerPlanHoldersLive } from "#billing/infrastructure/partner-plan-hol
 import { PlanUpgradePathsLive } from "#billing/infrastructure/plan-upgrade-paths.ts";
 import { RandomRequestTokensLive } from "#billing/infrastructure/random-request-tokens.ts";
 import { StripeContractsLive } from "#billing/infrastructure/stripe-contracts-live.ts";
+import { usageSnapshot } from "#billing/infrastructure/usage-snapshot-cron.ts";
 import { WorkspaceContractHoldersLive } from "#billing/infrastructure/workspace-contract-holders.ts";
 import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
 
@@ -114,8 +117,9 @@ const UsageAtCheckoutBound = Layer.effectDiscard(
  * contexts; where it stands against that plan, and choosing what stays
  * when it is over it, through the channels and workspace contexts;
  * ordering, cancelling and withdrawing, which call Stripe and
- * tell members through the notifications context; and the daily
- * reminders. The composition root provides those contexts, Ids and the
+ * tell members through the notifications context; the daily
+ * reminders; and the daily snapshot of every workspace's usage, which
+ * those contexts count too. The composition root provides those contexts, Ids and the
  * TransactionRunner, with BillingLive.
  */
 export const BillingOverviewLive = Layer.mergeAll(
@@ -128,11 +132,13 @@ export const BillingOverviewLive = Layer.mergeAll(
   CancelSubscription.layer,
   Withdraw.layer,
   SendBillingReminders.layer,
+  SnapshotUsage.layer,
   UsageAtCheckoutBound
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
       RecordsLive,
+      ContextUsageStatesLive,
       DrizzleWithdrawalsLive,
       StripeContractsLive,
       NotifiedBillingNoticesLive,
@@ -188,13 +194,15 @@ export const ContractRequestsLive = Layer.mergeAll(
 );
 
 /**
- * The billing context's crons: the hourly confirmations and reminders, and
- * the daily purge of erased workspaces' contract records.
+ * The billing context's crons: the hourly confirmations and reminders, the
+ * daily purge of erased workspaces' contract records, and the daily
+ * snapshot of every workspace's usage.
  */
 export const BillingCronsLive = Layer.mergeAll(
   billingReminders,
   contractRequests,
-  contractRetention
+  contractRetention,
+  usageSnapshot
 );
 
 // The billing endpoints. They need the use cases BillingOverviewLive
