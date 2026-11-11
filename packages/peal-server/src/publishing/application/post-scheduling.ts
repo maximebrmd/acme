@@ -199,8 +199,9 @@ export interface QueueReshuffle {
   /** Posts moved onto their slots. */
   readonly moved: number;
   /**
-   * Waiting posts left where they were: already on their slots, or not
-   * the caller's to move.
+   * Waiting posts left where they were: already on their slots, not the
+   * caller's to move, or moved, sent back or cancelled by someone else
+   * while it ran.
    */
   readonly unchanged: number;
   /** Waiting posts not placed when it stopped. */
@@ -1196,9 +1197,10 @@ export class PostScheduling extends Context.Service<
       }
 
       // One batch of a reshuffle, in one transaction: the queue's lock,
-      // the queue read again (a changed timetable stops it), the posts'
-      // rows in id order, then each move in the order of times. A post
-      // moved, sent back or cancelled since the plan is left as it is.
+      // the queue read again (a changed timetable stops it), the rows of
+      // the posts to move in id order, then each move in the order of
+      // times. A post moved, sent back or cancelled since the plan is left
+      // as it is.
       const reshuffleBatch = Effect.fn("PostScheduling.reshuffleBatch")(
         function* reshuffleBatch(
           actor: Actor,
@@ -1243,9 +1245,9 @@ export class PostScheduling extends Context.Service<
           }
 
           let movedCount = 0;
-          let unchanged = batch.length - toMove.length;
+          let unchanged = 0;
 
-          for (const [place, { from, postId, to }] of toMove.entries()) {
+          for (const [place, { from, postId, to }] of batch.entries()) {
             const current = locked.get(postId);
 
             // Still where the plan found it, waiting, on this queue.
@@ -1256,7 +1258,15 @@ export class PostScheduling extends Context.Service<
                 current.post.status._tag === "awaitingApproval") &&
               DateTime.Equivalence(current.post.status.schedule.at, from);
 
-            if (current === undefined || !asPlanned) {
+            // On its slot already, or moved, sent back or cancelled since
+            // the plan: left as it is.
+            if (
+              DateTime.Equivalence(from, to) ||
+              current === undefined ||
+              !asPlanned
+            ) {
+              unchanged += 1;
+
               continue;
             }
 
@@ -1288,7 +1298,7 @@ export class PostScheduling extends Context.Service<
 
             if (outcome === "planLimit") {
               const stopped: BatchOutcome = {
-                left: toMove.length - place,
+                left: batch.length - place,
                 moved: movedCount,
                 stoppedBy: Option.some("planLimit"),
                 unchanged,

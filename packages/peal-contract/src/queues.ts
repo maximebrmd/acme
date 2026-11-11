@@ -179,9 +179,9 @@ export type ReshuffleStop = typeof ReshuffleStopSchema.Type;
 
 /**
  * What a reshuffle did: posts moved onto their slots, posts left where
- * they were (already on their slots, or not the caller's to move), and
- * posts not placed when it stopped, with why (`stoppedBy`, null when it
- * went through).
+ * they were (already on their slots, not the caller's to move, or changed
+ * by someone else while it ran), and posts not placed when it stopped,
+ * with why (`stoppedBy`, null when it went through).
  */
 export const QueueReshuffleSchema = Schema.Struct({
   moved: Schema.Int,
@@ -296,7 +296,7 @@ export class QueuesApi extends HttpApiGroup.make("queues")
       success: QueueReshuffleSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and \`post.scheduled\` told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, or scheduled ones when the caller may only ask for posts to go out), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (\`stoppedBy\` \`planLimit\`), when no slot is left within ${queueHorizonDays} days (\`full\`), or when the queue was saved meanwhile (\`changed\`); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (\`noSlots\`) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.`,
+        description: `Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and \`post.scheduled\` told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (\`stoppedBy\` \`planLimit\`), when no slot is left within ${queueHorizonDays} days (\`full\`), or when the queue was saved meanwhile (\`changed\`); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (\`noSlots\`) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.`,
         summary: "Reshuffle a queue",
       })
     )

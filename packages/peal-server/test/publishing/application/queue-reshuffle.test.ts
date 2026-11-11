@@ -320,8 +320,9 @@ describe("reshuffling a queue", () => {
             { concurrency: "unbounded" }
           );
 
-          // Each post was moved once, by one of the two.
+          // Each post was moved once, by one of the two; the other left it.
           assert.strictEqual(one.moved + two.moved, 12);
+          assert.strictEqual(one.unchanged + two.unchanged, 12);
 
           const after = yield* Effect.all(sent.map(({ id }) => nowStored(id)));
 
