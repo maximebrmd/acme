@@ -15,6 +15,10 @@ public class ListTest : BaseMockServerTest
         const string mockResponse = """
             [
               {
+                "channelIds": [
+                  "channelIds",
+                  "channelIds"
+                ],
                 "createdAt": "createdAt",
                 "description": "description",
                 "disabledAt": "disabledAt",
@@ -29,9 +33,17 @@ public class ListTest : BaseMockServerTest
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
                 "scope": "workspace",
                 "updatedAt": "updatedAt",
-                "url": "url"
+                "url": "url",
+                "workspaceIds": [
+                  "workspaceIds",
+                  "workspaceIds"
+                ]
               },
               {
+                "channelIds": [
+                  "channelIds",
+                  "channelIds"
+                ],
                 "createdAt": "createdAt",
                 "description": "description",
                 "disabledAt": "disabledAt",
@@ -46,7 +58,11 @@ public class ListTest : BaseMockServerTest
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
                 "scope": "workspace",
                 "updatedAt": "updatedAt",
-                "url": "url"
+                "url": "url",
+                "workspaceIds": [
+                  "workspaceIds",
+                  "workspaceIds"
+                ]
               }
             ]
             """;
@@ -77,6 +93,9 @@ public class ListTest : BaseMockServerTest
         const string mockResponse = """
             [
               {
+                "channelIds": [
+                  "channelIds"
+                ],
                 "createdAt": "createdAt",
                 "description": "description",
                 "disabledAt": "disabledAt",
@@ -90,7 +109,10 @@ public class ListTest : BaseMockServerTest
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
                 "scope": "workspace",
                 "updatedAt": "updatedAt",
-                "url": "url"
+                "url": "url",
+                "workspaceIds": [
+                  "workspaceIds"
+                ]
               }
             ]
             """;

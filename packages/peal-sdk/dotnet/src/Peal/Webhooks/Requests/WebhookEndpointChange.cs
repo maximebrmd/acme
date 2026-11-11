@@ -12,6 +12,9 @@ public record WebhookEndpointChange
     [JsonIgnore]
     public required string EndpointId { get; set; }
 
+    [JsonPropertyName("channelIds")]
+    public IEnumerable<string>? ChannelIds { get; set; }
+
     [JsonPropertyName("description")]
     public string? Description { get; set; }
 
@@ -23,6 +26,9 @@ public record WebhookEndpointChange
 
     [JsonPropertyName("url")]
     public string? Url { get; set; }
+
+    [JsonPropertyName("workspaceIds")]
+    public IEnumerable<string>? WorkspaceIds { get; set; }
 
     /// <inheritdoc />
     public override string ToString()

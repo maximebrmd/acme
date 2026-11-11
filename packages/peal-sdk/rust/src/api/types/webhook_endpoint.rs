@@ -2,6 +2,9 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct WebhookEndpoint {
+    #[serde(rename = "channelIds")]
+    #[serde(default)]
+    pub channel_ids: Vec<String>,
     #[serde(rename = "createdAt")]
     #[serde(default)]
     pub created_at: String,
@@ -32,6 +35,9 @@ pub struct WebhookEndpoint {
     pub updated_at: String,
     #[serde(default)]
     pub url: String,
+    #[serde(rename = "workspaceIds")]
+    #[serde(default)]
+    pub workspace_ids: Vec<String>,
 }
 
 impl WebhookEndpoint {
@@ -43,6 +49,7 @@ impl WebhookEndpoint {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct WebhookEndpointBuilder {
+    channel_ids: Option<Vec<String>>,
     created_at: Option<String>,
     description: Option<String>,
     disabled_at: Option<String>,
@@ -55,9 +62,15 @@ pub struct WebhookEndpointBuilder {
     scope: Option<WebhookEndpointScope>,
     updated_at: Option<String>,
     url: Option<String>,
+    workspace_ids: Option<Vec<String>>,
 }
 
 impl WebhookEndpointBuilder {
+    pub fn channel_ids(mut self, value: Vec<String>) -> Self {
+        self.channel_ids = Some(value);
+        self
+    }
+
     pub fn created_at(mut self, value: impl Into<String>) -> Self {
         self.created_at = Some(value.into());
         self
@@ -118,8 +131,14 @@ impl WebhookEndpointBuilder {
         self
     }
 
+    pub fn workspace_ids(mut self, value: Vec<String>) -> Self {
+        self.workspace_ids = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`WebhookEndpoint`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`channel_ids`](WebhookEndpointBuilder::channel_ids)
     /// - [`created_at`](WebhookEndpointBuilder::created_at)
     /// - [`description`](WebhookEndpointBuilder::description)
     /// - [`enabled`](WebhookEndpointBuilder::enabled)
@@ -128,8 +147,12 @@ impl WebhookEndpointBuilder {
     /// - [`scope`](WebhookEndpointBuilder::scope)
     /// - [`updated_at`](WebhookEndpointBuilder::updated_at)
     /// - [`url`](WebhookEndpointBuilder::url)
+    /// - [`workspace_ids`](WebhookEndpointBuilder::workspace_ids)
     pub fn build(self) -> Result<WebhookEndpoint, BuildError> {
         Ok(WebhookEndpoint {
+            channel_ids: self
+                .channel_ids
+                .ok_or_else(|| BuildError::missing_field("channel_ids"))?,
             created_at: self
                 .created_at
                 .ok_or_else(|| BuildError::missing_field("created_at"))?,
@@ -154,6 +177,9 @@ impl WebhookEndpointBuilder {
                 .updated_at
                 .ok_or_else(|| BuildError::missing_field("updated_at"))?,
             url: self.url.ok_or_else(|| BuildError::missing_field("url"))?,
+            workspace_ids: self
+                .workspace_ids
+                .ok_or_else(|| BuildError::missing_field("workspace_ids"))?,
         })
     }
 }

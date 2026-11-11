@@ -5,11 +5,15 @@ import typing
 from ..core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ..core.request_options import RequestOptions
 from ..types.subscribable_webhook_event_type import SubscribableWebhookEventType
+from ..types.webhook_bulk_redelivery import WebhookBulkRedelivery
 from ..types.webhook_delivery import WebhookDelivery
 from ..types.webhook_delivery_page import WebhookDeliveryPage
+from ..types.webhook_delivery_status import WebhookDeliveryStatus
 from ..types.webhook_endpoint import WebhookEndpoint
 from ..types.webhook_endpoint_scope import WebhookEndpointScope
 from ..types.webhook_endpoint_secret import WebhookEndpointSecret
+from ..types.webhook_event_type import WebhookEventType
+from ..types.webhook_redelivery_request import WebhookRedeliveryRequest
 from .raw_client import AsyncRawWebhooksClient, RawWebhooksClient
 
 # this is used as the default value for optional parameters
@@ -69,13 +73,15 @@ class WebhooksClient:
         *,
         event_types: typing.Sequence[SubscribableWebhookEventType],
         url: str,
+        channel_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
         scope: typing.Optional[WebhookEndpointScope] = OMIT,
+        workspace_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookEndpointSecret:
         """
-        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. Needs webhook:manage.
+        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
 
         Parameters
         ----------
@@ -85,11 +91,15 @@ class WebhooksClient:
 
         url : str
 
+        channel_ids : typing.Optional[typing.Sequence[str]]
+
         description : typing.Optional[str]
 
         enabled : typing.Optional[bool]
 
         scope : typing.Optional[WebhookEndpointScope]
+
+        workspace_ids : typing.Optional[typing.Sequence[str]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -116,11 +126,120 @@ class WebhooksClient:
             workspace_id,
             event_types=event_types,
             url=url,
+            channel_ids=channel_ids,
             description=description,
             enabled=enabled,
             scope=scope,
+            workspace_ids=workspace_ids,
             request_options=request_options,
         )
+        return _response.data
+
+    def search_deliveries(
+        self,
+        workspace_id: str,
+        *,
+        cursor: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        event_type: typing.Optional[WebhookEventType] = None,
+        status: typing.Optional[WebhookDeliveryStatus] = None,
+        endpoint_id: typing.Optional[str] = None,
+        since: typing.Optional[str] = None,
+        until: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> WebhookDeliveryPage:
+        """
+        Lists the workspace's deliveries across its endpoints, newest first, 30 a page unless `limit` (at most 100) says otherwise, filtered by `status`, `endpointId`, `eventType`, and when they were made: `since` (included) and `until` (excluded). The deliveries of a `partner` endpoint include those of the partner's other workspaces, each naming its workspace (`workspaceId`, `workspaceExternalId`). A delivery that failed for good (`failed`) stays 30 days, with the receiver's last answer: send it again with `POST …/webhooks/deliveries/redeliver`. Pass the page's `nextCursor` as `cursor` for the next one. Needs webhook:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        cursor : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        event_type : typing.Optional[WebhookEventType]
+
+        status : typing.Optional[WebhookDeliveryStatus]
+
+        endpoint_id : typing.Optional[str]
+
+        since : typing.Optional[str]
+
+        until : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        WebhookDeliveryPage
+            WebhookDeliveryPage
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.webhooks.search_deliveries(
+            workspace_id="workspaceId",
+        )
+        """
+        _response = self._raw_client.search_deliveries(
+            workspace_id,
+            cursor=cursor,
+            limit=limit,
+            event_type=event_type,
+            status=status,
+            endpoint_id=endpoint_id,
+            since=since,
+            until=until,
+            request_options=request_options,
+        )
+        return _response.data
+
+    def redeliver_many(
+        self,
+        workspace_id: str,
+        *,
+        request: WebhookRedeliveryRequest,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> WebhookBulkRedelivery:
+        """
+        Sends many deliveries again, 100 a call at most: those named by `deliveryIds`, or the failed deliveries of the endpoint `endpointId` (made from `since`, before `until`, of `eventType`, each left out for any), oldest first, the last of each event only. Each goes to its own endpoint whatever the endpoint's filters are now, as a new delivery of the same event: the same `webhook-id` and body, signed anew. A delivery is skipped when its endpoint is off, when it is not the workspace's, and when its event was sent again since and that delivery is pending or went through, so calling again after a partial run sends nothing twice; `remaining` says how many more failed deliveries the selection holds. The new deliveries of an endpoint start a quarter of a second apart. A workspace sends 1000 deliveries again this way an hour, apart from the test events and single sends: a call that would pass it sends nothing (429 `TooManyWebhookSends`). Needs webhook:manage.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        request : WebhookRedeliveryRequest
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        WebhookBulkRedelivery
+            WebhookBulkRedelivery
+
+        Examples
+        --------
+        from peal import Peal, WebhookRedeliveryByIds
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.webhooks.redeliver_many(
+            workspace_id="workspaceId",
+            request=WebhookRedeliveryByIds(
+                delivery_ids=["deliveryIds"],
+            ),
+        )
+        """
+        _response = self._raw_client.redeliver_many(workspace_id, request=request, request_options=request_options)
         return _response.data
 
     def get(
@@ -197,20 +316,24 @@ class WebhooksClient:
         workspace_id: str,
         endpoint_id: str,
         *,
+        channel_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
         event_types: typing.Optional[typing.Sequence[SubscribableWebhookEventType]] = OMIT,
         url: typing.Optional[str] = OMIT,
+        workspace_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookEndpoint:
         """
-        Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+        Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
 
         Parameters
         ----------
         workspace_id : str
 
         endpoint_id : str
+
+        channel_ids : typing.Optional[typing.Sequence[str]]
 
         description : typing.Optional[str]
 
@@ -219,6 +342,8 @@ class WebhooksClient:
         event_types : typing.Optional[typing.Sequence[SubscribableWebhookEventType]]
 
         url : typing.Optional[str]
+
+        workspace_ids : typing.Optional[typing.Sequence[str]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -243,10 +368,12 @@ class WebhooksClient:
         _response = self._raw_client.update(
             workspace_id,
             endpoint_id,
+            channel_ids=channel_ids,
             description=description,
             enabled=enabled,
             event_types=event_types,
             url=url,
+            workspace_ids=workspace_ids,
             request_options=request_options,
         )
         return _response.data
@@ -287,16 +414,23 @@ class WebhooksClient:
         return _response.data
 
     def send_test(
-        self, workspace_id: str, endpoint_id: str, *, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        endpoint_id: str,
+        *,
+        event_type: typing.Optional[SubscribableWebhookEventType] = None,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookDelivery:
         """
-        Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
+        Sends the endpoint a `webhook.test` event, or, with `eventType`, a sample of that type: its real shape, with ids that name nothing, the workspace's own id and `sample: true`, which the receiver must never act on. Either goes whatever the endpoint subscribes to or filters. It answers with the delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
 
         Parameters
         ----------
         workspace_id : str
 
         endpoint_id : str
+
+        event_type : typing.Optional[SubscribableWebhookEventType]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -318,7 +452,9 @@ class WebhooksClient:
             endpoint_id="endpointId",
         )
         """
-        _response = self._raw_client.send_test(workspace_id, endpoint_id, request_options=request_options)
+        _response = self._raw_client.send_test(
+            workspace_id, endpoint_id, event_type=event_type, request_options=request_options
+        )
         return _response.data
 
     def list_deliveries(
@@ -328,10 +464,12 @@ class WebhooksClient:
         *,
         cursor: typing.Optional[str] = None,
         limit: typing.Optional[str] = None,
+        event_type: typing.Optional[WebhookEventType] = None,
+        status: typing.Optional[WebhookDeliveryStatus] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookDeliveryPage:
         """
-        Lists the endpoint's deliveries, newest first, 30 a page unless `limit` (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's `nextCursor` as `cursor` for the next one. A delivery is kept 30 days. Needs webhook:read.
+        Lists the endpoint's deliveries, newest first, of a `status` and an `eventType` when given, 30 a page unless `limit` (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's `nextCursor` as `cursor` for the next one. A delivery is kept 30 days. Needs webhook:read.
 
         Parameters
         ----------
@@ -342,6 +480,10 @@ class WebhooksClient:
         cursor : typing.Optional[str]
 
         limit : typing.Optional[str]
+
+        event_type : typing.Optional[WebhookEventType]
+
+        status : typing.Optional[WebhookDeliveryStatus]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -364,7 +506,13 @@ class WebhooksClient:
         )
         """
         _response = self._raw_client.list_deliveries(
-            workspace_id, endpoint_id, cursor=cursor, limit=limit, request_options=request_options
+            workspace_id,
+            endpoint_id,
+            cursor=cursor,
+            limit=limit,
+            event_type=event_type,
+            status=status,
+            request_options=request_options,
         )
         return _response.data
 
@@ -473,13 +621,15 @@ class AsyncWebhooksClient:
         *,
         event_types: typing.Sequence[SubscribableWebhookEventType],
         url: str,
+        channel_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
         scope: typing.Optional[WebhookEndpointScope] = OMIT,
+        workspace_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookEndpointSecret:
         """
-        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. Needs webhook:manage.
+        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
 
         Parameters
         ----------
@@ -489,11 +639,15 @@ class AsyncWebhooksClient:
 
         url : str
 
+        channel_ids : typing.Optional[typing.Sequence[str]]
+
         description : typing.Optional[str]
 
         enabled : typing.Optional[bool]
 
         scope : typing.Optional[WebhookEndpointScope]
+
+        workspace_ids : typing.Optional[typing.Sequence[str]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -528,10 +682,137 @@ class AsyncWebhooksClient:
             workspace_id,
             event_types=event_types,
             url=url,
+            channel_ids=channel_ids,
             description=description,
             enabled=enabled,
             scope=scope,
+            workspace_ids=workspace_ids,
             request_options=request_options,
+        )
+        return _response.data
+
+    async def search_deliveries(
+        self,
+        workspace_id: str,
+        *,
+        cursor: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        event_type: typing.Optional[WebhookEventType] = None,
+        status: typing.Optional[WebhookDeliveryStatus] = None,
+        endpoint_id: typing.Optional[str] = None,
+        since: typing.Optional[str] = None,
+        until: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> WebhookDeliveryPage:
+        """
+        Lists the workspace's deliveries across its endpoints, newest first, 30 a page unless `limit` (at most 100) says otherwise, filtered by `status`, `endpointId`, `eventType`, and when they were made: `since` (included) and `until` (excluded). The deliveries of a `partner` endpoint include those of the partner's other workspaces, each naming its workspace (`workspaceId`, `workspaceExternalId`). A delivery that failed for good (`failed`) stays 30 days, with the receiver's last answer: send it again with `POST …/webhooks/deliveries/redeliver`. Pass the page's `nextCursor` as `cursor` for the next one. Needs webhook:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        cursor : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        event_type : typing.Optional[WebhookEventType]
+
+        status : typing.Optional[WebhookDeliveryStatus]
+
+        endpoint_id : typing.Optional[str]
+
+        since : typing.Optional[str]
+
+        until : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        WebhookDeliveryPage
+            WebhookDeliveryPage
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.webhooks.search_deliveries(
+                workspace_id="workspaceId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.search_deliveries(
+            workspace_id,
+            cursor=cursor,
+            limit=limit,
+            event_type=event_type,
+            status=status,
+            endpoint_id=endpoint_id,
+            since=since,
+            until=until,
+            request_options=request_options,
+        )
+        return _response.data
+
+    async def redeliver_many(
+        self,
+        workspace_id: str,
+        *,
+        request: WebhookRedeliveryRequest,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> WebhookBulkRedelivery:
+        """
+        Sends many deliveries again, 100 a call at most: those named by `deliveryIds`, or the failed deliveries of the endpoint `endpointId` (made from `since`, before `until`, of `eventType`, each left out for any), oldest first, the last of each event only. Each goes to its own endpoint whatever the endpoint's filters are now, as a new delivery of the same event: the same `webhook-id` and body, signed anew. A delivery is skipped when its endpoint is off, when it is not the workspace's, and when its event was sent again since and that delivery is pending or went through, so calling again after a partial run sends nothing twice; `remaining` says how many more failed deliveries the selection holds. The new deliveries of an endpoint start a quarter of a second apart. A workspace sends 1000 deliveries again this way an hour, apart from the test events and single sends: a call that would pass it sends nothing (429 `TooManyWebhookSends`). Needs webhook:manage.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        request : WebhookRedeliveryRequest
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        WebhookBulkRedelivery
+            WebhookBulkRedelivery
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal, WebhookRedeliveryByIds
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.webhooks.redeliver_many(
+                workspace_id="workspaceId",
+                request=WebhookRedeliveryByIds(
+                    delivery_ids=["deliveryIds"],
+                ),
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.redeliver_many(
+            workspace_id, request=request, request_options=request_options
         )
         return _response.data
 
@@ -625,20 +906,24 @@ class AsyncWebhooksClient:
         workspace_id: str,
         endpoint_id: str,
         *,
+        channel_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
         event_types: typing.Optional[typing.Sequence[SubscribableWebhookEventType]] = OMIT,
         url: typing.Optional[str] = OMIT,
+        workspace_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookEndpoint:
         """
-        Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+        Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
 
         Parameters
         ----------
         workspace_id : str
 
         endpoint_id : str
+
+        channel_ids : typing.Optional[typing.Sequence[str]]
 
         description : typing.Optional[str]
 
@@ -647,6 +932,8 @@ class AsyncWebhooksClient:
         event_types : typing.Optional[typing.Sequence[SubscribableWebhookEventType]]
 
         url : typing.Optional[str]
+
+        workspace_ids : typing.Optional[typing.Sequence[str]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -679,10 +966,12 @@ class AsyncWebhooksClient:
         _response = await self._raw_client.update(
             workspace_id,
             endpoint_id,
+            channel_ids=channel_ids,
             description=description,
             enabled=enabled,
             event_types=event_types,
             url=url,
+            workspace_ids=workspace_ids,
             request_options=request_options,
         )
         return _response.data
@@ -731,16 +1020,23 @@ class AsyncWebhooksClient:
         return _response.data
 
     async def send_test(
-        self, workspace_id: str, endpoint_id: str, *, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        endpoint_id: str,
+        *,
+        event_type: typing.Optional[SubscribableWebhookEventType] = None,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookDelivery:
         """
-        Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
+        Sends the endpoint a `webhook.test` event, or, with `eventType`, a sample of that type: its real shape, with ids that name nothing, the workspace's own id and `sample: true`, which the receiver must never act on. Either goes whatever the endpoint subscribes to or filters. It answers with the delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
 
         Parameters
         ----------
         workspace_id : str
 
         endpoint_id : str
+
+        event_type : typing.Optional[SubscribableWebhookEventType]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -770,7 +1066,9 @@ class AsyncWebhooksClient:
 
         asyncio.run(main())
         """
-        _response = await self._raw_client.send_test(workspace_id, endpoint_id, request_options=request_options)
+        _response = await self._raw_client.send_test(
+            workspace_id, endpoint_id, event_type=event_type, request_options=request_options
+        )
         return _response.data
 
     async def list_deliveries(
@@ -780,10 +1078,12 @@ class AsyncWebhooksClient:
         *,
         cursor: typing.Optional[str] = None,
         limit: typing.Optional[str] = None,
+        event_type: typing.Optional[WebhookEventType] = None,
+        status: typing.Optional[WebhookDeliveryStatus] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookDeliveryPage:
         """
-        Lists the endpoint's deliveries, newest first, 30 a page unless `limit` (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's `nextCursor` as `cursor` for the next one. A delivery is kept 30 days. Needs webhook:read.
+        Lists the endpoint's deliveries, newest first, of a `status` and an `eventType` when given, 30 a page unless `limit` (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's `nextCursor` as `cursor` for the next one. A delivery is kept 30 days. Needs webhook:read.
 
         Parameters
         ----------
@@ -794,6 +1094,10 @@ class AsyncWebhooksClient:
         cursor : typing.Optional[str]
 
         limit : typing.Optional[str]
+
+        event_type : typing.Optional[WebhookEventType]
+
+        status : typing.Optional[WebhookDeliveryStatus]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -824,7 +1128,13 @@ class AsyncWebhooksClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.list_deliveries(
-            workspace_id, endpoint_id, cursor=cursor, limit=limit, request_options=request_options
+            workspace_id,
+            endpoint_id,
+            cursor=cursor,
+            limit=limit,
+            event_type=event_type,
+            status=status,
+            request_options=request_options,
         )
         return _response.data
 

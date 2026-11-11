@@ -18,6 +18,12 @@ public record ListDeliveriesWebhooksRequest
     [JsonIgnore]
     public string? Limit { get; set; }
 
+    [JsonIgnore]
+    public WebhookEventType? EventType { get; set; }
+
+    [JsonIgnore]
+    public WebhookDeliveryStatus? Status { get; set; }
+
     /// <inheritdoc />
     public override string ToString()
     {

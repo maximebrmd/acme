@@ -18,6 +18,10 @@ public class UpdateTest : BaseMockServerTest
 
         const string mockResponse = """
             {
+              "channelIds": [
+                "channelIds",
+                "channelIds"
+              ],
               "createdAt": "createdAt",
               "description": "description",
               "disabledAt": "disabledAt",
@@ -32,7 +36,11 @@ public class UpdateTest : BaseMockServerTest
               "previousSecretExpiresAt": "previousSecretExpiresAt",
               "scope": "workspace",
               "updatedAt": "updatedAt",
-              "url": "url"
+              "url": "url",
+              "workspaceIds": [
+                "workspaceIds",
+                "workspaceIds"
+              ]
             }
             """;
 
@@ -57,10 +65,12 @@ public class UpdateTest : BaseMockServerTest
             {
                 WorkspaceId = "workspaceId",
                 EndpointId = "endpointId",
+                ChannelIds = null,
                 Description = null,
                 Enabled = null,
                 EventTypes = null,
                 Url = null,
+                WorkspaceIds = null,
             }
         );
         JsonAssert.AreEqual(response, mockResponse);
@@ -75,6 +85,9 @@ public class UpdateTest : BaseMockServerTest
 
         const string mockResponse = """
             {
+              "channelIds": [
+                "channelIds"
+              ],
               "createdAt": "createdAt",
               "description": "description",
               "disabledAt": "disabledAt",
@@ -88,7 +101,10 @@ public class UpdateTest : BaseMockServerTest
               "previousSecretExpiresAt": "previousSecretExpiresAt",
               "scope": "workspace",
               "updatedAt": "updatedAt",
-              "url": "url"
+              "url": "url",
+              "workspaceIds": [
+                "workspaceIds"
+              ]
             }
             """;
 

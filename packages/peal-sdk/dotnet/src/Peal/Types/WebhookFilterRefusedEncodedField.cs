@@ -4,15 +4,15 @@ using Peal.Core;
 
 namespace Peal;
 
-[JsonConverter(typeof(WebhookUrlRefusedEncodedTag.WebhookUrlRefusedEncodedTagSerializer))]
+[JsonConverter(typeof(WebhookFilterRefusedEncodedField.WebhookFilterRefusedEncodedFieldSerializer))]
 [Serializable]
-public readonly record struct WebhookUrlRefusedEncodedTag : IStringEnum
+public readonly record struct WebhookFilterRefusedEncodedField : IStringEnum
 {
-    public static readonly WebhookUrlRefusedEncodedTag WebhookUrlRefused = new(
-        Values.WebhookUrlRefused
-    );
+    public static readonly WebhookFilterRefusedEncodedField ChannelIds = new(Values.ChannelIds);
 
-    public WebhookUrlRefusedEncodedTag(string value)
+    public static readonly WebhookFilterRefusedEncodedField WorkspaceIds = new(Values.WorkspaceIds);
+
+    public WebhookFilterRefusedEncodedField(string value)
     {
         Value = value;
     }
@@ -25,9 +25,9 @@ public readonly record struct WebhookUrlRefusedEncodedTag : IStringEnum
     /// <summary>
     /// Create a string enum with the given value.
     /// </summary>
-    public static WebhookUrlRefusedEncodedTag FromCustom(string value)
+    public static WebhookFilterRefusedEncodedField FromCustom(string value)
     {
-        return new WebhookUrlRefusedEncodedTag(value);
+        return new WebhookFilterRefusedEncodedField(value);
     }
 
     public bool Equals(string? other)
@@ -43,20 +43,20 @@ public readonly record struct WebhookUrlRefusedEncodedTag : IStringEnum
         return Value;
     }
 
-    public static bool operator ==(WebhookUrlRefusedEncodedTag value1, string value2) =>
+    public static bool operator ==(WebhookFilterRefusedEncodedField value1, string value2) =>
         value1.Value.Equals(value2);
 
-    public static bool operator !=(WebhookUrlRefusedEncodedTag value1, string value2) =>
+    public static bool operator !=(WebhookFilterRefusedEncodedField value1, string value2) =>
         !value1.Value.Equals(value2);
 
-    public static explicit operator string(WebhookUrlRefusedEncodedTag value) => value.Value;
+    public static explicit operator string(WebhookFilterRefusedEncodedField value) => value.Value;
 
-    public static explicit operator WebhookUrlRefusedEncodedTag(string value) => new(value);
+    public static explicit operator WebhookFilterRefusedEncodedField(string value) => new(value);
 
-    internal class WebhookUrlRefusedEncodedTagSerializer
-        : JsonConverter<WebhookUrlRefusedEncodedTag>
+    internal class WebhookFilterRefusedEncodedFieldSerializer
+        : JsonConverter<WebhookFilterRefusedEncodedField>
     {
-        public override WebhookUrlRefusedEncodedTag Read(
+        public override WebhookFilterRefusedEncodedField Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options
@@ -67,19 +67,19 @@ public readonly record struct WebhookUrlRefusedEncodedTag : IStringEnum
                 ?? throw new global::System.Exception(
                     "The JSON value could not be read as a string."
                 );
-            return new WebhookUrlRefusedEncodedTag(stringValue);
+            return new WebhookFilterRefusedEncodedField(stringValue);
         }
 
         public override void Write(
             Utf8JsonWriter writer,
-            WebhookUrlRefusedEncodedTag value,
+            WebhookFilterRefusedEncodedField value,
             JsonSerializerOptions options
         )
         {
             writer.WriteStringValue(value.Value);
         }
 
-        public override WebhookUrlRefusedEncodedTag ReadAsPropertyName(
+        public override WebhookFilterRefusedEncodedField ReadAsPropertyName(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options
@@ -90,12 +90,12 @@ public readonly record struct WebhookUrlRefusedEncodedTag : IStringEnum
                 ?? throw new global::System.Exception(
                     "The JSON property name could not be read as a string."
                 );
-            return new WebhookUrlRefusedEncodedTag(stringValue);
+            return new WebhookFilterRefusedEncodedField(stringValue);
         }
 
         public override void WriteAsPropertyName(
             Utf8JsonWriter writer,
-            WebhookUrlRefusedEncodedTag value,
+            WebhookFilterRefusedEncodedField value,
             JsonSerializerOptions options
         )
         {
@@ -109,6 +109,8 @@ public readonly record struct WebhookUrlRefusedEncodedTag : IStringEnum
     [Serializable]
     public static class Values
     {
-        public const string WebhookUrlRefused = "WebhookUrlRefused";
+        public const string ChannelIds = "channelIds";
+
+        public const string WorkspaceIds = "workspaceIds";
     }
 }

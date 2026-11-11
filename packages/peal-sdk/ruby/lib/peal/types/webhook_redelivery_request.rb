@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+require_relative "../../peal"
+
+module Peal
+  module Types
+    class WebhookRedeliveryRequest < Internal::Types::Model
+      extend Peal::Internal::Types::Union
+
+      member -> { Peal::Types::WebhookRedeliveryByIDs }
+
+      member -> { Peal::Types::WebhookRedeliveryOfFailed }
+    end
+  end
+end

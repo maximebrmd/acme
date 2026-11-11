@@ -15,10 +15,14 @@ use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Peal\Webhooks\Requests\NewWebhookEndpoint;
 use Peal\Types\WebhookEndpointSecret;
+use Peal\Webhooks\Requests\SearchDeliveriesWebhooksRequest;
+use Peal\Types\WebhookDeliveryPage;
+use Peal\Webhooks\Requests\RedeliverManyWebhooksRequest;
+use Peal\Types\WebhookBulkRedelivery;
 use Peal\Webhooks\Requests\WebhookEndpointChange;
+use Peal\Webhooks\Requests\SendTestWebhooksRequest;
 use Peal\Types\WebhookDelivery;
 use Peal\Webhooks\Requests\ListDeliveriesWebhooksRequest;
-use Peal\Types\WebhookDeliveryPage;
 
 class WebhooksClient
 {
@@ -112,7 +116,7 @@ class WebhooksClient
     }
 
     /**
-     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. Needs webhook:manage.
+     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
      *
      * Example:
      * ```php
@@ -162,6 +166,151 @@ class WebhooksClient
                     return null;
                 }
                 return WebhookEndpointSecret::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Lists the workspace's deliveries across its endpoints, newest first, 30 a page unless `limit` (at most 100) says otherwise, filtered by `status`, `endpointId`, `eventType`, and when they were made: `since` (included) and `until` (excluded). The deliveries of a `partner` endpoint include those of the partner's other workspaces, each naming its workspace (`workspaceId`, `workspaceExternalId`). A delivery that failed for good (`failed`) stays 30 days, with the receiver's last answer: send it again with `POST …/webhooks/deliveries/redeliver`. Pass the page's `nextCursor` as `cursor` for the next one. Needs webhook:read.
+     *
+     * Example:
+     * ```php
+     * $client->webhooks->searchDeliveries(
+     *     'workspaceId',
+     *     new SearchDeliveriesWebhooksRequest([]),
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param SearchDeliveriesWebhooksRequest $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?WebhookDeliveryPage
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function searchDeliveries(string $workspaceId, SearchDeliveriesWebhooksRequest $request = new SearchDeliveriesWebhooksRequest(), ?array $options = null): ?WebhookDeliveryPage
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $query = [];
+        if ($request->cursor != null) {
+            $query['cursor'] = $request->cursor;
+        }
+        if ($request->limit != null) {
+            $query['limit'] = $request->limit;
+        }
+        if ($request->eventType != null) {
+            $query['eventType'] = $request->eventType;
+        }
+        if ($request->status != null) {
+            $query['status'] = $request->status;
+        }
+        if ($request->endpointId != null) {
+            $query['endpointId'] = $request->endpointId;
+        }
+        if ($request->since != null) {
+            $query['since'] = $request->since;
+        }
+        if ($request->until != null) {
+            $query['until'] = $request->until;
+        }
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/webhooks/deliveries",
+                    method: HttpMethod::GET,
+                    query: $query,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return WebhookDeliveryPage::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Sends many deliveries again, 100 a call at most: those named by `deliveryIds`, or the failed deliveries of the endpoint `endpointId` (made from `since`, before `until`, of `eventType`, each left out for any), oldest first, the last of each event only. Each goes to its own endpoint whatever the endpoint's filters are now, as a new delivery of the same event: the same `webhook-id` and body, signed anew. A delivery is skipped when its endpoint is off, when it is not the workspace's, and when its event was sent again since and that delivery is pending or went through, so calling again after a partial run sends nothing twice; `remaining` says how many more failed deliveries the selection holds. The new deliveries of an endpoint start a quarter of a second apart. A workspace sends 1000 deliveries again this way an hour, apart from the test events and single sends: a call that would pass it sends nothing (429 `TooManyWebhookSends`). Needs webhook:manage.
+     *
+     * Example:
+     * ```php
+     * $client->webhooks->redeliverMany(
+     *     'workspaceId',
+     *     new RedeliverManyWebhooksRequest([
+     *         'body' => new WebhookRedeliveryByIds([
+     *             'deliveryIds' => [
+     *                 'deliveryIds',
+     *             ],
+     *         ]),
+     *     ]),
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param RedeliverManyWebhooksRequest $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?WebhookBulkRedelivery
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function redeliverMany(string $workspaceId, RedeliverManyWebhooksRequest $request, ?array $options = null): ?WebhookBulkRedelivery
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/webhooks/deliveries/redeliver",
+                    method: HttpMethod::POST,
+                    body: $request->body,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return WebhookBulkRedelivery::fromJson($json);
             }
         } catch (JsonException $e) {
             throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
@@ -283,7 +432,7 @@ class WebhooksClient
     }
 
     /**
-     * Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+     * Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
      *
      * Example:
      * ```php
@@ -402,18 +551,20 @@ class WebhooksClient
     }
 
     /**
-     * Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
+     * Sends the endpoint a `webhook.test` event, or, with `eventType`, a sample of that type: its real shape, with ids that name nothing, the workspace's own id and `sample: true`, which the receiver must never act on. Either goes whatever the endpoint subscribes to or filters. It answers with the delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
      *
      * Example:
      * ```php
      * $client->webhooks->sendTest(
      *     'workspaceId',
      *     'endpointId',
+     *     new SendTestWebhooksRequest([]),
      * );
      * ```
      *
      * @param string $workspaceId
      * @param string $endpointId
+     * @param SendTestWebhooksRequest $request
      * @param ?array{
      *   baseUrl?: string,
      *   maxRetries?: int,
@@ -426,16 +577,21 @@ class WebhooksClient
      * @throws PealException
      * @throws PealApiException
      */
-    public function sendTest(string $workspaceId, string $endpointId, ?array $options = null): ?WebhookDelivery
+    public function sendTest(string $workspaceId, string $endpointId, SendTestWebhooksRequest $request = new SendTestWebhooksRequest(), ?array $options = null): ?WebhookDelivery
     {
         $options = array_merge($this->options, $options ?? []);
         $options['maxRetries'] = 0;
+        $query = [];
+        if ($request->eventType != null) {
+            $query['eventType'] = $request->eventType;
+        }
         try {
             $response = $this->client->sendRequest(
                 new JsonApiRequest(
                     baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
                     path: "api/workspaces/{$workspaceId}/webhooks/{$endpointId}/test",
                     method: HttpMethod::POST,
+                    query: $query,
                 ),
                 $options,
             );
@@ -460,7 +616,7 @@ class WebhooksClient
     }
 
     /**
-     * Lists the endpoint's deliveries, newest first, 30 a page unless `limit` (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's `nextCursor` as `cursor` for the next one. A delivery is kept 30 days. Needs webhook:read.
+     * Lists the endpoint's deliveries, newest first, of a `status` and an `eventType` when given, 30 a page unless `limit` (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's `nextCursor` as `cursor` for the next one. A delivery is kept 30 days. Needs webhook:read.
      *
      * Example:
      * ```php
@@ -495,6 +651,12 @@ class WebhooksClient
         }
         if ($request->limit != null) {
             $query['limit'] = $request->limit;
+        }
+        if ($request->eventType != null) {
+            $query['eventType'] = $request->eventType;
+        }
+        if ($request->status != null) {
+            $query['status'] = $request->status;
         }
         try {
             $response = $this->client->sendRequest(

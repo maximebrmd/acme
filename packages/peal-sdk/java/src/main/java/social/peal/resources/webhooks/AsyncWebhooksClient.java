@@ -13,10 +13,13 @@ import social.peal.resources.webhooks.requests.GetWebhooksRequest;
 import social.peal.resources.webhooks.requests.ListDeliveriesWebhooksRequest;
 import social.peal.resources.webhooks.requests.ListWebhooksRequest;
 import social.peal.resources.webhooks.requests.NewWebhookEndpoint;
+import social.peal.resources.webhooks.requests.RedeliverManyWebhooksRequest;
 import social.peal.resources.webhooks.requests.RedeliverWebhooksRequest;
 import social.peal.resources.webhooks.requests.RotateSecretWebhooksRequest;
+import social.peal.resources.webhooks.requests.SearchDeliveriesWebhooksRequest;
 import social.peal.resources.webhooks.requests.SendTestWebhooksRequest;
 import social.peal.resources.webhooks.requests.WebhookEndpointChange;
+import social.peal.types.WebhookBulkRedelivery;
 import social.peal.types.WebhookDelivery;
 import social.peal.types.WebhookDeliveryPage;
 import social.peal.types.WebhookEndpoint;
@@ -100,7 +103,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With <code>scope</code> <code>partner</code>, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (<code>workspaceExternalId</code>); any other workspace answers 404 <code>PartnerNotFound</code>. Needs webhook:manage.
+     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With <code>scope</code> <code>partner</code>, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (<code>workspaceExternalId</code>); any other workspace answers 404 <code>PartnerNotFound</code>. <code>channelIds</code> (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of <code>eventTypes</code> when they are not wanted. <code>workspaceIds</code> (200 at most), on a <code>partner</code> endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
      */
     public CompletableFuture<WebhookEndpointSecret> create(String workspaceId, NewWebhookEndpoint request) {
         CompletableFuture<PealClientHttpResponse<WebhookEndpointSecret>> rawFuture =
@@ -115,13 +118,107 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With <code>scope</code> <code>partner</code>, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (<code>workspaceExternalId</code>); any other workspace answers 404 <code>PartnerNotFound</code>. Needs webhook:manage.
+     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With <code>scope</code> <code>partner</code>, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (<code>workspaceExternalId</code>); any other workspace answers 404 <code>PartnerNotFound</code>. <code>channelIds</code> (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of <code>eventTypes</code> when they are not wanted. <code>workspaceIds</code> (200 at most), on a <code>partner</code> endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
      */
     public CompletableFuture<WebhookEndpointSecret> create(
             String workspaceId, NewWebhookEndpoint request, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<WebhookEndpointSecret>> rawFuture =
                 this.rawClient.create(workspaceId, request, requestOptions);
         CompletableFuture<WebhookEndpointSecret> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the workspace's deliveries across its endpoints, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise, filtered by <code>status</code>, <code>endpointId</code>, <code>eventType</code>, and when they were made: <code>since</code> (included) and <code>until</code> (excluded). The deliveries of a <code>partner</code> endpoint include those of the partner's other workspaces, each naming its workspace (<code>workspaceId</code>, <code>workspaceExternalId</code>). A delivery that failed for good (<code>failed</code>) stays 30 days, with the receiver's last answer: send it again with <code>POST …/webhooks/deliveries/redeliver</code>. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Needs webhook:read.
+     */
+    public CompletableFuture<WebhookDeliveryPage> searchDeliveries(String workspaceId) {
+        CompletableFuture<PealClientHttpResponse<WebhookDeliveryPage>> rawFuture =
+                this.rawClient.searchDeliveries(workspaceId);
+        CompletableFuture<WebhookDeliveryPage> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the workspace's deliveries across its endpoints, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise, filtered by <code>status</code>, <code>endpointId</code>, <code>eventType</code>, and when they were made: <code>since</code> (included) and <code>until</code> (excluded). The deliveries of a <code>partner</code> endpoint include those of the partner's other workspaces, each naming its workspace (<code>workspaceId</code>, <code>workspaceExternalId</code>). A delivery that failed for good (<code>failed</code>) stays 30 days, with the receiver's last answer: send it again with <code>POST …/webhooks/deliveries/redeliver</code>. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Needs webhook:read.
+     */
+    public CompletableFuture<WebhookDeliveryPage> searchDeliveries(String workspaceId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<WebhookDeliveryPage>> rawFuture =
+                this.rawClient.searchDeliveries(workspaceId, requestOptions);
+        CompletableFuture<WebhookDeliveryPage> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the workspace's deliveries across its endpoints, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise, filtered by <code>status</code>, <code>endpointId</code>, <code>eventType</code>, and when they were made: <code>since</code> (included) and <code>until</code> (excluded). The deliveries of a <code>partner</code> endpoint include those of the partner's other workspaces, each naming its workspace (<code>workspaceId</code>, <code>workspaceExternalId</code>). A delivery that failed for good (<code>failed</code>) stays 30 days, with the receiver's last answer: send it again with <code>POST …/webhooks/deliveries/redeliver</code>. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Needs webhook:read.
+     */
+    public CompletableFuture<WebhookDeliveryPage> searchDeliveries(
+            String workspaceId, SearchDeliveriesWebhooksRequest request) {
+        CompletableFuture<PealClientHttpResponse<WebhookDeliveryPage>> rawFuture =
+                this.rawClient.searchDeliveries(workspaceId, request);
+        CompletableFuture<WebhookDeliveryPage> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the workspace's deliveries across its endpoints, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise, filtered by <code>status</code>, <code>endpointId</code>, <code>eventType</code>, and when they were made: <code>since</code> (included) and <code>until</code> (excluded). The deliveries of a <code>partner</code> endpoint include those of the partner's other workspaces, each naming its workspace (<code>workspaceId</code>, <code>workspaceExternalId</code>). A delivery that failed for good (<code>failed</code>) stays 30 days, with the receiver's last answer: send it again with <code>POST …/webhooks/deliveries/redeliver</code>. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Needs webhook:read.
+     */
+    public CompletableFuture<WebhookDeliveryPage> searchDeliveries(
+            String workspaceId, SearchDeliveriesWebhooksRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<WebhookDeliveryPage>> rawFuture =
+                this.rawClient.searchDeliveries(workspaceId, request, requestOptions);
+        CompletableFuture<WebhookDeliveryPage> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sends many deliveries again, 100 a call at most: those named by <code>deliveryIds</code>, or the failed deliveries of the endpoint <code>endpointId</code> (made from <code>since</code>, before <code>until</code>, of <code>eventType</code>, each left out for any), oldest first, the last of each event only. Each goes to its own endpoint whatever the endpoint's filters are now, as a new delivery of the same event: the same <code>webhook-id</code> and body, signed anew. A delivery is skipped when its endpoint is off, when it is not the workspace's, and when its event was sent again since and that delivery is pending or went through, so calling again after a partial run sends nothing twice; <code>remaining</code> says how many more failed deliveries the selection holds. The new deliveries of an endpoint start a quarter of a second apart. A workspace sends 1000 deliveries again this way an hour, apart from the test events and single sends: a call that would pass it sends nothing (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
+     */
+    public CompletableFuture<WebhookBulkRedelivery> redeliverMany(
+            String workspaceId, RedeliverManyWebhooksRequest request) {
+        CompletableFuture<PealClientHttpResponse<WebhookBulkRedelivery>> rawFuture =
+                this.rawClient.redeliverMany(workspaceId, request);
+        CompletableFuture<WebhookBulkRedelivery> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Sends many deliveries again, 100 a call at most: those named by <code>deliveryIds</code>, or the failed deliveries of the endpoint <code>endpointId</code> (made from <code>since</code>, before <code>until</code>, of <code>eventType</code>, each left out for any), oldest first, the last of each event only. Each goes to its own endpoint whatever the endpoint's filters are now, as a new delivery of the same event: the same <code>webhook-id</code> and body, signed anew. A delivery is skipped when its endpoint is off, when it is not the workspace's, and when its event was sent again since and that delivery is pending or went through, so calling again after a partial run sends nothing twice; <code>remaining</code> says how many more failed deliveries the selection holds. The new deliveries of an endpoint start a quarter of a second apart. A workspace sends 1000 deliveries again this way an hour, apart from the test events and single sends: a call that would pass it sends nothing (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
+     */
+    public CompletableFuture<WebhookBulkRedelivery> redeliverMany(
+            String workspaceId, RedeliverManyWebhooksRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<WebhookBulkRedelivery>> rawFuture =
+                this.rawClient.redeliverMany(workspaceId, request, requestOptions);
+        CompletableFuture<WebhookBulkRedelivery> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);
@@ -253,7 +350,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+     * Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; <code>workspaceIds</code> is for an endpoint of the <code>partner</code> scope only (422 <code>WebhookFilterRefused</code>). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
      */
     public CompletableFuture<WebhookEndpoint> update(String workspaceId, String endpointId) {
         CompletableFuture<PealClientHttpResponse<WebhookEndpoint>> rawFuture =
@@ -268,7 +365,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+     * Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; <code>workspaceIds</code> is for an endpoint of the <code>partner</code> scope only (422 <code>WebhookFilterRefused</code>). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
      */
     public CompletableFuture<WebhookEndpoint> update(
             String workspaceId, String endpointId, RequestOptions requestOptions) {
@@ -284,7 +381,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+     * Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; <code>workspaceIds</code> is for an endpoint of the <code>partner</code> scope only (422 <code>WebhookFilterRefused</code>). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
      */
     public CompletableFuture<WebhookEndpoint> update(
             String workspaceId, String endpointId, WebhookEndpointChange request) {
@@ -300,7 +397,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+     * Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; <code>workspaceIds</code> is for an endpoint of the <code>partner</code> scope only (422 <code>WebhookFilterRefused</code>). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
      */
     public CompletableFuture<WebhookEndpoint> update(
             String workspaceId, String endpointId, WebhookEndpointChange request, RequestOptions requestOptions) {
@@ -379,7 +476,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, or, with <code>eventType</code>, a sample of that type: its real shape, with ids that name nothing, the workspace's own id and <code>sample: true</code>, which the receiver must never act on. Either goes whatever the endpoint subscribes to or filters. It answers with the delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> sendTest(String workspaceId, String endpointId) {
         CompletableFuture<PealClientHttpResponse<WebhookDelivery>> rawFuture =
@@ -394,7 +491,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, or, with <code>eventType</code>, a sample of that type: its real shape, with ids that name nothing, the workspace's own id and <code>sample: true</code>, which the receiver must never act on. Either goes whatever the endpoint subscribes to or filters. It answers with the delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> sendTest(
             String workspaceId, String endpointId, RequestOptions requestOptions) {
@@ -410,7 +507,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, or, with <code>eventType</code>, a sample of that type: its real shape, with ids that name nothing, the workspace's own id and <code>sample: true</code>, which the receiver must never act on. Either goes whatever the endpoint subscribes to or filters. It answers with the delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> sendTest(
             String workspaceId, String endpointId, SendTestWebhooksRequest request) {
@@ -426,7 +523,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, or, with <code>eventType</code>, a sample of that type: its real shape, with ids that name nothing, the workspace's own id and <code>sample: true</code>, which the receiver must never act on. Either goes whatever the endpoint subscribes to or filters. It answers with the delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> sendTest(
             String workspaceId, String endpointId, SendTestWebhooksRequest request, RequestOptions requestOptions) {
@@ -442,7 +539,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Lists the endpoint's deliveries, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. A delivery is kept 30 days. Needs webhook:read.
+     * Lists the endpoint's deliveries, newest first, of a <code>status</code> and an <code>eventType</code> when given, 30 a page unless <code>limit</code> (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. A delivery is kept 30 days. Needs webhook:read.
      */
     public CompletableFuture<WebhookDeliveryPage> listDeliveries(String workspaceId, String endpointId) {
         CompletableFuture<PealClientHttpResponse<WebhookDeliveryPage>> rawFuture =
@@ -457,7 +554,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Lists the endpoint's deliveries, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. A delivery is kept 30 days. Needs webhook:read.
+     * Lists the endpoint's deliveries, newest first, of a <code>status</code> and an <code>eventType</code> when given, 30 a page unless <code>limit</code> (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. A delivery is kept 30 days. Needs webhook:read.
      */
     public CompletableFuture<WebhookDeliveryPage> listDeliveries(
             String workspaceId, String endpointId, RequestOptions requestOptions) {
@@ -473,7 +570,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Lists the endpoint's deliveries, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. A delivery is kept 30 days. Needs webhook:read.
+     * Lists the endpoint's deliveries, newest first, of a <code>status</code> and an <code>eventType</code> when given, 30 a page unless <code>limit</code> (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. A delivery is kept 30 days. Needs webhook:read.
      */
     public CompletableFuture<WebhookDeliveryPage> listDeliveries(
             String workspaceId, String endpointId, ListDeliveriesWebhooksRequest request) {
@@ -489,7 +586,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Lists the endpoint's deliveries, newest first, 30 a page unless <code>limit</code> (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. A delivery is kept 30 days. Needs webhook:read.
+     * Lists the endpoint's deliveries, newest first, of a <code>status</code> and an <code>eventType</code> when given, 30 a page unless <code>limit</code> (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. A delivery is kept 30 days. Needs webhook:read.
      */
     public CompletableFuture<WebhookDeliveryPage> listDeliveries(
             String workspaceId,

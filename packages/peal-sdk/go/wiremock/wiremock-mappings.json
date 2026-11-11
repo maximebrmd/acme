@@ -2665,7 +2665,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  }\n]",
+        "body": "[\n  {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2701,12 +2701,84 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"endpoint\": {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"secret\": \"secret\"\n}",
+        "body": "{\n  \"endpoint\": {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  },\n  \"secret\": \"secret\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
       "uuid": "1c25b373-35d2-4196-8e77-915aee636398",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "78962a14-a1ea-4d25-bd6a-d12171c88cdd",
+      "name": "List deliveries across endpoints - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/deliveries",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"attempts\": 1,\n      \"completedAt\": \"completedAt\",\n      \"createdAt\": \"createdAt\",\n      \"durationMs\": 1,\n      \"endpointId\": \"endpointId\",\n      \"error\": \"timeout\",\n      \"eventId\": \"eventId\",\n      \"eventType\": \"post.scheduled\",\n      \"failureReason\": \"exhausted\",\n      \"id\": \"id\",\n      \"lastAttemptAt\": \"lastAttemptAt\",\n      \"nextAttemptAt\": \"nextAttemptAt\",\n      \"redeliveryOf\": \"redeliveryOf\",\n      \"responseExcerpt\": \"responseExcerpt\",\n      \"responseStatus\": 1,\n      \"status\": \"pending\",\n      \"workspaceExternalId\": \"workspaceExternalId\",\n      \"workspaceId\": \"workspaceId\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "78962a14-a1ea-4d25-bd6a-d12171c88cdd",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "9ea5de2a-f55f-4165-978d-f48e5e44a84a",
+      "name": "Send many deliveries again - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/deliveries/redeliver",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": "{\n  \"redelivered\": [\n    {\n      \"attempts\": 1,\n      \"completedAt\": \"completedAt\",\n      \"createdAt\": \"createdAt\",\n      \"durationMs\": 1,\n      \"endpointId\": \"endpointId\",\n      \"error\": \"timeout\",\n      \"eventId\": \"eventId\",\n      \"eventType\": \"post.scheduled\",\n      \"failureReason\": \"exhausted\",\n      \"id\": \"id\",\n      \"lastAttemptAt\": \"lastAttemptAt\",\n      \"nextAttemptAt\": \"nextAttemptAt\",\n      \"redeliveryOf\": \"redeliveryOf\",\n      \"responseExcerpt\": \"responseExcerpt\",\n      \"responseStatus\": 1,\n      \"status\": \"pending\",\n      \"workspaceExternalId\": \"workspaceExternalId\",\n      \"workspaceId\": \"workspaceId\"\n    }\n  ],\n  \"remaining\": 1,\n  \"skipped\": [\n    {\n      \"deliveryId\": \"deliveryId\",\n      \"reason\": \"alreadySent\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "9ea5de2a-f55f-4165-978d-f48e5e44a84a",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -2740,7 +2812,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\",\n  \"workspaceIds\": [\n    \"workspaceIds\"\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2818,7 +2890,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\",\n  \"workspaceIds\": [\n    \"workspaceIds\"\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2857,7 +2929,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"endpoint\": {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"secret\": \"secret\"\n}",
+        "body": "{\n  \"endpoint\": {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  },\n  \"secret\": \"secret\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2896,7 +2968,7 @@
       },
       "response": {
         "status": 202,
-        "body": "{\n  \"attempts\": 1,\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"durationMs\": 1,\n  \"error\": \"timeout\",\n  \"eventId\": \"eventId\",\n  \"eventType\": \"post.scheduled\",\n  \"failureReason\": \"exhausted\",\n  \"id\": \"id\",\n  \"lastAttemptAt\": \"lastAttemptAt\",\n  \"nextAttemptAt\": \"nextAttemptAt\",\n  \"responseExcerpt\": \"responseExcerpt\",\n  \"responseStatus\": 1,\n  \"status\": \"pending\"\n}",
+        "body": "{\n  \"attempts\": 1,\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"durationMs\": 1,\n  \"endpointId\": \"endpointId\",\n  \"error\": \"timeout\",\n  \"eventId\": \"eventId\",\n  \"eventType\": \"post.scheduled\",\n  \"failureReason\": \"exhausted\",\n  \"id\": \"id\",\n  \"lastAttemptAt\": \"lastAttemptAt\",\n  \"nextAttemptAt\": \"nextAttemptAt\",\n  \"redeliveryOf\": \"redeliveryOf\",\n  \"responseExcerpt\": \"responseExcerpt\",\n  \"responseStatus\": 1,\n  \"status\": \"pending\",\n  \"workspaceExternalId\": \"workspaceExternalId\",\n  \"workspaceId\": \"workspaceId\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2935,7 +3007,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"items\": [\n    {\n      \"attempts\": 1,\n      \"completedAt\": \"completedAt\",\n      \"createdAt\": \"createdAt\",\n      \"durationMs\": 1,\n      \"error\": \"timeout\",\n      \"eventId\": \"eventId\",\n      \"eventType\": \"post.scheduled\",\n      \"failureReason\": \"exhausted\",\n      \"id\": \"id\",\n      \"lastAttemptAt\": \"lastAttemptAt\",\n      \"nextAttemptAt\": \"nextAttemptAt\",\n      \"responseExcerpt\": \"responseExcerpt\",\n      \"responseStatus\": 1,\n      \"status\": \"pending\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "body": "{\n  \"items\": [\n    {\n      \"attempts\": 1,\n      \"completedAt\": \"completedAt\",\n      \"createdAt\": \"createdAt\",\n      \"durationMs\": 1,\n      \"endpointId\": \"endpointId\",\n      \"error\": \"timeout\",\n      \"eventId\": \"eventId\",\n      \"eventType\": \"post.scheduled\",\n      \"failureReason\": \"exhausted\",\n      \"id\": \"id\",\n      \"lastAttemptAt\": \"lastAttemptAt\",\n      \"nextAttemptAt\": \"nextAttemptAt\",\n      \"redeliveryOf\": \"redeliveryOf\",\n      \"responseExcerpt\": \"responseExcerpt\",\n      \"responseStatus\": 1,\n      \"status\": \"pending\",\n      \"workspaceExternalId\": \"workspaceExternalId\",\n      \"workspaceId\": \"workspaceId\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2977,7 +3049,7 @@
       },
       "response": {
         "status": 202,
-        "body": "{\n  \"attempts\": 1,\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"durationMs\": 1,\n  \"error\": \"timeout\",\n  \"eventId\": \"eventId\",\n  \"eventType\": \"post.scheduled\",\n  \"failureReason\": \"exhausted\",\n  \"id\": \"id\",\n  \"lastAttemptAt\": \"lastAttemptAt\",\n  \"nextAttemptAt\": \"nextAttemptAt\",\n  \"responseExcerpt\": \"responseExcerpt\",\n  \"responseStatus\": 1,\n  \"status\": \"pending\"\n}",
+        "body": "{\n  \"attempts\": 1,\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"durationMs\": 1,\n  \"endpointId\": \"endpointId\",\n  \"error\": \"timeout\",\n  \"eventId\": \"eventId\",\n  \"eventType\": \"post.scheduled\",\n  \"failureReason\": \"exhausted\",\n  \"id\": \"id\",\n  \"lastAttemptAt\": \"lastAttemptAt\",\n  \"nextAttemptAt\": \"nextAttemptAt\",\n  \"redeliveryOf\": \"redeliveryOf\",\n  \"responseExcerpt\": \"responseExcerpt\",\n  \"responseStatus\": 1,\n  \"status\": \"pending\",\n  \"workspaceExternalId\": \"workspaceExternalId\",\n  \"workspaceId\": \"workspaceId\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -5851,6 +5923,6 @@
     }
   ],
   "meta": {
-    "total": 156
+    "total": 158
   }
 }

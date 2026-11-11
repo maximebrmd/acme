@@ -15,6 +15,10 @@ public class RotateSecretTest : BaseMockServerTest
         const string mockResponse = """
             {
               "endpoint": {
+                "channelIds": [
+                  "channelIds",
+                  "channelIds"
+                ],
                 "createdAt": "createdAt",
                 "description": "description",
                 "disabledAt": "disabledAt",
@@ -29,7 +33,11 @@ public class RotateSecretTest : BaseMockServerTest
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
                 "scope": "workspace",
                 "updatedAt": "updatedAt",
-                "url": "url"
+                "url": "url",
+                "workspaceIds": [
+                  "workspaceIds",
+                  "workspaceIds"
+                ]
               },
               "secret": "secret"
             }
@@ -65,6 +73,9 @@ public class RotateSecretTest : BaseMockServerTest
         const string mockResponse = """
             {
               "endpoint": {
+                "channelIds": [
+                  "channelIds"
+                ],
                 "createdAt": "createdAt",
                 "description": "description",
                 "disabledAt": "disabledAt",
@@ -78,7 +89,10 @@ public class RotateSecretTest : BaseMockServerTest
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
                 "scope": "workspace",
                 "updatedAt": "updatedAt",
-                "url": "url"
+                "url": "url",
+                "workspaceIds": [
+                  "workspaceIds"
+                ]
               },
               "secret": "secret"
             }

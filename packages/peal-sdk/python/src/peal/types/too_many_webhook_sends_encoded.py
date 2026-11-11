@@ -15,6 +15,9 @@ class TooManyWebhookSendsEncoded(UniversalBaseModel):
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
     allowed: int
+    retry_after_seconds: typing_extensions.Annotated[
+        int, FieldMetadata(alias="retryAfterSeconds"), pydantic.Field(alias="retryAfterSeconds")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

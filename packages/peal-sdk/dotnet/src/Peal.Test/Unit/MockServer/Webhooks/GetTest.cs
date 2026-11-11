@@ -14,6 +14,10 @@ public class GetTest : BaseMockServerTest
     {
         const string mockResponse = """
             {
+              "channelIds": [
+                "channelIds",
+                "channelIds"
+              ],
               "createdAt": "createdAt",
               "description": "description",
               "disabledAt": "disabledAt",
@@ -28,7 +32,11 @@ public class GetTest : BaseMockServerTest
               "previousSecretExpiresAt": "previousSecretExpiresAt",
               "scope": "workspace",
               "updatedAt": "updatedAt",
-              "url": "url"
+              "url": "url",
+              "workspaceIds": [
+                "workspaceIds",
+                "workspaceIds"
+              ]
             }
             """;
 
@@ -57,6 +65,9 @@ public class GetTest : BaseMockServerTest
     {
         const string mockResponse = """
             {
+              "channelIds": [
+                "channelIds"
+              ],
               "createdAt": "createdAt",
               "description": "description",
               "disabledAt": "disabledAt",
@@ -70,7 +81,10 @@ public class GetTest : BaseMockServerTest
               "previousSecretExpiresAt": "previousSecretExpiresAt",
               "scope": "workspace",
               "updatedAt": "updatedAt",
-              "url": "url"
+              "url": "url",
+              "workspaceIds": [
+                "workspaceIds"
+              ]
             }
             """;
 

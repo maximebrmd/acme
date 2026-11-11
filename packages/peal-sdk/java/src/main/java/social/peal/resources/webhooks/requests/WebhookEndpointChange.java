@@ -22,6 +22,8 @@ import social.peal.types.SubscribableWebhookEventType;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = WebhookEndpointChange.Builder.class)
 public final class WebhookEndpointChange {
+    private final Optional<List<String>> channelIds;
+
     private final Optional<String> description;
 
     private final Optional<Boolean> enabled;
@@ -30,19 +32,30 @@ public final class WebhookEndpointChange {
 
     private final Optional<String> url;
 
+    private final Optional<List<String>> workspaceIds;
+
     private final Map<String, Object> additionalProperties;
 
     private WebhookEndpointChange(
+            Optional<List<String>> channelIds,
             Optional<String> description,
             Optional<Boolean> enabled,
             Optional<List<SubscribableWebhookEventType>> eventTypes,
             Optional<String> url,
+            Optional<List<String>> workspaceIds,
             Map<String, Object> additionalProperties) {
+        this.channelIds = channelIds;
         this.description = description;
         this.enabled = enabled;
         this.eventTypes = eventTypes;
         this.url = url;
+        this.workspaceIds = workspaceIds;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("channelIds")
+    public Optional<List<String>> getChannelIds() {
+        return channelIds;
     }
 
     @JsonProperty("description")
@@ -65,6 +78,11 @@ public final class WebhookEndpointChange {
         return url;
     }
 
+    @JsonProperty("workspaceIds")
+    public Optional<List<String>> getWorkspaceIds() {
+        return workspaceIds;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -77,15 +95,18 @@ public final class WebhookEndpointChange {
     }
 
     private boolean equalTo(WebhookEndpointChange other) {
-        return description.equals(other.description)
+        return channelIds.equals(other.channelIds)
+                && description.equals(other.description)
                 && enabled.equals(other.enabled)
                 && eventTypes.equals(other.eventTypes)
-                && url.equals(other.url);
+                && url.equals(other.url)
+                && workspaceIds.equals(other.workspaceIds);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.description, this.enabled, this.eventTypes, this.url);
+        return Objects.hash(
+                this.channelIds, this.description, this.enabled, this.eventTypes, this.url, this.workspaceIds);
     }
 
     @java.lang.Override
@@ -99,6 +120,8 @@ public final class WebhookEndpointChange {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<List<String>> channelIds = Optional.empty();
+
         private Optional<String> description = Optional.empty();
 
         private Optional<Boolean> enabled = Optional.empty();
@@ -107,15 +130,30 @@ public final class WebhookEndpointChange {
 
         private Optional<String> url = Optional.empty();
 
+        private Optional<List<String>> workspaceIds = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         public Builder from(WebhookEndpointChange other) {
+            channelIds(other.getChannelIds());
             description(other.getDescription());
             enabled(other.getEnabled());
             eventTypes(other.getEventTypes());
             url(other.getUrl());
+            workspaceIds(other.getWorkspaceIds());
+            return this;
+        }
+
+        @JsonSetter(value = "channelIds", nulls = Nulls.SKIP)
+        public Builder channelIds(Optional<List<String>> channelIds) {
+            this.channelIds = channelIds;
+            return this;
+        }
+
+        public Builder channelIds(List<String> channelIds) {
+            this.channelIds = Optional.ofNullable(channelIds);
             return this;
         }
 
@@ -163,16 +201,30 @@ public final class WebhookEndpointChange {
             return this;
         }
 
+        @JsonSetter(value = "workspaceIds", nulls = Nulls.SKIP)
+        public Builder workspaceIds(Optional<List<String>> workspaceIds) {
+            this.workspaceIds = workspaceIds;
+            return this;
+        }
+
+        public Builder workspaceIds(List<String> workspaceIds) {
+            this.workspaceIds = Optional.ofNullable(workspaceIds);
+            return this;
+        }
+
         public WebhookEndpointChange build() {
-            return new WebhookEndpointChange(description, enabled, eventTypes, url, additionalProperties);
+            return new WebhookEndpointChange(
+                    channelIds, description, enabled, eventTypes, url, workspaceIds, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("description")
+            if (key.equalsIgnoreCase("channelIds")
+                    || key.equalsIgnoreCase("description")
                     || key.equalsIgnoreCase("enabled")
                     || key.equalsIgnoreCase("eventTypes")
-                    || key.equalsIgnoreCase("url")) {
+                    || key.equalsIgnoreCase("url")
+                    || key.equalsIgnoreCase("workspaceIds")) {
                 return;
             }
             this.additionalProperties.put(key, value);

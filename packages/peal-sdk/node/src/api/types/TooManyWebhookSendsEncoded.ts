@@ -5,4 +5,5 @@ export interface TooManyWebhookSendsEncoded {
     message?: string | undefined;
     requestId?: string | undefined;
     allowed: number;
+    retryAfterSeconds: number;
 }

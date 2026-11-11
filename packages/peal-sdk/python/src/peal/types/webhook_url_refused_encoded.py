@@ -7,13 +7,9 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .webhook_url_refusal import WebhookUrlRefusal
-from .webhook_url_refused_encoded_tag import WebhookUrlRefusedEncodedTag
 
 
 class WebhookUrlRefusedEncoded(UniversalBaseModel):
-    tag: typing_extensions.Annotated[
-        WebhookUrlRefusedEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ]
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
