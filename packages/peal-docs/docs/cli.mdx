@@ -493,19 +493,26 @@ peal inbox moderate <comment-id> --action hide
 
 ```sh
 peal webhooks list
-peal webhooks create --url https://hooks.example.com/peal --events post.published,post.failed
+peal webhooks create --url https://hooks.example.com/peal --events post.published,post.failed --channel <channel-id>
 peal webhooks update <endpoint-id> --events all --disable
+peal webhooks update <endpoint-id> --clear-channels
 peal webhooks rotate-secret <endpoint-id>
-peal webhooks test <endpoint-id>
+peal webhooks test <endpoint-id> --event post.published
 peal webhooks deliveries <endpoint-id>
-peal webhooks redeliver <endpoint-id> <delivery-id>
+peal webhooks deliveries --status failed --since 2026-11-10T00:00:00Z
+peal webhooks redeliver --endpoint <endpoint-id> <delivery-id>
+peal webhooks redeliver --failed --endpoint <endpoint-id>
+peal webhooks redeliver <delivery-id> <delivery-id>
 peal webhooks delete <endpoint-id>
 ```
 
 - Owners and admins read and manage the workspace's [webhook](/webhooks) endpoints. `peal webhooks show <endpoint-id>` prints one.
 - `--events` takes event types separated by commas, or `all`. `create` also takes `--description` and `--disabled`; `update` sends only what you give it, with `--enable` or `--disable` to turn the endpoint on or off.
 - `create` and `rotate-secret` print the signing secret, once: save it then. After a rotation the old secret still signs for 24 hours, beside the new one.
-- `test` sends a `webhook.test` event; `deliveries` shows how each delivery ended, newest first, and `redeliver` sends one again.
+- `--channel` (repeated, or ids separated by commas) narrows an endpoint to those channels, and `--clear-channels` hears every channel again; `--workspace-id`, with `--partner` on `create`, narrows a partner endpoint to those workspaces, and `--clear-workspaces` clears it. `update` replaces a list it is given.
+- `test` sends a `webhook.test` event, or with `--event` a sample of that type, marked `sample: true`.
+- `deliveries` shows how each delivery ended, newest first: one endpoint's, or without it every endpoint's, with `--status`, `--event`, `--since` and `--until` (instants with their offset).
+- `redeliver` sends deliveries again: one with `--endpoint` and its id, as the single sends count; several by id; or `--failed --endpoint <endpoint-id>` for an endpoint's failed ones, oldest first, 100 a call, with `--since`, `--until` and `--event`. It prints what it skipped and how many are left: run it again for those.
 
 ## Activity log [#activity]
 

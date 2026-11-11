@@ -145,3 +145,10 @@
   `test/studio-ads.ts` (`StudioState.ads`: the server's mode, two ad
   accounts, the boosts), whose handlers refuse a bearer credential what
   only a person does.
+- `peal webhooks`: `--channel`, `--workspace-id` (with `--partner` on
+  `create`), `--clear-channels` and `--clear-workspaces` set an endpoint's
+  filters, ids as given; `deliveries` without an endpoint, or with
+  `--since`/`--until`, reads `searchDeliveries`; `redeliver` sends one
+  delivery with `--endpoint` (`redeliver`, the single sends' budget), several
+  by id or `--failed --endpoint` (`redeliverMany`); `test --event` sends a
+  sample.
