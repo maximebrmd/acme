@@ -13,6 +13,7 @@ import type {
   PublicationSteps,
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
+import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
@@ -73,6 +74,14 @@ export interface FacebookMedia {
 }
 
 // A post's address on Facebook, from its id (Pages API, "Posts").
+// The title the options give a video, empty when they give none.
+const videoTitleOf = (post: OutgoingPost) =>
+  post.options.pipe(
+    Option.filter(Schema.is(FacebookOptions)),
+    Option.flatMapNullishOr(({ videoTitle }) => videoTitle),
+    Option.getOrElse(() => "")
+  );
+
 const permalinkOf = (postId: string) =>
   `https://www.facebook.com/${encodeURIComponent(postId)}`;
 
@@ -213,7 +222,11 @@ export const facebookClient = Effect.fn("FacebookClient.make")(
             (auth) =>
               formPost(page(post, "/videos"), {
                 ...auth,
-                ...withText({ file_url: url }, "description", post.text),
+                ...withText(
+                  withText({ file_url: url }, "description", post.text),
+                  "title",
+                  videoTitleOf(post)
+                ),
               }),
             ({ id }) => id
           )

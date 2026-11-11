@@ -303,13 +303,34 @@ interface JsonBody {
 }
 
 // The post's text on TikTok: a video's caption, or a photo post's
-// description (its title, of 90 characters, is left out).
-const textFields = (post: OutgoingPost, kind: PostKind): JsonBody => {
-  if (post.text.trim() === "") {
-    return {};
+// description, with the title its options give it (none when left out).
+const textFields = (
+  post: OutgoingPost,
+  kind: PostKind,
+  chosen: TikTokOptions
+): JsonBody => {
+  if (kind === "video") {
+    return post.text.trim() === "" ? {} : { title: post.text };
   }
 
-  return kind === "video" ? { title: post.text } : { description: post.text };
+  const titled: JsonBody =
+    chosen.photoTitle === undefined ? {} : { title: chosen.photoTitle };
+
+  return post.text.trim() === ""
+    ? titled
+    : { description: post.text, ...titled };
+};
+
+// What the options choose beyond TikTok's defaults: a video's cover frame,
+// music added to photos. Left out, nothing is sent.
+const chosenFields = (kind: PostKind, chosen: TikTokOptions): JsonBody => {
+  if (kind === "video") {
+    return chosen.videoCoverTimestampMs === undefined
+      ? {}
+      : { video_cover_timestamp_ms: chosen.videoCoverTimestampMs };
+  }
+
+  return chosen.autoAddMusic === true ? { auto_add_music: true } : {};
 };
 
 /**
@@ -343,8 +364,9 @@ const postInfo = (
       : comments;
 
   return {
-    ...textFields(post, kind),
+    ...textFields(post, kind, chosen),
     ...interactions,
+    ...chosenFields(kind, chosen),
     brand_content_toggle: commercial && chosen.brandContent === true,
     brand_organic_toggle: commercial && chosen.brandOrganic === true,
     privacy_level: privacyLevel,
@@ -907,7 +929,7 @@ export const tiktokClient = Effect.fn("TikTokClient.make")(
               post_info: info,
               post_mode: "DIRECT_POST",
               source_info: {
-                photo_cover_index: 0,
+                photo_cover_index: chosen.photoCoverIndex ?? 0,
                 photo_images: photos,
                 source: "PULL_FROM_URL",
               },
