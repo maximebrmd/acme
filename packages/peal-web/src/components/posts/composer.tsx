@@ -72,6 +72,7 @@ import { startChoiceOf } from "#posts/start-time.ts";
 import {
   channelOptionsOf,
   initialValues,
+  mediaKindsOf,
   valuesOfPost,
 } from "#posts/target-options.ts";
 import type { OptionValues, ValuesByChannel } from "#posts/target-options.ts";
@@ -329,19 +330,25 @@ export const Composer = ({
 
   const content = contentOf(text, overrides, channelIds, media, parts);
 
+  const attached = useAttachedMedia(workspaceId, media);
+
+  // The kinds of the attached media, which some options follow; unknown,
+  // so every option shows, while one is still being read.
+  const mediaKinds = mediaKindsOf(attached);
+
   // The options to send, and what is wrong with those filled in: while
-  // anything is, the post is neither saved nor scheduled.
+  // anything is, the post is neither saved nor scheduled. An option the
+  // media hide is not sent.
   const { options, problems: optionProblems } = channelOptionsOf(
     selected,
-    optionValues
+    optionValues,
+    mediaKinds
   );
 
   const optionsTaken = optionProblems.length === 0;
 
   const optionsOfChannel = (channelId: string) =>
     options.find((chosen) => chosen.channelId === channelId)?.options;
-
-  const attached = useAttachedMedia(workspaceId, media);
 
   const valuesOn = (channel: Channel): OptionValues =>
     optionValues[channel.id] ?? initialValues(channel.platform);
@@ -791,6 +798,7 @@ export const Composer = ({
           <TargetOptionsSection
             channels={selected}
             disabled={locked}
+            media={mediaKinds}
             photos={
               attached.length > 0 &&
               attached.every(({ media: found }) =>

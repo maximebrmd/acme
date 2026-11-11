@@ -16,6 +16,7 @@ import {
   WebhooksTest,
 } from "#test/webhooks/support.ts";
 import { DeliverWebhook } from "#webhooks/application/deliver-webhook.ts";
+import { EndpointSecrets } from "#webhooks/application/ports/endpoint-secrets.ts";
 import { EndpointStore } from "#webhooks/application/ports/endpoint-store.ts";
 import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
@@ -24,6 +25,7 @@ import {
   maxEndpointsPerWorkspace,
 } from "#webhooks/domain/delivery-policy.ts";
 import { changeEndpoint } from "#webhooks/domain/webhook-endpoint.ts";
+import { WebhookUrlSchema } from "#webhooks/domain/webhook-url.ts";
 
 const decodePayload = Schema.decodeUnknownSync(
   Schema.fromJsonString(Schema.toCodecJson(WebhookPayloadSchema))
@@ -296,7 +298,7 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
         // ...and saved after its deliveries failed for good.
         yield* store.markFailing(endpoint.id, now);
         assert.isTrue(yield* store.disable(endpoint.id, "failing", now));
-        assert.isTrue(yield* store.update(described, endpoint));
+        assert.isTrue(yield* store.update(described, endpoint, Option.none()));
 
         const kept = Option.getOrThrow(yield* store.get(endpoint.id));
 
@@ -307,7 +309,7 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
         // Turned on by a member, it is on, and its failures forgotten.
         const turnedOn = changeEndpoint(kept, { enabled: true }, now);
 
-        assert.isTrue(yield* store.update(turnedOn, kept));
+        assert.isTrue(yield* store.update(turnedOn, kept, Option.none()));
 
         const on = Option.getOrThrow(yield* store.get(endpoint.id));
 
@@ -587,6 +589,259 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
         []
       );
       assert.lengthOf(yield* endpoints.list(owner), 1);
+    })
+  );
+
+  it.effect(
+    "keep their headers sealed and show their names only, the whole list replaced by a change",
+    () =>
+      Effect.gen(function* headers() {
+        const owner = yield* freshOwner;
+        const endpoints = yield* WebhookEndpoints;
+        const store = yield* EndpointStore;
+        const value = "Bearer synthetic-header-value";
+
+        const { endpoint } = yield* freshEndpoint(owner, {
+          headers: [{ name: "Authorization", value }],
+        });
+
+        assert.deepStrictEqual(endpoint.headerNames, ["Authorization"]);
+        assert.deepStrictEqual(
+          (yield* endpoints.get(owner, endpoint.id)).headerNames,
+          ["Authorization"]
+        );
+
+        const [sealed] = Option.getOrThrow(
+          yield* store.secrets(endpoint.id)
+        ).headers;
+
+        assert(sealed !== undefined);
+        assert.strictEqual(sealed.name, "Authorization");
+        assert.notInclude(sealed.sealed, "synthetic-header-value");
+
+        // Left out, they stay; given, they replace; empty, they go.
+        const described = yield* endpoints.update(owner, endpoint.id, {
+          description: "Renamed",
+        });
+
+        assert.deepStrictEqual(described.headerNames, ["Authorization"]);
+
+        const replaced = yield* endpoints.update(owner, endpoint.id, {
+          headers: [
+            { name: "X-Gateway-Key", value: "synthetic-key" },
+            { name: "X-Route", value: "synthetic-route" },
+          ],
+        });
+
+        assert.deepStrictEqual(replaced.headerNames, [
+          "X-Gateway-Key",
+          "X-Route",
+        ]);
+        assert.lengthOf(
+          Option.getOrThrow(yield* store.secrets(endpoint.id)).headers,
+          2
+        );
+
+        // Named alone, whatever its case, a header keeps its value.
+        const kept = yield* endpoints.update(owner, endpoint.id, {
+          headers: [
+            { name: "x-gateway-key" },
+            { name: "X-Other", value: "synthetic-other" },
+          ],
+        });
+
+        const before = Option.getOrThrow(yield* store.secrets(endpoint.id));
+
+        assert.deepStrictEqual(kept.headerNames, ["x-gateway-key", "X-Other"]);
+        assert.strictEqual(
+          yield* tagOf(
+            endpoints.update(owner, endpoint.id, {
+              headers: [{ name: "X-Unknown" }],
+            })
+          ),
+          "HeadersRefused"
+        );
+        assert.deepStrictEqual(
+          Option.getOrThrow(yield* store.secrets(endpoint.id)).headers,
+          before.headers
+        );
+
+        const opened = yield* EndpointSecrets.use((secrets) =>
+          secrets.openHeaders(endpoint.id, endpoint.url, before.headers)
+        );
+
+        assert.deepStrictEqual(
+          opened.map((header) => [header.name, Redacted.value(header.value)]),
+          [
+            ["x-gateway-key", "synthetic-key"],
+            ["X-Other", "synthetic-other"],
+          ]
+        );
+
+        const cleared = yield* endpoints.update(owner, endpoint.id, {
+          headers: [],
+        });
+
+        assert.deepStrictEqual(cleared.headerNames, []);
+      })
+  );
+
+  it.effect(
+    "never carry a header's value to another origin unless it is given again",
+    () =>
+      Effect.gen(function* origins() {
+        const owner = yield* freshOwner;
+        const endpoints = yield* WebhookEndpoints;
+        const store = yield* EndpointStore;
+        const transport = yield* FakeTransport;
+        const value = "Bearer synthetic-gateway-token";
+
+        const { endpoint, host } = yield* freshEndpoint(owner, {
+          headers: [{ name: "Authorization", value }],
+        });
+
+        const stranger = `${crypto.randomUUID()}.hooks.example.com`;
+        const before = Option.getOrThrow(yield* store.secrets(endpoint.id));
+
+        // Another host, with the headers kept or named without a value:
+        // refused, nothing saved.
+        assert.deepStrictEqual(
+          yield* Effect.all([
+            tagOf(
+              endpoints.update(owner, endpoint.id, {
+                url: `https://${stranger}/x`,
+              })
+            ),
+            tagOf(
+              endpoints.update(owner, endpoint.id, {
+                headers: [{ name: "Authorization" }],
+                url: `https://${stranger}/x`,
+              })
+            ),
+          ]),
+          ["HeaderValuesRequired", "HeaderValuesRequired"]
+        );
+        assert.strictEqual(
+          (yield* endpoints.get(owner, endpoint.id)).url,
+          endpoint.url
+        );
+        assert.deepStrictEqual(
+          Option.getOrThrow(yield* store.secrets(endpoint.id)).headers,
+          before.headers
+        );
+
+        // Another path on the same origin keeps them.
+        yield* endpoints.update(owner, endpoint.id, {
+          url: `https://${host}/other?synthetic=1`,
+        });
+
+        const sameOrigin = yield* endpoints.sendTest(owner, endpoint.id);
+
+        yield* DeliverWebhook.use((delivering) =>
+          delivering.attempt(sameOrigin.id, 1)
+        );
+
+        assert.deepStrictEqual(
+          (yield* transport.sentTo(host)).map(
+            (request) => request.headers["Authorization"]
+          ),
+          [value]
+        );
+
+        // Given again with its value, it goes to the new host: that value.
+        const moved = yield* endpoints.update(owner, endpoint.id, {
+          headers: [{ name: "Authorization", value: "Bearer synthetic-new" }],
+          url: `https://${stranger}/x`,
+        });
+
+        assert.deepStrictEqual(moved.headerNames, ["Authorization"]);
+
+        const delivery = yield* endpoints.sendTest(owner, endpoint.id);
+
+        yield* DeliverWebhook.use((delivering) =>
+          delivering.attempt(delivery.id, 1)
+        );
+
+        assert.deepStrictEqual(
+          (yield* transport.sentTo(stranger)).map(
+            (request) => request.headers["Authorization"]
+          ),
+          ["Bearer synthetic-new"]
+        );
+
+        // Cleared, the endpoint moves anywhere.
+        const cleared = yield* endpoints.update(owner, endpoint.id, {
+          headers: [],
+          url: `https://${host}/hooks`,
+        });
+
+        assert.deepStrictEqual(cleared.headerNames, []);
+      })
+  );
+
+  it.effect("seal a header's value for its endpoint's origin only", () =>
+    Effect.gen(function* bound() {
+      const owner = yield* freshOwner;
+      const secrets = yield* EndpointSecrets;
+      const store = yield* EndpointStore;
+
+      const { endpoint, host } = yield* freshEndpoint(owner, {
+        headers: [{ name: "Authorization", value: "synthetic-bound" }],
+      });
+
+      const { headers } = Option.getOrThrow(yield* store.secrets(endpoint.id));
+
+      const opened = yield* secrets.openHeaders(
+        endpoint.id,
+        WebhookUrlSchema.make(`https://${host}/elsewhere`),
+        headers
+      );
+
+      assert.deepStrictEqual(
+        opened.map((header) => Redacted.value(header.value)),
+        ["synthetic-bound"]
+      );
+      assert.strictEqual(
+        yield* tagOf(
+          secrets.openHeaders(
+            endpoint.id,
+            WebhookUrlSchema.make("https://elsewhere.example.com/hooks"),
+            headers
+          )
+        ),
+        "SecretsNotConfigured"
+      );
+    })
+  );
+
+  it.effect("refuse headers an endpoint cannot carry, saving nothing", () =>
+    Effect.gen(function* refused() {
+      const owner = yield* freshOwner;
+      const endpoints = yield* WebhookEndpoints;
+      const before = (yield* endpoints.list(owner)).length;
+
+      for (const headers of [
+        [{ name: "webhook-id", value: "synthetic" }],
+        [{ name: "Content-Type", value: "text/plain" }],
+        [{ name: "X-Value", value: "line\nbreak" }],
+        [
+          { name: "Authorization", value: "synthetic-one" },
+          { name: "authorization", value: "synthetic-two" },
+        ],
+        ["A", "B", "C", "D", "E", "F"].map((name) => ({
+          name,
+          value: "synthetic",
+        })),
+      ]) {
+        assert.strictEqual(
+          yield* tagOf(
+            endpoints.create(owner, receiver("hooks.example.com", { headers }))
+          ),
+          "HeadersRefused"
+        );
+      }
+
+      assert.lengthOf(yield* endpoints.list(owner), before);
     })
   );
 });

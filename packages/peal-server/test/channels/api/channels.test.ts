@@ -34,6 +34,7 @@ import {
   refreshable,
   syntheticCredentials,
 } from "#test/channels/support.ts";
+import { TransactionsTest } from "#test/notifications/support.ts";
 import {
   anonymousSecurityTest,
   securityTest,
@@ -44,7 +45,10 @@ const UseCasesTest = Layer.mergeAll(
   ListChannels.layer,
   ChannelSettings.layer,
   DisconnectChannel.layer
-).pipe(Layer.provideMerge(MastodonConnectTest));
+).pipe(
+  Layer.provideMerge(TransactionsTest),
+  Layer.provideMerge(MastodonConnectTest)
+);
 
 // A client of the channels endpoints whose every request acts as the member,
 // as the WorkspaceAccess middleware would hand them to the handlers.

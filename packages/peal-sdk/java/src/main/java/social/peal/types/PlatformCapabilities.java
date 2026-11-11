@@ -30,6 +30,8 @@ public final class PlatformCapabilities {
 
     private final Optional<FollowUpCapabilities> followUps;
 
+    private final LivePostCapabilities livePost;
+
     private final List<LookupDescription> lookups;
 
     private final MediaCapabilities media;
@@ -47,6 +49,7 @@ public final class PlatformCapabilities {
     private PlatformCapabilities(
             PlatformCapabilitiesAnalytics analytics,
             Optional<FollowUpCapabilities> followUps,
+            LivePostCapabilities livePost,
             List<LookupDescription> lookups,
             MediaCapabilities media,
             PlatformCapabilitiesOptions options,
@@ -56,6 +59,7 @@ public final class PlatformCapabilities {
             Map<String, Object> additionalProperties) {
         this.analytics = analytics;
         this.followUps = followUps;
+        this.livePost = livePost;
         this.lookups = lookups;
         this.media = media;
         this.options = options;
@@ -76,6 +80,11 @@ public final class PlatformCapabilities {
             return Optional.empty();
         }
         return followUps;
+    }
+
+    @JsonProperty("livePost")
+    public LivePostCapabilities getLivePost() {
+        return livePost;
     }
 
     @JsonProperty("lookups")
@@ -128,6 +137,7 @@ public final class PlatformCapabilities {
     private boolean equalTo(PlatformCapabilities other) {
         return analytics.equals(other.analytics)
                 && followUps.equals(other.followUps)
+                && livePost.equals(other.livePost)
                 && lookups.equals(other.lookups)
                 && media.equals(other.media)
                 && options.equals(other.options)
@@ -141,6 +151,7 @@ public final class PlatformCapabilities {
         return Objects.hash(
                 this.analytics,
                 this.followUps,
+                this.livePost,
                 this.lookups,
                 this.media,
                 this.options,
@@ -159,9 +170,13 @@ public final class PlatformCapabilities {
     }
 
     public interface AnalyticsStage {
-        MediaStage analytics(@NotNull PlatformCapabilitiesAnalytics analytics);
+        LivePostStage analytics(@NotNull PlatformCapabilitiesAnalytics analytics);
 
         Builder from(PlatformCapabilities other);
+    }
+
+    public interface LivePostStage {
+        MediaStage livePost(@NotNull LivePostCapabilities livePost);
     }
 
     public interface MediaStage {
@@ -206,8 +221,17 @@ public final class PlatformCapabilities {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements AnalyticsStage, MediaStage, OptionsStage, PlatformStage, TextStage, VersionStage, _FinalStage {
+            implements AnalyticsStage,
+                    LivePostStage,
+                    MediaStage,
+                    OptionsStage,
+                    PlatformStage,
+                    TextStage,
+                    VersionStage,
+                    _FinalStage {
         private PlatformCapabilitiesAnalytics analytics;
+
+        private LivePostCapabilities livePost;
 
         private MediaCapabilities media;
 
@@ -231,6 +255,7 @@ public final class PlatformCapabilities {
         public Builder from(PlatformCapabilities other) {
             analytics(other.getAnalytics());
             followUps(other.getFollowUps());
+            livePost(other.getLivePost());
             lookups(other.getLookups());
             media(other.getMedia());
             options(other.getOptions());
@@ -242,8 +267,15 @@ public final class PlatformCapabilities {
 
         @java.lang.Override
         @JsonSetter("analytics")
-        public MediaStage analytics(@NotNull PlatformCapabilitiesAnalytics analytics) {
+        public LivePostStage analytics(@NotNull PlatformCapabilitiesAnalytics analytics) {
             this.analytics = Objects.requireNonNull(analytics, "analytics must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("livePost")
+        public MediaStage livePost(@NotNull LivePostCapabilities livePost) {
+            this.livePost = Objects.requireNonNull(livePost, "livePost must not be null");
             return this;
         }
 
@@ -334,13 +366,23 @@ public final class PlatformCapabilities {
         @java.lang.Override
         public PlatformCapabilities build() {
             return new PlatformCapabilities(
-                    analytics, followUps, lookups, media, options, platform, text, version, additionalProperties);
+                    analytics,
+                    followUps,
+                    livePost,
+                    lookups,
+                    media,
+                    options,
+                    platform,
+                    text,
+                    version,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("analytics")
                     || key.equalsIgnoreCase("followUps")
+                    || key.equalsIgnoreCase("livePost")
                     || key.equalsIgnoreCase("lookups")
                     || key.equalsIgnoreCase("media")
                     || key.equalsIgnoreCase("options")

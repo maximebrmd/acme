@@ -6,6 +6,7 @@ import {
   maxWebhookEndpoints,
   maxWebhookFilterChannels,
   maxWebhookFilterWorkspaces,
+  maxWebhookHeaders,
   SubscribableWebhookEventTypeSchema,
   webhookBulkRedeliveriesPerHour,
   WebhookBulkRedeliverySchema,
@@ -16,6 +17,7 @@ import {
   WebhookEndpointSecretSchema,
   WebhookEventTypeSchema,
   webhookFailingDays,
+  WebhookHeaderSchema,
   webhookSecretOverlapHours,
 } from "peal-contract";
 import type {
@@ -28,6 +30,7 @@ import type {
   WebhookDisabledReason,
   WebhookEndpoint,
   WebhookEndpointChange,
+  WebhookHeader,
 } from "peal-contract";
 
 import { explain } from "#explain.ts";
@@ -103,6 +106,48 @@ const workspaceFilterFlag = Flag.String("workspace-id").pipe(
   Flag.atLeast(0)
 );
 
+const headerFlag = Flag.String("header").pipe(
+  Flag.withMetavar("<name: value>"),
+  Flag.withDescription(
+    `A header every delivery carries beside Peal's own, as a gateway in front of the receiver may ask: repeat it, ${String(maxWebhookHeaders)} at most. Its value is never shown again, and your shell keeps what you type in its history: write it as "Authorization: $TOKEN" from a variable.`
+  ),
+  Flag.atLeast(0)
+);
+
+const decodeHeaders = Schema.decodeUnknownEffect(
+  Schema.Array(WebhookHeaderSchema).check(Schema.isMaxLength(maxWebhookHeaders))
+);
+
+// `--header "Name: value"`, each once, as the endpoint takes them: refused
+// before anything is asked of the server.
+const headersOf = (
+  given: readonly string[]
+): Effect.Effect<readonly WebhookHeader[], Refused> => {
+  const split = given.map((header) => {
+    const colon = header.indexOf(":");
+
+    return colon === -1
+      ? undefined
+      : {
+          name: header.slice(0, colon).trim(),
+          value: header.slice(colon + 1).trim(),
+        };
+  });
+
+  const refused = new Refused({
+    reason: `--header takes "Name: value", ${String(maxWebhookHeaders)} at most, each name once: a name that is an HTTP token and not one Peal sets (Host, User-Agent, Cookie, Expect, Accept-Encoding, a connection's own, any Content- or webhook- name), a value of visible ASCII on one line.`,
+  });
+
+  const names = split.flatMap((header) =>
+    header === undefined ? [] : [header.name.toLowerCase()]
+  );
+
+  return split.some((header) => header === undefined) ||
+    new Set(names).size !== names.length
+    ? Effect.fail(refused)
+    : decodeHeaders(split).pipe(Effect.mapError(() => refused));
+};
+
 // Ids given to a filter flag, each once, as the server keeps them.
 const filterOf = (given: readonly string[]) =>
   given.length === 0 ? Option.none() : Option.some(channelIdsOf(given));
@@ -142,6 +187,8 @@ const endpointLines = (endpoint: WebhookEndpoint): string[] =>
     ["  Status", statusOf(endpoint)],
     ["  Events", eventsOn(endpoint)],
     ["  Channels", listed(endpoint.channelIds, "every channel")],
+    // Their names: the values are never shown.
+    ["  Headers", listed(endpoint.headerNames, "none")],
     ...(endpoint.scope === "partner"
       ? [["  Workspaces", listed(endpoint.workspaceIds, "every workspace")]]
       : []),
@@ -253,6 +300,7 @@ const create = Command.make(
       Flag.withDefault(false)
     ),
     events: eventsFlag,
+    headers: headerFlag,
     json: jsonFlag,
     partner: Flag.Boolean("partner").pipe(
       Flag.withDescription(
@@ -266,6 +314,7 @@ const create = Command.make(
   },
   Effect.fn("webhooks.create")(function* create(input) {
     const eventTypes = yield* eventsOf(input.events);
+    const headers = yield* headersOf(input.headers);
 
     if (input.workspaceIds.length > 0 && !input.partner) {
       yield* new Refused({
@@ -290,6 +339,7 @@ const create = Command.make(
           }),
           enabled: !input.disabled,
           eventTypes,
+          headers,
           scope: input.partner ? "partner" : "workspace",
           url: input.url,
           ...Option.match(filterOf(input.workspaceIds), {
@@ -369,6 +419,10 @@ const update = Command.make(
       Flag.withDescription("Hear every channel again."),
       Flag.withDefault(false)
     ),
+    clearHeaders: Flag.Boolean("clear-headers").pipe(
+      Flag.withDescription("Send no header of the endpoint's own any more."),
+      Flag.withDefault(false)
+    ),
     clearWorkspaces: Flag.Boolean("clear-workspaces").pipe(
       Flag.withDescription(
         "On a partner endpoint, hear every workspace again."
@@ -390,6 +444,7 @@ const update = Command.make(
     ),
     endpointId: endpointArgument,
     events: eventsFlag.pipe(Flag.optional),
+    headers: headerFlag,
     json: jsonFlag,
     url: urlFlag.pipe(Flag.optional),
     workspace: workspaceFlag,
@@ -405,6 +460,18 @@ const update = Command.make(
         reason: "Give --channel or --clear-channels, not both.",
       });
     }
+
+    if (input.clearHeaders && input.headers.length > 0) {
+      yield* new Refused({
+        reason: "Give --header or --clear-headers, not both.",
+      });
+    }
+
+    // Given, they replace every header the endpoint had.
+    const headers =
+      input.clearHeaders || input.headers.length > 0
+        ? Option.some(yield* headersOf(input.headers))
+        : Option.none();
 
     if (input.clearWorkspaces && input.workspaceIds.length > 0) {
       yield* new Refused({
@@ -445,6 +512,10 @@ const update = Command.make(
         onNone: () => ({}),
         onSome: (types) => ({ eventTypes: types }),
       }),
+      ...Option.match(headers, {
+        onNone: () => ({}),
+        onSome: (given) => ({ headers: given }),
+      }),
       ...Option.match(input.url, {
         onNone: () => ({}),
         onSome: (address) => ({ url: address }),
@@ -458,7 +529,7 @@ const update = Command.make(
     if (Object.keys(payload).length === 0) {
       yield* new Refused({
         reason:
-          "Nothing to change: give --url, --events, --description, --channel, --workspace-id, a --clear flag, --enable or --disable.",
+          "Nothing to change: give --url, --events, --description, --channel, --workspace-id, --header, a --clear flag, --enable or --disable.",
       });
     }
 
@@ -487,7 +558,7 @@ const update = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Change a webhook endpoint's address, events, description or filters, or turn it off or back on. What you leave out stays as it is; --channel and --workspace-id replace the lists the endpoint had."
+    "Change a webhook endpoint's address, events, description, filters or headers, or turn it off or back on. What you leave out stays as it is; --channel, --workspace-id and --header replace the lists the endpoint had. Header values go only to the host they were given for: a --url on another host, on an endpoint with headers, needs every --header again with its value, or --clear-headers."
   )
 );
 

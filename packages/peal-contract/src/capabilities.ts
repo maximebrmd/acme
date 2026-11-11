@@ -148,6 +148,15 @@ export const accountNumberNames = [
   "reach",
 ] as const;
 
+/** Why Peal cannot change a post once it is live on a platform. */
+export const LivePostBlockerSchema = Schema.Literals([
+  "noApi",
+  "permission",
+  "unverified",
+]).annotate({ identifier: "LivePostBlocker" });
+
+export type LivePostBlocker = typeof LivePostBlockerSchema.Type;
+
 /**
  * What a post on a platform may hold, as far as Peal checks it before the
  * post goes out; the platform may refuse more.
@@ -175,6 +184,19 @@ export const PlatformCapabilitiesSchema = Schema.Struct({
       maxCount: Schema.Int,
     }).annotate({ identifier: "FollowUpCapabilities" })
   ),
+  // What Peal can do to a post once it is live there: delete it from the
+  // platform (`unpublish`, every part of it), or replace its text (`edit`,
+  // not offered yet). Each false one may say why: the platform has no call
+  // for it (`noApi`), it needs a permission Peal does not ask for, which
+  // the platform grants after a review (`permission`), or the platform's
+  // documentation does not say that Peal's permissions allow it, so Peal
+  // does not try it on members' accounts (`unverified`).
+  livePost: Schema.Struct({
+    edit: Schema.Boolean,
+    editBlockedBy: Schema.optionalKey(LivePostBlockerSchema),
+    unpublish: Schema.Boolean,
+    unpublishBlockedBy: Schema.optionalKey(LivePostBlockerSchema),
+  }).annotate({ identifier: "LivePostCapabilities" }),
   // What the platform tells about an account, for the options that refer
   // to it.
   lookups: Schema.Array(LookupDescriptionSchema),

@@ -3,9 +3,17 @@
 import * as Peal from "../index.js";
 
 export interface QueueHasNoRoomEncoded {
+    _tag: QueueHasNoRoomEncoded.Tag;
     code?: string | undefined;
     message?: string | undefined;
     requestId?: string | undefined;
     queueId: string;
     reason: Peal.QueueNoRoom;
+}
+
+export namespace QueueHasNoRoomEncoded {
+    export const Tag = {
+            QueueHasNoRoom: "QueueHasNoRoom"
+        } as const;
+    export type Tag = typeof Tag[keyof typeof Tag];
 }

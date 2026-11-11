@@ -728,6 +728,19 @@
     "unavailable": "L’état de la demande n’a pas pu être lu. Réessayez plus tard."
   },
   "Posts": {
+    "Live": {
+      "unpublish": "Dépublier",
+      "confirmTitle": "Supprimer ce post de {platform} ?",
+      "confirmDescription": "Il est supprimé de {channel} pour tout le monde, toutes ses parties. Cette action est définitive.",
+      "keep": "Le garder",
+      "removing": "Suppression en cours…",
+      "requested": "Suppression de la publication de {channel}.",
+      "removed": "Supprimé de {platform} le {at, date, medium}",
+      "failed": "La suppression a échoué ({code}). La publication est peut-être encore en ligne.",
+      "retry": "Réessayer",
+      "blocked": "{by, select, noApi {{platform} n’offre aucun moyen à Peal de supprimer des publications.} permission {{platform} ne permet pas encore à Peal de supprimer des publications.} unverified {Peal ne supprime pas encore de publications sur {platform}.} other {Peal ne peut pas supprimer de publications sur {platform}.}}",
+      "refused": "{reason, select, notPublished {La publication n’est pas en ligne sur ce canal.} alreadyRemoved {La publication a déjà été supprimée de ce canal.} noPlatformId {Peal n’a pas l’identifiant de cette publication sur la plateforme : supprimez-la là-bas.} notSupported {La plateforme ne permet pas à Peal de supprimer cette publication : supprimez-la là-bas.} changeInProgress {La publication est déjà en cours de suppression.} channelUnavailable {Le canal est déconnecté, désactivé ou doit être reconnecté.} boostRunning {Une mise en avant montre cette publication : arrêtez-la d’abord.} forbidden {Votre rôle ne vous permet pas de dépublier des publications.} other {La publication n’a pas pu être supprimée. Réessayez.}}"
+    },
     "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {{platform}}}",
     "status": "{status, select, draft {Brouillon} awaitingApproval {En attente d’approbation} scheduled {Programmé} publishing {En cours de publication} finished {Terminé} cancelled {Annulé} other {{status}}}",
     "targetStatus": "{status, select, pending {En attente} publishing {En cours} published {Publié} failed {Échec} unconfirmed {À vérifier} cancelled {Annulé} other {{status}}}",
@@ -973,7 +986,29 @@
         "categoryIdHint": "Le numéro d’une catégorie YouTube, comme 22 pour People & Blogs.",
         "categoryIdInvalid": "Une catégorie est un nombre, comme 22.",
         "notifySubscribers": "Prévenir les abonnés",
-        "containsSyntheticMedia": "Contient des contenus modifiés ou synthétiques réalistes"
+        "containsSyntheticMedia": "Contient des contenus modifiés ou synthétiques réalistes",
+        "thumbnail": "Miniature",
+        "thumbnailHint": "Une image JPEG ou PNG de la médiathèque, de 8 Mo au plus, définie une fois la vidéo mise en ligne. YouTube n’accepte de miniatures personnalisées que des chaînes qui y ont droit.",
+        "thumbnailInvalid": "Choisissez une image JPEG ou PNG de la médiathèque, de 8 Mo au plus.",
+        "license": "Licence",
+        "licenseHint": "Celle que la chaîne donne par défaut à ses vidéos, sauf si vous en choisissez une autre.",
+        "channelDefault": "Celle de la chaîne",
+        "licenseYouTube": "Licence YouTube standard",
+        "licenseCreativeCommon": "Creative Commons – Attribution",
+        "embeddable": "Intégration autorisée",
+        "embeddableHint": "Si d’autres sites peuvent intégrer la vidéo. YouTube décide quand rien n’est choisi.",
+        "embeddableYes": "Oui, d’autres sites peuvent l’intégrer",
+        "embeddableNo": "Non, la garder sur YouTube",
+        "publicStatsViewable": "Statistiques publiques",
+        "publicStatsViewableHint": "Si tout le monde peut voir les statistiques détaillées de la vidéo sur sa page. YouTube décide quand rien n’est choisi.",
+        "publicStatsViewableYes": "Oui, les montrer",
+        "publicStatsViewableNo": "Non, les garder cachées",
+        "defaultLanguage": "Langue du titre et de la description",
+        "defaultLanguageHint": "Une étiquette de langue, comme fr ou pt-BR.",
+        "defaultLanguageInvalid": "Une langue est une étiquette comme fr ou pt-BR.",
+        "recordingDate": "Date d’enregistrement",
+        "recordingDateHint": "Le jour où la vidéo a été enregistrée.",
+        "recordingDateInvalid": "Choisissez un jour."
       },
       "googleBusiness": {
         "postType": "Type de publication",
@@ -1035,7 +1070,17 @@
         "noPhotos": "Ce serveur ne peut pas publier de photos sur TikTok : joignez plutôt une vidéo.",
         "processing": "Une fois publiée, la publication peut mettre quelques minutes à être traitée avant d’apparaître sur le profil.",
         "consentMusic": "En publiant, vous acceptez la <music>Confirmation d’utilisation de la musique</music> de TikTok.",
-        "consentBranded": "En publiant, vous acceptez la <brand>Politique relative au contenu de marque</brand> et la <music>Confirmation d’utilisation de la musique</music> de TikTok."
+        "consentBranded": "En publiant, vous acceptez la <brand>Politique relative au contenu de marque</brand> et la <music>Confirmation d’utilisation de la musique</music> de TikTok.",
+        "videoCover": "Image de couverture, en millisecondes",
+        "videoCoverHint": "Pour une vidéo : l’image qui devient la couverture, en millisecondes depuis le début, comme 1500. La première image si rien n’est indiqué.",
+        "videoCoverInvalid": "Un nombre entier de millisecondes dans la durée de la vidéo, comme 1500.",
+        "photoTitle": "Titre de la publication photo",
+        "photoTitleHint": "90 caractères au plus. Le texte de la publication en est la description.",
+        "photoTitleInvalid": "Un titre tient sur une ligne, en 90 caractères au plus.",
+        "photoCover": "Photo de couverture",
+        "photoCoverHint": "La place de la couverture parmi les photos : 0 pour la première, 1 pour la deuxième, et ainsi de suite. La première si rien n’est indiqué.",
+        "photoCoverInvalid": "Une place parmi les photos : un nombre entier à partir de 0, inférieur au nombre de photos.",
+        "autoAddMusic": "Ajouter de la musique automatiquement"
       },
       "mastodon": {
         "accountDefault": "Le réglage du compte",
@@ -1116,6 +1161,43 @@
         "paidPartnershipHint": "X signale chaque partie du fil comme une promotion payée.",
         "madeWithAi": "Fait avec l’IA",
         "madeWithAiHint": "X signale chaque partie avec des images ou une vidéo comme contenant des médias générés par IA."
+      },
+      "mediaNone": "Aucune image choisie.",
+      "mediaLoading": "Lecture de l’image…",
+      "mediaFailed": "L’image n’a pas pu être lue : elle a peut-être été supprimée de la médiathèque. Choisissez-en une autre, ou retirez-la.",
+      "mediaChoose": "{label} : choisir dans la médiathèque",
+      "mediaReplace": "{label} : en choisir une autre",
+      "mediaRemove": "Retirer",
+      "mediaPickerTitle": "{label} : choisir une image",
+      "mediaPickerDescription": "Choisissez une image prête de la médiathèque de l’espace de travail. Seules celles que cette option accepte peuvent être choisies.",
+      "mediaUse": "Utiliser cette image",
+      "instagram": {
+        "shareToFeed": "Partager aussi dans le fil",
+        "shareToFeedHint": "Pour un reel : montré dans le fil en plus de l’onglet Reels. Instagram décide quand rien n’est choisi.",
+        "shareToFeedYes": "Oui, le partager dans le fil",
+        "shareToFeedNo": "Non, l’onglet Reels seulement",
+        "cover": "Image de couverture",
+        "coverHint": "Pour un reel : une image JPEG de la médiathèque, de 8 Mo au plus. Elle l’emporte sur l’image choisie dans la vidéo.",
+        "coverInvalid": "Choisissez une image JPEG de la médiathèque, de 8 Mo au plus, pour une publication d’une seule vidéo.",
+        "thumbOffset": "Couverture prise dans la vidéo, en millisecondes",
+        "thumbOffsetHint": "Pour un reel : l’image qui devient la couverture, en millisecondes depuis le début, comme 1500. La première image si rien n’est indiqué.",
+        "thumbOffsetInvalid": "Un nombre entier de millisecondes dans la durée de la vidéo, comme 1500.",
+        "audioName": "Nom de l’audio",
+        "audioNameHint": "Pour un reel : le nom que montre son audio, sur une ligne, en 100 caractères au plus. Instagram permet de le renommer une fois.",
+        "audioNameInvalid": "Une ligne, de 100 caractères au plus, pour une publication d’une seule vidéo.",
+        "trialReel": "Reel d’essai",
+        "trialReelHint": "Pour un reel : montré d’abord aux comptes qui ne vous suivent pas, puis partagé avec vos abonnés quand vous le décidez, ou s’il fonctionne bien.",
+        "trialReelNone": "Pas un reel d’essai",
+        "trialReelManual": "Le partager avec mes abonnés quand je le décide",
+        "trialReelPerformance": "Le partager avec mes abonnés s’il fonctionne bien",
+        "collaborators": "Collaborateurs",
+        "collaboratorsHint": "Jusqu’à trois noms d’utilisateur d’autres comptes Instagram, sans @, séparés par des virgules. Chaque compte reçoit une invitation à cosigner la publication : ne nommez que des comptes que vous voulez inviter.",
+        "collaboratorsInvalid": "Chacun est un nom d’utilisateur Instagram, sans @ : lettres, chiffres, points et tirets bas, 30 au plus, chacun une fois."
+      },
+      "facebook": {
+        "videoTitle": "Titre de la vidéo",
+        "videoTitleHint": "Pour une publication avec une vidéo : une ligne, de 255 caractères au plus.",
+        "videoTitleInvalid": "Un titre tient sur une ligne, en 255 caractères au plus, pour une publication avec une vidéo."
       }
     },
     "Calendar": {
@@ -1230,7 +1312,8 @@
       "notFound": "Cette publication n’existe plus.",
       "conflict": "La publication a changé entre-temps : rechargez-la pour voir où elle en est."
     },
-    "keptPrivate": "YouTube a rendu la vidéo privée, alors qu’elle devait être vue par plus de monde : les réglages du compte, ou les restrictions de Google sur le projet d’API du serveur, la gardent ainsi. Changez sa visibilité dans YouTube Studio."
+    "keptPrivate": "YouTube a rendu la vidéo privée, alors qu’elle devait être vue par plus de monde : les réglages du compte, ou les restrictions de Google sur le projet d’API du serveur, la gardent ainsi. Changez sa visibilité dans YouTube Studio.",
+    "thumbnailNotSet": "La miniature n’a pas été définie : la chaîne n’a peut-être pas droit aux miniatures personnalisées, ou YouTube a refusé l’image."
   },
   "Media": {
     "page": {
@@ -1369,7 +1452,8 @@
       "notReady": "Pas encore prête",
       "attach": "{count, plural, =0 {Ajouter} one {Ajouter # élément} other {Ajouter # éléments}}",
       "cancel": "Annuler",
-      "close": "Fermer"
+      "close": "Fermer",
+      "notAccepted": "Pas un fichier que cette option accepte"
     },
     "problem": {
       "tooManyVideos": "Trop de vidéos ({count} sur {maximum})",
@@ -1484,6 +1568,7 @@
       "SubscriptionWithdrawn": "Votre rétractation de l’abonnement {plan} de {workspace} a été reçue le {withdrawnAt, date, long} à {withdrawnAt, time, short} : il a pris fin, et {refunded} vous est remboursé sous 14 jours.",
       "SubscriptionStarted": "{workspace} est abonné à {plan} depuis le {startedAt, date, long}, pour {price} TTC {interval, select, month {par mois} other {par an}}. En tant que consommateur, vous pouvez vous rétracter dans les 14 jours.",
       "TrialStarted": "{workspace} essaie {plan} jusqu’au {endsAt, date, long} : rien n’est facturé.",
+      "WebhookDeliveriesFailing": "Une livraison vers le point de terminaison de webhook de {host} dans {workspace} a échoué pour de bon : le système derrière lui a manqué un événement. Le point de terminaison est toujours actif. Corrigez le destinataire, puis renvoyez les livraisons échouées depuis le journal des livraisons. Après {days, number} jours d’échecs, Peal désactive le point de terminaison.",
       "WebhookEndpointDisabled": "{reason, select, gone {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : il a répondu 410 Gone, ce qui demande de ne plus rien lui livrer.} other {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : toutes les livraisons échouaient depuis {days, number} jours. Corrigez le destinataire, puis réactivez-le.}}",
       "TrialEndingOver": "L’essai {plan} de {workspace} prend fin le {endsAt, date, long}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement. Il dépasse ce que permet l’offre gratuite ({over}) : à partir de ce jour, rien n’est programmé ni publié tant qu’il n’y est pas revenu.",
       "AdBoostChanged": "{change, select, started {Une mise en avant a démarré dans {workspace} : elle peut dépenser jusqu’à son budget de {budget}, sur le moyen de paiement du compte publicitaire, jusqu’au {endsAt, date, long}. Mettez-la en pause ou arrêtez-la à tout moment depuis la page de la publication.} ended {Une mise en avant dans {workspace}, d’un budget de {budget}, a atteint sa date de fin ({endsAt, date, long}) et n’est plus diffusée. Ce qu’elle a dépensé figure sur la page de la publication.} failed {Une mise en avant dans {workspace}, d’un budget de {budget}, n’a pas pu être créée : {reason} Rien n’a été diffusé, et rien n’a été dépensé.} budgetReached {Une mise en avant dans {workspace} a dépensé tout son budget de {budget}. Le réseau publicitaire cesse de la diffuser ; plus rien n’est dépensé pour elle.} unconfirmed {Peal a demandé au réseau publicitaire de diffuser une mise en avant dans {workspace}, d’un budget de {budget}, et n’a pas pu savoir si elle est diffusée. Elle dépense peut-être. Vérifiez-la sur la page de la publication, et arrêtez-la si elle ne doit pas être diffusée.} other {Une mise en avant de {workspace} a changé.}}",
@@ -1524,6 +1609,7 @@
       "postReview": "Une publication attend mon approbation, ou une publication que je suis est commentée, approuvée ou renvoyée",
       "channelReconnect": "Un canal doit être reconnecté, maintenant ou bientôt",
       "comments": "Des personnes commentent des publications en ligne",
+      "webhookFailing": "Des livraisons vers un point de terminaison de webhook échouent pour de bon, au plus une fois par jour pour chacun",
       "postPublished": "Une publication est partie",
       "postsLegend": "Me prévenir pour",
       "everyPost": "Toutes les publications de mes espaces de travail, pas seulement les miennes",
@@ -2030,6 +2116,9 @@
         "failed": "Une publication échoue sur un canal",
         "unconfirmed": "Une publication est peut-être partie sur un canal",
         "cancelled": "Une publication est annulée",
+        "finished": "Une publication a son résultat sur chaque canal",
+        "unpublished": "Une publication est supprimée de la plateforme d’un canal",
+        "unpublish_failed": "Une publication n’a pas pu être supprimée de la plateforme d’un canal",
         "approval_requested": "Une publication attend une approbation",
         "approved": "Une publication est approuvée",
         "changes_requested": "Des modifications sont demandées sur une publication"
@@ -2037,7 +2126,10 @@
       "channel": {
         "connected": "Un canal est connecté ou reconnecté",
         "disconnected": "Un canal est déconnecté",
-        "reconnect_needed": "Un canal doit être reconnecté"
+        "reconnect_needed": "Un canal doit être reconnecté",
+        "disabled": "Un canal est désactivé",
+        "enabled": "Un canal est réactivé",
+        "expiring": "La connexion d’un canal expire bientôt"
       },
       "media": {
         "ready": "Un fichier est prêt pour les publications",
@@ -2132,6 +2224,19 @@
     "workspacesLabel": "Seulement ces espaces de travail",
     "workspacesHint": "Les identifiants des espaces de travail du partenaire, un par ligne, {max, number} au plus. Laissez vide pour entendre tous les espaces de travail ; l’espace de travail principal n’est entendu que s’il est listé.",
     "channelsFilter": "Seulement les événements {count, plural, one {d’# chaîne} other {de # chaînes}}, et ceux sans chaîne",
+    "headersLegend": "Des en-têtes à vous",
+    "headersHint": "Envoyés avec chaque livraison à côté de ceux de Peal, comme peut le demander une passerelle devant votre serveur : {max, number} au plus. Les valeurs sont gardées chiffrées et ne s’affichent plus jamais ; la signature de Peal ne les couvre pas.",
+    "headerName": "Nom",
+    "headerValue": "Valeur",
+    "headerSet": "défini",
+    "headerSetHint": "Enregistrée, jamais affichée : saisissez une nouvelle valeur pour la remplacer.",
+    "headerMovedHint": "Enregistrée pour l’ancien hôte : saisissez de nouveau sa valeur.",
+    "headersMoved": "La nouvelle adresse est sur un autre hôte : saisissez de nouveau la valeur de chaque en-tête, ou retirez l’en-tête. Peal n’envoie jamais une valeur enregistrée à un autre hôte.",
+    "addHeader": "Ajouter un en-tête",
+    "removeHeader": "Retirer l’en-tête {name}",
+    "removeNewHeader": "Retirer cet en-tête",
+    "removeHeaderButton": "Retirer",
+    "headersShown": "En-têtes : {names}",
     "workspacesFilter": "Seulement {count, plural, one {# espace de travail} other {# espaces de travail}}",
     "statusFilter": "Statut",
     "eventFilter": "Événement",
@@ -2160,7 +2265,9 @@
       "tooMany": "L’espace de travail a déjà {allowed, number} points de terminaison, le maximum. Supprimez-en un d’abord.",
       "urlRefused": "{reason, select, malformed {Ce n’est pas une adresse.} notHttps {L’adresse doit être en HTTPS, sur le port par défaut.} credentials {L’adresse ne doit porter ni nom d’utilisateur ni mot de passe.} tooLong {L’adresse est trop longue.} notPublic {L’hôte de l’adresse n’est pas public, donc Peal ne lui envoie aucune requête.} unknownHost {L’hôte de l’adresse n’existe pas.} other {Peal ne livre pas à cette adresse.}}",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "filterRefused": "Seul un point de terminaison partenaire prend une liste d’espaces de travail, et chacun doit être un identifiant."
+      "filterRefused": "Seul un point de terminaison partenaire prend une liste d’espaces de travail, et chacun doit être un identifiant.",
+      "headerValuesRequired": "La nouvelle adresse est sur un autre hôte : saisissez de nouveau la valeur de chaque en-tête, ou retirez les en-têtes.",
+      "headersRefused": "Un en-tête enregistré garde sa valeur tant que son nom reste : saisissez de nouveau sa valeur, ou retirez-le."
     }
   },
   "AccountSettings": {
@@ -2952,7 +3059,18 @@
     "upcomingLoading": "Lecture des prochains créneaux…",
     "upcomingFailed": "Les prochains créneaux n’ont pas pu être lus.",
     "nextFree": "Prochain créneau libre : {at}.",
-    "noRoom": "{reason, select, noSlots {Aucun créneau libre : la file n’a aucun créneau.} other {Aucun créneau libre dans les {days, number} prochains jours.}}"
+    "noRoom": "{reason, select, noSlots {Aucun créneau libre : la file n’a aucun créneau.} other {Aucun créneau libre dans les {days, number} prochains jours.}}",
+    "reshuffle": {
+      "waiting": "{more, select, true {Plus de {count, number} publications attendent dans cette file à l’heure qu’elles avaient.} other {{count, plural, one {# publication attend dans cette file à l’heure qu’elle avait.} other {# publications attendent dans cette file à l’heure qu’elles avaient.}}}}",
+      "action": "Replacer les publications en attente sur les nouveaux créneaux",
+      "confirmTitle": "Replacer les publications en attente sur les nouveaux créneaux ?",
+      "confirmDescription": "Chaque publication en attente dans cette file passe sur ses créneaux tels qu’ils sont maintenant, dans l’ordre de leurs heures : la première sur le premier créneau libre, et ainsi de suite. Les publications déplacées à la main sont déplacées aussi, et celles en attente d’approbation continuent d’attendre, à leur nouvelle heure. Une publication déjà sur son créneau y reste, et ce que disent les publications et où elles vont ne change pas.",
+      "confirm": "Replacer les publications",
+      "moving": "Déplacement…",
+      "result": "{moved, plural, one {# publication déplacée} other {# publications déplacées}}, {unchanged, plural, one {# inchangée} other {# inchangées}}, {remaining, plural, one {# restante} other {# restantes}}.",
+      "stopped": "{reason, select, planLimit {Le déplacement s’est arrêté à un mois où l’offre n’a plus de place.} full {Il ne reste aucun créneau dans les {days, number} prochains jours pour les autres.} other {La file a changé entre-temps : replacez-les à nouveau.}}",
+      "failed": "Les publications n’ont pas pu être déplacées. Réessayez."
+    }
   },
   "Inbox": {
     "open": "Boîte de réception",
@@ -2983,7 +3101,7 @@
       "noComment": "Aucun commentaire ne reste sur la plateforme.",
       "openPost": "Ouvrir la publication",
       "onPlatform": "Voir la publication sur la plateforme",
-      "ended": "{reason, select, window {Ses commentaires ne sont plus lus : la publication a dépassé les jours pendant lesquels Peal les lit.} disconnected {Ses commentaires ne sont plus lus : son canal a été déconnecté.} unsupported {Ses commentaires ne sont plus lus : Peal n’en lit aucun sur cette plateforme.} missing {Ses commentaires ne sont plus lus : la plateforme n’affiche plus la publication.} other {Ses commentaires ne sont plus lus.}}"
+      "ended": "{reason, select, window {Ses commentaires ne sont plus lus : la publication a dépassé les jours pendant lesquels Peal les lit.} disconnected {Ses commentaires ne sont plus lus : son canal a été déconnecté.} unsupported {Ses commentaires ne sont plus lus : Peal n’en lit aucun sur cette plateforme.} missing {Ses commentaires ne sont plus lus : la plateforme n’affiche plus la publication.} removed {Ses commentaires ne sont plus lus : la publication a été supprimée de la plateforme depuis Peal.} other {Ses commentaires ne sont plus lus.}}"
     },
     "thread": {
       "title": "Commentaires",

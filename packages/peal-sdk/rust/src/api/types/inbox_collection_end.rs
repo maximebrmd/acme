@@ -7,6 +7,7 @@ pub enum InboxCollectionEnd {
     Disconnected,
     Unsupported,
     Missing,
+    Removed,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -19,6 +20,7 @@ impl Serialize for InboxCollectionEnd {
             Self::Disconnected => serializer.serialize_str("disconnected"),
             Self::Unsupported => serializer.serialize_str("unsupported"),
             Self::Missing => serializer.serialize_str("missing"),
+            Self::Removed => serializer.serialize_str("removed"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -32,6 +34,7 @@ impl<'de> Deserialize<'de> for InboxCollectionEnd {
             "disconnected" => Ok(Self::Disconnected),
             "unsupported" => Ok(Self::Unsupported),
             "missing" => Ok(Self::Missing),
+            "removed" => Ok(Self::Removed),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -44,6 +47,7 @@ impl fmt::Display for InboxCollectionEnd {
             Self::Disconnected => write!(f, "disconnected"),
             Self::Unsupported => write!(f, "unsupported"),
             Self::Missing => write!(f, "missing"),
+            Self::Removed => write!(f, "removed"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

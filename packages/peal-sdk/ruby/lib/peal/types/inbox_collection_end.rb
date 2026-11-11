@@ -11,6 +11,7 @@ module Peal
       DISCONNECTED = "disconnected"
       UNSUPPORTED = "unsupported"
       MISSING = "missing"
+      REMOVED = "removed"
     end
   end
 end

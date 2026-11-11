@@ -15,9 +15,10 @@ var (
 	newWebhookEndpointFieldDescription  = big.NewInt(1 << 2)
 	newWebhookEndpointFieldEnabled      = big.NewInt(1 << 3)
 	newWebhookEndpointFieldEventTypes   = big.NewInt(1 << 4)
-	newWebhookEndpointFieldScope        = big.NewInt(1 << 5)
-	newWebhookEndpointFieldURL          = big.NewInt(1 << 6)
-	newWebhookEndpointFieldWorkspaceIDs = big.NewInt(1 << 7)
+	newWebhookEndpointFieldHeaders      = big.NewInt(1 << 5)
+	newWebhookEndpointFieldScope        = big.NewInt(1 << 6)
+	newWebhookEndpointFieldURL          = big.NewInt(1 << 7)
+	newWebhookEndpointFieldWorkspaceIDs = big.NewInt(1 << 8)
 )
 
 type NewWebhookEndpoint struct {
@@ -26,6 +27,7 @@ type NewWebhookEndpoint struct {
 	Description  *string                        `json:"description,omitempty" url:"-"`
 	Enabled      *bool                          `json:"enabled,omitempty" url:"-"`
 	EventTypes   []SubscribableWebhookEventType `json:"eventTypes" url:"-"`
+	Headers      []*WebhookHeader               `json:"headers,omitempty" url:"-"`
 	Scope        *WebhookEndpointScope          `json:"scope,omitempty" url:"-"`
 	URL          string                         `json:"url" url:"-"`
 	WorkspaceIDs []string                       `json:"workspaceIds,omitempty" url:"-"`
@@ -76,6 +78,13 @@ func (n *NewWebhookEndpoint) SetEnabled(enabled *bool) {
 func (n *NewWebhookEndpoint) SetEventTypes(eventTypes []SubscribableWebhookEventType) {
 	n.EventTypes = eventTypes
 	n.require(newWebhookEndpointFieldEventTypes)
+}
+
+// SetHeaders sets the Headers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewWebhookEndpoint) SetHeaders(headers []*WebhookHeader) {
+	n.Headers = headers
+	n.require(newWebhookEndpointFieldHeaders)
 }
 
 // SetScope sets the Scope field and marks it as non-optional;
@@ -558,12 +567,18 @@ const (
 	SubscribableWebhookEventTypePostFailed             SubscribableWebhookEventType = "post.failed"
 	SubscribableWebhookEventTypePostUnconfirmed        SubscribableWebhookEventType = "post.unconfirmed"
 	SubscribableWebhookEventTypePostCancelled          SubscribableWebhookEventType = "post.cancelled"
+	SubscribableWebhookEventTypePostFinished           SubscribableWebhookEventType = "post.finished"
+	SubscribableWebhookEventTypePostUnpublished        SubscribableWebhookEventType = "post.unpublished"
+	SubscribableWebhookEventTypePostUnpublishFailed    SubscribableWebhookEventType = "post.unpublish_failed"
 	SubscribableWebhookEventTypePostApprovalRequested  SubscribableWebhookEventType = "post.approval_requested"
 	SubscribableWebhookEventTypePostApproved           SubscribableWebhookEventType = "post.approved"
 	SubscribableWebhookEventTypePostChangesRequested   SubscribableWebhookEventType = "post.changes_requested"
 	SubscribableWebhookEventTypeChannelConnected       SubscribableWebhookEventType = "channel.connected"
 	SubscribableWebhookEventTypeChannelDisconnected    SubscribableWebhookEventType = "channel.disconnected"
 	SubscribableWebhookEventTypeChannelReconnectNeeded SubscribableWebhookEventType = "channel.reconnect_needed"
+	SubscribableWebhookEventTypeChannelDisabled        SubscribableWebhookEventType = "channel.disabled"
+	SubscribableWebhookEventTypeChannelEnabled         SubscribableWebhookEventType = "channel.enabled"
+	SubscribableWebhookEventTypeChannelExpiring        SubscribableWebhookEventType = "channel.expiring"
 	SubscribableWebhookEventTypeMediaReady             SubscribableWebhookEventType = "media.ready"
 	SubscribableWebhookEventTypeMediaFailed            SubscribableWebhookEventType = "media.failed"
 	SubscribableWebhookEventTypeCommentReceived        SubscribableWebhookEventType = "comment.received"
@@ -592,6 +607,12 @@ func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEve
 		return SubscribableWebhookEventTypePostUnconfirmed, nil
 	case "post.cancelled":
 		return SubscribableWebhookEventTypePostCancelled, nil
+	case "post.finished":
+		return SubscribableWebhookEventTypePostFinished, nil
+	case "post.unpublished":
+		return SubscribableWebhookEventTypePostUnpublished, nil
+	case "post.unpublish_failed":
+		return SubscribableWebhookEventTypePostUnpublishFailed, nil
 	case "post.approval_requested":
 		return SubscribableWebhookEventTypePostApprovalRequested, nil
 	case "post.approved":
@@ -604,6 +625,12 @@ func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEve
 		return SubscribableWebhookEventTypeChannelDisconnected, nil
 	case "channel.reconnect_needed":
 		return SubscribableWebhookEventTypeChannelReconnectNeeded, nil
+	case "channel.disabled":
+		return SubscribableWebhookEventTypeChannelDisabled, nil
+	case "channel.enabled":
+		return SubscribableWebhookEventTypeChannelEnabled, nil
+	case "channel.expiring":
+		return SubscribableWebhookEventTypeChannelExpiring, nil
 	case "media.ready":
 		return SubscribableWebhookEventTypeMediaReady, nil
 	case "media.failed":
@@ -1360,12 +1387,13 @@ var (
 	webhookEndpointFieldEnabled                 = big.NewInt(1 << 5)
 	webhookEndpointFieldEventTypes              = big.NewInt(1 << 6)
 	webhookEndpointFieldFailingSince            = big.NewInt(1 << 7)
-	webhookEndpointFieldID                      = big.NewInt(1 << 8)
-	webhookEndpointFieldPreviousSecretExpiresAt = big.NewInt(1 << 9)
-	webhookEndpointFieldScope                   = big.NewInt(1 << 10)
-	webhookEndpointFieldUpdatedAt               = big.NewInt(1 << 11)
-	webhookEndpointFieldURL                     = big.NewInt(1 << 12)
-	webhookEndpointFieldWorkspaceIDs            = big.NewInt(1 << 13)
+	webhookEndpointFieldHeaderNames             = big.NewInt(1 << 8)
+	webhookEndpointFieldID                      = big.NewInt(1 << 9)
+	webhookEndpointFieldPreviousSecretExpiresAt = big.NewInt(1 << 10)
+	webhookEndpointFieldScope                   = big.NewInt(1 << 11)
+	webhookEndpointFieldUpdatedAt               = big.NewInt(1 << 12)
+	webhookEndpointFieldURL                     = big.NewInt(1 << 13)
+	webhookEndpointFieldWorkspaceIDs            = big.NewInt(1 << 14)
 )
 
 // webhookEndpointNullableFields maps the wire names of WebhookEndpoint's nullable fields (required or optional) to their field bits.
@@ -1385,6 +1413,7 @@ type WebhookEndpoint struct {
 	Enabled                 bool                           `json:"enabled" url:"enabled"`
 	EventTypes              []SubscribableWebhookEventType `json:"eventTypes" url:"eventTypes"`
 	FailingSince            *string                        `json:"failingSince,omitempty" url:"failingSince,omitempty"`
+	HeaderNames             []string                       `json:"headerNames" url:"headerNames"`
 	ID                      string                         `json:"id" url:"id"`
 	PreviousSecretExpiresAt *string                        `json:"previousSecretExpiresAt,omitempty" url:"previousSecretExpiresAt,omitempty"`
 	Scope                   WebhookEndpointScope           `json:"scope" url:"scope"`
@@ -1453,6 +1482,13 @@ func (w *WebhookEndpoint) GetFailingSince() *string {
 		return nil
 	}
 	return w.FailingSince
+}
+
+func (w *WebhookEndpoint) GetHeaderNames() []string {
+	if w == nil {
+		return nil
+	}
+	return w.HeaderNames
 }
 
 func (w *WebhookEndpoint) GetID() string {
@@ -1567,6 +1603,13 @@ func (w *WebhookEndpoint) SetEventTypes(eventTypes []SubscribableWebhookEventTyp
 func (w *WebhookEndpoint) SetFailingSince(failingSince *string) {
 	w.FailingSince = failingSince
 	w.require(webhookEndpointFieldFailingSince)
+}
+
+// SetHeaderNames sets the HeaderNames field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookEndpoint) SetHeaderNames(headerNames []string) {
+	w.HeaderNames = headerNames
+	w.require(webhookEndpointFieldHeaderNames)
 }
 
 // SetID sets the ID field and marks it as non-optional;
@@ -1794,12 +1837,18 @@ const (
 	WebhookEventTypePostFailed             WebhookEventType = "post.failed"
 	WebhookEventTypePostUnconfirmed        WebhookEventType = "post.unconfirmed"
 	WebhookEventTypePostCancelled          WebhookEventType = "post.cancelled"
+	WebhookEventTypePostFinished           WebhookEventType = "post.finished"
+	WebhookEventTypePostUnpublished        WebhookEventType = "post.unpublished"
+	WebhookEventTypePostUnpublishFailed    WebhookEventType = "post.unpublish_failed"
 	WebhookEventTypePostApprovalRequested  WebhookEventType = "post.approval_requested"
 	WebhookEventTypePostApproved           WebhookEventType = "post.approved"
 	WebhookEventTypePostChangesRequested   WebhookEventType = "post.changes_requested"
 	WebhookEventTypeChannelConnected       WebhookEventType = "channel.connected"
 	WebhookEventTypeChannelDisconnected    WebhookEventType = "channel.disconnected"
 	WebhookEventTypeChannelReconnectNeeded WebhookEventType = "channel.reconnect_needed"
+	WebhookEventTypeChannelDisabled        WebhookEventType = "channel.disabled"
+	WebhookEventTypeChannelEnabled         WebhookEventType = "channel.enabled"
+	WebhookEventTypeChannelExpiring        WebhookEventType = "channel.expiring"
 	WebhookEventTypeMediaReady             WebhookEventType = "media.ready"
 	WebhookEventTypeMediaFailed            WebhookEventType = "media.failed"
 	WebhookEventTypeCommentReceived        WebhookEventType = "comment.received"
@@ -1829,6 +1878,12 @@ func NewWebhookEventTypeFromString(s string) (WebhookEventType, error) {
 		return WebhookEventTypePostUnconfirmed, nil
 	case "post.cancelled":
 		return WebhookEventTypePostCancelled, nil
+	case "post.finished":
+		return WebhookEventTypePostFinished, nil
+	case "post.unpublished":
+		return WebhookEventTypePostUnpublished, nil
+	case "post.unpublish_failed":
+		return WebhookEventTypePostUnpublishFailed, nil
 	case "post.approval_requested":
 		return WebhookEventTypePostApprovalRequested, nil
 	case "post.approved":
@@ -1841,6 +1896,12 @@ func NewWebhookEventTypeFromString(s string) (WebhookEventType, error) {
 		return WebhookEventTypeChannelDisconnected, nil
 	case "channel.reconnect_needed":
 		return WebhookEventTypeChannelReconnectNeeded, nil
+	case "channel.disabled":
+		return WebhookEventTypeChannelDisabled, nil
+	case "channel.enabled":
+		return WebhookEventTypeChannelEnabled, nil
+	case "channel.expiring":
+		return WebhookEventTypeChannelExpiring, nil
 	case "media.ready":
 		return WebhookEventTypeMediaReady, nil
 	case "media.failed":
@@ -1874,6 +1935,210 @@ func NewWebhookEventTypeFromString(s string) (WebhookEventType, error) {
 
 func (w WebhookEventType) Ptr() *WebhookEventType {
 	return &w
+}
+
+var (
+	webhookHeaderFieldName  = big.NewInt(1 << 0)
+	webhookHeaderFieldValue = big.NewInt(1 << 1)
+)
+
+type WebhookHeader struct {
+	Name  string `json:"name" url:"name"`
+	Value string `json:"value" url:"value"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (w *WebhookHeader) GetName() string {
+	if w == nil {
+		return ""
+	}
+	return w.Name
+}
+
+func (w *WebhookHeader) GetValue() string {
+	if w == nil {
+		return ""
+	}
+	return w.Value
+}
+
+func (w *WebhookHeader) GetExtraProperties() map[string]interface{} {
+	if w == nil {
+		return nil
+	}
+	return w.extraProperties
+}
+
+func (w *WebhookHeader) require(field *big.Int) {
+	next := new(big.Int)
+	if w.explicitFields != nil {
+		next.Set(w.explicitFields)
+	}
+	next.Or(next, field)
+	w.explicitFields = next
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookHeader) SetName(name string) {
+	w.Name = name
+	w.require(webhookHeaderFieldName)
+}
+
+// SetValue sets the Value field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookHeader) SetValue(value string) {
+	w.Value = value
+	w.require(webhookHeaderFieldValue)
+}
+
+func (w *WebhookHeader) UnmarshalJSON(data []byte) error {
+	type unmarshaler WebhookHeader
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*w = WebhookHeader(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *w)
+	if err != nil {
+		return err
+	}
+	w.extraProperties = extraProperties
+	w.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (w *WebhookHeader) MarshalJSON() ([]byte, error) {
+	type embed WebhookHeader
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*w),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (w *WebhookHeader) String() string {
+	if w == nil {
+		return "<nil>"
+	}
+	if len(w.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(w); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", w)
+}
+
+var (
+	webhookHeaderChangeFieldName  = big.NewInt(1 << 0)
+	webhookHeaderChangeFieldValue = big.NewInt(1 << 1)
+)
+
+type WebhookHeaderChange struct {
+	Name  string  `json:"name" url:"name"`
+	Value *string `json:"value,omitempty" url:"value,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (w *WebhookHeaderChange) GetName() string {
+	if w == nil {
+		return ""
+	}
+	return w.Name
+}
+
+func (w *WebhookHeaderChange) GetValue() *string {
+	if w == nil {
+		return nil
+	}
+	return w.Value
+}
+
+func (w *WebhookHeaderChange) GetExtraProperties() map[string]interface{} {
+	if w == nil {
+		return nil
+	}
+	return w.extraProperties
+}
+
+func (w *WebhookHeaderChange) require(field *big.Int) {
+	next := new(big.Int)
+	if w.explicitFields != nil {
+		next.Set(w.explicitFields)
+	}
+	next.Or(next, field)
+	w.explicitFields = next
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookHeaderChange) SetName(name string) {
+	w.Name = name
+	w.require(webhookHeaderChangeFieldName)
+}
+
+// SetValue sets the Value field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookHeaderChange) SetValue(value *string) {
+	w.Value = value
+	w.require(webhookHeaderChangeFieldValue)
+}
+
+func (w *WebhookHeaderChange) UnmarshalJSON(data []byte) error {
+	type unmarshaler WebhookHeaderChange
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*w = WebhookHeaderChange(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *w)
+	if err != nil {
+		return err
+	}
+	w.extraProperties = extraProperties
+	w.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (w *WebhookHeaderChange) MarshalJSON() ([]byte, error) {
+	type embed WebhookHeaderChange
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*w),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (w *WebhookHeaderChange) String() string {
+	if w == nil {
+		return "<nil>"
+	}
+	if len(w.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(w); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", w)
 }
 
 var (
@@ -2324,8 +2589,9 @@ var (
 	webhookEndpointChangeFieldDescription  = big.NewInt(1 << 3)
 	webhookEndpointChangeFieldEnabled      = big.NewInt(1 << 4)
 	webhookEndpointChangeFieldEventTypes   = big.NewInt(1 << 5)
-	webhookEndpointChangeFieldURL          = big.NewInt(1 << 6)
-	webhookEndpointChangeFieldWorkspaceIDs = big.NewInt(1 << 7)
+	webhookEndpointChangeFieldHeaders      = big.NewInt(1 << 6)
+	webhookEndpointChangeFieldURL          = big.NewInt(1 << 7)
+	webhookEndpointChangeFieldWorkspaceIDs = big.NewInt(1 << 8)
 )
 
 type WebhookEndpointChange struct {
@@ -2335,6 +2601,7 @@ type WebhookEndpointChange struct {
 	Description  *string                        `json:"description,omitempty" url:"-"`
 	Enabled      *bool                          `json:"enabled,omitempty" url:"-"`
 	EventTypes   []SubscribableWebhookEventType `json:"eventTypes,omitempty" url:"-"`
+	Headers      []*WebhookHeaderChange         `json:"headers,omitempty" url:"-"`
 	URL          *string                        `json:"url,omitempty" url:"-"`
 	WorkspaceIDs []string                       `json:"workspaceIds,omitempty" url:"-"`
 
@@ -2391,6 +2658,13 @@ func (w *WebhookEndpointChange) SetEnabled(enabled *bool) {
 func (w *WebhookEndpointChange) SetEventTypes(eventTypes []SubscribableWebhookEventType) {
 	w.EventTypes = eventTypes
 	w.require(webhookEndpointChangeFieldEventTypes)
+}
+
+// SetHeaders sets the Headers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookEndpointChange) SetHeaders(headers []*WebhookHeaderChange) {
+	w.Headers = headers
+	w.require(webhookEndpointChangeFieldHeaders)
 }
 
 // SetURL sets the URL field and marks it as non-optional;

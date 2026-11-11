@@ -132,13 +132,19 @@ public class ScheduleTest : BaseMockServerTest
                     "platform": "youtube",
                     "categoryId": "categoryId",
                     "containsSyntheticMedia": true,
+                    "defaultLanguage": "defaultLanguage",
+                    "embeddable": true,
+                    "license": "youtube",
                     "madeForKids": true,
                     "notifySubscribers": true,
                     "privacy": "public",
+                    "publicStatsViewable": true,
+                    "recordingDate": "recordingDate",
                     "tags": [
                       "tags",
                       "tags"
                     ],
+                    "thumbnailMediaId": "thumbnailMediaId",
                     "title": "title"
                   },
                   "parts": {
@@ -160,8 +166,10 @@ public class ScheduleTest : BaseMockServerTest
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
+                  "removedAt": "removedAt",
                   "round": 1,
                   "status": "pending",
+                  "thumbnailNotSet": true,
                   "unconfirmedReason": "noResponse"
                 },
                 {
@@ -173,13 +181,19 @@ public class ScheduleTest : BaseMockServerTest
                     "platform": "youtube",
                     "categoryId": "categoryId",
                     "containsSyntheticMedia": true,
+                    "defaultLanguage": "defaultLanguage",
+                    "embeddable": true,
+                    "license": "youtube",
                     "madeForKids": true,
                     "notifySubscribers": true,
                     "privacy": "public",
+                    "publicStatsViewable": true,
+                    "recordingDate": "recordingDate",
                     "tags": [
                       "tags",
                       "tags"
                     ],
+                    "thumbnailMediaId": "thumbnailMediaId",
                     "title": "title"
                   },
                   "parts": {
@@ -201,8 +215,10 @@ public class ScheduleTest : BaseMockServerTest
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
+                  "removedAt": "removedAt",
                   "round": 1,
                   "status": "pending",
+                  "thumbnailNotSet": true,
                   "unconfirmedReason": "noResponse"
                 }
               ],
@@ -349,8 +365,10 @@ public class ScheduleTest : BaseMockServerTest
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
+                  "removedAt": "removedAt",
                   "round": 1,
                   "status": "pending",
+                  "thumbnailNotSet": true,
                   "unconfirmedReason": "noResponse"
                 }
               ],

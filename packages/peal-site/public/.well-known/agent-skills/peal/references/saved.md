@@ -88,4 +88,9 @@ peal posts list --queue Weekdays --json
   of the next 366 days is taken (`full`): tell the user, never pick a time
   yourself. A full month in the plan is `plan_limit_reached`.
 - `peal queues create` and `update` change what every member's posts are
-  queued into: only when the user asked. Changing slots moves no post.
+  queued into: only when the user asked. Changing slots moves no post;
+  `peal queues reshuffle <queue> --json` moves the waiting ones (those moved
+  by hand too; those awaiting approval keep waiting) onto the slots as they
+  now are, only when the user asks, and
+  answers `moved`, `unchanged`, `remaining` and `stoppedBy`: run it again
+  after `changed`, tell the user after `planLimit` or `full`.

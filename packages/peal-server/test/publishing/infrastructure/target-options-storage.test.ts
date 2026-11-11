@@ -82,6 +82,13 @@ layer(StorageTest)("a target's stored options", (it) => {
           "threads",
           "x",
           "x",
+          "youtube",
+          "tiktok",
+          "tiktok",
+          "instagram",
+          "instagram",
+          "facebook",
+          "facebook",
         ]
       );
     })

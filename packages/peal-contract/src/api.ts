@@ -138,9 +138,11 @@ export {
   queueHorizonDays,
   QueueDetailsSchema,
   QueuePreviewSchema,
+  QueueReshuffleSchema,
   QueueSchema,
   QueueSlotSchema,
   QueuesApi,
+  ReshuffleStopSchema,
   SlotTimeSchema,
   WeekdaySchema,
   weekdays,
@@ -151,7 +153,9 @@ export type {
   Queue,
   QueueDetails,
   QueuePreview,
+  QueueReshuffle,
   QueueSlot,
+  ReshuffleStop,
   Weekday,
 } from "./queues.ts";
 
@@ -508,6 +512,7 @@ export {
   CapabilitiesApi,
   capabilitiesVersion,
   ChannelCapabilitiesSchema,
+  LivePostBlockerSchema,
   MediaCapabilitiesSchema,
   MediaFormatSchema,
   OptionConstraintSchema,
@@ -521,6 +526,7 @@ export type {
   AccountRestriction,
   AccountStanding,
   ChannelCapabilities,
+  LivePostBlocker,
   MediaFormat,
   OptionConstraint,
   PlatformCapabilities,
@@ -829,6 +835,28 @@ export type {
 } from "./platform.ts";
 
 export {
+  LivePostChangeKindSchema,
+  LivePostChangeSchema,
+  LivePostChangesSchema,
+  LivePostChangeStatusSchema,
+  LivePostRefusalSchema,
+  LivePostRefusedTargetSchema,
+  PostUnpublishSchema,
+} from "./live-post-changes.ts";
+
+export type {
+  LivePostChange,
+  LivePostChangeKind,
+  LivePostChanges,
+  LivePostChangeStatus,
+  LivePostRefusal,
+  LivePostRefusedTarget,
+  PostUnpublish,
+} from "./live-post-changes.ts";
+
+export { LivePostNotChangeable } from "./live-post-not-changeable.ts";
+
+export {
   ContentViolationSchema,
   PostContentInvalid,
 } from "./post-content-invalid.ts";
@@ -1019,6 +1047,18 @@ export {
   ThreadsReplyControlSchema,
   XOptionsSchema,
   XReplySettingsSchema,
+  FacebookOptionsSchema,
+  InstagramOptionsSchema,
+  InstagramTrialReelSchema,
+  instagramCoverTypes,
+  maxFacebookVideoTitleLength,
+  maxInstagramAudioNameLength,
+  maxInstagramCollaborators,
+  maxInstagramCoverByteSize,
+  maxTikTokPhotoTitleLength,
+  maxYouTubeThumbnailByteSize,
+  YouTubeLicenseSchema,
+  youTubeThumbnailTypes,
 } from "./target-options.ts";
 
 export type {
@@ -1046,6 +1086,10 @@ export type {
   ThreadsReplyControl,
   XOptions,
   XReplySettings,
+  FacebookOptions,
+  InstagramOptions,
+  InstagramTrialReel,
+  YouTubeLicense,
 } from "./target-options.ts";
 
 export { PostTargetStatusSchema } from "./post-target-status.ts";
@@ -1214,13 +1258,19 @@ export { WebhookEndpointNotFound } from "./webhook-endpoint-not-found.ts";
 
 export { WebhookFilterRefused } from "./webhook-filter-refused.ts";
 
+export { WebhookHeaderValuesRequired } from "./webhook-header-values-required.ts";
+
+export { WebhookHeadersRefused } from "./webhook-headers-refused.ts";
+
 export {
   MediaFailureReasonSchema,
   WebhookReviewPartySchema,
   SubscribableWebhookEventTypeSchema,
   webhookEventVersion,
   WebhookEventTypeSchema,
+  WebhookFinishedTargetSchema,
   WebhookPayloadSchema,
+  WebhookSettledTargetStatusSchema,
   WebhookTargetSchema,
 } from "./webhook-events.ts";
 
@@ -1229,7 +1279,9 @@ export type {
   WebhookReviewParty,
   SubscribableWebhookEventType,
   WebhookEventType,
+  WebhookFinishedTarget,
   WebhookPayload,
+  WebhookSettledTargetStatus,
   WebhookTarget,
 } from "./webhook-events.ts";
 
@@ -1249,6 +1301,11 @@ export {
   maxWebhookEndpoints,
   maxWebhookFilterChannels,
   maxWebhookFilterWorkspaces,
+  maxWebhookHeaderNameLength,
+  maxWebhookHeaders,
+  maxWebhookHeaderValueLength,
+  refusedWebhookHeaderNames,
+  refusedWebhookHeaderPrefixes,
   webhookBulkRedeliveriesPerHour,
   webhookManualSendsPerHour,
   maxWebhookUrlLength,
@@ -1266,6 +1323,8 @@ export {
   WebhookEndpointScopeSchema,
   WebhookEndpointSecretSchema,
   webhookFailingDays,
+  WebhookHeaderChangeSchema,
+  WebhookHeaderSchema,
   WebhookRedeliveryRequestSchema,
   WebhookRedeliverySkipSchema,
   WebhooksApi,
@@ -1284,6 +1343,8 @@ export type {
   WebhookEndpoint,
   WebhookEndpointChange,
   WebhookEndpointScope,
+  WebhookHeader,
+  WebhookHeaderChange,
   WebhookEndpointSecret,
   WebhookRedeliveryRequest,
   WebhookRedeliverySkip,

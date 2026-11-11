@@ -6,7 +6,20 @@ import type {
   WebhookEndpoint,
   WebhookEndpointChange,
   WebhookEndpointScope,
+  WebhookHeader,
+  WebhookHeaderChange,
 } from "peal-contract";
+
+/**
+ * A header in an endpoint's form: one the endpoint has (`saved`), whose
+ * value is never shown and kept unless typed again, or one being added.
+ */
+export interface HeaderRow {
+  readonly name: string;
+  readonly saved: boolean;
+  /** Typed in this form; empty for a saved one that keeps its value. */
+  readonly value: string;
+}
 
 /** An endpoint as its form holds it, while a member writes it. */
 export interface EndpointDraft {
@@ -15,6 +28,12 @@ export interface EndpointDraft {
   readonly description: string;
   readonly enabled: boolean;
   readonly eventTypes: ReadonlySet<SubscribableWebhookEventType>;
+  /** Its headers, as the form lists them. */
+  readonly headers: readonly HeaderRow[];
+  /** The names of the headers it has, to tell whether they changed. */
+  readonly savedHeaderNames: readonly string[];
+  /** The address it has, whose origin its saved values go to; "" if new. */
+  readonly savedUrl: string;
   /** Whether it hears a partner's every workspace: the workspaces field. */
   readonly scope: WebhookEndpointScope;
   readonly url: string;
@@ -28,6 +47,9 @@ export const emptyDraft: EndpointDraft = {
   description: "",
   enabled: true,
   eventTypes: new Set(),
+  headers: [],
+  savedHeaderNames: [],
+  savedUrl: "",
   scope: "workspace",
   url: "",
   workspaceIds: "",
@@ -39,6 +61,13 @@ export const draftOf = (endpoint: WebhookEndpoint): EndpointDraft => ({
   description: endpoint.description,
   enabled: endpoint.enabled,
   eventTypes: new Set(endpoint.eventTypes),
+  headers: endpoint.headerNames.map((name) => ({
+    name,
+    saved: true,
+    value: "",
+  })),
+  savedHeaderNames: endpoint.headerNames,
+  savedUrl: endpoint.url,
   scope: endpoint.scope,
   url: endpoint.url,
   workspaceIds: endpoint.workspaceIds.join("\n"),
@@ -84,6 +113,114 @@ export const workspaceIdsOf = (written: string): string[] => [
       .filter((id) => id !== "")
   ),
 ];
+
+/** The draft with a header row more, empty, for a new header. */
+export const withNewHeader = (draft: EndpointDraft): EndpointDraft => ({
+  ...draft,
+  headers: [...draft.headers, { name: "", saved: false, value: "" }],
+});
+
+/** The draft with what was typed in one header row. */
+export const withHeader = (
+  draft: EndpointDraft,
+  index: number,
+  typed: { readonly name?: string; readonly value?: string }
+): EndpointDraft => ({
+  ...draft,
+  headers: draft.headers.map((row, at) =>
+    at === index
+      ? {
+          name: row.saved ? row.name : (typed.name ?? row.name),
+          saved: row.saved,
+          value: typed.value ?? row.value,
+        }
+      : row
+  ),
+});
+
+/** The draft without one header row. */
+export const withoutHeader = (
+  draft: EndpointDraft,
+  index: number
+): EndpointDraft => ({
+  ...draft,
+  headers: draft.headers.filter((_row, at) => at !== index),
+});
+
+// The rows that say something: an empty new row is no header.
+const filledRows = (draft: EndpointDraft) =>
+  draft.headers
+    .map((row) => ({ ...row, name: row.name.trim() }))
+    .filter((row) => row.saved || row.name !== "" || row.value !== "");
+
+// A new endpoint's headers, once each row has a name and a value.
+const newHeadersOf = (
+  draft: EndpointDraft
+): Option.Option<readonly WebhookHeader[]> => {
+  const rows = filledRows(draft);
+
+  return rows.every(({ name, value }) => name !== "" && value !== "")
+    ? Option.some(rows.map(({ name, value }) => ({ name, value })))
+    : Option.none();
+};
+
+// An address's origin (scheme, host and port), if it is a URL.
+const originOf = (url: string): Option.Option<string> =>
+  URL.canParse(url) ? Option.some(new URL(url).origin) : Option.none();
+
+/**
+ * Whether the draft moves a saved endpoint that has headers to another
+ * origin: their values are sent only to the origin they were given for,
+ * so each must be typed again, or the header removed.
+ */
+export const headersNeedValues = (draft: EndpointDraft): boolean => {
+  const saved = originOf(draft.savedUrl);
+  const typed = originOf(draft.url.trim());
+
+  return (
+    draft.savedHeaderNames.length > 0 &&
+    Option.isSome(saved) &&
+    Option.isSome(typed) &&
+    saved.value !== typed.value
+  );
+};
+
+// A change's headers: none while the form lists what the endpoint has,
+// untouched; the whole list otherwise, a saved row without a new value
+// keeping its own. A new row needs a name and a value, and so does a saved
+// one once the address moves to another origin.
+const changedHeadersOf = (
+  draft: EndpointDraft
+): Option.Option<Option.Option<readonly WebhookHeaderChange[]>> => {
+  const rows = filledRows(draft);
+  const moving = headersNeedValues(draft);
+
+  if (
+    rows.some(
+      ({ name, saved, value }) =>
+        (!saved && name === "") || ((moving || !saved) && value === "")
+    )
+  ) {
+    return Option.none();
+  }
+
+  const untouched =
+    rows.length === draft.savedHeaderNames.length &&
+    rows.every(
+      ({ name, saved, value }, index) =>
+        saved && value === "" && draft.savedHeaderNames[index] === name
+    );
+
+  return Option.some(
+    untouched
+      ? Option.none()
+      : Option.some(
+          rows.map(({ name, value }) =>
+            value === "" ? { name } : { name, value }
+          )
+        )
+  );
+};
 
 /** The draft with one event chosen, or left out. */
 export const withType = (
@@ -136,20 +273,28 @@ const written = (draft: EndpointDraft) => {
       });
 };
 
-/** The endpoint to create, once the draft has an address and an event. */
+/**
+ * The endpoint to create, once the draft has an address, an event, and a
+ * name and a value for each header it lists.
+ */
 export const newEndpointOf = (
   draft: EndpointDraft
 ): Option.Option<NewWebhookEndpoint> =>
-  written(draft).pipe(
-    Option.map((fields) =>
-      draft.channelIds.size === 0
-        ? { ...fields, enabled: draft.enabled }
-        : {
-            ...fields,
-            channelIds: [...draft.channelIds],
-            enabled: draft.enabled,
-          }
-    )
+  Option.all([written(draft), newHeadersOf(draft)]).pipe(
+    Option.map(([fields, headers]): NewWebhookEndpoint => {
+      const made: NewWebhookEndpoint = { ...fields, enabled: draft.enabled };
+      const channelIds = [...draft.channelIds];
+
+      if (channelIds.length > 0 && headers.length > 0) {
+        return { ...made, channelIds, headers };
+      }
+
+      if (channelIds.length > 0) {
+        return { ...made, channelIds };
+      }
+
+      return headers.length > 0 ? { ...made, headers } : made;
+    })
   );
 
 /**
@@ -160,16 +305,21 @@ export const newEndpointOf = (
 export const changeOf = (
   draft: EndpointDraft
 ): Option.Option<WebhookEndpointChange> =>
-  written(draft).pipe(
-    Option.map((fields) => {
-      const channelIds = [...draft.channelIds];
+  Option.all([written(draft), changedHeadersOf(draft)]).pipe(
+    Option.map(([fields, headers]): WebhookEndpointChange => {
+      const change: WebhookEndpointChange = {
+        ...fields,
+        channelIds: [...draft.channelIds],
+      };
 
-      return draft.scope === "partner"
-        ? {
-            ...fields,
-            channelIds,
-            workspaceIds: workspaceIdsOf(draft.workspaceIds),
-          }
-        : { ...fields, channelIds };
+      const filtered: WebhookEndpointChange =
+        draft.scope === "partner"
+          ? { ...change, workspaceIds: workspaceIdsOf(draft.workspaceIds) }
+          : change;
+
+      return Option.match(headers, {
+        onNone: () => filtered,
+        onSome: (given) => ({ ...filtered, headers: given }),
+      });
     })
   );

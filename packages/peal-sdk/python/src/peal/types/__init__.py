@@ -291,6 +291,7 @@ if typing.TYPE_CHECKING:
     from .excess import Excess
     from .external_id_taken_encoded import ExternalIdTakenEncoded
     from .external_id_taken_encoded_tag import ExternalIdTakenEncodedTag
+    from .facebook_options import FacebookOptions
     from .failure_reason import FailureReason
     from .field_default import FieldDefault
     from .field_description import FieldDescription
@@ -354,6 +355,8 @@ if typing.TYPE_CHECKING:
     from .inbox_thread_not_found_encoded import InboxThreadNotFoundEncoded
     from .inbox_thread_page import InboxThreadPage
     from .instagram_connection import InstagramConnection
+    from .instagram_options import InstagramOptions
+    from .instagram_trial_reel import InstagramTrialReel
     from .invalid_date_range_encoded import InvalidDateRangeEncoded
     from .invalid_date_range_encoded_tag import InvalidDateRangeEncodedTag
     from .invalid_time_range_encoded import InvalidTimeRangeEncoded
@@ -369,6 +372,16 @@ if typing.TYPE_CHECKING:
     from .linked_in_organization import LinkedInOrganization
     from .linked_in_visibility import LinkedInVisibility
     from .live_part import LivePart
+    from .live_post_blocker import LivePostBlocker
+    from .live_post_capabilities import LivePostCapabilities
+    from .live_post_change import LivePostChange
+    from .live_post_change_kind import LivePostChangeKind
+    from .live_post_change_status import LivePostChangeStatus
+    from .live_post_changes import LivePostChanges
+    from .live_post_not_changeable_encoded import LivePostNotChangeableEncoded
+    from .live_post_not_changeable_encoded_tag import LivePostNotChangeableEncodedTag
+    from .live_post_refusal import LivePostRefusal
+    from .live_post_refused_target import LivePostRefusedTarget
     from .lookup_description import LookupDescription
     from .lookup_input_invalid_encoded import LookupInputInvalidEncoded
     from .lookup_input_invalid_encoded_tag import LookupInputInvalidEncodedTag
@@ -460,6 +473,7 @@ if typing.TYPE_CHECKING:
         NoticeEvent_SubscriptionStarted,
         NoticeEvent_SubscriptionWithdrawn,
         NoticeEvent_TrialEnding,
+        NoticeEvent_WebhookDeliveriesFailing,
         NoticeEvent_WebhookEndpointDisabled,
     )
     from .notice_event_ad_boost_changed import NoticeEventAdBoostChanged
@@ -480,6 +494,7 @@ if typing.TYPE_CHECKING:
     from .notice_event_subscription_started import NoticeEventSubscriptionStarted
     from .notice_event_subscription_withdrawn import NoticeEventSubscriptionWithdrawn
     from .notice_event_trial_ending import NoticeEventTrialEnding
+    from .notice_event_webhook_deliveries_failing import NoticeEventWebhookDeliveriesFailing
     from .notice_event_webhook_endpoint_disabled import NoticeEventWebhookEndpointDisabled
     from .notice_page import NoticePage
     from .notification_preferences import NotificationPreferences
@@ -588,6 +603,7 @@ if typing.TYPE_CHECKING:
     from .post_timing_at import PostTimingAt
     from .post_timing_now import PostTimingNow
     from .post_timing_queue import PostTimingQueue
+    from .post_unpublish import PostUnpublish
     from .post_validation import PostValidation
     from .post_warning import PostWarning, PostWarning_ChannelsDropped, PostWarning_QueueChannelsDropped
     from .post_warning_channels_dropped import PostWarningChannelsDropped
@@ -599,11 +615,13 @@ if typing.TYPE_CHECKING:
     from .queue import Queue
     from .queue_details import QueueDetails
     from .queue_has_no_room_encoded import QueueHasNoRoomEncoded
+    from .queue_has_no_room_encoded_tag import QueueHasNoRoomEncodedTag
     from .queue_name_taken_encoded import QueueNameTakenEncoded
     from .queue_name_taken_encoded_tag import QueueNameTakenEncodedTag
     from .queue_no_room import QueueNoRoom
     from .queue_not_found_encoded import QueueNotFoundEncoded
     from .queue_preview import QueuePreview
+    from .queue_reshuffle import QueueReshuffle
     from .queue_slot import QueueSlot
     from .reachable_ad_account import ReachableAdAccount
     from .rejection_reason import RejectionReason
@@ -613,6 +631,7 @@ if typing.TYPE_CHECKING:
     from .reply_pending_encoded import ReplyPendingEncoded
     from .reply_status_conflict_encoded import ReplyStatusConflictEncoded
     from .reply_status_conflict_encoded_tag import ReplyStatusConflictEncodedTag
+    from .reshuffle_stop import ReshuffleStop
     from .return_url_not_allowed_encoded import ReturnUrlNotAllowedEncoded
     from .review_comment import ReviewComment
     from .review_comment_resolved import ReviewCommentResolved
@@ -673,7 +692,9 @@ if typing.TYPE_CHECKING:
     from .target_options import (
         TargetOptions,
         TargetOptions_Bluesky,
+        TargetOptions_Facebook,
         TargetOptions_GoogleBusiness,
+        TargetOptions_Instagram,
         TargetOptions_Linkedin,
         TargetOptions_Mastodon,
         TargetOptions_Pinterest,
@@ -764,6 +785,10 @@ if typing.TYPE_CHECKING:
     from .webhook_event_type import WebhookEventType
     from .webhook_filter_refused_encoded import WebhookFilterRefusedEncoded
     from .webhook_filter_refused_encoded_field import WebhookFilterRefusedEncodedField
+    from .webhook_header import WebhookHeader
+    from .webhook_header_change import WebhookHeaderChange
+    from .webhook_header_values_required_encoded import WebhookHeaderValuesRequiredEncoded
+    from .webhook_headers_refused_encoded import WebhookHeadersRefusedEncoded
     from .webhook_redelivery_by_ids import WebhookRedeliveryByIds
     from .webhook_redelivery_of_failed import WebhookRedeliveryOfFailed
     from .webhook_redelivery_request import WebhookRedeliveryRequest
@@ -783,6 +808,7 @@ if typing.TYPE_CHECKING:
     from .workspace_usage_report import WorkspaceUsageReport
     from .x_options import XOptions
     from .x_reply_settings import XReplySettings
+    from .you_tube_license import YouTubeLicense
     from .you_tube_options import YouTubeOptions
     from .you_tube_playlist import YouTubePlaylist
     from .you_tube_privacy import YouTubePrivacy
@@ -1070,6 +1096,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Excess": ".excess",
     "ExternalIdTakenEncoded": ".external_id_taken_encoded",
     "ExternalIdTakenEncodedTag": ".external_id_taken_encoded_tag",
+    "FacebookOptions": ".facebook_options",
     "FailureReason": ".failure_reason",
     "FieldDefault": ".field_default",
     "FieldDescription": ".field_description",
@@ -1129,6 +1156,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "InboxThreadNotFoundEncoded": ".inbox_thread_not_found_encoded",
     "InboxThreadPage": ".inbox_thread_page",
     "InstagramConnection": ".instagram_connection",
+    "InstagramOptions": ".instagram_options",
+    "InstagramTrialReel": ".instagram_trial_reel",
     "InvalidDateRangeEncoded": ".invalid_date_range_encoded",
     "InvalidDateRangeEncodedTag": ".invalid_date_range_encoded_tag",
     "InvalidTimeRangeEncoded": ".invalid_time_range_encoded",
@@ -1144,6 +1173,16 @@ _dynamic_imports: typing.Dict[str, str] = {
     "LinkedInOrganization": ".linked_in_organization",
     "LinkedInVisibility": ".linked_in_visibility",
     "LivePart": ".live_part",
+    "LivePostBlocker": ".live_post_blocker",
+    "LivePostCapabilities": ".live_post_capabilities",
+    "LivePostChange": ".live_post_change",
+    "LivePostChangeKind": ".live_post_change_kind",
+    "LivePostChangeStatus": ".live_post_change_status",
+    "LivePostChanges": ".live_post_changes",
+    "LivePostNotChangeableEncoded": ".live_post_not_changeable_encoded",
+    "LivePostNotChangeableEncodedTag": ".live_post_not_changeable_encoded_tag",
+    "LivePostRefusal": ".live_post_refusal",
+    "LivePostRefusedTarget": ".live_post_refused_target",
     "LookupDescription": ".lookup_description",
     "LookupInputInvalidEncoded": ".lookup_input_invalid_encoded",
     "LookupInputInvalidEncodedTag": ".lookup_input_invalid_encoded_tag",
@@ -1229,6 +1268,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventSubscriptionStarted": ".notice_event_subscription_started",
     "NoticeEventSubscriptionWithdrawn": ".notice_event_subscription_withdrawn",
     "NoticeEventTrialEnding": ".notice_event_trial_ending",
+    "NoticeEventWebhookDeliveriesFailing": ".notice_event_webhook_deliveries_failing",
     "NoticeEventWebhookEndpointDisabled": ".notice_event_webhook_endpoint_disabled",
     "NoticeEvent_AdBoostChanged": ".notice_event",
     "NoticeEvent_AdConnectionReconnectRequired": ".notice_event",
@@ -1247,6 +1287,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEvent_SubscriptionStarted": ".notice_event",
     "NoticeEvent_SubscriptionWithdrawn": ".notice_event",
     "NoticeEvent_TrialEnding": ".notice_event",
+    "NoticeEvent_WebhookDeliveriesFailing": ".notice_event",
     "NoticeEvent_WebhookEndpointDisabled": ".notice_event",
     "NoticePage": ".notice_page",
     "NotificationPreferences": ".notification_preferences",
@@ -1354,6 +1395,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostTiming_At": ".post_timing",
     "PostTiming_Now": ".post_timing",
     "PostTiming_Queue": ".post_timing",
+    "PostUnpublish": ".post_unpublish",
     "PostValidation": ".post_validation",
     "PostWarning": ".post_warning",
     "PostWarningChannelsDropped": ".post_warning_channels_dropped",
@@ -1367,11 +1409,13 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Queue": ".queue",
     "QueueDetails": ".queue_details",
     "QueueHasNoRoomEncoded": ".queue_has_no_room_encoded",
+    "QueueHasNoRoomEncodedTag": ".queue_has_no_room_encoded_tag",
     "QueueNameTakenEncoded": ".queue_name_taken_encoded",
     "QueueNameTakenEncodedTag": ".queue_name_taken_encoded_tag",
     "QueueNoRoom": ".queue_no_room",
     "QueueNotFoundEncoded": ".queue_not_found_encoded",
     "QueuePreview": ".queue_preview",
+    "QueueReshuffle": ".queue_reshuffle",
     "QueueSlot": ".queue_slot",
     "ReachableAdAccount": ".reachable_ad_account",
     "RejectionReason": ".rejection_reason",
@@ -1381,6 +1425,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ReplyPendingEncoded": ".reply_pending_encoded",
     "ReplyStatusConflictEncoded": ".reply_status_conflict_encoded",
     "ReplyStatusConflictEncodedTag": ".reply_status_conflict_encoded_tag",
+    "ReshuffleStop": ".reshuffle_stop",
     "ReturnUrlNotAllowedEncoded": ".return_url_not_allowed_encoded",
     "ReviewComment": ".review_comment",
     "ReviewCommentResolved": ".review_comment_resolved",
@@ -1440,7 +1485,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TargetMetrics": ".target_metrics",
     "TargetOptions": ".target_options",
     "TargetOptions_Bluesky": ".target_options",
+    "TargetOptions_Facebook": ".target_options",
     "TargetOptions_GoogleBusiness": ".target_options",
+    "TargetOptions_Instagram": ".target_options",
     "TargetOptions_Linkedin": ".target_options",
     "TargetOptions_Mastodon": ".target_options",
     "TargetOptions_Pinterest": ".target_options",
@@ -1530,6 +1577,10 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WebhookEventType": ".webhook_event_type",
     "WebhookFilterRefusedEncoded": ".webhook_filter_refused_encoded",
     "WebhookFilterRefusedEncodedField": ".webhook_filter_refused_encoded_field",
+    "WebhookHeader": ".webhook_header",
+    "WebhookHeaderChange": ".webhook_header_change",
+    "WebhookHeaderValuesRequiredEncoded": ".webhook_header_values_required_encoded",
+    "WebhookHeadersRefusedEncoded": ".webhook_headers_refused_encoded",
     "WebhookRedeliveryByIds": ".webhook_redelivery_by_ids",
     "WebhookRedeliveryOfFailed": ".webhook_redelivery_of_failed",
     "WebhookRedeliveryRequest": ".webhook_redelivery_request",
@@ -1549,6 +1600,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WorkspaceUsageReport": ".workspace_usage_report",
     "XOptions": ".x_options",
     "XReplySettings": ".x_reply_settings",
+    "YouTubeLicense": ".you_tube_license",
     "YouTubeOptions": ".you_tube_options",
     "YouTubePlaylist": ".you_tube_playlist",
     "YouTubePrivacy": ".you_tube_privacy",
@@ -1860,6 +1912,7 @@ __all__ = [
     "Excess",
     "ExternalIdTakenEncoded",
     "ExternalIdTakenEncodedTag",
+    "FacebookOptions",
     "FailureReason",
     "FieldDefault",
     "FieldDescription",
@@ -1919,6 +1972,8 @@ __all__ = [
     "InboxThreadNotFoundEncoded",
     "InboxThreadPage",
     "InstagramConnection",
+    "InstagramOptions",
+    "InstagramTrialReel",
     "InvalidDateRangeEncoded",
     "InvalidDateRangeEncodedTag",
     "InvalidTimeRangeEncoded",
@@ -1934,6 +1989,16 @@ __all__ = [
     "LinkedInOrganization",
     "LinkedInVisibility",
     "LivePart",
+    "LivePostBlocker",
+    "LivePostCapabilities",
+    "LivePostChange",
+    "LivePostChangeKind",
+    "LivePostChangeStatus",
+    "LivePostChanges",
+    "LivePostNotChangeableEncoded",
+    "LivePostNotChangeableEncodedTag",
+    "LivePostRefusal",
+    "LivePostRefusedTarget",
     "LookupDescription",
     "LookupInputInvalidEncoded",
     "LookupInputInvalidEncodedTag",
@@ -2019,6 +2084,7 @@ __all__ = [
     "NoticeEventSubscriptionStarted",
     "NoticeEventSubscriptionWithdrawn",
     "NoticeEventTrialEnding",
+    "NoticeEventWebhookDeliveriesFailing",
     "NoticeEventWebhookEndpointDisabled",
     "NoticeEvent_AdBoostChanged",
     "NoticeEvent_AdConnectionReconnectRequired",
@@ -2037,6 +2103,7 @@ __all__ = [
     "NoticeEvent_SubscriptionStarted",
     "NoticeEvent_SubscriptionWithdrawn",
     "NoticeEvent_TrialEnding",
+    "NoticeEvent_WebhookDeliveriesFailing",
     "NoticeEvent_WebhookEndpointDisabled",
     "NoticePage",
     "NotificationPreferences",
@@ -2144,6 +2211,7 @@ __all__ = [
     "PostTiming_At",
     "PostTiming_Now",
     "PostTiming_Queue",
+    "PostUnpublish",
     "PostValidation",
     "PostWarning",
     "PostWarningChannelsDropped",
@@ -2157,11 +2225,13 @@ __all__ = [
     "Queue",
     "QueueDetails",
     "QueueHasNoRoomEncoded",
+    "QueueHasNoRoomEncodedTag",
     "QueueNameTakenEncoded",
     "QueueNameTakenEncodedTag",
     "QueueNoRoom",
     "QueueNotFoundEncoded",
     "QueuePreview",
+    "QueueReshuffle",
     "QueueSlot",
     "ReachableAdAccount",
     "RejectionReason",
@@ -2171,6 +2241,7 @@ __all__ = [
     "ReplyPendingEncoded",
     "ReplyStatusConflictEncoded",
     "ReplyStatusConflictEncodedTag",
+    "ReshuffleStop",
     "ReturnUrlNotAllowedEncoded",
     "ReviewComment",
     "ReviewCommentResolved",
@@ -2230,7 +2301,9 @@ __all__ = [
     "TargetMetrics",
     "TargetOptions",
     "TargetOptions_Bluesky",
+    "TargetOptions_Facebook",
     "TargetOptions_GoogleBusiness",
+    "TargetOptions_Instagram",
     "TargetOptions_Linkedin",
     "TargetOptions_Mastodon",
     "TargetOptions_Pinterest",
@@ -2320,6 +2393,10 @@ __all__ = [
     "WebhookEventType",
     "WebhookFilterRefusedEncoded",
     "WebhookFilterRefusedEncodedField",
+    "WebhookHeader",
+    "WebhookHeaderChange",
+    "WebhookHeaderValuesRequiredEncoded",
+    "WebhookHeadersRefusedEncoded",
     "WebhookRedeliveryByIds",
     "WebhookRedeliveryOfFailed",
     "WebhookRedeliveryRequest",
@@ -2339,6 +2416,7 @@ __all__ = [
     "WorkspaceUsageReport",
     "XOptions",
     "XReplySettings",
+    "YouTubeLicense",
     "YouTubeOptions",
     "YouTubePlaylist",
     "YouTubePrivacy",

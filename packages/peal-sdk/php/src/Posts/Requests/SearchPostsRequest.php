@@ -6,6 +6,7 @@ use Peal\Core\Json\JsonSerializableType;
 use Peal\Types\PostOriginVia;
 use Peal\Types\PostOutcome;
 use Peal\Types\Platform;
+use Peal\Posts\Types\SearchPostsRequestRemoved;
 use Peal\Types\PostSort;
 use Peal\Types\PostStatus;
 
@@ -57,6 +58,11 @@ class SearchPostsRequest extends JsonSerializableType
     public ?string $queueId;
 
     /**
+     * @var ?value-of<SearchPostsRequestRemoved> $removed
+     */
+    public ?string $removed;
+
+    /**
      * @var ?value-of<PostSort> $sort
      */
     public ?string $sort;
@@ -87,6 +93,7 @@ class SearchPostsRequest extends JsonSerializableType
      *   outcome?: ?value-of<PostOutcome>,
      *   platform?: ?value-of<Platform>,
      *   queueId?: ?string,
+     *   removed?: ?value-of<SearchPostsRequestRemoved>,
      *   sort?: ?value-of<PostSort>,
      *   status?: ?value-of<PostStatus>,
      *   tagId?: ?string,
@@ -105,6 +112,7 @@ class SearchPostsRequest extends JsonSerializableType
         $this->outcome = $values['outcome'] ?? null;
         $this->platform = $values['platform'] ?? null;
         $this->queueId = $values['queueId'] ?? null;
+        $this->removed = $values['removed'] ?? null;
         $this->sort = $values['sort'] ?? null;
         $this->status = $values['status'] ?? null;
         $this->tagId = $values['tagId'] ?? null;

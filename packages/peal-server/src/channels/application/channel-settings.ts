@@ -3,11 +3,13 @@ import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 import { disable, enable, labelled } from "#channels/domain/channel.ts";
 import type { Channel } from "#channels/domain/channel.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import { ChannelEvents } from "./channel-events.ts";
 import { ChannelLocks } from "./channel-locks.ts";
 import { ChannelNotFound } from "./channel-not-found.ts";
 import { ChannelRepository } from "./channel-repository.ts";
@@ -31,7 +33,9 @@ const gone = (channelId: string) => (written: boolean) =>
  * warned of nothing meanwhile. Turned back on, it posts again, or asks to
  * be reconnected when its token stopped working or ran out meanwhile
  * (`enable`, in the domain). Its status is written alone, under the
- * channel's lock, so a token renewal running then keeps what it wrote.
+ * channel's lock, so a token renewal running then keeps what it wrote, and
+ * told (ChannelEvents) in the same transaction; a switch that changes
+ * nothing writes and tells nothing.
  */
 export class ChannelSettings extends Context.Service<
   ChannelSettings,
@@ -59,6 +63,8 @@ export class ChannelSettings extends Context.Service<
     Effect.gen(function* ChannelSettingsLive() {
       const channels = yield* ChannelRepository;
       const locks = yield* ChannelLocks;
+      const events = yield* ChannelEvents;
+      const { transaction } = yield* TransactionRunner;
 
       // The workspace's channel the id names, for whoever manages channels.
       const managed = Effect.fn("ChannelSettings.managed")(function* managed(
@@ -98,7 +104,8 @@ export class ChannelSettings extends Context.Service<
       const switched = (
         actor: Actor,
         channelId: string,
-        change: (channel: Channel, now: DateTime.Utc) => Channel
+        change: (channel: Channel, now: DateTime.Utc) => Channel,
+        tell: (channel: Channel) => Effect.Effect<void, DatabaseError>
       ) =>
         Effect.gen(function* switching() {
           const { id } = yield* managed(actor, channelId);
@@ -114,9 +121,14 @@ export class ChannelSettings extends Context.Service<
                 return current;
               }
 
-              yield* channels
-                .setStatus(next)
-                .pipe(Effect.flatMap(gone(channelId)));
+              yield* transaction(
+                channels
+                  .setStatus(next)
+                  .pipe(
+                    Effect.flatMap(gone(channelId)),
+                    Effect.andThen(tell(next))
+                  )
+              );
 
               return next;
             })
@@ -126,11 +138,11 @@ export class ChannelSettings extends Context.Service<
       return ChannelSettings.of({
         rename,
         turnOff: (actor, channelId) =>
-          switched(actor, channelId, disable).pipe(
+          switched(actor, channelId, disable, events.disabled).pipe(
             Effect.withSpan("ChannelSettings.turnOff")
           ),
         turnOn: (actor, channelId) =>
-          switched(actor, channelId, enable).pipe(
+          switched(actor, channelId, enable, events.enabled).pipe(
             Effect.withSpan("ChannelSettings.turnOn")
           ),
       });

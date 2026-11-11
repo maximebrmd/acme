@@ -8,20 +8,25 @@ import { optionsOn } from "./channel-options.ts";
 import type { ChannelOptions } from "./channel-options.ts";
 import type { ContentViolation } from "./content-violation.ts";
 import { countedText } from "./counted-text.ts";
+import { FacebookOptions } from "./facebook-options.ts";
+import type { FieldNotes } from "./field-description.ts";
+import { InstagramOptions, instagramReelFields } from "./instagram-options.ts";
 import { LinkedInOptions, pageProblems } from "./linkedin-options.ts";
 import type { Dimensions, MediaFile } from "./media-file.ts";
+import { mediaNamedBy } from "./named-media.ts";
 import type { OptionProblem } from "./option-problem.ts";
 import { followUpsOn, platformRules } from "./platform-rules.ts";
 import type { FormatLimits, MediaRules } from "./platform-rules.ts";
 import { PostContentRejected } from "./post-content-rejected.ts";
 import {
+  emptyContent,
   overriddenChannels,
   partAlone,
   partCount,
   textOn,
 } from "./post-content.ts";
 import type { PostContent } from "./post-content.ts";
-import { optionProblemsOn } from "./target-options.ts";
+import { describedNotesOn, optionProblemsOn } from "./target-options.ts";
 import type { TargetOptions } from "./target-options.ts";
 import {
   countHashtags,
@@ -30,6 +35,7 @@ import {
   measureText,
 } from "./text-length.ts";
 import { ThreadsOptions } from "./threads-options.ts";
+import { TikTokOptions } from "./tiktok-options.ts";
 
 /** A channel a post goes to, and the platform whose rules it follows. */
 export interface ChannelOnPlatform {
@@ -45,33 +51,199 @@ export interface ChannelOnPlatform {
 
 const isThreads = Schema.is(ThreadsOptions);
 
+const isTikTok = Schema.is(TikTokOptions);
+
+const isInstagram = Schema.is(InstagramOptions);
+
+const isFacebook = Schema.is(FacebookOptions);
+
+// The options that are set, of those named, in the order given.
+const setAmong = <Options, Field extends keyof Options & string>(
+  options: Options,
+  fields: readonly Field[]
+): readonly Field[] => fields.filter((field) => options[field] !== undefined);
+
+// The files of the media the first part of `content` shows, in its order.
+const filesOf = (
+  content: PostContent,
+  files: readonly MediaFile[]
+): readonly MediaFile[] =>
+  content.media.flatMap(({ mediaId }) =>
+    files.filter((file) => file.mediaId === mediaId)
+  );
+
+// A video's length in whole milliseconds, as the media API shows it.
+const durationMsOf = (file: MediaFile): Option.Option<number> =>
+  file.duration.pipe(
+    Option.map((duration) => Math.round(Duration.toMillis(duration)))
+  );
+
+// A frame at `offset` milliseconds lies within the video, when its length
+// is known.
+const withinVideo = (offset: number | undefined, file: MediaFile) =>
+  offset === undefined ||
+  Option.match(durationMsOf(file), {
+    onNone: () => true,
+    onSome: (durationMs) => offset < durationMs,
+  });
+
+// What TikTok refuses given the post's media: a video's cover frame on
+// photos or past the video, a photo post's title, music and cover on a
+// video, or a cover past the last photo.
+const tikTokMediaFields = (
+  options: TikTokOptions,
+  shown: readonly MediaFile[]
+): readonly string[] => {
+  const [first] = shown;
+
+  if (first === undefined) {
+    return [];
+  }
+
+  const video = shown.find((file) => file.kind === "video");
+
+  if (video !== undefined) {
+    return [
+      // Music added is a choice; left out or false, nothing is.
+      ...(options.autoAddMusic === true ? ["autoAddMusic"] : []),
+      ...setAmong(options, ["photoCoverIndex", "photoTitle"]),
+      ...(withinVideo(options.videoCoverTimestampMs, video)
+        ? []
+        : ["videoCoverTimestampMs"]),
+    ];
+  }
+
+  return [
+    ...(options.photoCoverIndex !== undefined &&
+    options.photoCoverIndex >= shown.length
+      ? ["photoCoverIndex"]
+      : []),
+    ...setAmong(options, ["videoCoverTimestampMs"]),
+  ];
+};
+
+// What Instagram refuses given the post's media: a reel's settings on
+// anything but a post of one video, or a cover frame past its end.
+const instagramMediaFields = (
+  content: PostContent,
+  options: InstagramOptions,
+  shown: readonly MediaFile[]
+): readonly string[] => {
+  const [only] = shown;
+
+  const reel =
+    content.media.length === 1 && only !== undefined && only.kind === "video";
+
+  if (!reel) {
+    return setAmong(options, instagramReelFields);
+  }
+
+  return withinVideo(options.thumbOffsetMs, only) ? [] : ["thumbOffsetMs"];
+};
+
+// What a file an option names must be: one of the types the option takes,
+// no larger than it takes. A file that is not the workspace's is said
+// elsewhere, as unknown media.
+const namedFileFields = (
+  options: TargetOptions,
+  files: readonly MediaFile[]
+): readonly string[] => {
+  const notes: Readonly<Record<string, FieldNotes>> = describedNotesOn(
+    options.platform
+  );
+
+  return mediaNamedBy(options).flatMap(({ field, mediaId }) => {
+    const file = files.find((found) => found.mediaId === mediaId);
+    const { contentTypes = [], maxByteSize } = notes[field] ?? {};
+
+    return file === undefined ||
+      (contentTypes.includes(file.contentType) &&
+        (maxByteSize === undefined || file.byteSize <= maxByteSize))
+      ? []
+      : [field];
+  });
+};
+
+// The fields the channel's platform refuses given the post's media.
+const mediaRefusedFields = (
+  content: PostContent,
+  options: TargetOptions,
+  files: readonly MediaFile[]
+): readonly string[] => {
+  const shown = filesOf(content, files);
+
+  if (isThreads(options)) {
+    return options.linkAttachment !== undefined && content.media.length > 0
+      ? ["linkAttachment"]
+      : [];
+  }
+
+  if (isTikTok(options)) {
+    return tikTokMediaFields(options, shown);
+  }
+
+  if (isInstagram(options)) {
+    return instagramMediaFields(content, options, shown);
+  }
+
+  if (isFacebook(options)) {
+    return options.videoTitle !== undefined &&
+      !shown.some((file) => file.kind === "video")
+      ? ["videoTitle"]
+      : [];
+  }
+
+  return [];
+};
+
 /**
  * What the channel's platform refuses in its options given the post's
  * media, which an options class cannot see (`problems` reads the options
- * alone): Threads' link attachment, "only available for text-only posts".
+ * alone): Threads' link attachment, "only available for text-only posts";
+ * TikTok's cover frame for a video and its title, music and cover for
+ * photos; an Instagram reel's settings, for a post of one video; a
+ * Facebook video's title; and the type and size of a file an option names
+ * (a thumbnail, a cover), among `files`, which hold every file the post
+ * depends on (`referencedMedia`). A field is named once, in the order of
+ * the options' fields.
  */
 export const mediaOptionViolationsOn = (
   content: PostContent,
   channel: ChannelOnPlatform,
-  options: Option.Option<TargetOptions>
+  options: Option.Option<TargetOptions>,
+  files: readonly MediaFile[] = []
 ): readonly ContentViolation[] =>
-  options.pipe(
-    Option.filter(isThreads),
-    Option.filter(
-      ({ linkAttachment }) =>
-        linkAttachment !== undefined && content.media.length > 0
-    ),
-    Option.match({
-      onNone: () => [],
-      onSome: () => [
-        {
-          _tag: "optionInvalid" as const,
-          ...channel,
-          field: "linkAttachment",
-        },
-      ],
-    })
-  );
+  Option.match(options, {
+    onNone: () => [],
+    onSome: (chosen) => {
+      const refused = new Set([
+        ...mediaRefusedFields(content, chosen, files),
+        ...namedFileFields(chosen, files),
+      ]);
+
+      return [...refused].toSorted().map((field): ContentViolation => ({
+        _tag: "optionInvalid",
+        ...channel,
+        field,
+      }));
+    },
+  });
+
+/**
+ * What options saved to start posts from (a channel set's, a channel's
+ * defaults) may not hold: a file of the library, which a default would
+ * keep a post depending on, and which may be deleted meanwhile. Each such
+ * option is invalid there.
+ */
+export const namedMediaViolationsOn = (
+  channel: ChannelOnPlatform,
+  options: TargetOptions
+): readonly ContentViolation[] =>
+  mediaNamedBy(options).map(({ field }): ContentViolation => ({
+    _tag: "optionInvalid",
+    ...channel,
+    field,
+  }));
 
 // A channel as violations name it: its id and its platform.
 const named = ({
@@ -212,6 +384,27 @@ export const checkDraft = (
     ),
   ]);
 };
+
+/**
+ * What options saved to start posts from must hold (a channel set's, a
+ * channel's defaults): what a draft's must (`checkDraft`), and no file of
+ * the library (`namedMediaViolationsOn`).
+ */
+export const checkSavedOptions = (
+  channels: readonly ChannelOnPlatform[],
+  options: readonly ChannelOptions[]
+): Result.Result<PostContent, PostContentRejected> =>
+  Result.flatMap(checkDraft(emptyContent, channels, options), (content) =>
+    checked(
+      content,
+      channels.flatMap((channel) =>
+        Option.match(optionsOn(options, channel.channelId), {
+          onNone: () => [],
+          onSome: (chosen) => namedMediaViolationsOn(named(channel), chosen),
+        })
+      )
+    )
+  );
 
 const atMost = (
   tag:
@@ -440,15 +633,6 @@ const fileViolations = (
   ];
 };
 
-// The files of the media the first part of `content` shows, in its order.
-const filesOf = (
-  content: PostContent,
-  files: readonly MediaFile[]
-): readonly MediaFile[] =>
-  content.media.flatMap(({ mediaId }) =>
-    files.filter((file) => file.mediaId === mediaId)
-  );
-
 /**
  * What the channel's platform would refuse in the post's images and videos,
  * whose files are `files`, in the post's order: each file's type, size,
@@ -599,7 +783,7 @@ export const checkPublishable = (
         ...mediaViolationsOn(content, channel, filesOf(content, files)),
         ...partViolationsOn(content, channel, files, chosen),
         ...optionViolationsOn(channel, chosen),
-        ...mediaOptionViolationsOn(content, channel, chosen),
+        ...mediaOptionViolationsOn(content, channel, chosen, files),
         ...connectionViolationsOn(connected, chosen),
       ];
     }),

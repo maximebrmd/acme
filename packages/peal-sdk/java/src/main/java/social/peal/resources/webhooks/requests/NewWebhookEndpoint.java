@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 import social.peal.types.SubscribableWebhookEventType;
 import social.peal.types.WebhookEndpointScope;
+import social.peal.types.WebhookHeader;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = NewWebhookEndpoint.Builder.class)
@@ -32,6 +33,8 @@ public final class NewWebhookEndpoint {
     private final Optional<Boolean> enabled;
 
     private final List<SubscribableWebhookEventType> eventTypes;
+
+    private final Optional<List<WebhookHeader>> headers;
 
     private final Optional<WebhookEndpointScope> scope;
 
@@ -46,6 +49,7 @@ public final class NewWebhookEndpoint {
             Optional<String> description,
             Optional<Boolean> enabled,
             List<SubscribableWebhookEventType> eventTypes,
+            Optional<List<WebhookHeader>> headers,
             Optional<WebhookEndpointScope> scope,
             String url,
             Optional<List<String>> workspaceIds,
@@ -54,6 +58,7 @@ public final class NewWebhookEndpoint {
         this.description = description;
         this.enabled = enabled;
         this.eventTypes = eventTypes;
+        this.headers = headers;
         this.scope = scope;
         this.url = url;
         this.workspaceIds = workspaceIds;
@@ -78,6 +83,11 @@ public final class NewWebhookEndpoint {
     @JsonProperty("eventTypes")
     public List<SubscribableWebhookEventType> getEventTypes() {
         return eventTypes;
+    }
+
+    @JsonProperty("headers")
+    public Optional<List<WebhookHeader>> getHeaders() {
+        return headers;
     }
 
     @JsonProperty("scope")
@@ -111,6 +121,7 @@ public final class NewWebhookEndpoint {
                 && description.equals(other.description)
                 && enabled.equals(other.enabled)
                 && eventTypes.equals(other.eventTypes)
+                && headers.equals(other.headers)
                 && scope.equals(other.scope)
                 && url.equals(other.url)
                 && workspaceIds.equals(other.workspaceIds);
@@ -123,6 +134,7 @@ public final class NewWebhookEndpoint {
                 this.description,
                 this.enabled,
                 this.eventTypes,
+                this.headers,
                 this.scope,
                 this.url,
                 this.workspaceIds);
@@ -168,6 +180,10 @@ public final class NewWebhookEndpoint {
 
         _FinalStage addAllEventTypes(List<SubscribableWebhookEventType> eventTypes);
 
+        _FinalStage headers(Optional<List<WebhookHeader>> headers);
+
+        _FinalStage headers(List<WebhookHeader> headers);
+
         _FinalStage scope(Optional<WebhookEndpointScope> scope);
 
         _FinalStage scope(WebhookEndpointScope scope);
@@ -184,6 +200,8 @@ public final class NewWebhookEndpoint {
         private Optional<List<String>> workspaceIds = Optional.empty();
 
         private Optional<WebhookEndpointScope> scope = Optional.empty();
+
+        private Optional<List<WebhookHeader>> headers = Optional.empty();
 
         private List<SubscribableWebhookEventType> eventTypes = new ArrayList<>();
 
@@ -203,6 +221,7 @@ public final class NewWebhookEndpoint {
             description(other.getDescription());
             enabled(other.getEnabled());
             eventTypes(other.getEventTypes());
+            headers(other.getHeaders());
             scope(other.getScope());
             url(other.getUrl());
             workspaceIds(other.getWorkspaceIds());
@@ -239,6 +258,19 @@ public final class NewWebhookEndpoint {
         @JsonSetter(value = "scope", nulls = Nulls.SKIP)
         public _FinalStage scope(Optional<WebhookEndpointScope> scope) {
             this.scope = scope;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage headers(List<WebhookHeader> headers) {
+            this.headers = Optional.ofNullable(headers);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "headers", nulls = Nulls.SKIP)
+        public _FinalStage headers(Optional<List<WebhookHeader>> headers) {
+            this.headers = headers;
             return this;
         }
 
@@ -308,7 +340,15 @@ public final class NewWebhookEndpoint {
         @java.lang.Override
         public NewWebhookEndpoint build() {
             return new NewWebhookEndpoint(
-                    channelIds, description, enabled, eventTypes, scope, url, workspaceIds, additionalProperties);
+                    channelIds,
+                    description,
+                    enabled,
+                    eventTypes,
+                    headers,
+                    scope,
+                    url,
+                    workspaceIds,
+                    additionalProperties);
         }
 
         @JsonAnySetter
@@ -317,6 +357,7 @@ public final class NewWebhookEndpoint {
                     || key.equalsIgnoreCase("description")
                     || key.equalsIgnoreCase("enabled")
                     || key.equalsIgnoreCase("eventTypes")
+                    || key.equalsIgnoreCase("headers")
                     || key.equalsIgnoreCase("scope")
                     || key.equalsIgnoreCase("url")
                     || key.equalsIgnoreCase("workspaceIds")) {

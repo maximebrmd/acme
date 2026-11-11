@@ -103,6 +103,24 @@ public record TargetOptions
     }
 
     /// <summary>
+    /// Create an instance of TargetOptions with <see cref="TargetOptions.Instagram"/>.
+    /// </summary>
+    public TargetOptions(TargetOptions.Instagram value)
+    {
+        Platform = "instagram";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of TargetOptions with <see cref="TargetOptions.Facebook"/>.
+    /// </summary>
+    public TargetOptions(TargetOptions.Facebook value)
+    {
+        Platform = "facebook";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("platform")]
@@ -157,6 +175,16 @@ public record TargetOptions
     /// Returns true if <see cref="Platform"/> is "x"
     /// </summary>
     public bool IsX => Platform == "x";
+
+    /// <summary>
+    /// Returns true if <see cref="Platform"/> is "instagram"
+    /// </summary>
+    public bool IsInstagram => Platform == "instagram";
+
+    /// <summary>
+    /// Returns true if <see cref="Platform"/> is "facebook"
+    /// </summary>
+    public bool IsFacebook => Platform == "facebook";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.YouTubeOptions"/> if <see cref="Platform"/> is 'youtube', otherwise throws an exception.
@@ -239,6 +267,24 @@ public record TargetOptions
             ? (Peal.XOptions)Value!
             : throw new global::System.Exception("TargetOptions.Platform is not 'x'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.InstagramOptions"/> if <see cref="Platform"/> is 'instagram', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'instagram'.</exception>
+    public Peal.InstagramOptions AsInstagram() =>
+        IsInstagram
+            ? (Peal.InstagramOptions)Value!
+            : throw new global::System.Exception("TargetOptions.Platform is not 'instagram'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.FacebookOptions"/> if <see cref="Platform"/> is 'facebook', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'facebook'.</exception>
+    public Peal.FacebookOptions AsFacebook() =>
+        IsFacebook
+            ? (Peal.FacebookOptions)Value!
+            : throw new global::System.Exception("TargetOptions.Platform is not 'facebook'");
+
     public T Match<T>(
         Func<Peal.YouTubeOptions, T> onYoutube,
         Func<Peal.TikTokOptions, T> onTiktok,
@@ -249,6 +295,8 @@ public record TargetOptions
         Func<Peal.BlueskyOptions, T> onBluesky,
         Func<Peal.ThreadsOptions, T> onThreads,
         Func<Peal.XOptions, T> onX,
+        Func<Peal.InstagramOptions, T> onInstagram,
+        Func<Peal.FacebookOptions, T> onFacebook,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -263,6 +311,8 @@ public record TargetOptions
             "bluesky" => onBluesky(AsBluesky()),
             "threads" => onThreads(AsThreads()),
             "x" => onX(AsX()),
+            "instagram" => onInstagram(AsInstagram()),
+            "facebook" => onFacebook(AsFacebook()),
             _ => onUnknown_(Platform, Value),
         };
     }
@@ -277,6 +327,8 @@ public record TargetOptions
         Action<Peal.BlueskyOptions> onBluesky,
         Action<Peal.ThreadsOptions> onThreads,
         Action<Peal.XOptions> onX,
+        Action<Peal.InstagramOptions> onInstagram,
+        Action<Peal.FacebookOptions> onFacebook,
         Action<string, object?> onUnknown_
     )
     {
@@ -308,6 +360,12 @@ public record TargetOptions
                 break;
             case "x":
                 onX(AsX());
+                break;
+            case "instagram":
+                onInstagram(AsInstagram());
+                break;
+            case "facebook":
+                onFacebook(AsFacebook());
                 break;
             default:
                 onUnknown_(Platform, Value);
@@ -441,6 +499,34 @@ public record TargetOptions
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.InstagramOptions"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsInstagram(out Peal.InstagramOptions? value)
+    {
+        if (Platform == "instagram")
+        {
+            value = (Peal.InstagramOptions)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.FacebookOptions"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsFacebook(out Peal.FacebookOptions? value)
+    {
+        if (Platform == "facebook")
+        {
+            value = (Peal.FacebookOptions)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator TargetOptions(TargetOptions.Youtube value) => new(value);
@@ -460,6 +546,10 @@ public record TargetOptions
     public static implicit operator TargetOptions(TargetOptions.Threads value) => new(value);
 
     public static implicit operator TargetOptions(TargetOptions.X value) => new(value);
+
+    public static implicit operator TargetOptions(TargetOptions.Instagram value) => new(value);
+
+    public static implicit operator TargetOptions(TargetOptions.Facebook value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<TargetOptions>
@@ -523,6 +613,10 @@ public record TargetOptions
                     ?? throw new JsonException("Failed to deserialize Peal.ThreadsOptions"),
                 "x" => jsonWithoutDiscriminator.Deserialize<Peal.XOptions?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.XOptions"),
+                "instagram" => jsonWithoutDiscriminator.Deserialize<Peal.InstagramOptions?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.InstagramOptions"),
+                "facebook" => jsonWithoutDiscriminator.Deserialize<Peal.FacebookOptions?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.FacebookOptions"),
                 _ => json.Deserialize<object?>(options),
             };
             return new TargetOptions(discriminator, value);
@@ -546,6 +640,8 @@ public record TargetOptions
                     "bluesky" => JsonSerializer.SerializeToNode(value.Value, options),
                     "threads" => JsonSerializer.SerializeToNode(value.Value, options),
                     "x" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "instagram" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "facebook" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["platform"] = value.Platform;
@@ -743,5 +839,43 @@ public record TargetOptions
         public override string ToString() => Value.ToString() ?? "null";
 
         public static implicit operator TargetOptions.X(Peal.XOptions value) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for instagram
+    /// </summary>
+    [Serializable]
+    public struct Instagram
+    {
+        public Instagram(Peal.InstagramOptions value)
+        {
+            Value = value;
+        }
+
+        internal Peal.InstagramOptions Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator TargetOptions.Instagram(Peal.InstagramOptions value) =>
+            new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for facebook
+    /// </summary>
+    [Serializable]
+    public struct Facebook
+    {
+        public Facebook(Peal.FacebookOptions value)
+        {
+            Value = value;
+        }
+
+        internal Peal.FacebookOptions Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator TargetOptions.Facebook(Peal.FacebookOptions value) =>
+            new(value);
     }
 }

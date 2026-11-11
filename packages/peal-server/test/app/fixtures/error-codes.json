@@ -320,6 +320,11 @@
     "tag": "LastOwner"
   },
   {
+    "code": "live_post_not_changeable",
+    "status": 409,
+    "tag": "LivePostNotChangeable"
+  },
+  {
     "code": "lookup_input_invalid",
     "status": 422,
     "tag": "LookupInputInvalid"
@@ -718,6 +723,16 @@
     "code": "webhook_filter_refused",
     "status": 422,
     "tag": "WebhookFilterRefused"
+  },
+  {
+    "code": "webhook_header_values_required",
+    "status": 422,
+    "tag": "WebhookHeaderValuesRequired"
+  },
+  {
+    "code": "webhook_headers_refused",
+    "status": 422,
+    "tag": "WebhookHeadersRefused"
   },
   {
     "code": "webhook_url_refused",

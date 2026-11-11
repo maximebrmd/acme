@@ -409,8 +409,12 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
         "video/mp4": instagramVideo,
         "video/quicktime": instagramVideo,
       },
+      // "Alternative text, up to 1000 character, for an image": images
+      // and a carousel's images, never a reel (the IG User Media
+      // reference, read 2026-11-11).
+      maxAltTextLength: 1000,
       mixesKinds: true,
-      showsAltText: false,
+      showsAltText: true,
     },
     mediaRequired: true,
     textLimits: [{ maximum: 2200, unit: "codePoints" }],

@@ -11,6 +11,7 @@ import social.peal.core.RequestOptions;
 import social.peal.resources.posts.requests.AttemptsPostsRequest;
 import social.peal.resources.posts.requests.BulkPosts;
 import social.peal.resources.posts.requests.CancelPostsRequest;
+import social.peal.resources.posts.requests.ChangesPostsRequest;
 import social.peal.resources.posts.requests.ConfirmPostsRequest;
 import social.peal.resources.posts.requests.CreatePostsRequest;
 import social.peal.resources.posts.requests.DiscardPostsRequest;
@@ -28,13 +29,18 @@ import social.peal.resources.posts.requests.RepostPostsRequest;
 import social.peal.resources.posts.requests.ReschedulePostsRequest;
 import social.peal.resources.posts.requests.SchedulePost;
 import social.peal.resources.posts.requests.SearchPostsRequest;
+import social.peal.resources.posts.requests.UnpublishPostsRequest;
+import social.peal.resources.posts.requests.UnpublishTargetPostsRequest;
 import social.peal.resources.posts.requests.UnschedulePostsRequest;
 import social.peal.resources.posts.requests.UpdatePostsRequest;
 import social.peal.types.BulkResult;
 import social.peal.types.DraftPage;
 import social.peal.types.ImportResult;
+import social.peal.types.LivePostChange;
+import social.peal.types.LivePostChanges;
 import social.peal.types.Post;
 import social.peal.types.PostPage;
+import social.peal.types.PostUnpublish;
 import social.peal.types.PostValidation;
 import social.peal.types.PublicationAttempt;
 
@@ -175,7 +181,7 @@ public class AsyncPostsClient {
     }
 
     /**
-     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>tagId</code> (posts filed under that tag), <code>queueId</code> (posts that queue placed), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
+     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>tagId</code> (posts filed under that tag), <code>queueId</code> (posts that queue placed), <code>removed</code> (<code>true</code>: posts Peal deleted from at least one channel's platform; <code>false</code>: posts deleted from none), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
      */
     public CompletableFuture<PostPage> search(String workspaceId) {
         CompletableFuture<PealClientHttpResponse<PostPage>> rawFuture = this.rawClient.search(workspaceId);
@@ -189,7 +195,7 @@ public class AsyncPostsClient {
     }
 
     /**
-     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>tagId</code> (posts filed under that tag), <code>queueId</code> (posts that queue placed), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
+     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>tagId</code> (posts filed under that tag), <code>queueId</code> (posts that queue placed), <code>removed</code> (<code>true</code>: posts Peal deleted from at least one channel's platform; <code>false</code>: posts deleted from none), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
      */
     public CompletableFuture<PostPage> search(String workspaceId, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<PostPage>> rawFuture =
@@ -204,7 +210,7 @@ public class AsyncPostsClient {
     }
 
     /**
-     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>tagId</code> (posts filed under that tag), <code>queueId</code> (posts that queue placed), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
+     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>tagId</code> (posts filed under that tag), <code>queueId</code> (posts that queue placed), <code>removed</code> (<code>true</code>: posts Peal deleted from at least one channel's platform; <code>false</code>: posts deleted from none), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
      */
     public CompletableFuture<PostPage> search(String workspaceId, SearchPostsRequest request) {
         CompletableFuture<PealClientHttpResponse<PostPage>> rawFuture = this.rawClient.search(workspaceId, request);
@@ -218,7 +224,7 @@ public class AsyncPostsClient {
     }
 
     /**
-     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>tagId</code> (posts filed under that tag), <code>queueId</code> (posts that queue placed), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
+     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>tagId</code> (posts filed under that tag), <code>queueId</code> (posts that queue placed), <code>removed</code> (<code>true</code>: posts Peal deleted from at least one channel's platform; <code>false</code>: posts deleted from none), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
      */
     public CompletableFuture<PostPage> search(
             String workspaceId, SearchPostsRequest request, RequestOptions requestOptions) {
@@ -992,6 +998,198 @@ public class AsyncPostsClient {
         CompletableFuture<PealClientHttpResponse<Post>> rawFuture =
                 this.rawClient.confirm(workspaceId, postId, targetId, request, requestOptions);
         CompletableFuture<Post> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Deletes the post from one channel's platform, for everyone: every part of a thread, the last first, so a deletion that stops midway leaves a shorter thread that still reads from its start. It cannot be undone from Peal. The request is accepted (202) and a job deletes it, one call at a time with the channel's other calls; a part the platform no longer has counts as deleted (<code>alreadyGone</code>), and a call that fails is tried again (as long as the platform asks to wait, and five more times while it cannot be reached), after which the change is <code>failed</code> with its <code>code</code> and asking again deletes the parts left. <code>wait</code> waits up to that many seconds (60 at most) for the change to end, and answers it as it then stands. Once done, the target keeps the status <code>published</code> with its <code>removedAt</code> (the month's count and the usage stay, as the post did go out), analytics stops reading it and keeps what it read, and the inbox stops reading its comments and keeps those it has. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted already, Peal has no id for a part of it, the platform does not let Peal delete it (the capabilities' <code>livePost</code> say so beforehand), another change of it is pending, the channel cannot be used, or a boost that is not over shows it. Webhooks hear <code>post.unpublished</code> or <code>post.unpublish_failed</code>. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public CompletableFuture<LivePostChange> unpublishTarget(String workspaceId, String postId, String targetId) {
+        CompletableFuture<PealClientHttpResponse<LivePostChange>> rawFuture =
+                this.rawClient.unpublishTarget(workspaceId, postId, targetId);
+        CompletableFuture<LivePostChange> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Deletes the post from one channel's platform, for everyone: every part of a thread, the last first, so a deletion that stops midway leaves a shorter thread that still reads from its start. It cannot be undone from Peal. The request is accepted (202) and a job deletes it, one call at a time with the channel's other calls; a part the platform no longer has counts as deleted (<code>alreadyGone</code>), and a call that fails is tried again (as long as the platform asks to wait, and five more times while it cannot be reached), after which the change is <code>failed</code> with its <code>code</code> and asking again deletes the parts left. <code>wait</code> waits up to that many seconds (60 at most) for the change to end, and answers it as it then stands. Once done, the target keeps the status <code>published</code> with its <code>removedAt</code> (the month's count and the usage stay, as the post did go out), analytics stops reading it and keeps what it read, and the inbox stops reading its comments and keeps those it has. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted already, Peal has no id for a part of it, the platform does not let Peal delete it (the capabilities' <code>livePost</code> say so beforehand), another change of it is pending, the channel cannot be used, or a boost that is not over shows it. Webhooks hear <code>post.unpublished</code> or <code>post.unpublish_failed</code>. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public CompletableFuture<LivePostChange> unpublishTarget(
+            String workspaceId, String postId, String targetId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<LivePostChange>> rawFuture =
+                this.rawClient.unpublishTarget(workspaceId, postId, targetId, requestOptions);
+        CompletableFuture<LivePostChange> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Deletes the post from one channel's platform, for everyone: every part of a thread, the last first, so a deletion that stops midway leaves a shorter thread that still reads from its start. It cannot be undone from Peal. The request is accepted (202) and a job deletes it, one call at a time with the channel's other calls; a part the platform no longer has counts as deleted (<code>alreadyGone</code>), and a call that fails is tried again (as long as the platform asks to wait, and five more times while it cannot be reached), after which the change is <code>failed</code> with its <code>code</code> and asking again deletes the parts left. <code>wait</code> waits up to that many seconds (60 at most) for the change to end, and answers it as it then stands. Once done, the target keeps the status <code>published</code> with its <code>removedAt</code> (the month's count and the usage stay, as the post did go out), analytics stops reading it and keeps what it read, and the inbox stops reading its comments and keeps those it has. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted already, Peal has no id for a part of it, the platform does not let Peal delete it (the capabilities' <code>livePost</code> say so beforehand), another change of it is pending, the channel cannot be used, or a boost that is not over shows it. Webhooks hear <code>post.unpublished</code> or <code>post.unpublish_failed</code>. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public CompletableFuture<LivePostChange> unpublishTarget(
+            String workspaceId, String postId, String targetId, UnpublishTargetPostsRequest request) {
+        CompletableFuture<PealClientHttpResponse<LivePostChange>> rawFuture =
+                this.rawClient.unpublishTarget(workspaceId, postId, targetId, request);
+        CompletableFuture<LivePostChange> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Deletes the post from one channel's platform, for everyone: every part of a thread, the last first, so a deletion that stops midway leaves a shorter thread that still reads from its start. It cannot be undone from Peal. The request is accepted (202) and a job deletes it, one call at a time with the channel's other calls; a part the platform no longer has counts as deleted (<code>alreadyGone</code>), and a call that fails is tried again (as long as the platform asks to wait, and five more times while it cannot be reached), after which the change is <code>failed</code> with its <code>code</code> and asking again deletes the parts left. <code>wait</code> waits up to that many seconds (60 at most) for the change to end, and answers it as it then stands. Once done, the target keeps the status <code>published</code> with its <code>removedAt</code> (the month's count and the usage stay, as the post did go out), analytics stops reading it and keeps what it read, and the inbox stops reading its comments and keeps those it has. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted already, Peal has no id for a part of it, the platform does not let Peal delete it (the capabilities' <code>livePost</code> say so beforehand), another change of it is pending, the channel cannot be used, or a boost that is not over shows it. Webhooks hear <code>post.unpublished</code> or <code>post.unpublish_failed</code>. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public CompletableFuture<LivePostChange> unpublishTarget(
+            String workspaceId,
+            String postId,
+            String targetId,
+            UnpublishTargetPostsRequest request,
+            RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<LivePostChange>> rawFuture =
+                this.rawClient.unpublishTarget(workspaceId, postId, targetId, request, requestOptions);
+        CompletableFuture<LivePostChange> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (<code>changes</code>) and, beside them, why it could not be on the others (<code>refused</code>, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public CompletableFuture<PostUnpublish> unpublish(String workspaceId, String postId) {
+        CompletableFuture<PealClientHttpResponse<PostUnpublish>> rawFuture =
+                this.rawClient.unpublish(workspaceId, postId);
+        CompletableFuture<PostUnpublish> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (<code>changes</code>) and, beside them, why it could not be on the others (<code>refused</code>, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public CompletableFuture<PostUnpublish> unpublish(
+            String workspaceId, String postId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<PostUnpublish>> rawFuture =
+                this.rawClient.unpublish(workspaceId, postId, requestOptions);
+        CompletableFuture<PostUnpublish> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (<code>changes</code>) and, beside them, why it could not be on the others (<code>refused</code>, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public CompletableFuture<PostUnpublish> unpublish(
+            String workspaceId, String postId, UnpublishPostsRequest request) {
+        CompletableFuture<PealClientHttpResponse<PostUnpublish>> rawFuture =
+                this.rawClient.unpublish(workspaceId, postId, request);
+        CompletableFuture<PostUnpublish> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (<code>changes</code>) and, beside them, why it could not be on the others (<code>refused</code>, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public CompletableFuture<PostUnpublish> unpublish(
+            String workspaceId, String postId, UnpublishPostsRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<PostUnpublish>> rawFuture =
+                this.rawClient.unpublish(workspaceId, postId, request, requestOptions);
+        CompletableFuture<PostUnpublish> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     */
+    public CompletableFuture<LivePostChanges> changes(String workspaceId, String postId) {
+        CompletableFuture<PealClientHttpResponse<LivePostChanges>> rawFuture =
+                this.rawClient.changes(workspaceId, postId);
+        CompletableFuture<LivePostChanges> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     */
+    public CompletableFuture<LivePostChanges> changes(
+            String workspaceId, String postId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<LivePostChanges>> rawFuture =
+                this.rawClient.changes(workspaceId, postId, requestOptions);
+        CompletableFuture<LivePostChanges> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     */
+    public CompletableFuture<LivePostChanges> changes(String workspaceId, String postId, ChangesPostsRequest request) {
+        CompletableFuture<PealClientHttpResponse<LivePostChanges>> rawFuture =
+                this.rawClient.changes(workspaceId, postId, request);
+        CompletableFuture<LivePostChanges> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     */
+    public CompletableFuture<LivePostChanges> changes(
+            String workspaceId, String postId, ChangesPostsRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<LivePostChanges>> rawFuture =
+                this.rawClient.changes(workspaceId, postId, request, requestOptions);
+        CompletableFuture<LivePostChanges> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);

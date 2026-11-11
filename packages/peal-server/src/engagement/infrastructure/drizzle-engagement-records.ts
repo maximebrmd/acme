@@ -1,8 +1,9 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { EngagementRecords } from "#engagement/application/engagement-records.ts";
+import type { CollectionEnd } from "#engagement/domain/thread.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type { SentReplyRecord } from "#shared/application/personal-data.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
@@ -11,6 +12,9 @@ import { shareFollowingLock } from "./following-lock.ts";
 import { erasedWorkspaces, replies, threads } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
+
+// The end of a thread whose post Peal deleted from its platform.
+const removed: CollectionEnd = "removed";
 
 /**
  * EngagementRecords on the engagement schema. Deleting a thread deletes
@@ -90,6 +94,22 @@ export const DrizzleEngagementRecords = Layer.effect(
       }
     );
 
-    return EngagementRecords.of({ eraseWorkspace, exportUser, forgetUser });
+    const postRemoved = (targetId: string, at: DateTime.Utc) =>
+      db
+        .update(threads)
+        .set({
+          endReason: removed,
+          endedAt: DateTime.toDateUtc(at),
+          nextCollectionAt: null,
+        })
+        .where(and(eq(threads.targetId, targetId), isNull(threads.endedAt)))
+        .pipe(Effect.asVoid, Effect.mapError(failed));
+
+    return EngagementRecords.of({
+      eraseWorkspace,
+      exportUser,
+      forgetUser,
+      postRemoved,
+    });
   })
 );

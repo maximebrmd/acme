@@ -477,6 +477,7 @@ type NoticeEvent struct {
 	SubscriptionCancelled         *NoticeEventSubscriptionCancelled
 	SubscriptionWithdrawn         *NoticeEventSubscriptionWithdrawn
 	WebhookEndpointDisabled       *NoticeEventWebhookEndpointDisabled
+	WebhookDeliveriesFailing      *NoticeEventWebhookDeliveriesFailing
 	AdBoostChanged                *NoticeEventAdBoostChanged
 	AdConnectionReconnectRequired *NoticeEventAdConnectionReconnectRequired
 
@@ -602,6 +603,13 @@ func (n *NoticeEvent) GetWebhookEndpointDisabled() *NoticeEventWebhookEndpointDi
 	return n.WebhookEndpointDisabled
 }
 
+func (n *NoticeEvent) GetWebhookDeliveriesFailing() *NoticeEventWebhookDeliveriesFailing {
+	if n == nil {
+		return nil
+	}
+	return n.WebhookDeliveriesFailing
+}
+
 func (n *NoticeEvent) GetAdBoostChanged() *NoticeEventAdBoostChanged {
 	if n == nil {
 		return nil
@@ -724,6 +732,12 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.WebhookEndpointDisabled = value
+	case "WebhookDeliveriesFailing":
+		value := new(NoticeEventWebhookDeliveriesFailing)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.WebhookDeliveriesFailing = value
 	case "AdBoostChanged":
 		value := new(NoticeEventAdBoostChanged)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -793,6 +807,9 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.WebhookEndpointDisabled != nil {
 		return internal.MarshalJSONWithExtraProperty(n.WebhookEndpointDisabled, "_tag", "WebhookEndpointDisabled")
 	}
+	if n.WebhookDeliveriesFailing != nil {
+		return internal.MarshalJSONWithExtraProperty(n.WebhookDeliveriesFailing, "_tag", "WebhookDeliveriesFailing")
+	}
 	if n.AdBoostChanged != nil {
 		return internal.MarshalJSONWithExtraProperty(n.AdBoostChanged, "_tag", "AdBoostChanged")
 	}
@@ -822,6 +839,7 @@ type NoticeEventVisitor interface {
 	VisitSubscriptionCancelled(*NoticeEventSubscriptionCancelled) error
 	VisitSubscriptionWithdrawn(*NoticeEventSubscriptionWithdrawn) error
 	VisitWebhookEndpointDisabled(*NoticeEventWebhookEndpointDisabled) error
+	VisitWebhookDeliveriesFailing(*NoticeEventWebhookDeliveriesFailing) error
 	VisitAdBoostChanged(*NoticeEventAdBoostChanged) error
 	VisitAdConnectionReconnectRequired(*NoticeEventAdConnectionReconnectRequired) error
 }
@@ -874,6 +892,9 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.WebhookEndpointDisabled != nil {
 		return visitor.VisitWebhookEndpointDisabled(n.WebhookEndpointDisabled)
+	}
+	if n.WebhookDeliveriesFailing != nil {
+		return visitor.VisitWebhookDeliveriesFailing(n.WebhookDeliveriesFailing)
 	}
 	if n.AdBoostChanged != nil {
 		return visitor.VisitAdBoostChanged(n.AdBoostChanged)
@@ -936,6 +957,9 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.WebhookEndpointDisabled != nil {
 		fields = append(fields, "WebhookEndpointDisabled")
+	}
+	if n.WebhookDeliveriesFailing != nil {
+		fields = append(fields, "WebhookDeliveriesFailing")
 	}
 	if n.AdBoostChanged != nil {
 		fields = append(fields, "AdBoostChanged")
@@ -2989,6 +3013,108 @@ func (n *NoticeEventTrialEnding) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NoticeEventTrialEnding) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventWebhookDeliveriesFailingFieldEndpointID = big.NewInt(1 << 0)
+	noticeEventWebhookDeliveriesFailingFieldHost       = big.NewInt(1 << 1)
+)
+
+type NoticeEventWebhookDeliveriesFailing struct {
+	EndpointID string `json:"endpointId" url:"endpointId"`
+	Host       string `json:"host" url:"host"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventWebhookDeliveriesFailing) GetEndpointID() string {
+	if n == nil {
+		return ""
+	}
+	return n.EndpointID
+}
+
+func (n *NoticeEventWebhookDeliveriesFailing) GetHost() string {
+	if n == nil {
+		return ""
+	}
+	return n.Host
+}
+
+func (n *NoticeEventWebhookDeliveriesFailing) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventWebhookDeliveriesFailing) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetEndpointID sets the EndpointID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventWebhookDeliveriesFailing) SetEndpointID(endpointID string) {
+	n.EndpointID = endpointID
+	n.require(noticeEventWebhookDeliveriesFailingFieldEndpointID)
+}
+
+// SetHost sets the Host field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventWebhookDeliveriesFailing) SetHost(host string) {
+	n.Host = host
+	n.require(noticeEventWebhookDeliveriesFailingFieldHost)
+}
+
+func (n *NoticeEventWebhookDeliveriesFailing) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventWebhookDeliveriesFailing
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventWebhookDeliveriesFailing(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventWebhookDeliveriesFailing) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventWebhookDeliveriesFailing
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventWebhookDeliveriesFailing) String() string {
 	if n == nil {
 		return "<nil>"
 	}

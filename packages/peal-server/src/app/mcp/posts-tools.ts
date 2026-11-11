@@ -9,6 +9,7 @@ import {
   ChannelSetReferencesSchema,
   duplicateWindowHours,
   idempotencyKeyLifetimeHours,
+  LivePostChangesSchema,
   maxBulkPosts,
   maxDraftPageSize,
   maxIdempotencyKeyLength,
@@ -24,10 +25,12 @@ import {
   PostSchema,
   PostSortSchema,
   PostStatusSchema,
+  PostUnpublishSchema,
   PostValidationSchema,
   PublicationAttemptSchema,
   queueHorizonDays,
   QueuePostSchema,
+  QueueReshuffleSchema,
   TargetConfirmationSchema,
   TikTokAccountSchema,
 } from "peal-contract";
@@ -52,7 +55,7 @@ const channelIds = Schema.Array(Schema.String).annotate({
 // The API's draft options, each channel's once.
 const options = PostDraftSchema.fields.options.schema.annotate({
   description:
-    "What the post sets on the platforms that ask for more than text and media, one entry per channel, tagged by the channel's `platform`: YouTube's title (required), madeForKids (required), privacy, tags, categoryId, notifySubscribers and containsSyntheticMedia; TikTok's privacyLevel (required: one of the levels get_tiktok_creator answers), disableComment, disableDuet, disableStitch, commercialContent, brandOrganic, brandContent and aiGenerated; Google Business Profile's postType (standard when left out, event or offer), title, startsAt and endsAt (required for an event or an offer, as 2026-11-27T09:00 on the location's own clock), callToAction (book, order, shop, learnMore, signUp or call) with its callToActionUrl (none for call), and an offer's couponCode, redeemUrl and terms; Pinterest's boardId (required: a board's id from the pinterestBoards lookup, run_channel_lookup), boardSectionId (from pinterestBoardSections), title, link, coverSecond and dominantColor; LinkedIn's visibility (public when left out, connections on a profile, or loggedIn), disableReshare, mentions (company pages, each a name and urn as the linkedinOrganizations lookup answers them on a company page channel, the text holding @ and that name), linkUrl with its linkTitle and a linkDescription, and a PDF document's documentTitle. get_channel_capabilities describes every field of a channel. A draft keeps them unfinished; scheduling needs the required ones.",
+    "What the post sets on the platforms that ask for more than text and media, one entry per channel, tagged by the channel's `platform`: YouTube's title (required), madeForKids (required), privacy, tags, categoryId, notifySubscribers, containsSyntheticMedia, license, embeddable, publicStatsViewable, defaultLanguage (a BCP 47 tag), recordingDate (as 2026-11-27) and thumbnailMediaId (a ready JPEG or PNG of the workspace's media, set once the video is up; a channel YouTube does not allow it is published without it, with `thumbnailNotSet`); TikTok's privacyLevel (required: one of the levels get_tiktok_creator answers), disableComment, disableDuet, disableStitch, commercialContent, brandOrganic, brandContent, aiGenerated, a video's videoCoverTimestampMs, and a photo post's photoTitle, autoAddMusic and photoCoverIndex; Google Business Profile's postType (standard when left out, event or offer), title, startsAt and endsAt (required for an event or an offer, as 2026-11-27T09:00 on the location's own clock), callToAction (book, order, shop, learnMore, signUp or call) with its callToActionUrl (none for call), and an offer's couponCode, redeemUrl and terms; Pinterest's boardId (required: a board's id from the pinterestBoards lookup, run_channel_lookup), boardSectionId (from pinterestBoardSections), title, link, coverSecond and dominantColor; LinkedIn's visibility (public when left out, connections on a profile, or loggedIn), disableReshare, mentions (company pages, each a name and urn as the linkedinOrganizations lookup answers them on a company page channel, the text holding @ and that name), linkUrl with its linkTitle and a linkDescription, and a PDF document's documentTitle; Mastodon's, Bluesky's, Threads' and X's reply, language, label and disclosure settings; Instagram's collaborators (up to 3 usernames of other accounts, each of which receives an invitation: set it only for accounts the user named) and, for a post of one video (a reel), shareToFeed, coverMediaId (a ready JPEG of the workspace's media), thumbOffsetMs, audioName and trialReel; Facebook's videoTitle, for a post of a video. Set an option only when the user chose it. get_channel_capabilities describes every field of a channel. A draft keeps them unfinished; scheduling needs the required ones.",
 });
 
 // The API's tags of a post, by id.
@@ -111,7 +114,7 @@ export const ListDrafts = Tool.make("list_drafts", {
 export const GetPost = Tool.make("get_post", {
   dependencies: [CurrentMember],
   description:
-    "Answers with a post of the workspace: what it says, when it goes out, the tags it is filed under (`tagIds`, which list_tags names), and how it went on each channel (its `targets`, whose ids repost_target and confirm_target take, each with `parts`: how many parts the post has there and those that are live, in order, as a post of several parts stops at the first that fails or has no confirmed outcome, each with its platform `options`, and `keptPrivate` when YouTube kept the video private although it was asked otherwise). A failed target says why in `failureReason`: the platform refused its text or format (contentRejected) or a media (mediaRejected); its channel was disconnected (channelDisconnected), or turned off (channelDisabled: enable_channel turns it back on, then the post is scheduled anew, as it is not sent later), or a media deleted (mediaRemoved); Peal was down at its time (missed); the user found it missing (notPublished); the platform kept limiting Peal (rateLimited), its daily upload allowance stayed spent (quotaExceeded, YouTube's), it refused the account's token (tokenExpired) or could not be reached (unavailable); the platform takes only private posts from this server's app until it audits it (appNotAudited, TikTok's: the account must be private and the post visible to its owner only); or the platform refused this server's app until its operator pays for it (appBillingLimit, X's: credits used up or spending cap reached), which is not the post's fault; or the workspace's plan had no room for it when it was due (planLimit: more channels than the plan allows, or the month's posts used up), and nothing was sent; or some parts of a post of several are live and those after them were not sent (partsNotSent: `parts.live` lists what is out, and Peal cannot send the rest, as it has no post to reply to, so repost_target refuses it and the member posts the rest on the platform; repliesNotAllowed: the first parts are live and X did not let this server's app post the rest as replies, which repost_target refuses too).",
+    "Answers with a post of the workspace: what it says, when it goes out, the tags it is filed under (`tagIds`, which list_tags names), and how it went on each channel, in its `targets`. Each target's id is what repost_target and confirm_target take; it has `parts` (how many parts the post has there and those that are live, in order, as a post of several parts stops at the first that fails or has no confirmed outcome), its platform `options`, `keptPrivate` when YouTube kept the video private although it was asked otherwise, `thumbnailNotSet` when YouTube set no thumbnail it was given, and `removedAt` once unpublish_post removed it. A failed target says why in `failureReason`: the platform refused its text or format (contentRejected) or a media (mediaRejected); its channel was disconnected (channelDisconnected), or turned off (channelDisabled: enable_channel turns it back on, then the post is scheduled anew, as it is not sent later), or a media deleted (mediaRemoved); Peal was down at its time (missed); the user found it missing (notPublished); the platform kept limiting Peal (rateLimited), its daily upload allowance stayed spent (quotaExceeded, YouTube's), it refused the account's token (tokenExpired) or could not be reached (unavailable); the platform takes only private posts from this server's app until it audits it (appNotAudited, TikTok's: the account must be private and the post visible to its owner only); or the platform refused this server's app until its operator pays for it (appBillingLimit, X's: credits used up or spending cap reached), which is not the post's fault; or the workspace's plan had no room for it when it was due (planLimit: more channels than the plan allows, or the month's posts used up), and nothing was sent; or some parts of a post of several are live and those after them were not sent (partsNotSent: `parts.live` lists what is out, and Peal cannot send the rest, as it has no post to reply to, so repost_target refuses it and the member posts the rest on the platform; repliesNotAllowed: the first parts are live and X did not let this server's app post the rest as replies, which repost_target refuses too).",
   failure: ToolRefused,
   parameters: Schema.Struct({ postId }),
   success: PostSchema,
@@ -121,7 +124,7 @@ export const GetPost = Tool.make("get_post", {
 
 export const CreateDraft = Tool.make("create_draft", {
   dependencies: [CurrentMember],
-  description: `Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the parts that follow it, the channels it is for, the options of those whose platform asks for more (X, LinkedIn, Bluesky, Mastodon, Threads, TikTok, YouTube, Pinterest, Google Business Profile), and the workspace's tags it is filed under (\`tagIds\`, none when left out). The parts are \`content.followUps\`, in order, each with its text, media, texts by channel and \`delaySeconds\`, the wait after the part before it: replies in a thread on the platforms whose channels get_channel_capabilities describes with \`followUps\`, refused when scheduled on the others. ${takesSaved} A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.`,
+  description: `Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the parts that follow it, the channels it is for, the options of those whose platform asks for more (X, LinkedIn, Bluesky, Mastodon, Threads, Instagram, Facebook, TikTok, YouTube, Pinterest, Google Business Profile), and the workspace's tags it is filed under (\`tagIds\`, none when left out). The parts are \`content.followUps\`, in order, each with its text, media, texts by channel and \`delaySeconds\`, the wait after the part before it: replies in a thread on the platforms whose channels get_channel_capabilities describes with \`followUps\`, refused when scheduled on the others. ${takesSaved} A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelIds,
@@ -225,6 +228,39 @@ export const ConfirmTarget = Tool.make("confirm_target", {
   )
   .annotate(Tool.Title, "Confirm a post on a channel");
 
+export const UnpublishPost = Tool.make("unpublish_post", {
+  dependencies: [CurrentMember],
+  description:
+    "Deletes a published post from its platforms, for everyone who could see it: every part of a thread, the last first. It cannot be undone, from Peal or by the platform: call this only when the user asked for this very post to be taken down, and say first which post and channels it removes. Give `channelId` or `targetId` (as get_post answers it), never both, to remove it from one channel; without either, it is removed from every channel where it can be. Each removal runs in the background: the answer lists the changes made (`changes`, each `pending`, then `done` or `failed`, which list_post_changes reads) and the channels it could not be removed from with why (`refused`: notPublished, alreadyRemoved, noPlatformId, notSupported, changeInProgress, channelUnavailable, boostRunning). Platforms that do not let Peal delete say so beforehand in get_channel_capabilities (`livePost`). The post stays published in Peal, its target with `removedAt` once done. Needs the scope workspace:publish.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelId: Schema.optionalKey(
+      Schema.String.annotate({
+        description:
+          "Only on this channel, as list_channels answers its id; left out, on every channel where the post can be removed.",
+      })
+    ),
+    postId,
+    targetId: Schema.optionalKey(targetId),
+  }),
+  success: PostUnpublishSchema,
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Unpublish a post");
+
+export const ListPostChanges = Tool.make("list_post_changes", {
+  dependencies: [CurrentMember],
+  description:
+    "Lists what was asked of a post once it was live (removing it from a channel's platform), newest first: each change with where it stands (`pending`, `done`, or `failed` with its `code`, after which unpublish_post may be called again to remove what is left) and how many parts are left.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ postId }),
+  success: LivePostChangesSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "List a post's changes");
+
 export const GetTikTokCreator = Tool.make("get_tiktok_creator", {
   dependencies: [CurrentMember],
   description:
@@ -301,7 +337,7 @@ const waitsForOutcome = `It answers while the post publishes, unless \`waitSecon
 
 export const ListPosts = Tool.make("list_posts", {
   dependencies: [CurrentMember],
-  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application), \`authorId\`, \`tagId\` (the posts filed under that tag) and \`queueId\` (the posts that queue placed). \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
+  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application), \`authorId\`, \`tagId\` (the posts filed under that tag), \`queueId\` (the posts that queue placed) and \`removed\` (the posts removed from a channel's platform, or from none). \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     authorId: Schema.optionalKey(Schema.String),
@@ -320,6 +356,12 @@ export const ListPosts = Tool.make("list_posts", {
       Schema.String.annotate({
         description:
           "Only the posts this queue placed, as list_queues answers its id.",
+      })
+    ),
+    removed: Schema.optionalKey(
+      Schema.Boolean.annotate({
+        description:
+          "True: only the posts removed from at least one channel's platform (unpublish_post); false: only those removed from none.",
       })
     ),
     sort: Schema.optionalKey(PostSortSchema),
@@ -419,6 +461,23 @@ export const QueuePost = Tool.make("queue_post", {
     changing({ destructive: true, idempotent: true, openWorld: true })
   )
   .annotate(Tool.Title, "Add a post to a queue");
+
+export const ReshuffleQueue = Tool.make("reshuffle_queue", {
+  dependencies: [CurrentMember],
+  description: `Moves the posts that wait in a queue (\`queue\`, by its id or its name) onto its slots as they are now: for after its timetable changed with update_queue, which moves no post by itself. The waiting posts (scheduled or awaiting approval, from now on) keep their order and take the queue's slots from now, the first onto the first, those moved by hand included; a post already on its slot stays as it is. Each move is what reschedule_post does, a new time on the same channels, but for approvals: a post that waits for an approval keeps waiting at its new time, whoever reshuffles, and a scheduled one goes through the workspace's approvals as yours. What the posts say and where they go do not change. Answers how many moved, how many stayed (\`unchanged\`), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (\`stoppedBy\` \`planLimit\`), when no slot is left within ${String(queueHorizonDays)} days (\`full\`), or when the queue was saved meanwhile (\`changed\`: call it again). Called again, it moves nothing. Do it only when the user asks for the queue's posts to be moved. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    queue: Schema.String.annotate({
+      description:
+        "The queue, by its id or its name whatever its case, as list_queues answers them.",
+    }),
+  }),
+  success: QueueReshuffleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Reshuffle a queue");
 
 export const CancelPost = Tool.make("cancel_post", {
   dependencies: [CurrentMember],
@@ -533,6 +592,7 @@ export const PostTools = Toolkit.make(
   PublishPost,
   ReschedulePost,
   QueuePost,
+  ReshuffleQueue,
   CreatePost,
   CreatePosts,
   ValidatePost,
@@ -540,5 +600,7 @@ export const PostTools = Toolkit.make(
   UnschedulePost,
   CancelPost,
   RepostTarget,
-  ConfirmTarget
+  ConfirmTarget,
+  UnpublishPost,
+  ListPostChanges
 );

@@ -307,6 +307,23 @@ class NoticeEvent_WebhookEndpointDisabled(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_WebhookDeliveriesFailing(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["WebhookDeliveriesFailing"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "WebhookDeliveriesFailing"
+    endpoint_id: typing_extensions.Annotated[str, FieldMetadata(alias="endpointId"), pydantic.Field(alias="endpointId")]
+    host: str
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class NoticeEvent_AdBoostChanged(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["AdBoostChanged"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -365,6 +382,7 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_SubscriptionCancelled,
         NoticeEvent_SubscriptionWithdrawn,
         NoticeEvent_WebhookEndpointDisabled,
+        NoticeEvent_WebhookDeliveriesFailing,
         NoticeEvent_AdBoostChanged,
         NoticeEvent_AdConnectionReconnectRequired,
     ],

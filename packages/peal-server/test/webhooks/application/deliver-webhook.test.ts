@@ -89,6 +89,39 @@ layer(WebhooksTest)("a delivery's attempts", (it) => {
     })
   );
 
+  it.effect(
+    "send the endpoint's own headers beside Peal's, which they never replace",
+    () =>
+      Effect.gen(function* ownHeaders() {
+        const owner = yield* freshOwner;
+        const transport = yield* FakeTransport;
+
+        const { endpoint, host } = yield* freshEndpoint(owner, {
+          headers: [
+            { name: "Authorization", value: "Bearer synthetic-gateway-token" },
+            { name: "X-Route", value: "synthetic-route" },
+          ],
+        });
+
+        const delivery = yield* pending(owner, endpoint.id);
+
+        yield* attempt(delivery.id, 1);
+
+        const [request] = yield* transport.sentTo(host);
+
+        assert(request !== undefined);
+        assert.strictEqual(
+          request.headers["Authorization"],
+          "Bearer synthetic-gateway-token"
+        );
+        assert.strictEqual(request.headers["X-Route"], "synthetic-route");
+        assert.strictEqual(request.headers["content-type"], "application/json");
+        assert.strictEqual(request.headers["user-agent"], "Peal-Webhooks");
+        assert.strictEqual(request.headers["webhook-id"], delivery.eventId);
+        assert.lengthOf(Object.keys(request.headers), 7);
+      })
+  );
+
   it.effect("try again on the schedule, with the same id and a new time", () =>
     Effect.gen(function* retries() {
       const owner = yield* freshOwner;
@@ -197,6 +230,44 @@ layer(WebhooksTest)("a delivery's attempts", (it) => {
       );
       assert.lengthOf(yield* transport.sentTo(host), maxAttempts);
     })
+  );
+
+  it.effect(
+    "tell those who manage webhooks that deliveries fail for good, while the endpoint is on",
+    () =>
+      Effect.gen(function* failing() {
+        const owner = yield* freshOwner;
+        const transport = yield* FakeTransport;
+        const notices = yield* ToldNotices;
+        const { endpoint, host } = yield* freshEndpoint(owner);
+
+        const exhaust = Effect.fn("exhaust")(function* exhaust() {
+          const delivery = yield* pending(owner, endpoint.id);
+
+          yield* transport.next(
+            host,
+            ...Array.from({ length: maxAttempts }, () => answered(503))
+          );
+
+          for (let number = 1; number <= maxAttempts; number += 1) {
+            yield* TestClock.adjust("1 minute");
+            yield* attempt(delivery.id, number);
+          }
+
+          return yield* DateTime.now;
+        });
+
+        const first = yield* exhaust();
+        const second = yield* exhaust();
+
+        // Each time: the notice keeps one a day (NotifiedEndpointNotices).
+        assert.deepStrictEqual(yield* notices.failingAbout(endpoint.id), [
+          first,
+          second,
+        ]);
+        // Still on: nothing was turned off.
+        assert.lengthOf(yield* notices.about(endpoint.id), 0);
+      })
   );
 
   it.effect(
@@ -340,6 +411,8 @@ layer(WebhooksTest)("a delivery's attempts", (it) => {
         assert.deepStrictEqual(yield* notices.about(endpoint.id), [
           { at: now, endpointId: endpoint.id, reason: "gone" },
         ]);
+        // Turned off by that failure: its own notice says it all.
+        assert.lengthOf(yield* notices.failingAbout(endpoint.id), 0);
       })
   );
 

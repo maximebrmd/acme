@@ -39,7 +39,12 @@
   posts out (`schedule_post`, `publish_post`, `reschedule_post`,
   `create_post`, `repost_target`) are `openWorld`, say in their description
   that what goes out is public and cannot be taken back, and check
-  post:schedule before reading the post. Instants are
+  post:schedule before reading the post. `unpublish_post` (in
+  `publishingTools`) is `destructive` and `openWorld`: its description
+  says the post is deleted from the platform for everyone, for good, and
+  that an agent calls it only when the user asked for that post;
+  `list_post_changes` reads. Their refusals have their words in
+  `refusals.ts` (`livePostRefusals`). Instants are
   `Schema.DateTimeUtcFromString` in tool parameters. The tools of
   `PostTools` and `MediaTools` that change something are `contentTools`,
   whose calls the ConnectionJournal keeps. The account's own
@@ -97,7 +102,9 @@
   `validate_post` take `when: queue` naming a queue by id or name
   (`queueReferenced`), the default when left out; `queue_post` (in
   `publishingTools`, open world) puts a draft or a scheduled post on a
-  queue's next free slot.
+  queue's next free slot. `reshuffle_queue` (in `publishingTools`, not
+  open world: it moves posts, not what they say) moves a queue's waiting
+  posts onto its slots; `update_queue` moves none.
 - On `/api/mcp`, a partner key names the workspace it acts in with each
   request, by id, in the `Peal-Workspace` header (`workspaceNamed` in
   `authenticate.ts`; 400 without it), and is told 404 for any workspace
@@ -128,4 +135,7 @@
   change, what is left out stays) take the filters; `send_test_webhook`
   (`eventType` for a sample) and `redeliver_webhooks` (ids, or an
   endpoint's failed ones) are `openWorld`, as they make Peal call
-  receivers. No tool returns a secret but `create_webhook`'s answer.
+  receivers. No tool returns a secret but `create_webhook`'s answer, and
+  none a header's value: `create_webhook` and `update_webhook` take
+  `headers` (write-only, the whole list replaced), and answer
+  `headerNames`.

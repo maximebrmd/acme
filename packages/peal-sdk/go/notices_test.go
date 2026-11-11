@@ -1295,6 +1295,39 @@ func TestGettersNoticeEvent(t *testing.T) {
 		_ = obj.GetWebhookEndpointDisabled() // Should return zero value
 	})
 
+	t.Run("GetWebhookDeliveriesFailing", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEvent{}
+		var expected *NoticeEventWebhookDeliveriesFailing
+		obj.WebhookDeliveriesFailing = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetWebhookDeliveriesFailing(), "getter should return the property value")
+	})
+
+	t.Run("GetWebhookDeliveriesFailing_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEvent{}
+		obj.WebhookDeliveriesFailing = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetWebhookDeliveriesFailing(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetWebhookDeliveriesFailing_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetWebhookDeliveriesFailing() // Should return zero value
+	})
+
 	t.Run("GetAdBoostChanged", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -4560,6 +4593,139 @@ func TestSettersMarkExplicitNoticeEventTrialEnding(t *testing.T) {
 
 }
 
+func TestSettersNoticeEventWebhookDeliveriesFailing(t *testing.T) {
+	t.Run("SetEndpointID", func(t *testing.T) {
+		obj := &NoticeEventWebhookDeliveriesFailing{}
+		var fernTestValueEndpointID string
+		obj.SetEndpointID(fernTestValueEndpointID)
+		assert.Equal(t, fernTestValueEndpointID, obj.EndpointID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetHost", func(t *testing.T) {
+		obj := &NoticeEventWebhookDeliveriesFailing{}
+		var fernTestValueHost string
+		obj.SetHost(fernTestValueHost)
+		assert.Equal(t, fernTestValueHost, obj.Host)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersNoticeEventWebhookDeliveriesFailing(t *testing.T) {
+	t.Run("GetEndpointID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventWebhookDeliveriesFailing{}
+		var expected string
+		obj.EndpointID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetEndpointID(), "getter should return the property value")
+	})
+
+	t.Run("GetEndpointID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEventWebhookDeliveriesFailing
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetEndpointID() // Should return zero value
+	})
+
+	t.Run("GetHost", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventWebhookDeliveriesFailing{}
+		var expected string
+		obj.Host = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetHost(), "getter should return the property value")
+	})
+
+	t.Run("GetHost_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEventWebhookDeliveriesFailing
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetHost() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitNoticeEventWebhookDeliveriesFailing(t *testing.T) {
+	t.Run("SetEndpointID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventWebhookDeliveriesFailing{}
+		var fernTestValueEndpointID string
+
+		// Act
+		obj.SetEndpointID(fernTestValueEndpointID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetHost_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventWebhookDeliveriesFailing{}
+		var fernTestValueHost string
+
+		// Act
+		obj.SetHost(fernTestValueHost)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
 func TestSettersNoticeEventWebhookEndpointDisabled(t *testing.T) {
 	t.Run("SetEndpointID", func(t *testing.T) {
 		obj := &NoticeEventWebhookEndpointDisabled{}
@@ -5639,6 +5805,39 @@ func TestJSONMarshalingNoticeEventTrialEnding(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingNoticeEventWebhookDeliveriesFailing(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventWebhookDeliveriesFailing{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled NoticeEventWebhookDeliveriesFailing
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj NoticeEventWebhookDeliveriesFailing
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj NoticeEventWebhookDeliveriesFailing
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingNoticeEventWebhookEndpointDisabled(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -6360,6 +6559,22 @@ func TestStringNoticeEventTrialEnding(t *testing.T) {
 	})
 }
 
+func TestStringNoticeEventWebhookDeliveriesFailing(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &NoticeEventWebhookDeliveriesFailing{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEventWebhookDeliveriesFailing
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
 func TestStringNoticeEventWebhookEndpointDisabled(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -6978,6 +7193,29 @@ func TestExtraPropertiesNoticeEventTrialEnding(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *NoticeEventTrialEnding
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesNoticeEventWebhookDeliveriesFailing(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &NoticeEventWebhookDeliveriesFailing{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEventWebhookDeliveriesFailing
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

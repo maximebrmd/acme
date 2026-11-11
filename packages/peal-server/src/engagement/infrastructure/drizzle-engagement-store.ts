@@ -512,6 +512,9 @@ export const DrizzleEngagementStore = Layer.effect(
             last_collected_at timestamptz
           )
           WHERE thread.id = saved.id
+            -- A thread whose post was removed while it was read stays
+            -- ended.
+            AND thread.end_reason IS DISTINCT FROM 'removed'
         `.pipe(Effect.mapError(failed));
       }
     );

@@ -16,9 +16,10 @@ export type DisconnectedChannel = Pick<
 export type DisconnectionCause = "dataDeletion" | "member";
 
 /**
- * Hears that a workspace's channel was connected or disconnected, for
- * whoever follows the workspace from outside (its webhook endpoints). The
- * use cases call it in the transaction that saves or deletes the channel,
+ * Hears that a workspace's channel was connected or disconnected, or turned
+ * off or back on, for whoever follows the workspace from outside (its
+ * webhook endpoints). The use cases call it in the transaction that saves,
+ * switches or deletes the channel,
  * so what it records commits with the change or not at all. A channel that
  * needs reconnecting is told to ChannelNotices. A platform's data deletion
  * request (DataDeletions) disconnects channels too, and tells it the same
@@ -39,6 +40,10 @@ export class ChannelEvents extends Context.Service<
       channel: DisconnectedChannel,
       cause: DisconnectionCause
     ) => Effect.Effect<void, DatabaseError>;
+    /** A member turned the channel off, `channel` as it is now. */
+    readonly disabled: (channel: Channel) => Effect.Effect<void, DatabaseError>;
+    /** A member turned the channel back on, `channel` as it is now. */
+    readonly enabled: (channel: Channel) => Effect.Effect<void, DatabaseError>;
   }
 >()("peal-server/channels/application/ChannelEvents") {
   /** Nobody follows: for tests that need none. */
@@ -46,7 +51,9 @@ export class ChannelEvents extends Context.Service<
     ChannelEvents,
     ChannelEvents.of({
       connected: () => Effect.void,
+      disabled: () => Effect.void,
       disconnected: () => Effect.void,
+      enabled: () => Effect.void,
     })
   );
 }

@@ -461,17 +461,59 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/send" \
 
 Posts carry the queue that placed them (`queueId`, null once it is deleted), and `GET …/posts/search?queueId=…` lists them.
 
+Saving a queue's slots moves no post. `POST …/queues/{queueId}/reshuffle`, with no body, moves its waiting posts (scheduled or awaiting approval, after now) onto its slots as they are now, in the order of their times, those moved by hand included ([Move the waiting posts onto new slots](/scheduling#reshuffle)). Each move is a `reschedule` (the plan counted in the new month, `post.scheduled` told for a scheduled post), but for approvals: a scheduled post goes through the approval policy as the caller's, and a post awaiting approval keeps waiting at its new time, whoever calls, its request still the requester's and `post.approval_requested` told with the new time; a post on its slot is not written. It needs post:schedule, or post:create where posts wait for an approval, and answers what it did:
+
+```json
+{ "moved": 12, "unchanged": 3, "remaining": 0, "stoppedBy": null }
+```
+
+`remaining` counts the posts not placed when it stopped, and `stoppedBy` says why: `planLimit` (a month without room), `full` (no slot left within 366 days) or `changed` (the queue was saved, or a post added to it on a slot not yet reached, meanwhile). Call it again to go on; called twice, the second call moves nothing. A queue without a slot answers 409 `queue_has_no_room` (`noSlots`).
+
+## Unpublish a post [#unpublish]
+
+`POST …/posts/{postId}/targets/{targetId}/unpublish` deletes a published post from one channel's platform, for everyone, every part of a thread, the last first ([Unpublish a post](/scheduling#unpublish)); `POST …/posts/{postId}/unpublish` asks it of every channel the post is on, and answers each channel's change (`changes`) beside why the others could not (`refused`): one channel that cannot never fails the whole request. Both need post:publish, and an OAuth client the scope `workspace:publish`. It cannot be undone.
+
+The request is accepted (202) with the change, and a job deletes the post, one call at a time with the channel's other calls. `?wait=<seconds>` (60 at most) waits for it to end and answers it as it then stands. `GET …/posts/{postId}/changes` lists a post's changes, newest first, with post:read.
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/targets/$TARGET_ID/unpublish?wait=30" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```json
+{
+  "id": "019a7b10-0c21-7d3e-8f41-2a6b5c4d3e10",
+  "kind": "unpublish",
+  "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+  "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+  "status": "done",
+  "partsLeft": 0,
+  "requestedAt": "2026-11-10T09:00:00.000Z",
+  "finishedAt": "2026-11-10T09:00:01.000Z",
+  "code": null
+}
+```
+
+- A change is `pending` while parts are left (`partsLeft`), `done` once none is, and `failed` with its `code` when Peal gave up (`unavailable`, `rateLimited`, `channelUnavailable`, or the platform's own): asking again deletes the parts left. `alreadyGone: true` says the platform no longer had a part.
+- Once done, the target keeps `status: published` and gets `removedAt`; `GET …/posts/search?removed=true` lists the posts removed from a channel at least.
+- Before anything is called, a request that cannot be carried out answers 409 `live_post_not_changeable`, with `reason`: `notPublished`, `alreadyRemoved`, `noPlatformId` (a post confirmed by hand), `notSupported` (the platform's capabilities say why, in `livePost`), `changeInProgress`, `channelUnavailable` or `boostRunning`.
+- Webhooks hear `post.unpublished` or `post.unpublish_failed` ([Webhooks](/webhooks#post-unpublished)).
+- `GET …/platforms/capabilities` says beforehand where Peal deletes posts: `livePost.unpublish`, and `livePost.unpublishBlockedBy` (`noApi`, `permission` or `unverified`) where it does not.
+
 ## From MCP and the command line [#tools]
 
-| Request                        | MCP tool                          | Command                              |
-| ------------------------------ | --------------------------------- | ------------------------------------ |
-| `POST …/posts/validate`        | `validate_post`                   | `peal post … --dry-run`              |
-| `POST …/posts/send?wait=…`     | `create_post`, with `waitSeconds` | `peal post … --now --wait <seconds>` |
-| `GET …/posts/{postId}/outcome` | `await_post`                      | `peal posts wait <post-id>`          |
-| `POST …/posts/bulk`            | `create_posts`                    |                                      |
-| `POST …/posts/import`          |                                   | `peal posts import <file.csv>`       |
-| `GET …/posts/search`           | `list_posts`                      | `peal posts list`                    |
-| `POST …/posts/{postId}/queue`  | `queue_post`                      | `peal posts queue <post-id>`         |
-| `GET …/queues/{queueId}/slots` | `preview_queue`                   | `peal queues preview <queue>`        |
+| Request                             | MCP tool                          | Command                              |
+| ----------------------------------- | --------------------------------- | ------------------------------------ |
+| `POST …/posts/validate`             | `validate_post`                   | `peal post … --dry-run`              |
+| `POST …/posts/send?wait=…`          | `create_post`, with `waitSeconds` | `peal post … --now --wait <seconds>` |
+| `GET …/posts/{postId}/outcome`      | `await_post`                      | `peal posts wait <post-id>`          |
+| `POST …/posts/bulk`                 | `create_posts`                    |                                      |
+| `POST …/posts/import`               |                                   | `peal posts import <file.csv>`       |
+| `GET …/posts/search`                | `list_posts`                      | `peal posts list`                    |
+| `POST …/posts/{postId}/queue`       | `queue_post`                      | `peal posts queue <post-id>`         |
+| `POST …/posts/{postId}/unpublish`   | `unpublish_post`                  | `peal posts unpublish <post-id>`     |
+| `GET …/posts/{postId}/changes`      | `list_post_changes`               | `peal posts changes <post-id>`       |
+| `GET …/queues/{queueId}/slots`      | `preview_queue`                   | `peal queues preview <queue>`        |
+| `POST …/queues/{queueId}/reshuffle` | `reshuffle_queue`                 | `peal queues reshuffle <queue>`      |
 
 [Connect an MCP client](/mcp#tools) describes the tools, and [Command line](/cli#post) the commands.

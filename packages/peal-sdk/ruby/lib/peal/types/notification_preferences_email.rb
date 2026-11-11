@@ -16,6 +16,8 @@ module Peal
       field :post_review, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "postReview"
 
       field :post_unconfirmed, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "postUnconfirmed"
+
+      field :webhook_failing, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "webhookFailing"
     end
   end
 end

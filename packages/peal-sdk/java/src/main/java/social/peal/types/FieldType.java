@@ -19,6 +19,8 @@ public final class FieldType {
 
     public static final FieldType TEXT_LIST = new FieldType(Value.TEXT_LIST, "textList");
 
+    public static final FieldType MEDIA = new FieldType(Value.MEDIA, "media");
+
     private final Value value;
 
     private final String string;
@@ -62,6 +64,8 @@ public final class FieldType {
                 return visitor.visitMentionList();
             case TEXT_LIST:
                 return visitor.visitTextList();
+            case MEDIA:
+                return visitor.visitMedia();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -83,6 +87,8 @@ public final class FieldType {
                 return MENTION_LIST;
             case "textList":
                 return TEXT_LIST;
+            case "media":
+                return MEDIA;
             default:
                 return new FieldType(Value.UNKNOWN, value);
         }
@@ -94,6 +100,8 @@ public final class FieldType {
         CHOICE,
 
         INTEGER,
+
+        MEDIA,
 
         MENTION_LIST,
 
@@ -110,6 +118,8 @@ public final class FieldType {
         T visitChoice();
 
         T visitInteger();
+
+        T visitMedia();
 
         T visitMentionList();
 

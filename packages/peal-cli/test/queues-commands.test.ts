@@ -1,5 +1,7 @@
-import { assert, describe, it } from "@effect/vitest";
-import { Effect, Ref, Schema } from "effect";
+import { assert, describe, expect, it } from "@effect/vitest";
+import { DateTime, Effect, Ref, Schema } from "effect";
+
+import { reshuffleLines } from "#commands/queues.ts";
 
 import { filesLayer, signedIn } from "./signed-in.ts";
 import { evergreenQueueId, weekdaysQueueId } from "./studio-queues.ts";
@@ -169,7 +171,7 @@ describe("peal queues", () => {
           "tue@12:00",
           ...inStudio,
         ]),
-        `Queue ${evergreenQueueId} of Studio is now Evergreen (UTC, 1 slot, 0 channels). Posts it placed keep their times.`
+        `Queue ${evergreenQueueId} of Studio is now Evergreen (UTC, 1 slot, 0 channels). Posts it placed keep their times: peal queues reshuffle moves them onto its slots.`
       );
 
       yield* session.printed([
@@ -393,4 +395,122 @@ describe("peal post --queue and peal posts queue", () => {
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
+
+  it.effect(
+    "moves a queue's waiting posts onto its slots as they now are",
+    () =>
+      Effect.gen(function* reshuffles() {
+        const session = yield* signedIn();
+
+        // Wednesday 11 and Monday 16 November, at 09:00.
+        for (const text of [
+          "The first queued post.",
+          "The second queued post.",
+        ]) {
+          yield* session.printed([
+            "post",
+            text,
+            "--queue",
+            "Weekdays",
+            "--channel",
+            mastodonId,
+            ...inStudio,
+          ]);
+        }
+
+        // Wednesdays only, from now on.
+        yield* session.printed([
+          "queues",
+          "update",
+          "Weekdays",
+          "--slot",
+          "wed@09:00",
+          ...inStudio,
+        ]);
+
+        assert.strictEqual(
+          yield* session.printed([
+            "queues",
+            "reshuffle",
+            "weekdays",
+            ...inStudio,
+          ]),
+          "Moved 1 post of Weekdays onto its slots; 1 already on theirs or not yours to move."
+        );
+        assert.include(
+          yield* changes(session.studio),
+          `queue:reshuffle:${weekdaysQueueId}:1`
+        );
+
+        const second = (yield* Ref.get(session.studio.state)).posts.find(
+          ({ content }) => content.text === "The second queued post."
+        );
+
+        assert.strictEqual(
+          second?.schedule === null || second === undefined
+            ? undefined
+            : DateTime.formatIso(second.schedule.at),
+          "2026-11-18T09:00:00.000Z"
+        );
+
+        assert.deepStrictEqual(
+          parsed(
+            yield* session.printed([
+              "queues",
+              "reshuffle",
+              "Weekdays",
+              "--json",
+              ...inStudio,
+            ])
+          ),
+          { moved: 0, remaining: 0, stoppedBy: null, unchanged: 2 }
+        );
+
+        assert.include(
+          yield* session.refused([
+            "queues",
+            "reshuffle",
+            "Evergreen",
+            ...inStudio,
+          ]),
+          "The queue has no slot"
+        );
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it("says why a reshuffle stopped, and how many posts it left", () => {
+    const queue = {
+      channelIds: [],
+      channelSetId: null,
+      createdAt: DateTime.makeUnsafe("2026-10-07T09:00:00Z"),
+      id: weekdaysQueueId,
+      isDefault: true,
+      name: "Weekdays",
+      slots: [],
+      timeZone: "UTC",
+      unavailableChannelIds: [],
+    };
+
+    expect(
+      reshuffleLines(queue, {
+        moved: 12,
+        remaining: 3,
+        stoppedBy: "planLimit",
+        unchanged: 1,
+      })
+    ).toStrictEqual([
+      "Moved 12 posts of Weekdays onto its slots; 1 already on theirs or not yours to move.",
+      "Stopped at a month the plan has no room in: 3 posts not moved. peal billing shows the plan.",
+    ]);
+    expect(
+      reshuffleLines(queue, {
+        moved: 0,
+        remaining: 1,
+        stoppedBy: "changed",
+        unchanged: 0,
+      })[1]
+    ).toBe(
+      "Stopped as the queue changed meanwhile (saved, or a post added to it): 1 post not moved. Run it again."
+    );
+  });
 });

@@ -465,4 +465,49 @@ layer(WebhooksTest)("the webhooks endpoints", (it) => {
       );
     })
   );
+
+  it.effect(
+    "take headers whose values they never answer, and replace the whole list",
+    () =>
+      Effect.gen(function* headers() {
+        const workspaceId = yield* freshWorkspace;
+        const client = yield* clientAs(owner(workspaceId));
+        const params = { workspaceId };
+        const value = "Bearer synthetic-api-header-value";
+
+        const created = yield* client.webhooks.create({
+          params,
+          payload: {
+            eventTypes: ["post.published"],
+            headers: [{ name: "Authorization", value }],
+            url: `https://${host()}/hooks`,
+          },
+        });
+
+        const endpointParams = { ...params, endpointId: created.endpoint.id };
+        const read = yield* client.webhooks.get({ params: endpointParams });
+
+        assert.deepStrictEqual(created.endpoint.headerNames, ["Authorization"]);
+        assert.deepStrictEqual(read.headerNames, ["Authorization"]);
+        assert.notInclude(JSON.stringify([created, read]), value);
+
+        // Another origin needs the values again, or no header.
+        assert.strictEqual(
+          yield* tagOf(
+            client.webhooks.update({
+              params: endpointParams,
+              payload: { url: `https://${host()}/hooks` },
+            })
+          ),
+          "WebhookHeaderValuesRequired"
+        );
+
+        const cleared = yield* client.webhooks.update({
+          params: endpointParams,
+          payload: { headers: [] },
+        });
+
+        assert.deepStrictEqual(cleared.headerNames, []);
+      })
+  );
 });

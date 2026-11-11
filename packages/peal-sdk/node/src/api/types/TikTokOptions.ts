@@ -3,15 +3,19 @@
 import * as Peal from "../index.js";
 
 /**
- * How a post goes out on a TikTok account. Scheduling needs `privacyLevel`.
+ * How a post goes out on a TikTok account. Scheduling needs `privacyLevel`; `videoCoverTimestampMs` is for a video, `photoTitle`, `autoAddMusic` and `photoCoverIndex` for photos.
  */
 export interface TikTokOptions {
     aiGenerated?: boolean | undefined;
+    autoAddMusic?: boolean | undefined;
     brandContent?: boolean | undefined;
     brandOrganic?: boolean | undefined;
     commercialContent?: boolean | undefined;
     disableComment?: boolean | undefined;
     disableDuet?: boolean | undefined;
     disableStitch?: boolean | undefined;
+    photoCoverIndex?: number | undefined;
+    photoTitle?: string | undefined;
     privacyLevel?: Peal.TikTokPrivacyLevel | undefined;
+    videoCoverTimestampMs?: number | undefined;
 }

@@ -121,6 +121,65 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   repost's rate-limit deadline counts from the repost. `confirm` records
   what a member found for an unconfirmed target and revises the outcome.
   Both call `PublicationOutcomes.resolved`.
+- `LivePostChanges` (`application/live-post-changes.ts`) unpublishes a
+  live post: it deletes a published target from its platform, every part
+  of a thread the last first, so a run that stops midway leaves a thread
+  that reads from its start. It takes `livePostChangePermission`
+  (`post:publish`, `domain/live-post-change.ts`: an OAuth client needs
+  `workspace:publish`, staff impersonating never have it), and refuses
+  before any call (`removable`, then `LivePostHolds`): `notPublished`,
+  `alreadyRemoved`, `changeInProgress`, `channelUnavailable` (from
+  `PlatformCredentials.account`), `notSupported`, `noPlatformId`,
+  `boostRunning` (`AdsLivePostHolds`: a boost of the ads context that is
+  not over). The change (`publishing.live_post_changes`, ids and platform
+  ids, never content) is inserted with its job (`ChangeLivePostV1`, payload
+  `{ changeId }`) in one transaction under the post's and the target's
+  locks; a partial unique index keeps one pending change a target, so
+  requests sent together make one. A failed change keeps its `partsLeft`,
+  which the next request takes up. Nothing is reposted or reopened: a
+  removed target stays `published` with `removedAt` (the month's count,
+  the usage and X's metered count stay), and `PublishedTargets` lists it
+  no more. X bills each deletion: nothing counts it yet; the priced half
+  of usage must.
+- `ChangeLivePostV1` (`workflows/change-live-post.ts`, persisted contract:
+  `claim`, `call/<part>/<n>`, clocks `retry/<part>/<n>`, `settle`) deletes
+  part by part through the channel's gate (`RemoveLivePost`, volatile like
+  every gate call). Each call writes `call_started_at` and commits before
+  the platform is called, so an erasure sees it in flight; a run that
+  finds a call begun calls again, as deleting is safe to repeat and "not
+  found" is success (`alreadyGone`, but not after a call of Peal's that
+  never ended, which may have deleted it: `beginCall` answers `resumed`). So, unlike a publish, a call that
+  failed is retried (`decideRemoval`, `domain/removal-decision.ts`): the
+  policy's `unavailableBackoff`, its rate-limit bounds, then `failed` with
+  a code. `settle` writes the change, the target's `removedAt` and tells
+  `LivePostEvents` (`ToldLivePostEvents`: the webhooks'
+  `post.unpublished` and `post.unpublish_failed`, and analytics' and the
+  inbox's `postRemoved`, which end their collection as `removed` and keep
+  what they read) in one transaction. Erasure stops pending changes'
+  jobs and is refused while a call is in flight
+  (`LivePostChangeStore.lockOpen`).
+- `livePostSupport` (`domain/live-post-support.ts`) says per platform
+  whether Peal deletes there, or why not (`noApi`, `permission`,
+  `unverified`): the one table the capabilities (`livePost`), the use case
+  and the docs' table read (`test/publishing/domain/live-post-docs.test.ts`
+  compares). Deleting adapters are `<platform>/<platform>-live-post.ts`, in
+  `platforms/live-post-clients-live.ts`'s registry, which does not compile
+  without an entry per platform (`notDeleting` where none);
+  `test/publishing/platforms/live-post-clients.test.ts` keeps it equal to
+  the table. Each refuses an id it cannot tell is the account's before any
+  call (`invalidPlatformId`). Mastodon's 404, Pinterest's 404 and a 401 or
+  403 count only with the platform's own JSON error, X's "gone" only
+  with its `resource-not-found` problem (a bare 404 is X unreachable, and
+  no message's words count); Bluesky's PDS answers
+  a record gone with no `commit`; LinkedIn and Facebook Pages stay
+  `unverified` until their permission for a deletion is confirmed. The
+  boost hold (`AdsLivePostHolds`, `boostRunning`) is read under the post's
+  and the target's locks, which creating a boost does not take, and a
+  target with a pending change is still promotable: before Facebook or
+  Instagram deletes, make boost creation lock the target (post first) and
+  refuse one with a pending change, and leave such targets out of
+  `PromotablePosts` (`test/publishing/domain/live-post-boost-hold.test.ts`
+  fails the day one does).
 - Every way of scheduling passes the `ApprovalGate` in the transaction that
   saves the post: `schedule`, `scheduleDraft`, `reschedule` and `send` (so
   `posts.send`, `create_post`, `publish_post` and `peal post` too) ask
@@ -318,6 +377,13 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   transaction that settles it (`recordTargetRun`, and `claimPostRun` for
   missed targets). `NotifiedPublicationOutcomes` keys the notice by target and
   round, and a bug in telling is logged, never stops publishing.
+- Every place a post becomes `finished` tells `PostEvents.finished` with
+  its targets, in that transaction: `finishIfSettled` (the last target
+  settling, `completePostRun`), `claimPostRun`'s missed targets, a cancel
+  that leaves nothing to send, and `confirm` revising the outcome. The
+  webhook keys it by the highest target round and the outcome, so a
+  repost that ends, or a confirmation that changes the outcome, tells
+  `post.finished` again, and a second settling never does.
 - A post's text and media are checked against each platform with
   `#publishing/domain/text-length.ts`, `content-rules.ts` and
   `platform-rules.ts` when it is scheduled, never while it is a draft.
@@ -386,6 +452,41 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   there (`optionInvalid`, `gateViolationsOn`) and `AccountStandings`
   describes them (`optionNeedsReconnect`), both from `ChannelGrants`; a
   403 on a gated write is `optionRefused`, never a refused token.
+- Instagram and Facebook take options too (`instagram-options.ts`,
+  `facebook-options.ts`), and YouTube and TikTok more. An option may name
+  a file of the library (`thumbnailMediaId`, `coverMediaId`): its notes
+  give `contentTypes` and `maxByteSize`, which make it a `media` field in
+  the capabilities. Such a file is not media the post shows: `shownMedia`
+  stays what platforms get, and `referencedMedia` (`named-media.ts`) is
+  every file the post depends on, which `mediaFor`, `PostChecks`,
+  duplication and `PostRepository.showing` (so `MediaInPosts`) read; an
+  account's own rules read the shown files only. `checkSavedOptions`
+  refuses a named file in a channel set or a channel's defaults, and
+  `keepingMedia` drops one gone from a copy or a released draft.
+  `mediaOptionViolationsOn` checks the named file's type and size and
+  every rule tied to the media (a reel's fields on one video, TikTok's
+  video and photo fields, a frame within the video, Facebook's title on a
+  video), given all the files.
+- YouTube sets a thumbnail after the video is up and processed
+  (`withThumbnail`, after `processed` and on a `found` lookup): it spends
+  a unit of `PlatformQuota` bucket `thumbnails:youtube` by Pacific day
+  (`YOUTUBE_DAILY_THUMBNAILS`), streams the image to thumbnails.set, and
+  journals `upload_sessions.thumbnail_set`, so a resumed run neither
+  sends nor pays again once that is written. A run cut between the call
+  and the journal spends a second unit and calls again (setting a
+  thumbnail twice changes nothing), and a send lost on the network keeps
+  its unit: accepted,
+  as it only makes the ledger count more than YouTube did and never
+  passes the budget; journal "call begun" before the call, as the upload
+  does, if that ever matters. Nothing about it fails the post: a refusal, the
+  budget spent or the file gone is `Published.thumbnailNotSet`, kept in
+  `post_targets.thumbnail_not_set` beside `keptPrivate`. New YouTube
+  fields, TikTok's cover frame and photo fields, Instagram's reel fields,
+  collaborators (on the post's own container, never a carousel item) and
+  Facebook's video title are sent only when chosen; Instagram's alt text
+  goes on images and a carousel's images. Meta names no parameter in a
+  code: a container refused while it names collaborators keeps Meta's
+  code, never `optionRefused`.
 - A field the web composer shows only for some values of another (an
   event's dates) says so with `shownWith` in `#posts/target-options.ts`:
   `isShown` hides it and `optionsOf` leaves its value out, as the domain's
@@ -652,8 +753,29 @@ publishing's schema, naming nobody: each goes with its workspace
   writes its posts. A request naming no channel and no set goes to the
   queue's (`queueChannelsDropped` for those disconnected since).
   `PostChecks` computes the slot unlocked. `QueueHasNoRoom` (`noSlots`,
-  `full` within `queueHorizonDays`). Part 2 (recycling, reshuffling) reuses
-  `onQueue` and `move`: add no other way of placing a post.
+  `full` within `queueHorizonDays`). Recycling reuses `onQueue` and
+  `move`: add no other way of placing a post.
+- `PostScheduling.reshuffle` moves a queue's waiting posts (scheduled or
+  awaiting approval, after `received`) onto its slots as they now are,
+  hand-moved ones included: `reshufflePlan` (`domain/queue-reshuffle.ts`)
+  gives post n, in time-then-id order, the n-th slot no publishing post
+  holds, ignoring where waiting posts are, so the plan is the same however
+  often it is made and two posts on one instant end apart. Planned once
+  under `QueueStore.lock` (`queuedFrom`), then batches of
+  `reshuffleBatchSize`, one transaction each: the queue's lock, the queue
+  read again (a changed timetable, `sameTimetable`, stops it `changed`, and
+  so does a slot of the batch held by a post the plan did not see, one
+  added between batches),
+  the posts' rows in id order, then each move through `moved`, in a
+  savepoint of its own so a `PlanLimitReached` (it stops `planLimit`)
+  keeps the moves before it. A post on its slot is not written; one moved,
+  sent back or cancelled since the plan is left alone; a scheduled post
+  that someone who only asks cannot move is `unchanged`. Each move is a
+  hand move's but for the gate: a held post is moved `keepingHeld`
+  (`ApprovalGate.follow`: its request follows the new time, still the
+  requester's), so a reshuffle never releases one, whoever runs it; only a
+  hand move (`reschedule`, `admitting`) by someone whose posts need no
+  approval schedules a held post.
 - `PostDrafts.duplicate` copies a post, whatever its status, into a new
   draft of whoever asked, every part included: what the workspace no
   longer has (a channel, a media, a tag) is left out rather than refused.

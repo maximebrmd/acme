@@ -5,6 +5,7 @@ import { SqlClient } from "effect/sql";
 
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import type { FollowedAccount } from "#analytics/application/analytics-records.ts";
+import type { CollectionEnd } from "#analytics/domain/tracked-post.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   AccountSnapshotRecord,
@@ -28,6 +29,9 @@ const failed = (cause: unknown) => new DatabaseError({ cause });
 const encoder = new TextEncoder();
 
 const utc = (date: Date) => DateTime.fromDateUnsafe(date);
+
+// The end of a post Peal deleted from its platform.
+const removed: CollectionEnd = "removed";
 
 /**
  * AnalyticsRecords on the analytics schema. Deleting a post followed
@@ -277,6 +281,14 @@ export const DrizzleAnalyticsRecords = Layer.effect(
       eraseWorkspace,
       exportAccounts,
       exportWorkspace,
+      postRemoved: (targetId, at) =>
+        sql`
+          UPDATE analytics.tracked_posts
+          SET next_collection_at = NULL,
+              ended_at = ${DateTime.formatIso(at)}::timestamptz,
+              end_reason = ${removed}
+          WHERE target_id = ${targetId} AND ended_at IS NULL
+        `.pipe(Effect.asVoid, Effect.mapError(failed)),
     });
   })
 ).pipe(Layer.provide(Digest.layerWebCrypto));

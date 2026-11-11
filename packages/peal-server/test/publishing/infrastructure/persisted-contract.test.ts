@@ -7,6 +7,10 @@ import { MessageStorage } from "effect/cluster";
 import { TestClock } from "effect/testing";
 import { Activity, WorkflowEngine } from "effect/workflow";
 
+import {
+  ChangeOutcomeSchema,
+  RemovalClaimSchema,
+} from "#publishing/application/live-post-removal.ts";
 import { PublicationJournal } from "#publishing/application/publication-journal.ts";
 import { PostOutcomeSchema } from "#publishing/domain/post-status.ts";
 import {
@@ -18,7 +22,9 @@ import {
   TargetOutcomeSchema,
 } from "#publishing/domain/publication-claims.ts";
 import { PublicationDecisionSchema } from "#publishing/domain/publication-policy.ts";
+import { RemovalDecisionSchema } from "#publishing/domain/removal-decision.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
+import { ChangeLivePostV1 } from "#publishing/infrastructure/workflows/change-live-post.ts";
 import { PublishTargetV2 } from "#publishing/infrastructure/workflows/publish-parts.ts";
 import {
   persistedWorkflowTags,
@@ -69,7 +75,12 @@ const fixture = <S extends Schema.Top>(
     )
   );
 
-const workflows = [PublishPostV1, PublishTargetV1, PublishTargetV2];
+const workflows = [
+  PublishPostV1,
+  PublishTargetV1,
+  PublishTargetV2,
+  ChangeLivePostV1,
+];
 
 // The result schema of each activity a job started now runs, by name
 // (`publish/<part>/<n>` for attempts, `record-part/<part>` for parts).
@@ -126,6 +137,65 @@ const StoredSuccessSchema = Schema.Struct({
 });
 
 describe("the persisted contract", () => {
+  // A change of a live post: its payload holds the change's id alone, and
+  // its execution id comes from it, so a request answered again never
+  // starts a second job for the same change.
+  it.effect("decodes ChangeLivePostV1's payload, results and ids", () =>
+    Effect.gen(function* decodesChanges() {
+      const payload = yield* fixture(
+        "ChangeLivePostV1",
+        "payload.json",
+        ChangeLivePostV1.payloadSchema
+      );
+
+      const keys = yield* fixture(
+        "ChangeLivePostV1",
+        "keys.json",
+        PostKeysSchema
+      );
+
+      assert.strictEqual(
+        yield* ChangeLivePostV1.executionId(payload),
+        keys.executionId
+      );
+
+      const claims = yield* fixture(
+        "ChangeLivePostV1",
+        "claim.json",
+        Schema.Array(RemovalClaimSchema)
+      );
+
+      const calls = yield* fixture(
+        "ChangeLivePostV1",
+        "call.json",
+        Schema.Array(RemovalDecisionSchema)
+      );
+
+      const settled = yield* fixture(
+        "ChangeLivePostV1",
+        "settle.json",
+        Schema.Array(ChangeOutcomeSchema)
+      );
+
+      const result = yield* fixture(
+        "ChangeLivePostV1",
+        "result.json",
+        ChangeLivePostV1.successSchema
+      );
+
+      assert.deepStrictEqual(
+        claims.map(({ _tag }) => _tag),
+        ["parts", "gone"]
+      );
+      assert.deepStrictEqual(
+        calls.map(({ _tag }) => _tag),
+        ["removed", "removed", "retry", "retry", "failed", "failed", "gone"]
+      );
+      assert.deepStrictEqual(settled, ["done", "failed", "gone"]);
+      assert.strictEqual(result, "done");
+    })
+  );
+
   it("keeps registering every released workflow tag", () => {
     const registered = workflows.map((workflow) => workflow._tag);
 

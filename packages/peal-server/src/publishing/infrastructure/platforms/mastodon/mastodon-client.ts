@@ -74,6 +74,18 @@ const processingPoll = Duration.seconds(3);
 // The channels context names a Mastodon account `<id>@<host>`.
 const accountPattern = /^[^@\s]+@(?<host>[^@\s/]+)$/u;
 
+/** The instance an account (`user@host`) lives on, reached by `scheme`. */
+export const instanceOfAccount = (
+  accountId: string,
+  scheme: "http:" | "https:"
+) => {
+  const host = accountPattern.exec(accountId)?.groups?.["host"];
+
+  return host === undefined
+    ? Effect.fail(new BadRequest({ code: "unknownInstance" }))
+    : Effect.succeed(new URL(`${scheme}//${host}`));
+};
+
 const MediaAttachmentSchema = Schema.Struct({
   id: Schema.NonEmptyString,
   url: Schema.optionalKey(Schema.NullOr(Schema.String)),
@@ -201,13 +213,8 @@ export const mastodonClient = Effect.fn("MastodonClient.make")(
     const media = yield* MediaForPublishing;
     const { api, scheme, uploads } = options;
 
-    const instanceOf = (post: OutgoingPost) => {
-      const host = accountPattern.exec(post.accountId)?.groups?.["host"];
-
-      return host === undefined
-        ? Effect.fail(new BadRequest({ code: "unknownInstance" }))
-        : Effect.succeed(new URL(`${scheme}//${host}`));
-    };
+    const instanceOf = (post: OutgoingPost) =>
+      instanceOfAccount(post.accountId, scheme);
 
     // Sends a request with the channel's token, renewed once if refused.
     // `answer` reads what came back.

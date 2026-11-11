@@ -27,6 +27,11 @@
   does; a closed account leaves its replies without an author
   (`EngagementRecords.forgetUser`), and its export lists the replies it
   sent, never the comments.
+- A thread whose post Peal deleted from its platform ends as `removed`
+  (`EngagementRecords.postRemoved`, told by publishing when it settles the
+  removal): it is read no more, and its comments stay for
+  `keptAfterCollection`, never forgotten for it; a read that finishes
+  after it leaves it ended.
 - `CollectComments` runs on the `engagement.collect-comments` cron, every
   ten minutes from minute 2: it follows publishing's `PublishedTargets` (`FollowedPosts`)
   as analytics does, then reads the threads due, the channels that waited

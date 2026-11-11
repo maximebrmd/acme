@@ -28,6 +28,13 @@ interface FakeVideo {
   polls: number;
 }
 
+/** A thumbnail thumbnails.set took, for a video. */
+export interface FakeThumbnail {
+  readonly bytes: Uint8Array;
+  readonly contentType: string;
+  readonly videoId: string;
+}
+
 /** A video category, as videoCategories.list answers one. */
 export interface FakeCategory {
   readonly assignable: boolean;
@@ -87,6 +94,12 @@ const concat = (parts: readonly Uint8Array[]) => {
  */
 export const fakeYouTubeApi = Effect.fnUntraced(function* fakeYouTubeApi(
   options: {
+    /**
+     * Whether the channel may set custom thumbnails: YouTube answers 403
+     * `forbidden` otherwise ("doesn't have permissions to upload and set
+     * custom video thumbnails").
+     */
+    readonly customThumbnails?: boolean;
     /** The video categories of every region but "ZZ", which YouTube refuses. */
     readonly categories?: readonly FakeCategory[];
     /** The playlists of the token's channel, in order. */
@@ -99,6 +112,7 @@ export const fakeYouTubeApi = Effect.fnUntraced(function* fakeYouTubeApi(
   const tokens = new Set(options.tokens ?? ["token-1"]);
   const sessions = new Map<number, FakeSession>();
   const videos: FakeVideo[] = [];
+  const thumbnails: FakeThumbnail[] = [];
   const script = scripted<PlatformAnswer>();
   const processing = options.processing ?? { _tag: "processed", after: 1 };
   let dropAt = 0;
@@ -218,6 +232,44 @@ export const fakeYouTubeApi = Effect.fnUntraced(function* fakeYouTubeApi(
       : standing(session);
   };
 
+  // thumbnails.set: the image is the body ("Accepted Media MIME types:
+  // image/jpeg, image/png, application/octet-stream"), for a video the
+  // channel made.
+  const setThumbnail = (
+    request: PlatformRequest,
+    origin: string
+  ): PlatformAnswer => {
+    const videoId = request.query.get("videoId") ?? "";
+    const contentType = headerOf(request, "content-type");
+
+    if (request.query.get("uploadType") !== "media") {
+      return googleError(400, "badRequest");
+    }
+
+    if (!videos.some(({ id }) => id === videoId)) {
+      return googleError(404, "videoNotFound");
+    }
+
+    if (options.customThumbnails === false) {
+      return googleError(403, "forbidden");
+    }
+
+    if (request.body.length === 0) {
+      return googleError(400, "mediaBodyRequired");
+    }
+
+    if (!["image/jpeg", "image/png"].includes(contentType)) {
+      return googleError(400, "invalidImage");
+    }
+
+    thumbnails.push({ bytes: request.body, contentType, videoId });
+
+    return json({
+      items: [{ default: { url: `${origin}/vi/${videoId}/default.jpg` } }],
+      kind: "youtube#thumbnailSetResponse",
+    });
+  };
+
   const handle = (request: PlatformRequest, origin: string): PlatformAnswer => {
     const route = `${request.method} ${request.path}`;
     const queued = script.next(route);
@@ -256,6 +308,10 @@ export const fakeYouTubeApi = Effect.fnUntraced(function* fakeYouTubeApi(
 
     if (route === "PUT /upload/youtube/v3/videos") {
       return put(request);
+    }
+
+    if (route === "POST /upload/youtube/v3/thumbnails/set") {
+      return setThumbnail(request, origin);
     }
 
     if (route === "GET /youtube/v3/videoCategories") {
@@ -337,6 +393,8 @@ export const fakeYouTubeApi = Effect.fnUntraced(function* fakeYouTubeApi(
     googleError,
     script,
     sessions: () => [...sessions.values()],
+    /** The thumbnails set, in order. */
+    thumbnails: () => [...thumbnails],
     videos: () => [...videos],
   };
 });

@@ -226,6 +226,7 @@ export const settleTarget = (
       keptPrivate,
       permalink,
       platformPostId,
+      thumbnailNotSet,
     }): PostTargetStatus => {
       const [first] = target.liveParts;
 
@@ -236,7 +237,17 @@ export const settleTarget = (
         publishedAt: now,
       };
 
-      return keptPrivate === true ? { ...live, keptPrivate } : live;
+      let noted = live;
+
+      if (keptPrivate === true) {
+        noted = { ...noted, keptPrivate };
+      }
+
+      if (thumbnailNotSet === true) {
+        noted = { ...noted, thumbnailNotSet };
+      }
+
+      return noted;
     },
     unconfirmed: ({ attemptedAt, reason }): PostTargetStatus => ({
       _tag: "unconfirmed",

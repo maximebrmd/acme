@@ -28,8 +28,14 @@ class PostTarget(UniversalBaseModel):
     published_at: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="publishedAt"), pydantic.Field(alias="publishedAt")
     ] = None
+    removed_at: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="removedAt"), pydantic.Field(alias="removedAt")
+    ] = None
     round: int
     status: PostTargetStatus
+    thumbnail_not_set: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="thumbnailNotSet"), pydantic.Field(alias="thumbnailNotSet")
+    ] = None
     unconfirmed_reason: typing_extensions.Annotated[
         typing.Optional[UnconfirmedReason],
         FieldMetadata(alias="unconfirmedReason"),

@@ -61,7 +61,13 @@ module Peal
       # (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted.
       # `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace
       # only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays
-      # as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
+      # as saved when what it names is gone. Filters apply when each event happens. `headers` (5 at most) go with every
+      # delivery beside Peal's own, which they never replace, for a gateway in front of the receiver that wants a token:
+      # a name is an HTTP token, once whatever its case, neither `host`, `user-agent`, `cookie`, `expect`,
+      # `accept-encoding`, a connection's own, nor any `content-` or `webhook-` name; a value is visible ASCII on one
+      # line, 1024 characters at most. Values are write-only: the endpoint shows their names (`headerNames`), never
+      # them, and sends them only to the origin (scheme, host and port) of the `url` they were given with. The signature
+      # does not cover them. Needs webhook:manage.
       #
       # @param request_options [Hash]
       # @param params [Peal::Webhooks::Types::NewWebhookEndpoint]
@@ -320,11 +326,15 @@ module Peal
         raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
       end
 
-      # Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out
-      # stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner`
-      # scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off,
-      # it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning
-      # it back on forgets the failures that turned it off. Needs webhook:manage.
+      # Changes an endpoint's address, description, events, filters or headers, or turns it off or back on: what is left
+      # out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the
+      # `partner` scope only (422 `WebhookFilterRefused`). `headers` replaces every header it had, `[]` removing them
+      # all: a header given without `value` keeps the value it has under that name, as none is ever shown, and one it
+      # does not have needs a value. A value is sent only to the origin (scheme, host and port) it was given for: a new
+      # `url` on another origin, on an endpoint with headers, needs `headers` in the same request, each with its
+      # `value`, or `[]` (422 `WebhookHeaderValuesRequired`). Filters apply to the events that happen after the change.
+      # Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for
+      # it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
       #
       # @param request_options [Hash]
       # @param params [Peal::Webhooks::Types::WebhookEndpointChange]

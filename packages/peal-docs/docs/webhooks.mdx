@@ -31,10 +31,20 @@ An endpoint is an address, the events it wants, a description, whether it is on,
 - **The description**, up to 200 characters, says what the endpoint is for.
 - **On or off.** While an endpoint is off, Peal sends it nothing, its deliveries still waiting fail, and what happens meanwhile is not kept for it: turning it back on does not replay it.
 - **The scope**, over the API: `workspace`, the default, hears this workspace; `partner`, on the home workspace of a [partner account](/embedding#webhooks) only, hears every workspace the account owns too. Elsewhere `partner` answers 404 `PartnerNotFound`. It is set when the endpoint is created, and stays.
-- **Only these channels** (`channelIds`, 50 at most). The endpoint is then sent the events about those channels only: an event of one channel (`post.published`, `post.failed`, `post.unconfirmed`, `channel.*`, `comment.*`) when its channel is listed, and an event of a whole post (`post.scheduled`, `post.unscheduled`, `post.cancelled`, the approval events) when one of the post's channels is, its payload unchanged. An event about no channel (`media.*`, `boost.*`) reaches the endpoint whatever it lists: leave those types out of its events when you do not want them. No list means every channel.
+- **Only these channels** (`channelIds`, 50 at most). The endpoint is then sent the events about those channels only: an event of one channel (`post.published`, `post.failed`, `post.unconfirmed`, `post.unpublished`, `post.unpublish_failed`, `channel.*`, `comment.*`) when its channel is listed, and an event of a whole post (`post.scheduled`, `post.unscheduled`, `post.cancelled`, the approval events) when one of the post's channels is, its payload unchanged. An event about no channel (`media.*`, `boost.*`) reaches the endpoint whatever it lists: leave those types out of its events when you do not want them. No list means every channel.
 - **Only these workspaces** (`workspaceIds`, 200 at most), on a `partner` endpoint only: it then hears those workspaces alone, and its home workspace only if it is listed. An endpoint of the `workspace` scope refuses the field (`WebhookFilterRefused`, or `InvalidRequest` when it is created). No list means every workspace it hears.
 
 Filters are checked for the shape of their ids only: an id that names nothing matches nothing, and a filter stays as you saved it when a channel is disconnected or a workspace leaves the partner account. The endpoint's form lists such a channel apart, ticked, as **A channel no longer connected**: untick it to take it off. They apply when each event happens, with the endpoint as it is then; [sending a delivery again](#log) sends it to its endpoint whatever the filters say now.
+
+### Headers of your own [#headers]
+
+An endpoint may carry up to 5 headers of your choosing, sent with every delivery beside Peal's own: a token a gateway in front of your server asks for, say, or a header to route on. They are static: the same on every delivery and every attempt.
+
+- **A name** is an HTTP token (letters, digits and ``!#$%&'*+.^_`|~-``), 64 characters at most, once per endpoint whatever its case. `Authorization` is allowed. Peal refuses the names it sets, or that describe the body or change how the request is delivered or its answer encoded: any name starting with `webhook-` or `Content-`, `Host`, `User-Agent`, `Cookie`, `Connection`, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Transfer-Encoding`, `Upgrade`, `Expect` and `Accept-Encoding`. None of yours ever replaces one of Peal's.
+- **A value** is visible ASCII on one line, spaces inside it but at neither end, 1,024 characters at most.
+- **Values are write-only.** Peal stores them encrypted, as it does the secret, and never shows them again: the endpoint lists their names (`headerNames`). To change them, send the endpoint's whole list with `headers`: a header given with its `value` sets it, one given by its `name` alone keeps the value the endpoint has under that name (422 `WebhookHeadersRefused` when it has none), and those left out go. `[]` removes them all, and leaving the field out keeps them. Peal never writes them in its logs, nor in the delivery log.
+- **Values stay with their origin.** Peal sends a value only to the origin (scheme, host and port) of the address it was given with, and keeps it sealed to that origin. A change of `url` to another path on the same host keeps the values; a change to another host needs `headers` in the same request, each header with its `value`, or `[]` to remove them (422 `WebhookHeaderValuesRequired` otherwise, and nothing is saved). Whoever moves the endpoint must know the values again: the address alone never carries them elsewhere.
+- **They are not signed.** The [signature](#verify) covers the event's id, timestamp and body, as the specification says: verify it whatever headers you get.
 
 ## The signing secret [#secret]
 
@@ -85,6 +95,10 @@ The endpoint is a third party to the people who wrote the post: an address someo
 
 Event types and their fields are a public contract. Peal adds event types, and fields to an event, without changing `version`: ignore the fields and the types you do not know. Nothing is renamed or removed. A change your code could not read would come as a new version, sent beside this one.
 
+### In the OpenAPI document [#openapi]
+
+The API's OpenAPI document, at `/api/openapi.json`, describes every event in its `webhooks` section (OpenAPI 3.1): one entry per type, with the payload's schema and the three `webhook-` headers. The [API reference](/reference) shows each. The SDKs have no typed events: read a payload with your language's JSON, as the examples below show.
+
 ## Events [#events]
 
 | Event                                                   | When                                                                      |
@@ -95,16 +109,24 @@ Event types and their fields are a public contract. Peal adds event types, and f
 | [`post.failed`](#post-failed)                           | A post did not go out on a channel                                        |
 | [`post.unconfirmed`](#post-unconfirmed)                 | Peal cannot tell whether a post went live on a channel                    |
 | [`post.cancelled`](#post-cancelled)                     | A post was cancelled                                                      |
+| [`post.finished`](#post-finished)                       | Every channel of a post has its result                                    |
+| [`post.unpublished`](#post-unpublished)                 | A post was deleted from a channel's platform                              |
+| [`post.unpublish_failed`](#post-unpublish-failed)       | Peal could not delete a post from a channel's platform                    |
 | [`post.approval_requested`](#post-approval-requested)   | A post waits for an approval                                              |
 | [`post.approved`](#post-approved)                       | A post that waited was approved                                           |
 | [`post.changes_requested`](#post-changes-requested)     | Changes were asked for on a post that waited                              |
 | [`channel.connected`](#channel-connected)               | An account was connected, or a channel authorized again                   |
 | [`channel.disconnected`](#channel-disconnected)         | A channel was disconnected                                                |
 | [`channel.reconnect_needed`](#channel-reconnect-needed) | A channel's authorization stopped working                                 |
+| [`channel.disabled`](#channel-disabled)                 | A member turned a channel off                                             |
+| [`channel.enabled`](#channel-enabled)                   | A member turned a channel back on                                         |
+| [`channel.expiring`](#channel-expiring)                 | A channel's authorization ends soon, and cannot be renewed                |
 | [`media.ready`](#media-ready)                           | A file was read, and can go in posts                                      |
 | [`media.failed`](#media-failed)                         | A file was refused, or could not be read                                  |
 | [`comment.received`](#comment-received)                 | Someone commented under a post that went live                             |
-| -----------------------------------------------         | ---------------------------------------------------------                 |
+| [`comment.replied`](#comment-replied)                   | A reply to a comment went out from Peal                                   |
+| [`boost.started`](#boost-started)                       | A boost was made and turned on                                            |
+| [`boost.paused`](#boost-paused)                         | A member paused a boost                                                   |
 | [`boost.resumed`](#boost-resumed)                       | A member ran a paused boost again                                         |
 | [`boost.stopped`](#boost-stopped)                       | A member stopped a boost for good                                         |
 | [`boost.ended`](#boost-ended)                           | A boost's end date passed                                                 |
@@ -354,6 +376,120 @@ The post was cancelled. `targets` are the channels it will not go out on; a chan
 }
 ```
 
+### post.finished [#post-finished]
+
+Every channel of the post has its result: it went live, failed, may have gone out, or was cancelled there. `post.published`, `post.failed` and `post.unconfirmed` tell each channel as it ends; this tells the whole post once the last one has, with `outcome`, what they add up to. A post sent again on a channel finishes again when that round ends, and brings another `post.finished` with its `round`; a member who confirms an unconfirmed channel brings one more when that changes `outcome`. An endpoint that listens to some channels hears it when one of the post's channels is among them.
+
+| Field         | Type    | What it holds                                                                                                                                                                                                                                    |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `workspaceId` | string  | The workspace                                                                                                                                                                                                                                    |
+| `postId`      | string  | The post                                                                                                                                                                                                                                         |
+| `outcome`     | string  | What its channels add up to: `published` (every channel has it whole), `partiallyPublished` (some do), `unconfirmed` (at least one may have it: check before anything else), `failed` (none has it) or `cancelled` (every channel was cancelled) |
+| `finishedAt`  | string  | When it finished, as an instant in UTC                                                                                                                                                                                                           |
+| `round`       | integer | The post's latest round: 1, and one more each time one of its channels was sent again                                                                                                                                                            |
+| `targets`     | array   | Each channel's result: `targetId`, `channelId`, `platform`, `status` (`published`, `failed`, `unconfirmed` or `cancelled`), `failureReason` ([why](#post-failed) it failed, or null) and `permalink` (its address there, or null)                |
+
+```json title="post.finished"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e1a",
+  "type": "post.finished",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:04.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "outcome": "partiallyPublished",
+    "finishedAt": "2026-11-10T09:00:04.000Z",
+    "round": 1,
+    "targets": [
+      {
+        "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+        "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+        "platform": "mastodon",
+        "status": "published",
+        "failureReason": null,
+        "permalink": "https://mastodon.example/@peal_example/113456789012345678"
+      },
+      {
+        "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d16",
+        "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+        "platform": "bluesky",
+        "status": "failed",
+        "failureReason": "rateLimited",
+        "permalink": null
+      }
+    ]
+  }
+}
+```
+
+### post.unpublished [#post-unpublished]
+
+Peal deleted the post from the channel's platform, every part of it, as a member, a key or an application asked ([Unpublish a post](/scheduling#unpublish)). The post stays `published` in Peal: its target gets `removedAt`, and keeps its permalink as a record.
+
+| Field         | Type           | What it holds                                                                  |
+| ------------- | -------------- | ------------------------------------------------------------------------------ |
+| `workspaceId` | string         | The workspace                                                                  |
+| `postId`      | string         | The post                                                                       |
+| `targetId`    | string         | The post on that channel                                                       |
+| `channelId`   | string         | The channel                                                                    |
+| `platform`    | string or null | The channel's platform; null once the channel was disconnected                 |
+| `removedAt`   | string         | When the last part was deleted, as an instant in UTC                           |
+| `alreadyGone` | boolean        | Whether the platform had a part no longer, as when it was deleted there before |
+
+```json title="post.unpublished"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e21",
+  "type": "post.unpublished",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "removedAt": "2026-11-10T09:00:00.000Z",
+    "alreadyGone": false
+  }
+}
+```
+
+### post.unpublish_failed [#post-unpublish-failed]
+
+Peal could not delete the post from the channel's platform, after the tries a deletion makes: `code` says why, as the change's `code` does (`unavailable`, `rateLimited`, `channelUnavailable`, or the platform's own). The post may still be there, whole or in part: a member may ask again, which deletes the parts left.
+
+| Field         | Type           | What it holds                                                  |
+| ------------- | -------------- | -------------------------------------------------------------- |
+| `workspaceId` | string         | The workspace                                                  |
+| `postId`      | string         | The post                                                       |
+| `targetId`    | string         | The post on that channel                                       |
+| `channelId`   | string         | The channel                                                    |
+| `platform`    | string or null | The channel's platform; null once the channel was disconnected |
+| `code`        | string         | Why the deletion stopped                                       |
+| `failedAt`    | string         | When Peal gave up, as an instant in UTC                        |
+
+```json title="post.unpublish_failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e22",
+  "type": "post.unpublish_failed",
+  "version": 1,
+  "timestamp": "2026-11-10T11:22:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "code": "unavailable",
+    "failedAt": "2026-11-10T11:22:00.000Z"
+  }
+}
+```
+
 ### post.approval_requested [#post-approval-requested]
 
 Someone asked for the post to go out, in a workspace that asks for [approvals](/review): it waits. It keeps its time, and no `post.scheduled` is sent until it is approved. What an application sends or schedules there starts this way.
@@ -513,6 +649,83 @@ The channel's authorization stopped working: nothing is posted there until someo
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
     "platform": "bluesky"
+  }
+}
+```
+
+### channel.disabled [#channel-disabled]
+
+A member turned the channel off: nothing is posted there until someone turns it back on. A post that reaches its time on it fails there (`channelDisabled`). The channel keeps its authorization, its posts and its analytics.
+
+| Field         | Type   | What it holds          |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | string | The workspace          |
+| `channelId`   | string | The channel            |
+| `platform`    | string | The channel's platform |
+
+```json title="channel.disabled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0b",
+  "type": "channel.disabled",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+### channel.enabled [#channel-enabled]
+
+A member turned the channel back on: it posts again. When its authorization stopped working or ran out meanwhile, `channel.reconnect_needed` follows.
+
+| Field         | Type   | What it holds          |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | string | The workspace          |
+| `channelId`   | string | The channel            |
+| `platform`    | string | The channel's platform |
+
+```json title="channel.enabled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0c",
+  "type": "channel.enabled",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+### channel.expiring [#channel-expiring]
+
+The channel's authorization cannot be renewed, and ends at `expiresAt`, as a LinkedIn profile's does after 60 days: someone [reconnects it](/channels#reconnect) before then, or nothing is posted there after. Told once for each expiry, a week ahead at most; schedule your own reminders from `expiresAt`.
+
+| Field         | Type   | What it holds                                     |
+| ------------- | ------ | ------------------------------------------------- |
+| `workspaceId` | string | The workspace                                     |
+| `channelId`   | string | The channel                                       |
+| `platform`    | string | The channel's platform                            |
+| `expiresAt`   | string | When its authorization ends, as an instant in UTC |
+
+```json title="channel.expiring"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0d",
+  "type": "channel.expiring",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "linkedin",
+    "expiresAt": "2026-11-18T06:00:00.000Z"
   }
 }
 ```
@@ -961,7 +1174,7 @@ A failed delivery is tried again, 8 attempts in all, over about a day:
 | 7       | 8 hours after the sixth failed    |
 | 8       | 8 hours after the seventh failed  |
 
-After the eighth, the delivery has failed for good. You can still [send it again](#log) by hand.
+After the eighth, the delivery has failed for good. You can still [send it again](#log) by hand. While the endpoint stays on, the members who manage webhooks are told so, once a day at most for each endpoint, with a [notification](/notifications#events), and an email unless they turned it off.
 
 Peal turns an endpoint off on its own in two cases, and then tells the members who manage webhooks, with a notification and an email:
 
@@ -1182,7 +1395,7 @@ export const verify = (secret, headers, rawBody) => {
 | `GET /api/workspaces/{workspaceId}/webhooks`                                                 | Lists the endpoints, oldest first                                                                   |
 | `POST /api/workspaces/{workspaceId}/webhooks`                                                | Adds an endpoint, and answers its `secret` once                                                     |
 | `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                    | Shows one                                                                                           |
-| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Changes its address, description, events or filters, or turns it on or off                          |
+| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Changes its address, description, events, filters or headers, or turns it on or off                 |
 | `DELETE /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                 | Deletes it, with its secret and its log                                                             |
 | `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/secret`                            | Rotates its secret, and answers the new one once                                                    |
 | `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Sends it a test event, or a sample of `eventType`                                                   |
@@ -1207,24 +1420,27 @@ curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
   -d '{
     "url": "https://hooks.example.com/peal",
     "description": "Order system",
-    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"]
+    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"],
+    "headers": [{ "name": "Authorization", "value": "Bearer <your gateway token>" }]
   }'
 ```
 
-The answer holds the `endpoint` and its `secret`. Later answers never hold the secret again.
+The answer holds the `endpoint` and its `secret`. Later answers never hold the secret again. Nor do they hold a header's value: the endpoint names its [headers](#headers) in `headerNames`.
 
 Errors come in the API's format, each with a `code` in snake case beside its name, such as `webhook_url_refused` for `WebhookUrlRefused` ([Errors](/api-conventions#errors)). An API key's requests count towards its [rate limit](/api-conventions#rate-limits).
 
-| Status | Error                     | When                                                                          |
-| ------ | ------------------------- | ----------------------------------------------------------------------------- |
-| 404    | `WebhookEndpointNotFound` | The workspace has no endpoint with this id.                                   |
-| 404    | `WebhookDeliveryNotFound` | The endpoint has no delivery with this id, or its log no longer keeps it.     |
-| 409    | `TooManyWebhookEndpoints` | The workspace already has 10 endpoints.                                       |
-| 409    | `WebhookEndpointDisabled` | A test or a resend was asked of an endpoint that is off.                      |
-| 422    | `WebhookFilterRefused`    | `workspaceIds` on an endpoint of the `workspace` scope; `field` names it.     |
-| 422    | `WebhookUrlRefused`       | Peal does not deliver to the address. `reason` says why, below.               |
-| 429    | `TooManyWebhookSends`     | The hour's test events and resends are spent: see [the delivery log](#log).   |
-| 503    | `WebhooksNotConfigured`   | The instance cannot keep a signing secret: see [Self-hosting](#self-hosting). |
+| Status | Error                         | When                                                                                                |
+| ------ | ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| 404    | `WebhookEndpointNotFound`     | The workspace has no endpoint with this id.                                                         |
+| 404    | `WebhookDeliveryNotFound`     | The endpoint has no delivery with this id, or its log no longer keeps it.                           |
+| 409    | `TooManyWebhookEndpoints`     | The workspace already has 10 endpoints.                                                             |
+| 409    | `WebhookEndpointDisabled`     | A test or a resend was asked of an endpoint that is off.                                            |
+| 422    | `WebhookFilterRefused`        | `workspaceIds` on an endpoint of the `workspace` scope; `field` names it.                           |
+| 422    | `WebhookHeadersRefused`       | A header given without `value` that the endpoint does not have.                                     |
+| 422    | `WebhookHeaderValuesRequired` | A new `url` on another origin, on an endpoint with headers, without every header's `value` or `[]`. |
+| 422    | `WebhookUrlRefused`           | Peal does not deliver to the address. `reason` says why, below.                                     |
+| 429    | `TooManyWebhookSends`         | The hour's test events and resends are spent: see [the delivery log](#log).                         |
+| 503    | `WebhooksNotConfigured`       | The instance cannot keep a signing secret: see [Self-hosting](#self-hosting).                       |
 
 | `reason`      | The address                                                        |
 | ------------- | ------------------------------------------------------------------ |

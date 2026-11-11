@@ -1,9 +1,12 @@
 import { Context, Effect, Layer, Option } from "effect";
 
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { keepingMedia, namesMedia } from "#publishing/domain/named-media.ts";
 import { PostContent, shownMedia } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import type { PostStatusName } from "#publishing/domain/post-status.ts";
+import { withOptions } from "#publishing/domain/post-target.ts";
+import type { PostTarget } from "#publishing/domain/post-target.ts";
 import { editDraft } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -43,8 +46,21 @@ const scheduledStatuses: readonly PostStatusName[] = [
 
 const ids = (posts: readonly Post[]) => posts.map(({ id }) => id);
 
-const shows = (post: Post, mediaId: MediaAssetId) =>
-  shownMedia(post.content).some((attachment) => attachment.mediaId === mediaId);
+// A post with its targets, whose options may name files.
+interface Locked {
+  readonly post: Post;
+  readonly targets: readonly PostTarget[];
+}
+
+const names = (targets: readonly PostTarget[], mediaId: MediaAssetId) =>
+  targets.some(({ options }) =>
+    Option.exists(options, (chosen) => namesMedia(chosen, mediaId))
+  );
+
+const shows = ({ post, targets }: Locked, mediaId: MediaAssetId) =>
+  shownMedia(post.content).some(
+    (attachment) => attachment.mediaId === mediaId
+  ) || names(targets, mediaId);
 
 const remaining = (media: readonly MediaAttachment[], mediaId: MediaAssetId) =>
   media.filter((attachment) => attachment.mediaId !== mediaId);
@@ -67,9 +83,10 @@ const without = (post: Post, mediaId: MediaAssetId) =>
   });
 
 /**
- * Which posts show a media asset, for the media context, which asks before
- * deleting one: a post scheduled or publishing keeps it from being deleted,
- * and drafts let go of it. Finished and cancelled posts keep their media ids
+ * Which posts show a media asset, or name it in their options (a
+ * thumbnail, a cover), for the media context, which asks before deleting
+ * one: a post scheduled or publishing keeps it from being deleted, and
+ * drafts let go of it. Finished and cancelled posts keep their media ids
  * as they were. It acts for the workspace, as the media context checked who
  * deletes.
  */
@@ -140,20 +157,32 @@ export class MediaInPosts extends Context.Service<
             )
           );
 
-          const showing = locked
-            .flatMap(Option.toArray)
-            .filter((post) => shows(post, mediaId));
+          const showing = yield* Effect.forEach(
+            locked.flatMap(Option.toArray),
+            (post) =>
+              posts
+                .targets(post.id)
+                .pipe(Effect.map((targets): Locked => ({ post, targets })))
+          ).pipe(
+            Effect.map((found) =>
+              found.filter((draft) => shows(draft, mediaId))
+            )
+          );
 
           return {
-            drafts: showing.filter(({ status }) => status._tag === "draft"),
-            scheduled: showing.filter(({ status }) =>
-              scheduledStatuses.includes(status._tag)
-            ),
+            drafts: showing.filter(({ post }) => post.status._tag === "draft"),
+            scheduled: showing
+              .filter(({ post }) =>
+                scheduledStatuses.includes(post.status._tag)
+              )
+              .map(({ post }) => post),
           };
         }
       );
 
-      const detach = (post: Post, mediaId: MediaAssetId) =>
+      // The draft without the media, in its parts and in the options of
+      // its targets that name it.
+      const detach = ({ post, targets }: Locked, mediaId: MediaAssetId) =>
         Effect.fromResult(editDraft(post, without(post, mediaId))).pipe(
           Effect.orDie,
           Effect.flatMap((edited) => posts.update(edited, post)),
@@ -161,6 +190,23 @@ export class MediaInPosts extends Context.Service<
             written
               ? Effect.void
               : Effect.die("A draft changed under its row lock")
+          ),
+          Effect.andThen(
+            names(targets, mediaId)
+              ? posts.setTargets(
+                  post.id,
+                  targets.map((target) =>
+                    withOptions(
+                      target,
+                      target.options.pipe(
+                        Option.map((chosen) =>
+                          keepingMedia(chosen, (kept) => kept !== mediaId)
+                        )
+                      )
+                    )
+                  )
+                )
+              : Effect.void
           )
         );
 
@@ -198,7 +244,7 @@ export class MediaInPosts extends Context.Service<
 
             const released: MediaRelease = {
               _tag: "released",
-              drafts: ids(drafts),
+              drafts: drafts.map(({ post }) => post.id),
             };
 
             return released;

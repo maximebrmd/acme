@@ -754,6 +754,7 @@ const (
 	InboxCollectionEndDisconnected InboxCollectionEnd = "disconnected"
 	InboxCollectionEndUnsupported  InboxCollectionEnd = "unsupported"
 	InboxCollectionEndMissing      InboxCollectionEnd = "missing"
+	InboxCollectionEndRemoved      InboxCollectionEnd = "removed"
 )
 
 func NewInboxCollectionEndFromString(s string) (InboxCollectionEnd, error) {
@@ -766,6 +767,8 @@ func NewInboxCollectionEndFromString(s string) (InboxCollectionEnd, error) {
 		return InboxCollectionEndUnsupported, nil
 	case "missing":
 		return InboxCollectionEndMissing, nil
+	case "removed":
+		return InboxCollectionEndRemoved, nil
 	}
 	var t InboxCollectionEnd
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

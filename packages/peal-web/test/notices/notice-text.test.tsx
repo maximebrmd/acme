@@ -196,6 +196,21 @@ describe(useNoticeText, () => {
     );
   });
 
+  it("says that deliveries to a webhook endpoint fail, and opens the webhooks", async () => {
+    const failing: NoticeEvent = {
+      _tag: "WebhookDeliveriesFailing",
+      endpointId: "00000000-0000-7000-8000-000000000002",
+      host: "hooks.example.com",
+    };
+
+    await expect(render("en", failing)).resolves.toContain(
+      `A delivery to the webhook endpoint at hooks.example.com in Studio Nord failed for good: the system behind it missed an event. The endpoint is still on. Fix the receiver, then send the failed deliveries again from the delivery log. After 5 days of failures, Peal turns the endpoint off. | Open the webhooks | /app/${workspaceId}/settings/webhooks`
+    );
+    await expect(render("fr", failing)).resolves.toContain(
+      "Une livraison vers le point de terminaison de webhook de hooks.example.com dans Studio Nord a échoué pour de bon"
+    );
+  });
+
   it("asks to reconnect a channel, in a workspace the reader left", async () => {
     const html = await render(
       "fr",

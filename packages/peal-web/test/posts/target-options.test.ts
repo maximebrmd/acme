@@ -1,14 +1,16 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Option, Result } from "effect";
+import { DateTime, Option, Result } from "effect";
 import { optionsPlatforms, TargetOptionsSchema } from "peal-contract";
-import type { ContentViolation, Platform } from "peal-contract";
+import type { ContentViolation, MediaKind, Platform } from "peal-contract";
 
+import type { AttachedMedia } from "#posts/media-fit.ts";
 import {
   channelOptionsOf,
   fieldOf,
   fieldsOf,
   initialValues,
   isShown,
+  mediaKindsOf,
   optionsOf,
   valuesOf,
   valuesOfPost,
@@ -34,7 +36,9 @@ describe("the options fields", () => {
       }
     }
 
-    expect(fieldsOf("facebook")).toStrictEqual([]);
+    expect(fieldsOf("facebook").map(({ name }) => name)).toStrictEqual([
+      "videoTitle",
+    ]);
     expect(Option.isSome(fieldOf("youtube", "title"))).toBeTruthy();
     expect(Option.isNone(fieldOf("youtube", "privacyLevel"))).toBeTruthy();
   });
@@ -160,6 +164,18 @@ describe("the options fields", () => {
       },
     ],
     [
+      "instagram",
+      {
+        audioName: "Synthetic theme",
+        collaborators: "peal.example, synthetic_baker",
+        coverMediaId: "019a0000-0000-7000-8000-000000000001",
+        shareToFeed: false,
+        thumbOffsetMs: "1500",
+        trialReel: "performance",
+      },
+    ],
+    ["facebook", { videoTitle: "A synthetic launch video" }],
+    [
       "x",
       {
         communityId: "1700000000000000001",
@@ -192,7 +208,9 @@ describe("the options fields", () => {
   it("cover every platform that takes options in the test above", () => {
     expect([...optionsPlatforms].toSorted()).toStrictEqual([
       "bluesky",
+      "facebook",
       "googleBusiness",
+      "instagram",
       "linkedin",
       "mastodon",
       "pinterest",
@@ -206,6 +224,7 @@ describe("the options fields", () => {
   it("start TikTok's interactions off and its disclosure untold", () => {
     expect(initialValues("tiktok")).toStrictEqual({
       aiGenerated: false,
+      autoAddMusic: false,
       brandContent: false,
       brandOrganic: false,
       commercialContent: false,
@@ -243,9 +262,9 @@ describe(optionsOf, () => {
     );
   });
 
-  it("gives nothing on a platform that takes no options", () => {
+  it("gives the platform alone where nothing it takes is filled in", () => {
     expect(optionsOf("instagram", { title: "Hi" })).toStrictEqual(
-      Result.succeed(Option.none())
+      Result.succeed(Option.some({ platform: "instagram" }))
     );
   });
 
@@ -484,6 +503,7 @@ describe(valuesOfPost, () => {
           parts: { count: 1, live: [] },
           permalink: null,
           publishedAt: null,
+          removedAt: null,
           round: 1,
           status: "pending",
           unconfirmedReason: null,
@@ -494,6 +514,7 @@ describe(valuesOfPost, () => {
 
     expect(values).toStrictEqual({
       c1: { ...initialValues("youtube"), title: "Hi" },
+      c2: {},
     });
   });
 });
@@ -530,7 +551,9 @@ describe(channelOptionsOf, () => {
           { id: "c1", platform: "tiktok" },
           { id: "c2", platform: "facebook" },
         ],
-        { c1: { ...initialValues("tiktok"), privacyLevel: "SELF_ONLY" } }
+        { c1: { ...initialValues("tiktok"), privacyLevel: "SELF_ONLY" } },
+        // A video: the photo post's box is not shown, and not sent.
+        ["video"]
       )
     ).toStrictEqual({
       options: [
@@ -609,6 +632,7 @@ describe(channelOptionsOf, () => {
             parts: { count: 1, live: [] },
             permalink: null,
             publishedAt: null,
+            removedAt: null,
             round: 1,
             status: "pending",
             unconfirmedReason: null,
@@ -767,5 +791,261 @@ describe("options the contract would refuse as filled in", () => {
         replySettings: "following",
       })
     ).toStrictEqual(Result.fail([{ _tag: "invalid", field: "communityId" }]));
+  });
+});
+
+const thumbnail = "019a0000-0000-7000-8000-00000000000a";
+
+describe("fields that name a file of the library", () => {
+  it("send the file's id, and fill it back", () => {
+    const values = { thumbnailMediaId: thumbnail, title: "A synthetic video" };
+
+    expect(
+      Result.getOrThrow(optionsOf("youtube", values)).pipe(
+        Option.map((options) => ({
+          options,
+          values: valuesOf("youtube", options),
+        }))
+      )
+    ).toStrictEqual(
+      Option.some({
+        options: {
+          platform: "youtube",
+          thumbnailMediaId: thumbnail,
+          title: "A synthetic video",
+        },
+        values: { ...initialValues("youtube"), ...values },
+      })
+    );
+    expect(fieldOf("youtube", "thumbnailMediaId")).toStrictEqual(
+      Option.some(
+        expect.objectContaining({
+          contentTypes: ["image/jpeg", "image/png"],
+          kind: "media",
+        })
+      )
+    );
+    expect(fieldOf("instagram", "coverMediaId")).toStrictEqual(
+      Option.some(
+        expect.objectContaining({ contentTypes: ["image/jpeg"], kind: "media" })
+      )
+    );
+  });
+
+  it("refuse what is not a file's id, as the contract does", () => {
+    expect(
+      optionsOf("youtube", { thumbnailMediaId: "not-a-media-id" })
+    ).toStrictEqual(
+      Result.fail([{ _tag: "invalid", field: "thumbnailMediaId" }])
+    );
+  });
+});
+
+// The names of the TikTok fields a post of these media shows.
+const shownTikTok = (media: readonly MediaKind[] | undefined) =>
+  fieldsOf("tiktok")
+    .filter((field) => isShown("tiktok", field, initialValues("tiktok"), media))
+    .map(({ name }) => name);
+
+// The names of the Instagram fields a post of these media shows.
+const shownInstagram = (media: readonly MediaKind[]) =>
+  fieldsOf("instagram")
+    .filter((field) => isShown("instagram", field, {}, media))
+    .map(({ name }) => name);
+
+describe("fields that follow the post's media", () => {
+  const reelFields = [
+    "shareToFeed",
+    "coverMediaId",
+    "thumbOffsetMs",
+    "audioName",
+    "trialReel",
+  ];
+
+  it("show a video's cover frame on a video, and the photos' fields on photos", () => {
+    const video = shownTikTok(["video"]);
+    const photos = shownTikTok(["image", "image"]);
+
+    expect(video).toContain("videoCoverTimestampMs");
+    expect(video).not.toContain("photoTitle");
+    expect(photos).toStrictEqual(
+      expect.arrayContaining(["photoTitle", "autoAddMusic", "photoCoverIndex"])
+    );
+    expect(photos).not.toContain("videoCoverTimestampMs");
+  });
+
+  it("show neither without media, and every field while the media are read", () => {
+    expect(shownTikTok([])).not.toContain("photoTitle");
+    expect(shownTikTok([])).not.toContain("videoCoverTimestampMs");
+    expect(shownTikTok(undefined)).toStrictEqual(
+      fieldsOf("tiktok").map(({ name }) => name)
+    );
+  });
+
+  it("show a reel's fields on a post of one video alone", () => {
+    expect(shownInstagram(["video"])).toStrictEqual([
+      ...reelFields,
+      "collaborators",
+    ]);
+
+    const others: readonly (readonly MediaKind[])[] = [
+      ["video", "video"],
+      ["image"],
+      [],
+    ];
+
+    expect(others.map(shownInstagram)).toStrictEqual([
+      ["collaborators"],
+      ["collaborators"],
+      ["collaborators"],
+    ]);
+  });
+
+  it("send no field the media hide", () => {
+    const values = {
+      audioName: "Synthetic theme",
+      collaborators: "peal.example",
+      shareToFeed: true,
+    };
+
+    expect(optionsOf("instagram", values, ["image", "image"])).toStrictEqual(
+      Result.succeed(
+        Option.some({ collaborators: ["peal.example"], platform: "instagram" })
+      )
+    );
+    expect(
+      optionsOf("facebook", { videoTitle: "A synthetic video" }, ["image"])
+    ).toStrictEqual(Result.succeed(Option.some({ platform: "facebook" })));
+    expect(
+      channelOptionsOf(
+        [{ id: "c1", platform: "facebook" }],
+        { c1: { videoTitle: "A synthetic video" } },
+        ["image"]
+      )
+    ).toStrictEqual({ options: [], problems: [] });
+    expect(
+      channelOptionsOf(
+        [{ id: "c1", platform: "facebook" }],
+        { c1: { videoTitle: "A synthetic video" } },
+        ["image", "video"]
+      ).options
+    ).toStrictEqual([
+      {
+        channelId: "c1",
+        options: { platform: "facebook", videoTitle: "A synthetic video" },
+      },
+    ]);
+  });
+
+  it("send no options on Instagram, Facebook or TikTok where nothing was chosen", () => {
+    const channels = [
+      { id: "c1", platform: "instagram" },
+      { id: "c2", platform: "facebook" },
+      { id: "c3", platform: "tiktok" },
+    ] as const;
+
+    for (const media of [
+      undefined,
+      [],
+      ["video"],
+      ["image", "image"],
+    ] as const) {
+      expect(channelOptionsOf(channels, {}, media)).toStrictEqual({
+        options: [],
+        problems: [],
+      });
+    }
+  });
+
+  it("send a photo post's music only when it is ticked, and only on photos", () => {
+    const values = {
+      ...initialValues("tiktok"),
+      autoAddMusic: true,
+      privacyLevel: "SELF_ONLY",
+    };
+
+    expect(
+      Result.getOrThrow(optionsOf("tiktok", values, ["image"])).pipe(
+        Option.map(
+          (options) => "autoAddMusic" in options && options.autoAddMusic
+        )
+      )
+    ).toStrictEqual(Option.some(true));
+    expect(
+      Result.getOrThrow(optionsOf("tiktok", values, ["video"])).pipe(
+        Option.map((options) => "autoAddMusic" in options)
+      )
+    ).toStrictEqual(Option.some(false));
+  });
+
+  it("name what is wrong in a field the media show, and nothing in one they hide", () => {
+    expect(
+      optionsOf("tiktok", { videoCoverTimestampMs: "1.5s" }, ["video"])
+    ).toStrictEqual(
+      Result.fail([{ _tag: "invalid", field: "videoCoverTimestampMs" }])
+    );
+    expect(
+      optionsOf("tiktok", { videoCoverTimestampMs: "1.5s" }, ["image"])
+    ).toStrictEqual(Result.succeed(Option.some({ platform: "tiktok" })));
+  });
+});
+
+describe("Instagram's collaborators", () => {
+  it("take three accounts at most", () => {
+    expect(
+      optionsOf("instagram", { collaborators: "a.one, b_two, c3, d4" })
+    ).toStrictEqual(
+      Result.fail([
+        { _tag: "tooMany", count: 4, field: "collaborators", maximum: 3 },
+      ])
+    );
+    expect(
+      optionsOf("instagram", { collaborators: "a.one, b_two, c3" })
+    ).toStrictEqual(
+      Result.succeed(
+        Option.some({
+          collaborators: ["a.one", "b_two", "c3"],
+          platform: "instagram",
+        })
+      )
+    );
+  });
+});
+
+const created = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
+
+const libraryFile = (id: string, kind: MediaKind): AttachedMedia => ({
+  altText: "",
+  media: Option.some({
+    altText: null,
+    byteSize: 200_000,
+    codec: null,
+    contentType: kind === "video" ? "video/mp4" : "image/jpeg",
+    createdAt: created,
+    dimensions: null,
+    durationMs: null,
+    id,
+    kind,
+    pageCount: null,
+    status: { _tag: "ready" },
+    updatedAt: created,
+    url: null,
+  }),
+  mediaId: id,
+});
+
+describe(mediaKindsOf, () => {
+  it("gives the attachments' kinds once each is read, and nothing until then", () => {
+    const pending: AttachedMedia = {
+      altText: "",
+      media: Option.none(),
+      mediaId: "b",
+    };
+
+    expect(mediaKindsOf([])).toStrictEqual([]);
+    expect(
+      mediaKindsOf([libraryFile("a", "image"), libraryFile("c", "video")])
+    ).toStrictEqual(["image", "video"]);
+    expect(mediaKindsOf([libraryFile("a", "image"), pending])).toBeUndefined();
   });
 });

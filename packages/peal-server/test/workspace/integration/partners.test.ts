@@ -728,6 +728,22 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             );
           }
 
+          // A queue is reshuffled in its partner's workspaces alone: the
+          // queue is looked for there, and nowhere else.
+          for (const [workspaceId, tag] of [
+            [ofAlpha.id, "QueueNotFound"],
+            [ofBeta.id, "WorkspaceNotFound"],
+            [ordinary, "WorkspaceNotFound"],
+          ] as const) {
+            const reply = yield* app.request(
+              `/api/workspaces/${workspaceId}/queues/0190f3a0-0000-7000-8000-00000000c0de/reshuffle`,
+              { headers: bearer(alphaKey), method: "POST" }
+            );
+
+            assert.strictEqual(reply.status, 404, workspaceId);
+            assert.deepInclude(reply.body, { _tag: tag }, workspaceId);
+          }
+
           // The partner API answers a partner's key only its own.
           for (const init of [
             { method: "GET" },

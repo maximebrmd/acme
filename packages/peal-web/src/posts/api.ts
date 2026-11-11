@@ -216,3 +216,13 @@ export const duplicatePost = PealApi.mutation("posts", "duplicate");
 export const repostTarget = PealApi.mutation("posts", "repost");
 
 export const confirmTarget = PealApi.mutation("posts", "confirm");
+
+/** Deletes a published post from one channel's platform, for everyone. */
+export const unpublishTarget = PealApi.mutation("posts", "unpublishTarget");
+
+/** What was asked of a post once it was live, newest first. */
+export const postChanges = (workspaceId: string, postId: string) =>
+  PealApi.query("posts", "changes", {
+    params: { postId, workspaceId },
+    reactivityKeys: postsKeys,
+  });

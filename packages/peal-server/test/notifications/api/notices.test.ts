@@ -323,6 +323,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
           postPublished: false,
           postReview: true,
           postUnconfirmed: true,
+          webhookFailing: true,
         },
         everyPost: false,
       });
@@ -343,6 +344,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
             postPublished: true,
             postReview: true,
             postUnconfirmed: true,
+            webhookFailing: true,
           },
           everyPost: false,
         }

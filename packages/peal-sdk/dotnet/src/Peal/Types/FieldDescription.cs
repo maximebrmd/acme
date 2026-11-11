@@ -12,6 +12,9 @@ public record FieldDescription : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("contentTypes")]
+    public IEnumerable<string> ContentTypes { get; set; } = new List<string>();
+
     [JsonPropertyName("forbiddenCharacters")]
     public IEnumerable<string> ForbiddenCharacters { get; set; } = new List<string>();
 
@@ -20,6 +23,9 @@ public record FieldDescription : IJsonOnDeserialized
 
     [JsonPropertyName("lookup")]
     public LookupName? Lookup { get; set; }
+
+    [JsonPropertyName("maxByteSize")]
+    public long? MaxByteSize { get; set; }
 
     [JsonPropertyName("maxLength")]
     public int? MaxLength { get; set; }

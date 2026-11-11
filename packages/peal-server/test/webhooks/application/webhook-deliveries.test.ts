@@ -226,23 +226,30 @@ layer(WebhooksTest)("a workspace's webhook records", (it) => {
         const endpoints = yield* WebhookEndpoints;
         const store = yield* DeliveryStore;
         const webhooks = yield* WebhookRecords;
-        const { endpoint } = yield* freshEndpoint(owner);
+
+        const { endpoint } = yield* freshEndpoint(owner, {
+          headers: [
+            { name: "Authorization", value: "Bearer synthetic-exported-value" },
+          ],
+        });
+
         const kept = yield* freshEndpoint(neighbour);
         const delivery = yield* endpoints.sendTest(owner, endpoint.id);
+        const exported = yield* webhooks.exportWorkspace(owner.workspaceId);
 
-        assert.deepStrictEqual(
-          yield* webhooks.exportWorkspace(owner.workspaceId),
-          [
-            {
-              createdAt: endpoint.createdAt,
-              description: endpoint.description,
-              enabled: true,
-              eventTypes: [...endpoint.eventTypes],
-              id: endpoint.id,
-              url: endpoint.url,
-            },
-          ]
-        );
+        // Its headers by name: their values are the receiver's secrets.
+        assert.deepStrictEqual(exported, [
+          {
+            createdAt: endpoint.createdAt,
+            description: endpoint.description,
+            enabled: true,
+            eventTypes: [...endpoint.eventTypes],
+            headerNames: ["Authorization"],
+            id: endpoint.id,
+            url: endpoint.url,
+          },
+        ]);
+        assert.notInclude(JSON.stringify(exported), "synthetic-exported-value");
 
         yield* webhooks.eraseWorkspace(owner.workspaceId);
 

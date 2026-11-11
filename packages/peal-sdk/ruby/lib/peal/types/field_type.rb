@@ -10,6 +10,7 @@ module Peal
       BOOLEAN = "boolean"
       CHOICE = "choice"
       INTEGER = "integer"
+      MEDIA = "media"
       MENTION_LIST = "mentionList"
       TEXT = "text"
       TEXT_LIST = "textList"

@@ -12,9 +12,11 @@ import type {
 const field = (
   described: Partial<FieldDescription> & Pick<FieldDescription, "name" | "type">
 ): FieldDescription => ({
+  contentTypes: [],
   forbiddenCharacters: [],
   ifLeftOut: null,
   lookup: null,
+  maxByteSize: null,
   maxLength: null,
   maximum: null,
   minimum: null,
@@ -109,6 +111,10 @@ const plain = (platform: Platform): PlatformCapabilities => ({
       platform === "mastodon" ? ["likes", "reposts", "replies", "quotes"] : [],
   },
   followUps: platform === "mastodon" ? { kind: "thread", maxCount: 24 } : null,
+  livePost:
+    platform === "threads"
+      ? { edit: false, unpublish: false, unpublishBlockedBy: "permission" }
+      : { edit: false, unpublish: true },
   lookups: [],
   media: {
     altText: { maxLength: 1500, shown: true },

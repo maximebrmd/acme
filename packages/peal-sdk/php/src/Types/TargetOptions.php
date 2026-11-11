@@ -21,6 +21,8 @@ class TargetOptions extends JsonSerializableType
      *   |'bluesky'
      *   |'threads'
      *   |'x'
+     *   |'instagram'
+     *   |'facebook'
      *   |'_unknown'
      * ) $platform
      */
@@ -37,6 +39,8 @@ class TargetOptions extends JsonSerializableType
      *   |BlueskyOptions
      *   |ThreadsOptions
      *   |XOptions
+     *   |InstagramOptions
+     *   |FacebookOptions
      *   |mixed
      * ) $value
      */
@@ -54,6 +58,8 @@ class TargetOptions extends JsonSerializableType
      *   |'bluesky'
      *   |'threads'
      *   |'x'
+     *   |'instagram'
+     *   |'facebook'
      *   |'_unknown'
      * ),
      *   value: (
@@ -66,6 +72,8 @@ class TargetOptions extends JsonSerializableType
      *   |BlueskyOptions
      *   |ThreadsOptions
      *   |XOptions
+     *   |InstagramOptions
+     *   |FacebookOptions
      *   |mixed
      * ),
      * } $values
@@ -182,6 +190,30 @@ class TargetOptions extends JsonSerializableType
         return new TargetOptions([
             'platform' => 'x',
             'value' => $x,
+        ]);
+    }
+
+    /**
+     * @param InstagramOptions $instagram
+     * @return TargetOptions
+     */
+    public static function instagram(InstagramOptions $instagram): TargetOptions
+    {
+        return new TargetOptions([
+            'platform' => 'instagram',
+            'value' => $instagram,
+        ]);
+    }
+
+    /**
+     * @param FacebookOptions $facebook
+     * @return TargetOptions
+     */
+    public static function facebook(FacebookOptions $facebook): TargetOptions
+    {
+        return new TargetOptions([
+            'platform' => 'facebook',
+            'value' => $facebook,
         ]);
     }
 
@@ -384,6 +416,50 @@ class TargetOptions extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isInstagram(): bool
+    {
+        return $this->value instanceof InstagramOptions && $this->platform === 'instagram';
+    }
+
+    /**
+     * @return InstagramOptions
+     */
+    public function asInstagram(): InstagramOptions
+    {
+        if (!($this->value instanceof InstagramOptions && $this->platform === 'instagram')) {
+            throw new Exception(
+                "Expected instagram; got " . $this->platform . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isFacebook(): bool
+    {
+        return $this->value instanceof FacebookOptions && $this->platform === 'facebook';
+    }
+
+    /**
+     * @return FacebookOptions
+     */
+    public function asFacebook(): FacebookOptions
+    {
+        if (!($this->value instanceof FacebookOptions && $this->platform === 'facebook')) {
+            throw new Exception(
+                "Expected facebook; got " . $this->platform . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -437,6 +513,14 @@ class TargetOptions extends JsonSerializableType
                 break;
             case 'x':
                 $value = $this->asX()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'instagram':
+                $value = $this->asInstagram()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'facebook':
+                $value = $this->asFacebook()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -501,6 +585,12 @@ class TargetOptions extends JsonSerializableType
                 break;
             case 'x':
                 $args['value'] = XOptions::jsonDeserialize($data);
+                break;
+            case 'instagram':
+                $args['value'] = InstagramOptions::jsonDeserialize($data);
+                break;
+            case 'facebook':
+                $args['value'] = FacebookOptions::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

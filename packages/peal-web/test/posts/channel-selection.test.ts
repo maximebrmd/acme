@@ -35,6 +35,7 @@ const draftFor = (...channelIds: readonly string[]): Post => ({
     parts: { count: 1, live: [] },
     permalink: null,
     publishedAt: null,
+    removedAt: null,
     round: 1,
     status: "pending",
     unconfirmedReason: null,

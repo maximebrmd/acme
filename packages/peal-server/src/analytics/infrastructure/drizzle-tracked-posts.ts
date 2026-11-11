@@ -382,6 +382,8 @@ export const DrizzleTrackedPosts = Layer.effect(
             end_reason text
           )
           WHERE post.target_id = saved.target_id
+            -- A post removed while it was read stays ended.
+            AND post.end_reason IS DISTINCT FROM 'removed'
         `.pipe(Effect.mapError(failed));
       }
     );
@@ -430,6 +432,9 @@ export const DrizzleTrackedPosts = Layer.effect(
                 saves = reading.saves
             FROM reading
             WHERE post.target_id = reading.target_id
+              -- A post removed while it was read stays ended, and its
+              -- reading is not kept.
+              AND post.end_reason IS DISTINCT FROM 'removed'
             RETURNING post.target_id
           )
           INSERT INTO analytics.metric_snapshots

@@ -41,6 +41,11 @@ export interface PostFilter {
   readonly outcome: Option.Option<PostOutcome>;
   /** Posts that queue placed. */
   readonly queueId: Option.Option<QueueId>;
+  /**
+   * True: posts Peal deleted from at least one channel's platform; false:
+   * posts deleted from none.
+   */
+  readonly removed: Option.Option<boolean>;
   /** Scheduled before this instant, excluded. */
   readonly scheduledBefore: Option.Option<DateTime.Utc>;
   /** Scheduled from this instant, included. */

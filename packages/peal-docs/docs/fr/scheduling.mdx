@@ -79,10 +79,12 @@ Certaines plateformes demandent à chaque publication plus que son texte et ses 
 
 | Plateforme              | Options                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| YouTube                 | **Titre** (obligatoire : 100 caractères au plus, sans `<` ni `>`), **Conçue pour les enfants** (obligatoire, sans valeur par défaut), **Visibilité** (publique sauf choix contraire), **Tags** (500 caractères en tout), **Numéro de catégorie**, **Prévenir les abonnés** (activé), contenus modifiés ou synthétiques                                                                                                               |
-| TikTok                  | **Qui peut voir cette publication** (obligatoire, sans valeur par défaut), **Autoriser les commentaires**, **Autoriser le Duo** et **Autoriser le Collage** (désactivés tant que vous ne les activez pas), divulgation d’un contenu commercial, contenu généré par IA                                                                                                                                                                |
+| YouTube                 | **Titre** (obligatoire : 100 caractères au plus, sans `<` ni `>`), **Conçue pour les enfants** (obligatoire, sans valeur par défaut), **Visibilité** (publique sauf choix contraire), **Tags** (500 caractères en tout), **Numéro de catégorie**, **Prévenir les abonnés** (activé), contenus modifiés ou synthétiques, et [d’autres](#media-options)                                                                                |
+| TikTok                  | **Qui peut voir cette publication** (obligatoire, sans valeur par défaut), **Autoriser les commentaires**, **Autoriser le Duo** et **Autoriser le Collage** (désactivés tant que vous ne les activez pas), divulgation d’un contenu commercial, contenu généré par IA, et [d’autres](#media-options)                                                                                                                                 |
 | LinkedIn                | **Qui peut voir cette publication** (tout le monde, sauf choix contraire ; relations uniquement vaut pour un profil), **Empêcher les autres de republier cette publication**, **Pages à mentionner** (des pages d’entreprise, chacune écrite `@Nom` dans le texte), **Lien à afficher sous forme de carte** avec son **Titre du lien** (obligatoire avec un lien) et sa **Description du lien**, **Titre du document** (pour un PDF) |
 | Pinterest               | **Tableau** (obligatoire, l’un de ceux du compte), **Section du tableau**, **Titre** (100 caractères au plus), **Lien** (là où mène un clic sur l’épingle, commençant par `http://` ou `https://`), **Couverture de la vidéo, à la seconde** (la première image sauf choix contraire), **Couleur dominante** (comme `#6E7874`)                                                                                                       |
+| Instagram               | Les réglages d’un reel et les **Collaborateurs** (voir [plus bas](#media-options))                                                                                                                                                                                                                                                                                                                                                   |
+| Facebook                | Le **Titre de la vidéo** d’une vidéo (voir [plus bas](#media-options))                                                                                                                                                                                                                                                                                                                                                               |
 | Google Business Profile | **Type de publication** (une actualité, sauf si vous choisissez un événement ou une offre), **Titre**, **Début** et **Fin** (obligatoires pour un événement ou une offre ; un titre de 58 caractères au plus), **Bouton** et son **Lien du bouton** (sur une actualité ou un événement), **Code promotionnel**, **Lien pour profiter de l’offre** et **Conditions générales** (sur une offre)                                        |
 
 Le texte de la publication est la description de la vidéo YouTube, la légende de la publication TikTok, la description de l’épingle Pinterest, le commentaire de la publication LinkedIn et la description de la publication Google Business Profile. Les tags sont séparés par des virgules ; YouTube compte les virgules, et deux caractères de plus pour un tag qui contient une espace.
@@ -145,6 +147,55 @@ Sur **X** :
 
 X ne documente pas quels comptes peuvent utiliser chacune d’elles. Quand X refuse une publication qui en porte, et que sa réponse en nomme une (le champ, ou la communauté), le canal indique **Échec**, avec le code `optionRefused` : Peal ne la renvoie pas, et le message de X n’est pas gardé, donc il ne dit pas quelle option X a refusée. Changez les options et republiez-la. Quand X refuse une telle publication pour autre chose, comme un compte restreint, le code est le type de problème de X lui-même, comme pour une publication sans options (`client-forbidden`, ou `http403` quand X n’en nomme aucun), et changer les options n’y fera rien.
 
+### YouTube, TikTok, Instagram et Facebook [#media-options]
+
+Ces options ne sont pas obligatoires non plus, hormis le titre et la réponse « conçue pour les enfants » de YouTube et l’audience de TikTok, plus haut. Chacune n’est envoyée que si vous la choisissez, et certaines ne valent que pour certains médias : l’éditeur les montre pour ceux-là, et la programmation les refuse sur une autre publication.
+
+Sur **YouTube**, en plus des options ci-dessus :
+
+| Option                                   | Nom dans l’API        | Valeurs                                                             | Par défaut                  |
+| ---------------------------------------- | --------------------- | ------------------------------------------------------------------- | --------------------------- |
+| **Miniature**                            | `thumbnailMediaId`    | Une image JPEG ou PNG de la [médiathèque](/media), de 8 Mio au plus | L’image que choisit YouTube |
+| **Licence**                              | `license`             | `youtube` ou `creativeCommon`                                       | Celle de la chaîne          |
+| **Intégration autorisée**                | `embeddable`          | Oui ou non                                                          | Le réglage de la chaîne     |
+| **Statistiques publiques**               | `publicStatsViewable` | Oui ou non                                                          | Le réglage de la chaîne     |
+| **Langue du titre et de la description** | `defaultLanguage`     | Une étiquette de langue, comme `en` ou `pt-BR`                      | Aucune                      |
+| **Date d’enregistrement**                | `recordingDate`       | Un jour, comme `2026-11-27`                                         | Aucune                      |
+
+YouTube définit la miniature une fois la vidéo mise en ligne, et seulement sur une chaîne qui a droit aux miniatures personnalisées. Sinon, ou s’il refuse l’image, la vidéo est publiée quand même, avec sa propre miniature : la page de la publication dit **La miniature n’a pas été définie**, et par l’API sa cible porte `thumbnailNotSet: true`. Peal définit au plus `YOUTUBE_DAILY_THUMBNAILS` miniatures par jour pour tout le serveur (voir [les variables d’environnement](/environment-variables)), car chacune puise dans le quota général du projet Google ; au-delà, une vidéo part avec celle de YouTube.
+
+Sur **TikTok**, en plus des options ci-dessus :
+
+| Option                                    | Nom dans l’API          | Valeurs                                                                 | Par défaut        |
+| ----------------------------------------- | ----------------------- | ----------------------------------------------------------------------- | ----------------- |
+| **Image de couverture, en millisecondes** | `videoCoverTimestampMs` | Une image d’une vidéo, en millisecondes depuis son début, dans sa durée | La première image |
+| **Titre de la publication photo**         | `photoTitle`            | Photos : 90 caractères au plus, comptés comme TikTok les compte         | Pas de titre      |
+| **Ajouter de la musique automatiquement** | `autoAddMusic`          | Photos : oui ou non                                                     | Non               |
+| **Photo de couverture**                   | `photoCoverIndex`       | Photos : la place de la couverture, à partir de 0 pour la première      | La première photo |
+
+Le texte d’une publication photo en est la description, et son titre est à part.
+
+Sur **Instagram** :
+
+| Option                                               | Nom dans l’API  | Valeurs                                                               | Par défaut                  |
+| ---------------------------------------------------- | --------------- | --------------------------------------------------------------------- | --------------------------- |
+| **Partager aussi dans le fil**                       | `shareToFeed`   | Un reel : oui ou non                                                  | Comme Instagram le décide   |
+| **Image de couverture**                              | `coverMediaId`  | Un reel : une image JPEG de la médiathèque, de 8 Mio au plus          | L’image prise dans la vidéo |
+| **Couverture prise dans la vidéo, en millisecondes** | `thumbOffsetMs` | Un reel : son image, en millisecondes depuis son début, dans sa durée | La première image           |
+| **Nom de l’audio**                                   | `audioName`     | Un reel : une ligne, 100 caractères au plus                           | Le nom d’Instagram          |
+| **Reel d’essai**                                     | `trialReel`     | Un reel : `manual` ou `performance`                                   | Pas un essai                |
+| **Collaborateurs**                                   | `collaborators` | Un à trois noms d’utilisateur Instagram                               | Aucun                       |
+
+Un reel est une publication d’une seule vidéo. Une image de couverture l’emporte sur l’image prise dans la vidéo : seule l’image est alors envoyée. Instagram ne renomme l’audio d’un reel qu’une fois. Un reel d’essai est d’abord montré aux comptes qui ne suivent pas le vôtre, et atteint vos abonnés quand vous le partagez dans l’application (`manual`) ou de lui-même s’il marche bien (`performance`). Chaque collaborateur est un autre compte, qui reçoit une invitation à être nommé coauteur : ne nommez que des comptes que vous voulez inviter. Instagram ne documente pas les collaborateurs pour les comptes connectés avec Instagram Login : quand Instagram refuse une telle publication, le canal indique **Échec** avec le code de Meta. Instagram montre aussi le texte alternatif des images d’une publication, jusqu’à 1 000 caractères, et aucun sur une vidéo.
+
+Sur **Facebook** :
+
+| Option                | Nom dans l’API | Valeurs                                       | Par défaut   |
+| --------------------- | -------------- | --------------------------------------------- | ------------ |
+| **Titre de la vidéo** | `videoTitle`   | Une vidéo : une ligne, 255 caractères au plus | Pas de titre |
+
+Une miniature ou une couverture est un fichier de la médiathèque que la publication ne montre pas : il doit être prêt et appartenir à l’espace de travail, il ne peut pas être supprimé tant qu’une publication qui part le nomme, un brouillon le perd quand il est supprimé, et une copie de la publication le laisse de côté une fois qu’il n’est plus là. Un ensemble de canaux ou les options par défaut d’un canal ne peuvent pas en nommer un.
+
 Par l’API, un brouillon prend ses options dans `options`, une entrée par canal, chacune marquée de sa `platform` ; chacune des cibles de la publication répond avec les siennes. Mettre à jour un brouillon remplace ses options : celles qui manquent sont retirées. Un canal ajouté seulement au moment de programmer n’en a pas encore : sur YouTube, TikTok ou Pinterest, donnez-lui d’abord ses options dans le brouillon.
 
 ## La programmer [#schedule]
@@ -165,12 +216,18 @@ Une file d’attente est un emploi du temps hebdomadaire de créneaux dans un fu
 - Un créneau est un jour et une heure sur l’horloge de la file, changements d’heure compris, comme une heure que vous choisissez : une heure que l’horloge saute passe au moment du saut, et une heure qui revient deux fois est la première des deux.
 - Un créneau est pris tant qu’une publication placée par la file est programmée, en attente d’approbation ou en cours de publication exactement à son heure. Rien d’autre n’est gardé des créneaux : repasser en brouillon, annuler ou déplacer à la main une telle publication libère son créneau, et une publication de la file déplacée à l’heure d’un créneau le prend.
 - La première file d’un espace de travail est sa file **par défaut**, celle où va une publication ajoutée sans file précise. En marquer une autre par défaut l’y déplace ; supprimer la file par défaut n’en laisse aucune jusqu’à ce qu’une autre soit marquée.
-- Changer les créneaux d’une file ne déplace aucune publication : celles déjà placées gardent leur heure.
+- Changer les créneaux d’une file ne déplace aucune publication : celles déjà placées gardent leur heure, jusqu’à ce que vous les [replaciez sur les nouveaux créneaux](#reshuffle).
 - Supprimer une file laisse ses publications programmées à leur heure.
 
 Dans l’éditeur, sous **Quand**, choisissez **Ajouter à la file**, choisissez la file (celle par défaut au départ), et lisez où la publication irait : **Prochain créneau libre**. Choisissez ensuite **Programmer** : le créneau est décidé quand Peal reçoit la publication, si bien que deux publications ajoutées au même moment ne prennent jamais le même. Une publication qui ne nomme aucun canal va sur les canaux et le groupe de canaux de la file ; un canal déconnecté depuis est laissé de côté, et c’est dit. La publication est ensuite une publication programmée comme une autre : vérifiée auprès de ses canaux, en attente d’approbation là où l’espace de travail en demande une, visible sur le calendrier avec la marque de sa file, et elle peut être déplacée, repassée en brouillon ou annulée. Une publication déjà programmée passe de même au prochain créneau libre de la file.
 
 Les publications du mois permises par l’abonnement se comptent dans le mois du créneau trouvé. Quand ce mois n’a plus de place, la publication est refusée, comme pour une heure que vous choisissez : Peal ne passe jamais de lui-même à un mois suivant. Une file sans créneau, ou dont tous les créneaux des 366 prochains jours sont pris, refuse aussi la publication.
+
+### Replacer les publications en attente sur de nouveaux créneaux [#reshuffle]
+
+Quand vous changez les créneaux d’une file ou son fuseau horaire, **Réglages**, **Files d’attente** propose, tant que des publications y attendent, **Replacer les publications en attente sur les nouveaux créneaux**, avec leur nombre. Une fois que vous confirmez, chaque publication en attente dans la file (programmée, ou en attente d’approbation, à une heure à venir) passe sur les créneaux de la file tels qu’ils sont maintenant, dans l’ordre de leurs heures : la première sur le premier créneau libre, la deuxième sur le suivant, et ainsi de suite. Les publications déplacées à la main à une autre heure sont déplacées aussi, car la file ne garde pas trace de celles qui l’ont été. Une publication déjà sur son créneau y reste, un créneau qu’occupe une publication en cours de publication est sauté, et ce que disent les publications et où elles vont ne change pas. Propriétaires, administrateurs et éditeurs peuvent le faire (`post:schedule` par l’API) ; par l’API, un contributeur dont les publications attendent une approbation ne déplace que celles-là.
+
+Chaque publication est déplacée comme à la main, sauf pour les approbations : elle prend sa nouvelle heure et compte dans son nouveau mois. Une publication programmée passe par les approbations de l’espace de travail comme si vous la programmiez, et une publication en attente d’approbation continue d’attendre, à sa nouvelle heure, quelle que soit la personne qui la déplace : sa demande reste celle de qui l’a faite, et personne n’est sollicité de nouveau pour décider. Pour programmer vous-même une telle publication, quand les vôtres n’ont pas besoin d’approbation, déplacez-la à la main. Peal dit ensuite combien de publications ont été déplacées, combien sont restées et combien restent à placer. Le déplacement s’arrête, en gardant ce qu’il a déplacé, à un mois où l’abonnement n’a plus de place, quand il ne reste aucun créneau dans les 366 jours, ou quand quelqu’un enregistre la file entre-temps : replacez-les de nouveau quand il y a de la place. Les replacer deux fois ne déplace rien la seconde fois.
 
 ## Brouillons [#drafts]
 
@@ -239,6 +296,32 @@ Peal patiente plutôt que d’abandonner quand une plateforme est occupée :
 Une publication qui n’a pas pu partir dans l’heure qui suit son heure prévue, par exemple parce que le serveur était arrêté, est marquée manquée et ne part pas.
 
 Chaque image ou vidéo est envoyée comme la plateforme le demande, et certaines plateformes traitent d’abord les vidéos : Peal les attend jusqu’à 15 minutes, puis réessaie plus tard, comme pour une plateforme qui ne répond pas.
+
+## Dépublier une publication [#unpublish]
+
+Une publication partie peut être reprise : **Dépublier**, sur sa page, la supprime de la plateforme de ce canal pour tout le monde, toutes les parties d’un fil, la dernière d’abord, si bien qu’une suppression qui s’arrête en chemin laisse un fil plus court qui se lit toujours depuis le début. C’est définitif, depuis Peal comme sur la plateforme : Peal demande donc d’abord, en nommant le canal. Les propriétaires, les administrateurs et les éditeurs peuvent dépublier (la permission qui publie, `post:publish`), ainsi qu’une clé d’API qui l’a reçue, ou une application autorisée à publier.
+
+La suppression se fait en arrière-plan, avec les autres appels du canal, un à la fois : le canal indique **Suppression en cours…**, puis **Supprimé de** la plateforme, avec la date ; la publication reste **Publiée** dans Peal, car elle est bien partie, si bien que le compte du mois et l’utilisation ne changent pas, et son adresse reste, barrée, pour mémoire. Une partie que la plateforme n’a déjà plus, supprimée chez elle auparavant, compte comme supprimée. Une plateforme qui ne répond pas est relancée après 1, 5, 15, 60 et 60 minutes, et une qui demande à Peal de ralentir, au moment qu’elle indique ; ensuite la suppression **a échoué**, avec la raison, et **Réessayer** supprime ce qui reste.
+
+Les statistiques s’arrêtent : les statistiques ne lisent plus la publication et gardent les chiffres déjà lus, et la boîte de réception ne lit plus ses commentaires et garde ceux qu’elle a pendant leurs 30 jours. Une publication montrée par une mise en avant qui n’est pas terminée ne peut pas être dépubliée : arrêtez d’abord la mise en avant, car la publicité continuerait de dépenser pour une publication disparue.
+
+Là où Peal supprime des publications :
+
+| Plateforme              | Dépublier | Pourquoi pas                                                                              |
+| ----------------------- | --------- | ----------------------------------------------------------------------------------------- |
+| Mastodon                | Oui       |                                                                                           |
+| Bluesky                 | Oui       |                                                                                           |
+| X                       | Oui       |                                                                                           |
+| Pinterest               | Oui       |                                                                                           |
+| Google Business Profile | Oui       |                                                                                           |
+| LinkedIn                | Non       | LinkedIn ne dit pas quelle permission une suppression demande                             |
+| Facebook Pages          | Non       | Meta indique que seules certaines applications peuvent supprimer les publications de Page |
+| Threads                 | Non       | Il faut une permission que Meta accorde après examen                                      |
+| Instagram               | Non       | Il faut une permission que Meta accorde après examen                                      |
+| YouTube                 | Non       | Il faut une permission plus large que celle que Peal demande                              |
+| TikTok                  | Non       | L’API de TikTok n’a aucun appel pour supprimer une publication                            |
+
+Là où ce n’est pas possible, supprimez la publication sur la plateforme elle-même. Une publication confirmée à la main ne peut pas non plus être dépubliée depuis Peal : Peal n’a pas son identifiant. Un canal déconnecté, désactivé ou à reconnecter ne peut pas être dépublié tant qu’il n’est pas revenu.
 
 ## Depuis un agent, la ligne de commande ou l’API [#api]
 

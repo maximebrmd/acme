@@ -8,6 +8,7 @@ import type {
   AccountStanding,
   Channel,
   ContentViolation,
+  Media,
   TikTokAccount,
   TikTokCreator,
 } from "peal-contract";
@@ -23,22 +24,27 @@ import {
   SelectValue,
 } from "peal-ui/components/select";
 import { Separator } from "peal-ui/components/separator";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { useEffect } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 
 import { channelName } from "#channels/channel-name.ts";
+import { MediaThumbnail } from "#components/media/media-thumbnail.tsx";
+import { MediaPicker } from "#components/posts/media-picker.tsx";
 import {
   channelCapabilities,
   pinterestBoards,
   pinterestBoardSections,
   tiktokCreator,
 } from "#posts/api.ts";
+import { mediaItem } from "#posts/attached-media.ts";
 import { blueskyLimits } from "#posts/bluesky-account.ts";
 import type { ComposerFailure } from "#posts/composer-failure.ts";
 import { choicesOf } from "#posts/lookup-choices.ts";
 import type { LookupChoices } from "#posts/lookup-choices.ts";
 import {
   fieldsOf,
+  matchesMedia,
   isShown,
   problemsByField,
   violationsByField,
@@ -48,11 +54,13 @@ import type {
   ChoiceField,
   LocalTimeField,
   LookupField,
+  MediaField,
   NumberField,
   OptionField,
   OptionProblem,
   OptionValues,
   OptionViolation,
+  PostMediaKinds,
   TagsField,
   MentionsField,
   TextField,
@@ -91,6 +99,8 @@ interface FieldProps<F extends OptionField> {
   readonly value: Value;
   /** What is wrong with the value, when anything is. */
   readonly problem: string | undefined;
+  /** The workspace whose library a media field picks from. */
+  readonly workspaceId: string | undefined;
 }
 
 const invalidOf = (t: Translate, field: OptionField) =>
@@ -172,6 +182,16 @@ const describedBy = (
   return ids.length === 0 ? undefined : ids.join(" ");
 };
 
+const inputTypeOf = (
+  field: LocalTimeField | MentionsField | TagsField | TextField
+): string => {
+  if (field.kind === "localTime") {
+    return "datetime-local";
+  }
+
+  return field.kind === "text" && field.date === true ? "date" : "text";
+};
+
 const TextInput = ({
   disabled,
   field,
@@ -192,7 +212,7 @@ const TextInput = ({
       <Label htmlFor={id}>{labelOf(t, field)}</Label>
       <Input
         id={id}
-        type={field.kind === "localTime" ? "datetime-local" : "text"}
+        type={inputTypeOf(field)}
         autoComplete="off"
         disabled={disabled}
         value={textOf(value)}
@@ -516,12 +536,231 @@ const LookupInput = (props: FieldProps<LookupField>) => {
   );
 };
 
+/** What a media field shows of the file it names. */
+export type ChosenMedia =
+  | { readonly _tag: "none" }
+  | { readonly _tag: "loading" }
+  | { readonly _tag: "failed" }
+  | { readonly _tag: "loaded"; readonly media: Media };
+
+// The file chosen, small, or what stands in for it.
+const ChosenPreview = ({ chosen }: { readonly chosen: ChosenMedia }) => {
+  const t = useTranslations("Posts.Options");
+
+  return Match.valueTags(chosen, {
+    failed: () => (
+      <p className="text-destructive-text text-sm">{t("mediaFailed")}</p>
+    ),
+    loaded: ({ media }) => (
+      <span className="relative block size-20 shrink-0 overflow-hidden rounded-md border">
+        <MediaThumbnail media={media} sizes="5rem" />
+      </span>
+    ),
+    loading: () => (
+      <span className="block size-20 shrink-0">
+        <span className="sr-only">{t("mediaLoading")}</span>
+        <Skeleton className="size-full" />
+      </span>
+    ),
+    none: () => (
+      <p className="text-muted-foreground text-sm">{t("mediaNone")}</p>
+    ),
+  });
+};
+
+/**
+ * A field that names a file of the library: the file chosen, `picker` to
+ * choose one, and a button to take it away.
+ */
+export const MediaOptionView = ({
+  chosen,
+  disabled,
+  field,
+  id,
+  limits,
+  onRemove,
+  picker,
+  problem,
+}: {
+  readonly chosen: ChosenMedia;
+  readonly disabled: boolean;
+  readonly field: MediaField;
+  readonly id: string;
+  readonly limits: FieldLimits;
+  readonly onRemove: () => void;
+  readonly picker: ReactNode;
+  readonly problem: string | undefined;
+}) => {
+  const t = useTranslations("Posts.Options");
+
+  return (
+    <fieldset
+      aria-describedby={describedBy(field, id, problem)}
+      className="flex flex-col gap-2"
+    >
+      <legend className="mb-2 text-sm leading-none font-medium">
+        {labelOf(t, field)}
+      </legend>
+      <div className="flex flex-wrap items-center gap-3">
+        <ChosenPreview chosen={chosen} />
+        <div className="flex flex-wrap gap-2">
+          {picker}
+          {chosen._tag === "none" ? null : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              onClick={onRemove}
+            >
+              {t("mediaRemove")}
+            </Button>
+          )}
+        </div>
+      </div>
+      <Notes field={field} id={id} limits={limits} problem={problem} />
+    </fieldset>
+  );
+};
+
+// A file the field may name: one of its types, no larger than it takes.
+const acceptsOf =
+  (field: MediaField) =>
+  (media: Media): boolean =>
+    field.contentTypes.includes(media.contentType) &&
+    media.byteSize <= field.maxByteSize;
+
+// The library's picker, for one file the field takes.
+const OptionMediaPicker = ({
+  chosen,
+  disabled,
+  field,
+  onValue,
+  workspaceId,
+}: {
+  readonly chosen: boolean;
+  readonly disabled: boolean;
+  readonly field: MediaField;
+  readonly onValue: (value: Value) => void;
+  readonly workspaceId: string;
+}) => {
+  const t = useTranslations("Posts.Options");
+
+  return (
+    <MediaPicker
+      accepts={acceptsOf(field)}
+      attached={[]}
+      disabled={disabled}
+      room={1}
+      texts={{
+        attach: t("mediaUse"),
+        description: t("mediaPickerDescription"),
+        // Named after the field: the attachments' picker is "Choose from
+        // the library" too.
+        open: chosen
+          ? t("mediaReplace", { label: t(field.label) })
+          : t("mediaChoose", { label: t(field.label) }),
+        title: t("mediaPickerTitle", { label: t(field.label) }),
+      }}
+      workspaceId={workspaceId}
+      onPick={(picked) => {
+        const [first] = picked;
+
+        if (first !== undefined) {
+          onValue(first.id);
+        }
+      }}
+    />
+  );
+};
+
+// The file a field names, read from the library.
+const HeldMedia = ({
+  mediaId,
+  workspaceId,
+  ...props
+}: FieldProps<MediaField> & {
+  readonly mediaId: string;
+  readonly workspaceId: string;
+}) => {
+  const result = useAtomValue(mediaItem(workspaceId, mediaId));
+
+  const chosen: ChosenMedia = AsyncResult.match(result, {
+    onFailure: (): ChosenMedia => ({ _tag: "failed" }),
+    onInitial: (): ChosenMedia => ({ _tag: "loading" }),
+    onSuccess: ({ value }): ChosenMedia => ({ _tag: "loaded", media: value }),
+  });
+
+  return (
+    <MediaOptionView
+      {...props}
+      chosen={chosen}
+      picker={
+        <OptionMediaPicker
+          chosen
+          disabled={props.disabled}
+          field={props.field}
+          workspaceId={workspaceId}
+          onValue={props.onValue}
+        />
+      }
+      onRemove={() => {
+        props.onValue(undefined);
+      }}
+    />
+  );
+};
+
+// A field that names a file of the library. Without a workspace, it shows
+// what it holds, with nothing to pick from.
+const MediaInput = (props: FieldProps<MediaField>) => {
+  const mediaId = textOf(props.value);
+  const { workspaceId } = props;
+
+  const handleRemove = () => {
+    props.onValue(undefined);
+  };
+
+  if (workspaceId === undefined) {
+    return (
+      <MediaOptionView
+        {...props}
+        chosen={mediaId === "" ? { _tag: "none" } : { _tag: "loading" }}
+        picker={null}
+        onRemove={handleRemove}
+      />
+    );
+  }
+
+  if (mediaId !== "") {
+    return <HeldMedia {...props} mediaId={mediaId} workspaceId={workspaceId} />;
+  }
+
+  return (
+    <MediaOptionView
+      {...props}
+      chosen={{ _tag: "none" }}
+      picker={
+        <OptionMediaPicker
+          chosen={false}
+          disabled={props.disabled}
+          field={props.field}
+          workspaceId={workspaceId}
+          onValue={props.onValue}
+        />
+      }
+      onRemove={handleRemove}
+    />
+  );
+};
+
 const FieldInput = (props: FieldProps<OptionField>) =>
   Match.value(props.field).pipe(
     Match.discriminatorsExhaustive("kind")({
       choice: (field) => <ChoiceInput {...props} field={field} />,
       localTime: (field) => <TextInput {...props} field={field} />,
       lookup: (field) => <LookupInput {...props} field={field} />,
+      media: (field) => <MediaInput {...props} field={field} />,
       mentions: (field) => <TextInput {...props} field={field} />,
       number: (field) => <NumberInput {...props} field={field} />,
       tags: (field) => <TextInput {...props} field={field} />,
@@ -534,9 +773,13 @@ const FieldInput = (props: FieldProps<OptionField>) =>
 interface ChannelOptionsProps {
   readonly channel: Channel;
   readonly disabled: boolean;
+  /** The kinds of the post's media, which some fields follow. */
+  readonly media?: PostMediaKinds;
   readonly onChange: (values: OptionValues) => void;
   readonly values: OptionValues;
   readonly violations: readonly ContentViolation[];
+  /** The workspace, whose library a media field picks from. */
+  readonly workspaceId?: string | undefined;
 }
 
 const unlimited: FieldLimits = {};
@@ -581,11 +824,13 @@ const ChannelOptionsFields = ({
   disabled,
   footer,
   header,
+  media,
   onChange,
   limits,
   lookups,
   values,
   violations,
+  workspaceId,
 }: ChannelOptionsProps & {
   readonly footer?: ReactNode;
   readonly header?: ReactNode;
@@ -598,13 +843,13 @@ const ChannelOptionsFields = ({
   const t = useTranslations("Posts.Options");
   const tPosts = useTranslations("Posts");
   const byField = violationsByField(violations, channel.id);
-  const typed = problemsByField(channel.platform, values);
+  const typed = problemsByField(channel.platform, values, media);
   const platform = tPosts("platform", { platform: channel.platform });
 
   const shown = fieldsOf(channel.platform).filter(
     (field) =>
       limitsByField.get(field.name)?.hidden !== true &&
-      isShown(channel.platform, field, values) &&
+      isShown(channel.platform, field, values, media) &&
       isOffered(field, values, lookupsByField)
   );
 
@@ -644,6 +889,7 @@ const ChannelOptionsFields = ({
               Option.map((found) => problemOf(t, field, found)),
               Option.getOrUndefined
             )}
+            workspaceId={workspaceId}
             onValue={(value) => {
               onChange(withValue(channel.platform, values, field.name, value));
             }}
@@ -829,7 +1075,14 @@ const TikTokChannelOptions = ({
     }
   }, [fitted, props.values, onChange]);
 
-  return <TikTokOptionsFields {...props} photos={photos} state={state} />;
+  return (
+    <TikTokOptionsFields
+      {...props}
+      photos={photos}
+      state={state}
+      workspaceId={workspaceId}
+    />
+  );
 };
 
 /**
@@ -872,6 +1125,7 @@ const PinterestChannelOptions = ({
   return (
     <PinterestOptionsFields
       {...props}
+      workspaceId={workspaceId}
       boards={{
         choices: choicesOf(useAtomValue(boards), ({ id, name }) => ({
           label: name,
@@ -920,6 +1174,7 @@ const BlueskyChannelOptions = ({
   return (
     <BlueskyOptionsFields
       {...props}
+      workspaceId={workspaceId}
       standing={
         AsyncResult.isSuccess(result)
           ? Option.some(result.value.account)
@@ -935,6 +1190,11 @@ interface TargetOptionsPanelProps {
   /** The channels the post goes to; those whose platform takes options show. */
   readonly channels: readonly Channel[];
   readonly disabled: boolean;
+  /**
+   * The kinds of the post's media, which some fields follow (a reel's on
+   * one video); every field shows while they are unknown.
+   */
+  readonly media?: PostMediaKinds;
   /** Whether the post shows photos only, which TikTok posts as photos. */
   readonly photos?: boolean;
   /**
@@ -949,9 +1209,23 @@ interface TargetOptionsPanelProps {
   readonly violations: readonly ContentViolation[];
 }
 
-/** Whether any of the channels' platforms takes options. */
-export const takesOptions = (channels: readonly Channel[]): boolean =>
-  channels.some(({ platform }) => fieldsOf(platform).length > 0);
+// Whether the platform has fields for a post of these media.
+const hasFieldsFor = ({ platform }: Channel, media: PostMediaKinds): boolean =>
+  fieldsOf(platform).some(
+    ({ shownFor }) =>
+      shownFor === undefined ||
+      media === undefined ||
+      matchesMedia(shownFor, media)
+  );
+
+/**
+ * Whether any of the channels' platforms takes options on a post of these
+ * media (any, while they are unknown).
+ */
+export const takesOptions = (
+  channels: readonly Channel[],
+  media?: PostMediaKinds
+): boolean => channels.some((channel) => hasFieldsFor(channel, media));
 
 // The options of each selected channel whose platform takes some, as its
 // platform's fields describe them, with what the last schedule refused in
@@ -959,6 +1233,7 @@ export const takesOptions = (channels: readonly Channel[]): boolean =>
 export const TargetOptionsPanel = ({
   channels,
   disabled,
+  media,
   onChange,
   photos = false,
   valuesOf,
@@ -967,16 +1242,18 @@ export const TargetOptionsPanel = ({
 }: TargetOptionsPanelProps) => (
   <div className="flex flex-col gap-4">
     {channels
-      .filter(({ platform }) => fieldsOf(platform).length > 0)
+      .filter((channel) => hasFieldsFor(channel, media))
       .map((channel) => {
         const props: ChannelOptionsProps = {
           channel,
           disabled,
+          media,
           onChange: (values) => {
             onChange(channel.id, values);
           },
           values: valuesOf(channel),
           violations,
+          workspaceId,
         };
 
         if (channel.platform === "pinterest") {
@@ -1047,14 +1324,15 @@ export const TargetOptionsSection = ({
 }: TargetOptionsSectionProps) => {
   const t = useTranslations("Posts.Options");
 
-  if (!takesOptions(panel.channels)) {
+  if (!takesOptions(panel.channels, panel.media)) {
     return null;
   }
 
   // Something filled in the API would refuse, which nothing sends.
   const wrong = panel.channels.some(
     (channel) =>
-      problemsByField(channel.platform, panel.valuesOf(channel)).size > 0
+      problemsByField(channel.platform, panel.valuesOf(channel), panel.media)
+        .size > 0
   );
 
   return (

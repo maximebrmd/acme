@@ -39,6 +39,10 @@ public class CreateTest : BaseMockServerTest
                   "post.scheduled"
                 ],
                 "failingSince": "failingSince",
+                "headerNames": [
+                  "headerNames",
+                  "headerNames"
+                ],
                 "id": "id",
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
                 "scope": "workspace",
@@ -81,6 +85,7 @@ public class CreateTest : BaseMockServerTest
                     SubscribableWebhookEventType.PostScheduled,
                     SubscribableWebhookEventType.PostScheduled,
                 },
+                Headers = null,
                 Scope = null,
                 Url = "x",
                 WorkspaceIds = null,
@@ -116,6 +121,9 @@ public class CreateTest : BaseMockServerTest
                   "post.scheduled"
                 ],
                 "failingSince": "failingSince",
+                "headerNames": [
+                  "headerNames"
+                ],
                 "id": "id",
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
                 "scope": "workspace",

@@ -118,7 +118,8 @@ export const posts = publishing.table(
  * sees a TikTok post), tagged by `platform`, and is null on platforms that
  * take none: rows from before options were kept have none. `kept_private`
  * is true on a published target the platform made private although asked
- * to show it to more people. `content_digest` is the SHA-256 of what the
+ * to show it to more people, `thumbnail_not_set` on one that went live
+ * without the thumbnail its options named. `content_digest` is the SHA-256 of what the
  * target sends to its channel (its text there and its media ids), written
  * when its post is scheduled, by which the same content sent to the same
  * channel again is found; null on a draft never scheduled, and on rows from
@@ -150,9 +151,14 @@ export const postTargets = publishing.table(
     postId: uuid("post_id")
       .notNull()
       .references(() => posts.id, { onDelete: "cascade" }),
+    // When Peal deleted it from the platform at a member's request, every
+    // part of it (`live_post_changes`); it stays published. Null while it
+    // is there.
+    removedAt: instant("removed_at"),
     round: integer("round").notNull().default(1),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
+    thumbnailNotSet: boolean("thumbnail_not_set").notNull().default(false),
     unconfirmedReason: text("unconfirmed_reason"),
   },
   (table) => [
@@ -241,13 +247,66 @@ export const publicationCalls = publishing.table(
 );
 
 /**
+ * The changes members ask of posts that are live on a channel (deleting
+ * them from the platform), each run by its own job (`ChangeLivePostV1`).
+ * `parts_left` lists the parts still to delete, last first, by place and
+ * platform id: never content. `call_started_at` is written and committed
+ * before each call to the platform, and `call_finished_at` once it
+ * answered: a call begun and not ended is in flight, which an erasure
+ * waits for. `requested_via` is the `PostOrigin` JSON the domain decodes
+ * (persisted contract), `requested_by` the member (a Better Auth user
+ * id), null for an API key and once they are forgotten. A target has one
+ * pending change at most (`live_post_changes_pending`). Rows go with
+ * their target.
+ */
+export const livePostChanges = publishing.table(
+  "live_post_changes",
+  {
+    alreadyGone: boolean("already_gone").notNull().default(false),
+    attempts: integer("attempts").notNull().default(0),
+    callFinishedAt: instant("call_finished_at"),
+    callStartedAt: instant("call_started_at"),
+    channelId: uuid("channel_id").notNull(),
+    failureCode: text("failure_code"),
+    finishedAt: instant("finished_at"),
+    id: uuid("id").primaryKey(),
+    kind: text("kind").notNull(),
+    partsLeft: jsonb("parts_left").notNull(),
+    postId: uuid("post_id").notNull(),
+    requestedAt: instant("requested_at").notNull(),
+    requestedBy: uuid("requested_by"),
+    requestedVia: jsonb("requested_via"),
+    status: text("status").notNull(),
+    targetId: uuid("target_id")
+      .notNull()
+      .references(() => postTargets.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    // One change at a time on a target: requests sent together make one.
+    uniqueIndex("live_post_changes_pending")
+      .on(table.targetId)
+      .where(sql`${table.status} = 'pending'`),
+    // A post's changes, newest first: ids are UUIDv7s.
+    index("live_post_changes_post").on(
+      table.workspaceId,
+      table.postId,
+      table.id
+    ),
+    // The latest change of a target.
+    index("live_post_changes_target").on(table.targetId, table.id),
+  ]
+);
+
+/**
  * A resumable upload a platform keeps for one publishing call (YouTube's
  * videos.insert), journaled before any byte is sent, so a run found in
  * flight asks the platform where the upload stands instead of sending it
  * again. `session_url` is where the bytes go, cleared once the platform
  * made the video, whose id `video_id` then keeps; `final_part_sent` is set
  * before the part holding the last byte leaves, after which the video may
- * exist. Rows go with their call.
+ * exist; `thumbnail_set` once the video's thumbnail is set, which a resumed
+ * run does not set again. Rows go with their call.
  */
 export const uploadSessions = publishing.table("upload_sessions", {
   byteSize: bigint("byte_size", { mode: "number" }).notNull(),
@@ -257,6 +316,7 @@ export const uploadSessions = publishing.table("upload_sessions", {
     .references(() => publicationCalls.idempotencyKey, { onDelete: "cascade" }),
   openedAt: instant("opened_at").notNull(),
   sessionUrl: text("session_url"),
+  thumbnailSet: boolean("thumbnail_set").notNull().default(false),
   videoId: text("video_id"),
 });
 

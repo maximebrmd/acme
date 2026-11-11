@@ -1,6 +1,7 @@
 // What the server writes about a request never holds a credential: a
-// connect link's token, a review link's, a partner key, or the token of a
-// link that applies a request to cancel. The app runs here as production
+// connect link's token, a review link's, a partner key, the token of a
+// link that applies a request to cancel, or the value of a header a
+// webhook endpoint's deliveries carry. The app runs here as production
 // runs it, logging each request and tracing it, and everything a log line
 // or a span would export is searched for each secret.
 import { assert, layer } from "@effect/vitest";
@@ -10,11 +11,21 @@ import {
   Exit,
   Layer,
   Logger,
+  Option,
   References,
   Schema,
   Tracer,
 } from "effect";
 
+import {
+  answered,
+  FakeTransport,
+} from "#test/webhooks/fakes/fake-transport.ts";
+import {
+  freshEndpoint,
+  freshOwner,
+  WebhooksTest,
+} from "#test/webhooks/support.ts";
 import {
   bodyOf,
   MigratedSqlLive,
@@ -27,6 +38,10 @@ import {
   keyOf,
   partnerOf,
 } from "#test/workspace/integration/partner-support.ts";
+import { toDeliveryView, toEndpointView } from "#webhooks/api/webhook-view.ts";
+import { DeliverWebhook } from "#webhooks/application/deliver-webhook.ts";
+import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
+import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
 
 const CreatedLinkSchema = Schema.Struct({ url: Schema.String });
 
@@ -161,3 +176,72 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
     );
   }
 );
+
+layer(
+  Layer.mergeAll(WebhooksTest, capture, Layer.succeed(Tracer.Tracer, tracer)),
+  { timeout: "60 seconds" }
+)("what the server writes about webhook deliveries", (it) => {
+  it.effect(
+    "holds no value of an endpoint's headers, nor does the delivery log",
+    () =>
+      Effect.gen(function* searched() {
+        const owner = yield* freshOwner;
+        const endpoints = yield* WebhookEndpoints;
+        const deliveries = yield* WebhookDeliveries;
+        const transport = yield* FakeTransport;
+        const first = "Bearer synthetic-header-value-first";
+        const second = "synthetic-header-value-second";
+
+        const { endpoint, host } = yield* freshEndpoint(owner, {
+          headers: [{ name: "Authorization", value: first }],
+        });
+
+        const changed = yield* endpoints.update(owner, endpoint.id, {
+          headers: [
+            { name: "Authorization", value: first },
+            { name: "X-Gateway-Key", value: second },
+          ],
+        });
+
+        // Delivered with them, refused by the receiver, then tried again.
+        yield* transport.next(
+          host,
+          answered(500, "Internal error"),
+          answered(204)
+        );
+
+        const delivery = yield* endpoints.sendTest(owner, endpoint.id);
+
+        yield* DeliverWebhook.use((delivering) =>
+          delivering.attempt(delivery.id, 1)
+        );
+        yield* DeliverWebhook.use((delivering) =>
+          delivering.attempt(delivery.id, 2)
+        );
+
+        const [request] = yield* transport.sentTo(host);
+
+        assert.strictEqual(request?.headers["X-Gateway-Key"], second);
+
+        const log = yield* deliveries.page(owner, endpoint.id, {
+          after: Option.none(),
+          limit: 10,
+        });
+
+        const shown = JSON.stringify([
+          toEndpointView(changed),
+          toEndpointView(yield* endpoints.get(owner, endpoint.id)),
+          log.items.map(toDeliveryView),
+        ]);
+
+        const all = written();
+
+        assert.isAbove(spans.length, 0);
+
+        for (const value of [first, second]) {
+          assert.notInclude(all, value);
+          assert.notInclude(shown, value);
+        }
+      })
+  );
+});

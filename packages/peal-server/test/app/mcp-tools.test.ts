@@ -19,6 +19,7 @@ import {
   ChannelSchema,
   ChannelSetSchema,
   QueuePreviewSchema,
+  QueueReshuffleSchema,
   QueueSchema,
   InboxCommentSchema,
   InboxReplySchema,
@@ -202,6 +203,16 @@ const ToolsFixtureLive = Layer.effect(
 
 // Replies are JSON, which writes instants as strings.
 const PostJsonSchema = Schema.toCodecJson(PostSchema);
+
+// The answers of the tools that remove a post from its platforms, as JSON.
+const UnpublishJsonSchema = Schema.Struct({
+  changes: Schema.Array(Schema.Unknown),
+  refused: Schema.Array(Schema.Unknown),
+});
+
+const ChangesJsonSchema = Schema.Struct({
+  items: Schema.Array(Schema.Unknown),
+});
 
 // Instants, as text to compare.
 const iso = (instant: DateTime.Utc | null | undefined) =>
@@ -427,6 +438,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_members: [true, false, true, false],
           list_partner_workspaces: [true, false, true, false],
           list_post_attempts: [true, false, true, false],
+          list_post_changes: [true, false, true, false],
           list_posts: [true, false, true, false],
           list_queues: [true, false, true, false],
           list_signatures: [true, false, true, false],
@@ -451,6 +463,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           repost_target: [false, false, false, true],
           request_changes: [false, true, false, false],
           reschedule_post: [false, true, true, true],
+          reshuffle_queue: [false, false, true, false],
           resume_boost: [false, true, true, true],
           revoke_connect_link: [false, true, true, false],
           revoke_invitation: [false, true, true, false],
@@ -465,6 +478,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // The same tags again change nothing more, and remove nothing
           // but a label.
           tag_post: [false, false, true, false],
+          // It deletes the post from the platform, for everyone.
+          unpublish_post: [false, true, false, true],
           unschedule_post: [false, true, true, false],
           update_channel_set: [false, true, true, false],
           update_draft: [false, true, true, false],
@@ -711,11 +726,13 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               postId,
               timeZone: "Europe/Paris",
             },
+            reshuffle_queue: { queue: postId },
             schedule_post: {
               at: "2030-01-01T10:00:00Z",
               postId,
               timeZone: "Europe/Paris",
             },
+            unpublish_post: { postId },
             unschedule_post: { postId },
             withdraw_comment_reply: { replyId: postId },
           } satisfies Record<string, ToolArguments>;
@@ -1968,6 +1985,29 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "workspace:publish"
         );
 
+        // Its waiting posts are moved onto its slots as they now are: none
+        // waits, so none moves; a queue without slots is told.
+        const reshuffled = yield* publisher.call(
+          "reshuffle_queue",
+          Schema.toCodecJson(QueueReshuffleSchema),
+          { queue: "Synthetic EVERGREEN" }
+        );
+
+        assert.deepStrictEqual(reshuffled, {
+          moved: 0,
+          remaining: 0,
+          stoppedBy: null,
+          unchanged: 0,
+        });
+        assert.include(
+          yield* publisher.refused("reshuffle_queue", { queue: empty.id }),
+          "The queue has no slot"
+        );
+        assert.include(
+          yield* writer.refused("reshuffle_queue", { queue: queue.id }),
+          "workspace:publish"
+        );
+
         // What an update leaves out stays as it is.
         const renamed = yield* writer.call("update_queue", QueueJsonSchema, {
           name: "Synthetic mornings",
@@ -2077,6 +2117,40 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               targetId: "not-a-target",
             }),
             "The workspace has no post with this id."
+          );
+          // Removing a post from its platforms is deciding what is out,
+          // which needs the publishing scope; a draft has nothing out.
+          assert.include(
+            yield* writer.refused("unpublish_post", { postId: created.id }),
+            "workspace:publish"
+          );
+          assert.deepStrictEqual(
+            yield* publisher.call("unpublish_post", UnpublishJsonSchema, {
+              postId: created.id,
+            }),
+            { changes: [], refused: [] }
+          );
+          assert.include(
+            yield* publisher.refused("unpublish_post", {
+              channelId: "00000000-0000-7000-8000-00000000c0de",
+              postId: created.id,
+            }),
+            "The post is not on that channel"
+          );
+          // One target, named one way: never whichever of two comes first.
+          assert.include(
+            yield* publisher.refused("unpublish_post", {
+              channelId: "00000000-0000-7000-8000-00000000c0de",
+              postId: created.id,
+              targetId: "00000000-0000-7000-8000-00000000e0de",
+            }),
+            "Give channelId or targetId, not both"
+          );
+          assert.deepStrictEqual(
+            yield* writer.call("list_post_changes", ChangesJsonSchema, {
+              postId: created.id,
+            }),
+            { items: [] }
           );
           assert.include(
             yield* writer.refused("create_draft", {

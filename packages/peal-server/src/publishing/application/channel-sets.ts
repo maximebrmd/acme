@@ -12,9 +12,8 @@ import type {
   ChannelSet,
   ChannelSetDetails,
 } from "#publishing/domain/channel-set.ts";
-import { checkDraft } from "#publishing/domain/content-rules.ts";
+import { checkSavedOptions } from "#publishing/domain/content-rules.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
-import { emptyContent } from "#publishing/domain/post-content.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
@@ -120,7 +119,7 @@ export class ChannelSets extends Context.Service<
 
         const found = yield* channelsFor(actor, channelIds).pipe(withPorts);
 
-        yield* Effect.fromResult(checkDraft(emptyContent, found, options));
+        yield* Effect.fromResult(checkSavedOptions(found, options));
       });
 
       const list = Effect.fn("ChannelSets.list")(function* list(actor: Actor) {

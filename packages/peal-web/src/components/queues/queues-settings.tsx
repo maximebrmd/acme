@@ -27,11 +27,16 @@ import {
   updateQueue,
   workspaceQueues,
 } from "#queues/atoms.ts";
-import { queueDetailsOf, queueDraftOf } from "#queues/slots.ts";
+import {
+  queueDetailsOf,
+  queueDraftOf,
+  timetableChanged,
+} from "#queues/slots.ts";
 import type { QueueDraft } from "#queues/slots.ts";
 import { savedItemErrorOf } from "#settings/saved-item-error.ts";
 import type { SavedItemError } from "#settings/saved-item-error.ts";
 
+import { QueueReshuffle } from "./queue-reshuffle.tsx";
 import {
   QueueFieldsView,
   QueueItemView,
@@ -71,12 +76,15 @@ const EditForm = ({
   channelSets,
   channels,
   onClose,
+  onSaved,
   queue,
   workspaceId,
 }: {
   readonly channelSets: readonly ChannelSet[];
   readonly channels: readonly Channel[];
   readonly onClose: () => void;
+  /** Saved, with whether its slots or its zone changed. */
+  readonly onSaved: (retimed: boolean) => void;
   readonly queue: Queue;
   readonly workspaceId: string;
 }) => {
@@ -106,7 +114,7 @@ const EditForm = ({
       Option.match(savedItemErrorOf(exit, true), {
         onNone: () => {
           toast.success(t("saved"));
-          onClose();
+          onSaved(timetableChanged(queue, details.value));
         },
         onSome: setError,
       });
@@ -147,12 +155,14 @@ const QueueRow = ({
   channelSets,
   channels,
   mayManage,
+  mayReshuffle,
   queue,
   workspaceId,
 }: {
   readonly channelSets: readonly ChannelSet[];
   readonly channels: readonly Channel[];
   readonly mayManage: boolean;
+  readonly mayReshuffle: boolean;
   readonly queue: Queue;
   readonly workspaceId: string;
 }) => {
@@ -160,6 +170,8 @@ const QueueRow = ({
   const nameId = useId();
   const remove = useAtomSet(deleteQueue, { mode: "promiseExit" });
   const [editing, setEditing] = useState(false);
+  // Its slots changed at a save: its waiting posts may be moved onto them.
+  const [retimed, setRetimed] = useState(false);
 
   const actions = mayManage ? (
     <>
@@ -207,7 +219,14 @@ const QueueRow = ({
           onClose={() => {
             setEditing(false);
           }}
+          onSaved={(changed) => {
+            setEditing(false);
+            setRetimed(retimed || changed);
+          }}
         />
+      ) : null}
+      {retimed && mayReshuffle ? (
+        <QueueReshuffle queue={queue} workspaceId={workspaceId} />
       ) : null}
     </QueueItemView>
   );
@@ -305,9 +324,11 @@ const CreateForm = ({
 // The page once the workspace's queues, channels and sets are known.
 const Loaded = ({
   mayManage,
+  mayReshuffle,
   workspaceId,
 }: {
   readonly mayManage: boolean;
+  readonly mayReshuffle: boolean;
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Queues");
@@ -355,6 +376,7 @@ const Loaded = ({
                 channelSets={channelSets}
                 channels={channels.value}
                 mayManage={mayManage}
+                mayReshuffle={mayReshuffle}
                 queue={queue}
                 workspaceId={workspaceId}
               />
@@ -384,13 +406,16 @@ const Loaded = ({
 /**
  * The workspace's queues: the list with each queue's coming slots, and
  * for those who may change posts a form to add one, and to change or
- * delete each.
+ * delete each; for those who may schedule, once a queue's slots changed,
+ * the offer to move its waiting posts onto them.
  */
 export const QueuesSettings = ({
   mayManage,
+  mayReshuffle,
   workspaceId,
 }: {
   readonly mayManage: boolean;
+  readonly mayReshuffle: boolean;
   readonly workspaceId: string;
 }) => {
   const hydrated = useHydrated();
@@ -398,7 +423,11 @@ export const QueuesSettings = ({
   return (
     <div className="flex flex-col gap-8">
       {hydrated ? (
-        <Loaded mayManage={mayManage} workspaceId={workspaceId} />
+        <Loaded
+          mayManage={mayManage}
+          mayReshuffle={mayReshuffle}
+          workspaceId={workspaceId}
+        />
       ) : (
         <SettingsLoading />
       )}

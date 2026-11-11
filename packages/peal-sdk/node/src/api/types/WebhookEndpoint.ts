@@ -11,6 +11,7 @@ export interface WebhookEndpoint {
     enabled: boolean;
     eventTypes: Peal.SubscribableWebhookEventType[];
     failingSince: string | null;
+    headerNames: string[];
     id: string;
     previousSecretExpiresAt: string | null;
     scope: Peal.WebhookEndpointScope;

@@ -24,6 +24,16 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
 
     public static readonly SubscribableWebhookEventType PostCancelled = new(Values.PostCancelled);
 
+    public static readonly SubscribableWebhookEventType PostFinished = new(Values.PostFinished);
+
+    public static readonly SubscribableWebhookEventType PostUnpublished = new(
+        Values.PostUnpublished
+    );
+
+    public static readonly SubscribableWebhookEventType PostUnpublishFailed = new(
+        Values.PostUnpublishFailed
+    );
+
     public static readonly SubscribableWebhookEventType PostApprovalRequested = new(
         Values.PostApprovalRequested
     );
@@ -44,6 +54,16 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
 
     public static readonly SubscribableWebhookEventType ChannelReconnectNeeded = new(
         Values.ChannelReconnectNeeded
+    );
+
+    public static readonly SubscribableWebhookEventType ChannelDisabled = new(
+        Values.ChannelDisabled
+    );
+
+    public static readonly SubscribableWebhookEventType ChannelEnabled = new(Values.ChannelEnabled);
+
+    public static readonly SubscribableWebhookEventType ChannelExpiring = new(
+        Values.ChannelExpiring
     );
 
     public static readonly SubscribableWebhookEventType MediaReady = new(Values.MediaReady);
@@ -185,6 +205,12 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
 
         public const string PostCancelled = "post.cancelled";
 
+        public const string PostFinished = "post.finished";
+
+        public const string PostUnpublished = "post.unpublished";
+
+        public const string PostUnpublishFailed = "post.unpublish_failed";
+
         public const string PostApprovalRequested = "post.approval_requested";
 
         public const string PostApproved = "post.approved";
@@ -196,6 +222,12 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
         public const string ChannelDisconnected = "channel.disconnected";
 
         public const string ChannelReconnectNeeded = "channel.reconnect_needed";
+
+        public const string ChannelDisabled = "channel.disabled";
+
+        public const string ChannelEnabled = "channel.enabled";
+
+        public const string ChannelExpiring = "channel.expiring";
 
         public const string MediaReady = "media.ready";
 

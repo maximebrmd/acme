@@ -38,6 +38,9 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  *   the store decodes every row with the domain's schema.
  * - `channel_ids` and `workspace_ids` are its filters, empty for none: ids
  *   without foreign keys, kept as saved after what they name is gone.
+ * - `headers` are those its deliveries carry beside Peal's own, as
+ *   `[{ name, sealed }]`: each value encrypted as the secret is, bound to
+ *   `webhook:<id>:header:<name>`, never shown again.
  */
 export const endpoints = webhooksSchema.table(
   "endpoints",
@@ -52,6 +55,10 @@ export const endpoints = webhooksSchema.table(
     disabledReason: text("disabled_reason"),
     eventTypes: text("event_types").array().notNull(),
     failingSince: instant("failing_since"),
+    headers: jsonb("headers")
+      .$type<readonly { readonly name: string; readonly sealed: string }[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     id: uuid("id").primaryKey(),
     previousSecret: text("previous_secret"),
     previousSecretExpiresAt: instant("previous_secret_expires_at"),

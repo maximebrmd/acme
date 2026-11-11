@@ -6,12 +6,13 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .you_tube_license import YouTubeLicense
 from .you_tube_privacy import YouTubePrivacy
 
 
 class YouTubeOptions(UniversalBaseModel):
     """
-    How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`.
+    How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`; `thumbnailMediaId` names an image of the library, set once the video is uploaded.
     """
 
     category_id: typing_extensions.Annotated[
@@ -22,6 +23,11 @@ class YouTubeOptions(UniversalBaseModel):
         FieldMetadata(alias="containsSyntheticMedia"),
         pydantic.Field(alias="containsSyntheticMedia"),
     ] = None
+    default_language: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="defaultLanguage"), pydantic.Field(alias="defaultLanguage")
+    ] = None
+    embeddable: typing.Optional[bool] = None
+    license: typing.Optional[YouTubeLicense] = None
     made_for_kids: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="madeForKids"), pydantic.Field(alias="madeForKids")
     ] = None
@@ -29,7 +35,16 @@ class YouTubeOptions(UniversalBaseModel):
         typing.Optional[bool], FieldMetadata(alias="notifySubscribers"), pydantic.Field(alias="notifySubscribers")
     ] = None
     privacy: typing.Optional[YouTubePrivacy] = None
+    public_stats_viewable: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="publicStatsViewable"), pydantic.Field(alias="publicStatsViewable")
+    ] = None
+    recording_date: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="recordingDate"), pydantic.Field(alias="recordingDate")
+    ] = None
     tags: typing.Optional[typing.List[str]] = None
+    thumbnail_media_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="thumbnailMediaId"), pydantic.Field(alias="thumbnailMediaId")
+    ] = None
     title: typing.Optional[str] = None
 
     if IS_PYDANTIC_V2:

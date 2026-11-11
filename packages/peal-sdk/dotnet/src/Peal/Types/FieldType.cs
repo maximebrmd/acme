@@ -14,6 +14,8 @@ public readonly record struct FieldType : IStringEnum
 
     public static readonly FieldType Integer = new(Values.Integer);
 
+    public static readonly FieldType Media = new(Values.Media);
+
     public static readonly FieldType MentionList = new(Values.MentionList);
 
     public static readonly FieldType Text = new(Values.Text);
@@ -119,6 +121,8 @@ public readonly record struct FieldType : IStringEnum
         public const string Choice = "choice";
 
         public const string Integer = "integer";
+
+        public const string Media = "media";
 
         public const string MentionList = "mentionList";
 

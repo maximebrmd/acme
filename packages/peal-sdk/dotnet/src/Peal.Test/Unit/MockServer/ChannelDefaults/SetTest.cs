@@ -26,13 +26,19 @@ public class SetTest : BaseMockServerTest
                 "platform": "youtube",
                 "categoryId": "categoryId",
                 "containsSyntheticMedia": true,
+                "defaultLanguage": "defaultLanguage",
+                "embeddable": true,
+                "license": "youtube",
                 "madeForKids": true,
                 "notifySubscribers": true,
                 "privacy": "public",
+                "publicStatsViewable": true,
+                "recordingDate": "recordingDate",
                 "tags": [
                   "tags",
                   "tags"
                 ],
+                "thumbnailMediaId": "thumbnailMediaId",
                 "title": "title"
               }
             }
@@ -65,10 +71,16 @@ public class SetTest : BaseMockServerTest
                         {
                             CategoryId = null,
                             ContainsSyntheticMedia = null,
+                            DefaultLanguage = null,
+                            Embeddable = null,
+                            License = null,
                             MadeForKids = null,
                             NotifySubscribers = null,
                             Privacy = null,
+                            PublicStatsViewable = null,
+                            RecordingDate = null,
                             Tags = null,
+                            ThumbnailMediaId = null,
                             Title = null,
                         }
                     )
@@ -95,12 +107,18 @@ public class SetTest : BaseMockServerTest
                 "platform": "youtube",
                 "categoryId": "categoryId",
                 "containsSyntheticMedia": true,
+                "defaultLanguage": "defaultLanguage",
+                "embeddable": true,
+                "license": "youtube",
                 "madeForKids": true,
                 "notifySubscribers": true,
                 "privacy": "public",
+                "publicStatsViewable": true,
+                "recordingDate": "recordingDate",
                 "tags": [
                   "tags"
                 ],
+                "thumbnailMediaId": "thumbnailMediaId",
                 "title": "title"
               }
             }

@@ -1,17 +1,21 @@
 import { Schema } from "effect";
 
+import { ByteCountSchema } from "./int64.ts";
 import { LookupNameSchema } from "./lookup-name.ts";
 
 /**
  * What a field holds: a yes or no (`boolean`), a text, one of `values`
- * (`choice`), several texts (`textList`), a whole number (`integer`), or
- * the accounts a text names (`mentionList`: objects of a `name` and a
- * `urn`, as the field's lookup answers them).
+ * (`choice`), several texts (`textList`), a whole number (`integer`), the
+ * accounts a text names (`mentionList`: objects of a `name` and a `urn`,
+ * as the field's lookup answers them), or the id of a file of the
+ * workspace's library (`media`: one of `contentTypes`, at most
+ * `maxByteSize` bytes).
  */
 export const FieldTypeSchema = Schema.Literals([
   "boolean",
   "choice",
   "integer",
+  "media",
   "mentionList",
   "text",
   "textList",
@@ -31,12 +35,17 @@ export const FieldDefaultSchema = Schema.Union([
  * is null does not apply to the field.
  */
 export const FieldDescriptionSchema = Schema.Struct({
+  // The types of file a `media` field may name, as `image/jpeg`; empty for
+  // any other type.
+  contentTypes: Schema.Array(Schema.String),
   // Characters refused anywhere in a text.
   forbiddenCharacters: Schema.Array(Schema.String),
   // What the platform does when the field is left out.
   ifLeftOut: Schema.NullOr(FieldDefaultSchema),
   // The lookup that answers the values the field takes on an account.
   lookup: Schema.NullOr(LookupNameSchema),
+  // The largest file a `media` field may name, in bytes.
+  maxByteSize: Schema.NullOr(ByteCountSchema),
   // The longest text, in code points; for a `textList`, of all its texts
   // together, as the platform counts them.
   maxLength: Schema.NullOr(Schema.Int),

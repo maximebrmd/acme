@@ -28,6 +28,7 @@ import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";
 import { PealApi } from "#api.ts";
 import { CredentialStore } from "#credentials.ts";
+import { livePostRefusalWords } from "#live-post-refusals.ts";
 import { planLimitReason } from "#plan-limit.ts";
 import { Refused } from "#refused.ts";
 import { SignInExpired } from "#sign-in-expired.ts";
@@ -446,6 +447,10 @@ const reasonOf =
         refused(
           "The workspace has no pending invitation with that id: it was accepted, declined or revoked."
         ),
+      LivePostNotChangeable: ({ reason }) =>
+        refused(
+          `The post was not deleted from that channel: ${livePostRefusalWords[reason]}. Nothing was asked of the platform.`
+        ),
       LookupInputInvalid: () =>
         refused(
           "The lookup refused its input: peal channels lookup <channel-id> lists what each lookup takes, and a cursor must be one a page before named."
@@ -657,6 +662,14 @@ const reasonOf =
           field === "workspaceIds"
             ? "Only a partner endpoint, in a partner account's home workspace, takes --workspace-id: an endpoint of its own workspace hears that workspace alone."
             : "--channel takes channels of the workspace, as peal channels list shows them."
+        ),
+      WebhookHeaderValuesRequired: () =>
+        refused(
+          'The new --url is on another host, and the endpoint has headers, whose values Peal sends only to the host they were given for: give every --header "Name: value" again with --url, or --clear-headers.'
+        ),
+      WebhookHeadersRefused: () =>
+        refused(
+          'A header named without a value keeps the one the endpoint has: it has none under that name, so give it with --header "Name: value".'
         ),
       WebhookUrlRefused: ({ reason }) => refused(urlRefusals[reason]),
       WebhooksNotConfigured: () =>

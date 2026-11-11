@@ -16,6 +16,7 @@ export interface WebhookEndpointChange {
     description?: string;
     enabled?: boolean;
     eventTypes?: Peal.SubscribableWebhookEventType[];
+    headers?: Peal.WebhookHeaderChange[];
     url?: string;
     workspaceIds?: string[];
 }

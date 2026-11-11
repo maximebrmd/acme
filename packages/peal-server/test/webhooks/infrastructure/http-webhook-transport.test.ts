@@ -41,6 +41,8 @@ const refusing = (reason: OutboundRequestRefused["reason"]) =>
 const body = '{"type":"webhook.test","data":{}}';
 
 const headers = {
+  // An endpoint's own, as a gateway in front of the receiver asks.
+  Authorization: "Bearer synthetic-gateway-token",
   "content-type": "application/json",
   "webhook-id": "00000000-0000-7000-8000-000000000041",
   "webhook-signature": "v1,c3ludGhldGlj",
@@ -75,6 +77,10 @@ describe("the webhook transport", () => {
       assert.strictEqual(
         headerOf(request, "webhook-signature"),
         headers["webhook-signature"]
+      );
+      assert.strictEqual(
+        headerOf(request, "authorization"),
+        headers.Authorization
       );
       // Receivers get none of Peal's trace context.
       assert.strictEqual(headerOf(request, "traceparent"), "");

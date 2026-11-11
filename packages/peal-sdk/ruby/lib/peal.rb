@@ -79,6 +79,9 @@ require_relative "peal/posts/types/queue_post"
 require_relative "peal/posts/types/unschedule_posts_request"
 require_relative "peal/posts/types/repost_posts_request"
 require_relative "peal/posts/types/confirm_posts_request"
+require_relative "peal/posts/types/unpublish_target_posts_request"
+require_relative "peal/posts/types/unpublish_posts_request"
+require_relative "peal/posts/types/changes_posts_request"
 require_relative "peal/posts/types/cancel_posts_request"
 require_relative "peal/media/client"
 require_relative "peal/media/types/list_media_request"
@@ -223,6 +226,7 @@ require_relative "peal/queues/types/get_queues_request"
 require_relative "peal/queues/types/update_queues_request"
 require_relative "peal/queues/types/delete_queues_request"
 require_relative "peal/queues/types/slots_queues_request"
+require_relative "peal/queues/types/reshuffle_queues_request"
 require_relative "peal/channel_defaults/client"
 require_relative "peal/channel_defaults/types/get_channel_defaults_request"
 require_relative "peal/channel_defaults/types/new_channel_defaults"
@@ -230,6 +234,12 @@ require_relative "peal/channel_defaults/types/clear_channel_defaults_request"
 require_relative "peal/environment"
 
 module Peal
+  module Posts
+    module Types
+      autoload :SearchPostsRequestRemoved, ::File.join(__dir__, "peal/posts/types/search_posts_request_removed")
+    end
+  end
+
   module NotificationPreferences
     module Types
       autoload :NotificationPreferencesChangeEmail, ::File.join(__dir__, "peal/notification_preferences/types/notification_preferences_change_email")
@@ -433,9 +443,12 @@ module Peal
     autoload :BoostPage, ::File.join(__dir__, "peal/types/boost_page")
     autoload :BoostQuote, ::File.join(__dir__, "peal/types/boost_quote")
     autoload :BoostStateConflictEncoded, ::File.join(__dir__, "peal/types/boost_state_conflict_encoded")
+    autoload :FacebookOptions, ::File.join(__dir__, "peal/types/facebook_options")
     autoload :GoogleBusinessCallToAction, ::File.join(__dir__, "peal/types/google_business_call_to_action")
     autoload :GoogleBusinessPostType, ::File.join(__dir__, "peal/types/google_business_post_type")
     autoload :GoogleBusinessOptions, ::File.join(__dir__, "peal/types/google_business_options")
+    autoload :InstagramTrialReel, ::File.join(__dir__, "peal/types/instagram_trial_reel")
+    autoload :InstagramOptions, ::File.join(__dir__, "peal/types/instagram_options")
     autoload :LinkedInMention, ::File.join(__dir__, "peal/types/linked_in_mention")
     autoload :LinkedInVisibility, ::File.join(__dir__, "peal/types/linked_in_visibility")
     autoload :LinkedInOptions, ::File.join(__dir__, "peal/types/linked_in_options")
@@ -449,6 +462,7 @@ module Peal
     autoload :TikTokOptions, ::File.join(__dir__, "peal/types/tik_tok_options")
     autoload :XReplySettings, ::File.join(__dir__, "peal/types/x_reply_settings")
     autoload :XOptions, ::File.join(__dir__, "peal/types/x_options")
+    autoload :YouTubeLicense, ::File.join(__dir__, "peal/types/you_tube_license")
     autoload :YouTubePrivacy, ::File.join(__dir__, "peal/types/you_tube_privacy")
     autoload :YouTubeOptions, ::File.join(__dir__, "peal/types/you_tube_options")
     autoload :TargetOptions, ::File.join(__dir__, "peal/types/target_options")
@@ -519,6 +533,7 @@ module Peal
     autoload :PostContentInvalidEncodedTag, ::File.join(__dir__, "peal/types/post_content_invalid_encoded_tag")
     autoload :PostContentInvalidEncoded, ::File.join(__dir__, "peal/types/post_content_invalid_encoded")
     autoload :PostNotFoundEncoded, ::File.join(__dir__, "peal/types/post_not_found_encoded")
+    autoload :QueueHasNoRoomEncodedTag, ::File.join(__dir__, "peal/types/queue_has_no_room_encoded_tag")
     autoload :QueueNoRoom, ::File.join(__dir__, "peal/types/queue_no_room")
     autoload :QueueHasNoRoomEncoded, ::File.join(__dir__, "peal/types/queue_has_no_room_encoded")
     autoload :QueueNotFoundEncoded, ::File.join(__dir__, "peal/types/queue_not_found_encoded")
@@ -554,6 +569,8 @@ module Peal
     autoload :FieldDescription, ::File.join(__dir__, "peal/types/field_description")
     autoload :FollowUpCapabilitiesKind, ::File.join(__dir__, "peal/types/follow_up_capabilities_kind")
     autoload :FollowUpCapabilities, ::File.join(__dir__, "peal/types/follow_up_capabilities")
+    autoload :LivePostBlocker, ::File.join(__dir__, "peal/types/live_post_blocker")
+    autoload :LivePostCapabilities, ::File.join(__dir__, "peal/types/live_post_capabilities")
     autoload :LookupDescription, ::File.join(__dir__, "peal/types/lookup_description")
     autoload :MediaCapabilitiesAltText, ::File.join(__dir__, "peal/types/media_capabilities_alt_text")
     autoload :MediaKind, ::File.join(__dir__, "peal/types/media_kind")
@@ -665,6 +682,14 @@ module Peal
     autoload :Invitation, ::File.join(__dir__, "peal/types/invitation")
     autoload :InvitationNotFoundEncoded, ::File.join(__dir__, "peal/types/invitation_not_found_encoded")
     autoload :LinkedInOrganization, ::File.join(__dir__, "peal/types/linked_in_organization")
+    autoload :LivePostChangeKind, ::File.join(__dir__, "peal/types/live_post_change_kind")
+    autoload :LivePostChangeStatus, ::File.join(__dir__, "peal/types/live_post_change_status")
+    autoload :LivePostChange, ::File.join(__dir__, "peal/types/live_post_change")
+    autoload :LivePostChanges, ::File.join(__dir__, "peal/types/live_post_changes")
+    autoload :LivePostNotChangeableEncodedTag, ::File.join(__dir__, "peal/types/live_post_not_changeable_encoded_tag")
+    autoload :LivePostRefusal, ::File.join(__dir__, "peal/types/live_post_refusal")
+    autoload :LivePostNotChangeableEncoded, ::File.join(__dir__, "peal/types/live_post_not_changeable_encoded")
+    autoload :LivePostRefusedTarget, ::File.join(__dir__, "peal/types/live_post_refused_target")
     autoload :LookupInputInvalidEncodedTag, ::File.join(__dir__, "peal/types/lookup_input_invalid_encoded_tag")
     autoload :LookupInputInvalidEncoded, ::File.join(__dir__, "peal/types/lookup_input_invalid_encoded")
     autoload :LookupNotFoundEncoded, ::File.join(__dir__, "peal/types/lookup_not_found_encoded")
@@ -733,6 +758,7 @@ module Peal
     autoload :NoticeEventSubscriptionStarted, ::File.join(__dir__, "peal/types/notice_event_subscription_started")
     autoload :NoticeEventSubscriptionWithdrawn, ::File.join(__dir__, "peal/types/notice_event_subscription_withdrawn")
     autoload :NoticeEventTrialEnding, ::File.join(__dir__, "peal/types/notice_event_trial_ending")
+    autoload :NoticeEventWebhookDeliveriesFailing, ::File.join(__dir__, "peal/types/notice_event_webhook_deliveries_failing")
     autoload :WebhookTurnOffReason, ::File.join(__dir__, "peal/types/webhook_turn_off_reason")
     autoload :NoticeEventWebhookEndpointDisabled, ::File.join(__dir__, "peal/types/notice_event_webhook_endpoint_disabled")
     autoload :NoticeEvent, ::File.join(__dir__, "peal/types/notice_event")
@@ -776,6 +802,7 @@ module Peal
     autoload :PostSort, ::File.join(__dir__, "peal/types/post_sort")
     autoload :PostStatusConflictEncodedTag, ::File.join(__dir__, "peal/types/post_status_conflict_encoded_tag")
     autoload :PostStatusConflictEncoded, ::File.join(__dir__, "peal/types/post_status_conflict_encoded")
+    autoload :PostUnpublish, ::File.join(__dir__, "peal/types/post_unpublish")
     autoload :ScheduleCheck, ::File.join(__dir__, "peal/types/schedule_check")
     autoload :PostValidation, ::File.join(__dir__, "peal/types/post_validation")
     autoload :SignedRequestMethod, ::File.join(__dir__, "peal/types/signed_request_method")
@@ -793,6 +820,8 @@ module Peal
     autoload :Queue, ::File.join(__dir__, "peal/types/queue")
     autoload :QueueDetails, ::File.join(__dir__, "peal/types/queue_details")
     autoload :QueuePreview, ::File.join(__dir__, "peal/types/queue_preview")
+    autoload :ReshuffleStop, ::File.join(__dir__, "peal/types/reshuffle_stop")
+    autoload :QueueReshuffle, ::File.join(__dir__, "peal/types/queue_reshuffle")
     autoload :ReplyInvalidEncodedTag, ::File.join(__dir__, "peal/types/reply_invalid_encoded_tag")
     autoload :ReplyInvalidEncodedReason, ::File.join(__dir__, "peal/types/reply_invalid_encoded_reason")
     autoload :ReplyInvalidEncoded, ::File.join(__dir__, "peal/types/reply_invalid_encoded")
@@ -866,6 +895,10 @@ module Peal
     autoload :WebhookEndpointSecret, ::File.join(__dir__, "peal/types/webhook_endpoint_secret")
     autoload :WebhookFilterRefusedEncodedField, ::File.join(__dir__, "peal/types/webhook_filter_refused_encoded_field")
     autoload :WebhookFilterRefusedEncoded, ::File.join(__dir__, "peal/types/webhook_filter_refused_encoded")
+    autoload :WebhookHeader, ::File.join(__dir__, "peal/types/webhook_header")
+    autoload :WebhookHeaderChange, ::File.join(__dir__, "peal/types/webhook_header_change")
+    autoload :WebhookHeaderValuesRequiredEncoded, ::File.join(__dir__, "peal/types/webhook_header_values_required_encoded")
+    autoload :WebhookHeadersRefusedEncoded, ::File.join(__dir__, "peal/types/webhook_headers_refused_encoded")
     autoload :WebhookRedeliveryByIDs, ::File.join(__dir__, "peal/types/webhook_redelivery_by_ids")
     autoload :WebhookRedeliveryOfFailed, ::File.join(__dir__, "peal/types/webhook_redelivery_of_failed")
     autoload :WebhookRedeliveryRequest, ::File.join(__dir__, "peal/types/webhook_redelivery_request")

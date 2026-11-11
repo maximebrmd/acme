@@ -6,6 +6,7 @@ import {
   PostNotFound,
   SpendCeilingExceeded,
   TooManyRequests,
+  WebhookHeaderValuesRequired,
 } from "peal-contract";
 
 import { explain } from "#explain.ts";
@@ -158,5 +159,15 @@ describe("a refusal, with the request it answers", () => {
         })
       )[CliError.userMessage]
     ).toContain("run peal login --ads again and approve it");
+  });
+});
+
+describe("a webhook move that keeps headers, explained", () => {
+  it("asks for every header again, or for none", () => {
+    const explained = explain(url)(new WebhookHeaderValuesRequired());
+
+    expect(explained._tag === "Refused" ? explained.reason : "").toContain(
+      "--clear-headers"
+    );
   });
 });

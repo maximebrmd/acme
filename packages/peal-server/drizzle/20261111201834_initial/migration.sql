@@ -678,6 +678,7 @@ CREATE TABLE "notifications"."notification_preferences" (
 	"email_post_published" boolean NOT NULL,
 	"email_post_review" boolean DEFAULT true NOT NULL,
 	"email_post_unconfirmed" boolean NOT NULL,
+	"email_webhook_failing" boolean DEFAULT true NOT NULL,
 	"every_post" boolean DEFAULT false NOT NULL,
 	"updated_at" timestamp with time zone NOT NULL,
 	"user_id" uuid PRIMARY KEY
@@ -715,6 +716,26 @@ CREATE TABLE "publishing"."idempotency_keys" (
 	CONSTRAINT "idempotency_keys_pkey" PRIMARY KEY("workspace_id","key_digest")
 );
 --> statement-breakpoint
+CREATE TABLE "publishing"."live_post_changes" (
+	"already_gone" boolean DEFAULT false NOT NULL,
+	"attempts" integer DEFAULT 0 NOT NULL,
+	"call_finished_at" timestamp with time zone,
+	"call_started_at" timestamp with time zone,
+	"channel_id" uuid NOT NULL,
+	"failure_code" text,
+	"finished_at" timestamp with time zone,
+	"id" uuid PRIMARY KEY,
+	"kind" text NOT NULL,
+	"parts_left" jsonb NOT NULL,
+	"post_id" uuid NOT NULL,
+	"requested_at" timestamp with time zone NOT NULL,
+	"requested_by" uuid,
+	"requested_via" jsonb,
+	"status" text NOT NULL,
+	"target_id" uuid NOT NULL,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "publishing"."post_targets" (
 	"cancel_requested" boolean DEFAULT false NOT NULL,
 	"channel_id" uuid NOT NULL,
@@ -730,9 +751,11 @@ CREATE TABLE "publishing"."post_targets" (
 	"permalink" text,
 	"platform_post_id" text,
 	"post_id" uuid NOT NULL,
+	"removed_at" timestamp with time zone,
 	"round" integer DEFAULT 1 NOT NULL,
 	"started_at" timestamp with time zone,
 	"status" text NOT NULL,
+	"thumbnail_not_set" boolean DEFAULT false NOT NULL,
 	"unconfirmed_reason" text,
 	CONSTRAINT "post_targets_post_channel" UNIQUE("post_id","channel_id")
 );
@@ -841,6 +864,7 @@ CREATE TABLE "publishing"."upload_sessions" (
 	"idempotency_key" text PRIMARY KEY,
 	"opened_at" timestamp with time zone NOT NULL,
 	"session_url" text,
+	"thumbnail_set" boolean DEFAULT false NOT NULL,
 	"video_id" text
 );
 --> statement-breakpoint
@@ -944,6 +968,7 @@ CREATE TABLE "webhooks"."endpoints" (
 	"disabled_reason" text,
 	"event_types" text[] NOT NULL,
 	"failing_since" timestamp with time zone,
+	"headers" jsonb DEFAULT '[]' NOT NULL,
 	"id" uuid PRIMARY KEY,
 	"previous_secret" text,
 	"previous_secret_expires_at" timestamp with time zone,
@@ -1402,6 +1427,9 @@ CREATE INDEX "notices_user" ON "notifications"."notices" ("user_id","id");--> st
 CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHERE "read_at" IS NULL;--> statement-breakpoint
 CREATE INDEX "channel_defaults_workspace" ON "publishing"."channel_defaults" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "idempotency_keys_created_at" ON "publishing"."idempotency_keys" ("created_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "live_post_changes_pending" ON "publishing"."live_post_changes" ("target_id") WHERE "status" = 'pending';--> statement-breakpoint
+CREATE INDEX "live_post_changes_post" ON "publishing"."live_post_changes" ("workspace_id","post_id","id");--> statement-breakpoint
+CREATE INDEX "live_post_changes_target" ON "publishing"."live_post_changes" ("target_id","id");--> statement-breakpoint
 CREATE INDEX "post_targets_channel_content" ON "publishing"."post_targets" ("channel_id","content_digest") WHERE "content_digest" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("listed_at","id") WHERE "status" = 'published';--> statement-breakpoint
 CREATE INDEX "posts_tag_ids" ON "publishing"."posts" USING gin ("tag_ids");--> statement-breakpoint
@@ -1478,6 +1506,7 @@ ALTER TABLE "analytics"."metric_snapshots" ADD CONSTRAINT "metric_snapshots_targ
 ALTER TABLE "engagement"."comments" ADD CONSTRAINT "comments_thread_id_threads_id_fkey" FOREIGN KEY ("thread_id") REFERENCES "engagement"."threads"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "engagement"."replies" ADD CONSTRAINT "replies_comment_id_comments_id_fkey" FOREIGN KEY ("comment_id") REFERENCES "engagement"."comments"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "engagement"."replies" ADD CONSTRAINT "replies_thread_id_threads_id_fkey" FOREIGN KEY ("thread_id") REFERENCES "engagement"."threads"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "publishing"."live_post_changes" ADD CONSTRAINT "live_post_changes_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."post_targets" ADD CONSTRAINT "post_targets_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "publishing"."posts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_attempts" ADD CONSTRAINT "publication_attempts_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_calls" ADD CONSTRAINT "publication_calls_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint

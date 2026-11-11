@@ -5,11 +5,15 @@ require_relative "../../peal"
 module Peal
   module Types
     class FieldDescription < Internal::Types::Model
+      field :content_types, -> { Internal::Types::Array[String] }, optional: false, nullable: false, api_name: "contentTypes"
+
       field :forbidden_characters, -> { Internal::Types::Array[String] }, optional: false, nullable: false, api_name: "forbiddenCharacters"
 
       field :if_left_out, -> { Peal::Types::FieldDefault }, optional: false, nullable: true, api_name: "ifLeftOut"
 
       field :lookup, -> { Peal::Types::LookupName }, optional: false, nullable: true
+
+      field :max_byte_size, -> { Integer }, optional: false, nullable: true, api_name: "maxByteSize"
 
       field :max_length, -> { Integer }, optional: false, nullable: true, api_name: "maxLength"
 

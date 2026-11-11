@@ -1,4 +1,4 @@
-import { DateTime, Effect, Layer, Option, Ref, Stream } from "effect";
+import { DateTime, Effect, Layer, Option, Ref, Result, Stream } from "effect";
 import { HttpRouter } from "effect/http";
 import { HttpApiBuilder, HttpApiError, HttpApiSchema } from "effect/http-api";
 import {
@@ -15,6 +15,7 @@ import {
   duplicateWindowHours,
   CurrentPrincipal,
   Forbidden,
+  LivePostNotChangeable,
   DuplicatePost,
   IdempotencyKeyReused,
   importColumns,
@@ -65,6 +66,8 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 import type {
+  LivePostChange,
+  LivePostRefusal,
   AccountExport,
   ActivityEvent,
   ApprovalPolicy,
@@ -188,6 +191,7 @@ const everything: readonly Permission[] = [
   "post:update",
   "post:delete",
   "post:schedule",
+  "post:publish",
   "webhook:read",
   "webhook:manage",
 ];
@@ -350,6 +354,7 @@ const pendingOn = (id: string, channelId: string): PostTarget => ({
   parts: { count: 1, live: [] },
   permalink: null,
   publishedAt: null,
+  removedAt: null,
   round: 1,
   status: "pending",
   unconfirmedReason: null,
@@ -751,6 +756,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       postPublished: false,
       postReview: true,
       postUnconfirmed: true,
+      webhookFailing: true,
     },
     everyPost: false,
   },
@@ -875,6 +881,7 @@ export const webhooks: readonly WebhookEndpoint[] = [
     enabled: true,
     eventTypes: ["post.published", "post.failed"],
     failingSince: at("2026-11-09T11:00:00Z"),
+    headerNames: [],
     id: hookId,
     previousSecretExpiresAt: null,
     scope: "workspace",
@@ -891,6 +898,7 @@ export const webhooks: readonly WebhookEndpoint[] = [
     enabled: false,
     eventTypes: ["media.ready"],
     failingSince: at("2026-11-01T10:00:00Z"),
+    headerNames: [],
     id: failingHookId,
     previousSecretExpiresAt: null,
     scope: "workspace",
@@ -1364,6 +1372,46 @@ const publishing = allowed("post:schedule").pipe(
       : Effect.succeed(member)
   )
 );
+
+// The member a request acts as, if their role lets them publish, which
+// unpublishing a live post takes, and the application they act through was
+// allowed to.
+const unpublishing = allowed("post:publish").pipe(
+  Effect.flatMap((member) =>
+    member.principal._tag === "user" &&
+    member.principal.oauth !== undefined &&
+    !member.principal.oauth.scopes.includes(publishScope)
+      ? Effect.fail(new Forbidden())
+      : Effect.succeed(member)
+  )
+);
+
+// A change of a live post, as the studio answers it: its platform deletes
+// at once.
+const doneChange = (postId: string, target: PostTarget): LivePostChange => ({
+  code: null,
+  finishedAt: studioNow,
+  id: `0190f3a0-0000-7000-8000-${target.id.slice(-12)}`,
+  kind: "unpublish",
+  partsLeft: 0,
+  postId,
+  requestedAt: studioNow,
+  status: "done",
+  targetId: target.id,
+});
+
+// Deletes the target from its synthetic platform, or why it cannot be.
+const unpublishedOn = (
+  target: PostTarget
+): Result.Result<PostTarget, LivePostRefusal> => {
+  if (target.status !== "published") {
+    return Result.fail("notPublished");
+  }
+
+  return target.removedAt === null
+    ? Result.succeed({ ...target, removedAt: studioNow })
+    : Result.fail("alreadyRemoved");
+};
 
 // Posts scheduled through the command line say so.
 const viaCommandLine: PostOrigin = {
@@ -2858,6 +2906,15 @@ export const studioGroupsLive = (studio: Studio) =>
                 : { ...post, outcome: "cancelled", status: "cancelled" }
             );
           }),
+        changes: ({ params }) =>
+          allowed("post:read").pipe(
+            Effect.andThen(findPost(studio, params.workspaceId, params.postId)),
+            Effect.map((post) => ({
+              items: post.targets.flatMap((target) =>
+                target.removedAt === null ? [] : [doneChange(post.id, target)]
+              ),
+            }))
+          ),
         confirm: ({ params, payload }) =>
           publishing.pipe(
             Effect.andThen(
@@ -3340,6 +3397,72 @@ export const studioGroupsLive = (studio: Studio) =>
               ...post,
               tagIds: payload.tagIds,
             });
+          }),
+        unpublish: ({ params }) =>
+          Effect.gen(function* unpublish() {
+            yield* unpublishing;
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const changes: LivePostChange[] = [];
+            const refused: { reason: LivePostRefusal; targetId: string }[] = [];
+
+            const targets = post.targets.map((target) => {
+              const made = unpublishedOn(target);
+
+              if (Result.isFailure(made)) {
+                refused.push({ reason: made.failure, targetId: target.id });
+
+                return target;
+              }
+
+              changes.push(doneChange(post.id, target));
+
+              return made.success;
+            });
+
+            yield* savePost(studio, { ...post, targets });
+            yield* record(studio, `unpublish:${post.id}`);
+
+            return { changes, refused };
+          }),
+        unpublishTarget: ({ params }) =>
+          Effect.gen(function* unpublishTarget() {
+            yield* unpublishing;
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const target = post.targets.find(
+              ({ id }) => id === params.targetId
+            );
+
+            if (target === undefined) {
+              return yield* new PostNotFound();
+            }
+
+            const made = unpublishedOn(target);
+
+            if (Result.isFailure(made)) {
+              return yield* new LivePostNotChangeable({ reason: made.failure });
+            }
+
+            yield* savePost(studio, {
+              ...post,
+              targets: post.targets.map((found) =>
+                found.id === target.id ? made.success : found
+              ),
+            });
+            yield* record(studio, `unpublish:${target.id}`);
+
+            return doneChange(post.id, target);
           }),
         unschedule: ({ params }) =>
           Effect.gen(function* unschedule() {
@@ -4602,6 +4725,8 @@ export const studioGroupsLive = (studio: Studio) =>
               enabled,
               eventTypes: payload.eventTypes,
               failingSince: null,
+              // Names only: the values are never answered.
+              headerNames: (payload.headers ?? []).map(({ name }) => name),
               id: `0190f3a0-0000-7000-8000-00000000b${String(current.webhooks.length + 1).padStart(3, "0")}`,
               previousSecretExpiresAt: null,
               scope: payload.scope ?? "workspace",
@@ -4863,9 +4988,16 @@ export const studioGroupsLive = (studio: Studio) =>
               `webhook:update:${found.id}:${Object.keys(payload).toSorted().join(",")}`
             );
 
+            const { headers, ...changed } = payload;
+
+            const headerNames =
+              headers === undefined
+                ? found.headerNames
+                : headers.map(({ name }) => name);
+
             return yield* saveEndpoint(studio, {
               ...found,
-              ...payload,
+              ...changed,
               disabledAt: enabled ? null : (found.disabledAt ?? now),
               disabledReason: enabled
                 ? null
@@ -4873,6 +5005,7 @@ export const studioGroupsLive = (studio: Studio) =>
               enabled,
               failingSince:
                 enabled && !found.enabled ? null : found.failingSince,
+              headerNames,
               updatedAt: now,
             });
           }),

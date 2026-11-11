@@ -36,6 +36,9 @@ public record WebhookEndpoint : IJsonOnDeserialized
     [JsonPropertyName("failingSince")]
     public string? FailingSince { get; set; }
 
+    [JsonPropertyName("headerNames")]
+    public IEnumerable<string> HeaderNames { get; set; } = new List<string>();
+
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 

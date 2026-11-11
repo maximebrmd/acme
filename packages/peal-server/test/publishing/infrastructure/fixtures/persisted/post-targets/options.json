@@ -73,5 +73,40 @@
     "platform": "x",
     "replySettings": "following",
     "shareWithFollowers": true
-  }
+  },
+  {
+    "defaultLanguage": "fr-CA",
+    "embeddable": true,
+    "license": "creativeCommon",
+    "madeForKids": false,
+    "platform": "youtube",
+    "publicStatsViewable": false,
+    "recordingDate": "2026-11-27",
+    "thumbnailMediaId": "00000000-0000-7000-8000-0000000000b1",
+    "title": "A synthetic video with its thumbnail"
+  },
+  {
+    "autoAddMusic": true,
+    "photoCoverIndex": 1,
+    "photoTitle": "Synthetic photos",
+    "platform": "tiktok",
+    "privacyLevel": "SELF_ONLY"
+  },
+  {
+    "platform": "tiktok",
+    "privacyLevel": "FOLLOWER_OF_CREATOR",
+    "videoCoverTimestampMs": 1500
+  },
+  { "platform": "instagram" },
+  {
+    "audioName": "Synthetic theme",
+    "collaborators": ["synthetic.friend"],
+    "coverMediaId": "00000000-0000-7000-8000-0000000000b2",
+    "platform": "instagram",
+    "shareToFeed": true,
+    "thumbOffsetMs": 2000,
+    "trialReel": "performance"
+  },
+  { "platform": "facebook" },
+  { "platform": "facebook", "videoTitle": "A synthetic video title" }
 ]

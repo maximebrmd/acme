@@ -50,6 +50,14 @@ func TestSettersNewWebhookEndpoint(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetHeaders", func(t *testing.T) {
+		obj := &NewWebhookEndpoint{}
+		var fernTestValueHeaders []*WebhookHeader
+		obj.SetHeaders(fernTestValueHeaders)
+		assert.Equal(t, fernTestValueHeaders, obj.Headers)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetScope", func(t *testing.T) {
 		obj := &NewWebhookEndpoint{}
 		var fernTestValueScope *WebhookEndpointScope
@@ -209,6 +217,37 @@ func TestSettersMarkExplicitNewWebhookEndpoint(t *testing.T) {
 
 		// Act
 		obj.SetEventTypes(fernTestValueEventTypes)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetHeaders_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NewWebhookEndpoint{}
+		var fernTestValueHeaders []*WebhookHeader
+
+		// Act
+		obj.SetHeaders(fernTestValueHeaders)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -3131,6 +3170,14 @@ func TestSettersWebhookEndpoint(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetHeaderNames", func(t *testing.T) {
+		obj := &WebhookEndpoint{}
+		var fernTestValueHeaderNames []string
+		obj.SetHeaderNames(fernTestValueHeaderNames)
+		assert.Equal(t, fernTestValueHeaderNames, obj.HeaderNames)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetID", func(t *testing.T) {
 		obj := &WebhookEndpoint{}
 		var fernTestValueID string
@@ -3414,6 +3461,39 @@ func TestGettersWebhookEndpoint(t *testing.T) {
 			}
 		}()
 		_ = obj.GetFailingSince() // Should return zero value
+	})
+
+	t.Run("GetHeaderNames", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookEndpoint{}
+		var expected []string
+		obj.HeaderNames = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetHeaderNames(), "getter should return the property value")
+	})
+
+	t.Run("GetHeaderNames_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookEndpoint{}
+		obj.HeaderNames = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetHeaderNames(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetHeaderNames_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookEndpoint
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetHeaderNames() // Should return zero value
 	})
 
 	t.Run("GetID", func(t *testing.T) {
@@ -3825,6 +3905,37 @@ func TestSettersMarkExplicitWebhookEndpoint(t *testing.T) {
 		// It verifies that setting a field via setter allows successful JSON round-trip
 	})
 
+	t.Run("SetHeaderNames_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookEndpoint{}
+		var fernTestValueHeaderNames []string
+
+		// Act
+		obj.SetHeaderNames(fernTestValueHeaderNames)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetID_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -4131,6 +4242,282 @@ func TestSettersMarkExplicitWebhookEndpointSecret(t *testing.T) {
 
 		// Act
 		obj.SetSecret(fernTestValueSecret)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersWebhookHeader(t *testing.T) {
+	t.Run("SetName", func(t *testing.T) {
+		obj := &WebhookHeader{}
+		var fernTestValueName string
+		obj.SetName(fernTestValueName)
+		assert.Equal(t, fernTestValueName, obj.Name)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetValue", func(t *testing.T) {
+		obj := &WebhookHeader{}
+		var fernTestValueValue string
+		obj.SetValue(fernTestValueValue)
+		assert.Equal(t, fernTestValueValue, obj.Value)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersWebhookHeader(t *testing.T) {
+	t.Run("GetName", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeader{}
+		var expected string
+		obj.Name = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetName(), "getter should return the property value")
+	})
+
+	t.Run("GetName_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookHeader
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetName() // Should return zero value
+	})
+
+	t.Run("GetValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeader{}
+		var expected string
+		obj.Value = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetValue(), "getter should return the property value")
+	})
+
+	t.Run("GetValue_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookHeader
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetValue() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitWebhookHeader(t *testing.T) {
+	t.Run("SetName_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeader{}
+		var fernTestValueName string
+
+		// Act
+		obj.SetName(fernTestValueName)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetValue_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeader{}
+		var fernTestValueValue string
+
+		// Act
+		obj.SetValue(fernTestValueValue)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersWebhookHeaderChange(t *testing.T) {
+	t.Run("SetName", func(t *testing.T) {
+		obj := &WebhookHeaderChange{}
+		var fernTestValueName string
+		obj.SetName(fernTestValueName)
+		assert.Equal(t, fernTestValueName, obj.Name)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetValue", func(t *testing.T) {
+		obj := &WebhookHeaderChange{}
+		var fernTestValueValue *string
+		obj.SetValue(fernTestValueValue)
+		assert.Equal(t, fernTestValueValue, obj.Value)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersWebhookHeaderChange(t *testing.T) {
+	t.Run("GetName", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeaderChange{}
+		var expected string
+		obj.Name = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetName(), "getter should return the property value")
+	})
+
+	t.Run("GetName_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookHeaderChange
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetName() // Should return zero value
+	})
+
+	t.Run("GetValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeaderChange{}
+		var expected *string
+		obj.Value = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetValue(), "getter should return the property value")
+	})
+
+	t.Run("GetValue_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeaderChange{}
+		obj.Value = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetValue(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetValue_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookHeaderChange
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetValue() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitWebhookHeaderChange(t *testing.T) {
+	t.Run("SetName_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeaderChange{}
+		var fernTestValueName string
+
+		// Act
+		obj.SetName(fernTestValueName)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetValue_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeaderChange{}
+		var fernTestValueValue *string
+
+		// Act
+		obj.SetValue(fernTestValueValue)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -4775,6 +5162,14 @@ func TestSettersWebhookEndpointChange(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetHeaders", func(t *testing.T) {
+		obj := &WebhookEndpointChange{}
+		var fernTestValueHeaders []*WebhookHeaderChange
+		obj.SetHeaders(fernTestValueHeaders)
+		assert.Equal(t, fernTestValueHeaders, obj.Headers)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetURL", func(t *testing.T) {
 		obj := &WebhookEndpointChange{}
 		var fernTestValueURL *string
@@ -4957,6 +5352,37 @@ func TestSettersMarkExplicitWebhookEndpointChange(t *testing.T) {
 
 		// Act
 		obj.SetEventTypes(fernTestValueEventTypes)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetHeaders_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookEndpointChange{}
+		var fernTestValueHeaders []*WebhookHeaderChange
+
+		// Act
+		obj.SetHeaders(fernTestValueHeaders)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -5204,6 +5630,72 @@ func TestJSONMarshalingWebhookEndpointSecret(t *testing.T) {
 	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
 		t.Parallel()
 		var obj WebhookEndpointSecret
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingWebhookHeader(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeader{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled WebhookHeader
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj WebhookHeader
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj WebhookHeader
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingWebhookHeaderChange(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookHeaderChange{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled WebhookHeaderChange
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj WebhookHeaderChange
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj WebhookHeaderChange
 		err := json.Unmarshal([]byte(`{}`), &obj)
 		assert.NoError(t, err, "unmarshaling empty object should succeed")
 	})
@@ -5529,6 +6021,38 @@ func TestStringWebhookEndpointSecret(t *testing.T) {
 	})
 }
 
+func TestStringWebhookHeader(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &WebhookHeader{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookHeader
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringWebhookHeaderChange(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &WebhookHeaderChange{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookHeaderChange
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
 func TestStringWebhookRedeliveryByIDs(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -5620,6 +6144,27 @@ func TestEnumSubscribableWebhookEventType(t *testing.T) {
 		assert.Equal(t, SubscribableWebhookEventType("post.cancelled"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_post_finished", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("post.finished")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("post.finished"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_unpublished", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("post.unpublished")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("post.unpublished"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_unpublish_failed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("post.unpublish_failed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("post.unpublish_failed"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_post_approval_requested", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewSubscribableWebhookEventTypeFromString("post.approval_requested")
@@ -5660,6 +6205,27 @@ func TestEnumSubscribableWebhookEventType(t *testing.T) {
 		val, err := NewSubscribableWebhookEventTypeFromString("channel.reconnect_needed")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, SubscribableWebhookEventType("channel.reconnect_needed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_channel_disabled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("channel.disabled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("channel.disabled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_channel_enabled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("channel.enabled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("channel.enabled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_channel_expiring", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("channel.expiring")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("channel.expiring"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_media_ready", func(t *testing.T) {
@@ -5983,6 +6549,27 @@ func TestEnumWebhookEventType(t *testing.T) {
 		assert.Equal(t, WebhookEventType("post.cancelled"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_post_finished", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("post.finished")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("post.finished"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_unpublished", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("post.unpublished")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("post.unpublished"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_unpublish_failed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("post.unpublish_failed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("post.unpublish_failed"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_post_approval_requested", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewWebhookEventTypeFromString("post.approval_requested")
@@ -6023,6 +6610,27 @@ func TestEnumWebhookEventType(t *testing.T) {
 		val, err := NewWebhookEventTypeFromString("channel.reconnect_needed")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, WebhookEventType("channel.reconnect_needed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_channel_disabled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("channel.disabled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("channel.disabled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_channel_enabled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("channel.enabled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("channel.enabled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_channel_expiring", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("channel.expiring")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("channel.expiring"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_media_ready", func(t *testing.T) {
@@ -6276,6 +6884,52 @@ func TestExtraPropertiesWebhookEndpointSecret(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *WebhookEndpointSecret
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesWebhookHeader(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &WebhookHeader{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookHeader
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesWebhookHeaderChange(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &WebhookHeaderChange{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookHeaderChange
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

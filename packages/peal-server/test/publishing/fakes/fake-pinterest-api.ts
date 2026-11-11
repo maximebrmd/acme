@@ -307,6 +307,8 @@ const analyticsPath = /^\/v5\/pins\/(?<id>\d+)\/analytics$/u;
 
 const uploadPath = /^\/upload\/(?<id>\d+)$/u;
 
+const pinPath = /^\/v5\/pins\/(?<id>\d+)$/u;
+
 const defaultBoards: readonly FakeBoard[] = [
   {
     id: "549755885001",
@@ -541,9 +543,35 @@ export const fakePinterestApi = Effect.fnUntraced(function* fakePinterestApi(
     return undefined;
   };
 
-  const route = (request: PlatformRequest, origin: string): PlatformAnswer =>
-    (request.method === "GET" ? reads(request) : writes(request, origin)) ??
-    refusal(404, 404, "Not found.");
+  // The account's own Pins only: Pinterest finds no other for it.
+  const deletes = (request: PlatformRequest): PlatformAnswer | undefined => {
+    const id = pinPath.exec(request.path)?.groups?.["id"];
+
+    if (id === undefined) {
+      return undefined;
+    }
+
+    const index = pins.findIndex((pin) => pin.id === id);
+
+    if (index === -1) {
+      return refusal(404, 50, "Pin not found.");
+    }
+
+    pins.splice(index, 1);
+
+    return { _tag: "answer", status: 204 };
+  };
+
+  const route = (request: PlatformRequest, origin: string): PlatformAnswer => {
+    if (request.method === "DELETE") {
+      return deletes(request) ?? refusal(404, 404, "Not found.");
+    }
+
+    return (
+      (request.method === "GET" ? reads(request) : writes(request, origin)) ??
+      refusal(404, 404, "Not found.")
+    );
+  };
 
   const handle = (request: PlatformRequest, origin: string): PlatformAnswer => {
     const key = `${request.method} ${request.path}`;

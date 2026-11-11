@@ -52,3 +52,9 @@ export const parseWebhookUrl = (
 
 /** The host deliveries go to: what logs, notices and staff may see of it. */
 export const hostOf = (url: WebhookUrl): string => new URL(url).host;
+
+/**
+ * Where deliveries go, as a browser compares origins: scheme, host and
+ * port. A header's value is sealed for one, so it never reaches another.
+ */
+export const originOf = (url: WebhookUrl): string => new URL(url).origin;

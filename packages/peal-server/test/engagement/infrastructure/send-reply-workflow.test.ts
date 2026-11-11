@@ -32,6 +32,7 @@ import {
   SendReplyV1,
   SendReplyV1Live,
 } from "#engagement/infrastructure/workflows/send-reply.ts";
+import { LivePostClients } from "#publishing/application/live-post-clients.ts";
 import {
   ChannelGateLive,
   GatedCommentSource,
@@ -216,7 +217,8 @@ const serverOver = <S, E, R>(
           Layer.mergeAll(
             FakePlatformPublisher,
             UnreadMetrics,
-            adaptersOf(world, platform)
+            adaptersOf(world, platform),
+            LivePostClients.none
           )
         )
       )

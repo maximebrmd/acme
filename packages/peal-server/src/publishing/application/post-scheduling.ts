@@ -33,6 +33,12 @@ import {
 import type { Post } from "#publishing/domain/post.ts";
 import { postingMonthOf, sameMonth } from "#publishing/domain/posting-month.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
+import {
+  reshuffleBatchSize,
+  reshufflePlan,
+} from "#publishing/domain/queue-reshuffle.ts";
+import type { ReshuffleMove } from "#publishing/domain/queue-reshuffle.ts";
+import { sameTimetable } from "#publishing/domain/queue.ts";
 import type { Queue } from "#publishing/domain/queue.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
@@ -181,6 +187,29 @@ export interface SentPost extends PostWithTargets {
   readonly replayed: boolean;
 }
 
+/**
+ * Why a reshuffle stopped before every waiting post was on its slot: a
+ * month without room in the plan, no slot left within the horizon, or the
+ * queue's timetable changed, the queue went, or a post added to it holds
+ * a slot it had not reached, while it ran.
+ */
+export type ReshuffleStop = "changed" | "full" | "planLimit";
+
+/** What a reshuffle did. */
+export interface QueueReshuffle {
+  /** Posts moved onto their slots. */
+  readonly moved: number;
+  /**
+   * Waiting posts left where they were: already on their slots, not the
+   * caller's to move, or moved, sent back or cancelled by someone else
+   * while it ran.
+   */
+  readonly unchanged: number;
+  /** Waiting posts not placed when it stopped. */
+  readonly remaining: number;
+  readonly stoppedBy: Option.Option<ReshuffleStop>;
+}
+
 /** A draft to send to some channels, at a time, with its targets' options. */
 export interface ScheduleDraftRequest {
   // A channel listed twice gets one target.
@@ -233,6 +262,12 @@ const withQueue = (post: Post, queueId: Option.Option<QueueId>) =>
     onNone: () => post,
     onSome: (id) => placedBy(post, id),
   });
+
+// What a move does with a post that waits for an approval: `admitting`
+// puts it through the gate as the mover's, as a hand move does (someone
+// whose posts need no approval schedules it); `keepingHeld` keeps it
+// waiting, its request following its new time, as a reshuffle does.
+type HeldMove = "admitting" | "keepingHeld";
 
 // Someone who only asks acts on drafts and on posts that wait: a scheduled
 // post is for those who may schedule to move or stop.
@@ -344,6 +379,32 @@ export class PostScheduling extends Context.Service<
       | QueueNotFound
       | ScheduleInPast
       | Unpublishable
+    >;
+    /**
+     * Moves the queue's waiting posts (scheduled or awaiting an approval,
+     * after now) onto its slots as they now are, first to first, in the
+     * order of their times: posts moved by hand included, publishing ones
+     * untouched and their slots kept clear. Each move is a hand move's
+     * (`reschedule`): the gate asked, the month's room in the plan, the
+     * job replaced, the post told as scheduled; a post already on its slot
+     * is not written. Someone who only asks moves the posts that wait for
+     * an approval, and leaves the scheduled ones (`unchanged`).
+     *
+     * The slots are planned once, under the queue's lock, then posts are
+     * moved by batches of `reshuffleBatchSize`, one transaction each: the
+     * queue's lock, then the posts' rows in id order. It stops, keeping
+     * what it moved, at a month without room (`planLimit`), when no slot
+     * is left within the horizon (`full`), or when the queue's timetable
+     * changed meanwhile (`changed`): called again, it goes on. Called
+     * twice, the second call moves nothing. QueueHasNoRoom (`noSlots`) for
+     * a queue without slots.
+     */
+    readonly reshuffle: (
+      actor: Actor,
+      queueId: QueueId
+    ) => Effect.Effect<
+      QueueReshuffle,
+      DatabaseError | MissingPermission | QueueHasNoRoom | QueueNotFound
     >;
     /**
      * Deletes the idempotency keys past their lifetime, and says how many:
@@ -466,6 +527,32 @@ export class PostScheduling extends Context.Service<
         }
       );
 
+      // A held post moved by someone who does not ask for it again (a
+      // reshuffle of its queue): it keeps waiting, and its request follows
+      // its new time. It is never admitted this way, whoever moves it.
+      const keptWaiting = Effect.fn("PostScheduling.keptWaiting")(
+        function* keptWaiting(
+          actor: Actor,
+          post: Post,
+          targets: readonly PostTarget[]
+        ) {
+          const { at, timeZone } = yield* scheduleOf(post);
+
+          yield* gate.follow(actor, {
+            authorId: post.authorId,
+            postId: post.id,
+            scheduledAt: at,
+            subject: approvalSubject(post.content, targets),
+            timeZone,
+            workspaceId: post.workspaceId,
+          });
+
+          return yield* Effect.fromResult(awaitApproval(post)).pipe(
+            Effect.orDie
+          );
+        }
+      );
+
       // The channels to send the content to, once their platforms take it
       // and the options it has on them.
       const publishableOn = Effect.fn("PostScheduling.publishableOn")(
@@ -476,7 +563,7 @@ export class PostScheduling extends Context.Service<
           options: readonly ChannelOptions[]
         ) {
           const channels = yield* channelsFor(actor, channelIds);
-          const files = yield* mediaFor(actor, content);
+          const files = yield* mediaFor(actor, content, options);
 
           // What the platforms' rules and each account's own refuse.
           const violations = yield* violationsOf(
@@ -574,30 +661,39 @@ export class PostScheduling extends Context.Service<
         PostOrigins.use((origins) => origins.of(actor)).pipe(withPorts);
 
       // Saves the post at its new time, with who moved it there, and swaps
-      // its job for one then. A queue that placed it is kept with it.
+      // its job for one then. A queue that placed it is kept with it. A
+      // held post moved `keepingHeld` keeps waiting, as whoever asked for
+      // it left it; any other goes through the gate as the mover's.
       const move = Effect.fn("PostScheduling.move")(function* move(
         actor: Actor,
         current: StoredPost,
         { queueId, schedule: at }: Placed,
         received: DateTime.Utc,
-        targets: readonly PostTarget[]
+        targets: readonly PostTarget[],
+        held: HeldMove
       ) {
         const now = yield* DateTime.now;
 
-        const moved = yield* throughGate(
-          actor,
-          withQueue(
-            scheduledThrough(
-              yield* Effect.fromResult(
-                schedulePost(current.post, asReceived(at, received, now), now)
-              ),
-              yield* originOf(actor),
-              authorOf(actor)
-            ),
-            queueId
-          ),
-          targets
+        const retimed = yield* Effect.fromResult(
+          schedulePost(current.post, asReceived(at, received, now), now)
         );
+
+        const moved =
+          held === "keepingHeld" &&
+          current.post.status._tag === "awaitingApproval"
+            ? yield* keptWaiting(actor, withQueue(retimed, queueId), targets)
+            : yield* throughGate(
+                actor,
+                withQueue(
+                  scheduledThrough(
+                    retimed,
+                    yield* originOf(actor),
+                    authorOf(actor)
+                  ),
+                  queueId
+                ),
+                targets
+              );
 
         // A scheduled post moved within its month takes no more room, even
         // in a month already past a smaller plan's allowance.
@@ -1087,7 +1183,14 @@ export class PostScheduling extends Context.Service<
 
           yield* posts.setTargets(postId, targets);
 
-          const post = yield* move(actor, current, placed, received, targets);
+          const post = yield* move(
+            actor,
+            current,
+            placed,
+            received,
+            targets,
+            "admitting"
+          );
 
           yield* announce(post, targets);
 
@@ -1103,7 +1206,8 @@ export class PostScheduling extends Context.Service<
         actor: Actor,
         current: StoredPost,
         placed: Placed,
-        received: DateTime.Utc
+        received: DateTime.Utc,
+        held: HeldMove = "admitting"
       ) {
         const postId = current.post.id;
 
@@ -1124,7 +1228,14 @@ export class PostScheduling extends Context.Service<
           );
         }
 
-        const post = yield* move(actor, current, placed, received, targets);
+        const post = yield* move(
+          actor,
+          current,
+          placed,
+          received,
+          targets,
+          held
+        );
 
         yield* announce(post, targets);
 
@@ -1132,6 +1243,237 @@ export class PostScheduling extends Context.Service<
 
         return changed;
       });
+
+      // What one batch of a reshuffle did, and why it stopped, if it did.
+      interface BatchOutcome {
+        readonly moved: number;
+        readonly unchanged: number;
+        // The moves of the batch it did not get to.
+        readonly left: number;
+        readonly stoppedBy: Option.Option<ReshuffleStop>;
+      }
+
+      // One batch of a reshuffle, in one transaction: the queue's lock,
+      // the queue read again (a changed timetable stops it, and so does a
+      // slot of the batch that a post the plan never saw holds now, as one
+      // added to the queue between batches), the rows of the posts to move
+      // in id order, then each move in the order of times. A post moved,
+      // sent back or cancelled since the plan is left as it is.
+      const reshuffleBatch = Effect.fn("PostScheduling.reshuffleBatch")(
+        function* reshuffleBatch(
+          actor: Actor,
+          planned: Queue,
+          seen: ReadonlySet<PostId>,
+          batch: readonly ReshuffleMove[],
+          received: DateTime.Utc
+        ) {
+          yield* queues.lock(planned.id);
+
+          const queue = yield* queues.byId(planned.workspaceId, planned.id);
+
+          const slots = new Set(
+            batch.flatMap(({ from, to }) =>
+              DateTime.Equivalence(from, to) ? [] : [DateTime.toEpochMillis(to)]
+            )
+          );
+
+          const taken = (yield* queues.queuedFrom(planned.id, received)).some(
+            ({ at, id }) =>
+              !seen.has(id) && slots.has(DateTime.toEpochMillis(at))
+          );
+
+          if (
+            Option.isNone(queue) ||
+            !sameTimetable(queue.value, planned) ||
+            taken
+          ) {
+            const changed: BatchOutcome = {
+              left: batch.length,
+              moved: 0,
+              stoppedBy: Option.some("changed"),
+              unchanged: 0,
+            };
+
+            return changed;
+          }
+
+          const toMove = batch.filter(
+            ({ from, to }) => !DateTime.Equivalence(from, to)
+          );
+
+          const locked = new Map<PostId, StoredPost>();
+
+          for (const { postId } of toMove.toSorted((left, right) =>
+            left.postId.localeCompare(right.postId)
+          )) {
+            const current = yield* lockPost(actor, postId).pipe(
+              Effect.map(Option.some),
+              Effect.catchTag("PostNotFound", () =>
+                Effect.succeed(Option.none<StoredPost>())
+              )
+            );
+
+            if (Option.isSome(current)) {
+              locked.set(postId, current.value);
+            }
+          }
+
+          let movedCount = 0;
+          let unchanged = 0;
+
+          for (const [place, { from, postId, to }] of batch.entries()) {
+            const current = locked.get(postId);
+
+            // Still where the plan found it, waiting, on this queue.
+            const asPlanned =
+              current !== undefined &&
+              Option.contains(current.post.queueId, planned.id) &&
+              (current.post.status._tag === "scheduled" ||
+                current.post.status._tag === "awaitingApproval") &&
+              DateTime.Equivalence(current.post.status.schedule.at, from);
+
+            // On its slot already, or moved, sent back or cancelled since
+            // the plan: left as it is.
+            if (
+              DateTime.Equivalence(from, to) ||
+              current === undefined ||
+              !asPlanned
+            ) {
+              unchanged += 1;
+
+              continue;
+            }
+
+            const placed: Placed = {
+              queueId: Option.some(planned.id),
+              schedule: new Schedule({ at: to, timeZone: planned.timeZone }),
+            };
+
+            // Each move in a savepoint of its own: one refused leaves
+            // those before it moved.
+            const outcome = yield* transaction(
+              moved(actor, current, placed, received, "keepingHeld")
+            ).pipe(
+              Effect.as("moved" as const),
+              // A scheduled post is not for someone who only asks to move,
+              // and a month may have no room. A waiting post moved to a
+              // slot after the request came is neither checked again nor
+              // late: the other refusals are bugs.
+              Effect.catchTags({
+                InvalidPostTransition: Effect.die,
+                MissingPermission: () => Effect.succeed("unchanged" as const),
+                PlanLimitReached: () => Effect.succeed("planLimit" as const),
+                PostContentRejected: Effect.die,
+                ScheduleInPast: Effect.die,
+                UnknownChannels: Effect.die,
+                UnknownMedia: Effect.die,
+              })
+            );
+
+            if (outcome === "planLimit") {
+              const stopped: BatchOutcome = {
+                left: batch.length - place,
+                moved: movedCount,
+                stoppedBy: Option.some("planLimit"),
+                unchanged,
+              };
+
+              return stopped;
+            }
+
+            if (outcome === "moved") {
+              movedCount += 1;
+            } else {
+              unchanged += 1;
+            }
+          }
+
+          const done: BatchOutcome = {
+            left: 0,
+            moved: movedCount,
+            stoppedBy: Option.none(),
+            unchanged,
+          };
+
+          return done;
+        }
+      );
+
+      const reshuffle = Effect.fn("PostScheduling.reshuffle")(
+        function* reshuffle(actor: Actor, queueId: QueueId) {
+          yield* mayAsk(actor);
+
+          const received = yield* DateTime.now;
+
+          // The plan, from the queue and its posts as they stand under its
+          // lock: where the waiting posts are plays no part but their order.
+          const { plan, queue, seen } = yield* transaction(
+            Effect.gen(function* planning() {
+              yield* queues.lock(queueId);
+
+              const current = yield* queueNamed(
+                actor.workspaceId,
+                Option.some(queueId)
+              ).pipe(withPorts);
+
+              const waiting = yield* queues.queuedFrom(current.id, received);
+              const planned = reshufflePlan(current, received, waiting);
+
+              if (Result.isFailure(planned)) {
+                return yield* new QueueHasNoRoom({
+                  queueId: current.id,
+                  reason: planned.failure,
+                });
+              }
+
+              return {
+                plan: planned.success,
+                queue: current,
+                seen: new Set(waiting.map(({ id }) => id)),
+              };
+            })
+          );
+
+          let movedCount = 0;
+          let unchanged = 0;
+          const remaining = plan.unplaced;
+
+          const batches = Arr.chunksOf(plan.moves, reshuffleBatchSize);
+
+          for (const [place, batch] of batches.entries()) {
+            const outcome = yield* transaction(
+              reshuffleBatch(actor, queue, seen, batch, received)
+            );
+
+            movedCount += outcome.moved;
+            unchanged += outcome.unchanged;
+
+            if (Option.isSome(outcome.stoppedBy)) {
+              const later = batches
+                .slice(place + 1)
+                .reduce((sum, rest) => sum + rest.length, 0);
+
+              const stopped: QueueReshuffle = {
+                moved: movedCount,
+                remaining: remaining + outcome.left + later,
+                stoppedBy: outcome.stoppedBy,
+                unchanged,
+              };
+
+              return stopped;
+            }
+          }
+
+          const done: QueueReshuffle = {
+            moved: movedCount,
+            remaining,
+            stoppedBy: remaining > 0 ? Option.some("full") : Option.none(),
+            unchanged,
+          };
+
+          return done;
+        }
+      );
 
       const scheduleDraft = Effect.fn("PostScheduling.scheduleDraft")(
         function* scheduleDraft(
@@ -1353,6 +1695,7 @@ export class PostScheduling extends Context.Service<
               ).pipe(Effect.orDie);
 
               yield* applied(yield* posts.update(finished, current.post));
+              yield* events.finished(finished, targets);
 
               return { post: finished, targets };
             }
@@ -1380,6 +1723,7 @@ export class PostScheduling extends Context.Service<
         forgetExpiredKeys,
         mayAsk,
         reschedule,
+        reshuffle,
         schedule,
         scheduleDraft,
         send,

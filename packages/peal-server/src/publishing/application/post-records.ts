@@ -9,6 +9,8 @@ import type {
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
+import { LivePostChangeStore } from "./live-post-change-store.ts";
+import { LivePostJobs } from "./live-post-jobs.ts";
 import { PostsPublishing } from "./posts-publishing.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
 import { WorkspacePostStore } from "./workspace-post-store.ts";
@@ -32,8 +34,10 @@ export class PostRecords extends Context.Service<
      * Deletes the workspace's posts, and what it saved to write and file
      * them (tags, signatures, channel sets, default options), in the
      * caller's transaction if any,
-     * and stops the jobs of those still scheduled, so nothing of the
-     * workspace goes out. Refused while one of them is being published.
+     * and stops the jobs of those still scheduled, and of the changes of
+     * live posts still pending, so nothing of the workspace goes out or
+     * is deleted after. Refused while one of them is being published, or
+     * a call deleting one is in flight.
      */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
@@ -66,6 +70,8 @@ export class PostRecords extends Context.Service<
     Effect.gen(function* PostRecordsLive() {
       const store = yield* WorkspacePostStore;
       const scheduler = yield* PublicationScheduler;
+      const changes = yield* LivePostChangeStore;
+      const liveJobs = yield* LivePostJobs;
       const { transaction } = yield* TransactionRunner;
 
       // The rounds of the workspace's posts that are publishing, under
@@ -79,11 +85,18 @@ export class PostRecords extends Context.Service<
       ) {
         const rounds = yield* store.lockRounds(workspaceId);
 
-        if (rounds.some(({ inFlight }) => inFlight)) {
+        // And the pending changes of its live posts, one of whose calls
+        // may be deleting a post from its platform right now.
+        const open = yield* changes.lockOpen(workspaceId);
+
+        if (
+          rounds.some(({ inFlight }) => inFlight) ||
+          open.some(({ inFlight }) => inFlight)
+        ) {
           return yield* new PostsPublishing({ workspaceId });
         }
 
-        return rounds;
+        return { open, rounds };
       });
 
       const eraseWorkspace = Effect.fn("PostRecords.eraseWorkspace")(
@@ -94,7 +107,7 @@ export class PostRecords extends Context.Service<
               // claims its post before this reads it, which then reads as
               // publishing, or after this commits, and finds it gone.
               const standings = yield* store.lockAll(workspaceId);
-              const rounds = yield* goingOut(workspaceId);
+              const { open, rounds } = yield* goingOut(workspaceId);
 
               // A stop is part of the transaction, as a start is: the jobs
               // that sleep until a post's time, and those that wait
@@ -110,6 +123,12 @@ export class PostRecords extends Context.Service<
 
               for (const { round, targetId } of rounds) {
                 yield* scheduler.cancelRound({ round, targetId });
+              }
+
+              // The changes go with their targets: their jobs stop, and
+              // one that wakes all the same finds its change gone.
+              for (const { changeId } of open) {
+                yield* liveJobs.stop(changeId);
               }
 
               yield* store.deleteAll(workspaceId);

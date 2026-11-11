@@ -8,6 +8,7 @@ import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { MediaLibrary } from "#media/application/media-library.ts";
+import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
 import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
@@ -132,6 +133,7 @@ describe("a plan's refusal, through the tools", () => {
                 Layer.mock(PostChecks, {}),
                 Layer.mock(PostDrafts, {}),
                 Layer.mock(PostFollowUp, {}),
+                Layer.mock(LivePostChanges, {}),
                 Layer.mock(PostOutcomes, {}),
                 Layer.mock(PostQueries, {}),
                 Layer.mock(PostSearch, {}),

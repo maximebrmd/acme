@@ -210,7 +210,11 @@
   still counts in its plan. Off is not disconnected: nothing calls
   `ChannelEvents.disconnected`, so analytics and the inbox keep what they
   read, and pass it over while `ChannelAccess` answers `disabled`
-  (`paused`) until it is back on.
+  (`paused`) until it is back on. A switch writes the status and tells
+  `ChannelEvents.disabled` or `.enabled` (`channel.disabled`,
+  `channel.enabled`, keyed by the channel's `updatedAt`) in one
+  transaction, under the channel's lock; one that changes nothing tells
+  nothing. Analytics passes both on and does nothing of its own.
 - Any request to a host a user chose (a Mastodon instance, the servers a
   Bluesky DID names) goes through `publicHttpClient` or `publicFetch` from
   `#shared/infrastructure/platforms`: HTTPS on the default port only,
@@ -261,7 +265,10 @@
   the account again without disconnecting: the channel and its history
   stay. `channel.reconnect_needed` is
   published for a week after a channel enters `refreshNeeded` (`toldFor`),
-  not each time the daily check tells it: its key is purged with its event.
+  not each time the daily check tells it: its key is purged with its event. `channel.expiring` wraps `reconnectSoon` the same way, keyed by
+  the channel and the expiry, published only from `reconnectLeadTime`
+  before it until it passes (`expiryTold`), so a 60-day token warned
+  daily is told once.
 - A token refresh run that stops at its budget makes the next one start
   after where it stopped, then come back to the channels before (in this
   process): channels whose platform hangs never take every run.

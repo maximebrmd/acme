@@ -34,11 +34,14 @@
   post's channels, and the approval gate the submitted subject's,
   `channelsSubmitted`). A new type does not compile until it says which. Publishing
   tells through `PostEvents` (schedule, unschedule, cancel, confirm, in
-  `PostScheduling`'s and `PostFollowUp`'s transactions) and
+  `PostScheduling`'s and `PostFollowUp`'s transactions, and finish,
+  wherever a post becomes `finished`: `post.finished`, once per round and
+  outcome) and
   `webhookOutcomes` around `PublicationOutcomes`; channels through
   `ChannelEvents` (connect, reconnect, disconnect, in
-  `ChannelRepository.addingTo`'s transaction) and `webhookChannelNotices`
-  (reconnect needed, which the daily check tells again); media through
+  `ChannelRepository.addingTo`'s transaction; turned off and on, in
+  `ChannelSettings`') and `webhookChannelNotices` (reconnect needed and
+  expiring, which the daily check tells again); media through
   `webhookMediaAssets`, around `MediaAssets.update`. A bug in telling is
   logged and never stops the fact; the database failing rolls both back.
   A new event is told from the transaction that records its fact.
@@ -57,6 +60,29 @@
   new one for 24 hours. Never log one, nor an endpoint's URL, whose path
   or query may hold the receiver's secret: logs, notices and the staff
   console name an endpoint by id and host.
+- An endpoint's own headers (`domain/endpoint-headers.ts`,
+  `maxEndpointHeaders` 5, an owner's decision): names are HTTP tokens,
+  once whatever their case, never `refusedHeaderPrefixes` (`webhook-`,
+  `content-`) nor `refusedHeaderNames` (RFC 9110 and 9112, cited there), so
+  none can replace one of Peal's (the transport merges them under Peal's
+  anyway); values visible ASCII on one line. Values are sealed through
+  `EndpointSecrets.sealHeaders`, bound to
+  `webhook:<endpoint>:header:<lowercased name>:<origin of the URL>`, in
+  `webhooks.endpoints.headers` (`[{ name, sealed }]`), opened only to send
+  (`openHeaders`; one that no longer decrypts abandons the delivery as
+  `notConfigured`, as a secret does), and never returned, logged or
+  exported: the view, the export and the staff console name them only
+  (`headerNames`). A change's `headers` replaces the whole list, left out
+  it keeps it; a header named there without a value keeps the sealed value
+  the endpoint has under that name (bound to it in lowercase), and one it
+  has not is `HeadersRefused` (422 `WebhookHeadersRefused`). A value goes
+  to its origin only: a new `url` on another origin (`originOf`), on an
+  endpoint with headers, is `HeaderValuesRequired` (422
+  `WebhookHeaderValuesRequired`) unless the change gives every header with
+  its value or `[]`; the web form asks the values again
+  (`headersNeedValues`). The contract's copy of the rules is kept equal by
+  `test/webhooks/api/contract.test.ts`; `test/app/secrets-in-logs.test.ts`
+  searches the logs, traces and delivery log for the values.
 - `WebhookTransport` sends through `publicHttpClient` only (HTTPS on 443,
   public addresses checked before every request, no redirect followed, no
   trace context), with its spans off and 15 seconds for the whole exchange.
@@ -71,7 +97,12 @@
   failed attempts (`failing_since`, cleared by a success or by turning it
   back on). Turning off happens once (`EndpointStore.disable`), and tells
   the members with `webhook:manage` through the `WebhookEndpointDisabled`
-  notice, always emailed. A delivery whose endpoint is off fails without a
+  notice, always emailed. A delivery that fails for good (its attempts used up,
+  or a secret that no longer decrypts) while its endpoint is still on once
+  the attempt is recorded tells them `WebhookDeliveriesFailing` in the same
+  transaction (`EndpointNotices.failing`, keyed
+  `webhook-failing:<endpoint>:<UTC day>`, so once a day), emailed as their
+  `webhookFailing` preference says. A delivery whose endpoint is off fails without a
   request. Its payload's `startAfterMillis` (decoding default 0) is slept
   first under the clock `start`, in memory: how deliveries sent again
   together are spaced out (`bulkReplaySpacing`, 250 ms per endpoint).

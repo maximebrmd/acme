@@ -15,6 +15,8 @@ public final class InboxCollectionEnd {
 
     public static final InboxCollectionEnd DISCONNECTED = new InboxCollectionEnd(Value.DISCONNECTED, "disconnected");
 
+    public static final InboxCollectionEnd REMOVED = new InboxCollectionEnd(Value.REMOVED, "removed");
+
     private final Value value;
 
     private final String string;
@@ -55,6 +57,8 @@ public final class InboxCollectionEnd {
                 return visitor.visitUnsupported();
             case DISCONNECTED:
                 return visitor.visitDisconnected();
+            case REMOVED:
+                return visitor.visitRemoved();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -72,6 +76,8 @@ public final class InboxCollectionEnd {
                 return UNSUPPORTED;
             case "disconnected":
                 return DISCONNECTED;
+            case "removed":
+                return REMOVED;
             default:
                 return new InboxCollectionEnd(Value.UNKNOWN, value);
         }
@@ -86,6 +92,8 @@ public final class InboxCollectionEnd {
 
         MISSING,
 
+        REMOVED,
+
         UNKNOWN
     }
 
@@ -97,6 +105,8 @@ public final class InboxCollectionEnd {
         T visitUnsupported();
 
         T visitMissing();
+
+        T visitRemoved();
 
         T visitUnknown(String unknownType);
     }

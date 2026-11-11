@@ -5,6 +5,7 @@ import {
   ChannelSetNotFound,
   CurrentMember,
   InvalidTimeZone,
+  QueueHasNoRoom,
   QueueNameTaken,
   QueueNotFound,
   TooManyQueues,
@@ -15,6 +16,7 @@ import type {
   QueueSlot as SlotInput,
 } from "peal-contract";
 
+import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { Queues } from "#publishing/application/queues.ts";
 import { ChannelSetIdSchema } from "#publishing/domain/channel-set-id.ts";
 import { QueueIdSchema } from "#publishing/domain/queue-id.ts";
@@ -25,7 +27,7 @@ import { forbidden } from "#shared/api/forbidden.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
 import { channelIdsFrom } from "./post-input.ts";
-import { previewView, queueView } from "./queue-view.ts";
+import { previewView, queueView, reshuffleView } from "./queue-view.ts";
 
 const decodeQueueId = Schema.decodeUnknownOption(QueueIdSchema);
 
@@ -102,6 +104,7 @@ export const QueuesHandlers = HttpApiBuilder.group(
   "queues",
   Effect.fn(function* queuesHandlers(handlers) {
     const queues = yield* Queues;
+    const scheduling = yield* PostScheduling;
 
     return handlers.handleAll({
       create: ({ payload }) =>
@@ -158,6 +161,24 @@ export const QueuesHandlers = HttpApiBuilder.group(
             Effect.catchTags({
               DatabaseError: Effect.die,
               MissingPermission: forbidden,
+            })
+          );
+        }),
+      reshuffle: ({ params }) =>
+        Effect.gen(function* reshuffle() {
+          const actor = actorOf(yield* CurrentMember);
+          const queueId = yield* queueIdFrom(params.queueId);
+
+          return yield* scheduling.reshuffle(actor, queueId).pipe(
+            Effect.map(reshuffleView),
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+              QueueHasNoRoom: ({ reason }) =>
+                Effect.fail(
+                  new QueueHasNoRoom({ queueId: params.queueId, reason })
+                ),
+              QueueNotFound: notFound,
             })
           );
         }),

@@ -7,6 +7,7 @@ enum FieldType: string
     case Boolean = "boolean";
     case Choice = "choice";
     case Integer = "integer";
+    case Media = "media";
     case MentionList = "mentionList";
     case Text = "text";
     case TextList = "textList";

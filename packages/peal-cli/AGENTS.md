@@ -68,6 +68,12 @@
   row refused or unreadable ends as a refusal, after printing every row, and
   never prints the file. No command sends `posts.bulk`: a CSV file is the
   command line's way to several posts.
+- `peal posts unpublish` (`commands/posts-unpublish.ts`) deletes a post
+  from its platforms (`--channel`, by id or handle, or every channel), and
+  asks first through `confirmed`; `--json` needs `--yes`
+  (`neverAsksInJson`). `peal posts changes` reads `posts.changes`, and
+  `peal posts list --removed` `search?removed=true`. Refusal reasons have
+  their words in `src/live-post-refusals.ts`, typed by the contract.
 - `peal tags` (list, create, update, delete) keeps a workspace's tags, and
   `peal posts tag`, `peal posts list --tag`, `peal drafts save --tag` and
   `peal post --tag` file posts under them. Wherever a command takes a tag
@@ -87,7 +93,7 @@
   each in prose after the rest (`warningLines`); `--json` prints the answer
   as it came. The MCP toolkit `saved-tools.ts` has the same, by id, and
   its posts name sets by id or name.
-- `peal queues` (list, show, preview, create, update, delete) keeps a
+- `peal queues` (list, show, preview, create, update, reshuffle, delete) keeps a
   workspace's queues (`--slot mon@09:00`, repeated; `--zone`; `--channel`;
   `--set`; `--default`; on `update`, `--clear-channels` and `--clear-slots`
   empty them), named by id or name (`saved-items.ts`:
@@ -96,8 +102,10 @@
   the next word as an optional value, which would read a name as the
   post's text) or `--default-queue` is one of `--at`, `--now`, `--queue`
   and `--default-queue`; `peal posts queue` and `peal posts list --queue` follow
-  `posts.enqueue` and `search?queueId`. The studio's queues are in
-  `test/studio-queues.ts`, built over what `studio.ts` hands them.
+  `posts.enqueue` and `search?queueId`. `peal queues reshuffle` follows
+  `queues.reshuffle` and says why it stopped (`reshuffleLines`). The
+  studio's queues are in `test/studio-queues.ts`, built over what
+  `studio.ts` hands them.
 - `peal channels rename`, `disable` and `enable`
   (`commands/channel-settings.ts`) name a channel and turn it off or back
   on, and `peal posts duplicate` makes a draft of a post, reading it first
@@ -169,4 +177,7 @@
   `--since`, `--until` and `--event` without `--failed`, names an
   endpoint's id given as a delivery, and ends as a refusal
   (`nothing_redelivered`) when nothing was sent again; `test --event` sends a
-  sample.
+  sample. `--header "Name: value"` (repeated) is checked against the
+  contract's `WebhookHeaderSchema` before any request, `update` sends the
+  whole list or `[]` with `--clear-headers`, and prose prints the names
+  only, never a value.

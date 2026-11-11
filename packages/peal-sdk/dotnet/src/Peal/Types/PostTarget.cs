@@ -35,11 +35,17 @@ public record PostTarget : IJsonOnDeserialized
     [JsonPropertyName("publishedAt")]
     public string? PublishedAt { get; set; }
 
+    [JsonPropertyName("removedAt")]
+    public string? RemovedAt { get; set; }
+
     [JsonPropertyName("round")]
     public required int Round { get; set; }
 
     [JsonPropertyName("status")]
     public required PostTargetStatus Status { get; set; }
+
+    [JsonPropertyName("thumbnailNotSet")]
+    public bool? ThumbnailNotSet { get; set; }
 
     [JsonPropertyName("unconfirmedReason")]
     public UnconfirmedReason? UnconfirmedReason { get; set; }

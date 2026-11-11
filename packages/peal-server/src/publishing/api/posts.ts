@@ -10,6 +10,7 @@ import {
   IdempotencyKeyReused,
   ImportUnreadable,
   InvalidTimeRange,
+  LivePostNotChangeable,
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
@@ -28,6 +29,8 @@ import type {
   PostRefusal,
 } from "peal-contract";
 
+import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
+import type { LivePostNotChangeable as LivePostNotChangeableError } from "#publishing/application/live-post-not-changeable.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
 import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
@@ -49,6 +52,10 @@ import { changesNothing } from "#shared/api/change-mark.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 
+import {
+  livePostChangeView,
+  postUnpublishView,
+} from "./live-post-change-view.ts";
 import { keyAt, newPostOf, readPost, sendRead } from "./post-batch.ts";
 import type { ReadPost } from "./post-batch.ts";
 import { checkRequestFrom } from "./post-check-input.ts";
@@ -119,6 +126,9 @@ const duplicate = ({ duplicates }: DuplicateContent) =>
     })
   );
 
+const notChangeable = ({ reason }: LivePostNotChangeableError) =>
+  Effect.fail(new LivePostNotChangeable({ reason }));
+
 const targetConflict = ({ from }: InvalidTargetTransition) =>
   Effect.fail(new TargetStatusConflict({ status: from }));
 
@@ -144,6 +154,7 @@ export const PostsHandlers = HttpApiBuilder.group(
     const searching = yield* PostSearch;
     const tags = yield* PostTags;
     const presets = yield* PostPresets;
+    const live = yield* LivePostChanges;
     const limitReached = yield* limitRefusal;
 
     const toValidation = validationOf(limitReached);
@@ -225,6 +236,21 @@ export const PostsHandlers = HttpApiBuilder.group(
           );
 
           return postView(cancelled);
+        }),
+      changes: ({ params }) =>
+        Effect.gen(function* changes() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+
+          const listed = yield* live.list(actor, postId).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+              PostNotFound: notFound,
+            })
+          );
+
+          return { items: listed.map(livePostChangeView) };
         }),
       confirm: ({ params, payload }) =>
         Effect.gen(function* confirm() {
@@ -674,7 +700,13 @@ export const PostsHandlers = HttpApiBuilder.group(
       search: ({ query }) =>
         Effect.gen(function* search() {
           const actor = actorOf(yield* CurrentMember);
-          const request = searchRequestFrom(query);
+          const { removed, ...filters } = query;
+
+          const request = searchRequestFrom(
+            removed === undefined
+              ? filters
+              : { ...filters, removed: removed === "true" }
+          );
 
           const page = yield* searching.search(actor, request).pipe(
             Effect.catchTags({
@@ -741,6 +773,44 @@ export const PostsHandlers = HttpApiBuilder.group(
           );
 
           return postView(tagged);
+        }),
+      unpublish: ({ params }) =>
+        Effect.gen(function* unpublish() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+
+          const made = yield* live.unpublishPost(actor, postId).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+              PostNotFound: notFound,
+            })
+          );
+
+          return postUnpublishView(made);
+        }),
+      unpublishTarget: ({ params, query }) =>
+        Effect.gen(function* unpublishTarget() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+          const targetId = yield* targetIdFrom(params.targetId);
+
+          const change = yield* live
+            .unpublishTarget(actor, postId, targetId)
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                LivePostNotChangeable: notChangeable,
+                MissingPermission: forbidden,
+                PostNotFound: notFound,
+              })
+            );
+
+          const ended = yield* live
+            .awaitEnd(change, Duration.seconds(query.wait ?? 0))
+            .pipe(Effect.orDie);
+
+          return livePostChangeView(ended);
         }),
       unschedule: ({ params }) =>
         Effect.gen(function* unschedule() {

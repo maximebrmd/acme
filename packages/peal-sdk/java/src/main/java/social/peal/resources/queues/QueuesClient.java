@@ -10,10 +10,12 @@ import social.peal.resources.queues.requests.CreateQueuesRequest;
 import social.peal.resources.queues.requests.DeleteQueuesRequest;
 import social.peal.resources.queues.requests.GetQueuesRequest;
 import social.peal.resources.queues.requests.ListQueuesRequest;
+import social.peal.resources.queues.requests.ReshuffleQueuesRequest;
 import social.peal.resources.queues.requests.SlotsQueuesRequest;
 import social.peal.resources.queues.requests.UpdateQueuesRequest;
 import social.peal.types.Queue;
 import social.peal.types.QueuePreview;
+import social.peal.types.QueueReshuffle;
 
 public class QueuesClient {
     protected final ClientOptions clientOptions;
@@ -175,6 +177,37 @@ public class QueuesClient {
             String workspaceId, String queueId, SlotsQueuesRequest request, RequestOptions requestOptions) {
         return this.rawClient
                 .slots(workspaceId, queueId, request, requestOptions)
+                .body();
+    }
+
+    /**
+     * Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does (a new time, the month's room in the plan, and <code>post.scheduled</code> told for a scheduled post), but for approvals: a scheduled post goes through the approval policy as the caller's, and a post that waits for an approval keeps waiting, at its new time, whoever calls, under the request it had (<code>post.approval_requested</code> is told with the new time, and nobody is asked again to decide); moving it by hand is how a caller whose posts need no approval schedules it. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (<code>stoppedBy</code> <code>planLimit</code>), when no slot is left within 366 days (<code>full</code>), or when the queue was saved meanwhile (<code>changed</code>); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (<code>noSlots</code>) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+     */
+    public QueueReshuffle reshuffle(String workspaceId, String queueId) {
+        return this.rawClient.reshuffle(workspaceId, queueId).body();
+    }
+
+    /**
+     * Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does (a new time, the month's room in the plan, and <code>post.scheduled</code> told for a scheduled post), but for approvals: a scheduled post goes through the approval policy as the caller's, and a post that waits for an approval keeps waiting, at its new time, whoever calls, under the request it had (<code>post.approval_requested</code> is told with the new time, and nobody is asked again to decide); moving it by hand is how a caller whose posts need no approval schedules it. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (<code>stoppedBy</code> <code>planLimit</code>), when no slot is left within 366 days (<code>full</code>), or when the queue was saved meanwhile (<code>changed</code>); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (<code>noSlots</code>) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+     */
+    public QueueReshuffle reshuffle(String workspaceId, String queueId, RequestOptions requestOptions) {
+        return this.rawClient.reshuffle(workspaceId, queueId, requestOptions).body();
+    }
+
+    /**
+     * Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does (a new time, the month's room in the plan, and <code>post.scheduled</code> told for a scheduled post), but for approvals: a scheduled post goes through the approval policy as the caller's, and a post that waits for an approval keeps waiting, at its new time, whoever calls, under the request it had (<code>post.approval_requested</code> is told with the new time, and nobody is asked again to decide); moving it by hand is how a caller whose posts need no approval schedules it. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (<code>stoppedBy</code> <code>planLimit</code>), when no slot is left within 366 days (<code>full</code>), or when the queue was saved meanwhile (<code>changed</code>); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (<code>noSlots</code>) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+     */
+    public QueueReshuffle reshuffle(String workspaceId, String queueId, ReshuffleQueuesRequest request) {
+        return this.rawClient.reshuffle(workspaceId, queueId, request).body();
+    }
+
+    /**
+     * Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does (a new time, the month's room in the plan, and <code>post.scheduled</code> told for a scheduled post), but for approvals: a scheduled post goes through the approval policy as the caller's, and a post that waits for an approval keeps waiting, at its new time, whoever calls, under the request it had (<code>post.approval_requested</code> is told with the new time, and nobody is asked again to decide); moving it by hand is how a caller whose posts need no approval schedules it. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (<code>stoppedBy</code> <code>planLimit</code>), when no slot is left within 366 days (<code>full</code>), or when the queue was saved meanwhile (<code>changed</code>); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (<code>noSlots</code>) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+     */
+    public QueueReshuffle reshuffle(
+            String workspaceId, String queueId, ReshuffleQueuesRequest request, RequestOptions requestOptions) {
+        return this.rawClient
+                .reshuffle(workspaceId, queueId, request, requestOptions)
                 .body();
     }
 }

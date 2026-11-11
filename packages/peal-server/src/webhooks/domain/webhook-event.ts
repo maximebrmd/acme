@@ -69,6 +69,36 @@ const channel = {
 
 const media = { ...workspace, mediaId: MediaAssetIdSchema };
 
+/**
+ * How a post ended across its channels, once each has its result: every
+ * channel has it whole, some do, at least one may have it (to check), none
+ * does, or every one was cancelled. As publishing names it.
+ */
+export const FinishedOutcomeSchema = Schema.Literals([
+  "published",
+  "partiallyPublished",
+  "unconfirmed",
+  "failed",
+  "cancelled",
+]);
+
+/** Where a post ended on one channel, once it has its result there. */
+export const SettledTargetStatusSchema = Schema.Literals([
+  "published",
+  "failed",
+  "unconfirmed",
+  "cancelled",
+]);
+
+// A post's result on one of its channels: its address there when it went
+// live, why it did not when it failed.
+const FinishedTargetSchema = Schema.Struct({
+  ...EventTargetSchema.fields,
+  failureReason: Schema.NullOr(Schema.NonEmptyString),
+  permalink: Schema.NullOr(Schema.String),
+  status: SettledTargetStatusSchema,
+});
+
 // A comment under a post that went live on a channel, by ids: never what
 // it says, nor who wrote it, which the receiver reads through the API.
 const comment = {
@@ -173,6 +203,42 @@ export const WebhookEventSchema = Schema.Union([
     }),
     type: Schema.Literal("post.cancelled"),
   }),
+  // Every channel of the post has its result, in its latest round (1, and
+  // one more for each repost): told again when a repost ends, and when a
+  // member's confirmation changes the outcome.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...post,
+      finishedAt: Schema.DateTimeUtc,
+      outcome: FinishedOutcomeSchema,
+      round: Schema.Int,
+      targets: Schema.Array(FinishedTargetSchema),
+    }),
+    type: Schema.Literal("post.finished"),
+  }),
+  // Peal deleted the post from the channel's platform, every part of it,
+  // at a member's request: it stays published in Peal, with `removedAt`.
+  // `alreadyGone` when the platform had it no longer, deleted there before.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...post,
+      ...EventTargetSchema.fields,
+      alreadyGone: Schema.Boolean,
+      removedAt: Schema.DateTimeUtc,
+    }),
+    type: Schema.Literal("post.unpublished"),
+  }),
+  // Peal could not delete the post from the channel's platform: `code`
+  // says why; the post may still be there, and a member may ask again.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...post,
+      ...EventTargetSchema.fields,
+      code: Schema.NonEmptyString,
+      failedAt: Schema.DateTimeUtc,
+    }),
+    type: Schema.Literal("post.unpublish_failed"),
+  }),
   // Someone asked for the post to go out at `scheduledAt`, in a workspace
   // that asks for approvals: it waits, and no `post.scheduled` is sent
   // until it is approved.
@@ -212,6 +278,23 @@ export const WebhookEventSchema = Schema.Union([
   Schema.Struct({
     data: Schema.Struct(channel),
     type: Schema.Literal("channel.reconnect_needed"),
+  }),
+  // A member turned the channel off: nothing is posted there until it is
+  // turned back on.
+  Schema.Struct({
+    data: Schema.Struct(channel),
+    type: Schema.Literal("channel.disabled"),
+  }),
+  // A member turned the channel back on.
+  Schema.Struct({
+    data: Schema.Struct(channel),
+    type: Schema.Literal("channel.enabled"),
+  }),
+  // The channel's authorization cannot be renewed and ends at `expiresAt`:
+  // someone reconnects it before then, or nothing is posted there after.
+  Schema.Struct({
+    data: Schema.Struct({ ...channel, expiresAt: Schema.DateTimeUtc }),
+    type: Schema.Literal("channel.expiring"),
   }),
   // The file was probed, and can go in posts.
   Schema.Struct({
@@ -325,7 +408,10 @@ export const channelsOf: (event: WebhookEvent) => EventChannels =
       "boost.stopped": noChannel,
       "boost.unconfirmed": noChannel,
       "channel.connected": ofChannel,
+      "channel.disabled": ofChannel,
       "channel.disconnected": ofChannel,
+      "channel.enabled": ofChannel,
+      "channel.expiring": ofChannel,
       "channel.reconnect_needed": ofChannel,
       "comment.received": ofChannel,
       "comment.replied": ofChannel,
@@ -336,9 +422,12 @@ export const channelsOf: (event: WebhookEvent) => EventChannels =
       "post.cancelled": ofTargets,
       "post.changes_requested": () => ofPost,
       "post.failed": ofChannel,
+      "post.finished": ofTargets,
       "post.published": ofChannel,
       "post.scheduled": ofTargets,
       "post.unconfirmed": ofChannel,
+      "post.unpublish_failed": ofChannel,
+      "post.unpublished": ofChannel,
       "post.unscheduled": () => ofPost,
       "webhook.test": noChannel,
     })

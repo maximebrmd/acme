@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 import social.peal.core.ObjectMappers;
 import social.peal.types.SubscribableWebhookEventType;
+import social.peal.types.WebhookHeaderChange;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = WebhookEndpointChange.Builder.class)
@@ -30,6 +31,8 @@ public final class WebhookEndpointChange {
 
     private final Optional<List<SubscribableWebhookEventType>> eventTypes;
 
+    private final Optional<List<WebhookHeaderChange>> headers;
+
     private final Optional<String> url;
 
     private final Optional<List<String>> workspaceIds;
@@ -41,6 +44,7 @@ public final class WebhookEndpointChange {
             Optional<String> description,
             Optional<Boolean> enabled,
             Optional<List<SubscribableWebhookEventType>> eventTypes,
+            Optional<List<WebhookHeaderChange>> headers,
             Optional<String> url,
             Optional<List<String>> workspaceIds,
             Map<String, Object> additionalProperties) {
@@ -48,6 +52,7 @@ public final class WebhookEndpointChange {
         this.description = description;
         this.enabled = enabled;
         this.eventTypes = eventTypes;
+        this.headers = headers;
         this.url = url;
         this.workspaceIds = workspaceIds;
         this.additionalProperties = additionalProperties;
@@ -71,6 +76,11 @@ public final class WebhookEndpointChange {
     @JsonProperty("eventTypes")
     public Optional<List<SubscribableWebhookEventType>> getEventTypes() {
         return eventTypes;
+    }
+
+    @JsonProperty("headers")
+    public Optional<List<WebhookHeaderChange>> getHeaders() {
+        return headers;
     }
 
     @JsonProperty("url")
@@ -99,6 +109,7 @@ public final class WebhookEndpointChange {
                 && description.equals(other.description)
                 && enabled.equals(other.enabled)
                 && eventTypes.equals(other.eventTypes)
+                && headers.equals(other.headers)
                 && url.equals(other.url)
                 && workspaceIds.equals(other.workspaceIds);
     }
@@ -106,7 +117,13 @@ public final class WebhookEndpointChange {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.channelIds, this.description, this.enabled, this.eventTypes, this.url, this.workspaceIds);
+                this.channelIds,
+                this.description,
+                this.enabled,
+                this.eventTypes,
+                this.headers,
+                this.url,
+                this.workspaceIds);
     }
 
     @java.lang.Override
@@ -128,6 +145,8 @@ public final class WebhookEndpointChange {
 
         private Optional<List<SubscribableWebhookEventType>> eventTypes = Optional.empty();
 
+        private Optional<List<WebhookHeaderChange>> headers = Optional.empty();
+
         private Optional<String> url = Optional.empty();
 
         private Optional<List<String>> workspaceIds = Optional.empty();
@@ -141,6 +160,7 @@ public final class WebhookEndpointChange {
             description(other.getDescription());
             enabled(other.getEnabled());
             eventTypes(other.getEventTypes());
+            headers(other.getHeaders());
             url(other.getUrl());
             workspaceIds(other.getWorkspaceIds());
             return this;
@@ -190,6 +210,17 @@ public final class WebhookEndpointChange {
             return this;
         }
 
+        @JsonSetter(value = "headers", nulls = Nulls.SKIP)
+        public Builder headers(Optional<List<WebhookHeaderChange>> headers) {
+            this.headers = headers;
+            return this;
+        }
+
+        public Builder headers(List<WebhookHeaderChange> headers) {
+            this.headers = Optional.ofNullable(headers);
+            return this;
+        }
+
         @JsonSetter(value = "url", nulls = Nulls.SKIP)
         public Builder url(Optional<String> url) {
             this.url = url;
@@ -214,7 +245,7 @@ public final class WebhookEndpointChange {
 
         public WebhookEndpointChange build() {
             return new WebhookEndpointChange(
-                    channelIds, description, enabled, eventTypes, url, workspaceIds, additionalProperties);
+                    channelIds, description, enabled, eventTypes, headers, url, workspaceIds, additionalProperties);
         }
 
         @JsonAnySetter
@@ -223,6 +254,7 @@ public final class WebhookEndpointChange {
                     || key.equalsIgnoreCase("description")
                     || key.equalsIgnoreCase("enabled")
                     || key.equalsIgnoreCase("eventTypes")
+                    || key.equalsIgnoreCase("headers")
                     || key.equalsIgnoreCase("url")
                     || key.equalsIgnoreCase("workspaceIds")) {
                 return;

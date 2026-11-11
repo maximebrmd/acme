@@ -728,6 +728,19 @@
     "unavailable": "The status could not be read. Try again later."
   },
   "Posts": {
+    "Live": {
+      "unpublish": "Unpublish",
+      "confirmTitle": "Delete this post from {platform}?",
+      "confirmDescription": "It is deleted from {channel} for everyone, every part of it. This cannot be undone.",
+      "keep": "Keep it",
+      "removing": "Removing…",
+      "requested": "Removing the post from {channel}.",
+      "removed": "Removed from {platform} on {at, date, medium}",
+      "failed": "The removal failed ({code}). The post may still be there.",
+      "retry": "Try again",
+      "blocked": "{by, select, noApi {{platform} offers no way for Peal to delete posts.} permission {{platform} does not let Peal delete posts yet.} unverified {Peal does not delete posts on {platform} yet.} other {Peal cannot delete posts on {platform}.}}",
+      "refused": "{reason, select, notPublished {The post is not live on this channel.} alreadyRemoved {The post was removed from this channel already.} noPlatformId {Peal has no id for this post on the platform: delete it there.} notSupported {The platform does not let Peal delete this post: delete it there.} changeInProgress {The post is being removed already.} channelUnavailable {The channel is disconnected, turned off or must be reconnected.} boostRunning {A boost shows this post: stop it first.} forbidden {Your role does not let you unpublish posts.} other {The post could not be removed. Try again.}}"
+    },
     "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {{platform}}}",
     "status": "{status, select, draft {Draft} awaitingApproval {Awaiting approval} scheduled {Scheduled} publishing {Publishing} finished {Finished} cancelled {Cancelled} other {{status}}}",
     "targetStatus": "{status, select, pending {Waiting} publishing {Publishing} published {Published} failed {Failed} unconfirmed {To check} cancelled {Cancelled} other {{status}}}",
@@ -973,7 +986,29 @@
         "categoryIdHint": "The number of a YouTube category, such as 22 for People & Blogs.",
         "categoryIdInvalid": "A category is a number, such as 22.",
         "notifySubscribers": "Notify subscribers",
-        "containsSyntheticMedia": "Contains altered or synthetic content that looks real"
+        "containsSyntheticMedia": "Contains altered or synthetic content that looks real",
+        "thumbnail": "Thumbnail",
+        "thumbnailHint": "A JPEG or PNG image of the library, 8 MB at most, set once the video is uploaded. YouTube takes custom thumbnails only from channels allowed them.",
+        "thumbnailInvalid": "Choose a JPEG or PNG image of the library, 8 MB at most.",
+        "license": "License",
+        "licenseHint": "The channel’s upload default unless you choose otherwise.",
+        "channelDefault": "The channel’s default",
+        "licenseYouTube": "Standard YouTube License",
+        "licenseCreativeCommon": "Creative Commons – Attribution",
+        "embeddable": "Embedding allowed",
+        "embeddableHint": "Whether other sites may embed the video. YouTube decides when not chosen.",
+        "embeddableYes": "Yes, other sites may embed it",
+        "embeddableNo": "No, keep it on YouTube",
+        "publicStatsViewable": "Public statistics",
+        "publicStatsViewableHint": "Whether anyone can see the video’s extended statistics on its page. YouTube decides when not chosen.",
+        "publicStatsViewableYes": "Yes, show them",
+        "publicStatsViewableNo": "No, keep them hidden",
+        "defaultLanguage": "Language of the title and description",
+        "defaultLanguageHint": "A language tag, as en or pt-BR.",
+        "defaultLanguageInvalid": "A language is a tag such as en or pt-BR.",
+        "recordingDate": "Recording date",
+        "recordingDateHint": "The day the video was recorded.",
+        "recordingDateInvalid": "Choose a day."
       },
       "googleBusiness": {
         "postType": "Post type",
@@ -1035,7 +1070,17 @@
         "noPhotos": "This server cannot post photos to TikTok: attach one video instead.",
         "processing": "Once published, the post may take a few minutes to process before it shows on the profile.",
         "consentMusic": "By posting, you agree to TikTok’s <music>Music Usage Confirmation</music>.",
-        "consentBranded": "By posting, you agree to TikTok’s <brand>Branded Content Policy</brand> and <music>Music Usage Confirmation</music>."
+        "consentBranded": "By posting, you agree to TikTok’s <brand>Branded Content Policy</brand> and <music>Music Usage Confirmation</music>.",
+        "videoCover": "Cover frame, in milliseconds",
+        "videoCoverHint": "For a video: the frame that becomes the cover, in milliseconds from its start, such as 1500. The first frame when left empty.",
+        "videoCoverInvalid": "A whole number of milliseconds within the video, such as 1500.",
+        "photoTitle": "Photo post title",
+        "photoTitleHint": "At most 90 characters. The post’s text is its description.",
+        "photoTitleInvalid": "A title is one line, 90 characters at most.",
+        "photoCover": "Cover photo",
+        "photoCoverHint": "The cover’s place among the photos: 0 for the first, 1 for the second, and so on. The first when left empty.",
+        "photoCoverInvalid": "A place among the photos: a whole number from 0, below the number of photos.",
+        "autoAddMusic": "Add music automatically"
       },
       "mastodon": {
         "accountDefault": "The account’s default",
@@ -1116,6 +1161,43 @@
         "paidPartnershipHint": "X labels every part of the thread as a paid promotion.",
         "madeWithAi": "Made with AI",
         "madeWithAiHint": "X labels each part with images or a video as containing AI-generated media."
+      },
+      "mediaNone": "No image chosen.",
+      "mediaLoading": "Reading the image…",
+      "mediaFailed": "The image could not be read: it may have been deleted from the library. Choose another, or remove it.",
+      "mediaChoose": "{label}: choose from the library",
+      "mediaReplace": "{label}: choose another",
+      "mediaRemove": "Remove",
+      "mediaPickerTitle": "{label}: choose an image",
+      "mediaPickerDescription": "Pick one ready image of the workspace’s library. Only those this option takes can be picked.",
+      "mediaUse": "Use this image",
+      "instagram": {
+        "shareToFeed": "Also share to the feed",
+        "shareToFeedHint": "For a reel: shown in the feed as well as in the Reels tab. Instagram decides when not chosen.",
+        "shareToFeedYes": "Yes, share it to the feed",
+        "shareToFeedNo": "No, the Reels tab only",
+        "cover": "Cover image",
+        "coverHint": "For a reel: a JPEG image of the library, 8 MB at most. It wins over the cover frame.",
+        "coverInvalid": "Choose a JPEG image of the library, 8 MB at most, for a post of one video.",
+        "thumbOffset": "Cover frame, in milliseconds",
+        "thumbOffsetHint": "For a reel: the frame that becomes the cover, in milliseconds from its start, such as 1500. The first frame when left empty.",
+        "thumbOffsetInvalid": "A whole number of milliseconds within the video, such as 1500.",
+        "audioName": "Audio name",
+        "audioNameHint": "For a reel: the name its audio shows, on one line, 100 characters at most. Instagram lets it be renamed once.",
+        "audioNameInvalid": "One line, 100 characters at most, for a post of one video.",
+        "trialReel": "Trial reel",
+        "trialReelHint": "For a reel: shown to accounts that do not follow you first, then shared with your followers when you choose, or when it performs well.",
+        "trialReelNone": "Not a trial reel",
+        "trialReelManual": "Share with followers when I choose",
+        "trialReelPerformance": "Share with followers if it performs well",
+        "collaborators": "Collaborators",
+        "collaboratorsHint": "Up to three usernames of other Instagram accounts, without @, separated by commas. Each account receives an invitation to co-author the post: name only accounts you mean to invite.",
+        "collaboratorsInvalid": "Each is an Instagram username, without @: letters, digits, periods and underscores, 30 at most, each once."
+      },
+      "facebook": {
+        "videoTitle": "Video title",
+        "videoTitleHint": "For a post with a video: one line, 255 characters at most.",
+        "videoTitleInvalid": "A title is one line, 255 characters at most, for a post with a video."
       }
     },
     "Calendar": {
@@ -1230,7 +1312,8 @@
       "notFound": "This post no longer exists.",
       "conflict": "The post changed meanwhile: reload it to see where it is."
     },
-    "keptPrivate": "YouTube made the video private, although it was to be seen by more people: the account's settings, or Google's restrictions on the server's API project, keep it so. Change its visibility in YouTube Studio."
+    "keptPrivate": "YouTube made the video private, although it was to be seen by more people: the account's settings, or Google's restrictions on the server's API project, keep it so. Change its visibility in YouTube Studio.",
+    "thumbnailNotSet": "The thumbnail was not set: the channel may not be allowed custom thumbnails, or YouTube refused the image."
   },
   "Media": {
     "page": {
@@ -1369,7 +1452,8 @@
       "notReady": "Not ready yet",
       "attach": "{count, plural, =0 {Attach} one {Attach # item} other {Attach # items}}",
       "cancel": "Cancel",
-      "close": "Close"
+      "close": "Close",
+      "notAccepted": "Not a file this option takes"
     },
     "problem": {
       "tooManyVideos": "Too many videos ({count} of {maximum})",
@@ -1484,6 +1568,7 @@
       "SubscriptionWithdrawn": "Your withdrawal from the {plan} subscription of {workspace} was received on {withdrawnAt, date, long} at {withdrawnAt, time, short}: it has ended, and {refunded} is refunded within 14 days.",
       "SubscriptionStarted": "{workspace} is subscribed to {plan} since {startedAt, date, long}, for {price} {interval, select, month {a month} other {a year}}, VAT included. As a consumer you may withdraw within 14 days.",
       "TrialStarted": "{workspace} is trying {plan} until {endsAt, date, long}: nothing is charged.",
+      "WebhookDeliveriesFailing": "A delivery to the webhook endpoint at {host} in {workspace} failed for good: the system behind it missed an event. The endpoint is still on. Fix the receiver, then send the failed deliveries again from the delivery log. After {days, number} days of failures, Peal turns the endpoint off.",
       "WebhookEndpointDisabled": "{reason, select, gone {The webhook endpoint at {host} in {workspace} was turned off: it answered 410 Gone, which asks for no more deliveries.} other {The webhook endpoint at {host} in {workspace} was turned off: every delivery had failed for {days, number} days. Fix the receiver, then turn it back on.}}",
       "TrialEndingOver": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan. It holds more than the free plan allows ({over}): from that day nothing is scheduled or published until it is back within it.",
       "AdBoostChanged": "{change, select, started {A boost started in {workspace}: it may spend up to its budget of {budget}, from the ad account’s payment method, until {endsAt, date, long}. Pause or stop it at any time on the post’s page.} ended {A boost in {workspace}, with a budget of {budget}, reached its end date ({endsAt, date, long}) and no longer runs. What it spent is on the post’s page.} failed {A boost in {workspace}, with a budget of {budget}, could not be made: {reason} Nothing ran, and nothing was spent.} budgetReached {A boost in {workspace} has spent its whole budget of {budget}. The ad network stops showing it; nothing more is spent on it.} unconfirmed {Peal told the ad network to run a boost in {workspace}, with a budget of {budget}, and could not learn whether it runs. It may be spending. Check it on the post’s page, and stop it there if it should not run.} other {A boost of {workspace} changed.}}",
@@ -1524,6 +1609,7 @@
       "postReview": "A post waits for my approval, or a post I follow is commented on, approved or sent back",
       "channelReconnect": "A channel must be reconnected, now or soon",
       "comments": "People comment on published posts",
+      "webhookFailing": "Deliveries to a webhook endpoint fail for good, at most once a day for each endpoint",
       "postPublished": "A post went out",
       "postsLegend": "Tell me about",
       "everyPost": "Every post of my workspaces, not only the ones I wrote",
@@ -2030,6 +2116,9 @@
         "failed": "A post fails on a channel",
         "unconfirmed": "A post may have gone out on a channel",
         "cancelled": "A post is cancelled",
+        "finished": "A post has its result on every channel",
+        "unpublished": "A post is deleted from a channel’s platform",
+        "unpublish_failed": "A post could not be deleted from a channel’s platform",
         "approval_requested": "A post waits for an approval",
         "approved": "A post is approved",
         "changes_requested": "Changes are requested on a post"
@@ -2037,7 +2126,10 @@
       "channel": {
         "connected": "A channel is connected or reconnected",
         "disconnected": "A channel is disconnected",
-        "reconnect_needed": "A channel must be reconnected"
+        "reconnect_needed": "A channel must be reconnected",
+        "disabled": "A channel is turned off",
+        "enabled": "A channel is turned back on",
+        "expiring": "A channel’s sign-in ends soon"
       },
       "media": {
         "ready": "A file is ready for posts",
@@ -2132,6 +2224,19 @@
     "workspacesLabel": "Only these workspaces",
     "workspacesHint": "Ids of the partner’s workspaces, one a line, at most {max, number}. Leave it empty to hear every workspace; the home workspace is heard only if it is listed.",
     "channelsFilter": "Only events about {count, plural, one {# channel} other {# channels}}, and those about no channel",
+    "headersLegend": "Headers of your own",
+    "headersHint": "Sent with every delivery beside Peal’s own, as a gateway in front of your server may ask: {max, number} at most. Values are kept encrypted and never shown again; Peal’s signature does not cover them.",
+    "headerName": "Name",
+    "headerValue": "Value",
+    "headerSet": "set",
+    "headerSetHint": "Saved, never shown: type a new value to replace it.",
+    "headerMovedHint": "Saved for the old host: type its value again.",
+    "headersMoved": "The new address is on another host: type each header’s value again, or remove the header. Peal never sends a saved value to another host.",
+    "addHeader": "Add a header",
+    "removeHeader": "Remove the header {name}",
+    "removeNewHeader": "Remove this header",
+    "removeHeaderButton": "Remove",
+    "headersShown": "Headers: {names}",
     "workspacesFilter": "Only {count, plural, one {# workspace} other {# workspaces}}",
     "statusFilter": "Status",
     "eventFilter": "Event",
@@ -2160,7 +2265,9 @@
       "tooMany": "The workspace already has {allowed, number} endpoints, the most it may. Delete one first.",
       "urlRefused": "{reason, select, malformed {This is not an address.} notHttps {The address must be HTTPS, on the default port.} credentials {The address must not carry a user name or a password.} tooLong {The address is too long.} notPublic {The address’s host is not public, so Peal does not send requests to it.} unknownHost {The address’s host does not exist.} other {Peal does not deliver to this address.}}",
       "unknown": "Something went wrong. Try again.",
-      "filterRefused": "Only a partner endpoint takes a list of workspaces, and each must be an id."
+      "filterRefused": "Only a partner endpoint takes a list of workspaces, and each must be an id.",
+      "headerValuesRequired": "The new address is on another host: type each header’s value again, or remove the headers.",
+      "headersRefused": "A saved header keeps its value only while its name stays: type its value again, or remove it."
     }
   },
   "AccountSettings": {
@@ -2952,7 +3059,18 @@
     "upcomingLoading": "Reading the next slots…",
     "upcomingFailed": "The next slots could not be read.",
     "nextFree": "Next free slot: {at}.",
-    "noRoom": "{reason, select, noSlots {No free slot: the queue has no slot.} other {No free slot in the next {days, number} days.}}"
+    "noRoom": "{reason, select, noSlots {No free slot: the queue has no slot.} other {No free slot in the next {days, number} days.}}",
+    "reshuffle": {
+      "waiting": "{more, select, true {More than {count, number} posts wait in this queue at the times they had.} other {{count, plural, one {# post waits in this queue at the time it had.} other {# posts wait in this queue at the times they had.}}}}",
+      "action": "Move the waiting posts onto the new slots",
+      "confirmTitle": "Move the waiting posts onto the new slots?",
+      "confirmDescription": "Every post that waits in this queue moves onto its slots as they are now, in the order of their times: the first onto the first free slot, and so on. Posts moved by hand move too, and posts waiting for an approval keep waiting, at their new times. A post already on its slot stays where it is, and what the posts say and where they go do not change.",
+      "confirm": "Move the posts",
+      "moving": "Moving…",
+      "result": "{moved, plural, one {# post moved} other {# posts moved}}, {unchanged, number} unchanged, {remaining, number} remaining.",
+      "stopped": "{reason, select, planLimit {It stopped at a month the plan has no room in.} full {No slot is left in the next {days, number} days for the others.} other {The queue changed meanwhile: move them again.}}",
+      "failed": "The posts could not be moved. Try again."
+    }
   },
   "Inbox": {
     "open": "Inbox",
@@ -2983,7 +3101,7 @@
       "noComment": "No comment is left on the platform.",
       "openPost": "Open the post",
       "onPlatform": "View the post on the platform",
-      "ended": "{reason, select, window {Its comments are no longer read: the post is past the days Peal reads them for.} disconnected {Its comments are no longer read: its channel was disconnected.} unsupported {Its comments are no longer read: Peal reads none on this platform.} missing {Its comments are no longer read: the platform no longer shows the post.} other {Its comments are no longer read.}}"
+      "ended": "{reason, select, window {Its comments are no longer read: the post is past the days Peal reads them for.} disconnected {Its comments are no longer read: its channel was disconnected.} unsupported {Its comments are no longer read: Peal reads none on this platform.} missing {Its comments are no longer read: the platform no longer shows the post.} removed {Its comments are no longer read: the post was deleted from the platform from Peal.} other {Its comments are no longer read.}}"
     },
     "thread": {
       "title": "Comments",

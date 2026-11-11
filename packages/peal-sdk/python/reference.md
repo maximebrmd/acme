@@ -1513,7 +1513,7 @@ client.channels.enable(
 </details>
 
 ## posts
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L45-L84">drafts</a>(...) -> DraftPage</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L49-L88">drafts</a>(...) -> DraftPage</code></summary>
 <dl>
 <dd>
 
@@ -1602,7 +1602,7 @@ client.posts.drafts(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L86-L122">list</a>(...) -> typing.List[Post]</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L90-L126">list</a>(...) -> typing.List[Post]</code></summary>
 <dl>
 <dd>
 
@@ -1693,7 +1693,7 @@ client.posts.list(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L124-L204">create</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L128-L208">create</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -1792,7 +1792,7 @@ client.posts.create(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L206-L294">search</a>(...) -> PostPage</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L210-L302">search</a>(...) -> PostPage</code></summary>
 <dl>
 <dd>
 
@@ -1804,7 +1804,7 @@ client.posts.create(
 <dl>
 <dd>
 
-Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 </dd>
 </dl>
 </dd>
@@ -1925,6 +1925,14 @@ client.posts.search(
 <dl>
 <dd>
 
+**removed:** `typing.Optional[SearchPostsRequestRemoved]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **sort:** `typing.Optional[PostSort]` 
     
 </dd>
@@ -1969,7 +1977,7 @@ client.posts.search(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L296-L399">send</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L304-L407">send</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2149,7 +2157,7 @@ client.posts.send(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L401-L470">bulk</a>(...) -> BulkResult</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L409-L478">bulk</a>(...) -> BulkResult</code></summary>
 <dl>
 <dd>
 
@@ -2359,7 +2367,7 @@ client.posts.import_(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L519-L603">validate</a>(...) -> PostValidation</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L527-L611">validate</a>(...) -> PostValidation</code></summary>
 <dl>
 <dd>
 
@@ -2514,7 +2522,7 @@ client.posts.validate(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L605-L636">get</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L613-L644">get</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2596,7 +2604,7 @@ client.posts.get(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L638-L723">update</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L646-L731">update</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2704,7 +2712,7 @@ client.posts.update(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L725-L757">discard</a>(...)</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L733-L765">discard</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -2786,7 +2794,7 @@ client.posts.discard(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L759-L799">outcome</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L767-L807">outcome</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2876,7 +2884,7 @@ client.posts.outcome(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L801-L834">attempts</a>(...) -> typing.List[PublicationAttempt]</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L809-L842">attempts</a>(...) -> typing.List[PublicationAttempt]</code></summary>
 <dl>
 <dd>
 
@@ -2958,7 +2966,7 @@ client.posts.attempts(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L836-L877">tag</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L844-L885">tag</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3051,7 +3059,7 @@ client.posts.tag(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L879-L912">duplicate</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L887-L920">duplicate</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3133,7 +3141,7 @@ client.posts.duplicate(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L914-L965">schedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L922-L973">schedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3244,7 +3252,7 @@ client.posts.schedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L967-L1014">reschedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L975-L1022">reschedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3336,7 +3344,7 @@ client.posts.reschedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1016-L1061">enqueue</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1024-L1069">enqueue</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3434,7 +3442,7 @@ client.posts.enqueue(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1063-L1096">unschedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1071-L1104">unschedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3516,7 +3524,7 @@ client.posts.unschedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1098-L1139">repost</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1106-L1147">repost</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3607,7 +3615,7 @@ client.posts.repost(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1141-L1188">confirm</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1149-L1196">confirm</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3709,7 +3717,270 @@ client.posts.confirm(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1190-L1223">cancel</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1198-L1244">unpublish_target</a>(...) -> LivePostChange</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes the post from one channel's platform, for everyone: every part of a thread, the last first, so a deletion that stops midway leaves a shorter thread that still reads from its start. It cannot be undone from Peal. The request is accepted (202) and a job deletes it, one call at a time with the channel's other calls; a part the platform no longer has counts as deleted (`alreadyGone`), and a call that fails is tried again (as long as the platform asks to wait, and five more times while it cannot be reached), after which the change is `failed` with its `code` and asking again deletes the parts left. `wait` waits up to that many seconds (60 at most) for the change to end, and answers it as it then stands. Once done, the target keeps the status `published` with its `removedAt` (the month's count and the usage stay, as the post did go out), analytics stops reading it and keeps what it read, and the inbox stops reading its comments and keeps those it has. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted already, Peal has no id for a part of it, the platform does not let Peal delete it (the capabilities' `livePost` say so beforehand), another change of it is pending, the channel cannot be used, or a boost that is not over shows it. Webhooks hear `post.unpublished` or `post.unpublish_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.posts.unpublish_target(
+    workspace_id="workspaceId",
+    post_id="postId",
+    target_id="targetId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**target_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**wait:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1246-L1279">unpublish</a>(...) -> PostUnpublish</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (`changes`) and, beside them, why it could not be on the others (`refused`, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.posts.unpublish(
+    workspace_id="workspaceId",
+    post_id="postId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1281-L1314">changes</a>(...) -> LivePostChanges</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.posts.changes(
+    workspace_id="workspaceId",
+    post_id="postId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1316-L1349">cancel</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -6635,7 +6906,7 @@ client.lookups.run(
 </details>
 
 ## webhooks
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L38-L68">list</a>(...) -> typing.List[WebhookEndpoint]</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L40-L70">list</a>(...) -> typing.List[WebhookEndpoint]</code></summary>
 <dl>
 <dd>
 
@@ -6708,7 +6979,7 @@ client.webhooks.list(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L70-L136">create</a>(...) -> WebhookEndpointSecret</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L72-L142">create</a>(...) -> WebhookEndpointSecret</code></summary>
 <dl>
 <dd>
 
@@ -6720,7 +6991,7 @@ client.webhooks.list(
 <dl>
 <dd>
 
-Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
+Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. `headers` (5 at most) go with every delivery beside Peal's own, which they never replace, for a gateway in front of the receiver that wants a token: a name is an HTTP token, once whatever its case, neither `host`, `user-agent`, `cookie`, `expect`, `accept-encoding`, a connection's own, nor any `content-` or `webhook-` name; a value is visible ASCII on one line, 1024 characters at most. Values are write-only: the endpoint shows their names (`headerNames`), never them, and sends them only to the origin (scheme, host and port) of the `url` they were given with. The signature does not cover them. Needs webhook:manage.
 </dd>
 </dl>
 </dd>
@@ -6813,6 +7084,14 @@ client.webhooks.create(
 <dl>
 <dd>
 
+**headers:** `typing.Optional[typing.List[WebhookHeader]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **scope:** `typing.Optional[WebhookEndpointScope]` 
     
 </dd>
@@ -6841,7 +7120,7 @@ client.webhooks.create(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L138-L202">search_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L144-L208">search_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
 <dl>
 <dd>
 
@@ -6970,7 +7249,7 @@ client.webhooks.search_deliveries(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L204-L243">redeliver_many</a>(...) -> WebhookBulkRedelivery</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L210-L249">redeliver_many</a>(...) -> WebhookBulkRedelivery</code></summary>
 <dl>
 <dd>
 
@@ -7056,7 +7335,7 @@ client.webhooks.redeliver_many(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L245-L278">get</a>(...) -> WebhookEndpoint</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L251-L284">get</a>(...) -> WebhookEndpoint</code></summary>
 <dl>
 <dd>
 
@@ -7138,7 +7417,7 @@ client.webhooks.get(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L280-L312">delete</a>(...)</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L286-L318">delete</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -7220,7 +7499,7 @@ client.webhooks.delete(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L314-L379">update</a>(...) -> WebhookEndpoint</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L320-L389">update</a>(...) -> WebhookEndpoint</code></summary>
 <dl>
 <dd>
 
@@ -7232,7 +7511,7 @@ client.webhooks.delete(
 <dl>
 <dd>
 
-Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+Changes an endpoint's address, description, events, filters or headers, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). `headers` replaces every header it had, `[]` removing them all: a header given without `value` keeps the value it has under that name, as none is ever shown, and one it does not have needs a value. A value is sent only to the origin (scheme, host and port) it was given for: a new `url` on another origin, on an endpoint with headers, needs `headers` in the same request, each with its `value`, or `[]` (422 `WebhookHeaderValuesRequired`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
 </dd>
 </dl>
 </dd>
@@ -7322,6 +7601,14 @@ client.webhooks.update(
 <dl>
 <dd>
 
+**headers:** `typing.Optional[typing.List[WebhookHeaderChange]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **url:** `typing.Optional[str]` 
     
 </dd>
@@ -7350,7 +7637,7 @@ client.webhooks.update(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L381-L414">rotate_secret</a>(...) -> WebhookEndpointSecret</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L391-L424">rotate_secret</a>(...) -> WebhookEndpointSecret</code></summary>
 <dl>
 <dd>
 
@@ -7432,7 +7719,7 @@ client.webhooks.rotate_secret(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L416-L458">send_test</a>(...) -> WebhookDelivery</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L426-L468">send_test</a>(...) -> WebhookDelivery</code></summary>
 <dl>
 <dd>
 
@@ -7522,7 +7809,7 @@ client.webhooks.send_test(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L460-L517">list_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L470-L527">list_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
 <dl>
 <dd>
 
@@ -7636,7 +7923,7 @@ client.webhooks.list_deliveries(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L519-L560">redeliver</a>(...) -> WebhookDelivery</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L529-L570">redeliver</a>(...) -> WebhookDelivery</code></summary>
 <dl>
 <dd>
 
@@ -14110,7 +14397,7 @@ client.channel_sets.delete(
 </details>
 
 ## queues
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L31-L59">list</a>(...) -> typing.List[Queue]</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L32-L60">list</a>(...) -> typing.List[Queue]</code></summary>
 <dl>
 <dd>
 
@@ -14183,7 +14470,7 @@ client.queues.list(
 </dl>
 </details>
 
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L61-L129">create</a>(...) -> Queue</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L62-L130">create</a>(...) -> Queue</code></summary>
 <dl>
 <dd>
 
@@ -14272,7 +14559,7 @@ client.queues.create(
 </dl>
 </details>
 
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L131-L164">get</a>(...) -> Queue</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L132-L165">get</a>(...) -> Queue</code></summary>
 <dl>
 <dd>
 
@@ -14354,7 +14641,7 @@ client.queues.get(
 </dl>
 </details>
 
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L166-L239">update</a>(...) -> Queue</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L167-L240">update</a>(...) -> Queue</code></summary>
 <dl>
 <dd>
 
@@ -14452,7 +14739,7 @@ client.queues.update(
 </dl>
 </details>
 
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L241-L273">delete</a>(...)</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L242-L274">delete</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -14534,7 +14821,7 @@ client.queues.delete(
 </dl>
 </details>
 
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L275-L315">slots</a>(...) -> QueuePreview</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L276-L316">slots</a>(...) -> QueuePreview</code></summary>
 <dl>
 <dd>
 
@@ -14605,6 +14892,88 @@ client.queues.slots(
 <dd>
 
 **count:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L318-L351">reshuffle</a>(...) -> QueueReshuffle</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does (a new time, the month's room in the plan, and `post.scheduled` told for a scheduled post), but for approvals: a scheduled post goes through the approval policy as the caller's, and a post that waits for an approval keeps waiting, at its new time, whoever calls, under the request it had (`post.approval_requested` is told with the new time, and nobody is asked again to decide); moving it by hand is how a caller whose posts need no approval schedules it. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (`stoppedBy` `planLimit`), when no slot is left within 366 days (`full`), or when the queue was saved meanwhile (`changed`); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (`noSlots`) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.queues.reshuffle(
+    workspace_id="workspaceId",
+    queue_id="queueId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**queue_id:** `str` 
     
 </dd>
 </dl>

@@ -7,6 +7,7 @@ import {
   InvalidTimeZone,
   maxQueuePreview,
   maxQueuesPerWorkspace,
+  QueueHasNoRoom,
   QueueNameTaken,
   QueueNotFound,
   TooManyQueues,
@@ -17,6 +18,7 @@ import type {
   Queue,
   QueueDetails,
   QueuePreview,
+  QueueReshuffle,
   QueueSlot,
 } from "peal-contract";
 
@@ -29,7 +31,7 @@ import type { Studio } from "./studio.ts";
 /** What the queues take of the studio, which hands it over. */
 export interface StudioWorld {
   readonly allowed: (
-    permission: "post:read" | "post:update"
+    permission: "post:read" | "post:schedule" | "post:update"
   ) => Effect.Effect<unknown, Forbidden, CurrentMember>;
   readonly checkChannels: (
     channelIds: readonly string[]
@@ -349,6 +351,98 @@ export const studioQueuesOf = (world: StudioWorld) => {
                 : []
             )
           ),
+        // The queue's waiting posts onto its slots, in the order of
+        // their times, those publishing left where they are.
+        reshuffle: ({ params }) =>
+          Effect.gen(function* reshuffle() {
+            yield* world.allowed("post:schedule");
+
+            const queue = yield* findQueue(
+              studio,
+              params.workspaceId,
+              params.queueId
+            );
+
+            if (queue.slots.length === 0) {
+              return yield* new QueueHasNoRoom({
+                queueId: queue.id,
+                reason: "noSlots",
+              });
+            }
+
+            const { posts } = yield* Ref.get(studio.state);
+
+            const ours = posts.filter(
+              (post) =>
+                post.queueId === queue.id &&
+                post.schedule !== null &&
+                DateTime.isGreaterThan(post.schedule.at, world.now)
+            );
+
+            const held = new Set(
+              ours.flatMap((post) =>
+                post.status === "publishing" && post.schedule !== null
+                  ? [DateTime.toEpochMillis(post.schedule.at)]
+                  : []
+              )
+            );
+
+            const waiting = ours
+              .filter(
+                ({ status }) =>
+                  status === "scheduled" || status === "awaitingApproval"
+              )
+              .toSorted(
+                (left, right) =>
+                  DateTime.toEpochMillis(left.schedule?.at ?? world.now) -
+                    DateTime.toEpochMillis(right.schedule?.at ?? world.now) ||
+                  left.id.localeCompare(right.id)
+              );
+
+            const slots = slotsOf(
+              queue,
+              world.now,
+              waiting.length + held.size
+            ).filter((slot) => !held.has(DateTime.toEpochMillis(slot)));
+
+            const placed = new Map(
+              waiting.map((post, place) => [post.id, slots[place]] as const)
+            );
+
+            const moved = waiting.filter(
+              ({ id, schedule }) =>
+                schedule !== null &&
+                placed.get(id) !== undefined &&
+                !DateTime.Equivalence(
+                  schedule.at,
+                  placed.get(id) ?? schedule.at
+                )
+            );
+
+            yield* Ref.update(studio.state, (state) => ({
+              ...state,
+              posts: state.posts.map((post) => {
+                const to = placed.get(post.id);
+
+                return to === undefined || post.schedule === null
+                  ? post
+                  : { ...post, schedule: { ...post.schedule, at: to } };
+              }),
+            }));
+            yield* world.record(
+              studio,
+              `queue:reshuffle:${queue.id}:${String(moved.length)}`
+            );
+
+            const result: QueueReshuffle = {
+              moved: moved.length,
+              remaining: 0,
+              stoppedBy: null,
+              unchanged: waiting.length - moved.length,
+            };
+
+            return result;
+          }),
         slots: ({ params, query }) =>
           Effect.gen(function* slots() {
             yield* world.allowed("post:read");

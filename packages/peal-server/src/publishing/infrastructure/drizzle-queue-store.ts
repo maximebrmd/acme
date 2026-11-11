@@ -130,6 +130,39 @@ export const DrizzleQueueStore = Layer.effect(
           Effect.asVoid,
           Effect.withSpan("QueueStore.lock")
         ),
+      queuedFrom: (queueId, after) =>
+        db
+          .select({
+            id: posts.id,
+            scheduledAt: posts.scheduledAt,
+            status: posts.status,
+          })
+          .from(posts)
+          .where(
+            and(
+              eq(posts.queueId, queueId),
+              gt(posts.scheduledAt, DateTime.toDateUtc(after)),
+              inArray(posts.status, holding)
+            )
+          )
+          .orderBy(asc(posts.scheduledAt), asc(posts.id))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) =>
+              rows.flatMap(({ id, scheduledAt, status }) =>
+                scheduledAt === null
+                  ? []
+                  : [
+                      {
+                        at: DateTime.fromDateUnsafe(scheduledAt),
+                        id: PostIdSchema.make(id),
+                        publishing: status === "publishing",
+                      },
+                    ]
+              )
+            ),
+            Effect.withSpan("QueueStore.queuedFrom")
+          ),
       remove: (workspaceId, queueId) =>
         Effect.gen(function* remove() {
           // Its posts stay where they are, without it.

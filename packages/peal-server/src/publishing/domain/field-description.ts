@@ -3,14 +3,16 @@ import type { Schema, SchemaAST } from "effect";
 
 /**
  * What a field holds: a yes or no, a text, one of a few values (`choice`),
- * several texts (`textList`, as a video's tags), a whole number, or the
+ * several texts (`textList`, as a video's tags), a whole number, the
  * accounts a text names (`mentionList`: each a `name` and the account's
- * `urn`, as a lookup answers them).
+ * `urn`, as a lookup answers them), or the id of a file of the workspace's
+ * library (`media`, as a video's thumbnail).
  */
 export type FieldType =
   | "boolean"
   | "choice"
   | "integer"
+  | "media"
   | "mentionList"
   | "text"
   | "textList";
@@ -20,12 +22,19 @@ export type FieldType =
  * its rules use, so no figure is written twice.
  */
 export interface FieldNotes<Lookup extends string = string> {
+  /**
+   * The types of file a `media` field may name: noting them makes the
+   * field one.
+   */
+  readonly contentTypes?: readonly string[];
   /** The characters the field refuses anywhere in a text. */
   readonly forbiddenCharacters?: readonly string[];
   /** What the platform does when the field is left out. */
   readonly ifLeftOut?: boolean | number | string;
   /** The lookup that answers the values the field takes on an account. */
   readonly lookup?: Lookup;
+  /** The largest file a `media` field may name, in bytes. */
+  readonly maxByteSize?: number;
   /**
    * The longest text, in code points. For a `textList`, of all its texts
    * together, as the platform counts them.
@@ -169,11 +178,17 @@ export const describeFields = <Lookup extends string>(
         return undescribed;
       }
 
+      // A file of the library is named by its id, a text.
+      const named =
+        notes.contentTypes !== undefined && kind.type === "text"
+          ? ofType("media")
+          : kind;
+
       return {
         ...notes,
         name,
         required: options.required.includes(name),
-        ...kind,
+        ...named,
       };
     });
 

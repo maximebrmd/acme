@@ -20,6 +20,9 @@ export const NotificationPreferencesSchema = Schema.Struct({
     // Comments on posts, and approvals asked for and decided.
     postReview: Schema.Boolean,
     postUnconfirmed: Schema.Boolean,
+    // Deliveries to a webhook endpoint that fail for good, for those who
+    // manage webhooks: once a day per endpoint.
+    webhookFailing: Schema.Boolean,
   }),
   // How every post went, where the user may schedule posts, rather than
   // only the posts they wrote.
@@ -38,6 +41,7 @@ export const NotificationPreferencesChangeSchema = Schema.Struct({
       postPublished: Schema.optionalKey(Schema.Boolean),
       postReview: Schema.optionalKey(Schema.Boolean),
       postUnconfirmed: Schema.optionalKey(Schema.Boolean),
+      webhookFailing: Schema.optionalKey(Schema.Boolean),
     })
   ),
   everyPost: Schema.optionalKey(Schema.Boolean),

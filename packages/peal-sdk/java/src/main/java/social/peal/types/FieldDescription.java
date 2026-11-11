@@ -26,11 +26,15 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = FieldDescription.Builder.class)
 public final class FieldDescription {
+    private final List<String> contentTypes;
+
     private final List<String> forbiddenCharacters;
 
     private final Optional<FieldDefault> ifLeftOut;
 
     private final Optional<LookupName> lookup;
+
+    private final Optional<Long> maxByteSize;
 
     private final Optional<Integer> maxLength;
 
@@ -51,9 +55,11 @@ public final class FieldDescription {
     private final Map<String, Object> additionalProperties;
 
     private FieldDescription(
+            List<String> contentTypes,
             List<String> forbiddenCharacters,
             Optional<FieldDefault> ifLeftOut,
             Optional<LookupName> lookup,
+            Optional<Long> maxByteSize,
             Optional<Integer> maxLength,
             Optional<Integer> maximum,
             Optional<Integer> minimum,
@@ -63,9 +69,11 @@ public final class FieldDescription {
             FieldType type,
             List<String> values,
             Map<String, Object> additionalProperties) {
+        this.contentTypes = contentTypes;
         this.forbiddenCharacters = forbiddenCharacters;
         this.ifLeftOut = ifLeftOut;
         this.lookup = lookup;
+        this.maxByteSize = maxByteSize;
         this.maxLength = maxLength;
         this.maximum = maximum;
         this.minimum = minimum;
@@ -75,6 +83,11 @@ public final class FieldDescription {
         this.type = type;
         this.values = values;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("contentTypes")
+    public List<String> getContentTypes() {
+        return contentTypes;
     }
 
     @JsonProperty("forbiddenCharacters")
@@ -96,6 +109,14 @@ public final class FieldDescription {
             return Optional.empty();
         }
         return lookup;
+    }
+
+    @JsonIgnore
+    public Optional<Long> getMaxByteSize() {
+        if (maxByteSize == null) {
+            return Optional.empty();
+        }
+        return maxByteSize;
     }
 
     @JsonIgnore
@@ -163,6 +184,12 @@ public final class FieldDescription {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("maxByteSize")
+    private Optional<Long> _getMaxByteSize() {
+        return maxByteSize;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("maxLength")
     private Optional<Integer> _getMaxLength() {
         return maxLength;
@@ -198,9 +225,11 @@ public final class FieldDescription {
     }
 
     private boolean equalTo(FieldDescription other) {
-        return forbiddenCharacters.equals(other.forbiddenCharacters)
+        return contentTypes.equals(other.contentTypes)
+                && forbiddenCharacters.equals(other.forbiddenCharacters)
                 && ifLeftOut.equals(other.ifLeftOut)
                 && lookup.equals(other.lookup)
+                && maxByteSize.equals(other.maxByteSize)
                 && maxLength.equals(other.maxLength)
                 && maximum.equals(other.maximum)
                 && minimum.equals(other.minimum)
@@ -214,9 +243,11 @@ public final class FieldDescription {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
+                this.contentTypes,
                 this.forbiddenCharacters,
                 this.ifLeftOut,
                 this.lookup,
+                this.maxByteSize,
                 this.maxLength,
                 this.maximum,
                 this.minimum,
@@ -257,6 +288,12 @@ public final class FieldDescription {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage contentTypes(List<String> contentTypes);
+
+        _FinalStage addContentTypes(String contentTypes);
+
+        _FinalStage addAllContentTypes(List<String> contentTypes);
+
         _FinalStage forbiddenCharacters(List<String> forbiddenCharacters);
 
         _FinalStage addForbiddenCharacters(String forbiddenCharacters);
@@ -274,6 +311,12 @@ public final class FieldDescription {
         _FinalStage lookup(LookupName lookup);
 
         _FinalStage lookup(Nullable<LookupName> lookup);
+
+        _FinalStage maxByteSize(Optional<Long> maxByteSize);
+
+        _FinalStage maxByteSize(Long maxByteSize);
+
+        _FinalStage maxByteSize(Nullable<Long> maxByteSize);
 
         _FinalStage maxLength(Optional<Integer> maxLength);
 
@@ -324,11 +367,15 @@ public final class FieldDescription {
 
         private Optional<Integer> maxLength = Optional.empty();
 
+        private Optional<Long> maxByteSize = Optional.empty();
+
         private Optional<LookupName> lookup = Optional.empty();
 
         private Optional<FieldDefault> ifLeftOut = Optional.empty();
 
         private List<String> forbiddenCharacters = new ArrayList<>();
+
+        private List<String> contentTypes = new ArrayList<>();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -336,9 +383,11 @@ public final class FieldDescription {
 
         @java.lang.Override
         public Builder from(FieldDescription other) {
+            contentTypes(other.getContentTypes());
             forbiddenCharacters(other.getForbiddenCharacters());
             ifLeftOut(other.getIfLeftOut());
             lookup(other.getLookup());
+            maxByteSize(other.getMaxByteSize());
             maxLength(other.getMaxLength());
             maximum(other.getMaximum());
             minimum(other.getMinimum());
@@ -496,6 +545,31 @@ public final class FieldDescription {
         }
 
         @java.lang.Override
+        public _FinalStage maxByteSize(Nullable<Long> maxByteSize) {
+            if (maxByteSize.isNull()) {
+                this.maxByteSize = null;
+            } else if (maxByteSize.isEmpty()) {
+                this.maxByteSize = Optional.empty();
+            } else {
+                this.maxByteSize = Optional.of(maxByteSize.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage maxByteSize(Long maxByteSize) {
+            this.maxByteSize = Optional.ofNullable(maxByteSize);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "maxByteSize", nulls = Nulls.SKIP)
+        public _FinalStage maxByteSize(Optional<Long> maxByteSize) {
+            this.maxByteSize = maxByteSize;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage lookup(Nullable<LookupName> lookup) {
             if (lookup.isNull()) {
                 this.lookup = null;
@@ -570,11 +644,37 @@ public final class FieldDescription {
         }
 
         @java.lang.Override
+        public _FinalStage addAllContentTypes(List<String> contentTypes) {
+            if (contentTypes != null) {
+                this.contentTypes.addAll(contentTypes);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addContentTypes(String contentTypes) {
+            this.contentTypes.add(contentTypes);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "contentTypes", nulls = Nulls.SKIP)
+        public _FinalStage contentTypes(List<String> contentTypes) {
+            this.contentTypes.clear();
+            if (contentTypes != null) {
+                this.contentTypes.addAll(contentTypes);
+            }
+            return this;
+        }
+
+        @java.lang.Override
         public FieldDescription build() {
             return new FieldDescription(
+                    contentTypes,
                     forbiddenCharacters,
                     ifLeftOut,
                     lookup,
+                    maxByteSize,
                     maxLength,
                     maximum,
                     minimum,
@@ -588,9 +688,11 @@ public final class FieldDescription {
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("forbiddenCharacters")
+            if (key.equalsIgnoreCase("contentTypes")
+                    || key.equalsIgnoreCase("forbiddenCharacters")
                     || key.equalsIgnoreCase("ifLeftOut")
                     || key.equalsIgnoreCase("lookup")
+                    || key.equalsIgnoreCase("maxByteSize")
                     || key.equalsIgnoreCase("maxLength")
                     || key.equalsIgnoreCase("maximum")
                     || key.equalsIgnoreCase("minimum")

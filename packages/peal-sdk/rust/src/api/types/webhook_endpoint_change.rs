@@ -13,6 +13,8 @@ pub struct WebhookEndpointChange {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_types: Option<Vec<SubscribableWebhookEventType>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub headers: Option<Vec<WebhookHeaderChange>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
     #[serde(rename = "workspaceIds")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -32,6 +34,7 @@ pub struct WebhookEndpointChangeBuilder {
     description: Option<String>,
     enabled: Option<bool>,
     event_types: Option<Vec<SubscribableWebhookEventType>>,
+    headers: Option<Vec<WebhookHeaderChange>>,
     url: Option<String>,
     workspace_ids: Option<Vec<String>>,
 }
@@ -57,6 +60,11 @@ impl WebhookEndpointChangeBuilder {
         self
     }
 
+    pub fn headers(mut self, value: Vec<WebhookHeaderChange>) -> Self {
+        self.headers = Some(value);
+        self
+    }
+
     pub fn url(mut self, value: impl Into<String>) -> Self {
         self.url = Some(value.into());
         self
@@ -74,6 +82,7 @@ impl WebhookEndpointChangeBuilder {
             description: self.description,
             enabled: self.enabled,
             event_types: self.event_types,
+            headers: self.headers,
             url: self.url,
             workspace_ids: self.workspace_ids,
         })

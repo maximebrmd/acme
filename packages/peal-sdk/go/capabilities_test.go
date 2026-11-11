@@ -1525,6 +1525,283 @@ func TestSettersMarkExplicitFollowUpCapabilities(t *testing.T) {
 
 }
 
+func TestSettersLivePostCapabilities(t *testing.T) {
+	t.Run("SetEdit", func(t *testing.T) {
+		obj := &LivePostCapabilities{}
+		var fernTestValueEdit bool
+		obj.SetEdit(fernTestValueEdit)
+		assert.Equal(t, fernTestValueEdit, obj.Edit)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetEditBlockedBy", func(t *testing.T) {
+		obj := &LivePostCapabilities{}
+		var fernTestValueEditBlockedBy *LivePostBlocker
+		obj.SetEditBlockedBy(fernTestValueEditBlockedBy)
+		assert.Equal(t, fernTestValueEditBlockedBy, obj.EditBlockedBy)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetUnpublish", func(t *testing.T) {
+		obj := &LivePostCapabilities{}
+		var fernTestValueUnpublish bool
+		obj.SetUnpublish(fernTestValueUnpublish)
+		assert.Equal(t, fernTestValueUnpublish, obj.Unpublish)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetUnpublishBlockedBy", func(t *testing.T) {
+		obj := &LivePostCapabilities{}
+		var fernTestValueUnpublishBlockedBy *LivePostBlocker
+		obj.SetUnpublishBlockedBy(fernTestValueUnpublishBlockedBy)
+		assert.Equal(t, fernTestValueUnpublishBlockedBy, obj.UnpublishBlockedBy)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersLivePostCapabilities(t *testing.T) {
+	t.Run("GetEdit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+		var expected bool
+		obj.Edit = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetEdit(), "getter should return the property value")
+	})
+
+	t.Run("GetEdit_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LivePostCapabilities
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetEdit() // Should return zero value
+	})
+
+	t.Run("GetEditBlockedBy", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+		var expected *LivePostBlocker
+		obj.EditBlockedBy = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetEditBlockedBy(), "getter should return the property value")
+	})
+
+	t.Run("GetEditBlockedBy_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+		obj.EditBlockedBy = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetEditBlockedBy(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetEditBlockedBy_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LivePostCapabilities
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetEditBlockedBy() // Should return zero value
+	})
+
+	t.Run("GetUnpublish", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+		var expected bool
+		obj.Unpublish = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetUnpublish(), "getter should return the property value")
+	})
+
+	t.Run("GetUnpublish_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LivePostCapabilities
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetUnpublish() // Should return zero value
+	})
+
+	t.Run("GetUnpublishBlockedBy", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+		var expected *LivePostBlocker
+		obj.UnpublishBlockedBy = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetUnpublishBlockedBy(), "getter should return the property value")
+	})
+
+	t.Run("GetUnpublishBlockedBy_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+		obj.UnpublishBlockedBy = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetUnpublishBlockedBy(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetUnpublishBlockedBy_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LivePostCapabilities
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetUnpublishBlockedBy() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitLivePostCapabilities(t *testing.T) {
+	t.Run("SetEdit_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+		var fernTestValueEdit bool
+
+		// Act
+		obj.SetEdit(fernTestValueEdit)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetEditBlockedBy_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+		var fernTestValueEditBlockedBy *LivePostBlocker
+
+		// Act
+		obj.SetEditBlockedBy(fernTestValueEditBlockedBy)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetUnpublish_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+		var fernTestValueUnpublish bool
+
+		// Act
+		obj.SetUnpublish(fernTestValueUnpublish)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetUnpublishBlockedBy_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+		var fernTestValueUnpublishBlockedBy *LivePostBlocker
+
+		// Act
+		obj.SetUnpublishBlockedBy(fernTestValueUnpublishBlockedBy)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
 func TestSettersMediaCapabilities(t *testing.T) {
 	t.Run("SetAltText", func(t *testing.T) {
 		obj := &MediaCapabilities{}
@@ -3865,6 +4142,14 @@ func TestSettersPlatformCapabilities(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetLivePost", func(t *testing.T) {
+		obj := &PlatformCapabilities{}
+		var fernTestValueLivePost *LivePostCapabilities
+		obj.SetLivePost(fernTestValueLivePost)
+		assert.Equal(t, fernTestValueLivePost, obj.LivePost)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetLookups", func(t *testing.T) {
 		obj := &PlatformCapabilities{}
 		var fernTestValueLookups []*LookupDescription
@@ -3980,6 +4265,39 @@ func TestGettersPlatformCapabilities(t *testing.T) {
 			}
 		}()
 		_ = obj.GetFollowUps() // Should return zero value
+	})
+
+	t.Run("GetLivePost", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilities{}
+		var expected *LivePostCapabilities
+		obj.LivePost = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetLivePost(), "getter should return the property value")
+	})
+
+	t.Run("GetLivePost_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilities{}
+		obj.LivePost = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetLivePost(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetLivePost_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PlatformCapabilities
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetLivePost() // Should return zero value
 	})
 
 	t.Run("GetLookups", func(t *testing.T) {
@@ -4202,6 +4520,37 @@ func TestSettersMarkExplicitPlatformCapabilities(t *testing.T) {
 
 		// Act
 		obj.SetFollowUps(fernTestValueFollowUps)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetLivePost_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilities{}
+		var fernTestValueLivePost *LivePostCapabilities
+
+		// Act
+		obj.SetLivePost(fernTestValueLivePost)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -5613,6 +5962,39 @@ func TestJSONMarshalingFollowUpCapabilities(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingLivePostCapabilities(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LivePostCapabilities{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled LivePostCapabilities
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj LivePostCapabilities
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj LivePostCapabilities
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingMediaCapabilities(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -6440,6 +6822,22 @@ func TestStringFollowUpCapabilities(t *testing.T) {
 	})
 }
 
+func TestStringLivePostCapabilities(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &LivePostCapabilities{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LivePostCapabilities
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
 func TestStringMediaCapabilities(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -6704,6 +7102,42 @@ func TestEnumFollowUpCapabilitiesKind(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewFollowUpCapabilitiesKindFromString("thread")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumLivePostBlocker(t *testing.T) {
+	t.Run("NewFromString_noApi", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLivePostBlockerFromString("noApi")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LivePostBlocker("noApi"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_permission", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLivePostBlockerFromString("permission")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LivePostBlocker("permission"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_unverified", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLivePostBlockerFromString("unverified")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LivePostBlocker("unverified"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewLivePostBlockerFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewLivePostBlockerFromString("noApi")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)
@@ -7057,6 +7491,29 @@ func TestExtraPropertiesFollowUpCapabilities(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *FollowUpCapabilities
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesLivePostCapabilities(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &LivePostCapabilities{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LivePostCapabilities
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

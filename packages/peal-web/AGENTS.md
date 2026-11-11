@@ -117,7 +117,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `#posts/target-options.ts` describes for each selected channel's platform
   (text, number, tags, choice, yes or no, toggle, and `lookup`, a choice
   among what a lookup answers for the account, shown `under` another once
-  that one is chosen; `initial`, `inverted` and `within` for TikTok's
+  that one is chosen; `media`, a file of the library by its id, picked
+  with `MediaPicker` among the `contentTypes` and size it takes;
+  `initial`, `inverted` and `within` for TikTok's
   boxes), turns them into the contract's `TargetOptions` with
   Schema, and shows each `option*` violation under its field. `optionsOf`
   checks each field filled in against the contract alone and answers what
@@ -136,10 +138,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   the disclosure's label, and TikTok's consent line, as its content sharing
   guidelines require. A field shown once another holds anything (X's
   sharing with followers, once a community is written) has
-  `shownWith: { filled: true }`. The counter takes the channel's options
-  (`fitOn`'s fourth argument), as a Mastodon content warning counts with
-  the text. On a Bluesky channel, `BlueskyChannelOptions` reads the
-  channel's capabilities (`channelCapabilities`) and closes each gate its
+  `shownWith: { filled: true }`. A field for some media only has
+  `shownFor` (`video`, `photos`, or `reel`: one video alone), read from
+  the attachments' kinds (`mediaKindsOf`, passed to `isShown`, `optionsOf`
+  and `channelOptionsOf`; every field shows while one is being read): like
+  one hidden by `shownWith`, it is not sent. The counter takes the
+  channel's options (`fitOn`'s fourth argument), as a Mastodon content
+  warning counts with the text. On a Bluesky channel,
+  `BlueskyChannelOptions` reads the channel's capabilities
+  (`channelCapabilities`) and closes each gate its
   account must be reconnected to set (`optionNeedsReconnect`,
   `#posts/bluesky-account.ts`), with the line saying so; a gate the post
   holds stays, to be taken off. On a Pinterest channel, `PinterestChannelOptions`
@@ -157,7 +164,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Queues have a settings page too (`…/settings/queues`, views in
   `components/queues/queue-views.tsx`, state in `queues-settings.tsx`,
   atoms in `#queues/atoms.ts`), with each queue's next slots on its own
-  clock. The composer's schedule section (`SchedulePlacementFields`)
+  clock. A save that changed a queue's slots or zone (`timetableChanged`)
+  offers, to members with post:schedule and while posts wait in it,
+  `QueueReshuffle` (`queues.reshuffle`, after a confirmation that says
+  posts moved by hand move too; its view `QueueReshuffleView`): saving
+  alone moves no post. The composer's schedule section (`SchedulePlacementFields`)
   chooses a time or a queue (`QueueChoice`, its view `QueueChoiceView`,
   the default preselected), and puts the saved draft or the scheduled post
   on the queue with `posts.enqueue`; the calendar marks queued posts and
@@ -330,6 +341,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `Idempotency-Key` made when the review opened: never make one per
   click. Explain every refusal with `adsErrorOf` and `useAdsErrorLines`:
   a new contract error gets its words in `Ads.errors`.
+- `PostDetail` offers **Unpublish** on a published channel to members with
+  post:publish (`components/posts/live/`: `LivePostActions` reads the
+  post's changes and the platforms' capabilities, `LivePostView` shows
+  each state of `liveStateOf`, `#posts/live-post.ts`), behind a
+  confirmation that names the channel and says it cannot be undone;
+  `TargetView` shows when a channel was removed and strikes its address
+  through, and the calendar dims a post removed from every channel it went
+  out on (`isRemovedEverywhere`). Strings are in `Posts.Live`.
 - `PostPaid` (ads:read) shows a post's boosts and `PaidSectionView`'s two
   columns, organic and paid: never add them up. Pause and stop take
   ads:spend or ads:manage, resume ads:spend (`controlsOf`); stopping asks
@@ -343,5 +362,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   always sends `channelIds`, an empty list hearing every channel), a status
   and event filter on each log, a **Failed** tab across endpoints
   (`searchPage`), "Send all failed again" naming how many and the hour's
-  budget, and a test event type (a sample). Every string is in the
-  `Webhooks` namespace, en and fr.
+  budget, and a test event type (a sample). Headers are rows (`HeaderRow`):
+  a saved one shows its name and its value as "set", never the value, and
+  keeps it unless typed again; an edit sends `headers` only when a row
+  changed, the whole list, a saved row without a value by its name alone
+  (the server keeps its value). Values are typed in password fields. Every
+  string is in the `Webhooks` namespace, en and fr.

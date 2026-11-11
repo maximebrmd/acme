@@ -92,7 +92,15 @@ const decodeAccountId = Schema.decodeUnknownOption(AdAccountIdSchema);
 const decodeBoostId = Schema.decodeUnknownOption(BoostIdSchema);
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
 
-const boostPlatforms: ReadonlySet<string> = new Set(["facebook", "instagram"]);
+/**
+ * The platforms Peal boosts posts on. Publishing deletes on none of them,
+ * as its boost hold takes no lock a boost shares: see the publishing
+ * guide before one joins `livePostSupport`.
+ */
+export const boostPlatforms: ReadonlySet<string> = new Set([
+  "facebook",
+  "instagram",
+]);
 
 // Instagram accounts connected through Instagram Login cannot run ads:
 // only those reached through their Page can.

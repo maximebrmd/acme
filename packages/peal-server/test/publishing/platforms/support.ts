@@ -13,6 +13,7 @@ import {
 import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
+import { LivePostClients } from "#publishing/application/live-post-clients.ts";
 import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
 import type { PublishableMedia } from "#publishing/application/media-for-publishing.ts";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
@@ -31,6 +32,8 @@ import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { blueskyClient } from "#publishing/infrastructure/platforms/bluesky/bluesky-client.ts";
 import { googleBusinessClient } from "#publishing/infrastructure/platforms/google-business/google-business-client.ts";
 import { linkedinClient } from "#publishing/infrastructure/platforms/linkedin/linkedin-client.ts";
+import { livePostClientsWith } from "#publishing/infrastructure/platforms/live-post-clients-live.ts";
+import type { LivePostSettings } from "#publishing/infrastructure/platforms/live-post-clients-live.ts";
 import { mastodonClient } from "#publishing/infrastructure/platforms/mastodon/mastodon-client.ts";
 import { facebookClient } from "#publishing/infrastructure/platforms/meta/facebook-client.ts";
 import { instagramClient } from "#publishing/infrastructure/platforms/meta/instagram-client.ts";
@@ -605,8 +608,17 @@ export const uploadLedgerOf = (ledger: UploadLedger) =>
               byteSize: session.byteSize,
               finalPartSent: false,
               sessionUrl: Option.some(session.sessionUrl),
+              thumbnailSet: false,
               videoId: Option.none(),
             });
+          }),
+        thumbnailSet: (key) =>
+          Effect.sync(() => {
+            const found = ledger.sessions.get(key);
+
+            if (found !== undefined) {
+              ledger.sessions.set(key, { ...found, thumbnailSet: true });
+            }
           }),
       })
     ),
@@ -646,6 +658,7 @@ export const youtubeClientWith = Effect.fn("test.youtubeClient")(
   function* youtubeClientWith(options: {
     readonly api: string;
     readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly dailyThumbnails?: number;
     readonly dailyUploads?: number;
     readonly files?: readonly TestFile[];
     readonly ledger: UploadLedger;
@@ -656,6 +669,7 @@ export const youtubeClientWith = Effect.fn("test.youtubeClient")(
       api,
       apiUrl: new URL(options.api),
       chunkSize: 256 * 1024,
+      dailyThumbnails: options.dailyThumbnails ?? 100,
       dailyUploads: options.dailyUploads ?? 100,
       timing: testTiming,
       uploads: api,
@@ -698,4 +712,41 @@ export const pinterestClientWith = Effect.fn("test.pinterestClient")(
       )
     );
   }
+);
+
+/**
+ * The clients that delete posts, with the fakes as the platforms, over
+ * plain HTTP, with the credentials given.
+ */
+export const liveClientsOn = (options: {
+  readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+  readonly platforms: Partial<Omit<LivePostSettings, "mastodonScheme">>;
+}) =>
+  LivePostClients.pipe(
+    Effect.provide(
+      livePostClientsWith({
+        googleBusinessApi:
+          options.platforms.googleBusinessApi ?? new URL("http://127.0.0.1:9"),
+        mastodonScheme: "http:",
+        pinterestApi:
+          options.platforms.pinterestApi ?? new URL("http://127.0.0.1:9"),
+        xApi: options.platforms.xApi ?? new URL("http://127.0.0.1:9"),
+      }).pipe(
+        Layer.provide(
+          Layer.mergeAll(
+            HttpTest,
+            options.credentials,
+            SecureRandom.layerWebCrypto,
+            Digest.layerWebCrypto
+          )
+        )
+      )
+    )
+  );
+
+/** What the registry of the clients that delete posts is built with. */
+export const LiveRegistryTest = Layer.mergeAll(
+  HttpTest,
+  SecureRandom.layerWebCrypto,
+  Digest.layerWebCrypto
 );

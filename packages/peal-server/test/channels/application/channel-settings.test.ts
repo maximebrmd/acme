@@ -1,6 +1,7 @@
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Option } from "effect";
 
+import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ChannelNotFound } from "#channels/application/channel-not-found.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ChannelSettings } from "#channels/application/channel-settings.ts";
@@ -19,6 +20,7 @@ import {
   later,
   syntheticCredentials,
 } from "#test/channels/support.ts";
+import { TransactionsTest } from "#test/notifications/support.ts";
 
 // What a workspace decides about a channel it keeps (its name, whether it
 // is on), and the list it finds its channels in.
@@ -27,7 +29,14 @@ const UseCasesTest = Layer.mergeAll(
   ChannelSettings.layer,
   ListChannels.layer
 ).pipe(
-  Layer.provideMerge(Layer.mergeAll(DrizzleChannelRepository, SqlChannelLocks)),
+  Layer.provideMerge(
+    Layer.mergeAll(
+      ChannelEvents.none,
+      DrizzleChannelRepository,
+      SqlChannelLocks,
+      TransactionsTest
+    )
+  ),
   Layer.provideMerge(DatabaseTest)
 );
 

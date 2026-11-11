@@ -760,6 +760,88 @@ func TestPostsConfirmWithWireMock(
 	VerifyRequestCount(t, "TestPostsConfirmWithWireMock", "POST", "/api/workspaces/workspaceId/posts/postId/targets/targetId/confirm", nil, 1)
 }
 
+func TestPostsUnpublishTargetWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.UnpublishTargetPostsRequest{
+		WorkspaceID: "workspaceId",
+		PostID:      "postId",
+		TargetID:    "targetId",
+	}
+	_, invocationErr := client.Posts.UnpublishTarget(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsUnpublishTargetWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsUnpublishTargetWithWireMock", "POST", "/api/workspaces/workspaceId/posts/postId/targets/targetId/unpublish", nil, 1)
+}
+
+func TestPostsUnpublishWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.UnpublishPostsRequest{
+		WorkspaceID: "workspaceId",
+		PostID:      "postId",
+	}
+	_, invocationErr := client.Posts.Unpublish(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsUnpublishWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsUnpublishWithWireMock", "POST", "/api/workspaces/workspaceId/posts/postId/unpublish", nil, 1)
+}
+
+func TestPostsChangesWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.ChangesPostsRequest{
+		WorkspaceID: "workspaceId",
+		PostID:      "postId",
+	}
+	_, invocationErr := client.Posts.Changes(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsChangesWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsChangesWithWireMock", "GET", "/api/workspaces/workspaceId/posts/postId/changes", nil, 1)
+}
+
 func TestPostsCancelWithWireMock(
 	t *testing.T,
 ) {

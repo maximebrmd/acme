@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import social.peal.core.ObjectMappers;
+import social.peal.resources.posts.types.SearchPostsRequestRemoved;
 import social.peal.types.Platform;
 import social.peal.types.PostOriginVia;
 import social.peal.types.PostOutcome;
@@ -43,6 +44,8 @@ public final class SearchPostsRequest {
 
     private final Optional<String> queueId;
 
+    private final Optional<SearchPostsRequestRemoved> removed;
+
     private final Optional<PostSort> sort;
 
     private final Optional<PostStatus> status;
@@ -63,6 +66,7 @@ public final class SearchPostsRequest {
             Optional<PostOutcome> outcome,
             Optional<Platform> platform,
             Optional<String> queueId,
+            Optional<SearchPostsRequestRemoved> removed,
             Optional<PostSort> sort,
             Optional<PostStatus> status,
             Optional<String> tagId,
@@ -77,6 +81,7 @@ public final class SearchPostsRequest {
         this.outcome = outcome;
         this.platform = platform;
         this.queueId = queueId;
+        this.removed = removed;
         this.sort = sort;
         this.status = status;
         this.tagId = tagId;
@@ -129,6 +134,11 @@ public final class SearchPostsRequest {
         return queueId;
     }
 
+    @JsonProperty("removed")
+    public Optional<SearchPostsRequestRemoved> getRemoved() {
+        return removed;
+    }
+
     @JsonProperty("sort")
     public Optional<PostSort> getSort() {
         return sort;
@@ -170,6 +180,7 @@ public final class SearchPostsRequest {
                 && outcome.equals(other.outcome)
                 && platform.equals(other.platform)
                 && queueId.equals(other.queueId)
+                && removed.equals(other.removed)
                 && sort.equals(other.sort)
                 && status.equals(other.status)
                 && tagId.equals(other.tagId)
@@ -188,6 +199,7 @@ public final class SearchPostsRequest {
                 this.outcome,
                 this.platform,
                 this.queueId,
+                this.removed,
                 this.sort,
                 this.status,
                 this.tagId,
@@ -223,6 +235,8 @@ public final class SearchPostsRequest {
 
         private Optional<String> queueId = Optional.empty();
 
+        private Optional<SearchPostsRequestRemoved> removed = Optional.empty();
+
         private Optional<PostSort> sort = Optional.empty();
 
         private Optional<PostStatus> status = Optional.empty();
@@ -245,6 +259,7 @@ public final class SearchPostsRequest {
             outcome(other.getOutcome());
             platform(other.getPlatform());
             queueId(other.getQueueId());
+            removed(other.getRemoved());
             sort(other.getSort());
             status(other.getStatus());
             tagId(other.getTagId());
@@ -351,6 +366,17 @@ public final class SearchPostsRequest {
             return this;
         }
 
+        @JsonSetter(value = "removed", nulls = Nulls.SKIP)
+        public Builder removed(Optional<SearchPostsRequestRemoved> removed) {
+            this.removed = removed;
+            return this;
+        }
+
+        public Builder removed(SearchPostsRequestRemoved removed) {
+            this.removed = Optional.ofNullable(removed);
+            return this;
+        }
+
         @JsonSetter(value = "sort", nulls = Nulls.SKIP)
         public Builder sort(Optional<PostSort> sort) {
             this.sort = sort;
@@ -406,6 +432,7 @@ public final class SearchPostsRequest {
                     outcome,
                     platform,
                     queueId,
+                    removed,
                     sort,
                     status,
                     tagId,
@@ -424,6 +451,7 @@ public final class SearchPostsRequest {
                     || key.equalsIgnoreCase("outcome")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("queueId")
+                    || key.equalsIgnoreCase("removed")
                     || key.equalsIgnoreCase("sort")
                     || key.equalsIgnoreCase("status")
                     || key.equalsIgnoreCase("tagId")

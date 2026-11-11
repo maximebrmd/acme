@@ -16,6 +16,7 @@ export interface NewWebhookEndpoint {
     description?: string;
     enabled?: boolean;
     eventTypes: Peal.SubscribableWebhookEventType[];
+    headers?: Peal.WebhookHeader[];
     scope?: Peal.WebhookEndpointScope;
     url: string;
     workspaceIds?: string[];

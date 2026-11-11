@@ -42,6 +42,8 @@ public final class WebhookEndpoint {
 
     private final Optional<String> failingSince;
 
+    private final List<String> headerNames;
+
     private final String id;
 
     private final Optional<String> previousSecretExpiresAt;
@@ -65,6 +67,7 @@ public final class WebhookEndpoint {
             boolean enabled,
             List<SubscribableWebhookEventType> eventTypes,
             Optional<String> failingSince,
+            List<String> headerNames,
             String id,
             Optional<String> previousSecretExpiresAt,
             WebhookEndpointScope scope,
@@ -80,6 +83,7 @@ public final class WebhookEndpoint {
         this.enabled = enabled;
         this.eventTypes = eventTypes;
         this.failingSince = failingSince;
+        this.headerNames = headerNames;
         this.id = id;
         this.previousSecretExpiresAt = previousSecretExpiresAt;
         this.scope = scope;
@@ -136,6 +140,11 @@ public final class WebhookEndpoint {
             return Optional.empty();
         }
         return failingSince;
+    }
+
+    @JsonProperty("headerNames")
+    public List<String> getHeaderNames() {
+        return headerNames;
     }
 
     @JsonProperty("id")
@@ -215,6 +224,7 @@ public final class WebhookEndpoint {
                 && enabled == other.enabled
                 && eventTypes.equals(other.eventTypes)
                 && failingSince.equals(other.failingSince)
+                && headerNames.equals(other.headerNames)
                 && id.equals(other.id)
                 && previousSecretExpiresAt.equals(other.previousSecretExpiresAt)
                 && scope.equals(other.scope)
@@ -234,6 +244,7 @@ public final class WebhookEndpoint {
                 this.enabled,
                 this.eventTypes,
                 this.failingSince,
+                this.headerNames,
                 this.id,
                 this.previousSecretExpiresAt,
                 this.scope,
@@ -318,6 +329,12 @@ public final class WebhookEndpoint {
 
         _FinalStage failingSince(Nullable<String> failingSince);
 
+        _FinalStage headerNames(List<String> headerNames);
+
+        _FinalStage addHeaderNames(String headerNames);
+
+        _FinalStage addAllHeaderNames(List<String> headerNames);
+
         _FinalStage previousSecretExpiresAt(Optional<String> previousSecretExpiresAt);
 
         _FinalStage previousSecretExpiresAt(String previousSecretExpiresAt);
@@ -359,6 +376,8 @@ public final class WebhookEndpoint {
 
         private Optional<String> previousSecretExpiresAt = Optional.empty();
 
+        private List<String> headerNames = new ArrayList<>();
+
         private Optional<String> failingSince = Optional.empty();
 
         private List<SubscribableWebhookEventType> eventTypes = new ArrayList<>();
@@ -383,6 +402,7 @@ public final class WebhookEndpoint {
             enabled(other.getEnabled());
             eventTypes(other.getEventTypes());
             failingSince(other.getFailingSince());
+            headerNames(other.getHeaderNames());
             id(other.getId());
             previousSecretExpiresAt(other.getPreviousSecretExpiresAt());
             scope(other.getScope());
@@ -487,6 +507,30 @@ public final class WebhookEndpoint {
         @JsonSetter(value = "previousSecretExpiresAt", nulls = Nulls.SKIP)
         public _FinalStage previousSecretExpiresAt(Optional<String> previousSecretExpiresAt) {
             this.previousSecretExpiresAt = previousSecretExpiresAt;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addAllHeaderNames(List<String> headerNames) {
+            if (headerNames != null) {
+                this.headerNames.addAll(headerNames);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addHeaderNames(String headerNames) {
+            this.headerNames.add(headerNames);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "headerNames", nulls = Nulls.SKIP)
+        public _FinalStage headerNames(List<String> headerNames) {
+            this.headerNames.clear();
+            if (headerNames != null) {
+                this.headerNames.addAll(headerNames);
+            }
             return this;
         }
 
@@ -624,6 +668,7 @@ public final class WebhookEndpoint {
                     enabled,
                     eventTypes,
                     failingSince,
+                    headerNames,
                     id,
                     previousSecretExpiresAt,
                     scope,
@@ -643,6 +688,7 @@ public final class WebhookEndpoint {
                     || key.equalsIgnoreCase("enabled")
                     || key.equalsIgnoreCase("eventTypes")
                     || key.equalsIgnoreCase("failingSince")
+                    || key.equalsIgnoreCase("headerNames")
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("previousSecretExpiresAt")
                     || key.equalsIgnoreCase("scope")

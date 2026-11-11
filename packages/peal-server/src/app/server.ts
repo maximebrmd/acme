@@ -14,6 +14,7 @@ import {
   AdsWorkersLive,
   DirectAds,
   GatedAds,
+  PostBoostsLive,
 } from "#ads/container.ts";
 import {
   AnalyticsApiLive,
@@ -159,9 +160,9 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   AdsApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
-const ApiLive = HttpApiBuilder.layer(Api, {
-  openapiPath: "/openapi.json",
-}).pipe(
+// `/openapi.json` is served with the discovery documents, the same as
+// `/api/openapi.json`: the API's document with the events webhooks send.
+const ApiLive = HttpApiBuilder.layer(Api).pipe(
   Layer.provide([
     SystemHandlers,
     ClientErrorsLive,
@@ -255,12 +256,17 @@ const ReviewGateContextLive = ReviewGateLive.pipe(
 // Publishing posts to the channels the channels context lists, with the
 // media the media context holds, once the review context's gate admits
 // them.
+// A post deleted from its platform is no longer followed by analytics
+// nor the inbox, and none is while a boost of the ads context shows it.
 const PublishingContextLive = PublishingLive.pipe(
   Layer.provide(
     Layer.mergeAll(
       ChannelsWithNoticesLive,
       MediaContextLive,
-      ReviewGateContextLive
+      ReviewGateContextLive,
+      AnalyticsRecordsLive,
+      EngagementRecordsLive,
+      PostBoostsLive
     )
   )
 );

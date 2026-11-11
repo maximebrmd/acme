@@ -1,9 +1,8 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import { ChannelOptions } from "#publishing/domain/channel-options.ts";
-import { checkDraft } from "#publishing/domain/content-rules.ts";
+import { checkSavedOptions } from "#publishing/domain/content-rules.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
-import { emptyContent } from "#publishing/domain/post-content.ts";
 import type { TargetOptions } from "#publishing/domain/target-options.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
@@ -82,9 +81,7 @@ export class ChannelDefaults extends Context.Service<
         const channels = yield* channelsFor(actor, [channelId]).pipe(withPorts);
         const defaults = new ChannelOptions({ channelId, options });
 
-        yield* Effect.fromResult(
-          checkDraft(emptyContent, channels, [defaults])
-        );
+        yield* Effect.fromResult(checkSavedOptions(channels, [defaults]));
         yield* store.put(actor.workspaceId, defaults, yield* DateTime.now);
 
         return options;

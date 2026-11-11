@@ -150,6 +150,42 @@ func (l *ListQueuesRequest) SetWorkspaceID(workspaceID string) {
 }
 
 var (
+	reshuffleQueuesRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	reshuffleQueuesRequestFieldQueueID     = big.NewInt(1 << 1)
+)
+
+type ReshuffleQueuesRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+	QueueID     string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (r *ReshuffleQueuesRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReshuffleQueuesRequest) SetWorkspaceID(workspaceID string) {
+	r.WorkspaceID = workspaceID
+	r.require(reshuffleQueuesRequestFieldWorkspaceID)
+}
+
+// SetQueueID sets the QueueID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReshuffleQueuesRequest) SetQueueID(queueID string) {
+	r.QueueID = queueID
+	r.require(reshuffleQueuesRequestFieldQueueID)
+}
+
+var (
 	slotsQueuesRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	slotsQueuesRequestFieldQueueID     = big.NewInt(1 << 1)
 	slotsQueuesRequestFieldCount       = big.NewInt(1 << 2)
@@ -832,6 +868,152 @@ func (q *QueuePreview) String() string {
 }
 
 var (
+	queueReshuffleFieldMoved     = big.NewInt(1 << 0)
+	queueReshuffleFieldRemaining = big.NewInt(1 << 1)
+	queueReshuffleFieldStoppedBy = big.NewInt(1 << 2)
+	queueReshuffleFieldUnchanged = big.NewInt(1 << 3)
+)
+
+// queueReshuffleNullableFields maps the wire names of QueueReshuffle's nullable fields (required or optional) to their field bits.
+var queueReshuffleNullableFields = map[string]*big.Int{
+	"stoppedBy": queueReshuffleFieldStoppedBy,
+}
+
+type QueueReshuffle struct {
+	Moved     int            `json:"moved" url:"moved"`
+	Remaining int            `json:"remaining" url:"remaining"`
+	StoppedBy *ReshuffleStop `json:"stoppedBy,omitempty" url:"stoppedBy,omitempty"`
+	Unchanged int            `json:"unchanged" url:"unchanged"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (q *QueueReshuffle) GetMoved() int {
+	if q == nil {
+		return 0
+	}
+	return q.Moved
+}
+
+func (q *QueueReshuffle) GetRemaining() int {
+	if q == nil {
+		return 0
+	}
+	return q.Remaining
+}
+
+func (q *QueueReshuffle) GetStoppedBy() *ReshuffleStop {
+	if q == nil {
+		return nil
+	}
+	return q.StoppedBy
+}
+
+func (q *QueueReshuffle) GetUnchanged() int {
+	if q == nil {
+		return 0
+	}
+	return q.Unchanged
+}
+
+func (q *QueueReshuffle) GetExtraProperties() map[string]interface{} {
+	if q == nil {
+		return nil
+	}
+	return q.extraProperties
+}
+
+func (q *QueueReshuffle) require(field *big.Int) {
+	next := new(big.Int)
+	if q.explicitFields != nil {
+		next.Set(q.explicitFields)
+	}
+	next.Or(next, field)
+	q.explicitFields = next
+}
+
+// SetMoved sets the Moved field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueReshuffle) SetMoved(moved int) {
+	q.Moved = moved
+	q.require(queueReshuffleFieldMoved)
+}
+
+// SetRemaining sets the Remaining field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueReshuffle) SetRemaining(remaining int) {
+	q.Remaining = remaining
+	q.require(queueReshuffleFieldRemaining)
+}
+
+// SetStoppedBy sets the StoppedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueReshuffle) SetStoppedBy(stoppedBy *ReshuffleStop) {
+	q.StoppedBy = stoppedBy
+	q.require(queueReshuffleFieldStoppedBy)
+}
+
+// SetUnchanged sets the Unchanged field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueReshuffle) SetUnchanged(unchanged int) {
+	q.Unchanged = unchanged
+	q.require(queueReshuffleFieldUnchanged)
+}
+
+func (q *QueueReshuffle) UnmarshalJSON(data []byte) error {
+	type unmarshaler QueueReshuffle
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*q = QueueReshuffle(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *q)
+	if err != nil {
+		return err
+	}
+	q.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, queueReshuffleNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		q.require(presentFields)
+	}
+	q.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (q *QueueReshuffle) MarshalJSON() ([]byte, error) {
+	type embed QueueReshuffle
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*q),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, q.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (q *QueueReshuffle) String() string {
+	if q == nil {
+		return "<nil>"
+	}
+	if len(q.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(q.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(q); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", q)
+}
+
+var (
 	queueSlotFieldDay  = big.NewInt(1 << 0)
 	queueSlotFieldTime = big.NewInt(1 << 1)
 )
@@ -931,6 +1113,31 @@ func (q *QueueSlot) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", q)
+}
+
+type ReshuffleStop string
+
+const (
+	ReshuffleStopPlanLimit ReshuffleStop = "planLimit"
+	ReshuffleStopFull      ReshuffleStop = "full"
+	ReshuffleStopChanged   ReshuffleStop = "changed"
+)
+
+func NewReshuffleStopFromString(s string) (ReshuffleStop, error) {
+	switch s {
+	case "planLimit":
+		return ReshuffleStopPlanLimit, nil
+	case "full":
+		return ReshuffleStopFull, nil
+	case "changed":
+		return ReshuffleStopChanged, nil
+	}
+	var t ReshuffleStop
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r ReshuffleStop) Ptr() *ReshuffleStop {
+	return &r
 }
 
 type SlotTime = string

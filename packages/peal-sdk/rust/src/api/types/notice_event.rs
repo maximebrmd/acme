@@ -156,6 +156,15 @@ pub enum NoticeEvent {
     },
 
     #[non_exhaustive]
+    WebhookDeliveriesFailing {
+        #[serde(rename = "endpointId")]
+        #[serde(default)]
+        endpoint_id: String,
+        #[serde(default)]
+        host: String,
+    },
+
+    #[non_exhaustive]
     AdBoostChanged {
         #[serde(rename = "boostId")]
         #[serde(default)]
@@ -305,6 +314,10 @@ impl NoticeEvent {
             host,
             reason,
         }
+    }
+
+    pub fn webhook_deliveries_failing(endpoint_id: String, host: String) -> Self {
+        Self::WebhookDeliveriesFailing { endpoint_id, host }
     }
 
     pub fn ad_boost_changed(

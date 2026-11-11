@@ -80,6 +80,25 @@ const statusBodyOf = jsonBodyOf(StatusBodySchema);
 
 const invalidToken = json({ error: "The access token is invalid" }, 401);
 
+// The id of the status a request names, as `/api/v1/statuses/:id` does.
+const statusIdOf = (request: PlatformRequest) =>
+  /^\/api\/v1\/statuses\/(?<id>\w+)$/u.exec(request.path)?.groups?.["id"];
+
+// The route a request takes, its ids left out.
+const routeOf = (
+  request: PlatformRequest,
+  isMedia: boolean,
+  statusId: string | undefined
+) => {
+  if (isMedia) {
+    return `${request.method} /api/v1/media/:id`;
+  }
+
+  return statusId === undefined
+    ? `${request.method} ${request.path}`
+    : `${request.method} /api/v1/statuses/:id`;
+};
+
 /**
  * A Mastodon instance for publishing: it takes media (images processed at
  * once, videos after `videoPolls` looks), publishes statuses, and keeps
@@ -168,16 +187,24 @@ export const fakeMastodonInstance = Effect.fnUntraced(
           });
     };
 
+    // As Mastodon deletes: only the token's own statuses, and 404 for one
+    // that is not, or no longer, there.
+    const deleteStatus = (id: string | undefined, origin: string) => {
+      const index = statuses.findIndex((status) => status.id === id);
+      const [removed] = index === -1 ? [] : statuses.splice(index, 1);
+
+      return removed === undefined
+        ? json({ error: "Record not found" }, 404)
+        : json(statusJson(removed, origin));
+    };
+
     const handle = (
       request: PlatformRequest,
       origin: string
     ): PlatformAnswer => {
       const mediaPath = /^\/api\/v1\/media\/(?<id>\w+)$/u.exec(request.path);
-
-      const route =
-        mediaPath === null
-          ? `${request.method} ${request.path}`
-          : `${request.method} /api/v1/media/:id`;
+      const statusId = statusIdOf(request);
+      const route = routeOf(request, mediaPath !== null, statusId);
 
       const script = scripts.next(route);
 
@@ -215,6 +242,10 @@ export const fakeMastodonInstance = Effect.fnUntraced(
         }
 
         return json({ id: found.id, url: "https://files.example/2" });
+      }
+
+      if (route === "DELETE /api/v1/statuses/:id") {
+        return deleteStatus(statusId, origin);
       }
 
       if (route === "POST /api/v1/statuses") {

@@ -11,6 +11,8 @@ export const WebhookErrorKeySchema = Schema.Literals([
   "endpointDisabled",
   "filterRefused",
   "forbidden",
+  "headerValuesRequired",
+  "headersRefused",
   "notConfigured",
   "notFound",
   "tooManySends",
@@ -33,6 +35,8 @@ const reasons = new Map<string, WebhookErrorKey>([
   ["TooManyWebhookSends", "tooManySends"],
   ["WebhookEndpointNotFound", "notFound"],
   ["WebhookFilterRefused", "filterRefused"],
+  ["WebhookHeaderValuesRequired", "headerValuesRequired"],
+  ["WebhookHeadersRefused", "headersRefused"],
   ["WebhooksNotConfigured", "notConfigured"],
 ]);
 

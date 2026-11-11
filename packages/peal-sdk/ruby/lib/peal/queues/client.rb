@@ -318,6 +318,65 @@ module Peal
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
         end
       end
+
+      # Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are
+      # now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on,
+      # those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand
+      # does (a new time, the month's room in the plan, and `post.scheduled` told for a scheduled post), but for
+      # approvals: a scheduled post goes through the approval policy as the caller's, and a post that waits for an
+      # approval keeps waiting, at its new time, whoever calls, under the request it had (`post.approval_requested` is
+      # told with the new time, and nobody is asked again to decide); moving it by hand is how a caller whose posts need
+      # no approval schedules it. A post already on its slot is left as it is. Answers how many posts moved, how many
+      # were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go
+      # out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops,
+      # keeping what it moved, at a month the plan has no room in (`stoppedBy` `planLimit`), when no slot is left within
+      # 366 days (`full`), or when the queue was saved meanwhile (`changed`); call it again to go on. Called twice, the
+      # second call moves nothing. QueueHasNoRoom (`noSlots`) for a queue without slots. Needs post:schedule, or
+      # post:create where posts wait for an approval.
+      #
+      # @param request_options [Hash]
+      # @param params [Hash]
+      # @option request_options [String] :base_url
+      # @option request_options [Hash{String => Object}] :additional_headers
+      # @option request_options [Hash{String => Object}] :additional_query_parameters
+      # @option request_options [Hash{String => Object}] :additional_body_parameters
+      # @option request_options [Integer] :timeout_in_seconds
+      # @option params [String] :workspace_id
+      # @option params [String] :queue_id
+      #
+      # @example
+      #   client.queues.reshuffle(
+      #     workspace_id: "workspaceId",
+      #     queue_id: "queueId"
+      #   )
+      #
+      # @return [Peal::Types::QueueReshuffle]
+      def reshuffle(request_options: {}, **params)
+        params = Peal::Internal::Types::Utils.normalize_keys(params)
+        request = Peal::Internal::JSON::Request.new(
+          base_url: request_options[:base_url],
+          method: "POST",
+          path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/queues/#{URI.encode_uri_component(params[:queue_id].to_s)}/reshuffle",
+          request_options: request_options,
+          max_retries: 0
+        )
+        begin
+          response = @client.send(request)
+        rescue Net::HTTPRequestTimeout
+          raise Peal::Errors::TimeoutError
+        end
+        code = response.code.to_i
+        if code.between?(200, 299)
+          (response.body.to_s.empty? ? nil : Peal::Types::QueueReshuffle.load(response.body))
+        else
+          error_class = Peal::Errors::ResponseError.subclass_for_code(code)
+          error_types = {
+            401 => Peal::Types::UnauthenticatedEncoded
+          }
+          error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
+          raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
+        end
+      end
     end
   end
 end

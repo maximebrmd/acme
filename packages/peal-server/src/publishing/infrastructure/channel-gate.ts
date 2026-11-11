@@ -36,6 +36,16 @@ import type {
   SendOutcome,
 } from "#engagement/application/ports/reply-sender.ts";
 import {
+  LivePostClients,
+  RemovalFailureSchema,
+  RemovalOutcomeSchema,
+  RemovalRequestSchema,
+} from "#publishing/application/live-post-clients.ts";
+import type {
+  RemovalFailure,
+  RemovalOutcome,
+} from "#publishing/application/live-post-clients.ts";
+import {
   PlatformPublisher,
   PublishRequestSchema,
 } from "#publishing/application/platform-publisher.ts";
@@ -65,7 +75,9 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
  * `ReadComments` reads the comments under some of its posts the same way,
  * and `SendReply`, `ResumeReply`, `WithdrawReply` and `ModerateComment` act
  * on them as the account, for engagement: their payloads are ids, and the
- * text of a reply stays in engagement's tables.
+ * text of a reply stays in engagement's tables. `RemoveLivePost` deletes a
+ * post, or a part of one, that a member asked to unpublish, by the
+ * platform's id for it: a removal never overlaps a publish on the channel.
  *
  * Calls run in the order they came, whichever context sent them. Each
  * collection (post counts, the account, comments) has one call a channel
@@ -115,6 +127,11 @@ export const ChannelGate = Entity.make("ChannelGate", [
     payload: { request: ModerationRequestSchema },
     success: ActionOutcomeSchema,
   }),
+  Rpc.make("RemoveLivePost", {
+    error: RemovalFailureSchema,
+    payload: { request: RemovalRequestSchema },
+    success: RemovalOutcomeSchema,
+  }),
 ]);
 
 /**
@@ -128,6 +145,7 @@ export const ChannelGateLive = ChannelGate.toLayer(
     const metrics = yield* MetricsReader;
     const comments = yield* CommentSource;
     const replies = yield* ReplySender;
+    const live = yield* LivePostClients;
 
     return ChannelGate.of({
       ModerateComment: ({ payload }) => replies.moderate(payload.request),
@@ -135,6 +153,7 @@ export const ChannelGateLive = ChannelGate.toLayer(
       ReadAccount: ({ payload }) => metrics.account(payload.request),
       ReadComments: ({ payload }) => comments.read(payload.request),
       ReadMetrics: ({ payload }) => metrics.read(payload.request),
+      RemoveLivePost: ({ payload }) => live.remove(payload.request),
       Resume: ({ payload }) => platforms.resume(payload.request),
       ResumeReply: ({ payload }) => replies.resume(payload.request),
       SendReply: ({ payload }) => replies.send(payload.request),
@@ -435,6 +454,49 @@ export const GatedReplySender = Layer.effect(
         ),
       withdraw: (request) =>
         acting(gateFor(request.channelId).WithdrawReply({ request })),
+    });
+  })
+);
+
+// The gate did not take the removal, lost it, or a bug broke it: the post
+// may still be there, and deleting it again is safe.
+const notRemoved = (): Effect.Effect<RemovalOutcome, RemovalFailure> =>
+  Effect.fail(new PlatformUnavailable());
+
+/**
+ * The LivePostClients the jobs that unpublish posts use: each deletion
+ * goes through its channel's gate, in turn with the channel's publishing.
+ * Provide ChannelGateLive, with the real clients, beside it.
+ */
+export const GatedLivePostClients = Layer.effect(
+  LivePostClients,
+  Effect.gen(function* GatedLivePostClients() {
+    const gateFor = yield* ChannelGate.client;
+
+    return LivePostClients.of({
+      remove: (request) =>
+        gateFor(request.channelId)
+          .RemoveLivePost({ request })
+          .pipe(
+            Effect.retry({
+              schedule: notTakenRetry,
+              times: 4,
+              while: (error) =>
+                error._tag === "MailboxFull" ||
+                error._tag === "EntityNotAssignedToRunner",
+            }),
+            Effect.catchTags({
+              AlreadyProcessingMessage: notRemoved,
+              EntityNotAssignedToRunner: notRemoved,
+              MailboxFull: notRemoved,
+              PersistenceError: notRemoved,
+            }),
+            Effect.catchDefect((cause) =>
+              Effect.logError("A removal failed in its adapter", cause).pipe(
+                Effect.andThen(notRemoved())
+              )
+            )
+          ),
     });
   })
 );

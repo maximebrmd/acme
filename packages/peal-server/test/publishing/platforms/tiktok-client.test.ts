@@ -384,6 +384,65 @@ describe("publishing on TikTok", () => {
     }).pipe(Effect.scoped)
   );
 
+  it.live("gives a video the cover frame its options choose", () =>
+    Effect.gen(function* cover() {
+      const file = video();
+      const { client, tiktok } = yield* onTikTok({ files: [file] });
+
+      yield* client.publish(
+        yield* post({
+          media: [attached(file)],
+          options: Option.some(chosen({ videoCoverTimestampMs: 1500 })),
+        })
+      );
+
+      const info = bodyOf(tiktok, "/v2/post/publish/video/init/")["post_info"];
+
+      assert.deepInclude(info, {
+        title: "A synthetic #launch video",
+        video_cover_timestamp_ms: 1500,
+      });
+    })
+  );
+
+  it.live("gives photos the title, music and cover their options choose", () =>
+    Effect.gen(function* photoOptions() {
+      const first = photo();
+      const second = photo();
+
+      const { client, tiktok } = yield* onTikTok({
+        files: [first, second],
+        pullFrom: "https://media.test/",
+      });
+
+      yield* client.publish(
+        yield* post({
+          media: [attached(first), attached(second)],
+          options: Option.some(
+            chosen({
+              autoAddMusic: true,
+              photoCoverIndex: 1,
+              photoTitle: "Synthetic photos",
+            })
+          ),
+        })
+      );
+
+      const body = bodyOf(tiktok, "/v2/post/publish/content/init/");
+
+      assert.deepStrictEqual(body["post_info"], {
+        auto_add_music: true,
+        brand_content_toggle: false,
+        brand_organic_toggle: false,
+        description: "A synthetic #launch video",
+        disable_comment: true,
+        privacy_level: "PUBLIC_TO_EVERYONE",
+        title: "Synthetic photos",
+      });
+      assert.deepInclude(body["source_info"], { photo_cover_index: 1 });
+    }).pipe(Effect.scoped)
+  );
+
   it.live(
     "refuses photos it has no verified address for, sending nothing",
     () =>

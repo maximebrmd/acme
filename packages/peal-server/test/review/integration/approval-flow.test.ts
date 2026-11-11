@@ -1,9 +1,10 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer, Option, Ref } from "effect";
+import { DateTime, Effect, Layer, Option, Ref } from "effect";
 
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { Queues } from "#publishing/application/queues.ts";
 import { ApprovalNeedsPerson } from "#review/application/approval-needs-person.ts";
 import { LinkAccessDenied } from "#review/application/link-access-denied.ts";
 import { ApprovalStore } from "#review/application/ports/approval-store.ts";
@@ -19,6 +20,7 @@ import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
+import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
   callsOn,
   eventually,
@@ -678,6 +680,128 @@ describe("a workspace where contributors and applications wait", () => {
             ),
             ["withdrawn"]
           );
+        })
+      ),
+    timeout
+  );
+});
+
+// A slot at half past `hour` on every day of the week.
+const daily = (hour: number) =>
+  (
+    [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ] as const
+  ).map((day) => ({ day, time: { hour, minute: 30 } }));
+
+describe("a queue reshuffled where contributors wait", () => {
+  it.effect(
+    "keeps a contributor's held post waiting at its new slot, whoever reshuffles, under the request it had",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* reshuffled() {
+          const scheduling = yield* PostScheduling;
+          const requests = yield* ApprovalStore;
+          const { channelId, contributor, editor, workspaceId } = yield* team;
+
+          yield* withPolicy(workspaceId, "contributorsAndApplications");
+
+          const { queue } = yield* Queues.use((queues) =>
+            queues.create(editor, {
+              channelIds: [],
+              channelSetId: Option.none(),
+              isDefault: false,
+              name: "Evergreen",
+              slots: daily(9),
+              timeZone: TimeZoneIdSchema.make("UTC"),
+            })
+          );
+
+          const queued = (text: string) => ({
+            channelIds: [channelId],
+            content: contentOf(text),
+            idempotency: Option.none(),
+            placement: {
+              _tag: "queue" as const,
+              queueId: Option.some(queue.id),
+            },
+            timeZone: TimeZoneIdSchema.make("UTC"),
+          });
+
+          const { post: held } = yield* scheduling.send(
+            contributor,
+            queued("A synthetic post a contributor queued.")
+          );
+
+          assert.strictEqual(held.status._tag, "awaitingApproval");
+
+          yield* Queues.use((queues) =>
+            queues.update(editor, queue.id, {
+              channelIds: queue.channelIds,
+              channelSetId: queue.channelSetId,
+              isDefault: queue.isDefault,
+              name: queue.name,
+              slots: daily(10),
+              timeZone: queue.timeZone,
+            })
+          );
+
+          // An editor, whose own posts need no approval, reshuffles: the
+          // contributor's post moves, and still waits.
+          const result = yield* scheduling.reshuffle(editor, queue.id);
+
+          assert.strictEqual(result.moved, 1);
+
+          const { post: now } = yield* storedPost(held.id);
+
+          assert.strictEqual(now.status._tag, "awaitingApproval");
+          assert.strictEqual(
+            now.status._tag === "awaitingApproval"
+              ? DateTime.formatIso(now.status.schedule.at)
+              : undefined,
+            "2026-06-15T10:30:00.000Z"
+          );
+
+          // Its request still waits, for the contributor, at the new time.
+          const asked = yield* requests.ofPost(workspaceId, held.id);
+
+          assert.deepStrictEqual(
+            asked.map(({ requestedBy, scheduledAt, status }) => [
+              status,
+              requestedBy,
+              DateTime.formatIso(scheduledAt),
+            ]),
+            [
+              [
+                "pending",
+                contributor.subject._tag === "user"
+                  ? Option.some(contributor.subject.userId)
+                  : Option.none(),
+                "2026-06-15T10:30:00.000Z",
+              ],
+            ]
+          );
+
+          // Nothing waits to send it, and a hand move by the editor still
+          // schedules it, as before.
+          assert.isTrue(Option.isNone((yield* storedPost(held.id)).execution));
+
+          const moved = yield* scheduling.reschedule(
+            editor,
+            held.id,
+            scheduleIn("2026-06-15T11:00:00Z")
+          );
+
+          assert.strictEqual(moved.post.status._tag, "scheduled");
+
+          yield* scheduling.unschedule(editor, held.id);
         })
       ),
     timeout

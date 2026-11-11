@@ -19,6 +19,7 @@ export type NoticeEvent =
     | Peal.NoticeEvent.SubscriptionCancelled
     | Peal.NoticeEvent.SubscriptionWithdrawn
     | Peal.NoticeEvent.WebhookEndpointDisabled
+    | Peal.NoticeEvent.WebhookDeliveriesFailing
     | Peal.NoticeEvent.AdBoostChanged
     | Peal.NoticeEvent.AdConnectionReconnectRequired;
 
@@ -85,6 +86,10 @@ export namespace NoticeEvent {
 
     export interface WebhookEndpointDisabled extends Peal.NoticeEventWebhookEndpointDisabled {
         _tag: "WebhookEndpointDisabled";
+    }
+
+    export interface WebhookDeliveriesFailing extends Peal.NoticeEventWebhookDeliveriesFailing {
+        _tag: "WebhookDeliveriesFailing";
     }
 
     export interface AdBoostChanged extends Peal.NoticeEventAdBoostChanged {

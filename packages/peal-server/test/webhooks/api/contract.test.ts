@@ -9,13 +9,21 @@ import {
   maxWebhookBulkRedelivery,
   maxWebhookFilterChannels,
   maxWebhookFilterWorkspaces,
+  maxWebhookHeaderNameLength,
+  maxWebhookHeaders,
+  maxWebhookHeaderValueLength,
+  NewWebhookEndpointSchema,
+  refusedWebhookHeaderNames,
+  refusedWebhookHeaderPrefixes,
   webhookBulkRedeliveriesPerHour,
   WebhookRedeliverySkipSchema,
+  WebhookSettledTargetStatusSchema,
   maxWebhookDescriptionLength,
   maxWebhookEndpoints,
   webhookManualSendsPerHour,
   maxWebhookUrlLength,
   MediaFailureReasonSchema,
+  PostOutcomeSchema,
   SubscribableWebhookEventTypeSchema,
   UnconfirmedReasonSchema,
   WebhookAttemptErrorSchema,
@@ -33,7 +41,11 @@ import {
   ProbeStateSchema,
   RejectionReasonSchema,
 } from "#media/domain/media-status.ts";
-import { FailureReasonSchema as DomainFailureReasonSchema } from "#publishing/domain/post-target-status.ts";
+import { PostOutcomeSchema as DomainPostOutcomeSchema } from "#publishing/domain/post-status.ts";
+import {
+  FailureReasonSchema as DomainFailureReasonSchema,
+  PostTargetStatusNameSchema,
+} from "#publishing/domain/post-target-status.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { UnconfirmedReasonSchema as DomainUnconfirmedReasonSchema } from "#shared/domain/publish-result.ts";
 import type { SkipReason } from "#webhooks/application/webhook-deliveries.ts";
@@ -46,10 +58,18 @@ import {
   maxFilterChannels,
   maxFilterWorkspaces,
   manualSendsPerHour,
+  maxEndpointHeaders,
   maxEndpointsPerWorkspace,
   secretOverlap,
   turnOffAfterFailingFor,
 } from "#webhooks/domain/delivery-policy.ts";
+import {
+  EndpointHeadersSchema,
+  maxHeaderNameLength,
+  maxHeaderValueLength,
+  refusedHeaderNames,
+  refusedHeaderPrefixes,
+} from "#webhooks/domain/endpoint-headers.ts";
 import { bodyOf, RecordedEvent } from "#webhooks/domain/recorded-event.ts";
 import { sampleOf } from "#webhooks/domain/sample-events.ts";
 import { DeliveryFailureSchema } from "#webhooks/domain/webhook-delivery.ts";
@@ -64,6 +84,8 @@ import {
 } from "#webhooks/domain/webhook-event-type.ts";
 import {
   eventVersion,
+  FinishedOutcomeSchema,
+  SettledTargetStatusSchema,
   WebhookEventSchema,
 } from "#webhooks/domain/webhook-event.ts";
 import { maxWebhookUrlLength as domainMaxUrlLength } from "#webhooks/domain/webhook-url.ts";
@@ -96,6 +118,31 @@ const decodeEvent = Schema.decodeUnknownSync(
   Schema.toCodecJson(WebhookEventSchema),
   { onExcessProperty: "error" }
 );
+
+const header = (name: string, value = "synthetic") => ({ name, value });
+
+// Headers the contract and the endpoint must judge alike.
+const headerCases = [
+  [],
+  [header("Authorization", "Bearer synthetic-token")],
+  [header("webhook-id")],
+  [header("Webhook-Signature")],
+  [header("Host")],
+  [header("Content-Encoding", "gzip")],
+  [header("content-range", "bytes 0-1/2")],
+  [header("Expect", "100-continue")],
+  [header("Accept-Encoding", "identity")],
+  [header("Contents-Version")],
+  [header("Bad Name")],
+  [header("X-Value", "line\nbreak")],
+  [header("X-Value", " padded")],
+  [header("X-Value", "nul\u0000")],
+  [header("X-Value", "half \uD83D")],
+  [header("X-Value", "")],
+  [header("A"), header("a")],
+  ["A", "B", "C", "D", "E", "F"].map((name) => header(name)),
+  ["A", "B", "C", "D", "E"].map((name) => header(name)),
+];
 
 describe("the contract", () => {
   it("lists the events, and their version, as the server sends them", () => {
@@ -130,6 +177,24 @@ describe("the contract", () => {
     );
   });
 
+  it("names how post.finished says a post ended as publishing does", () => {
+    // Once every target settled: never pending nor publishing.
+    expect(FinishedOutcomeSchema.literals).toStrictEqual(
+      DomainPostOutcomeSchema.literals
+    );
+    expect(PostOutcomeSchema.literals).toStrictEqual(
+      DomainPostOutcomeSchema.literals
+    );
+    expect(SettledTargetStatusSchema.literals).toStrictEqual(
+      PostTargetStatusNameSchema.literals.filter(
+        (status) => status !== "pending" && status !== "publishing"
+      )
+    );
+    expect(WebhookSettledTargetStatusSchema.literals).toStrictEqual(
+      SettledTargetStatusSchema.literals
+    );
+  });
+
   it("states the limits and delays the server applies", () => {
     expect({
       attempts: maxWebhookAttempts,
@@ -139,6 +204,9 @@ describe("the contract", () => {
       description: maxWebhookDescriptionLength,
       endpoints: maxWebhookEndpoints,
       failingDays: webhookFailingDays,
+      headerName: maxWebhookHeaderNameLength,
+      headerValue: maxWebhookHeaderValueLength,
+      headers: maxWebhookHeaders,
       manualSends: webhookManualSendsPerHour,
       overlapHours: webhookSecretOverlapHours,
       retentionDays: webhookDeliveryRetentionDays,
@@ -152,12 +220,31 @@ describe("the contract", () => {
       description: maxDescriptionLength,
       endpoints: maxEndpointsPerWorkspace,
       failingDays: Duration.toDays(turnOffAfterFailingFor),
+      headerName: maxHeaderNameLength,
+      headerValue: maxHeaderValueLength,
+      headers: maxEndpointHeaders,
       manualSends: manualSendsPerHour,
       overlapHours: Duration.toHours(secretOverlap),
       retentionDays: Duration.toDays(deliveryRetention),
       url: domainMaxUrlLength,
       workspaces: maxFilterWorkspaces,
     });
+  });
+
+  it("takes the headers an endpoint takes, and refuses those it refuses", () => {
+    expect(refusedWebhookHeaderNames).toStrictEqual(refusedHeaderNames);
+    expect(refusedWebhookHeaderPrefixes).toStrictEqual(refusedHeaderPrefixes);
+
+    const disagreeing = headerCases.filter(
+      (headers) =>
+        Schema.is(NewWebhookEndpointSchema)({
+          eventTypes: ["post.published"],
+          headers,
+          url: "https://hooks.example.com/peal",
+        }) !== Schema.is(EndpointHeadersSchema)(headers)
+    );
+
+    expect(disagreeing).toStrictEqual([]);
   });
 
   it("names why a delivery is not sent again as the server does", () => {

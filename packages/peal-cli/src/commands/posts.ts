@@ -22,6 +22,7 @@ import type {
 
 import { importPosts } from "#commands/posts-import.ts";
 import { list } from "#commands/posts-list.ts";
+import { changes, unpublish } from "#commands/posts-unpublish.ts";
 import { explain, explainingPublishing } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { channelIdsOf, channelsFlag } from "#post-flags.ts";
@@ -88,7 +89,14 @@ const partsDetail = ({ parts }: PostTarget): string =>
     ? `; ${String(parts.live.length)} of ${String(parts.count)} parts live`
     : "";
 
-const targetDetail = (target: PostTarget): string => {
+// What else a published target says of how it went out.
+const publishedNotes = (target: PostTarget): string =>
+  target.thumbnailNotSet === true
+    ? "; its thumbnail was not set: the channel may not be allowed custom thumbnails, or YouTube refused the image"
+    : "";
+
+/** How a target went, as `peal posts show` prints it after its channel. */
+export const targetDetail = (target: PostTarget): string => {
   if (target.status === "failed" && target.failureReason !== null) {
     return `failed: ${target.failureReason} (${failureReasons[target.failureReason]})${partsDetail(target)}`;
   }
@@ -104,8 +112,8 @@ const targetDetail = (target: PostTarget): string => {
         : "published";
 
     return target.permalink === null
-      ? `${published}${partsDetail(target)}`
-      : `${published} at ${target.permalink}${partsDetail(target)}`;
+      ? `${published}${partsDetail(target)}${publishedNotes(target)}`
+      : `${published} at ${target.permalink}${partsDetail(target)}${publishedNotes(target)}`;
   }
 
   return `${target.status}${partsDetail(target)}`;
@@ -833,7 +841,7 @@ const tag = Command.make(
 
 export const posts = Command.make("posts").pipe(
   Command.withDescription(
-    "A workspace's posts: listing them, scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, following up where it failed, filing it under tags, and importing a file of them. peal post writes and sends one in a single command."
+    "A workspace's posts: listing them, scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, following up where it failed, deleting it from the platforms once live, filing it under tags, and importing a file of them. peal post writes and sends one in a single command."
   ),
   Command.withSubcommands([
     list,
@@ -848,6 +856,8 @@ export const posts = Command.make("posts").pipe(
     cancel,
     repost,
     confirm,
+    unpublish,
+    changes,
     tag,
     duplicate,
     importPosts,

@@ -32,6 +32,10 @@ public class UpdateTest : BaseMockServerTest
                 "post.scheduled"
               ],
               "failingSince": "failingSince",
+              "headerNames": [
+                "headerNames",
+                "headerNames"
+              ],
               "id": "id",
               "previousSecretExpiresAt": "previousSecretExpiresAt",
               "scope": "workspace",
@@ -69,6 +73,7 @@ public class UpdateTest : BaseMockServerTest
                 Description = null,
                 Enabled = null,
                 EventTypes = null,
+                Headers = null,
                 Url = null,
                 WorkspaceIds = null,
             }
@@ -97,6 +102,9 @@ public class UpdateTest : BaseMockServerTest
                 "post.scheduled"
               ],
               "failingSince": "failingSince",
+              "headerNames": [
+                "headerNames"
+              ],
               "id": "id",
               "previousSecretExpiresAt": "previousSecretExpiresAt",
               "scope": "workspace",

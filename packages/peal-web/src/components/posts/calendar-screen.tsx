@@ -42,6 +42,7 @@ import {
 } from "#posts/api.ts";
 import { filtered, knownFilter, noFilter } from "#posts/calendar-filter.ts";
 import type { CalendarFilter } from "#posts/calendar-filter.ts";
+import { isRemovedEverywhere } from "#posts/live-post.ts";
 import { failureOf } from "#posts/outcome.ts";
 import { isAhead, startAtOf, startTimeOn } from "#posts/start-time.ts";
 import { useMounted } from "#posts/use-mounted.ts";
@@ -218,6 +219,8 @@ const PostChip = ({
       className={cn(
         "flex min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-xs",
         chipTone[placed.post.status],
+        // Removed from every platform it went out on: kept, dimmed.
+        isRemovedEverywhere(placed.post) ? "opacity-60" : null,
         isDragging ? "opacity-50" : null
       )}
     >

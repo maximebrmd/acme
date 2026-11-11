@@ -16,6 +16,8 @@ module Peal
 
         field :event_types, -> { Internal::Types::Array[Peal::Types::SubscribableWebhookEventType] }, optional: true, nullable: false, api_name: "eventTypes"
 
+        field :headers, -> { Internal::Types::Array[Peal::Types::WebhookHeaderChange] }, optional: true, nullable: false
+
         field :url, -> { String }, optional: true, nullable: false
 
         field :workspace_ids, -> { Internal::Types::Array[String] }, optional: true, nullable: false, api_name: "workspaceIds"

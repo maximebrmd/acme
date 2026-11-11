@@ -10,8 +10,13 @@ import { ChannelDefaults } from "#publishing/application/channel-defaults.ts";
 import { ChannelLookups } from "#publishing/application/channel-lookups.ts";
 import { ChannelSets } from "#publishing/application/channel-sets.ts";
 import { HeldPosts } from "#publishing/application/held-posts.ts";
+import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
+import { LivePostClients } from "#publishing/application/live-post-clients.ts";
+import { LivePostEvents } from "#publishing/application/live-post-events.ts";
+import { LivePostHolds } from "#publishing/application/live-post-holds.ts";
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import { pacedLookups } from "#publishing/application/paced-lookups.ts";
+import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
@@ -34,11 +39,13 @@ import { RoutedPlatformPublisher } from "#publishing/application/routed-platform
 import { Signatures } from "#publishing/application/signatures.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import type { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
+import { AdsLivePostHolds } from "#publishing/infrastructure/ads-live-post-holds.ts";
 import { AnalyticsCountedPlatforms } from "#publishing/infrastructure/analytics-counted-platforms.ts";
 import { ChannelAccessCredentials } from "#publishing/infrastructure/channel-access-credentials.ts";
 import { ChannelAccessGrants } from "#publishing/infrastructure/channel-access-grants.ts";
 import {
   ChannelGateLive,
+  GatedLivePostClients,
   GatedPlatformPublisher,
   UnreadComments,
   UnreadMetrics,
@@ -47,6 +54,7 @@ import { DrizzleChannelDefaultsStore } from "#publishing/infrastructure/drizzle-
 import { DrizzleChannelSetStore } from "#publishing/infrastructure/drizzle-channel-set-store.ts";
 import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
+import { DrizzleLivePostChangeStore } from "#publishing/infrastructure/drizzle-live-post-change-store.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
 import { DrizzlePostOversight } from "#publishing/infrastructure/drizzle-post-oversight.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
@@ -69,15 +77,19 @@ import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-
 import { NamedPostOrigins } from "#publishing/infrastructure/named-post-origins.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
+import { LivePostClientsLive } from "#publishing/infrastructure/platforms/live-post-clients-live.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platform-lookups-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
+import { ToldLivePostEvents } from "#publishing/infrastructure/told-live-post-events.ts";
 import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
 import {
   webhookOutcomes,
   WebhookPostEvents,
 } from "#publishing/infrastructure/webhook-post-events.ts";
+import { WorkflowLivePostJobs } from "#publishing/infrastructure/workflow-live-post-jobs.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
+import { ChangeLivePostV1Live } from "#publishing/infrastructure/workflows/change-live-post.ts";
 import { PublishTargetV2Live } from "#publishing/infrastructure/workflows/publish-parts.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
@@ -86,7 +98,23 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 
 // The use cases over their adapters, asking whatever ApprovalGate they are
 // given before a post is scheduled.
-const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
+// What changes of live posts need beside publishing's own adapters: what
+// holds a post (a boost), who hears how a change ended, and the channels'
+// credentials, which say whether a channel can be used.
+type LiveServices = LivePostEvents | LivePostHolds | PlatformCredentials;
+
+/**
+ * For tests that change no live post: nothing holds a post, nobody hears,
+ * and no channel can be used, so every change is refused
+ * `channelUnavailable`.
+ */
+export const LivePostsUnused = Layer.mergeAll(
+  LivePostEvents.none,
+  LivePostHolds.none,
+  PlatformCredentials.unusable
+);
+
+const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
@@ -94,7 +122,8 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
   >,
   accounts: Layer.Layer<AccountRules, E2, R2>,
   origins: Layer.Layer<PostOrigins, E3, R3>,
-  events: Layer.Layer<PostEvents | H, never, R4>
+  events: Layer.Layer<PostEvents | H, never, R4>,
+  live: Layer.Layer<LiveServices, never, R5>
 ) =>
   Layer.mergeAll(
     PostBatches.layer.pipe(
@@ -112,7 +141,8 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
     ChannelDefaults.layer,
     HeldPosts.layer,
     PostFollowUp.layer,
-    PostUsage.layer
+    PostUsage.layer,
+    LivePostChanges.layer
   ).pipe(
     Layer.provideMerge(PostPresets.layer),
     Layer.provideMerge(
@@ -121,6 +151,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
         DrizzleChannelSetStore,
         DrizzleContentFingerprints,
         DrizzleIdempotencyKeys,
+        DrizzleLivePostChangeStore,
         DrizzlePostOversight,
         DrizzlePostRepository,
         DrizzlePublicationJournal,
@@ -132,6 +163,8 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
         LoggedChannelHealth,
         LoggedOperatorAlerts,
         WorkflowPublicationScheduler,
+        WorkflowLivePostJobs,
+        live,
         references,
         accounts,
         origins,
@@ -168,6 +201,7 @@ export const publishingWith = <
   E3 = never,
   R3 = never,
   R4 = never,
+  R5 = never,
 >(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
@@ -176,31 +210,35 @@ export const publishingWith = <
   >,
   accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none,
   origins: Layer.Layer<PostOrigins, E3, R3> = PostOrigins.unnamed,
-  events: Layer.Layer<PostEvents, never, R4> = PostEvents.none
+  events: Layer.Layer<PostEvents, never, R4> = PostEvents.none,
+  live: Layer.Layer<LiveServices, never, R5> = LivePostsUnused
 ) =>
-  publishingOver(references, accounts, origins, events).pipe(
+  publishingOver(references, accounts, origins, events, live).pipe(
     Layer.provideMerge(ApprovalGate.open)
   );
 
 /**
  * The same behind `gate`, which says which posts wait for an approval, and
  * may bring what a test reads it with; `events` hears what happens to
- * posts, and may bring what a test reads that with too.
+ * posts, and may bring what a test reads that with too; `live` is what
+ * changes of live posts need (by default, nothing can change one).
  */
-export const publishingBehind = <G, E3, R3, E, R, H, R4>(
+export const publishingBehind = <G, E3, R3, E, R, H, R4, R5 = never>(
   gate: Layer.Layer<ApprovalGate | G, E3, R3>,
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
     R
   >,
-  events: Layer.Layer<PostEvents | H, never, R4>
+  events: Layer.Layer<PostEvents | H, never, R4>,
+  live: Layer.Layer<LiveServices, never, R5> = LivePostsUnused
 ) =>
   publishingOver(
     references,
     AccountRules.none,
     PostOrigins.unnamed,
-    events
+    events,
+    live
   ).pipe(Layer.provideMerge(gate));
 
 /**
@@ -233,7 +271,11 @@ export const PublishingLive = publishingOver(
   ),
   AccountRules.layer.pipe(Layer.provide(ChannelAccessGrants)),
   NamedPostOrigins,
-  WebhookPostEvents
+  WebhookPostEvents,
+  // Changes of live posts: the channels context says whether a channel
+  // can be used, the ads context which posts a boost shows, and the
+  // webhooks, analytics and the inbox hear how a change ended.
+  Layer.mergeAll(ChannelAccessCredentials, AdsLivePostHolds, ToldLivePostEvents)
 ).pipe(
   // The operator's X_THREADS, which scheduling reads.
   Layer.provide(XThreadsLive),
@@ -331,10 +373,13 @@ export const publishingWorkers = <
   R2 = never,
   E3 = never,
   R3 = never,
+  E4 = never,
+  R4 = never,
 >(
   platforms: Layer.Layer<PlatformPublisher, E, R>,
   readers: GateReaders<E2, R2> = UnreadMetrics,
-  engagement: GateEngagement<E3, R3> = UnreadComments
+  engagement: GateEngagement<E3, R3> = UnreadComments,
+  live: Layer.Layer<LivePostClients, E4, R4> = LivePostClients.none
 ) =>
   Layer.mergeAll(
     PublishPostV1Live,
@@ -342,9 +387,10 @@ export const publishingWorkers = <
     PublishTargetV2Live
   ).pipe(
     Layer.provide(GatedPlatformPublisher),
+    Layer.merge(ChangeLivePostV1Live.pipe(Layer.provide(GatedLivePostClients))),
     Layer.merge(
       ChannelGateLive.pipe(
-        Layer.provide(Layer.mergeAll(platforms, readers, engagement))
+        Layer.provide(Layer.mergeAll(platforms, readers, engagement, live))
       )
     )
   );
@@ -390,7 +436,15 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
 export const publishingWorkersReading = <E, R, E2, R2>(
   readers: GateReaders<E, R>,
   engagement: GateEngagement<E2, R2>
-) => publishingWorkers(PlatformsLive, readers, engagement);
+) =>
+  publishingWorkers(
+    PlatformsLive,
+    readers,
+    engagement,
+    // What deletes the posts members unpublish, with the channels'
+    // tokens.
+    LivePostClientsLive.pipe(Layer.provide(ChannelAccessCredentials))
+  );
 
 /**
  * The MetricsReader that sends each read through its channel's gate, for

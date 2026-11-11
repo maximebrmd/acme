@@ -1224,7 +1224,7 @@ describe("peal channels defaults", () => {
         "--options takes a platform's options as JSON"
       );
       assert.include(
-        yield* session.refused(setting(youtubeId, '{"platform":"facebook"}')),
+        yield* session.refused(setting(youtubeId, '{"platform":"myspace"}')),
         "--options takes a platform's options as JSON"
       );
       assert.include(
