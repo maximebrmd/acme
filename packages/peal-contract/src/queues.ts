@@ -229,7 +229,7 @@ export class QueuesApi extends HttpApiGroup.make("queues")
       success: QueueSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Replaces a queue's name, zone, slots and channels: every channel must be connected now, so this is also how a disconnected one is taken out. ${details} Posts the queue placed keep their times: a slot that changed frees nothing and moves nothing. Saving the default with \`isDefault\` false leaves the workspace without one. Needs post:update and channel:read.`,
+        description: `Replaces a queue's name, zone, slots and channels: every channel must be connected now, so this is also how a disconnected one is taken out. ${details} Posts the queue placed keep their times: a slot that changed frees nothing and moves nothing. Saving the default with \`isDefault\` false, or without \`isDefault\`, leaves the workspace without one, and a post then sent to the default queue is refused (QueueNotFound): send \`isDefault\` true to keep it the default. Needs post:update and channel:read.`,
         summary: "Update a queue",
       })
     ),
