@@ -322,7 +322,8 @@ export class PostScheduling extends Context.Service<
      * there as `scheduleDraft` schedules it, and a scheduled post or one
      * that waits for an approval is moved there as `reschedule` moves it.
      * The slot is decided under the queue's lock, the post's own slot
-     * apart, so a post added again to its queue stays where it is. A draft
+     * apart, so a post added again to its queue stays where it is unless an
+     * earlier slot was freed since, which it takes. A draft
      * for no channel, given none, goes where the same content sent onto
      * the queue would: its channels still connected and its channel set's,
      * with the set's options and the channels' defaults, the channels gone

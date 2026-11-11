@@ -452,7 +452,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/send" \
   -d '{"channelIds": [], "content": {"text": "An evergreen tip.", "media": [], "overrides": []}, "when": {"_tag": "queue"}}'
 ```
 
-`POST …/posts/{postId}/queue`, with `{ "queueId"?, "channelIds"? }`, puts a draft on the next free slot (on `channelIds`, else its own channels, else the queue's channels and channel set, as a post sent onto the queue, with the same `warnings`), or moves a scheduled post, or one awaiting approval, there; a post already on its queue's slot stays. `GET …/queues/{queueId}/slots?count=…` previews the next slots, each with the post that holds it, and `nextFree`, where a post added now would go: advice, as nothing is held.
+`POST …/posts/{postId}/queue`, with `{ "queueId"?, "channelIds"? }`, puts a draft on the next free slot (on `channelIds`, else its own channels, else the queue's channels and channel set, as a post sent onto the queue, with the same `warnings`), or moves a scheduled post, or one awaiting approval, there. Its own slot counts as free: a post added again to its queue stays where it is, unless a slot before it was freed since, which it then takes. `GET …/queues/{queueId}/slots?count=…` previews the next slots, each with the post that holds it, and `nextFree`, where a post added now would go: advice, as nothing is held.
 
 - A queue without a slot, or with every slot of the next 366 days taken, answers 409 `queue_has_no_room`, with `reason` `noSlots` or `full`.
 - A queue that is not the workspace's, or a default the workspace does not have, answers 404 `queue_not_found`.

@@ -544,6 +544,16 @@ describe("adding a post to a queue", () => {
           });
 
           assert.strictEqual(timeOf(again.post), "2026-06-15T08:30:00.000Z");
+
+          // Unless a slot before its own was freed since: it takes that one.
+          yield* scheduling.unschedule(editor, draft.post.id);
+
+          const earlier = yield* scheduling.enqueue(editor, byHand.post.id, {
+            channelIds: Option.none(),
+            queueId: Option.some(queue.id),
+          });
+
+          assert.strictEqual(timeOf(earlier.post), "2026-06-15T07:30:00.000Z");
         })
       ),
     timeout

@@ -678,7 +678,7 @@ const queue = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Put a post on the next free slot of a queue: a draft is scheduled there, and a scheduled post, or one waiting for an approval, is moved there. The slot is decided when the server answers; a post already on its queue's slot stays there."
+    "Put a post on the next free slot of a queue: a draft is scheduled there, and a scheduled post, or one waiting for an approval, is moved there. The slot is decided when the server answers; its own slot counts as free, so a post added again to its queue stays there, unless a slot before it was freed since."
   )
 );
 
