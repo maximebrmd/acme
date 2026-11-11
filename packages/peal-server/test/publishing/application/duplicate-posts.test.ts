@@ -7,6 +7,9 @@ import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
+import { ChannelOptions } from "#publishing/domain/channel-options.ts";
+import { InstagramOptions } from "#publishing/domain/instagram-options.ts";
+import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import {
@@ -27,6 +30,10 @@ import {
   targetsOf,
   utc,
 } from "#test/publishing/infrastructure/harness.ts";
+import {
+  onPostsWithLibraryAt,
+  storeMedia,
+} from "#test/publishing/library-media.ts";
 import { connect, onPostsServerAt } from "#test/publishing/posts-server.ts";
 import { actorIn, contentOf } from "#test/publishing/support.ts";
 
@@ -72,6 +79,65 @@ const post = (
 });
 
 describe("sending the same content twice", () => {
+  it.effect(
+    "tells a story from the feed post of the same file, and two stories apart from none",
+    () =>
+      onPostsWithLibraryAt(
+        start,
+        Effect.gen(function* stories() {
+          const scheduling = yield* PostScheduling;
+          const workspaceId = yield* freshWorkspace;
+          const instagram = yield* connect(workspaceId, "instagram");
+          const actor = actorIn(workspaceId);
+
+          const photo = yield* storeMedia(workspaceId, {
+            dimensions: { height: 1080, width: 1080 },
+          });
+
+          const shown = new PostContent({
+            media: [new MediaAttachment({ altText: "", mediaId: photo })],
+            overrides: [],
+            text: "A synthetic square.",
+          });
+
+          const sent = (at: string, format: "feed" | "story") =>
+            scheduling.send(actor, {
+              channelIds: [instagram],
+              content: shown,
+              idempotency: Option.none(),
+              options: [
+                new ChannelOptions({
+                  channelId: instagram,
+                  options: new InstagramOptions({ format }),
+                }),
+              ],
+              placement: { _tag: "at", at: utc(at) },
+              timeZone: paris,
+            });
+
+          const story = yield* sent("2026-06-16T08:00:00Z", "story");
+
+          // The feed post of the same file and text, an hour later.
+          yield* sent("2026-06-16T09:00:00Z", "feed");
+
+          const again = yield* sent("2026-06-16T10:00:00Z", "story").pipe(
+            Effect.flip
+          );
+
+          assert.strictEqual(again._tag, "DuplicateContent");
+
+          if (again._tag === "DuplicateContent") {
+            assert.deepStrictEqual(again.duplicates, [
+              { channelId: instagram, postId: story.post.id },
+            ]);
+          }
+
+          yield* scheduling.unschedule(actor, story.post.id);
+        })
+      ),
+    timeout
+  );
+
   it.effect(
     "is refused on the channel that has it, within a day, unless meant",
     () =>

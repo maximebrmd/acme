@@ -18,6 +18,19 @@ import {
   Tracer,
 } from "effect";
 
+import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
+import {
+  facebookPageId,
+  fakeMetaGraph,
+  graphAppSecret,
+} from "#test/publishing/fakes/fake-meta-graph.ts";
+import {
+  attached,
+  credentialsOf,
+  metaClientWith,
+  outgoing,
+  testFile,
+} from "#test/publishing/platforms/support.ts";
 import {
   answered,
   FakeTransport,
@@ -322,5 +335,51 @@ layer(
           assert.notInclude(shown, value);
         }
       })
+  );
+});
+
+layer(Layer.mergeAll(capture, Layer.succeed(Tracer.Tracer, tracer)), {
+  excludeTestServices: true,
+  timeout: "60 seconds",
+})("what the server writes about publishing a reel", (it) => {
+  it.effect(
+    "holds no Page token, which the upload carries in its Authorization header",
+    () =>
+      Effect.gen(function* searched() {
+        const token = "synthetic-page-token-in-an-upload-header";
+        const clip = testFile("video", 4096);
+        const graph = yield* fakeMetaGraph([token]);
+
+        const client = yield* metaClientWith({
+          appSecret: graphAppSecret,
+          credentials: credentialsOf(
+            { accountId: facebookPageId, platform: "facebook" },
+            [token]
+          ),
+          files: [clip],
+          platform: "facebook",
+          url: graph.url,
+        });
+
+        const result = yield* client
+          .publish(
+            yield* outgoing({
+              accountId: facebookPageId,
+              media: [attached(clip)],
+              options: Option.some(new FacebookOptions({ format: "reel" })),
+            })
+          )
+          .pipe(Effect.withSpan("test.reel"));
+
+        assert.strictEqual(result._tag, "published");
+        assert.isTrue(
+          graph
+            .requests()
+            .some((request) => request.path.startsWith("/video-upload/"))
+        );
+        // The upload was written about, with its address.
+        assert.include(written(), "/video-upload/");
+        assert.notInclude(written(), token);
+      }).pipe(Effect.scoped)
   );
 });

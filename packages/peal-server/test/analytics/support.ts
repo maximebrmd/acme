@@ -105,6 +105,7 @@ export const readersWith = ({
   const metaHosts: MetaHosts = {
     facebookDialog: graph,
     facebookGraph: graph,
+    facebookUpload: graph,
     instagramApi: graph,
     instagramAuthorize: graph,
     instagramGraph: graph,

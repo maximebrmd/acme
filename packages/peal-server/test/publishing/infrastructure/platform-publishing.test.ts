@@ -55,6 +55,7 @@ const platformsOn = (instanceUrl: string) =>
         metaHosts: {
           facebookDialog: new URL(instanceUrl),
           facebookGraph: new URL(instanceUrl),
+          facebookUpload: new URL(instanceUrl),
           instagramApi: new URL(instanceUrl),
           instagramAuthorize: new URL(instanceUrl),
           instagramGraph: new URL(instanceUrl),

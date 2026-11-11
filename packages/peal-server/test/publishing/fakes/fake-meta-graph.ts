@@ -4,6 +4,7 @@ import { Effect } from "effect";
 
 import {
   dropped,
+  headerOf,
   json,
   platformServer,
   scripted,
@@ -40,6 +41,22 @@ export interface FakePost {
   readonly id: string;
   readonly params: Readonly<Record<string, string>>;
   readonly text: string;
+}
+
+/** A Page's reel or video story, from its start to its finish. */
+export interface FakeVideo {
+  readonly edge: "video_reels" | "video_stories";
+  readonly id: string;
+  /** The URL Meta was told to fetch it from, once uploaded. */
+  fileUrl: string | undefined;
+  finished: boolean;
+}
+
+/** A story the fake's Page shows. */
+export interface FakeStory {
+  readonly mediaId: string;
+  readonly mediaType: "photo" | "video";
+  readonly postId: string;
 }
 
 export interface FakeMetaGraphOptions {
@@ -86,7 +103,9 @@ const proofOf = (token: string) =>
   createHmac("sha256", graphAppSecret).update(token).digest("hex");
 
 const isVideo = (params: Params) =>
-  params["media_type"] === "VIDEO" || params["media_type"] === "REELS";
+  params["media_type"] === "VIDEO" ||
+  params["media_type"] === "REELS" ||
+  (params["media_type"] === "STORIES" && params["video_url"] !== undefined);
 
 // A container's status as each API names it: Threads `status`, with an
 // `error_message`; Instagram `status_code`, with a sentence in `status`.
@@ -114,11 +133,14 @@ const statusAnswer = (
 
 const nodePattern = /^\/(?<version>v1\.0|v27\.0)\/(?<id>\d+)$/u;
 
+const uploadPattern = /^\/video-upload\/v27\.0\/(?<id>\d+)$/u;
+
 const mediaFbidPattern = /"media_fbid":"(?<id>\d+)"/u;
 
 /**
  * Meta's publishing APIs on one loopback server: Threads under /v1.0,
- * Instagram and Facebook Pages under /v27.0. Containers go through
+ * Instagram and Facebook Pages under /v27.0, and the upload host's
+ * /video-upload/v27.0. Containers go through
  * IN_PROGRESS, FINISHED and PUBLISHED; posts are listed on their account.
  * It takes the tokens in `tokens`, checks Facebook and Instagram calls'
  * `appsecret_proof`, and answers queued `script` answers first.
@@ -130,6 +152,10 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
   const containers = new Map<string, FakeContainer>();
   const posts: FakePost[] = [];
   const unpublishedPhotos = new Set<string>();
+  // Photos a post or a story used, which no story may use again.
+  const usedPhotos = new Set<string>();
+  const videos = new Map<string, FakeVideo>();
+  const stories: FakeStory[] = [];
   const script = scripted<PlatformAnswer>();
   // Routes whose next call is carried out, then its answer lost.
   const lost = scripted<true>();
@@ -146,12 +172,15 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
     const topic = params["topic_tag"] ?? "";
 
     // Threads takes a link attachment on a post of text alone, and a topic
-    // without periods or ampersands.
+    // without periods or ampersands; Instagram's stories take no
+    // collaborators.
     if (
       (params["link_attachment"] !== undefined &&
         params["media_type"] !== "TEXT") ||
       topic.includes(".") ||
-      topic.includes("&")
+      topic.includes("&") ||
+      (params["media_type"] === "STORIES" &&
+        params["collaborators"] !== undefined)
     ) {
       return metaError(100);
     }
@@ -258,6 +287,7 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
 
       if (key.startsWith("attached_media[") && photo !== undefined) {
         unpublishedPhotos.delete(photo);
+        usedPhotos.add(photo);
       }
     }
 
@@ -282,8 +312,125 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
     return json({ id: photoId, post_id: post.id });
   };
 
-  const videos: Handler = (params) =>
+  const pageVideos: Handler = (params) =>
     json({ id: posted(nextId(), params, params["description"] ?? "").id });
+
+  // The Reels Publishing API's and the Page Stories API's three phases: a
+  // start that makes room for a video, its upload on the upload host, and
+  // a finish that publishes it, once, after the upload only.
+  const videoPhases =
+    (edge: FakeVideo["edge"]): Handler =>
+    (params) => {
+      if (params["upload_phase"] === "start") {
+        const video: FakeVideo = {
+          edge,
+          fileUrl: undefined,
+          finished: false,
+          id: nextId(),
+        };
+
+        videos.set(video.id, video);
+
+        return json({
+          upload_url: `https://rupload.facebook.com/video-upload/v27.0/${video.id}`,
+          video_id: video.id,
+        });
+      }
+
+      const video = videos.get(params["video_id"] ?? "");
+
+      if (
+        params["upload_phase"] !== "finish" ||
+        video === undefined ||
+        video.edge !== edge ||
+        video.fileUrl === undefined ||
+        video.finished ||
+        (edge === "video_reels" && params["video_state"] !== "PUBLISHED")
+      ) {
+        return metaError(100);
+      }
+
+      video.finished = true;
+
+      if (edge === "video_reels") {
+        posted(video.id, params, params["description"] ?? "");
+
+        return json({ success: true });
+      }
+
+      const postId = `${facebookPageId}_${nextId()}`;
+
+      posted(postId, params, "");
+      stories.push({ mediaId: video.id, mediaType: "video", postId });
+
+      return json({ post_id: postId, success: true });
+    };
+
+  // A story of a photo uploaded unpublished, which no post used before.
+  const photoStories: Handler = (params) => {
+    const photoId = params["photo_id"] ?? "";
+
+    if (!unpublishedPhotos.has(photoId) || usedPhotos.has(photoId)) {
+      return metaError(100);
+    }
+
+    unpublishedPhotos.delete(photoId);
+    usedPhotos.add(photoId);
+
+    const postId = `${facebookPageId}_${nextId()}`;
+
+    posted(postId, params, "");
+    stories.push({ mediaId: photoId, mediaType: "photo", postId });
+
+    return json({ post_id: postId, success: true });
+  };
+
+  const storyListing: Handler = () =>
+    json({
+      data: stories.toReversed().map((story) => ({
+        media_id: story.mediaId,
+        media_type: story.mediaType,
+        post_id: story.postId,
+        status: "PUBLISHED",
+      })),
+    });
+
+  // A video's status, as Meta reports each phase.
+  const videoStatus = (video: FakeVideo): PlatformAnswer =>
+    json({
+      id: video.id,
+      status: {
+        publishing_phase: {
+          publish_status: video.finished ? "published" : "draft",
+          status: video.finished ? "complete" : "not_started",
+        },
+        uploading_phase: {
+          status: video.fileUrl === undefined ? "not_started" : "complete",
+        },
+        video_status:
+          video.fileUrl === undefined ? "uploading" : "upload_complete",
+      },
+    });
+
+  // The upload host takes the Page's token in its Authorization header,
+  // and the file's address in `file_url`.
+  const upload = (request: PlatformRequest, id: string): PlatformAnswer => {
+    const video = videos.get(id);
+    const authorization = headerOf(request, "authorization");
+    const fileUrl = headerOf(request, "file_url");
+
+    if (!tokens.some((token) => authorization === `OAuth ${token}`)) {
+      return metaError(190, 401);
+    }
+
+    if (video === undefined || fileUrl === "") {
+      return metaError(100);
+    }
+
+    video.fileUrl = fileUrl;
+
+    return json({ success: true });
+  };
 
   const routes = new Map<string, Handler>([
     [`GET /v1.0/${threadsUserId}/threads`, listing("text")],
@@ -295,7 +442,14 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
     [`POST /v1.0/${threadsUserId}/threads_publish`, publishing("text")],
     [`POST /v27.0/${facebookPageId}/feed`, feed],
     [`POST /v27.0/${facebookPageId}/photos`, photos],
-    [`POST /v27.0/${facebookPageId}/videos`, videos],
+    [`POST /v27.0/${facebookPageId}/videos`, pageVideos],
+    [`POST /v27.0/${facebookPageId}/video_reels`, videoPhases("video_reels")],
+    [
+      `POST /v27.0/${facebookPageId}/video_stories`,
+      videoPhases("video_stories"),
+    ],
+    [`POST /v27.0/${facebookPageId}/photo_stories`, photoStories],
+    [`GET /v27.0/${facebookPageId}/stories`, storyListing],
     [`POST /v27.0/${instagramUserId}/media`, newContainer],
     [`POST /v27.0/${instagramUserId}/media_publish`, publishing("caption")],
   ]);
@@ -314,6 +468,12 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
       return statusAnswer(found["version"] ?? "", look(container));
     }
 
+    const video = videos.get(id);
+
+    if (video !== undefined) {
+      return videoStatus(video);
+    }
+
     return posts.some((post) => post.id === id)
       ? json({ id, permalink: `https://social.example/p/${id}` })
       : metaError(100);
@@ -325,6 +485,14 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
 
     if (scriptedAnswer !== undefined) {
       return scriptedAnswer;
+    }
+
+    const uploading = uploadPattern.exec(request.path)?.groups?.["id"];
+
+    if (request.method === "POST" && uploading !== undefined) {
+      const answer = upload(request, uploading);
+
+      return lost.next(name) === undefined ? answer : dropped;
     }
 
     const {
@@ -347,8 +515,11 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
     }
 
     const answer = routes.get(name)?.(params) ?? node(request);
+    // A phase of a video's upload is lost by its own name.
+    const phase = params["upload_phase"];
+    const lostAs = phase === undefined ? name : `${name}#${phase}`;
 
-    return lost.next(name) === undefined ? answer : dropped;
+    return lost.next(lostAs) === undefined ? answer : dropped;
   };
 
   const server = yield* platformServer(handle);
@@ -362,7 +533,9 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
     },
     posts: () => [...posts],
     script,
+    stories: () => [...stories],
     unpublishedPhotos: () => [...unpublishedPhotos],
+    videos: () => [...videos.values()],
   };
 });
 

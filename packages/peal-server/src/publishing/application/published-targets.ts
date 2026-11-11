@@ -1,6 +1,7 @@
 import { Context } from "effect";
 import type { DateTime, Effect, Option } from "effect";
 
+import type { PostFormat } from "#publishing/domain/post-format.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   ChannelId,
@@ -19,6 +20,11 @@ export interface PublishedTarget {
   /** The member who wrote the post; none for an API key's. */
   readonly authorId: Option.Option<UserId>;
   readonly channelId: ChannelId;
+  /**
+   * The format its options chose (a story, a reel), none for a feed post:
+   * a story has no lasting page, no statistics and no comments Peal reads.
+   */
+  readonly format: Option.Option<PostFormat>;
   readonly permalink: Option.Option<string>;
   readonly platformPostId: PlatformPostId;
   readonly postId: PostId;
@@ -55,10 +61,16 @@ export interface PublishedCursor {
 export class PublishedTargets extends Context.Service<
   PublishedTargets,
   {
-    /** At most `limit` targets published from `cursor` on. */
+    /**
+     * At most `limit` targets published from `cursor` on, but those of the
+     * formats `without` names, left out by the query itself: a page is as
+     * long as `limit` whenever more targets follow, so a reader that stops
+     * at a short page never stops before the last.
+     */
     readonly from: (
       cursor: PublishedCursor,
-      limit: number
+      limit: number,
+      without?: readonly PostFormat[]
     ) => Effect.Effect<readonly PublishedTarget[], DatabaseError>;
     /** The channels a post of the workspace went live on, oldest first. */
     readonly ofPost: (

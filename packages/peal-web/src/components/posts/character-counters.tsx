@@ -38,6 +38,7 @@ interface CharacterCountersProps {
 export const CharacterCounters = ({ fits }: CharacterCountersProps) => {
   const t = useTranslations("Posts.Composer");
   const tPosts = useTranslations("Posts");
+  const tFormats = useTranslations("Posts.Formats");
 
   if (fits.length === 0) {
     return (
@@ -98,6 +99,11 @@ export const CharacterCounters = ({ fits }: CharacterCountersProps) => {
           );
         })}
       </ul>
+      {fits.some(({ fit }) => fit.textNotSent === true) ? (
+        <p className="text-muted-foreground text-sm">
+          {tFormats("textNotSent")}
+        </p>
+      ) : null}
     </div>
   );
 };

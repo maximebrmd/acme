@@ -313,6 +313,7 @@ describe("a platform's capabilities", () => {
     const facebook = capabilitiesOf("facebook", false);
 
     expect(facebook.options.map(({ name }) => name)).toStrictEqual([
+      "format",
       "videoTitle",
     ]);
     expect(facebook.lookups).toStrictEqual([]);

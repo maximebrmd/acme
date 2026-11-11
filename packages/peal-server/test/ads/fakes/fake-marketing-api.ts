@@ -649,6 +649,7 @@ export const fakeMarketingApi = (options: FakeMarketingOptions = {}) =>
       ...metaHosts,
       facebookDialog: origin,
       facebookGraph: origin,
+      facebookUpload: origin,
     };
 
     return {

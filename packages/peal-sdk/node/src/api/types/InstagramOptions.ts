@@ -3,12 +3,13 @@
 import * as Peal from "../index.js";
 
 /**
- * How a post goes out on an Instagram account. Scheduling needs none of them; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
+ * How a post goes out on an Instagram account. Scheduling needs none of them; `format` `story` makes it a story, sent without the post's text and taking none of the other options; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
  */
 export interface InstagramOptions {
     audioName?: string | undefined;
     collaborators?: string[] | undefined;
     coverMediaId?: string | undefined;
+    format?: Peal.InstagramFormat | undefined;
     shareToFeed?: boolean | undefined;
     thumbOffsetMs?: number | undefined;
     trialReel?: Peal.InstagramTrialReel | undefined;

@@ -51,6 +51,12 @@ class PlatformCapabilities extends JsonSerializableType
     public string $platform;
 
     /**
+     * @var ?array<PostFormatCapabilities> $postFormats
+     */
+    #[JsonProperty('postFormats'), ArrayType([PostFormatCapabilities::class])]
+    public ?array $postFormats;
+
+    /**
      * @var TextCapabilities $text
      */
     #[JsonProperty('text')]
@@ -73,6 +79,7 @@ class PlatformCapabilities extends JsonSerializableType
      *   text: TextCapabilities,
      *   version: int,
      *   followUps?: ?FollowUpCapabilities,
+     *   postFormats?: ?array<PostFormatCapabilities>,
      * } $values
      */
     public function __construct(
@@ -85,6 +92,7 @@ class PlatformCapabilities extends JsonSerializableType
         $this->media = $values['media'];
         $this->options = $values['options'];
         $this->platform = $values['platform'];
+        $this->postFormats = $values['postFormats'] ?? null;
         $this->text = $values['text'];
         $this->version = $values['version'];
     }

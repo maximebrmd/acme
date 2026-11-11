@@ -2,6 +2,7 @@ import { Schema } from "effect";
 
 import type { MediaContentType } from "./media.ts";
 import type { Platform } from "./platform.ts";
+import type { TargetOptions } from "./target-options.ts";
 import { xLinksIn } from "./x-links.ts";
 
 // The rules the API applies to a post's text and media before it schedules
@@ -242,6 +243,21 @@ export interface FollowUpRules {
 }
 
 /**
+ * What a post format (a story, a reel) changes of its platform's rules:
+ * its media rules, its count of files, whether it needs one and the parts
+ * it takes replace the platform's whole, so a format without `followUps`
+ * takes no parts. `sendsText` false: the post goes out without its text,
+ * which is neither counted nor checked there.
+ */
+export interface PostFormatRules {
+  readonly followUps?: FollowUpRules;
+  readonly maxMedia?: number;
+  readonly media?: MediaRules;
+  readonly mediaRequired: boolean;
+  readonly sendsText: boolean;
+}
+
+/**
  * What a platform accepts in one post, as far as the API checks. A platform
  * without `media` has no media rule the API knows.
  */
@@ -261,6 +277,13 @@ export interface PlatformRules {
   readonly media?: MediaRules;
   /** The platform publishes images and videos only, never text alone. */
   readonly mediaRequired: boolean;
+  /**
+   * The kinds of post whose rules differ from a feed post's there, by the
+   * name the options' `format` gives them (`rulesFor` picks them).
+   */
+  readonly postFormats?: Readonly<Record<string, PostFormatRules>>;
+  /** False where the post goes out without its text; left out, it is sent. */
+  readonly sendsText?: boolean;
   /** Every limit applies. */
   readonly textLimits: readonly TextLimit[];
 }
@@ -343,6 +366,69 @@ const pinterestVideo: FormatLimits = {
   minDurationMs: 4 * second,
 };
 
+// Stories and reels, from Meta's references (the server's platform rules
+// cite each page): one file each; a story sends no text.
+const verticalVideo: FormatLimits = {
+  aspectRatio: { maximum: 0.6, minimum: 0.5 },
+  minDurationMs: 3 * second,
+  sideRange: { maximum: 8192, minimum: 540 },
+};
+
+const instagramStoryVideo: FormatLimits = {
+  aspectRatio: { maximum: 10, minimum: 0.1 },
+  maxByteSize: 100 * mebibyte,
+  maxDurationMs: 60 * second,
+  minDurationMs: 3 * second,
+};
+
+const instagramStory: PostFormatRules = {
+  maxMedia: 1,
+  media: {
+    formats: {
+      "image/jpeg": {
+        aspectRatio: { maximum: 10, minimum: 0.1 },
+        maxByteSize: 8 * mebibyte,
+      },
+      "video/mp4": instagramStoryVideo,
+      "video/quicktime": instagramStoryVideo,
+    },
+    maxVideos: 1,
+    mixesKinds: false,
+    showsAltText: false,
+  },
+  mediaRequired: true,
+  sendsText: false,
+};
+
+const facebookStory: PostFormatRules = {
+  maxMedia: 1,
+  media: {
+    formats: {
+      "image/gif": { maxByteSize: 10 * mebibyte },
+      "image/jpeg": { maxByteSize: 10 * mebibyte },
+      "image/png": { maxByteSize: 10 * mebibyte },
+      "video/mp4": { ...verticalVideo, maxDurationMs: 60 * second },
+    },
+    maxVideos: 1,
+    mixesKinds: false,
+    showsAltText: false,
+  },
+  mediaRequired: true,
+  sendsText: false,
+};
+
+const facebookReel: PostFormatRules = {
+  maxMedia: 1,
+  media: {
+    formats: { "video/mp4": { ...verticalVideo, maxDurationMs: 90 * second } },
+    maxVideos: 1,
+    mixesKinds: false,
+    showsAltText: false,
+  },
+  mediaRequired: true,
+  sendsText: true,
+};
+
 // The platforms with threads: a reply chain, as long as a post has parts.
 const thread: FollowUpRules = { kind: "thread", maximum: maxFollowUps };
 
@@ -382,6 +468,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
       showsAltText: true,
     },
     mediaRequired: false,
+    postFormats: { reel: facebookReel, story: facebookStory },
     textLimits: [{ maximum: 63_206, unit: "codePoints" }],
   },
   googleBusiness: {
@@ -417,6 +504,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
       showsAltText: true,
     },
     mediaRequired: true,
+    postFormats: { story: instagramStory },
     textLimits: [{ maximum: 2200, unit: "codePoints" }],
   },
   linkedin: {
@@ -547,4 +635,49 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: true,
     textLimits: [{ maximum: 5000, unit: "utf8Bytes" }],
   },
+};
+
+/**
+ * The format the options choose on their platform (`story`, `reel`), or
+ * none for a feed post, whether `feed` is chosen or nothing is.
+ */
+export const postFormatOf = (
+  platform: Platform,
+  options: TargetOptions | undefined
+): string | undefined =>
+  options?.platform === platform &&
+  (options.platform === "instagram" || options.platform === "facebook") &&
+  options.format !== undefined &&
+  options.format !== "feed"
+    ? options.format
+    : undefined;
+
+/**
+ * The rules a post follows on the platform with the options it has there:
+ * those of the format they choose, which replace the platform's media
+ * rules, count of files and parts whole, or the platform's own for a feed
+ * post, for options of another platform and on a platform without
+ * formats. The server's `rulesFor` is the source.
+ */
+export const rulesFor = (
+  platform: Platform,
+  options: TargetOptions | undefined
+): PlatformRules => {
+  const rules = platformRules[platform];
+  const name = postFormatOf(platform, options);
+  const format = name === undefined ? undefined : rules.postFormats?.[name];
+
+  if (format === undefined) {
+    return rules;
+  }
+
+  const {
+    followUps: _followUps,
+    maxMedia: _maxMedia,
+    media: _media,
+    postFormats: _postFormats,
+    ...base
+  } = rules;
+
+  return { ...base, ...format };
 };

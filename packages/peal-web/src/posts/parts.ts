@@ -3,9 +3,10 @@ import type {
   Platform,
   PostContent,
   PostPart,
+  TargetOptions,
   TextOverride,
 } from "peal-contract";
-import { maxFollowUps, platformRules } from "peal-contract/post-text";
+import { maxFollowUps, rulesFor } from "peal-contract/post-text";
 import type { FollowUpKind } from "peal-contract/post-text";
 
 // The parts that follow a post's first, as the composer edits them: a
@@ -136,9 +137,16 @@ export type PartsTaken =
   // It takes parts, and fewer than these.
   | { readonly _tag: "tooMany"; readonly maximum: number };
 
-/** What `platform` makes of a post with `count` parts after its first. */
-export const partsTaken = (platform: Platform, count: number): PartsTaken => {
-  const rules = platformRules[platform].followUps;
+/**
+ * What `platform` makes of a post with `count` parts after its first, with
+ * the channel's `options`: a story or a reel takes none.
+ */
+export const partsTaken = (
+  platform: Platform,
+  count: number,
+  options?: TargetOptions
+): PartsTaken => {
+  const rules = rulesFor(platform, options).followUps;
 
   if (count === 0) {
     return { _tag: "taken", kind: "none" };

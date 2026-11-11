@@ -746,3 +746,122 @@ describe("an Instagram post's options", () => {
       }).pipe(Effect.scoped)
   );
 });
+
+describe("an Instagram story", () => {
+  const story = Option.some(new InstagramOptions({ format: "story" }));
+
+  it.live("goes out as a story container, without the post's text", () =>
+    Effect.gen(function* image() {
+      const photo = jpeg();
+      const { client, graph } = yield* onInstagram({ files: [photo] });
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: instagramUserId,
+          media: [attached(photo)],
+          options: story,
+          text: "A caption a story never shows",
+        })
+      );
+
+      const [container] = graph.containers();
+      const [post] = graph.posts();
+
+      // No caption, no alt text ("Reels and stories are not supported").
+      assert.deepStrictEqual(container?.params, {
+        image_url: `https://media.test/${photo.media.mediaId}`,
+        media_type: "STORIES",
+      });
+      // The daily quota is read first, as for any container.
+      assert.strictEqual(
+        graph.requests()[0]?.path,
+        `/v27.0/${instagramUserId}/content_publishing_limit`
+      );
+      // A story has no lasting page: it is published without an address.
+      assert.deepStrictEqual(result, {
+        _tag: "published",
+        platformPostId: PlatformPostIdSchema.make(post?.id ?? "missing"),
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("goes out with a video, which Meta processes first", () =>
+    Effect.gen(function* video() {
+      const clip = testFile("video", 4096);
+      const { client, graph } = yield* onInstagram({ files: [clip] });
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: instagramUserId,
+          media: [attached(clip)],
+          options: story,
+        })
+      );
+
+      assert.strictEqual(result._tag, "published");
+      assert.deepStrictEqual(graph.containers()[0]?.params, {
+        media_type: "STORIES",
+        video_url: `https://media.test/${clip.media.mediaId}`,
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("is confirmed by its container when the answer is lost", () =>
+    Effect.gen(function* lost() {
+      const photo = jpeg();
+      const { client, graph } = yield* onInstagram({ files: [photo] });
+
+      graph.loseAnswer(`POST /v27.0/${instagramUserId}/media_publish`);
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: instagramUserId,
+          media: [attached(photo)],
+          options: story,
+          text: "Lost answer",
+        })
+      );
+
+      assert.strictEqual(result._tag, "published");
+      assert.isFalse("permalink" in result);
+      assert.lengthOf(graph.posts(), 1);
+      // The account's feed is never searched for a story.
+      assert.isFalse(
+        graph
+          .requests()
+          .some(
+            (request) =>
+              request.method === "GET" &&
+              request.path === `/v27.0/${instagramUserId}/media`
+          )
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("is left unconfirmed on a resume, never sent again", () =>
+    Effect.gen(function* resumed() {
+      const photo = jpeg();
+      const { client, graph } = yield* onInstagram({ files: [photo] });
+
+      const post = yield* outgoing({
+        accountId: instagramUserId,
+        media: [attached(photo)],
+        options: story,
+        text: "Sent before a restart",
+      });
+
+      yield* client.publish(post);
+
+      const before = graph.requests().length;
+      const result = yield* client.resume(post);
+
+      assert.deepStrictEqual(result, {
+        _tag: "unconfirmed",
+        reason: "interrupted",
+      });
+      assert.lengthOf(graph.posts(), 1);
+      // Nothing is asked: a caption search cannot find a story.
+      assert.lengthOf(graph.requests(), before);
+    }).pipe(Effect.scoped)
+  );
+});

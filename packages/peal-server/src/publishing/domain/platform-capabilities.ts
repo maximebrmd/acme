@@ -13,9 +13,11 @@ import { lookupsOn } from "./lookup.ts";
 import type { LookupDescription, LookupName } from "./lookup.ts";
 import { maxAltTextLength } from "./media-attachment.ts";
 import type { OptionConstraint } from "./option-constraint.ts";
-import { platformRules } from "./platform-rules.ts";
+import { formatRulesOn, platformRules } from "./platform-rules.ts";
 import type { PlatformRules, TextLimit } from "./platform-rules.ts";
 import { maxMediaPerPost } from "./post-content.ts";
+import { PostFormatSchema } from "./post-format.ts";
+import type { PostFormat } from "./post-format.ts";
 import { maxPostTextLength } from "./post-text.ts";
 import { describeOptionsOn, optionConstraintsOn } from "./target-options.ts";
 
@@ -63,11 +65,35 @@ export interface PlatformCapabilities {
   readonly optionConstraints: readonly OptionConstraint[];
   readonly options: readonly FieldDescription<LookupName>[];
   readonly platform: Platform;
+  /**
+   * The kinds of post whose rules differ from a feed post's there, which
+   * the options' `format` chooses. Left out where the platform has none.
+   */
+  readonly postFormats?: readonly PostFormatCapabilities[];
   readonly rules: PlatformRules;
   /** Every limit on the text: the platform's, then Peal's own. */
   readonly textLimits: readonly TextLimit[];
   readonly version: typeof capabilitiesVersion;
 }
+
+/** A post format of a platform, with the rules a post of it follows. */
+export interface PostFormatCapabilities {
+  readonly description: string;
+  /** As `maxAltTextLength` above, by the format's rules. */
+  readonly maxAltTextLength: number;
+  /** As `maxMedia` above, by the format's rules. */
+  readonly maxMedia: number;
+  readonly name: PostFormat;
+  /** The platform's rules with the format's in place (`rulesFor`). */
+  readonly rules: PlatformRules;
+}
+
+/** What each format is, as clients are told. */
+export const postFormatDescriptions: Readonly<Record<PostFormat, string>> = {
+  reel: "A reel: one vertical video, with the post's text as its description and `videoTitle` as its title.",
+  story:
+    "A story: one image or video, shown for 24 hours, sent without the post's text. Peal reads no statistics or comments of stories.",
+};
 
 /** A lookup, with the options whose values it answers. */
 export interface OptionLookup extends LookupDescription {
@@ -121,6 +147,33 @@ const withoutParts = ({
   ...rules
 }: PlatformRules): PlatformRules => rules;
 
+// The longest alt text the rules keep, within Peal's own.
+const altTextLimitOf = (rules: PlatformRules): number =>
+  Math.min(rules.media?.maxAltTextLength ?? maxAltTextLength, maxAltTextLength);
+
+// The platform's formats, described; none where it has no formats.
+const postFormatsOn = (
+  platform: Platform
+): readonly PostFormatCapabilities[] | undefined => {
+  const described = PostFormatSchema.literals.flatMap((name) => {
+    const rules = formatRulesOn(platform, name);
+
+    return rules === undefined
+      ? []
+      : [
+          {
+            description: postFormatDescriptions[name],
+            maxAltTextLength: altTextLimitOf(rules),
+            maxMedia: mediaLimitOf(rules),
+            name,
+            rules,
+          },
+        ];
+  });
+
+  return described.length === 0 ? undefined : described;
+};
+
 // Where Peal reads no number.
 const nothingCounted: PlatformCapabilities["counted"] = {
   account: [],
@@ -147,15 +200,12 @@ export const capabilitiesOf = (
     ? platformRules[platform]
     : withoutParts(platformRules[platform]);
 
-  return {
+  const described: PlatformCapabilities = {
     counted,
     countsPosts,
     livePost: livePostSupport[platform],
     lookups: optionLookupsOn(platform, connection),
-    maxAltTextLength: Math.min(
-      rules.media?.maxAltTextLength ?? maxAltTextLength,
-      maxAltTextLength
-    ),
+    maxAltTextLength: altTextLimitOf(rules),
     maxMedia: mediaLimitOf(rules),
     optionConstraints: optionConstraintsOn(platform),
     options: describedOptionsOn(platform),
@@ -164,6 +214,10 @@ export const capabilitiesOf = (
     textLimits: [...rules.textLimits, ownTextLimit],
     version: capabilitiesVersion,
   };
+
+  const postFormats = postFormatsOn(platform);
+
+  return postFormats === undefined ? described : { ...described, postFormats };
 };
 
 /** Every platform's capabilities, in the platforms' order. */

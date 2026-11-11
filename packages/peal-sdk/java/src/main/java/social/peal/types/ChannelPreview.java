@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -40,6 +41,8 @@ public final class ChannelPreview {
 
     private final List<TextCount> textCounts;
 
+    private final Optional<Boolean> textNotSent;
+
     private final List<ContentViolation> violations;
 
     private final Map<String, Object> additionalProperties;
@@ -54,6 +57,7 @@ public final class ChannelPreview {
             Platform platform,
             String text,
             List<TextCount> textCounts,
+            Optional<Boolean> textNotSent,
             List<ContentViolation> violations,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
@@ -65,6 +69,7 @@ public final class ChannelPreview {
         this.platform = platform;
         this.text = text;
         this.textCounts = textCounts;
+        this.textNotSent = textNotSent;
         this.violations = violations;
         this.additionalProperties = additionalProperties;
     }
@@ -114,6 +119,11 @@ public final class ChannelPreview {
         return textCounts;
     }
 
+    @JsonProperty("textNotSent")
+    public Optional<Boolean> getTextNotSent() {
+        return textNotSent;
+    }
+
     @JsonProperty("violations")
     public List<ContentViolation> getViolations() {
         return violations;
@@ -140,6 +150,7 @@ public final class ChannelPreview {
                 && platform.equals(other.platform)
                 && text.equals(other.text)
                 && textCounts.equals(other.textCounts)
+                && textNotSent.equals(other.textNotSent)
                 && violations.equals(other.violations);
     }
 
@@ -155,6 +166,7 @@ public final class ChannelPreview {
                 this.platform,
                 this.text,
                 this.textCounts,
+                this.textNotSent,
                 this.violations);
     }
 
@@ -216,6 +228,10 @@ public final class ChannelPreview {
 
         _FinalStage addAllTextCounts(List<TextCount> textCounts);
 
+        _FinalStage textNotSent(Optional<Boolean> textNotSent);
+
+        _FinalStage textNotSent(Boolean textNotSent);
+
         _FinalStage violations(List<ContentViolation> violations);
 
         _FinalStage addViolations(ContentViolation violations);
@@ -249,6 +265,8 @@ public final class ChannelPreview {
 
         private List<ContentViolation> violations = new ArrayList<>();
 
+        private Optional<Boolean> textNotSent = Optional.empty();
+
         private List<TextCount> textCounts = new ArrayList<>();
 
         private List<PartPreview> parts = new ArrayList<>();
@@ -268,6 +286,7 @@ public final class ChannelPreview {
             platform(other.getPlatform());
             text(other.getText());
             textCounts(other.getTextCounts());
+            textNotSent(other.getTextNotSent());
             violations(other.getViolations());
             return this;
         }
@@ -346,6 +365,19 @@ public final class ChannelPreview {
         }
 
         @java.lang.Override
+        public _FinalStage textNotSent(Boolean textNotSent) {
+            this.textNotSent = Optional.ofNullable(textNotSent);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "textNotSent", nulls = Nulls.SKIP)
+        public _FinalStage textNotSent(Optional<Boolean> textNotSent) {
+            this.textNotSent = textNotSent;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage addAllTextCounts(List<TextCount> textCounts) {
             if (textCounts != null) {
                 this.textCounts.addAll(textCounts);
@@ -405,6 +437,7 @@ public final class ChannelPreview {
                     platform,
                     text,
                     textCounts,
+                    textNotSent,
                     violations,
                     additionalProperties);
         }
@@ -420,6 +453,7 @@ public final class ChannelPreview {
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("text")
                     || key.equalsIgnoreCase("textCounts")
+                    || key.equalsIgnoreCase("textNotSent")
                     || key.equalsIgnoreCase("violations")) {
                 return;
             }

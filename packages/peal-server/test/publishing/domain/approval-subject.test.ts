@@ -5,6 +5,7 @@ import {
   approvalSubject,
   channelsOfSubject,
 } from "#publishing/domain/approval-subject.ts";
+import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import { GoogleBusinessOptions } from "#publishing/domain/google-business-options.ts";
 import { LinkedInOptions } from "#publishing/domain/linkedin-options.ts";
 import { PinterestOptions } from "#publishing/domain/pinterest-options.ts";
@@ -164,6 +165,15 @@ describe("what an approval of a post covers", () => {
       overrides: [],
       text: "Launch day, with @Example Bakery",
     });
+  });
+
+  it("changes when a format is chosen: a story is not the feed post approved", () => {
+    expect(subjectWith(new FacebookOptions({ format: "story" }))).not.toBe(
+      subjectWith(new FacebookOptions({}))
+    );
+    expect(subjectWith(new FacebookOptions({ format: "reel" }))).not.toBe(
+      subjectWith(new FacebookOptions({ format: "story" }))
+    );
   });
 
   it("covers no options where a channel has none", () => {

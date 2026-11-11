@@ -63,6 +63,12 @@ class ChannelPreview extends JsonSerializableType
     public array $textCounts;
 
     /**
+     * @var ?bool $textNotSent
+     */
+    #[JsonProperty('textNotSent')]
+    public ?bool $textNotSent;
+
+    /**
      * @var array<ContentViolation> $violations
      */
     #[JsonProperty('violations'), ArrayType([ContentViolation::class])]
@@ -80,6 +86,7 @@ class ChannelPreview extends JsonSerializableType
      *   text: string,
      *   textCounts: array<TextCount>,
      *   violations: array<ContentViolation>,
+     *   textNotSent?: ?bool,
      * } $values
      */
     public function __construct(
@@ -94,6 +101,7 @@ class ChannelPreview extends JsonSerializableType
         $this->platform = $values['platform'];
         $this->text = $values['text'];
         $this->textCounts = $values['textCounts'];
+        $this->textNotSent = $values['textNotSent'] ?? null;
         $this->violations = $values['violations'];
     }
 

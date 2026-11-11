@@ -20,13 +20,22 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = FacebookOptions.Builder.class)
 public final class FacebookOptions {
+    private final Optional<FacebookFormat> format;
+
     private final Optional<String> videoTitle;
 
     private final Map<String, Object> additionalProperties;
 
-    private FacebookOptions(Optional<String> videoTitle, Map<String, Object> additionalProperties) {
+    private FacebookOptions(
+            Optional<FacebookFormat> format, Optional<String> videoTitle, Map<String, Object> additionalProperties) {
+        this.format = format;
         this.videoTitle = videoTitle;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("format")
+    public Optional<FacebookFormat> getFormat() {
+        return format;
     }
 
     @JsonProperty("videoTitle")
@@ -46,12 +55,12 @@ public final class FacebookOptions {
     }
 
     private boolean equalTo(FacebookOptions other) {
-        return videoTitle.equals(other.videoTitle);
+        return format.equals(other.format) && videoTitle.equals(other.videoTitle);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.videoTitle);
+        return Objects.hash(this.format, this.videoTitle);
     }
 
     @java.lang.Override
@@ -65,6 +74,8 @@ public final class FacebookOptions {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<FacebookFormat> format = Optional.empty();
+
         private Optional<String> videoTitle = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -72,7 +83,19 @@ public final class FacebookOptions {
         private Builder() {}
 
         public Builder from(FacebookOptions other) {
+            format(other.getFormat());
             videoTitle(other.getVideoTitle());
+            return this;
+        }
+
+        @JsonSetter(value = "format", nulls = Nulls.SKIP)
+        public Builder format(Optional<FacebookFormat> format) {
+            this.format = format;
+            return this;
+        }
+
+        public Builder format(FacebookFormat format) {
+            this.format = Optional.ofNullable(format);
             return this;
         }
 
@@ -88,12 +111,12 @@ public final class FacebookOptions {
         }
 
         public FacebookOptions build() {
-            return new FacebookOptions(videoTitle, additionalProperties);
+            return new FacebookOptions(format, videoTitle, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("videoTitle")) {
+            if (key.equalsIgnoreCase("format") || key.equalsIgnoreCase("videoTitle")) {
                 return;
             }
             this.additionalProperties.put(key, value);

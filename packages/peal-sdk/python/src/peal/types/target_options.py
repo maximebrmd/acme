@@ -10,8 +10,10 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .bluesky_content_label import BlueskyContentLabel
 from .bluesky_replies import BlueskyReplies
+from .facebook_format import FacebookFormat
 from .google_business_call_to_action import GoogleBusinessCallToAction
 from .google_business_post_type import GoogleBusinessPostType
+from .instagram_format import InstagramFormat
 from .instagram_trial_reel import InstagramTrialReel
 from .linked_in_mention import LinkedInMention
 from .linked_in_visibility import LinkedInVisibility
@@ -365,6 +367,7 @@ class TargetOptions_Instagram(UniversalBaseModel):
     cover_media_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="coverMediaId"), pydantic.Field(alias="coverMediaId")
     ] = None
+    format: typing.Optional[InstagramFormat] = None
     share_to_feed: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="shareToFeed"), pydantic.Field(alias="shareToFeed")
     ] = None
@@ -391,6 +394,7 @@ class TargetOptions_Facebook(UniversalBaseModel):
     """
 
     platform: typing.Literal["facebook"] = "facebook"
+    format: typing.Optional[FacebookFormat] = None
     video_title: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="videoTitle"), pydantic.Field(alias="videoTitle")
     ] = None

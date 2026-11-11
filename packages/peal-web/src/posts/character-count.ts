@@ -5,7 +5,7 @@ import {
   countLinks,
   countMentions,
   measureText,
-  platformRules,
+  rulesFor,
 } from "peal-contract/post-text";
 import type { TextUnit } from "peal-contract/post-text";
 
@@ -46,6 +46,11 @@ export interface ChannelFit {
   readonly counts: readonly TextCount[];
   readonly platform: Platform;
   readonly problems: readonly ChannelProblem[];
+  /**
+   * True when the post has text and the format its options choose sends
+   * none (a story): the text is then neither counted nor checked.
+   */
+  readonly textNotSent?: true;
   /** The limit closest to being reached, if the platform has any. */
   readonly tightest: TextCount | undefined;
 }
@@ -62,7 +67,9 @@ const tooMany = (
 /**
  * How `text`, shown with `media` images or videos, fits `platform`, with
  * the `options` it has on the channel, which some platforms count with the
- * text (a Mastodon content warning: `countedText`).
+ * text (a Mastodon content warning: `countedText`) and which may choose a
+ * format of rules of its own (`rulesFor`): a story's text is not sent, so
+ * it is neither counted nor checked.
  */
 export const fitOn = (
   platform: Platform,
@@ -70,14 +77,17 @@ export const fitOn = (
   media: number,
   options?: TargetOptions
 ): ChannelFit => {
-  const rules = platformRules[platform];
-  const counted = countedText(text, options);
+  const rules = rulesFor(platform, options);
+  const sent = rules.sendsText !== false;
+  const counted = countedText(sent ? text : "", options);
 
-  const counts = rules.textLimits.map(({ maximum, unit }): TextCount => {
-    const length = measureText(counted, unit);
+  const counts = sent
+    ? rules.textLimits.map(({ maximum, unit }): TextCount => {
+        const length = measureText(counted, unit);
 
-    return { length, maximum, remaining: maximum - length, unit };
-  });
+        return { length, maximum, remaining: maximum - length, unit };
+      })
+    : [];
 
   const [tightest] = counts.toSorted(
     (left, right) => left.remaining - right.remaining
@@ -89,11 +99,14 @@ export const fitOn = (
   const mediaRequired: readonly ChannelProblem[] =
     rules.mediaRequired && media === 0 ? [{ _tag: "mediaRequired" }] : [];
 
+  // What goes out: no text at all on a story.
+  const checked = sent ? text : "";
+
   const forbidden = (rules.forbiddenCharacters ?? []).filter((character) =>
-    text.includes(character)
+    checked.includes(character)
   );
 
-  return {
+  const fit: ChannelFit = {
     counts,
     platform,
     problems: [
@@ -103,12 +116,14 @@ export const fitOn = (
         : []),
       ...tooMany("tooManyMedia", media, rules.maxMedia),
       ...mediaRequired,
-      ...tooMany("tooManyHashtags", countHashtags(text), rules.maxHashtags),
-      ...tooMany("tooManyMentions", countMentions(text), rules.maxMentions),
-      ...tooMany("tooManyLinks", countLinks(text), rules.maxLinks),
+      ...tooMany("tooManyHashtags", countHashtags(checked), rules.maxHashtags),
+      ...tooMany("tooManyMentions", countMentions(checked), rules.maxMentions),
+      ...tooMany("tooManyLinks", countLinks(checked), rules.maxLinks),
     ],
     tightest,
   };
+
+  return !sent && text.trim() !== "" ? { ...fit, textNotSent: true } : fit;
 };
 
 /** Whether the platform would take the post as it is. */

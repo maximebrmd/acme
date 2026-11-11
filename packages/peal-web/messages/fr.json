@@ -1197,6 +1197,10 @@
       "mediaPickerDescription": "Choisissez une image prête de la médiathèque de l’espace de travail. Seules celles que cette option accepte peuvent être choisies.",
       "mediaUse": "Utiliser cette image",
       "instagram": {
+        "format": "Format",
+        "formatHint": "Une story montre une image ou une vidéo pendant 24 heures, sans le texte de la publication. Une publication du fil si rien n’est choisi.",
+        "formatFeed": "Publication",
+        "formatStory": "Story",
         "shareToFeed": "Partager aussi dans le fil",
         "shareToFeedHint": "Pour un reel : montré dans le fil en plus de l’onglet Reels. Instagram décide quand rien n’est choisi.",
         "shareToFeedYes": "Oui, le partager dans le fil",
@@ -1220,10 +1224,23 @@
         "collaboratorsInvalid": "Chacun est un nom d’utilisateur Instagram, sans @ : lettres, chiffres, points et tirets bas, 30 au plus, chacun une fois."
       },
       "facebook": {
+        "format": "Format",
+        "formatHint": "Une story montre une image ou une vidéo pendant 24 heures, sans le texte de la publication ; un reel est une vidéo verticale. Une publication du fil si rien n’est choisi.",
+        "formatFeed": "Publication",
+        "formatStory": "Story",
+        "formatReel": "Reel",
         "videoTitle": "Titre de la vidéo",
         "videoTitleHint": "Pour une publication avec une vidéo : une ligne, de 255 caractères au plus.",
         "videoTitleInvalid": "Un titre tient sur une ligne, en 255 caractères au plus, pour une publication avec une vidéo."
       }
+    },
+    "Formats": {
+      "title": "Format",
+      "feed": "Publication",
+      "story": "Story",
+      "reel": "Reel",
+      "textNotSent": "Une story est envoyée sans texte.",
+      "storiesExpire": "Les stories disparaissent après 24 heures et n’ont pas de statistiques dans Peal."
     },
     "Calendar": {
       "title": "Calendrier",

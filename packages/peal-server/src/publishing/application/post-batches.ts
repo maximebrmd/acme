@@ -9,6 +9,8 @@ import {
   Result,
 } from "effect";
 
+import { optionsOn } from "#publishing/domain/channel-options.ts";
+import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
 import {
   contentOn,
@@ -169,6 +171,7 @@ export class PostBatches extends Context.Service<
         readonly at: DateTime.Utc;
         readonly channelIds: readonly ChannelId[];
         readonly content: PostContent;
+        readonly options: readonly ChannelOptions[];
         readonly place: number;
       }
 
@@ -178,7 +181,8 @@ export class PostBatches extends Context.Service<
         earlier: Accepted,
         at: DateTime.Utc,
         channelIds: readonly ChannelId[],
-        content: PostContent
+        content: PostContent,
+        options: readonly ChannelOptions[]
       ): readonly ChannelId[] =>
         Duration.isLessThan(
           DateTime.distance(earlier.at, at).pipe(Duration.abs),
@@ -187,8 +191,12 @@ export class PostBatches extends Context.Service<
           ? channelIds.filter(
               (channelId) =>
                 earlier.channelIds.includes(channelId) &&
-                contentOn(earlier.content, channelId) ===
-                  contentOn(content, channelId)
+                contentOn(
+                  earlier.content,
+                  channelId,
+                  optionsOn(earlier.options, channelId)
+                ) ===
+                  contentOn(content, channelId, optionsOn(options, channelId))
             )
           : [];
 
@@ -374,7 +382,8 @@ export class PostBatches extends Context.Service<
                     earlier,
                     when,
                     found.filled.channelIds,
-                    found.filled.content
+                    found.filled.content,
+                    found.filled.options
                   );
 
                   return shared.length === 0
@@ -405,6 +414,7 @@ export class PostBatches extends Context.Service<
               at: when,
               channelIds: found.filled.channelIds,
               content: found.filled.content,
+              options: found.filled.options,
               place,
             });
 

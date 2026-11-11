@@ -270,6 +270,98 @@ public class ChannelTest : BaseMockServerTest
                   ]
                 },
                 "platform": "x",
+                "postFormats": [
+                  {
+                    "description": "description",
+                    "media": {
+                      "altText": {
+                        "maxLength": 1,
+                        "shown": true
+                      },
+                      "formats": [
+                        {
+                          "contentType": "image/gif",
+                          "kind": "image",
+                          "maxAspectRatio": 1.1,
+                          "maxByteSize": 1000000,
+                          "maxDurationMs": 1,
+                          "maxMediaWith": 1,
+                          "maxPixels": 1,
+                          "maxSide": 1,
+                          "minAspectRatio": 1.1,
+                          "minByteSize": 1000000,
+                          "minDurationMs": 1,
+                          "minSide": 1
+                        },
+                        {
+                          "contentType": "image/gif",
+                          "kind": "image",
+                          "maxAspectRatio": 1.1,
+                          "maxByteSize": 1000000,
+                          "maxDurationMs": 1,
+                          "maxMediaWith": 1,
+                          "maxPixels": 1,
+                          "maxSide": 1,
+                          "minAspectRatio": 1.1,
+                          "minByteSize": 1000000,
+                          "minDurationMs": 1,
+                          "minSide": 1
+                        }
+                      ],
+                      "maxCount": 1,
+                      "maxVideos": 1,
+                      "mixesKinds": true,
+                      "required": true
+                    },
+                    "name": "name",
+                    "sendsText": true
+                  },
+                  {
+                    "description": "description",
+                    "media": {
+                      "altText": {
+                        "maxLength": 1,
+                        "shown": true
+                      },
+                      "formats": [
+                        {
+                          "contentType": "image/gif",
+                          "kind": "image",
+                          "maxAspectRatio": 1.1,
+                          "maxByteSize": 1000000,
+                          "maxDurationMs": 1,
+                          "maxMediaWith": 1,
+                          "maxPixels": 1,
+                          "maxSide": 1,
+                          "minAspectRatio": 1.1,
+                          "minByteSize": 1000000,
+                          "minDurationMs": 1,
+                          "minSide": 1
+                        },
+                        {
+                          "contentType": "image/gif",
+                          "kind": "image",
+                          "maxAspectRatio": 1.1,
+                          "maxByteSize": 1000000,
+                          "maxDurationMs": 1,
+                          "maxMediaWith": 1,
+                          "maxPixels": 1,
+                          "maxSide": 1,
+                          "minAspectRatio": 1.1,
+                          "minByteSize": 1000000,
+                          "minDurationMs": 1,
+                          "minSide": 1
+                        }
+                      ],
+                      "maxCount": 1,
+                      "maxVideos": 1,
+                      "mixesKinds": true,
+                      "required": true
+                    },
+                    "name": "name",
+                    "sendsText": true
+                  }
+                ],
                 "text": {
                   "forbiddenCharacters": [
                     "forbiddenCharacters",
@@ -412,6 +504,20 @@ public class ChannelTest : BaseMockServerTest
                   ]
                 },
                 "platform": "x",
+                "postFormats": [
+                  {
+                    "description": "description",
+                    "media": {
+                      "altText": {
+                        "maxLength": 1
+                      },
+                      "maxCount": 1,
+                      "required": true
+                    },
+                    "name": "name",
+                    "sendsText": true
+                  }
+                ],
                 "text": {
                   "forbiddenCharacters": [
                     "forbiddenCharacters"

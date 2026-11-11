@@ -245,6 +245,8 @@ pub enum TargetOptions {
         #[serde(rename = "coverMediaId")]
         #[serde(skip_serializing_if = "Option::is_none")]
         cover_media_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        format: Option<InstagramFormat>,
         #[serde(rename = "shareToFeed")]
         #[serde(skip_serializing_if = "Option::is_none")]
         share_to_feed: Option<bool>,
@@ -259,6 +261,8 @@ pub enum TargetOptions {
     #[serde(rename = "facebook")]
     #[non_exhaustive]
     Facebook {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        format: Option<FacebookFormat>,
         #[serde(rename = "videoTitle")]
         #[serde(skip_serializing_if = "Option::is_none")]
         video_title: Option<String>,
@@ -389,6 +393,7 @@ impl TargetOptions {
             audio_name: None,
             collaborators: None,
             cover_media_id: None,
+            format: None,
             share_to_feed: None,
             thumb_offset_ms: None,
             trial_reel: None,
@@ -396,7 +401,10 @@ impl TargetOptions {
     }
 
     pub fn facebook() -> Self {
-        Self::Facebook { video_title: None }
+        Self::Facebook {
+            format: None,
+            video_title: None,
+        }
     }
 
     pub fn youtube_with_category_id(
@@ -1979,6 +1987,7 @@ impl TargetOptions {
         audio_name: String,
         collaborators: Option<Vec<String>>,
         cover_media_id: Option<String>,
+        format: Option<InstagramFormat>,
         share_to_feed: Option<bool>,
         thumb_offset_ms: Option<i64>,
         trial_reel: Option<InstagramTrialReel>,
@@ -1987,6 +1996,7 @@ impl TargetOptions {
             audio_name: Some(audio_name),
             collaborators,
             cover_media_id,
+            format,
             share_to_feed,
             thumb_offset_ms,
             trial_reel,
@@ -1997,6 +2007,7 @@ impl TargetOptions {
         audio_name: Option<String>,
         collaborators: Vec<String>,
         cover_media_id: Option<String>,
+        format: Option<InstagramFormat>,
         share_to_feed: Option<bool>,
         thumb_offset_ms: Option<i64>,
         trial_reel: Option<InstagramTrialReel>,
@@ -2005,6 +2016,7 @@ impl TargetOptions {
             audio_name,
             collaborators: Some(collaborators),
             cover_media_id,
+            format,
             share_to_feed,
             thumb_offset_ms,
             trial_reel,
@@ -2015,6 +2027,7 @@ impl TargetOptions {
         audio_name: Option<String>,
         collaborators: Option<Vec<String>>,
         cover_media_id: String,
+        format: Option<InstagramFormat>,
         share_to_feed: Option<bool>,
         thumb_offset_ms: Option<i64>,
         trial_reel: Option<InstagramTrialReel>,
@@ -2023,6 +2036,27 @@ impl TargetOptions {
             audio_name,
             collaborators,
             cover_media_id: Some(cover_media_id),
+            format,
+            share_to_feed,
+            thumb_offset_ms,
+            trial_reel,
+        }
+    }
+
+    pub fn instagram_with_format(
+        audio_name: Option<String>,
+        collaborators: Option<Vec<String>>,
+        cover_media_id: Option<String>,
+        format: InstagramFormat,
+        share_to_feed: Option<bool>,
+        thumb_offset_ms: Option<i64>,
+        trial_reel: Option<InstagramTrialReel>,
+    ) -> Self {
+        Self::Instagram {
+            audio_name,
+            collaborators,
+            cover_media_id,
+            format: Some(format),
             share_to_feed,
             thumb_offset_ms,
             trial_reel,
@@ -2033,6 +2067,7 @@ impl TargetOptions {
         audio_name: Option<String>,
         collaborators: Option<Vec<String>>,
         cover_media_id: Option<String>,
+        format: Option<InstagramFormat>,
         share_to_feed: bool,
         thumb_offset_ms: Option<i64>,
         trial_reel: Option<InstagramTrialReel>,
@@ -2041,6 +2076,7 @@ impl TargetOptions {
             audio_name,
             collaborators,
             cover_media_id,
+            format,
             share_to_feed: Some(share_to_feed),
             thumb_offset_ms,
             trial_reel,
@@ -2051,6 +2087,7 @@ impl TargetOptions {
         audio_name: Option<String>,
         collaborators: Option<Vec<String>>,
         cover_media_id: Option<String>,
+        format: Option<InstagramFormat>,
         share_to_feed: Option<bool>,
         thumb_offset_ms: i64,
         trial_reel: Option<InstagramTrialReel>,
@@ -2059,6 +2096,7 @@ impl TargetOptions {
             audio_name,
             collaborators,
             cover_media_id,
+            format,
             share_to_feed,
             thumb_offset_ms: Some(thumb_offset_ms),
             trial_reel,
@@ -2069,6 +2107,7 @@ impl TargetOptions {
         audio_name: Option<String>,
         collaborators: Option<Vec<String>>,
         cover_media_id: Option<String>,
+        format: Option<InstagramFormat>,
         share_to_feed: Option<bool>,
         thumb_offset_ms: Option<i64>,
         trial_reel: InstagramTrialReel,
@@ -2077,14 +2116,23 @@ impl TargetOptions {
             audio_name,
             collaborators,
             cover_media_id,
+            format,
             share_to_feed,
             thumb_offset_ms,
             trial_reel: Some(trial_reel),
         }
     }
 
-    pub fn facebook_with_video_title(video_title: String) -> Self {
+    pub fn facebook_with_format(format: FacebookFormat, video_title: Option<String>) -> Self {
         Self::Facebook {
+            format: Some(format),
+            video_title,
+        }
+    }
+
+    pub fn facebook_with_video_title(format: Option<FacebookFormat>, video_title: String) -> Self {
+        Self::Facebook {
+            format,
             video_title: Some(video_title),
         }
     }

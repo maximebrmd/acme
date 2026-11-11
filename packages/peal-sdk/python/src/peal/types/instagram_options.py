@@ -6,12 +6,13 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .instagram_format import InstagramFormat
 from .instagram_trial_reel import InstagramTrialReel
 
 
 class InstagramOptions(UniversalBaseModel):
     """
-    How a post goes out on an Instagram account. Scheduling needs none of them; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
+    How a post goes out on an Instagram account. Scheduling needs none of them; `format` `story` makes it a story, sent without the post's text and taking none of the other options; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
     """
 
     audio_name: typing_extensions.Annotated[
@@ -21,6 +22,7 @@ class InstagramOptions(UniversalBaseModel):
     cover_media_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="coverMediaId"), pydantic.Field(alias="coverMediaId")
     ] = None
+    format: typing.Optional[InstagramFormat] = None
     share_to_feed: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="shareToFeed"), pydantic.Field(alias="shareToFeed")
     ] = None

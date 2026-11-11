@@ -13,6 +13,7 @@ from .media_capabilities import MediaCapabilities
 from .platform import Platform
 from .platform_capabilities_analytics import PlatformCapabilitiesAnalytics
 from .platform_capabilities_options import PlatformCapabilitiesOptions
+from .post_format_capabilities import PostFormatCapabilities
 from .text_capabilities import TextCapabilities
 
 
@@ -28,6 +29,11 @@ class PlatformCapabilities(UniversalBaseModel):
     media: MediaCapabilities
     options: PlatformCapabilitiesOptions
     platform: Platform
+    post_formats: typing_extensions.Annotated[
+        typing.Optional[typing.List[PostFormatCapabilities]],
+        FieldMetadata(alias="postFormats"),
+        pydantic.Field(alias="postFormats"),
+    ] = None
     text: TextCapabilities
     version: int
 

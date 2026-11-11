@@ -462,6 +462,7 @@ export const blueskySession = Effect.fn("test.blueskySession")(
 export const metaHostsAt = (url: string, instagramUrl = url): MetaHosts => ({
   facebookDialog: new URL(url),
   facebookGraph: new URL(url),
+  facebookUpload: new URL(url),
   instagramApi: new URL(instagramUrl),
   instagramAuthorize: new URL(instagramUrl),
   instagramGraph: new URL(instagramUrl),

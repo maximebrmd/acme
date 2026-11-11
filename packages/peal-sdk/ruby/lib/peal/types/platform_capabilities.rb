@@ -19,6 +19,8 @@ module Peal
 
       field :platform, -> { Peal::Types::Platform }, optional: false, nullable: false
 
+      field :post_formats, -> { Internal::Types::Array[Peal::Types::PostFormatCapabilities] }, optional: true, nullable: false, api_name: "postFormats"
+
       field :text, -> { Peal::Types::TextCapabilities }, optional: false, nullable: false
 
       field :version, -> { Integer }, optional: false, nullable: false

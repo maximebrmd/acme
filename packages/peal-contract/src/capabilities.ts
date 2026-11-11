@@ -97,6 +97,22 @@ export const MediaCapabilitiesSchema = Schema.Struct({
 }).annotate({ identifier: "MediaCapabilities" });
 
 /**
+ * A kind of post whose rules differ from a feed post's on its platform,
+ * chosen by the options' `format` (`name`): its images and videos, and
+ * whether the post's text goes out with it (a story is sent without). The
+ * post's text there is limited as `text` says when it is sent. A format
+ * takes no parts after the first.
+ */
+export const PostFormatCapabilitiesSchema = Schema.Struct({
+  description: Schema.String,
+  media: MediaCapabilitiesSchema,
+  name: Schema.String,
+  sendsText: Schema.Boolean,
+}).annotate({ identifier: "PostFormatCapabilities" });
+
+export type PostFormatCapabilities = typeof PostFormatCapabilitiesSchema.Type;
+
+/**
  * A rule between two options: when the yes-or-no `field` is true, one of
  * `oneOf` must be true too (`needsOneOf`), or `other` must not have `value`
  * (`notWith`); `field` is needed while `other` has one of `values`
@@ -208,6 +224,11 @@ export const PlatformCapabilitiesSchema = Schema.Struct({
     fields: Schema.Array(FieldDescriptionSchema),
   }),
   platform: PlatformSchema,
+  // The kinds of post whose rules differ from a feed post's there (an
+  // Instagram story, a Facebook story or reel), each chosen by the
+  // options' `format`; `media` above is a feed post's. Left out where the
+  // platform has none.
+  postFormats: Schema.optionalKey(Schema.Array(PostFormatCapabilitiesSchema)),
   text: TextCapabilitiesSchema,
   version: Schema.Int,
 }).annotate({ identifier: "PlatformCapabilities" });

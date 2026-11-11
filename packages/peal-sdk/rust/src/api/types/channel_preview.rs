@@ -21,6 +21,9 @@ pub struct ChannelPreview {
     #[serde(rename = "textCounts")]
     #[serde(default)]
     pub text_counts: Vec<TextCount>,
+    #[serde(rename = "textNotSent")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_not_sent: Option<bool>,
     #[serde(default)]
     pub violations: Vec<ContentViolation>,
 }
@@ -43,6 +46,7 @@ pub struct ChannelPreviewBuilder {
     platform: Option<Platform>,
     text: Option<String>,
     text_counts: Option<Vec<TextCount>>,
+    text_not_sent: Option<bool>,
     violations: Option<Vec<ContentViolation>>,
 }
 
@@ -92,6 +96,11 @@ impl ChannelPreviewBuilder {
         self
     }
 
+    pub fn text_not_sent(mut self, value: bool) -> Self {
+        self.text_not_sent = Some(value);
+        self
+    }
+
     pub fn violations(mut self, value: Vec<ContentViolation>) -> Self {
         self.violations = Some(value);
         self
@@ -136,6 +145,7 @@ impl ChannelPreviewBuilder {
             text_counts: self
                 .text_counts
                 .ok_or_else(|| BuildError::missing_field("text_counts"))?,
+            text_not_sent: self.text_not_sent,
             violations: self
                 .violations
                 .ok_or_else(|| BuildError::missing_field("violations"))?,

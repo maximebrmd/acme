@@ -5,7 +5,7 @@ using Peal.Core;
 namespace Peal;
 
 /// <summary>
-/// How a post goes out on an Instagram account. Scheduling needs none of them; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
+/// How a post goes out on an Instagram account. Scheduling needs none of them; `format` `story` makes it a story, sent without the post's text and taking none of the other options; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
 /// </summary>
 [Serializable]
 public record InstagramOptions : IJsonOnDeserialized
@@ -22,6 +22,9 @@ public record InstagramOptions : IJsonOnDeserialized
 
     [JsonPropertyName("coverMediaId")]
     public string? CoverMediaId { get; set; }
+
+    [JsonPropertyName("format")]
+    public InstagramFormat? Format { get; set; }
 
     [JsonPropertyName("shareToFeed")]
     public bool? ShareToFeed { get; set; }

@@ -529,6 +529,7 @@ export {
   OptionConstraintSchema,
   PlatformCapabilitiesSchema,
   postCountNames,
+  PostFormatCapabilitiesSchema,
   TextCapabilitiesSchema,
   TextLimitSchema,
 } from "./capabilities.ts";
@@ -541,6 +542,7 @@ export type {
   MediaFormat,
   OptionConstraint,
   PlatformCapabilities,
+  PostFormatCapabilities,
   TextLimit,
 } from "./capabilities.ts";
 
@@ -1060,7 +1062,9 @@ export {
   ThreadsReplyControlSchema,
   XOptionsSchema,
   XReplySettingsSchema,
+  FacebookFormatSchema,
   FacebookOptionsSchema,
+  InstagramFormatSchema,
   InstagramOptionsSchema,
   InstagramTrialReelSchema,
   instagramCoverTypes,
@@ -1099,7 +1103,9 @@ export type {
   ThreadsReplyControl,
   XOptions,
   XReplySettings,
+  FacebookFormat,
   FacebookOptions,
+  InstagramFormat,
   InstagramOptions,
   InstagramTrialReel,
   YouTubeLicense,

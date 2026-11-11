@@ -10,6 +10,7 @@ export interface PlatformCapabilities {
     media: Peal.MediaCapabilities;
     options: PlatformCapabilities.Options;
     platform: Peal.Platform;
+    postFormats?: Peal.PostFormatCapabilities[] | undefined;
     text: Peal.TextCapabilities;
     version: number;
 }

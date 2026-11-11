@@ -520,6 +520,45 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   goes on images and a carousel's images. Meta names no parameter in a
   code: a container refused while it names collaborators keeps Meta's
   code, never `optionRefused`.
+- A post format is a kind of post whose rules differ from a feed post's,
+  chosen by the options' `format` and never guessed from the files
+  (`post-format.ts`, `postFormatOf`: `feed` and nothing are none): an
+  Instagram `story`, a Facebook `story` or `reel`. Its rules are
+  `platformRules[platform].postFormats[format]` (`PostFormatRules`, each
+  figure cited with its page), whose media, count of files, need of one
+  and parts replace the platform's whole; `sendsText: false` (a story)
+  sends, counts and checks no text, and the check's preview says
+  `textNotSent`, a note, never a violation. Read the rules a post follows
+  only through `rulesFor(platform, options)` (`violationsOn`,
+  `mediaViolationsOn`, `partViolationsOn`, `previewOn`, `followUpsOn` and
+  the router), never `platformRules[platform]` for a post; the contract's
+  `rulesFor` is the clients' copy, which the contract test compares format
+  by format. The capabilities give `postFormats` only on platforms that
+  have formats, under the same version. A story refuses a feed post's
+  options in `problems()` (with `onlyWith` constraints on `format`), so
+  `mediaOptionViolationsOn` skips them there. The duplicate digest adds
+  the format when there is one, so a feed post's digests stay as they were
+  and a story is never the feed post's duplicate. `PublishedTargets` rows
+  carry their `format`; `from(cursor, limit, without)` leaves formats out
+  in its query, so a page stays full: analytics and the inbox leave out
+  stories there, and ads offer feed posts only.
+- Instagram's story is a container with `media_type=STORIES` and its one
+  file, no caption, alt text or collaborators, published without a
+  permalink; its `lookUp` reads the held container only (a resumed run
+  answers `unknown`), never the caption search. Facebook's reels and video
+  stories (`meta/facebook-formats.ts`) start on `video_reels` or
+  `video_stories`, have Meta fetch the file on the upload host
+  (`MetaHosts.facebookUpload`, the Page's token in the `Authorization`
+  header, which traces redact), poll `?fields=status` until uploaded, and
+  publish with the `finish` phase (`finishPhase`); a photo story uploads
+  its photo unpublished in `prepare`, every run its own, and publishes it
+  with `photo_stories`. Their `lookUp` reads what the run holds (a video's
+  `publishing_phase`: not started is `absent`; a story among the Page's
+  `stories` by its `media_id`, `found` or `unknown`); a resumed run
+  answers `unknown`, so a story or a reel is never sent twice. A reel is
+  published under its video's id, a story under its `post_id`, neither
+  with a permalink. Meta's 30 reels a Page a day have no endpoint or
+  documented code: its refusal keeps Meta's code.
 - A field the web composer shows only for some values of another (an
   event's dates) says so with `shownWith` in `#posts/target-options.ts`:
   `isShown` hides it and `optionsOf` leaves its value out, as the domain's

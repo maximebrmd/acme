@@ -4,7 +4,14 @@ import { PublishedPosts } from "#analytics/application/published-posts.ts";
 import type { Publication } from "#analytics/domain/tracked-post.ts";
 import { PublishedTargets } from "#publishing/application/published-targets.ts";
 
-/** The posts that went live, as the publishing context lists them. */
+// Stories have no statistics Peal reads, and leave after a day: the
+// listing leaves them out itself, so a page is short only at its end.
+const unfollowed = ["story"] as const;
+
+/**
+ * The posts that went live, as the publishing context lists them, but
+ * stories.
+ */
 export const PublishingPublishedPosts = Layer.effect(
   PublishedPosts,
   Effect.gen(function* PublishingPublishedPosts() {
@@ -12,7 +19,7 @@ export const PublishingPublishedPosts = Layer.effect(
 
     return PublishedPosts.of({
       from: (cursor, limit) =>
-        targets.from(cursor, limit).pipe(
+        targets.from(cursor, limit, unfollowed).pipe(
           Effect.map((published) =>
             published.map((target): Publication => ({
               channelId: target.channelId,

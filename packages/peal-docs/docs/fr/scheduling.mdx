@@ -179,6 +179,7 @@ Sur **Instagram** :
 
 | Option                                               | Nom dans l’API  | Valeurs                                                               | Par défaut                  |
 | ---------------------------------------------------- | --------------- | --------------------------------------------------------------------- | --------------------------- |
+| **Format**                                           | `format`        | `story` (voir [stories et reels](#formats)), ou `feed`                | Une publication du fil      |
 | **Partager aussi dans le fil**                       | `shareToFeed`   | Un reel : oui ou non                                                  | Comme Instagram le décide   |
 | **Image de couverture**                              | `coverMediaId`  | Un reel : une image JPEG de la médiathèque, de 8 Mio au plus          | L’image prise dans la vidéo |
 | **Couverture prise dans la vidéo, en millisecondes** | `thumbOffsetMs` | Un reel : son image, en millisecondes depuis son début, dans sa durée | La première image           |
@@ -186,17 +187,34 @@ Sur **Instagram** :
 | **Reel d’essai**                                     | `trialReel`     | Un reel : `manual` ou `performance`                                   | Pas un essai                |
 | **Collaborateurs**                                   | `collaborators` | Un à trois noms d’utilisateur Instagram                               | Aucun                       |
 
-Un reel est une publication d’une seule vidéo. Une image de couverture l’emporte sur l’image prise dans la vidéo : seule l’image est alors envoyée. Instagram ne renomme l’audio d’un reel qu’une fois. Un reel d’essai est d’abord montré aux comptes qui ne suivent pas le vôtre, et atteint vos abonnés quand vous le partagez dans l’application (`manual`) ou de lui-même s’il marche bien (`performance`). Chaque collaborateur est un autre compte, qui reçoit une invitation à être nommé coauteur : ne nommez que des comptes que vous voulez inviter. Instagram ne documente pas les collaborateurs pour les comptes connectés avec Instagram Login : quand Instagram refuse une telle publication, le canal indique **Échec** avec le code de Meta. Instagram montre aussi le texte alternatif des images d’une publication, jusqu’à 1 000 caractères, et aucun sur une vidéo.
+Sur Instagram, un reel est une publication du fil d’une seule vidéo ; une story ne prend aucune de ces options. Une image de couverture l’emporte sur l’image prise dans la vidéo : seule l’image est alors envoyée. Instagram ne renomme l’audio d’un reel qu’une fois. Un reel d’essai est d’abord montré aux comptes qui ne suivent pas le vôtre, et atteint vos abonnés quand vous le partagez dans l’application (`manual`) ou de lui-même s’il marche bien (`performance`). Chaque collaborateur est un autre compte, qui reçoit une invitation à être nommé coauteur : ne nommez que des comptes que vous voulez inviter. Instagram ne documente pas les collaborateurs pour les comptes connectés avec Instagram Login : quand Instagram refuse une telle publication, le canal indique **Échec** avec le code de Meta. Instagram montre aussi le texte alternatif des images d’une publication, jusqu’à 1 000 caractères, et aucun sur une vidéo.
 
 Sur **Facebook** :
 
-| Option                | Nom dans l’API | Valeurs                                       | Par défaut   |
-| --------------------- | -------------- | --------------------------------------------- | ------------ |
-| **Titre de la vidéo** | `videoTitle`   | Une vidéo : une ligne, 255 caractères au plus | Pas de titre |
+| Option                | Nom dans l’API | Valeurs                                                          | Par défaut             |
+| --------------------- | -------------- | ---------------------------------------------------------------- | ---------------------- |
+| **Format**            | `format`       | `story` ou `reel` (voir [stories et reels](#formats)), ou `feed` | Une publication du fil |
+| **Titre de la vidéo** | `videoTitle`   | Une vidéo ou un reel : une ligne, 255 caractères au plus         | Pas de titre           |
 
 Une miniature ou une couverture est un fichier de la médiathèque que la publication ne montre pas : il doit être prêt et appartenir à l’espace de travail, il ne peut pas être supprimé tant qu’une publication qui part le nomme, un brouillon le perd quand il est supprimé, et une copie de la publication le laisse de côté une fois qu’il n’est plus là. Un ensemble de canaux ou les options par défaut d’un canal ne peuvent pas en nommer un.
 
 Par l’API, un brouillon prend ses options dans `options`, une entrée par canal, chacune marquée de sa `platform` ; chacune des cibles de la publication répond avec les siennes. Mettre à jour un brouillon remplace ses options : celles qui manquent sont retirées. Un canal ajouté seulement au moment de programmer n’en a pas encore : sur YouTube, TikTok ou Pinterest, donnez-lui d’abord ses options dans le brouillon.
+
+### Stories et reels [#formats]
+
+Sur Instagram et Facebook, **Format** choisit le genre de publication que reçoit un canal. Peal ne le devine jamais d’après le fichier : une vidéo verticale reste une publication du fil (un reel, sur Instagram) tant que vous ne choisissez pas **Story**, ou **Reel** sur Facebook.
+
+| Format    | Où        | Ce qu’il prend                                                                                                                  | Le texte de la publication |
+| --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| **Story** | Instagram | Une image JPEG de 8 Mio au plus, ou une vidéo MP4 ou QuickTime de 3 à 60 secondes et 100 Mio au plus                            | Pas envoyé                 |
+| **Story** | Facebook  | Une image JPEG, PNG ou GIF de 10 Mio au plus, ou une vidéo MP4 verticale (9:16, 540 pixels de côté au moins) de 3 à 60 secondes | Pas envoyé                 |
+| **Reel**  | Facebook  | Une vidéo MP4 verticale (9:16, 540 pixels de côté au moins) de 3 à 90 secondes                                                  | Sa description             |
+
+Une story est envoyée sans le texte de la publication : l’éditeur le dit sous les compteurs et n’y compte rien, et une vérification par l’API répond `textNotSent` pour ce canal. Une story ne prend aucune autre option (ni collaborateurs, ni réglages de reel, ni titre), et une story ou un reel n’a pas de parties après lui. Le titre d’un reel Facebook est le **Titre de la vidéo**. Une story et la publication du fil du même fichier et du même texte ne sont pas prises pour des doublons l’une de l’autre.
+
+Une story disparaît après 24 heures. Peal n’en garde pas de lien et n’en lit ni statistiques ni commentaires, et ni une story ni un reel ne peuvent être sponsorisés depuis Peal ; chacun compte dans les publications du mois comme les autres. Meta demande que la vidéo d’un reel ou d’une story vidéo défile à 24 à 60 images par seconde, ce que Peal ne vérifie pas : Meta refuse une vidéo hors de cette plage quand la publication part, et le canal indique **Échec** avec le code de Meta. Meta n’accepte aussi que 30 reels par Page sur 24 heures glissantes par son API ; au-delà, le reel échoue avec le code de Meta, et vous pouvez le republier plus tard.
+
+Si le serveur de Peal redémarre pendant qu’une story ou un reel part, Peal ne peut pas le relire : le canal indique **À vérifier**, pour que vous vérifiiez le compte, puis le confirmiez ou le republiiez. Peal ne le renvoie jamais de lui-même. Par l’API, les capacités d’un canal listent les formats de sa plateforme dans `postFormats`, chacun avec les médias qu’il prend et si le texte est envoyé.
 
 ## La programmer [#schedule]
 
