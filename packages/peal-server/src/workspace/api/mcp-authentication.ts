@@ -1,4 +1,4 @@
-import { Effect, Option, Redacted, Schema } from "effect";
+import { Effect, Option, Redacted, Result, Schema } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
 import { CurrentMember } from "peal-contract";
 
@@ -6,6 +6,9 @@ import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ConnectionJournal } from "#workspace/application/connection-journal.ts";
 import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
+import { answerAccessDenied } from "#workspace/domain/membership.ts";
+import type { AccessDenied } from "#workspace/domain/membership.ts";
+import type { Principal } from "#workspace/domain/principal.ts";
 
 import { memberOf } from "./principal.ts";
 import { pastLimit, limitHeaders } from "./rate-limit.ts";
@@ -59,10 +62,32 @@ const jsonRpcError = (
 
 // The token works, but its user can no longer act in its workspace. Signing
 // in again would not help, so there is no challenge.
-const forbidden = () =>
-  Effect.succeed(
-    jsonRpcError(403, "The workspace this token is bound to is not open to you")
-  );
+const closed = () =>
+  jsonRpcError(403, "The workspace this token is bound to is not open to you");
+
+/**
+ * What a credential refused its workspace is told: a partner key, that no
+ * workspace it acts in has that id, as the API tells it; a person whose
+ * account lacks the two-step verification the workspace requires, what to
+ * do; anyone else, that the workspace is not open to them.
+ */
+const refusalOf = (principal: Principal, denied: AccessDenied) =>
+  answerAccessDenied({
+    BannedUser: closed,
+    NotAMember: () =>
+      principal._tag === "PartnerKeyPrincipal"
+        ? jsonRpcError(
+            404,
+            `No such workspace: the ${workspaceHeaderName} header names none this partner key acts in.`
+          )
+        : closed(),
+    TwoStepRequired: () =>
+      jsonRpcError(
+        403,
+        "This workspace requires two-step verification. Turn it on in your Peal account settings, then try again."
+      ),
+    WorkspaceMismatch: closed,
+  })(denied);
 
 /**
  * Authentication for the MCP endpoint, as Better Auth's requireMcpAuth does
@@ -124,22 +149,18 @@ export const mcpAuthentication = ({
           // home workspace included, is told there is no such workspace,
           // as the API tells it.
           const resolved = yield* members.resolve(principal, workspaceId).pipe(
-            Effect.asSome,
-            Effect.catchTag("NotAMember", (denied) =>
-              principal._tag === "PartnerKeyPrincipal"
-                ? Effect.succeedNone
-                : Effect.fail(denied)
+            Effect.map((actor) => Result.succeed(actor)),
+            Effect.catchTag("DirectoryUnavailable", Effect.die),
+            Effect.catch((error) =>
+              Effect.succeed(Result.fail(refusalOf(principal, error)))
             )
           );
 
-          if (Option.isNone(resolved)) {
-            return jsonRpcError(
-              404,
-              `No such workspace: the ${workspaceHeaderName} header names none this partner key acts in.`
-            );
+          if (Result.isFailure(resolved)) {
+            return resolved.failure;
           }
 
-          const member = memberOf(resolved.value, principal);
+          const member = memberOf(resolved.success, principal);
 
           // The body is read once and kept, so the MCP server reads it again.
           const called =
@@ -174,16 +195,12 @@ export const mcpAuthentication = ({
         }).pipe(
           Effect.catchTags({
             AuthUnavailable: Effect.die,
-            BannedUser: forbidden,
-            DirectoryUnavailable: Effect.die,
             InvalidAccessToken: ({ challenge, description, status }) =>
               Effect.succeed(
                 jsonRpcError(status, description, {
                   "www-authenticate": challenge,
                 })
               ),
-            NotAMember: forbidden,
-            WorkspaceMismatch: forbidden,
             WorkspaceNotNamed: () =>
               Effect.succeed(
                 jsonRpcError(

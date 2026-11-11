@@ -34,6 +34,7 @@ export const PermissionSchema = Schema.Literals([
   "member:delete",
   "organization:update",
   "organization:delete",
+  "organization:secure",
   "partner:read",
   "partner:manage",
   "post:read",

@@ -1,4 +1,4 @@
-import { Option, Result, Schema } from "effect";
+import { Match, Option, Result, Schema } from "effect";
 import type { DateTime } from "effect";
 
 import { Actor } from "#shared/domain/access.ts";
@@ -12,13 +12,29 @@ import { grantedPermissions } from "./oauth-grant.ts";
 import type { PartnerId } from "./partner-id.ts";
 import type { Principal } from "./principal.ts";
 import { permissionsFor } from "./roles.ts";
+import { TwoStepRequired } from "./two-step-required.ts";
 import type { UserPrincipal } from "./user-principal.ts";
 import { WorkspaceMismatch } from "./workspace-mismatch.ts";
 
-/** A user's place in one workspace, and whether staff banned the user. */
+/**
+ * Whether the user's account has two-step verification on, and whether the
+ * workspace requires it of its members.
+ */
+export const TwoStepStandingSchema = Schema.Struct({
+  enabled: Schema.Boolean,
+  required: Schema.Boolean,
+});
+
+export type TwoStepStanding = typeof TwoStepStandingSchema.Type;
+
+/**
+ * A user's place in one workspace, whether staff banned the user, and their
+ * two-step verification against the workspace's requirement.
+ */
 export const MembershipSchema = Schema.Struct({
   ban: Schema.Option(BanSchema),
   role: Schema.String,
+  twoStep: TwoStepStandingSchema,
 });
 
 export type Membership = typeof MembershipSchema.Type;
@@ -28,7 +44,8 @@ export type Membership = typeof MembershipSchema.Type;
  * schedule, approve or publish, connect accounts, change billing, handle
  * API keys, manage webhooks, a partner account or delete the workspace,
  * connect an ad account, spend on ads or decide what ads may spend,
- * which all outlive the impersonation or reach outside Peal; nor answer
+ * or require two-step verification of the workspace's members, which all
+ * outlive the impersonation or reach outside Peal; nor answer
  * the comments under the workspace's posts, nor read them: other people
  * wrote those, and staff need none of them to help a member. They may
  * write and edit drafts, each change recorded in the audit log
@@ -48,6 +65,7 @@ export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
   "engagement:read",
   "engagement:reply",
   "organization:delete",
+  "organization:secure",
   "partner:manage",
   "post:approve",
   "post:publish",
@@ -55,7 +73,19 @@ export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
   "webhook:manage",
 ]);
 
-export type AccessDenied = BannedUser | NotAMember | WorkspaceMismatch;
+export type AccessDenied =
+  | BannedUser
+  | NotAMember
+  | TwoStepRequired
+  | WorkspaceMismatch;
+
+/**
+ * Answers a refusal of `actorFor` case by case, every case named: a reason
+ * added to `AccessDenied` does not compile until each caller decides what
+ * it means. `TwoStepRequired` is not a removal: what waits for the person
+ * waits, as it works again once they turn two-step verification on.
+ */
+export const answerAccessDenied = Match.typeTags<AccessDenied>();
 
 /**
  * What a user may do in a workspace where they hold `role`: what the role
@@ -97,9 +127,12 @@ const boundElsewhere = (
  * acts only in the workspaces its partner owns (`ownedBy`), with the
  * permissions it was given, as a key of that workspace would: any other
  * workspace, its partner's home workspace included, reads as one that does
- * not exist. A user acts in a workspace they are a member of, unless
- * banned, with what their roles allow; through an OAuth client bound to a
- * workspace, in that workspace only.
+ * not exist. Keys belong to workspaces, not people: two-step verification
+ * does not concern them. A user acts in a workspace they are a member of,
+ * unless banned, or unless the workspace requires two-step verification
+ * and their account does not have it on, with what their roles allow;
+ * through an OAuth client bound to a workspace, in that workspace only.
+ * Staff acting as the user are let in or not by the user's account.
  */
 export const actorFor = (
   principal: Principal,
@@ -151,6 +184,12 @@ export const actorFor = (
 
   if (isBanned(membership.value.ban, now)) {
     return Result.fail(new BannedUser({ userId: principal.userId }));
+  }
+
+  const { twoStep } = membership.value;
+
+  if (twoStep.required && !twoStep.enabled) {
+    return Result.fail(new TwoStepRequired({ workspaceId }));
   }
 
   return Result.succeed(

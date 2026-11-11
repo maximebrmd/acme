@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -28,7 +28,12 @@ import {
   user,
   verification,
 } from "./auth-schema.generated.ts";
-import { partnerKeys, partners, partnerWorkspaces } from "./schema.ts";
+import {
+  partnerKeys,
+  partners,
+  partnerWorkspaces,
+  securityPolicies,
+} from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -309,6 +314,12 @@ export const DrizzleAccountStore = Layer.effect(
           .delete(partners)
           .where(eq(partners.workspaceId, workspaceId))
           .pipe(Effect.mapError(failed));
+
+        // What it required of its members.
+        yield* db
+          .delete(securityPolicies)
+          .where(eq(securityPolicies.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
       }
     );
 
@@ -349,13 +360,22 @@ export const DrizzleAccountStore = Layer.effect(
           .where(eq(session.impersonatedBy, userId))
           .pipe(Effect.mapError(failed));
 
-        // Password reset tokens hold the user's id as their value.
+        // Password reset tokens, the browsers two-step verification
+        // trusts and the second steps of sign-ins in progress hold the
+        // user's id as their value. Their identifiers' prefixes are Better
+        // Auth's (a test pins two-step verification's). The user's
+        // authenticator and recovery codes (auth.two_factor) go with the
+        // user, by its foreign key.
         yield* db
           .delete(verification)
           .where(
             and(
               eq(verification.value, userId),
-              sql`${verification.identifier} LIKE 'reset-password:%'`
+              or(
+                sql`${verification.identifier} LIKE 'reset-password:%'`,
+                sql`${verification.identifier} LIKE 'trust-device-%'`,
+                sql`${verification.identifier} LIKE '2fa-%'`
+              )
             )
           )
           .pipe(Effect.mapError(failed));

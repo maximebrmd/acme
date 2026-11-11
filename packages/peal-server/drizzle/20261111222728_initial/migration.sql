@@ -1054,6 +1054,12 @@ CREATE TABLE "workspace"."partners" (
 	"workspace_id" uuid NOT NULL CONSTRAINT "partners_workspace" UNIQUE
 );
 --> statement-breakpoint
+CREATE TABLE "workspace"."security_policies" (
+	"two_step_required" boolean DEFAULT false NOT NULL,
+	"updated_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid PRIMARY KEY
+);
+--> statement-breakpoint
 CREATE TABLE "auth"."account" (
 	"id" uuid PRIMARY KEY DEFAULT pg_catalog.gen_random_uuid(),
 	"account_id" text NOT NULL,

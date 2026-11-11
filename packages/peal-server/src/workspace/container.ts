@@ -64,6 +64,7 @@ import { DrizzleCustomerWorkspaces } from "#workspace/infrastructure/drizzle-cus
 import { DrizzleImpersonationSessions } from "#workspace/infrastructure/drizzle-impersonation-sessions.ts";
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
 import { DrizzlePartnerStore } from "#workspace/infrastructure/drizzle-partner-store.ts";
+import { SecurityPoliciesLive } from "#workspace/infrastructure/drizzle-security-policies.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 import { EmailedAccountMail } from "#workspace/infrastructure/emailed-account-mail.ts";
 import { LoggedActivityJournal } from "#workspace/infrastructure/logged-activity-journal.ts";
@@ -174,6 +175,9 @@ export const WorkspaceLive = Layer.mergeAll(
   // The directory other contexts name members with (the review context),
   // and Better Auth's hooks check a membership with.
   Layer.provideMerge(MemberDirectoryLive),
+  // What each workspace requires of its members, which Better Auth's
+  // hooks and the workspace's settings read.
+  Layer.provideMerge(SecurityPoliciesLive),
   Layer.provideMerge(ImpersonationGuardLive),
   Layer.provideMerge(LegalConnectionJournal),
   Layer.provideMerge(CountedRequestLimits),

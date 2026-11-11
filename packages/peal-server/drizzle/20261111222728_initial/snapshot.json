@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "7440f9aa-2554-43c1-8610-915722672d30",
+  "id": "c923dd45-4886-4cf2-b4dc-01f8bffcf9ee",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -1581,6 +1581,25 @@
         "n|type|workspace.partners",
         "n|rel|workspace.partners_pkey",
         "n|rel|workspace.partners_workspace"
+      ],
+      "reads": [
+        "n|sch|workspace"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "workspace",
+        "security_policies"
+      ],
+      "writes": [
+        "s|tbl|workspace.security_policies",
+        "n|tbl|workspace.security_policies",
+        "e|tbl|workspace.security_policies",
+        "n|rel|workspace.security_policies",
+        "n|type|workspace.security_policies",
+        "n|rel|workspace.security_policies_pkey"
       ],
       "reads": [
         "n|sch|workspace"
@@ -6715,6 +6734,12 @@
     {
       "schema": "workspace",
       "name": "partners",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "workspace",
+      "name": "security_policies",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -16433,6 +16458,45 @@
       "entityType": "columns"
     },
     {
+      "schema": "workspace",
+      "table": "security_policies",
+      "name": "two_step_required",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "security_policies",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "security_policies",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
       "schema": "auth",
       "table": "account",
       "name": "id",
@@ -24731,6 +24795,16 @@
       "name": "partners_pkey",
       "columns": [
         "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "workspace",
+      "table": "security_policies",
+      "name": "security_policies_pkey",
+      "columns": [
+        "workspace_id"
       ],
       "nameExplicit": false,
       "entityType": "pks"

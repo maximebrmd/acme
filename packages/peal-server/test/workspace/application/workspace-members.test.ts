@@ -12,6 +12,10 @@ import type { InvitationRequest } from "#workspace/application/workspace-people.
 import { Invitation } from "#workspace/domain/invitation.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
+// An account without two-step verification, in a workspace that does not
+// require it.
+const noTwoStep = { enabled: false, required: false };
+
 const workspaceId = WorkspaceIdSchema.make(
   "5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60"
 );
@@ -124,7 +128,9 @@ const run = <A, E>(
       MemberDirectory.of({
         account: () => Effect.succeed(Option.none()),
         membership: () =>
-          Effect.succeed(Option.some({ ban: Option.none(), role })),
+          Effect.succeed(
+            Option.some({ ban: Option.none(), role, twoStep: noTwoStep })
+          ),
       })
     );
 

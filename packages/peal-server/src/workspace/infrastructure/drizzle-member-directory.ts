@@ -11,6 +11,7 @@ import { Account } from "#workspace/domain/account.ts";
 import type { Ban } from "#workspace/domain/ban.ts";
 
 import { member, organization, user } from "./auth-schema.generated.ts";
+import { securityPolicies } from "./schema.ts";
 
 const banOf = (
   banned: boolean | null,
@@ -25,8 +26,10 @@ const banOf = (
     : Option.none();
 
 /**
- * Members and bans, read from Better Auth's tables with the server's own
- * Drizzle driver. Better Auth writes them; this only reads.
+ * Members, bans and two-step verification, read from Better Auth's tables
+ * with the server's own Drizzle driver, with each workspace's requirement.
+ * Better Auth writes them; this only reads, from the database on every
+ * request, never from a session's cached copy of the user.
  */
 export const MemberDirectoryLive = Layer.effect(
   MemberDirectory,
@@ -39,14 +42,22 @@ export const MemberDirectoryLive = Layer.effect(
 
     const membership = Effect.fn("MemberDirectory.membership")(
       function* membership(userId: UserId, workspaceId: WorkspaceId) {
+        // The workspace's requirement comes with the membership, in the
+        // same query: a workspace without a policy requires nothing.
         const rows = yield* db
           .select({
             banExpires: user.banExpires,
             banned: user.banned,
             role: member.role,
+            twoStepEnabled: user.twoFactorEnabled,
+            twoStepRequired: securityPolicies.twoStepRequired,
           })
           .from(member)
           .innerJoin(user, eq(user.id, member.userId))
+          .leftJoin(
+            securityPolicies,
+            eq(securityPolicies.workspaceId, member.organizationId)
+          )
           .where(
             and(
               eq(member.userId, userId),
@@ -60,6 +71,10 @@ export const MemberDirectoryLive = Layer.effect(
           Option.map((row) => ({
             ban: banOf(row.banned, row.banExpires),
             role: row.role,
+            twoStep: {
+              enabled: row.twoStepEnabled === true,
+              required: row.twoStepRequired === true,
+            },
           }))
         );
       }
@@ -101,6 +116,7 @@ export const MemberDirectoryLive = Layer.effect(
           image: Option.fromNullishOr(found.image),
           locale: found.locale ?? defaultLocale,
           name: found.name,
+          twoStepEnabled: found.twoFactorEnabled === true,
           workspaces: workspaces.map((workspace) => ({
             ...workspace,
             id: WorkspaceIdSchema.make(workspace.id),
