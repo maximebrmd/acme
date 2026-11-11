@@ -1,10 +1,14 @@
 import { Context, Effect, Layer, Option } from "effect";
 
-import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
+import { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { checkDraft } from "#publishing/domain/content-rules.ts";
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
+import {
+  keepingMedia,
+  referencedMedia,
+} from "#publishing/domain/named-media.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
-import { PostContent, shownMedia } from "#publishing/domain/post-content.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import {
   authorOf,
@@ -166,7 +170,7 @@ export class PostDrafts extends Context.Service<
         const channels = yield* channelsFor(actor, channelIds);
 
         yield* Effect.fromResult(checkDraft(content, channels, options));
-        yield* mediaFor(actor, content);
+        yield* mediaFor(actor, content, options);
 
         return channels.map(({ channelId }) => channelId);
       }, withPorts);
@@ -318,17 +322,21 @@ export class PostDrafts extends Context.Service<
             )
           );
 
-          // Every file it shows, in any of its parts.
-          const shown = shownMedia(content);
+          // Every file it depends on: those it shows, in any of its parts,
+          // and those its options name.
+          const referenced = referencedMedia(
+            content,
+            optionsOfTargets(
+              targets,
+              targets.map(({ channelId }) => channelId)
+            )
+          );
 
           const media =
-            shown.length === 0
+            referenced.length === 0
               ? []
               : yield* AttachableMedia.use((attachable) =>
-                  attachable.lookUp(
-                    actor,
-                    shown.map(({ mediaId }) => mediaId)
-                  )
+                  attachable.lookUp(actor, referenced)
                 );
 
           const tags = yield* TagStore.use((store) =>
@@ -366,7 +374,16 @@ export class PostDrafts extends Context.Service<
             ),
             text: content.text,
           }),
-          options: optionsOfTargets(targets, channelIds),
+          // An option naming a file gone since is left out.
+          options: optionsOfTargets(targets, channelIds).map(
+            (chosen) =>
+              new ChannelOptions({
+                channelId: chosen.channelId,
+                options: keepingMedia(chosen.options, (mediaId) =>
+                  mediaIds.has(mediaId)
+                ),
+              })
+          ),
           tagIds: post.tagIds.filter((tagId) => tagIds.has(tagId)),
         }).pipe(
           // Checked a moment ago: gone since, they are the server's to

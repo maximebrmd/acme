@@ -476,7 +476,7 @@ export class PostScheduling extends Context.Service<
           options: readonly ChannelOptions[]
         ) {
           const channels = yield* channelsFor(actor, channelIds);
-          const files = yield* mediaFor(actor, content);
+          const files = yield* mediaFor(actor, content, options);
 
           // What the platforms' rules and each account's own refuse.
           const violations = yield* violationsOf(
