@@ -170,6 +170,51 @@ describe("the validate endpoint", () => {
   );
 
   it.effect(
+    "says a story's text is not sent, and shows it with none",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* validatesStory() {
+          const workspaceId = yield* freshWorkspace;
+          const instagram = yield* connect(workspaceId, "instagram");
+          const params = { workspaceId };
+
+          const viewer = yield* clientAs(
+            memberOf(workspaceId, permissionsFor("viewer"))
+          );
+
+          const checkedWith = (options: object) =>
+            viewer.posts.validate({
+              params,
+              payload: {
+                channelIds: [instagram],
+                content: text("A synthetic story #one"),
+                options: [
+                  {
+                    channelId: instagram,
+                    options: { platform: "instagram", ...options },
+                  },
+                ],
+              },
+            });
+
+          const [story] = (yield* checkedWith({ format: "story" })).channels;
+
+          assert.isTrue(story?.textNotSent);
+          assert.strictEqual(story?.text, "");
+          assert.deepStrictEqual(story?.textCounts, []);
+          assert.deepStrictEqual(story?.media, { count: 0, maximum: 1 });
+
+          const [feed] = (yield* checkedWith({ format: "feed" })).channels;
+
+          assert.isUndefined(feed?.textNotSent);
+          assert.strictEqual(feed?.text, "A synthetic story #one");
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "answers 200 with what would refuse the post, and makes nothing",
     () =>
       onPostsServerAt(

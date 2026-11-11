@@ -57,6 +57,8 @@ export type PartPreview = typeof PartPreviewSchema.Type;
  * the platform, or the account, would refuse. Those are the post's first
  * part; `parts` are the parts after it (`content.followUps`), in order,
  * each previewed the same way, and a violation of one names it by `part`.
+ * A format that sends no text there (a story) is shown with none, and
+ * `textNotSent` says so when the post has text for the channel.
  */
 export const ChannelPreviewSchema = Schema.Struct({
   channelId: Schema.String,
@@ -71,7 +73,11 @@ export const ChannelPreviewSchema = Schema.Struct({
   platform: PlatformSchema,
   text: Schema.String,
   // One per limit of the platform: Bluesky counts graphemes and bytes.
+  // None where the format the options choose sends no text.
   textCounts: Schema.Array(TextCountSchema),
+  // True when the post has text for the channel and its format (a story)
+  // goes out without it: a note, not a violation. Left out otherwise.
+  textNotSent: Schema.optionalKey(Schema.Literal(true)),
   violations: Schema.Array(ContentViolationSchema),
 }).annotate({ identifier: "ChannelPreview" });
 
