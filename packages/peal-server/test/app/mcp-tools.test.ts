@@ -400,6 +400,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           get_post_ad_performance: [true, false, true, false],
           get_post_review: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
+          get_usage: [true, false, true, false],
           import_media: [false, false, false, true],
           invite_member: [false, true, false, true],
           list_activity: [true, false, true, false],
@@ -2165,6 +2166,34 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               })
             ),
             { enabled: false, plan: null }
+          );
+
+          // Its usage, counted all the same, without a plan.
+          assert.deepStrictEqual(
+            yield* reader.call(
+              "get_usage",
+              Schema.Struct({
+                allowances: Schema.Null,
+                period: Schema.Struct({
+                  from: Schema.String,
+                  to: Schema.String,
+                }),
+                plan: Schema.Null,
+              }),
+              { from: "2026-11-01", to: "2026-11-07" }
+            ),
+            {
+              allowances: null,
+              period: { from: "2026-11-01", to: "2026-11-07" },
+              plan: null,
+            }
+          );
+          assert.include(
+            yield* reader.refused("get_usage", {
+              from: "2026-08-01",
+              to: "2026-11-07",
+            }),
+            "92 days at most"
           );
         })
     );

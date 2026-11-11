@@ -1,4 +1,4 @@
-import { Effect, Option, Schema } from "effect";
+import { DateTime, Effect, Option, Schema } from "effect";
 import { CurrentMember, defaultActivityPageSize } from "peal-contract";
 import type { CalendarDay } from "peal-contract";
 
@@ -21,7 +21,9 @@ import type { PostHistory } from "#analytics/application/analytics-reports.ts";
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
 import { billingView } from "#billing/api/billing-view.ts";
+import { usageView } from "#billing/api/usage-view.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
+import { UsageReports } from "#billing/application/usage-reports.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { authorize } from "#shared/domain/authorize.ts";
@@ -37,6 +39,9 @@ const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 const decodeTimeZone = Schema.decodeUnknownOption(TimeZoneIdSchema);
 
 const noHistory: readonly PostHistory[] = [];
+
+// A day the tool's schema checked, as its first instant (UTC).
+const dayFrom = (day: CalendarDay) => DateTime.make(`${day}T00:00:00Z`);
 
 const invalidRange = () =>
   refuse(
@@ -96,6 +101,7 @@ export const ReportToolsLive = ReportTools.toLayer(
   Effect.gen(function* reportTools() {
     const analytics = yield* AnalyticsQueries;
     const billing = yield* BillingOverview;
+    const usage = yield* UsageReports;
     const activity = yield* ActivityLog;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
@@ -170,6 +176,26 @@ export const ReportToolsLive = ReportTools.toLayer(
           );
 
           return billingView(found);
+        }),
+      get_usage: ({ from, to }) =>
+        Effect.gen(function* getUsage() {
+          const found = yield* usage
+            .ofWorkspace(yield* actor, {
+              from: Option.fromUndefinedOr(from).pipe(Option.flatMap(dayFrom)),
+              to: Option.fromUndefinedOr(to).pipe(Option.flatMap(dayFrom)),
+            })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                InvalidUsageRange: ({ maxDays }) =>
+                  refuse(
+                    `The range must end on or after the day it starts, and span ${String(maxDays)} days at most.`
+                  ),
+                MissingPermission: notAllowed("read the workspace's usage"),
+              })
+            );
+
+          return usageView(found);
         }),
       list_activity: ({ actor: actorId, cursor, limit, operation }) =>
         Effect.gen(function* listed() {
