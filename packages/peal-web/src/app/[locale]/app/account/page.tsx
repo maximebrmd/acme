@@ -22,6 +22,7 @@ import { PasswordForm } from "#components/account/password-form.tsx";
 import { ProfileForm } from "#components/account/profile-form.tsx";
 import { SessionsList } from "#components/account/sessions-list.tsx";
 import { TimeFormatForm } from "#components/account/time-format-form.tsx";
+import { TwoStepSection } from "#components/account/two-step-section.tsx";
 import { redirect } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
 
@@ -62,6 +63,7 @@ const AccountPage = async ({ params }: PageProps<"/[locale]/app/account">) => {
 
   const { user } = me.value;
   const t = await getTranslations("AccountSettings");
+  const twoStep = await getTranslations("TwoStep");
   // What this server keeps of a closed account for the law, if anything.
   const { legalHold } = await accountClosure();
 
@@ -96,6 +98,9 @@ const AccountPage = async ({ params }: PageProps<"/[locale]/app/account">) => {
         description={t("password.description")}
       >
         <PasswordForm />
+      </Section>
+      <Section title={twoStep("title")} description={twoStep("about")}>
+        <TwoStepSection emailVerified={user.emailVerified} />
       </Section>
       <Section
         title={t("sessions.title")}
