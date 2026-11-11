@@ -86,7 +86,9 @@ const proofOf = (token: string) =>
   createHmac("sha256", graphAppSecret).update(token).digest("hex");
 
 const isVideo = (params: Params) =>
-  params["media_type"] === "VIDEO" || params["media_type"] === "REELS";
+  params["media_type"] === "VIDEO" ||
+  params["media_type"] === "REELS" ||
+  (params["media_type"] === "STORIES" && params["video_url"] !== undefined);
 
 // A container's status as each API names it: Threads `status`, with an
 // `error_message`; Instagram `status_code`, with a sentence in `status`.
@@ -146,12 +148,15 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
     const topic = params["topic_tag"] ?? "";
 
     // Threads takes a link attachment on a post of text alone, and a topic
-    // without periods or ampersands.
+    // without periods or ampersands; Instagram's stories take no
+    // collaborators.
     if (
       (params["link_attachment"] !== undefined &&
         params["media_type"] !== "TEXT") ||
       topic.includes(".") ||
-      topic.includes("&")
+      topic.includes("&") ||
+      (params["media_type"] === "STORIES" &&
+        params["collaborators"] !== undefined)
     ) {
       return metaError(100);
     }
