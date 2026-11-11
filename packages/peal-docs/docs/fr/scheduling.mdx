@@ -113,12 +113,14 @@ Mastodon compte un avertissement de contenu dans la limite de caractères de la 
 
 Sur **Bluesky** :
 
-| Option                   | Nom dans l’API | Valeurs                                                   | Si omise | Parties                                    |
-| ------------------------ | -------------- | --------------------------------------------------------- | -------- | ------------------------------------------ |
-| **Langues**              | `languages`    | Jusqu’à trois étiquettes de langue, comme `fr` ou `pt-BR` | Aucune   | Chaque partie                              |
-| **Étiquette de contenu** | `contentLabel` | `sexual`, `nudity`, `porn`, `graphic-media`               | Aucune   | Chaque partie avec des images ou une vidéo |
+| Option                                             | Nom dans l’API  | Valeurs                                                                                                              | Si omise      | Parties                                    |
+| -------------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------ |
+| **Langues**                                        | `languages`     | Jusqu’à trois étiquettes de langue, comme `fr` ou `pt-BR`                                                            | Aucune        | Chaque partie                              |
+| **Étiquette de contenu**                           | `contentLabel`  | `sexual`, `nudity`, `porn`, `graphic-media`                                                                          | Aucune        | Chaque partie avec des images ou une vidéo |
+| **Qui peut répondre**                              | `replies`       | `everyone`, `nobody`, ou `limited` à ceux de `replyFollowers`, `replyFollowing` et `replyMentioned` qui sont activés | Tout le monde | Le fil                                     |
+| **Empêcher les autres de citer cette publication** | `disableQuotes` | Oui ou non                                                                                                           | Non           | Chaque partie                              |
 
-Une étiquette décrit les images ou la vidéo : une partie sans média part sans elle.
+Une étiquette décrit les images ou la vidéo : une partie sans média part sans elle. Qui peut répondre et les citations s’écrivent avec la publication, en une seule requête, donc une publication ne part jamais sans eux. Ils demandent que le compte ait été connecté depuis que Peal les demande : sur un canal connecté avant, la programmation les refuse, et ses [capacités](/api-overview#capabilities) le disent (`optionNeedsReconnect`). Reconnectez le compte sur la page **Canaux** pour les utiliser ; rien d’autre ne change.
 
 Sur **Threads** :
 

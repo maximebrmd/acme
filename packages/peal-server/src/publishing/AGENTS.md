@@ -373,7 +373,16 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   `countedText` is the clients' copy): `violationsOn`, `previewOn` and the
   composer's counter measure it. X documents no tier for its options: a
   400 or 403 on a post that carried any is `BadRequest` `optionRefused`
-  (`x-refusal.ts`), never retried, X's words never kept.
+  (`platforms/option-refusal.ts`), never retried, X's words never kept.
+- Bluesky's gates (`replies`, `disableQuotes`) are records of their own,
+  a threadgate under the thread's first post's key and a postgate under
+  each post's, written with the post in one `com.atproto.repo.applyWrites`
+  (all or nothing, so `lookUp` by the record key still tells the truth); a
+  post without gates keeps `createRecord`. They need scopes channels
+  connected before Peal asked for them lack: `AccountRules` refuses them
+  there (`optionInvalid`, `gateViolationsOn`) and `AccountStandings`
+  describes them (`optionNeedsReconnect`), both from `ChannelGrants`; a
+  403 on a gated write is `optionRefused`, never a refused token.
 - A field the web composer shows only for some values of another (an
   event's dates) says so with `shownWith` in `#posts/target-options.ts`:
   `isShown` hides it and `optionsOf` leaves its value out, as the domain's

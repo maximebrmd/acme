@@ -157,6 +157,9 @@ const scheduled = { name: "postType", values: ["event", "offer"] } as const;
 
 const offered = { name: "postType", values: ["offer"] } as const;
 
+// A Bluesky thread whose replies are limited to some.
+const repliesLimited = { name: "replies", values: ["limited"] } as const;
+
 /**
  * The fields of each platform that takes options, in the order the composer
  * shows them. A platform's options added to the contract need an entry here.
@@ -182,6 +185,48 @@ export const optionFields = {
       label: "bluesky.contentLabel",
       name: "contentLabel",
       none: "bluesky.labelNone",
+    },
+    {
+      choices: [
+        { label: "bluesky.repliesEveryone", value: "everyone" },
+        { label: "bluesky.repliesNobody", value: "nobody" },
+        { label: "bluesky.repliesLimited", value: "limited" },
+      ],
+      hint: "bluesky.repliesHint",
+      invalid: "bluesky.repliesInvalid",
+      kind: "choice",
+      label: "bluesky.replies",
+      name: "replies",
+      none: "bluesky.repliesEveryone",
+    },
+    {
+      initial: false,
+      kind: "toggle",
+      label: "bluesky.replyFollowers",
+      name: "replyFollowers",
+      shownWith: repliesLimited,
+    },
+    {
+      initial: false,
+      kind: "toggle",
+      label: "bluesky.replyFollowing",
+      name: "replyFollowing",
+      shownWith: repliesLimited,
+    },
+    {
+      initial: false,
+      kind: "toggle",
+      label: "bluesky.replyMentioned",
+      name: "replyMentioned",
+      shownWith: repliesLimited,
+    },
+    {
+      hint: "bluesky.disableQuotesHint",
+      initial: false,
+      invalid: "bluesky.disableQuotesInvalid",
+      kind: "toggle",
+      label: "bluesky.disableQuotes",
+      name: "disableQuotes",
     },
   ],
   googleBusiness: [

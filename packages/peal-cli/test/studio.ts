@@ -3900,6 +3900,10 @@ export const studioGroupsLive = (studio: Studio) =>
                           _tag: "mediaTypesRefused" as const,
                           contentTypes: ["image/jpeg" as const],
                         },
+                        {
+                          _tag: "optionNeedsReconnect" as const,
+                          field: "replies",
+                        },
                       ],
                     }
                   : { _tag: "unrestricted" as const },

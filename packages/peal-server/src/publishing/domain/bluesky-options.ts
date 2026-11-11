@@ -12,7 +12,11 @@ import { PostTextSchema } from "./post-text.ts";
 // text content", at most 3 tags of the `language` format (BCP 47), and
 // `labels`, self-labels of `com.atproto.label.defs`, "Effectively content
 // warnings". Both are fields of each part's record, so they apply to every
-// part of a thread.
+// part of a thread. Who may reply is the thread's: an
+// `app.bsky.feed.threadgate` record under its first post's record key ("If
+// value is an empty array, no one can reply. If value is undefined, anyone
+// can reply."). Quoting is each post's: an `app.bsky.feed.postgate` record
+// under the post's key, with its `#disableRule`.
 
 /** The most languages a Bluesky post names (the lexicon's `maxLength`). */
 export const maxBlueskyLanguages = 3;
@@ -31,31 +35,93 @@ export const BlueskyContentLabelSchema = Schema.Literals([
 
 export type BlueskyContentLabel = typeof BlueskyContentLabelSchema.Type;
 
+/**
+ * Who may reply to the thread: everyone (no gate), nobody, or only those
+ * the `reply…` options name (`limited`).
+ */
+export const BlueskyRepliesSchema = Schema.Literals([
+  "everyone",
+  "nobody",
+  "limited",
+]);
+
+export type BlueskyReplies = typeof BlueskyRepliesSchema.Type;
+
+// The value that lets the `reply…` options in.
+const limited: readonly BlueskyReplies[] = ["limited"];
+
+/** The options that ask for a gate record, which needs its own scope. */
+export const blueskyGateFields = ["disableQuotes", "replies"] as const;
+
+/** Whether the options ask for a reply gate on the thread. */
+export const gatesReplies = (options: BlueskyOptions): boolean =>
+  options.replies !== undefined && options.replies !== "everyone";
+
+/** Whether the options ask for a quote gate on each post. */
+export const gatesQuotes = (options: BlueskyOptions): boolean =>
+  options.disableQuotes === true;
+
+/** The gates the options ask for, by the field that asks. */
+export const gatesAskedBy = (
+  options: BlueskyOptions
+): readonly (typeof blueskyGateFields)[number][] => [
+  ...(gatesQuotes(options) ? (["disableQuotes"] as const) : []),
+  ...(gatesReplies(options) ? (["replies"] as const) : []),
+];
+
 // A BCP 47 tag, as Bluesky's `language` format takes it: a primary
 // language of two or three letters, then subtags of up to eight letters or
 // digits, such as "en", "pt-BR" or "zh-Hant".
 const languageTag = /^[A-Za-z]{2,3}(?:-[A-Za-z\d]{1,8})*$/u;
 
+const replyRules = [
+  "replyFollowers",
+  "replyFollowing",
+  "replyMentioned",
+] as const;
+
 // What Bluesky would refuse in a target's options.
 const blueskyProblems = (
   options: BlueskyOptions
-): readonly OptionProblem<BlueskyField>[] =>
-  (options.languages ?? []).every((tag) => languageTag.test(tag))
+): readonly OptionProblem<BlueskyField>[] => [
+  ...((options.languages ?? []).every((tag) => languageTag.test(tag))
     ? []
-    : [invalid("languages")];
+    : [invalid("languages")]),
+  // Limited to nobody is `nobody`: say who.
+  ...(options.replies === "limited" &&
+  replyRules.every((rule) => options[rule] !== true)
+    ? [invalid("replies")]
+    : []),
+  ...replyRules.flatMap((rule) =>
+    options[rule] === true && options.replies !== "limited"
+      ? [invalid(rule)]
+      : []
+  ),
+];
 
 /**
  * How a post goes out on a Bluesky account. Nothing is needed: left out,
- * the post names no language and carries no label.
+ * the post names no language and carries no label, everyone may reply and
+ * anyone may quote it. `replies` `limited` lets those reply that
+ * `replyMentioned` (accounts the post mentions), `replyFollowing` (accounts
+ * the author follows) and `replyFollowers` (the author's followers) say,
+ * one of them at least. `disableQuotes` keeps every part from being quoted.
+ * The two gates need the channel to have granted their scopes
+ * (`blueskyGateScopes`), which channels connected before them have not.
  */
 export class BlueskyOptions extends Schema.Class<BlueskyOptions>(
   "peal-server/publishing/domain/BlueskyOptions"
 )({
   contentLabel: Schema.optionalKey(BlueskyContentLabelSchema),
+  disableQuotes: Schema.optionalKey(Schema.Boolean),
   languages: Schema.optionalKey(
     Schema.Array(PostTextSchema).check(Schema.isMaxLength(maxBlueskyLanguages))
   ),
   platform: Schema.tag("bluesky"),
+  replies: Schema.optionalKey(BlueskyRepliesSchema),
+  replyFollowers: Schema.optionalKey(Schema.Boolean),
+  replyFollowing: Schema.optionalKey(Schema.Boolean),
+  replyMentioned: Schema.optionalKey(Schema.Boolean),
 }) {
   /**
    * What the fields' schemas do not say, for the description clients read
@@ -65,11 +131,22 @@ export class BlueskyOptions extends Schema.Class<BlueskyOptions>(
     Record<BlueskyField, FieldNotes<LookupName>>
   > = {
     contentLabel: {},
+    disableQuotes: { ifLeftOut: false },
     languages: { maximum: maxBlueskyLanguages, pattern: languageTag.source },
+    replies: { ifLeftOut: "everyone" },
+    replyFollowers: { ifLeftOut: false },
+    replyFollowing: { ifLeftOut: false },
+    replyMentioned: { ifLeftOut: false },
   };
 
-  /** No rule ties two of Bluesky's options together. */
-  static readonly constraints: readonly OptionConstraint<BlueskyField>[] = [];
+  /** Each of who may reply is taken with replies limited to some. */
+  static readonly constraints: readonly OptionConstraint<BlueskyField>[] =
+    replyRules.map((field) => ({
+      _tag: "onlyWith",
+      field,
+      other: "replies",
+      values: limited,
+    }));
 
   /** What Bluesky would refuse in them. */
   problems(): readonly OptionProblem<BlueskyField>[] {

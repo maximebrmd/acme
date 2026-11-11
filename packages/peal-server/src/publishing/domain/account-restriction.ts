@@ -12,6 +12,8 @@ import type { TikTokBlock } from "./tiktok-creator.ts";
  * - `videoDuration`: the account's videos last this long at most.
  * - `mediaTypesRefused`: files of these types are refused on the channel
  *   (photos, on a server TikTok takes none from).
+ * - `optionNeedsReconnect`: the option is refused until the channel is
+ *   connected again, to grant what it needs (a Bluesky gate's scope).
  */
 export type AccountRestriction =
   | {
@@ -28,7 +30,8 @@ export type AccountRestriction =
   | {
       readonly _tag: "mediaTypesRefused";
       readonly contentTypes: readonly MediaContentType[];
-    };
+    }
+  | { readonly _tag: "optionNeedsReconnect"; readonly field: string };
 
 /** Why the platform's answer about the account could not be had. */
 export type AccountUnreadReason =

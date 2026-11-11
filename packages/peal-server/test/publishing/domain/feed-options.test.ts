@@ -2,6 +2,10 @@ import { describe, expect, it } from "@effect/vitest";
 import { Option, Result, Schema } from "effect";
 
 import {
+  gateRestrictions,
+  gateViolationsOn,
+} from "#publishing/domain/bluesky-gates.ts";
+import {
   BlueskyOptions,
   maxBlueskyLanguages,
 } from "#publishing/domain/bluesky-options.ts";
@@ -28,6 +32,7 @@ import {
   ThreadsOptions,
 } from "#publishing/domain/threads-options.ts";
 import { XOptions } from "#publishing/domain/x-options.ts";
+import { blueskyGateScopes } from "#shared/domain/bluesky-scopes.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { contentOf, mediaFile } from "#test/publishing/support.ts";
@@ -140,7 +145,12 @@ describe("the options of Mastodon, Bluesky, Threads and X", () => {
     ]);
     expect(fields("bluesky")).toStrictEqual([
       ["contentLabel", "choice", false],
+      ["disableQuotes", "boolean", false],
       ["languages", "textList", false],
+      ["replies", "choice", false],
+      ["replyFollowers", "boolean", false],
+      ["replyFollowing", "boolean", false],
+      ["replyMentioned", "boolean", false],
     ]);
     expect(fields("threads")).toStrictEqual([
       ["linkAttachment", "text", false],
@@ -375,5 +385,57 @@ describe("X's options", () => {
         values: ["true"],
       },
     ]);
+  });
+});
+
+const bluesky = channel("4", "bluesky");
+
+const before = [
+  "atproto",
+  "repo:app.bsky.feed.post?action=create&action=delete",
+];
+
+const granted = [...before, ...blueskyGateScopes];
+
+describe("Bluesky's gates", () => {
+  it("say who may reply: everyone, nobody, or some named", () => {
+    expect(
+      new BlueskyOptions({
+        replies: "limited",
+        replyFollowers: true,
+        replyMentioned: false,
+      }).problems()
+    ).toStrictEqual([]);
+    expect(new BlueskyOptions({ replies: "limited" }).problems()).toStrictEqual(
+      [{ _tag: "invalid", field: "replies" }]
+    );
+    expect(
+      new BlueskyOptions({ replies: "nobody", replyFollowing: true }).problems()
+    ).toStrictEqual([{ _tag: "invalid", field: "replyFollowing" }]);
+  });
+
+  it("are refused on a channel that did not grant their scopes, and said beforehand", () => {
+    const gated = Option.some<TargetOptions>(
+      new BlueskyOptions({ disableQuotes: true, replies: "nobody" })
+    );
+
+    expect(gateViolationsOn(bluesky, gated, before)).toStrictEqual([
+      { _tag: "optionInvalid", ...bluesky, field: "disableQuotes" },
+      { _tag: "optionInvalid", ...bluesky, field: "replies" },
+    ]);
+    expect(gateViolationsOn(bluesky, gated, granted)).toStrictEqual([]);
+    // Nothing gated, nothing refused.
+    expect(
+      gateViolationsOn(
+        bluesky,
+        Option.some(new BlueskyOptions({ replies: "everyone" })),
+        before
+      )
+    ).toStrictEqual([]);
+    expect(gateRestrictions(before)).toStrictEqual([
+      { _tag: "optionNeedsReconnect", field: "disableQuotes" },
+      { _tag: "optionNeedsReconnect", field: "replies" },
+    ]);
+    expect(gateRestrictions(granted)).toStrictEqual([]);
   });
 });

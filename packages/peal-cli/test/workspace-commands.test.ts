@@ -389,6 +389,10 @@ describe("peal channels capabilities", () => {
       assert.include(shown, "disableDuet must be true.");
       assert.include(shown, "Videos last 600 seconds at most.");
       assert.include(shown, "Refused on this channel: image/jpeg.");
+      assert.include(
+        shown,
+        "replies needs the account reconnected in the web app."
+      );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 

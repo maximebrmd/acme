@@ -374,12 +374,27 @@ export const BlueskyContentLabelSchema = Schema.Literals([
 export type BlueskyContentLabel = typeof BlueskyContentLabelSchema.Type;
 
 /**
+ * Who may reply to a Bluesky thread: everyone when left out, nobody, or
+ * those its `reply…` options name (`limited`).
+ */
+export const BlueskyRepliesSchema = Schema.Literals([
+  "everyone",
+  "nobody",
+  "limited",
+]).annotate({ identifier: "BlueskyReplies" });
+
+export type BlueskyReplies = typeof BlueskyRepliesSchema.Type;
+
+/**
  * A post on a Bluesky account: its record's text is the post's text there.
- * Each option applies to every part of a thread.
+ * Who may reply is the thread's; the others apply to every part.
  */
 export const BlueskyOptionsSchema = Schema.Struct({
   // Labels the media of each part that has any.
   contentLabel: Schema.optionalKey(BlueskyContentLabelSchema),
+  // Keeps each part from being quoted. False when left out. Needs the
+  // channel to have granted its scope.
+  disableQuotes: Schema.optionalKey(Schema.Boolean),
   // The languages of the text: at most `maxBlueskyLanguages` BCP 47 tags,
   // as "en" or "pt-BR".
   languages: Schema.optionalKey(
@@ -388,9 +403,17 @@ export const BlueskyOptionsSchema = Schema.Struct({
     )
   ),
   platform: Schema.Literal("bluesky"),
+  // Who may reply to the thread. Anything but everyone needs the channel to
+  // have granted its scope.
+  replies: Schema.optionalKey(BlueskyRepliesSchema),
+  // With `replies` limited, one of them at least: the author's followers,
+  // the accounts the author follows, the accounts the post mentions.
+  replyFollowers: Schema.optionalKey(Schema.Boolean),
+  replyFollowing: Schema.optionalKey(Schema.Boolean),
+  replyMentioned: Schema.optionalKey(Schema.Boolean),
 }).annotate({
   description:
-    "How a post goes out on a Bluesky account, on every part of a thread. Scheduling needs none of them.",
+    "How a post goes out on a Bluesky account. Scheduling needs none of them; `replies` limited needs one of `replyFollowers`, `replyFollowing` and `replyMentioned`, and the two gates (`replies`, `disableQuotes`) a channel connected since Peal asks for their scopes.",
   identifier: "BlueskyOptions",
 });
 

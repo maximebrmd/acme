@@ -1051,7 +1051,19 @@
         "labelSexual": "Suggestif",
         "labelNudity": "Nudité",
         "labelPorn": "Contenu pour adultes",
-        "labelGraphicMedia": "Images choquantes"
+        "labelGraphicMedia": "Images choquantes",
+        "replies": "Qui peut répondre",
+        "repliesHint": "S’applique à tout le fil. Limiter les réponses, ou les citations, demande que le compte ait été connecté depuis que Peal le demande : reconnectez-le sur la page Canaux si la programmation refuse.",
+        "repliesInvalid": "Choisissez qui peut répondre, ou reconnectez le compte sur la page Canaux pour que Peal puisse le régler.",
+        "repliesEveryone": "Tout le monde",
+        "repliesNobody": "Personne",
+        "repliesLimited": "Seulement certains comptes",
+        "replyFollowers": "Vos abonnés",
+        "replyFollowing": "Les comptes que vous suivez",
+        "replyMentioned": "Les comptes mentionnés dans la publication",
+        "disableQuotes": "Empêcher les autres de citer cette publication",
+        "disableQuotesHint": "Sur chaque partie du fil.",
+        "disableQuotesInvalid": "Reconnectez le compte sur la page Canaux pour que Peal puisse le régler."
       },
       "threads": {
         "replyControl": "Qui peut répondre",

@@ -35,6 +35,7 @@ import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.t
 import type { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
 import { AnalyticsCountedPlatforms } from "#publishing/infrastructure/analytics-counted-platforms.ts";
 import { ChannelAccessCredentials } from "#publishing/infrastructure/channel-access-credentials.ts";
+import { ChannelAccessGrants } from "#publishing/infrastructure/channel-access-grants.ts";
 import {
   ChannelGateLive,
   GatedPlatformPublisher,
@@ -224,7 +225,7 @@ export const PublishingLive = publishingOver(
     LibraryAttachableMedia,
     PlanPostAllowanceLive
   ),
-  AccountRules.layer,
+  AccountRules.layer.pipe(Layer.provide(ChannelAccessGrants)),
   NamedPostOrigins,
   WebhookPostEvents
 ).pipe(
@@ -238,7 +239,9 @@ export const PublishingLive = publishingOver(
       PostingCapabilities.layer.pipe(
         Layer.provide(
           Layer.mergeAll(
-            AccountStandings.layer.pipe(Layer.provide(PacedLookupsLive)),
+            AccountStandings.layer.pipe(
+              Layer.provide(Layer.merge(PacedLookupsLive, ChannelAccessGrants))
+            ),
             AnalyticsCountedPlatforms,
             XThreadsLive
           )

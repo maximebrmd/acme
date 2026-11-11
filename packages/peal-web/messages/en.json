@@ -1051,7 +1051,19 @@
         "labelSexual": "Suggestive",
         "labelNudity": "Nudity",
         "labelPorn": "Adult content",
-        "labelGraphicMedia": "Graphic media"
+        "labelGraphicMedia": "Graphic media",
+        "replies": "Who can reply",
+        "repliesHint": "Applies to the whole thread. Limiting replies, or quotes, needs the account to have been connected since Peal asks for it: reconnect it on the Channels page if scheduling refuses.",
+        "repliesInvalid": "Choose who can reply, or reconnect the account on the Channels page to let Peal set it.",
+        "repliesEveryone": "Everyone",
+        "repliesNobody": "Nobody",
+        "repliesLimited": "Only some accounts",
+        "replyFollowers": "Your followers",
+        "replyFollowing": "Accounts you follow",
+        "replyMentioned": "Accounts mentioned in the post",
+        "disableQuotes": "Keep others from quoting this post",
+        "disableQuotesHint": "On every part of the thread.",
+        "disableQuotesInvalid": "Reconnect the account on the Channels page to let Peal set it."
       },
       "threads": {
         "replyControl": "Who can reply",

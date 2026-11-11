@@ -29,6 +29,7 @@ export interface FakeBlob {
 /** A record the PDS holds. */
 export interface FakeRecord {
   readonly cid: string;
+  readonly collection: string;
   readonly rkey: string;
   readonly value: { readonly [field: string]: JsonValue };
 }
@@ -43,6 +44,11 @@ export type BlueskyScript =
   | { readonly _tag: "createThenDrop" };
 
 export interface FakeBlueskyOptions {
+  /**
+   * The collections the session's scopes let Peal create records in, as
+   * the PDS checks each write of applyWrites (all when left out).
+   */
+  readonly grantedCollections?: readonly string[];
   /** How many looks at a video job find it still processing. */
   readonly videoPolls?: number;
   /** A video job that fails, with this code. */
@@ -128,6 +134,53 @@ const CreateSchema = Schema.Struct({
 
 const createOf = jsonBodyOf(CreateSchema);
 
+const ApplyWritesSchema = Schema.Struct({
+  repo: Schema.String,
+  writes: Schema.Array(
+    Schema.Struct({
+      $type: Schema.Literal("com.atproto.repo.applyWrites#create"),
+      collection: Schema.String,
+      rkey: Schema.String,
+      value: Schema.Record(Schema.String, Schema.Json),
+    })
+  ),
+});
+
+const applyWritesOf = jsonBodyOf(ApplyWritesSchema);
+
+// The gates' records, as the lexicons write them, under their post's key.
+const GateSchema = Schema.Union([
+  Schema.Struct({
+    $type: Schema.Literal("app.bsky.feed.threadgate"),
+    allow: Schema.Array(
+      Schema.Struct({
+        $type: Schema.Literals([
+          "app.bsky.feed.threadgate#mentionRule",
+          "app.bsky.feed.threadgate#followerRule",
+          "app.bsky.feed.threadgate#followingRule",
+        ]),
+      })
+    ).check(Schema.isMaxLength(5)),
+    createdAt: Schema.String,
+    post: Schema.String,
+  }),
+  Schema.Struct({
+    $type: Schema.Literal("app.bsky.feed.postgate"),
+    createdAt: Schema.String,
+    embeddingRules: Schema.Array(
+      Schema.Struct({
+        $type: Schema.Literal("app.bsky.feed.postgate#disableRule"),
+      })
+    ),
+    post: Schema.String,
+  }),
+]);
+
+const isGate = Schema.is(GateSchema);
+
+// Where a record is kept: its collection and its key.
+const keyOf = (collection: string, rkey: string) => `${collection}/${rkey}`;
+
 // What a post's record may say of its languages and labels, by the
 // lexicons: three languages at most, and self-labels of known values.
 const PostFieldsSchema = Schema.Struct({
@@ -170,6 +223,7 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
   const validTokens = new Set(["access-1"]);
   const nonce = "nonce-a";
   const blobs: FakeBlob[] = [];
+  // Records by collection and key (`keyOf`).
   const records = new Map<string, FakeRecord>();
   const jobs = new Map<string, { blob: FakeBlob; polls: number }>();
   const serviceTokens = new Set<string>();
@@ -261,18 +315,74 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
       return json({ error: "InvalidRequest", message: "Bad record" }, 400);
     }
 
-    if (records.has(body.rkey)) {
+    if (records.has(keyOf(body.collection, body.rkey))) {
       return json({ error: "InternalServerError" }, 500);
     }
 
     const cid = `bafyrecord${records.size + 1}`;
 
-    records.set(body.rkey, { cid, rkey: body.rkey, value: body.record });
+    records.set(keyOf(body.collection, body.rkey), {
+      cid,
+      collection: body.collection,
+      rkey: body.rkey,
+      value: body.record,
+    });
 
     return json({
       cid,
       uri: `at://${blueskyDid}/${body.collection}/${body.rkey}`,
     });
+  };
+
+  // Every write checked against the session's scopes and the lexicons
+  // first, then all made, or none.
+  const applyWrites = (request: PlatformRequest) => {
+    const body = applyWritesOf(request);
+    const granted = options.grantedCollections;
+
+    if (
+      granted !== undefined &&
+      body.writes.some(({ collection }) => !granted.includes(collection))
+    ) {
+      return json(
+        { error: "ScopeMissingError", message: "Missing scope" },
+        403
+      );
+    }
+
+    const valid = body.writes.every(
+      ({ collection, rkey, value }) =>
+        tidPattern.test(rkey) &&
+        (collection === "app.bsky.feed.post"
+          ? isValidPost(value)
+          : isGate(value) && value.$type === collection)
+    );
+
+    if (!valid || body.repo !== blueskyDid) {
+      return json({ error: "InvalidRequest", message: "Bad record" }, 400);
+    }
+
+    if (
+      body.writes.some(({ collection, rkey }) =>
+        records.has(keyOf(collection, rkey))
+      )
+    ) {
+      return json({ error: "InternalServerError" }, 500);
+    }
+
+    const results = body.writes.map(({ collection, rkey, value }) => {
+      const cid = `bafyrecord${records.size + 1}`;
+
+      records.set(keyOf(collection, rkey), { cid, collection, rkey, value });
+
+      return {
+        $type: "com.atproto.repo.applyWrites#createResult",
+        cid,
+        uri: `at://${blueskyDid}/${collection}/${rkey}`,
+      };
+    });
+
+    return json({ commit: { cid: "bafycommit", rev: "synthetic" }, results });
   };
 
   const jobStatus = (jobId: string) => {
@@ -309,6 +419,48 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
         });
   };
 
+  // The PDS's calls that need the session's token, once DPoP passed.
+  const authorized = (
+    route: string,
+    request: PlatformRequest,
+    script: BlueskyScript | undefined
+  ): PlatformAnswer => {
+    switch (route) {
+      case "POST /xrpc/com.atproto.repo.uploadBlob": {
+        const blob = storeBlob(
+          headerOf(request, "content-type"),
+          request.body.length
+        );
+
+        return json({ blob: blobRef(blob) });
+      }
+
+      case "POST /xrpc/com.atproto.repo.createRecord": {
+        const answer = create(request);
+
+        return script?._tag === "createThenDrop" ? dropped : answer;
+      }
+
+      case "POST /xrpc/com.atproto.repo.applyWrites": {
+        const answer = applyWrites(request);
+
+        return script?._tag === "createThenDrop" ? dropped : answer;
+      }
+
+      case "GET /xrpc/com.atproto.server.getServiceAuth": {
+        const token = `service-${serviceTokens.size + 1}`;
+
+        serviceTokens.add(token);
+
+        return json({ token });
+      }
+
+      default: {
+        return json({ error: "MethodNotImplemented" }, 501);
+      }
+    }
+  };
+
   const handle = (request: PlatformRequest, origin: string): PlatformAnswer => {
     const route = `${request.method} ${request.path}`;
     const script = scripts.next(route);
@@ -319,13 +471,18 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
 
     switch (route) {
       case "GET /xrpc/com.atproto.repo.getRecord": {
-        const found = records.get(request.query.get("rkey") ?? "");
+        const found = records.get(
+          keyOf(
+            request.query.get("collection") ?? "",
+            request.query.get("rkey") ?? ""
+          )
+        );
 
         return found === undefined
           ? json({ error: "RecordNotFound", message: "Could not locate" }, 400)
           : json({
               cid: found.cid,
-              uri: `at://${blueskyDid}/app.bsky.feed.post/${found.rkey}`,
+              uri: `at://${blueskyDid}/${found.collection}/${found.rkey}`,
               value: found.value,
             });
       }
@@ -368,34 +525,7 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
       return refused.value;
     }
 
-    switch (route) {
-      case "POST /xrpc/com.atproto.repo.uploadBlob": {
-        const blob = storeBlob(
-          headerOf(request, "content-type"),
-          request.body.length
-        );
-
-        return json({ blob: blobRef(blob) });
-      }
-
-      case "POST /xrpc/com.atproto.repo.createRecord": {
-        const answer = create(request);
-
-        return script?._tag === "createThenDrop" ? dropped : answer;
-      }
-
-      case "GET /xrpc/com.atproto.server.getServiceAuth": {
-        const token = `service-${serviceTokens.size + 1}`;
-
-        serviceTokens.add(token);
-
-        return json({ token });
-      }
-
-      default: {
-        return json({ error: "MethodNotImplemented" }, 501);
-      }
-    }
+    return authorized(route, request, script);
   };
 
   const server = yield* platformServer(handle);

@@ -6,6 +6,7 @@ import {
   operatorRefusalCodes,
   platformRefusalCodes,
 } from "#publishing/domain/own-refusals.ts";
+import { optionRefusedCode } from "#publishing/infrastructure/platforms/option-refusal.ts";
 import { codeOf } from "#publishing/infrastructure/platforms/platform-exchange.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
@@ -123,14 +124,6 @@ export const xRetryAfter = (
     Option.orElse(() => retryAfterOf(headers, now))
   );
 };
-
-/**
- * The code of X's refusal of a post that carries options (who may reply,
- * a community, a disclosure): X documents no account or access level for
- * them, and its message is never kept, so the refusal says the post's
- * options were refused, never which.
- */
-export const optionRefusedCode = "optionRefused";
 
 const rejected = (call: XCall, code: string): PublishFailure =>
   call === "media" ? new MediaRejected({ code }) : new BadRequest({ code });

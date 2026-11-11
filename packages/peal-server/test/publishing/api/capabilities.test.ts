@@ -22,6 +22,7 @@ import { platformCapabilitiesView } from "#publishing/api/capabilities-view.ts";
 import { CapabilitiesHandlers } from "#publishing/api/capabilities.ts";
 import { AccountStandings } from "#publishing/application/account-standings.ts";
 import { ChannelConnections } from "#publishing/application/channel-connections.ts";
+import { ChannelGrants } from "#publishing/application/channel-grants.ts";
 import { CountedPlatforms } from "#publishing/application/counted-platforms.ts";
 import { PlatformLookups } from "#publishing/application/platform-lookups.ts";
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
@@ -124,6 +125,7 @@ const clientWith = (
               Layer.provide(
                 Layer.mergeAll(
                   AccountStandings.layer.pipe(
+                    Layer.provide(ChannelGrants.none),
                     Layer.provide(
                       Layer.succeed(
                         PlatformLookups,
@@ -214,7 +216,12 @@ describe("the platforms' capabilities endpoint", () => {
         ]),
         [
           ["contentLabel", "choice", null],
+          ["disableQuotes", "boolean", null],
           ["languages", "textList", 3],
+          ["replies", "choice", null],
+          ["replyFollowers", "boolean", null],
+          ["replyFollowing", "boolean", null],
+          ["replyMentioned", "boolean", null],
         ]
       );
       assert.deepStrictEqual(

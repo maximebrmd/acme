@@ -118,7 +118,18 @@ describe("the options fields", () => {
         visibility: "unlisted",
       },
     ],
-    ["bluesky", { contentLabel: "graphic-media", languages: "en, pt-BR" }],
+    [
+      "bluesky",
+      {
+        contentLabel: "graphic-media",
+        disableQuotes: true,
+        languages: "en, pt-BR",
+        replies: "limited",
+        replyFollowers: true,
+        replyFollowing: false,
+        replyMentioned: true,
+      },
+    ],
     [
       "threads",
       {
