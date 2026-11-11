@@ -15,8 +15,13 @@ import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
 import { instanceOfAccount } from "./mastodon-client.ts";
 import type { MastodonHttp } from "./mastodon-client.ts";
 
-// Mastodon's status ids are numbers written as strings (snowflakes).
-const statusIdPattern = /^\d{1,30}$/u;
+// A status id is a string, "cast from an integer but not guaranteed to be
+// a number" (https://docs.joinmastodon.org/entities/Status/, read
+// 2026-11-11): Mastodon's are digits, other servers of the same API give
+// other shapes. One of URL-safe characters is taken, and sent encoded, as
+// analytics and the inbox send it; a dot, a slash or anything else that
+// could change the path is not.
+const statusIdPattern = /^[A-Za-z0-9_-]{1,64}$/u;
 
 // What Mastodon's answer to a deletion means, from its API reference
 // (https://docs.joinmastodon.org/methods/statuses/#delete, read
@@ -88,7 +93,10 @@ export const mastodonLivePost = (options: {
       return yield* api
         .execute(
           HttpClientRequest.delete(
-            new URL(`/api/v1/statuses/${platformPostId}`, instance)
+            new URL(
+              `/api/v1/statuses/${encodeURIComponent(platformPostId)}`,
+              instance
+            )
           ).pipe(HttpClientRequest.bearerToken(token.accessToken))
         )
         .pipe(

@@ -205,6 +205,26 @@ describe("deleting posts on Mastodon", () => {
     }).pipe(Effect.scoped)
   );
 
+  it.live(
+    "deletes a status whose id is not a number, as servers of the same API may give",
+    () =>
+      Effect.gen(function* otherIds() {
+        const { instance, live } = yield* onInstance();
+
+        assert.strictEqual(
+          yield* live.remove({
+            channelId,
+            platformPostId: PlatformPostIdSchema.make("AbC123_xY-9"),
+          }),
+          "alreadyGone"
+        );
+        assert.strictEqual(
+          callsOf(instance, "DELETE")[0]?.path,
+          "/api/v1/statuses/AbC123_xY-9"
+        );
+      }).pipe(Effect.scoped)
+  );
+
   it.live("asks for nothing that is not a status id", () =>
     Effect.gen(function* invalid() {
       const { instance, live } = yield* onInstance();
