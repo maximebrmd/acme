@@ -64,6 +64,8 @@ public readonly record struct Permission : IStringEnum
 
     public static readonly Permission OrganizationDelete = new(Values.OrganizationDelete);
 
+    public static readonly Permission OrganizationSecure = new(Values.OrganizationSecure);
+
     public static readonly Permission PartnerRead = new(Values.PartnerRead);
 
     public static readonly Permission PartnerManage = new(Values.PartnerManage);
@@ -236,6 +238,8 @@ public readonly record struct Permission : IStringEnum
         public const string OrganizationUpdate = "organization:update";
 
         public const string OrganizationDelete = "organization:delete";
+
+        public const string OrganizationSecure = "organization:secure";
 
         public const string PartnerRead = "partner:read";
 

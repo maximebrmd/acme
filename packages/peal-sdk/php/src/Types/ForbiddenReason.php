@@ -10,4 +10,5 @@ enum ForbiddenReason: string
     case WrongWorkspace = "wrongWorkspace";
     case Suspended = "suspended";
     case UntrustedOrigin = "untrustedOrigin";
+    case TwoStepRequired = "twoStepRequired";
 }

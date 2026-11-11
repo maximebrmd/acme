@@ -26,6 +26,9 @@ public record Membership : IJsonOnDeserialized
     [JsonPropertyName("slug")]
     public required string Slug { get; set; }
 
+    [JsonPropertyName("twoStepRequired")]
+    public required bool TwoStepRequired { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

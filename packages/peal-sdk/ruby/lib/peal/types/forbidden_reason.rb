@@ -13,6 +13,7 @@ module Peal
       WRONG_WORKSPACE = "wrongWorkspace"
       SUSPENDED = "suspended"
       UNTRUSTED_ORIGIN = "untrustedOrigin"
+      TWO_STEP_REQUIRED = "twoStepRequired"
     end
   end
 end

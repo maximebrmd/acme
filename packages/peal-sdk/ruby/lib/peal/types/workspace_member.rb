@@ -13,6 +13,8 @@ module Peal
 
       field :role, -> { String }, optional: false, nullable: false
 
+      field :two_step_enabled, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "twoStepEnabled"
+
       field :user_id, -> { String }, optional: false, nullable: false, api_name: "userId"
     end
   end

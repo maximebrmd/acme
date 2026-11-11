@@ -20,6 +20,8 @@ public readonly record struct ForbiddenReason : IStringEnum
 
     public static readonly ForbiddenReason UntrustedOrigin = new(Values.UntrustedOrigin);
 
+    public static readonly ForbiddenReason TwoStepRequired = new(Values.TwoStepRequired);
+
     public ForbiddenReason(string value)
     {
         Value = value;
@@ -127,5 +129,7 @@ public readonly record struct ForbiddenReason : IStringEnum
         public const string Suspended = "suspended";
 
         public const string UntrustedOrigin = "untrustedOrigin";
+
+        public const string TwoStepRequired = "twoStepRequired";
     }
 }

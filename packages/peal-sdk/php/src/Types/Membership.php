@@ -39,12 +39,19 @@ class Membership extends JsonSerializableType
     public string $slug;
 
     /**
+     * @var bool $twoStepRequired
+     */
+    #[JsonProperty('twoStepRequired')]
+    public bool $twoStepRequired;
+
+    /**
      * @param array{
      *   id: string,
      *   name: string,
      *   permissions: array<value-of<Permission>>,
      *   role: string,
      *   slug: string,
+     *   twoStepRequired: bool,
      * } $values
      */
     public function __construct(
@@ -55,6 +62,7 @@ class Membership extends JsonSerializableType
         $this->permissions = $values['permissions'];
         $this->role = $values['role'];
         $this->slug = $values['slug'];
+        $this->twoStepRequired = $values['twoStepRequired'];
     }
 
     /**

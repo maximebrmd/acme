@@ -12,6 +12,9 @@ pub struct Membership {
     pub role: String,
     #[serde(default)]
     pub slug: String,
+    #[serde(rename = "twoStepRequired")]
+    #[serde(default)]
+    pub two_step_required: bool,
 }
 
 impl Membership {
@@ -28,6 +31,7 @@ pub struct MembershipBuilder {
     permissions: Option<Vec<Permission>>,
     role: Option<String>,
     slug: Option<String>,
+    two_step_required: Option<bool>,
 }
 
 impl MembershipBuilder {
@@ -56,6 +60,11 @@ impl MembershipBuilder {
         self
     }
 
+    pub fn two_step_required(mut self, value: bool) -> Self {
+        self.two_step_required = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`Membership`].
     /// This method will fail if any of the following fields are not set:
     /// - [`id`](MembershipBuilder::id)
@@ -63,6 +72,7 @@ impl MembershipBuilder {
     /// - [`permissions`](MembershipBuilder::permissions)
     /// - [`role`](MembershipBuilder::role)
     /// - [`slug`](MembershipBuilder::slug)
+    /// - [`two_step_required`](MembershipBuilder::two_step_required)
     pub fn build(self) -> Result<Membership, BuildError> {
         Ok(Membership {
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
@@ -72,6 +82,9 @@ impl MembershipBuilder {
                 .ok_or_else(|| BuildError::missing_field("permissions"))?,
             role: self.role.ok_or_else(|| BuildError::missing_field("role"))?,
             slug: self.slug.ok_or_else(|| BuildError::missing_field("slug"))?,
+            two_step_required: self
+                .two_step_required
+                .ok_or_else(|| BuildError::missing_field("two_step_required"))?,
         })
     }
 }

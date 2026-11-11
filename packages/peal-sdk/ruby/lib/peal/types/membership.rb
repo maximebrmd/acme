@@ -14,6 +14,8 @@ module Peal
       field :role, -> { String }, optional: false, nullable: false
 
       field :slug, -> { String }, optional: false, nullable: false
+
+      field :two_step_required, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "twoStepRequired"
     end
   end
 end

@@ -35,6 +35,7 @@ module Peal
       MEMBER_DELETE = "member:delete"
       ORGANIZATION_UPDATE = "organization:update"
       ORGANIZATION_DELETE = "organization:delete"
+      ORGANIZATION_SECURE = "organization:secure"
       PARTNER_READ = "partner:read"
       PARTNER_MANAGE = "partner:manage"
       POST_READ = "post:read"

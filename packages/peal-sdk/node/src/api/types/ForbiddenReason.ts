@@ -6,6 +6,7 @@ export const ForbiddenReason = {
         PersonRequired: "personRequired",
         WrongWorkspace: "wrongWorkspace",
         Suspended: "suspended",
-        UntrustedOrigin: "untrustedOrigin"
+        UntrustedOrigin: "untrustedOrigin",
+        TwoStepRequired: "twoStepRequired"
     } as const;
 export type ForbiddenReason = typeof ForbiddenReason[keyof typeof ForbiddenReason];

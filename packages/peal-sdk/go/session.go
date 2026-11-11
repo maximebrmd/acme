@@ -140,12 +140,13 @@ func (m *Me) String() string {
 }
 
 var (
-	meUserFieldEmail         = big.NewInt(1 << 0)
-	meUserFieldEmailVerified = big.NewInt(1 << 1)
-	meUserFieldID            = big.NewInt(1 << 2)
-	meUserFieldImage         = big.NewInt(1 << 3)
-	meUserFieldLocale        = big.NewInt(1 << 4)
-	meUserFieldName          = big.NewInt(1 << 5)
+	meUserFieldEmail          = big.NewInt(1 << 0)
+	meUserFieldEmailVerified  = big.NewInt(1 << 1)
+	meUserFieldID             = big.NewInt(1 << 2)
+	meUserFieldImage          = big.NewInt(1 << 3)
+	meUserFieldLocale         = big.NewInt(1 << 4)
+	meUserFieldName           = big.NewInt(1 << 5)
+	meUserFieldTwoStepEnabled = big.NewInt(1 << 6)
 )
 
 // meUserNullableFields maps the wire names of MeUser's nullable fields (required or optional) to their field bits.
@@ -154,12 +155,13 @@ var meUserNullableFields = map[string]*big.Int{
 }
 
 type MeUser struct {
-	Email         string       `json:"email" url:"email"`
-	EmailVerified bool         `json:"emailVerified" url:"emailVerified"`
-	ID            string       `json:"id" url:"id"`
-	Image         *string      `json:"image,omitempty" url:"image,omitempty"`
-	Locale        MeUserLocale `json:"locale" url:"locale"`
-	Name          string       `json:"name" url:"name"`
+	Email          string       `json:"email" url:"email"`
+	EmailVerified  bool         `json:"emailVerified" url:"emailVerified"`
+	ID             string       `json:"id" url:"id"`
+	Image          *string      `json:"image,omitempty" url:"image,omitempty"`
+	Locale         MeUserLocale `json:"locale" url:"locale"`
+	Name           string       `json:"name" url:"name"`
+	TwoStepEnabled bool         `json:"twoStepEnabled" url:"twoStepEnabled"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -208,6 +210,13 @@ func (m *MeUser) GetName() string {
 		return ""
 	}
 	return m.Name
+}
+
+func (m *MeUser) GetTwoStepEnabled() bool {
+	if m == nil {
+		return false
+	}
+	return m.TwoStepEnabled
 }
 
 func (m *MeUser) GetExtraProperties() map[string]interface{} {
@@ -266,6 +275,13 @@ func (m *MeUser) SetLocale(locale MeUserLocale) {
 func (m *MeUser) SetName(name string) {
 	m.Name = name
 	m.require(meUserFieldName)
+}
+
+// SetTwoStepEnabled sets the TwoStepEnabled field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MeUser) SetTwoStepEnabled(twoStepEnabled bool) {
+	m.TwoStepEnabled = twoStepEnabled
+	m.require(meUserFieldTwoStepEnabled)
 }
 
 func (m *MeUser) UnmarshalJSON(data []byte) error {
@@ -340,19 +356,21 @@ func (m MeUserLocale) Ptr() *MeUserLocale {
 }
 
 var (
-	membershipFieldID          = big.NewInt(1 << 0)
-	membershipFieldName        = big.NewInt(1 << 1)
-	membershipFieldPermissions = big.NewInt(1 << 2)
-	membershipFieldRole        = big.NewInt(1 << 3)
-	membershipFieldSlug        = big.NewInt(1 << 4)
+	membershipFieldID              = big.NewInt(1 << 0)
+	membershipFieldName            = big.NewInt(1 << 1)
+	membershipFieldPermissions     = big.NewInt(1 << 2)
+	membershipFieldRole            = big.NewInt(1 << 3)
+	membershipFieldSlug            = big.NewInt(1 << 4)
+	membershipFieldTwoStepRequired = big.NewInt(1 << 5)
 )
 
 type Membership struct {
-	ID          string       `json:"id" url:"id"`
-	Name        string       `json:"name" url:"name"`
-	Permissions []Permission `json:"permissions" url:"permissions"`
-	Role        string       `json:"role" url:"role"`
-	Slug        string       `json:"slug" url:"slug"`
+	ID              string       `json:"id" url:"id"`
+	Name            string       `json:"name" url:"name"`
+	Permissions     []Permission `json:"permissions" url:"permissions"`
+	Role            string       `json:"role" url:"role"`
+	Slug            string       `json:"slug" url:"slug"`
+	TwoStepRequired bool         `json:"twoStepRequired" url:"twoStepRequired"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -394,6 +412,13 @@ func (m *Membership) GetSlug() string {
 		return ""
 	}
 	return m.Slug
+}
+
+func (m *Membership) GetTwoStepRequired() bool {
+	if m == nil {
+		return false
+	}
+	return m.TwoStepRequired
 }
 
 func (m *Membership) GetExtraProperties() map[string]interface{} {
@@ -445,6 +470,13 @@ func (m *Membership) SetRole(role string) {
 func (m *Membership) SetSlug(slug string) {
 	m.Slug = slug
 	m.require(membershipFieldSlug)
+}
+
+// SetTwoStepRequired sets the TwoStepRequired field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Membership) SetTwoStepRequired(twoStepRequired bool) {
+	m.TwoStepRequired = twoStepRequired
+	m.require(membershipFieldTwoStepRequired)
 }
 
 func (m *Membership) UnmarshalJSON(data []byte) error {

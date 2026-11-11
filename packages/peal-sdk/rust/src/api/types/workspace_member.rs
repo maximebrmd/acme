@@ -11,6 +11,9 @@ pub struct WorkspaceMember {
     pub name: String,
     #[serde(default)]
     pub role: String,
+    #[serde(rename = "twoStepEnabled")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub two_step_enabled: Option<bool>,
     #[serde(rename = "userId")]
     #[serde(default)]
     pub user_id: String,
@@ -29,6 +32,7 @@ pub struct WorkspaceMemberBuilder {
     joined_at: Option<String>,
     name: Option<String>,
     role: Option<String>,
+    two_step_enabled: Option<bool>,
     user_id: Option<String>,
 }
 
@@ -50,6 +54,11 @@ impl WorkspaceMemberBuilder {
 
     pub fn role(mut self, value: impl Into<String>) -> Self {
         self.role = Some(value.into());
+        self
+    }
+
+    pub fn two_step_enabled(mut self, value: bool) -> Self {
+        self.two_step_enabled = Some(value);
         self
     }
 
@@ -75,6 +84,7 @@ impl WorkspaceMemberBuilder {
                 .ok_or_else(|| BuildError::missing_field("joined_at"))?,
             name: self.name.ok_or_else(|| BuildError::missing_field("name"))?,
             role: self.role.ok_or_else(|| BuildError::missing_field("role"))?,
+            two_step_enabled: self.two_step_enabled,
             user_id: self
                 .user_id
                 .ok_or_else(|| BuildError::missing_field("user_id"))?,

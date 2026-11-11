@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -27,6 +29,8 @@ public final class WorkspaceMember {
 
     private final String role;
 
+    private final Optional<Boolean> twoStepEnabled;
+
     private final String userId;
 
     private final Map<String, Object> additionalProperties;
@@ -36,12 +40,14 @@ public final class WorkspaceMember {
             String joinedAt,
             String name,
             String role,
+            Optional<Boolean> twoStepEnabled,
             String userId,
             Map<String, Object> additionalProperties) {
         this.email = email;
         this.joinedAt = joinedAt;
         this.name = name;
         this.role = role;
+        this.twoStepEnabled = twoStepEnabled;
         this.userId = userId;
         this.additionalProperties = additionalProperties;
     }
@@ -66,6 +72,11 @@ public final class WorkspaceMember {
         return role;
     }
 
+    @JsonProperty("twoStepEnabled")
+    public Optional<Boolean> getTwoStepEnabled() {
+        return twoStepEnabled;
+    }
+
     @JsonProperty("userId")
     public String getUserId() {
         return userId;
@@ -87,12 +98,13 @@ public final class WorkspaceMember {
                 && joinedAt.equals(other.joinedAt)
                 && name.equals(other.name)
                 && role.equals(other.role)
+                && twoStepEnabled.equals(other.twoStepEnabled)
                 && userId.equals(other.userId);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.email, this.joinedAt, this.name, this.role, this.userId);
+        return Objects.hash(this.email, this.joinedAt, this.name, this.role, this.twoStepEnabled, this.userId);
     }
 
     @java.lang.Override
@@ -132,6 +144,10 @@ public final class WorkspaceMember {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage twoStepEnabled(Optional<Boolean> twoStepEnabled);
+
+        _FinalStage twoStepEnabled(Boolean twoStepEnabled);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -147,6 +163,8 @@ public final class WorkspaceMember {
 
         private String userId;
 
+        private Optional<Boolean> twoStepEnabled = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -157,6 +175,7 @@ public final class WorkspaceMember {
             joinedAt(other.getJoinedAt());
             name(other.getName());
             role(other.getRole());
+            twoStepEnabled(other.getTwoStepEnabled());
             userId(other.getUserId());
             return this;
         }
@@ -197,8 +216,21 @@ public final class WorkspaceMember {
         }
 
         @java.lang.Override
+        public _FinalStage twoStepEnabled(Boolean twoStepEnabled) {
+            this.twoStepEnabled = Optional.ofNullable(twoStepEnabled);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "twoStepEnabled", nulls = Nulls.SKIP)
+        public _FinalStage twoStepEnabled(Optional<Boolean> twoStepEnabled) {
+            this.twoStepEnabled = twoStepEnabled;
+            return this;
+        }
+
+        @java.lang.Override
         public WorkspaceMember build() {
-            return new WorkspaceMember(email, joinedAt, name, role, userId, additionalProperties);
+            return new WorkspaceMember(email, joinedAt, name, role, twoStepEnabled, userId, additionalProperties);
         }
 
         @JsonAnySetter
@@ -207,6 +239,7 @@ public final class WorkspaceMember {
                     || key.equalsIgnoreCase("joinedAt")
                     || key.equalsIgnoreCase("name")
                     || key.equalsIgnoreCase("role")
+                    || key.equalsIgnoreCase("twoStepEnabled")
                     || key.equalsIgnoreCase("userId")) {
                 return;
             }
