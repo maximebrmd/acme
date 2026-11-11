@@ -39,7 +39,10 @@
   and tags it with the name Fern runs, writes a Fern workspace for the
   language under `.cache/sdk/fern` (paths relative, as Fern wants), and runs
   the workspace's `fern-api` with `--local` and its telemetry, upgrade check
-  and version redirection off. `--generate-tests` makes Fern write whole
+  and version redirection off. Fern copies the SDK's folder, builds included,
+  into temporary folders it never deletes, so its `TMPDIR` is
+  `.cache/sdk/fern/<language>/tmp`, emptied before and after each run.
+  `--generate-tests` makes Fern write whole
   projects (manifests, build files, its own tests), not the source alone.
   Generation is deterministic: `sdk:check` compares two runs' output through
   Git. Upgrade Fern (the CLI or a generator) on purpose, then regenerate and

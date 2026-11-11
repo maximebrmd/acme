@@ -4,7 +4,7 @@
 // keeping only the files the folder's .fernignore names, which are ours. The
 // SDKs' license and notice then go in, and scripts/finish.ts fills what the
 // generator leaves out of the package's manifest.
-import { copyFile, mkdir } from "node:fs/promises";
+import { copyFile, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 
 import { $ } from "bun";
@@ -85,21 +85,41 @@ await $`docker pull --quiet ${pinned}`.quiet();
 
 await $`docker tag ${pinned} ${generator.image}:${generator.version}`;
 
+// Fern copies the SDK's folder, builds included (a Rust `target/` weighs
+// gigabytes), into temporary folders it never deletes: it gets a folder of
+// its own, emptied before and after each run, even one that failed or was
+// killed.
+const temporaryFolder = path.join(cacheRoot, "fern", language.name, "tmp");
+
+const removeTemporaryFolder = async () => {
+  await rm(temporaryFolder, { force: true, recursive: true });
+};
+
+await removeTemporaryFolder();
+
+await mkdir(temporaryFolder, { recursive: true });
+
 // --generate-tests makes Fern write the whole project (manifest, build
 // files, its unit tests) rather than the client's source alone.
-const result =
-  await $`node ${path.join(cliFolder, "cli.cjs")} generate --local --group ${language.name} --version ${language.version} --generate-tests --force --no-prompt --log-level warn`
-    .cwd(path.dirname(fernFolder))
-    .env({
-      ...process.env,
-      FERN_DISABLE_AUTO_BOOTSTRAP: "true",
-      FERN_DISABLE_TELEMETRY: "true",
-      FERN_DISABLE_UPGRADE_CHECK: "true",
-      FERN_NO_VERSION_REDIRECTION: "true",
-      FERN_TELEMETRY_DISABLED: "true",
-    })
-    .quiet()
-    .nothrow();
+const result = await (async () => {
+  try {
+    return await $`node ${path.join(cliFolder, "cli.cjs")} generate --local --group ${language.name} --version ${language.version} --generate-tests --force --no-prompt --log-level warn`
+      .cwd(path.dirname(fernFolder))
+      .env({
+        ...process.env,
+        FERN_DISABLE_AUTO_BOOTSTRAP: "true",
+        FERN_DISABLE_TELEMETRY: "true",
+        FERN_DISABLE_UPGRADE_CHECK: "true",
+        FERN_NO_VERSION_REDIRECTION: "true",
+        FERN_TELEMETRY_DISABLED: "true",
+        TMPDIR: temporaryFolder,
+      })
+      .quiet()
+      .nothrow();
+  } finally {
+    await removeTemporaryFolder();
+  }
+})();
 
 if (result.exitCode !== 0) {
   process.stderr.write(result.stdout);
