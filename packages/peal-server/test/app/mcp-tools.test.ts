@@ -405,6 +405,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           discard_draft: [false, true, true, false],
           // Each call makes another draft.
           duplicate_post: [false, false, false, false],
+          // It changes the post's text on the platform, for everyone.
+          edit_published_post: [false, false, true, true],
           enable_channel: [false, false, true, false],
           find_tools: [true, false, true, false],
           get_ad_account: [true, false, true, false],
@@ -713,6 +715,11 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
                   when: { _tag: "now" },
                 },
               ],
+            },
+            edit_published_post: {
+              postId,
+              targetId: postId,
+              text: "Never sent.",
             },
             mark_comment_answered: { answered: true, commentId: postId },
             moderate_comment: { action: "like", commentId: postId },
@@ -2145,6 +2152,41 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               targetId: "00000000-0000-7000-8000-00000000e0de",
             }),
             "Give channelId or targetId, not both"
+          );
+          // Editing what is out needs the publishing scope too, names one
+          // channel one way, and finds nothing on a channel the post is not
+          // on.
+          assert.include(
+            yield* writer.refused("edit_published_post", {
+              channelId: "00000000-0000-7000-8000-00000000c0de",
+              postId: created.id,
+              text: "Corrected.",
+            }),
+            "workspace:publish"
+          );
+          assert.include(
+            yield* publisher.refused("edit_published_post", {
+              postId: created.id,
+              text: "Corrected.",
+            }),
+            "Give channelId or targetId, exactly one"
+          );
+          assert.include(
+            yield* publisher.refused("edit_published_post", {
+              channelId: "00000000-0000-7000-8000-00000000c0de",
+              postId: created.id,
+              targetId: "00000000-0000-7000-8000-00000000e0de",
+              text: "Corrected.",
+            }),
+            "Give channelId or targetId, exactly one"
+          );
+          assert.include(
+            yield* publisher.refused("edit_published_post", {
+              channelId: "00000000-0000-7000-8000-00000000c0de",
+              postId: created.id,
+              text: "Corrected.",
+            }),
+            "The post is not on that channel"
           );
           assert.deepStrictEqual(
             yield* writer.call("list_post_changes", ChangesJsonSchema, {

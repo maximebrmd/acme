@@ -2119,6 +2119,8 @@
         "finished": "Une publication a son résultat sur chaque canal",
         "unpublished": "Une publication est supprimée de la plateforme d’un canal",
         "unpublish_failed": "Une publication n’a pas pu être supprimée de la plateforme d’un canal",
+        "edited": "Le texte d’une publication est modifié sur la plateforme d’un canal",
+        "edit_failed": "Le texte d’une publication n’a pas pu être modifié sur la plateforme d’un canal",
         "approval_requested": "Une publication attend une approbation",
         "approved": "Une publication est approuvée",
         "changes_requested": "Des modifications sont demandées sur une publication"

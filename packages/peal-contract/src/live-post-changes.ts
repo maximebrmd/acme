@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { maxPostTextLength } from "./post-text.ts";
+
 /**
  * Why a post cannot be changed on a channel now:
  *
@@ -104,6 +106,21 @@ export const PostUnpublishSchema = Schema.Struct({
 }).annotate({ identifier: "PostUnpublish" });
 
 export type PostUnpublish = typeof PostUnpublishSchema.Type;
+
+/**
+ * An edit of a live post: `text` for the part at `part` (from 0, the
+ * post itself, which it is when left out) on one channel. Only the text
+ * changes.
+ */
+export const LivePostEditSchema = Schema.Struct({
+  part: Schema.optionalKey(Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))),
+  text: Schema.String.check(
+    Schema.isNonEmpty(),
+    Schema.isMaxLength(maxPostTextLength)
+  ),
+}).annotate({ identifier: "LivePostEdit" });
+
+export type LivePostEdit = typeof LivePostEditSchema.Type;
 
 /** A post's changes once live, newest first. */
 export const LivePostChangesSchema = Schema.Struct({

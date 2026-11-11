@@ -9,6 +9,7 @@ import {
   ChannelSetReferencesSchema,
   duplicateWindowHours,
   idempotencyKeyLifetimeHours,
+  LivePostChangeSchema,
   LivePostChangesSchema,
   maxBulkPosts,
   maxDraftPageSize,
@@ -250,10 +251,42 @@ export const UnpublishPost = Tool.make("unpublish_post", {
   )
   .annotate(Tool.Title, "Unpublish a post");
 
+export const EditPublishedPost = Tool.make("edit_published_post", {
+  dependencies: [CurrentMember],
+  description:
+    "Replaces the text of a post that is already published, on one channel's platform, for everyone who can see it: the change is public at once. Only the text changes, never the media, the options, the audience or the time. Peal edits on Mastodon and Google Business Profile; get_channel_capabilities says where (`livePost.edit`) and why not elsewhere (`editBlockedBy`). Call it only when the user asked for this edit, and say first which post and channel it changes. Give `channelId` or `targetId` (as get_post answers it), exactly one; `part` is the part of a thread, from 0 (the post itself, the default). The text is checked as the channel's text is when a post is scheduled: a refused text lists every violation. The edit runs in the background: the answer is the change (`pending`, then `done` or `failed` with its `code`, which list_post_changes reads; `postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll); once done, the text is that part's own on that channel in Peal, and the target has its `editedAt`. Refused before anything is sent where it is not live there, removed, not editable on that platform, being changed already, its channel cannot be used, or the user's posts need an approval (approvalRequired: an approver makes it). Needs the scope workspace:publish.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelId: Schema.optionalKey(
+      Schema.String.annotate({
+        description:
+          "The channel to edit it on, as list_channels answers its id.",
+      })
+    ),
+    part: Schema.optionalKey(
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)).annotate({
+        description:
+          "The part of a thread to edit, from 0, the post itself; left out, 0.",
+      })
+    ),
+    postId,
+    targetId: Schema.optionalKey(targetId),
+    text: Schema.String.check(Schema.isNonEmpty()).annotate({
+      description:
+        "The new text of that part on that channel, which replaces the old one there for everyone.",
+    }),
+  }),
+  success: LivePostChangeSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: true })
+  )
+  .annotate(Tool.Title, "Edit a published post");
+
 export const ListPostChanges = Tool.make("list_post_changes", {
   dependencies: [CurrentMember],
   description:
-    "Lists what was asked of a post once it was live (removing it from a channel's platform), newest first: each change with where it stands (`pending`, `done`, or `failed` with its `code`, after which unpublish_post may be called again to remove what is left) and how many parts are left.",
+    "Lists what was asked of a post once it was live (removing it from a channel's platform, or editing its text there), newest first: each change with its `kind` (`unpublish` or `edit`) and where it stands (`pending`, `done`, or `failed` with its `code`, after which unpublish_post may be called again to remove what is left, or edit_published_post to edit again) and how many parts are left.",
   failure: ToolRefused,
   parameters: Schema.Struct({ postId }),
   success: LivePostChangesSchema,
@@ -602,5 +635,6 @@ export const PostTools = Toolkit.make(
   RepostTarget,
   ConfirmTarget,
   UnpublishPost,
+  EditPublishedPost,
   ListPostChanges
 );

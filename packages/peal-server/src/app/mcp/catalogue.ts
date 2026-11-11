@@ -65,6 +65,7 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "confirm_target",
   "create_post",
   "create_posts",
+  "edit_published_post",
   "mark_comment_answered",
   "moderate_comment",
   "publish_post",

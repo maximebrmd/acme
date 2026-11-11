@@ -262,6 +262,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "disable_channel",
           "discard_draft",
           "duplicate_post",
+          "edit_published_post",
           "enable_channel",
           "find_tools",
           "get_ad_account",
