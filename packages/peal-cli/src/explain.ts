@@ -663,6 +663,10 @@ const reasonOf =
             ? "Only a partner endpoint, in a partner account's home workspace, takes --workspace-id: an endpoint of its own workspace hears that workspace alone."
             : "--channel takes channels of the workspace, as peal channels list shows them."
         ),
+      WebhookHeaderValuesRequired: () =>
+        refused(
+          'The new --url is on another host, and the endpoint has headers, whose values Peal sends only to the host they were given for: give every --header "Name: value" again with --url, or --clear-headers.'
+        ),
       WebhookHeadersRefused: () =>
         refused(
           'A header named without a value keeps the one the endpoint has: it has none under that name, so give it with --header "Name: value".'

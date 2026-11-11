@@ -26,6 +26,9 @@ partner's workspaces. `--header "Name: value"` (5 at most) adds a header to
 every delivery, for a gateway in front of the receiver; `update` replaces
 them all, `--clear-headers` removes them. Take a value from the user, never
 repeat it: it is write-only, and the endpoint shows `headerNames` only.
+Values go only to the host they were given for: a `--url` on another host,
+on an endpoint with headers, needs every `--header` again (from the user)
+or `--clear-headers`.
 
 ## Deliveries
 

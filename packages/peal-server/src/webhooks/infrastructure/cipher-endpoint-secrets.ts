@@ -14,15 +14,24 @@ import { SealedSecretSchema } from "#webhooks/domain/sealed-secret.ts";
 import type { SealedSecret } from "#webhooks/domain/sealed-secret.ts";
 import { secretBytes, secretPrefix } from "#webhooks/domain/signature.ts";
 import type { WebhookEndpointId } from "#webhooks/domain/webhook-endpoint-id.ts";
+import { originOf } from "#webhooks/domain/webhook-url.ts";
+import type { WebhookUrl } from "#webhooks/domain/webhook-url.ts";
 
 const encoder = new TextEncoder();
 
 const notConfigured = () => Effect.fail(new SecretsNotConfigured());
 
-// A header's value is bound to its endpoint and its name: moved to another
-// endpoint, or under another name, it does not decrypt.
-const headerContext = (endpointId: WebhookEndpointId, name: string) =>
-  webhookSecretContext(`${endpointId}:header:${name.toLowerCase()}`);
+// A header's value is bound to its endpoint, its name and the origin it is
+// sent to: moved to another endpoint, under another name or to another
+// origin, it does not decrypt. A name is a token, so holds no colon.
+const headerContext = (
+  endpointId: WebhookEndpointId,
+  url: WebhookUrl,
+  name: string
+) =>
+  webhookSecretContext(
+    `${endpointId}:header:${name.toLowerCase()}:${originOf(url)}`
+  );
 
 // The HMAC key a secret holds: the bytes after its prefix.
 const keyOf = (secret: Redacted.Redacted) =>
@@ -41,7 +50,7 @@ const keyOf = (secret: Redacted.Redacted) =>
  * without a key issues none, and a secret whose key left the keyring, or
  * that was moved to another endpoint, signs nothing. Header values are
  * sealed and opened on the same cipher, bound to
- * `webhook:<endpoint id>:header:<name>`.
+ * `webhook:<endpoint id>:header:<name>:<origin>`.
  */
 export const CipherEndpointSecrets = Layer.effect(
   EndpointSecrets,
@@ -80,13 +89,13 @@ export const CipherEndpointSecrets = Layer.effect(
 
         return { sealed: SealedSecretSchema.make(sealed), secret };
       }),
-      openHeaders: (endpointId, headers) =>
+      openHeaders: (endpointId, url, headers) =>
         Effect.all(
           headers.map(({ name, sealed }) =>
             cipher
               .decryptSecret(
                 EncryptedTokenSchema.make(sealed),
-                headerContext(endpointId, name)
+                headerContext(endpointId, url, name)
               )
               .pipe(
                 Effect.map((value) => ({ name, value })),
@@ -94,13 +103,13 @@ export const CipherEndpointSecrets = Layer.effect(
               )
           )
         ),
-      sealHeaders: (endpointId, headers) =>
+      sealHeaders: (endpointId, url, headers) =>
         Effect.all(
           headers.map(({ name, value }) =>
             cipher
               .encryptSecret(
                 Redacted.make(value),
-                headerContext(endpointId, name)
+                headerContext(endpointId, url, name)
               )
               .pipe(
                 Effect.map((sealed): SealedHeader => ({

@@ -2230,6 +2230,8 @@
     "headerValue": "Value",
     "headerSet": "set",
     "headerSetHint": "Saved, never shown: type a new value to replace it.",
+    "headerMovedHint": "Saved for the old host: type its value again.",
+    "headersMoved": "The new address is on another host: type each header’s value again, or remove the header. Peal never sends a saved value to another host.",
     "addHeader": "Add a header",
     "removeHeader": "Remove the header {name}",
     "removeNewHeader": "Remove this header",
@@ -2264,6 +2266,7 @@
       "urlRefused": "{reason, select, malformed {This is not an address.} notHttps {The address must be HTTPS, on the default port.} credentials {The address must not carry a user name or a password.} tooLong {The address is too long.} notPublic {The address’s host is not public, so Peal does not send requests to it.} unknownHost {The address’s host does not exist.} other {Peal does not deliver to this address.}}",
       "unknown": "Something went wrong. Try again.",
       "filterRefused": "Only a partner endpoint takes a list of workspaces, and each must be an id.",
+      "headerValuesRequired": "The new address is on another host: type each header’s value again, or remove the headers.",
       "headersRefused": "A saved header keeps its value only while its name stays: type its value again, or remove it."
     }
   },

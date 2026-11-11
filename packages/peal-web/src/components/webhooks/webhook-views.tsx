@@ -51,6 +51,7 @@ import {
   goneChannelIds,
   withChannel,
   withEveryType,
+  headersNeedValues,
   withHeader,
   withNewHeader,
   withoutHeader,
@@ -340,7 +341,8 @@ const ChannelsFieldset = ({
 
 // The headers every delivery carries beside Peal's: a saved one by its
 // name, its value shown as set and replaced only when typed again; a new
-// one with its name and value. Values are typed like passwords.
+// one with its name and value. Values are typed like passwords. Once the
+// address moves to another origin, every saved value is asked again.
 const HeadersFieldset = ({
   disabled,
   draft,
@@ -356,13 +358,23 @@ const HeadersFieldset = ({
 }) => {
   const t = useTranslations("Webhooks");
   const hintId = `${idPrefix}-webhook-headers-hint`;
+  const movedId = `${idPrefix}-webhook-headers-moved`;
+  const moving = headersNeedValues(draft);
 
   return (
-    <fieldset className="flex flex-col gap-3" aria-describedby={hintId}>
+    <fieldset
+      className="flex flex-col gap-3"
+      aria-describedby={moving ? `${hintId} ${movedId}` : hintId}
+    >
       <legend className="mb-2 font-medium">{t("headersLegend")}</legend>
       <p id={hintId} className="text-muted-foreground text-sm">
         {t("headersHint", { max: maxWebhookHeaders })}
       </p>
+      {moving ? (
+        <p id={movedId} className="text-destructive text-sm">
+          {t("headersMoved")}
+        </p>
+      ) : null}
       {draft.headers.map((row, index) => {
         const nameId = `${idPrefix}-webhook-header-${String(index)}-name`;
         const valueId = `${idPrefix}-webhook-header-${String(index)}-value`;
@@ -402,9 +414,17 @@ const HeadersFieldset = ({
                 spellCheck={false}
                 maxLength={maxWebhookHeaderValueLength}
                 value={row.value}
-                placeholder={row.saved ? t("headerSet") : undefined}
+                placeholder={row.saved && !moving ? t("headerSet") : undefined}
+                required={moving && row.saved}
                 disabled={disabled}
-                aria-describedby={row.saved ? `${valueId}-hint` : undefined}
+                aria-invalid={
+                  moving && row.saved && row.value === "" ? true : undefined
+                }
+                aria-describedby={
+                  row.saved
+                    ? `${valueId}-hint ${moving ? movedId : ""}`.trim()
+                    : undefined
+                }
                 onChange={(event) => {
                   onChange(
                     withHeader(draft, index, { value: event.target.value })
@@ -416,7 +436,7 @@ const HeadersFieldset = ({
                   id={`${valueId}-hint`}
                   className="text-muted-foreground text-xs"
                 >
-                  {t("headerSetHint")}
+                  {moving ? t("headerMovedHint") : t("headerSetHint")}
                 </p>
               ) : null}
             </div>
@@ -606,7 +626,10 @@ export const EndpointFieldsView = ({
         disabled={disabled}
         draft={draft}
         idPrefix={idPrefix}
-        invalid={error?.key === "headersRefused"}
+        invalid={
+          error?.key === "headersRefused" ||
+          error?.key === "headerValuesRequired"
+        }
         onChange={onChange}
       />
       {withEnabled ? (

@@ -725,6 +725,11 @@
     "tag": "WebhookFilterRefused"
   },
   {
+    "code": "webhook_header_values_required",
+    "status": 422,
+    "tag": "WebhookHeaderValuesRequired"
+  },
+  {
     "code": "webhook_headers_refused",
     "status": 422,
     "tag": "WebhookHeadersRefused"

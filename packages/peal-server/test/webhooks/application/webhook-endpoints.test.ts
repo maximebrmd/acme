@@ -25,6 +25,7 @@ import {
   maxEndpointsPerWorkspace,
 } from "#webhooks/domain/delivery-policy.ts";
 import { changeEndpoint } from "#webhooks/domain/webhook-endpoint.ts";
+import { WebhookUrlSchema } from "#webhooks/domain/webhook-url.ts";
 
 const decodePayload = Schema.decodeUnknownSync(
   Schema.fromJsonString(Schema.toCodecJson(WebhookPayloadSchema))
@@ -666,7 +667,7 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
         );
 
         const opened = yield* EndpointSecrets.use((secrets) =>
-          secrets.openHeaders(endpoint.id, before.headers)
+          secrets.openHeaders(endpoint.id, endpoint.url, before.headers)
         );
 
         assert.deepStrictEqual(
@@ -683,6 +684,134 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
 
         assert.deepStrictEqual(cleared.headerNames, []);
       })
+  );
+
+  it.effect(
+    "never carry a header's value to another origin unless it is given again",
+    () =>
+      Effect.gen(function* origins() {
+        const owner = yield* freshOwner;
+        const endpoints = yield* WebhookEndpoints;
+        const store = yield* EndpointStore;
+        const transport = yield* FakeTransport;
+        const value = "Bearer synthetic-gateway-token";
+
+        const { endpoint, host } = yield* freshEndpoint(owner, {
+          headers: [{ name: "Authorization", value }],
+        });
+
+        const stranger = `${crypto.randomUUID()}.hooks.example.com`;
+        const before = Option.getOrThrow(yield* store.secrets(endpoint.id));
+
+        // Another host, with the headers kept or named without a value:
+        // refused, nothing saved.
+        assert.deepStrictEqual(
+          yield* Effect.all([
+            tagOf(
+              endpoints.update(owner, endpoint.id, {
+                url: `https://${stranger}/x`,
+              })
+            ),
+            tagOf(
+              endpoints.update(owner, endpoint.id, {
+                headers: [{ name: "Authorization" }],
+                url: `https://${stranger}/x`,
+              })
+            ),
+          ]),
+          ["HeaderValuesRequired", "HeaderValuesRequired"]
+        );
+        assert.strictEqual(
+          (yield* endpoints.get(owner, endpoint.id)).url,
+          endpoint.url
+        );
+        assert.deepStrictEqual(
+          Option.getOrThrow(yield* store.secrets(endpoint.id)).headers,
+          before.headers
+        );
+
+        // Another path on the same origin keeps them.
+        yield* endpoints.update(owner, endpoint.id, {
+          url: `https://${host}/other?synthetic=1`,
+        });
+
+        const sameOrigin = yield* endpoints.sendTest(owner, endpoint.id);
+
+        yield* DeliverWebhook.use((delivering) =>
+          delivering.attempt(sameOrigin.id, 1)
+        );
+
+        assert.deepStrictEqual(
+          (yield* transport.sentTo(host)).map(
+            (request) => request.headers["Authorization"]
+          ),
+          [value]
+        );
+
+        // Given again with its value, it goes to the new host: that value.
+        const moved = yield* endpoints.update(owner, endpoint.id, {
+          headers: [{ name: "Authorization", value: "Bearer synthetic-new" }],
+          url: `https://${stranger}/x`,
+        });
+
+        assert.deepStrictEqual(moved.headerNames, ["Authorization"]);
+
+        const delivery = yield* endpoints.sendTest(owner, endpoint.id);
+
+        yield* DeliverWebhook.use((delivering) =>
+          delivering.attempt(delivery.id, 1)
+        );
+
+        assert.deepStrictEqual(
+          (yield* transport.sentTo(stranger)).map(
+            (request) => request.headers["Authorization"]
+          ),
+          ["Bearer synthetic-new"]
+        );
+
+        // Cleared, the endpoint moves anywhere.
+        const cleared = yield* endpoints.update(owner, endpoint.id, {
+          headers: [],
+          url: `https://${host}/hooks`,
+        });
+
+        assert.deepStrictEqual(cleared.headerNames, []);
+      })
+  );
+
+  it.effect("seal a header's value for its endpoint's origin only", () =>
+    Effect.gen(function* bound() {
+      const owner = yield* freshOwner;
+      const secrets = yield* EndpointSecrets;
+      const store = yield* EndpointStore;
+
+      const { endpoint, host } = yield* freshEndpoint(owner, {
+        headers: [{ name: "Authorization", value: "synthetic-bound" }],
+      });
+
+      const { headers } = Option.getOrThrow(yield* store.secrets(endpoint.id));
+
+      const opened = yield* secrets.openHeaders(
+        endpoint.id,
+        WebhookUrlSchema.make(`https://${host}/elsewhere`),
+        headers
+      );
+
+      assert.deepStrictEqual(
+        opened.map((header) => Redacted.value(header.value)),
+        ["synthetic-bound"]
+      );
+      assert.strictEqual(
+        yield* tagOf(
+          secrets.openHeaders(
+            endpoint.id,
+            WebhookUrlSchema.make("https://elsewhere.example.com/hooks"),
+            headers
+          )
+        ),
+        "SecretsNotConfigured"
+      );
+    })
   );
 
   it.effect("refuse headers an endpoint cannot carry, saving nothing", () =>

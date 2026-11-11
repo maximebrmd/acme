@@ -32,6 +32,8 @@ export interface EndpointDraft {
   readonly headers: readonly HeaderRow[];
   /** The names of the headers it has, to tell whether they changed. */
   readonly savedHeaderNames: readonly string[];
+  /** The address it has, whose origin its saved values go to; "" if new. */
+  readonly savedUrl: string;
   /** Whether it hears a partner's every workspace: the workspaces field. */
   readonly scope: WebhookEndpointScope;
   readonly url: string;
@@ -47,6 +49,7 @@ export const emptyDraft: EndpointDraft = {
   eventTypes: new Set(),
   headers: [],
   savedHeaderNames: [],
+  savedUrl: "",
   scope: "workspace",
   url: "",
   workspaceIds: "",
@@ -64,6 +67,7 @@ export const draftOf = (endpoint: WebhookEndpoint): EndpointDraft => ({
     value: "",
   })),
   savedHeaderNames: endpoint.headerNames,
+  savedUrl: endpoint.url,
   scope: endpoint.scope,
   url: endpoint.url,
   workspaceIds: endpoint.workspaceIds.join("\n"),
@@ -160,17 +164,41 @@ const newHeadersOf = (
     : Option.none();
 };
 
+// An address's origin (scheme, host and port), if it is a URL.
+const originOf = (url: string): Option.Option<string> =>
+  URL.canParse(url) ? Option.some(new URL(url).origin) : Option.none();
+
+/**
+ * Whether the draft moves a saved endpoint that has headers to another
+ * origin: their values are sent only to the origin they were given for,
+ * so each must be typed again, or the header removed.
+ */
+export const headersNeedValues = (draft: EndpointDraft): boolean => {
+  const saved = originOf(draft.savedUrl);
+  const typed = originOf(draft.url.trim());
+
+  return (
+    draft.savedHeaderNames.length > 0 &&
+    Option.isSome(saved) &&
+    Option.isSome(typed) &&
+    saved.value !== typed.value
+  );
+};
+
 // A change's headers: none while the form lists what the endpoint has,
 // untouched; the whole list otherwise, a saved row without a new value
-// keeping its own. A new row needs a name and a value.
+// keeping its own. A new row needs a name and a value, and so does a saved
+// one once the address moves to another origin.
 const changedHeadersOf = (
   draft: EndpointDraft
 ): Option.Option<Option.Option<readonly WebhookHeaderChange[]>> => {
   const rows = filledRows(draft);
+  const moving = headersNeedValues(draft);
 
   if (
     rows.some(
-      ({ name, saved, value }) => !saved && (name === "" || value === "")
+      ({ name, saved, value }) =>
+        (!saved && name === "") || ((moving || !saved) && value === "")
     )
   ) {
     return Option.none();

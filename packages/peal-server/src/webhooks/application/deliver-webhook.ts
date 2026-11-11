@@ -216,7 +216,7 @@ export class DeliverWebhook extends Context.Service<
         }
 
         const opened = yield* secrets
-          .openHeaders(endpoint.id, stored.headers)
+          .openHeaders(endpoint.id, endpoint.url, stored.headers)
           .pipe(Effect.option);
 
         if (Option.isNone(opened)) {

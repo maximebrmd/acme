@@ -11,6 +11,7 @@ import {
   WebhookEndpointDisabled,
   WebhookEndpointNotFound,
   WebhookFilterRefused,
+  WebhookHeaderValuesRequired,
   WebhookHeadersRefused,
   WebhooksNotConfigured,
   WebhookUrlRefused,
@@ -67,6 +68,10 @@ const headersRefused = () =>
 
 // A change's header without a value the endpoint does not have.
 const noHeaderToKeep = () => Effect.fail(new WebhookHeadersRefused());
+
+// A move to another origin that keeps a header's value.
+const headerValuesRequired = () =>
+  Effect.fail(new WebhookHeaderValuesRequired());
 
 const endpointDisabled = () => Effect.fail(new WebhookEndpointDisabled());
 
@@ -321,6 +326,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
                 DatabaseError: Effect.die,
                 EndpointNotFound: endpointNotFound,
                 FilterRefused: filterRefused,
+                HeaderValuesRequired: headerValuesRequired,
                 HeadersRefused: noHeaderToKeep,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: forbidden,

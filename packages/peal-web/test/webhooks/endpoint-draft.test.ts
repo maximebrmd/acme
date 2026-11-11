@@ -12,6 +12,7 @@ import {
   newEndpointOf,
   withChannel,
   withEveryType,
+  headersNeedValues,
   withHeader,
   withNewHeader,
   withoutHeader,
@@ -249,5 +250,34 @@ describe("an endpoint's headers", () => {
     expect(
       Option.map(changeOf(withoutHeader(saved, 0)), (change) => change.headers)
     ).toStrictEqual(Option.some([]));
+  });
+
+  it("asks every saved value again once the address moves to another origin", () => {
+    const moved = { ...saved, url: "https://elsewhere.example.com/peal" };
+
+    expect(headersNeedValues(moved)).toBeTruthy();
+    // Not sent while a saved value is not typed again.
+    expect(changeOf(moved)).toStrictEqual(Option.none());
+    expect(
+      Option.map(
+        changeOf(withHeader(moved, 0, { value: "Bearer synthetic-moved" })),
+        (change) => change.headers
+      )
+    ).toStrictEqual(
+      Option.some([{ name: "Authorization", value: "Bearer synthetic-moved" }])
+    );
+    expect(
+      Option.map(changeOf(withoutHeader(moved, 0)), (change) => change.headers)
+    ).toStrictEqual(Option.some([]));
+  });
+
+  it("keeps saved values on another path of the same origin", () => {
+    const samePlace = { ...saved, url: "https://hooks.example.com/other" };
+
+    expect(headersNeedValues(saved)).toBeFalsy();
+    expect(headersNeedValues(samePlace)).toBeFalsy();
+    expect(
+      Option.map(changeOf(samePlace), (change) => "headers" in change)
+    ).toStrictEqual(Option.some(false));
   });
 });

@@ -248,6 +248,10 @@ export const WebhookToolsLive = WebhookTools.toLayer(
               DatabaseError: Effect.die,
               EndpointNotFound: noEndpoint,
               FilterRefused: filterRefused,
+              HeaderValuesRequired: () =>
+                refuse(
+                  "The new address is on another origin (scheme, host or port) and the endpoint has headers, whose values are never sent to another origin: ask the user for each header's value and give them all in headers in the same call, or give headers: [] to remove them. Nothing was saved."
+                ),
               HeadersRefused: headersRefused,
               InvalidWebhookUrl: urlRefused,
               MissingPermission: notAllowed("manage webhooks"),

@@ -1258,6 +1258,8 @@ export { WebhookEndpointNotFound } from "./webhook-endpoint-not-found.ts";
 
 export { WebhookFilterRefused } from "./webhook-filter-refused.ts";
 
+export { WebhookHeaderValuesRequired } from "./webhook-header-values-required.ts";
+
 export { WebhookHeadersRefused } from "./webhook-headers-refused.ts";
 
 export {

@@ -41,12 +41,14 @@ import type {
 import { WebhookEventIdSchema } from "#webhooks/domain/webhook-event-id.ts";
 import type { SubscribableEventType } from "#webhooks/domain/webhook-event-type.ts";
 import type { WebhookEvent } from "#webhooks/domain/webhook-event.ts";
-import { parseWebhookUrl } from "#webhooks/domain/webhook-url.ts";
+import { originOf, parseWebhookUrl } from "#webhooks/domain/webhook-url.ts";
+import type { WebhookUrl } from "#webhooks/domain/webhook-url.ts";
 
 import { dispatch } from "./dispatch.ts";
 import { EndpointDisabled } from "./endpoint-disabled.ts";
 import { EndpointNotFound } from "./endpoint-not-found.ts";
 import { FilterRefused } from "./filter-refused.ts";
+import { HeaderValuesRequired } from "./header-values-required.ts";
 import { HeadersRefused } from "./headers-refused.ts";
 import { PartnerScopeUnavailable } from "./partner-scope-unavailable.ts";
 import type { DeliveryJobs } from "./ports/delivery-jobs.ts";
@@ -245,6 +247,7 @@ export class WebhookEndpoints extends Context.Service<
       | DatabaseError
       | EndpointNotFound
       | FilterRefused
+      | HeaderValuesRequired
       | HeadersRefused
       | MissingPermission
       | SecretsNotConfigured
@@ -374,7 +377,7 @@ export class WebhookEndpoints extends Context.Service<
         );
 
         const issued = yield* secrets.issue(endpoint.id);
-        const sealed = yield* secrets.sealHeaders(endpoint.id, headers);
+        const sealed = yield* secrets.sealHeaders(endpoint.id, url, headers);
 
         yield* store.addingTo(
           actor.workspaceId,
@@ -394,12 +397,15 @@ export class WebhookEndpoints extends Context.Service<
         return created;
       }, Effect.provideContext(ports));
 
-      // Each header of a change sealed: its new value, or the one the
-      // endpoint has under that name, whatever its case, which is bound to
-      // the name in lowercase. One without a value it has not is refused.
+      // Each header of a change sealed for the address it goes to: its new
+      // value, or the one the endpoint has under that name, whatever its
+      // case, which is bound to the name in lowercase and to the origin,
+      // which the caller made sure stays. One without a value it has not is
+      // refused.
       const sealedChanges = Effect.fn("WebhookEndpoints.sealedChanges")(
         function* sealedChanges(
           endpointId: WebhookEndpointId,
+          url: WebhookUrl,
           changes: readonly HeaderChange[]
         ) {
           const kept = Option.match(yield* store.secrets(endpointId), {
@@ -411,7 +417,7 @@ export class WebhookEndpoints extends Context.Service<
             changes.map(({ name, value }) => {
               if (value !== undefined) {
                 return secrets
-                  .sealHeaders(endpointId, [{ name, value }])
+                  .sealHeaders(endpointId, url, [{ name, value }])
                   .pipe(
                     Effect.flatMap(([one]) =>
                       one === undefined
@@ -453,16 +459,30 @@ export class WebhookEndpoints extends Context.Service<
           workspaceIds,
         });
 
+        const changes =
+          askedHeaders === undefined
+            ? undefined
+            : yield* headerChangesFrom(askedHeaders);
+
+        const target =
+          url === undefined ? current.url : yield* deliverable(url);
+
+        // Moved to another origin, an endpoint keeps no header's value: each
+        // is given again, or none is left.
+        if (
+          originOf(target) !== originOf(current.url) &&
+          current.headerNames.length > 0 &&
+          (changes === undefined ||
+            changes.some(({ value }) => value === undefined))
+        ) {
+          return yield* new HeaderValuesRequired();
+        }
+
         // Given, the headers replace those it had; left out, they stay.
         const sealed =
-          askedHeaders === undefined
+          changes === undefined
             ? Option.none<readonly SealedHeader[]>()
-            : Option.some(
-                yield* sealedChanges(
-                  current.id,
-                  yield* headerChangesFrom(askedHeaders)
-                )
-              );
+            : Option.some(yield* sealedChanges(current.id, target, changes));
 
         const named = Option.match(sealed, {
           onNone: () => ({}),
@@ -473,7 +493,7 @@ export class WebhookEndpoints extends Context.Service<
           current,
           url === undefined
             ? { ...change, ...filters, ...named }
-            : { ...change, ...filters, ...named, url: yield* deliverable(url) },
+            : { ...change, ...filters, ...named, url: target },
           yield* DateTime.now
         );
 

@@ -8,6 +8,7 @@ import type {
 } from "#webhooks/domain/endpoint-headers.ts";
 import type { SealedSecret } from "#webhooks/domain/sealed-secret.ts";
 import type { WebhookEndpointId } from "#webhooks/domain/webhook-endpoint-id.ts";
+import type { WebhookUrl } from "#webhooks/domain/webhook-url.ts";
 
 /** A new signing secret: as its endpoint's owner reads it once, and stored. */
 export interface IssuedSecret {
@@ -27,7 +28,8 @@ export interface OpenedHeader {
  * rest and bound to their endpoint. The plain secret leaves only once, when
  * it is issued; signing happens behind the port. The values of the headers
  * an endpoint's managers chose are sealed the same way, each bound to its
- * endpoint and its name, and opened only to send a delivery.
+ * endpoint, its name and the origin of the address it goes to (`url`'s),
+ * and opened only to send a delivery to that origin.
  */
 export class EndpointSecrets extends Context.Service<
   EndpointSecrets,
@@ -46,10 +48,12 @@ export class EndpointSecrets extends Context.Service<
     ) => Effect.Effect<readonly string[], SecretsNotConfigured>;
     readonly sealHeaders: (
       endpointId: WebhookEndpointId,
+      url: WebhookUrl,
       headers: readonly EndpointHeader[]
     ) => Effect.Effect<readonly SealedHeader[], SecretsNotConfigured>;
     readonly openHeaders: (
       endpointId: WebhookEndpointId,
+      url: WebhookUrl,
       headers: readonly SealedHeader[]
     ) => Effect.Effect<readonly OpenedHeader[], SecretsNotConfigured>;
   }

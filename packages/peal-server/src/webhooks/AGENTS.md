@@ -66,7 +66,7 @@
   none can replace one of Peal's (the transport merges them under Peal's
   anyway); values visible ASCII on one line. Values are sealed through
   `EndpointSecrets.sealHeaders`, bound to
-  `webhook:<endpoint>:header:<lowercased name>`, in
+  `webhook:<endpoint>:header:<lowercased name>:<origin of the URL>`, in
   `webhooks.endpoints.headers` (`[{ name, sealed }]`), opened only to send
   (`openHeaders`; one that no longer decrypts abandons the delivery as
   `notConfigured`, as a secret does), and never returned, logged or
@@ -74,7 +74,12 @@
   (`headerNames`). A change's `headers` replaces the whole list, left out
   it keeps it; a header named there without a value keeps the sealed value
   the endpoint has under that name (bound to it in lowercase), and one it
-  has not is `HeadersRefused` (422 `WebhookHeadersRefused`). The contract's copy of the rules is kept equal by
+  has not is `HeadersRefused` (422 `WebhookHeadersRefused`). A value goes
+  to its origin only: a new `url` on another origin (`originOf`), on an
+  endpoint with headers, is `HeaderValuesRequired` (422
+  `WebhookHeaderValuesRequired`) unless the change gives every header with
+  its value or `[]`; the web form asks the values again
+  (`headersNeedValues`). The contract's copy of the rules is kept equal by
   `test/webhooks/api/contract.test.ts`; `test/app/secrets-in-logs.test.ts`
   searches the logs, traces and delivery log for the values.
 - `WebhookTransport` sends through `publicHttpClient` only (HTTPS on 443,

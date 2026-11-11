@@ -467,6 +467,44 @@ describe("an endpoint's headers, in the views", () => {
     ).toStrictEqual([]);
   });
 
+  it("asks for each saved value again once the address moves to another host", async () => {
+    const moved = {
+      ...draftOf({ ...on, headerNames: ["Authorization"] }),
+      url: "https://elsewhere.example.com/peal",
+    };
+
+    const [english, french] = await Promise.all(
+      (["en", "fr"] as const).map(
+        async (locale) =>
+          await render(
+            locale,
+            <EndpointFieldsView
+              channels={[]}
+              draft={moved}
+              error={null}
+              disabled={false}
+              idPrefix="edit"
+              withEnabled={false}
+              onChange={noop}
+            />
+          )
+      )
+    );
+
+    expect(
+      missingFrom(english ?? "", [
+        "The new address is on another host: type each header’s value again, or remove the header. Peal never sends a saved value to another host.",
+        "required",
+      ])
+    ).toStrictEqual([]);
+    expect(english).not.toContain('placeholder="set"');
+    expect(
+      missingFrom(french ?? "", [
+        "La nouvelle adresse est sur un autre hôte : saisissez de nouveau la valeur de chaque en-tête, ou retirez l’en-tête. Peal n’envoie jamais une valeur enregistrée à un autre hôte.",
+      ])
+    ).toStrictEqual([]);
+  });
+
   it("names an endpoint's headers, never their values", async () => {
     const html = await render(
       "en",

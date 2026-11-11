@@ -558,7 +558,7 @@ const update = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Change a webhook endpoint's address, events, description, filters or headers, or turn it off or back on. What you leave out stays as it is; --channel, --workspace-id and --header replace the lists the endpoint had."
+    "Change a webhook endpoint's address, events, description, filters or headers, or turn it off or back on. What you leave out stays as it is; --channel, --workspace-id and --header replace the lists the endpoint had. Header values go only to the host they were given for: a --url on another host, on an endpoint with headers, needs every --header again with its value, or --clear-headers."
   )
 );
 
