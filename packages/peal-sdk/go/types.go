@@ -20550,6 +20550,124 @@ func (w WebhookFilterRefusedEncodedField) Ptr() *WebhookFilterRefusedEncodedFiel
 }
 
 var (
+	webhookHeaderValuesRequiredEncodedFieldCode      = big.NewInt(1 << 0)
+	webhookHeaderValuesRequiredEncodedFieldMessage   = big.NewInt(1 << 1)
+	webhookHeaderValuesRequiredEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type WebhookHeaderValuesRequiredEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (w *WebhookHeaderValuesRequiredEncoded) GetCode() *string {
+	if w == nil {
+		return nil
+	}
+	return w.Code
+}
+
+func (w *WebhookHeaderValuesRequiredEncoded) GetMessage() *string {
+	if w == nil {
+		return nil
+	}
+	return w.Message
+}
+
+func (w *WebhookHeaderValuesRequiredEncoded) GetRequestID() *string {
+	if w == nil {
+		return nil
+	}
+	return w.RequestID
+}
+
+func (w *WebhookHeaderValuesRequiredEncoded) GetExtraProperties() map[string]interface{} {
+	if w == nil {
+		return nil
+	}
+	return w.extraProperties
+}
+
+func (w *WebhookHeaderValuesRequiredEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if w.explicitFields != nil {
+		next.Set(w.explicitFields)
+	}
+	next.Or(next, field)
+	w.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookHeaderValuesRequiredEncoded) SetCode(code *string) {
+	w.Code = code
+	w.require(webhookHeaderValuesRequiredEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookHeaderValuesRequiredEncoded) SetMessage(message *string) {
+	w.Message = message
+	w.require(webhookHeaderValuesRequiredEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WebhookHeaderValuesRequiredEncoded) SetRequestID(requestID *string) {
+	w.RequestID = requestID
+	w.require(webhookHeaderValuesRequiredEncodedFieldRequestID)
+}
+
+func (w *WebhookHeaderValuesRequiredEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler WebhookHeaderValuesRequiredEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*w = WebhookHeaderValuesRequiredEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *w)
+	if err != nil {
+		return err
+	}
+	w.extraProperties = extraProperties
+	w.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (w *WebhookHeaderValuesRequiredEncoded) MarshalJSON() ([]byte, error) {
+	type embed WebhookHeaderValuesRequiredEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*w),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (w *WebhookHeaderValuesRequiredEncoded) String() string {
+	if w == nil {
+		return "<nil>"
+	}
+	if len(w.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(w); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", w)
+}
+
+var (
 	webhookHeadersRefusedEncodedFieldCode      = big.NewInt(1 << 0)
 	webhookHeadersRefusedEncodedFieldMessage   = big.NewInt(1 << 1)
 	webhookHeadersRefusedEncodedFieldRequestID = big.NewInt(1 << 2)

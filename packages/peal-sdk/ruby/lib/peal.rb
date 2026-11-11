@@ -897,6 +897,7 @@ module Peal
     autoload :WebhookFilterRefusedEncoded, ::File.join(__dir__, "peal/types/webhook_filter_refused_encoded")
     autoload :WebhookHeader, ::File.join(__dir__, "peal/types/webhook_header")
     autoload :WebhookHeaderChange, ::File.join(__dir__, "peal/types/webhook_header_change")
+    autoload :WebhookHeaderValuesRequiredEncoded, ::File.join(__dir__, "peal/types/webhook_header_values_required_encoded")
     autoload :WebhookHeadersRefusedEncoded, ::File.join(__dir__, "peal/types/webhook_headers_refused_encoded")
     autoload :WebhookRedeliveryByIDs, ::File.join(__dir__, "peal/types/webhook_redelivery_by_ids")
     autoload :WebhookRedeliveryOfFailed, ::File.join(__dir__, "peal/types/webhook_redelivery_of_failed")

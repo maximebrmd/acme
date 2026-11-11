@@ -537,6 +537,7 @@ export * from "./WebhookFilterRefusedEncoded.js";
 export * from "./WebhookHeader.js";
 export * from "./WebhookHeaderChange.js";
 export * from "./WebhookHeadersRefusedEncoded.js";
+export * from "./WebhookHeaderValuesRequiredEncoded.js";
 export * from "./WebhookRedeliveryByIds.js";
 export * from "./WebhookRedeliveryOfFailed.js";
 export * from "./WebhookRedeliveryRequest.js";

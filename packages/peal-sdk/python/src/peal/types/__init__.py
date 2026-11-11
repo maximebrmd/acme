@@ -787,6 +787,7 @@ if typing.TYPE_CHECKING:
     from .webhook_filter_refused_encoded_field import WebhookFilterRefusedEncodedField
     from .webhook_header import WebhookHeader
     from .webhook_header_change import WebhookHeaderChange
+    from .webhook_header_values_required_encoded import WebhookHeaderValuesRequiredEncoded
     from .webhook_headers_refused_encoded import WebhookHeadersRefusedEncoded
     from .webhook_redelivery_by_ids import WebhookRedeliveryByIds
     from .webhook_redelivery_of_failed import WebhookRedeliveryOfFailed
@@ -1578,6 +1579,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WebhookFilterRefusedEncodedField": ".webhook_filter_refused_encoded_field",
     "WebhookHeader": ".webhook_header",
     "WebhookHeaderChange": ".webhook_header_change",
+    "WebhookHeaderValuesRequiredEncoded": ".webhook_header_values_required_encoded",
     "WebhookHeadersRefusedEncoded": ".webhook_headers_refused_encoded",
     "WebhookRedeliveryByIds": ".webhook_redelivery_by_ids",
     "WebhookRedeliveryOfFailed": ".webhook_redelivery_of_failed",
@@ -2393,6 +2395,7 @@ __all__ = [
     "WebhookFilterRefusedEncodedField",
     "WebhookHeader",
     "WebhookHeaderChange",
+    "WebhookHeaderValuesRequiredEncoded",
     "WebhookHeadersRefusedEncoded",
     "WebhookRedeliveryByIds",
     "WebhookRedeliveryOfFailed",

@@ -65,8 +65,9 @@ module Peal
       # delivery beside Peal's own, which they never replace, for a gateway in front of the receiver that wants a token:
       # a name is an HTTP token, once whatever its case, neither `host`, `content-type`, `content-length`, `user-agent`,
       # `cookie`, a connection's own nor any `webhook-` name; a value is visible ASCII on one line, 1024 characters at
-      # most. Values are write-only: the endpoint shows their names (`headerNames`), never them. The signature does not
-      # cover them. Needs webhook:manage.
+      # most. Values are write-only: the endpoint shows their names (`headerNames`), never them, and sends them only to
+      # the origin (scheme, host and port) of the `url` they were given with. The signature does not cover them. Needs
+      # webhook:manage.
       #
       # @param request_options [Hash]
       # @param params [Peal::Webhooks::Types::NewWebhookEndpoint]
@@ -329,9 +330,11 @@ module Peal
       # out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the
       # `partner` scope only (422 `WebhookFilterRefused`). `headers` replaces every header it had, `[]` removing them
       # all: a header given without `value` keeps the value it has under that name, as none is ever shown, and one it
-      # does not have needs a value. Filters apply to the events that happen after the change. Turned off, it is sent
-      # nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on
-      # forgets the failures that turned it off. Needs webhook:manage.
+      # does not have needs a value. A value is sent only to the origin (scheme, host and port) it was given for: a new
+      # `url` on another origin, on an endpoint with headers, needs `headers` in the same request, each with its
+      # `value`, or `[]` (422 `WebhookHeaderValuesRequired`). Filters apply to the events that happen after the change.
+      # Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for
+      # it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
       #
       # @param request_options [Hash]
       # @param params [Peal::Webhooks::Types::WebhookEndpointChange]
