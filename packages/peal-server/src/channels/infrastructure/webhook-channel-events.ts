@@ -3,6 +3,7 @@ import { DateTime, Duration, Effect, Layer } from "effect";
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import type { DisconnectedChannel } from "#channels/application/channel-events.ts";
 import { ChannelNotices } from "#channels/application/channel-notices.ts";
+import { reconnectLeadTime } from "#channels/domain/channel.ts";
 import type { Channel } from "#channels/domain/channel.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
@@ -31,9 +32,10 @@ const neverStopping = <R>(
 
 /**
  * ChannelEvents through the webhooks context, whose WebhookEvents joins the
- * transaction that saved or deleted the channel: `channel.connected`, keyed
- * by the instant the channel was last changed, so each reconnection is told
- * once, and `channel.disconnected`.
+ * transaction that saved, switched or deleted the channel:
+ * `channel.connected`, keyed by the instant the channel was last changed,
+ * so each reconnection is told once, `channel.disabled` and
+ * `channel.enabled` the same way, and `channel.disconnected`.
  */
 export const WebhookChannelEvents = Layer.effect(
   ChannelEvents,
@@ -51,11 +53,25 @@ export const WebhookChannelEvents = Layer.effect(
             key: `channel:${channel.id}:connected:${DateTime.formatIso(channel.updatedAt)}`,
           })
         ),
+      disabled: (channel) =>
+        neverStopping(
+          webhooks.publish({
+            event: { data: dataOf(channel), type: "channel.disabled" },
+            key: `channel:${channel.id}:disabled:${DateTime.formatIso(channel.updatedAt)}`,
+          })
+        ),
       disconnected: (channel) =>
         neverStopping(
           webhooks.publish({
             event: { data: dataOf(channel), type: "channel.disconnected" },
             key: `channel:${channel.id}:disconnected`,
+          })
+        ),
+      enabled: (channel) =>
+        neverStopping(
+          webhooks.publish({
+            event: { data: dataOf(channel), type: "channel.enabled" },
+            key: `channel:${channel.id}:enabled:${DateTime.formatIso(channel.updatedAt)}`,
           })
         ),
     });
@@ -72,12 +88,38 @@ const toldFor = Duration.days(7);
 const stillTold = (channel: Channel, now: DateTime.Utc) =>
   DateTime.isLessThan(now, DateTime.addDuration(channel.updatedAt, toldFor));
 
+// When an expiry is told: from `reconnectLeadTime` before it, the longest
+// the daily check warns ahead, until it passes. Well within the 30 days
+// its key is kept, so the daily check, which tells it every day, sends it
+// once, however long the token lasts.
+const expiryTold = (expiresAt: DateTime.Utc, now: DateTime.Utc) =>
+  DateTime.isLessThan(now, expiresAt) &&
+  DateTime.isGreaterThanOrEqualTo(
+    now,
+    DateTime.subtractDuration(expiresAt, reconnectLeadTime)
+  );
+
+// A bug in telling never stops the notice: it is logged, and the daily
+// check tells it again.
+const loggedFailure = <R>(
+  channel: Channel,
+  telling: Effect.Effect<void, DatabaseError, R>
+) =>
+  telling.pipe(
+    Effect.catchCause((cause) =>
+      Effect.logError("A channel's webhook event could not be published", cause)
+    ),
+    Effect.annotateLogs({ channelId: channel.id })
+  );
+
 /**
  * Channel notices told through `told`, after the workspace's webhook
  * endpoints heard `channel.reconnect_needed`, under the key of the channel
  * entering `refreshNeeded` (its `updatedAt` then), so the daily check,
- * which tells it again, sends it once, and for a week only (`toldFor`). Like the notice, it never fails: one
- * that could not be recorded is logged, and the daily check tells it again.
+ * which tells it again, sends it once, and for a week only (`toldFor`), or
+ * `channel.expiring`, under the key of the expiry, once per expiry
+ * (`expiryTold`). Like the notice, it never fails: one that could not be
+ * recorded is logged, and the daily check tells it again.
  */
 export const webhookChannelNotices = <E, R>(
   told: Layer.Layer<ChannelNotices, E, R>
@@ -111,7 +153,23 @@ export const webhookChannelNotices = <E, R>(
             Effect.annotateLogs({ channelId: channel.id }),
             Effect.andThen(notices.reconnectRequired(channel))
           ),
-        reconnectSoon: notices.reconnectSoon,
+        reconnectSoon: (channel, expiresAt) =>
+          loggedFailure(
+            channel,
+            DateTime.now.pipe(
+              Effect.flatMap((now) =>
+                expiryTold(expiresAt, now)
+                  ? webhooks.publish({
+                      event: {
+                        data: { ...dataOf(channel), expiresAt },
+                        type: "channel.expiring",
+                      },
+                      key: `channel:${channel.id}:expiring:${DateTime.formatIso(expiresAt)}`,
+                    })
+                  : Effect.void
+              )
+            )
+          ).pipe(Effect.andThen(notices.reconnectSoon(channel, expiresAt))),
       });
     })
   ).pipe(Layer.provide(told));

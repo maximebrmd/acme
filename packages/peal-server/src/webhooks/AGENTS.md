@@ -39,8 +39,9 @@
   outcome) and
   `webhookOutcomes` around `PublicationOutcomes`; channels through
   `ChannelEvents` (connect, reconnect, disconnect, in
-  `ChannelRepository.addingTo`'s transaction) and `webhookChannelNotices`
-  (reconnect needed, which the daily check tells again); media through
+  `ChannelRepository.addingTo`'s transaction; turned off and on, in
+  `ChannelSettings`') and `webhookChannelNotices` (reconnect needed and
+  expiring, which the daily check tells again); media through
   `webhookMediaAssets`, around `MediaAssets.update`. A bug in telling is
   logged and never stops the fact; the database failing rolls both back.
   A new event is told from the transaction that records its fact.

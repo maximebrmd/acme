@@ -44,6 +44,8 @@ export const analyticsChannelEvents = <E, R>(
                     )
               )
             ),
+        // Off is not gone: analytics keeps reading what it followed.
+        disabled: events.disabled,
         disconnected: (channel, cause) =>
           events.disconnected(channel, cause).pipe(
             Effect.andThen(DateTime.now),
@@ -54,6 +56,7 @@ export const analyticsChannelEvents = <E, R>(
               })
             )
           ),
+        enabled: events.enabled,
       });
     })
   ).pipe(Layer.provide(heard));
