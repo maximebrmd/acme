@@ -5112,6 +5112,96 @@ async fn main() {
 </dl>
 </details>
 
+## usage
+<details><summary><code>client.usage.<a href="/src/api/resources/usage/client.rs">get</a>(workspace_id: String, from: Option&lt;Option&lt;CalendarDay&gt;&gt;, to: Option&lt;Option&lt;CalendarDay&gt;&gt;) -> Result&lt;WorkspaceUsageReport, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers what the workspace uses of its plan now, and day by day from `from` to `to` (UTC days, both included, at most 92; by default the 30 days that end today): each day's posts that went out, one per channel they went out on, by platform, and its requests to the writing assistant; the channels it connected, its members and the media it stored as each day ended, null for a day the server took no snapshot of; then the period's totals, with its channel-days and, for each calendar month it touches, its posts on platforms that bill the server per post. Usage is kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, `plan` and `allowances` are null. Needs billing:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .usage
+        .get(
+            &"workspaceId".to_string(),
+            &GetQueryRequest {
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## analytics
 <details><summary><code>client.analytics.<a href="/src/api/resources/analytics/client.rs">summary</a>(workspace_id: String, from: Option&lt;CalendarDay&gt;, time_zone: Option&lt;String&gt;, to: Option&lt;CalendarDay&gt;) -> Result&lt;AnalyticsSummary, ApiError&gt;</code></summary>
 <dl>

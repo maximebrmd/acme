@@ -27,6 +27,7 @@ import { SignaturesClient } from "./api/resources/signatures/client/Client.js";
 import { SystemClient } from "./api/resources/system/client/Client.js";
 import { TagsClient } from "./api/resources/tags/client/Client.js";
 import { TiktokClient } from "./api/resources/tiktok/client/Client.js";
+import { UsageClient } from "./api/resources/usage/client/Client.js";
 import { WebhooksClient } from "./api/resources/webhooks/client/Client.js";
 import type { BaseClientOptions, BaseRequestOptions } from "./BaseClient.js";
 import { normalizeClientOptionsWithAuth, type NormalizedClientOptionsWithAuth } from "./BaseClient.js";
@@ -54,6 +55,7 @@ export class PealClient {
     protected _members: MembersClient | undefined;
     protected _invitations: InvitationsClient | undefined;
     protected _billing: BillingClient | undefined;
+    protected _usage: UsageClient | undefined;
     protected _analytics: AnalyticsClient | undefined;
     protected _tiktok: TiktokClient | undefined;
     protected _capabilities: CapabilitiesClient | undefined;
@@ -122,6 +124,10 @@ export class PealClient {
 
     public get billing(): BillingClient {
         return (this._billing ??= new BillingClient(this._options));
+    }
+
+    public get usage(): UsageClient {
+        return (this._usage ??= new UsageClient(this._options));
     }
 
     public get analytics(): AnalyticsClient {

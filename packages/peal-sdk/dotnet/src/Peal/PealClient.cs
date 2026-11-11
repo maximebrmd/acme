@@ -45,6 +45,7 @@ public partial class PealClient : IPealClient
         Members = new MembersClient(_client);
         Invitations = new InvitationsClient(_client);
         Billing = new BillingClient(_client);
+        Usage = new UsageClient(_client);
         Analytics = new AnalyticsClient(_client);
         Tiktok = new TiktokClient(_client);
         Capabilities = new CapabilitiesClient(_client);
@@ -86,6 +87,8 @@ public partial class PealClient : IPealClient
     public IInvitationsClient Invitations { get; }
 
     public IBillingClient Billing { get; }
+
+    public IUsageClient Usage { get; }
 
     public IAnalyticsClient Analytics { get; }
 

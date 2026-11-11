@@ -37,6 +37,7 @@ if typing.TYPE_CHECKING:
     from .system.client import AsyncSystemClient, SystemClient
     from .tags.client import AsyncTagsClient, TagsClient
     from .tiktok.client import AsyncTiktokClient, TiktokClient
+    from .usage.client import AsyncUsageClient, UsageClient
     from .webhooks.client import AsyncWebhooksClient, WebhooksClient
 
 
@@ -136,6 +137,7 @@ class Peal:
         self._members: typing.Optional[MembersClient] = None
         self._invitations: typing.Optional[InvitationsClient] = None
         self._billing: typing.Optional[BillingClient] = None
+        self._usage: typing.Optional[UsageClient] = None
         self._analytics: typing.Optional[AnalyticsClient] = None
         self._tiktok: typing.Optional[TiktokClient] = None
         self._capabilities: typing.Optional[CapabilitiesClient] = None
@@ -248,6 +250,14 @@ class Peal:
 
             self._billing = BillingClient(client_wrapper=self._client_wrapper)
         return self._billing
+
+    @property
+    def usage(self):
+        if self._usage is None:
+            from .usage.client import UsageClient  # noqa: E402
+
+            self._usage = UsageClient(client_wrapper=self._client_wrapper)
+        return self._usage
 
     @property
     def analytics(self):
@@ -495,6 +505,7 @@ class AsyncPeal:
         self._members: typing.Optional[AsyncMembersClient] = None
         self._invitations: typing.Optional[AsyncInvitationsClient] = None
         self._billing: typing.Optional[AsyncBillingClient] = None
+        self._usage: typing.Optional[AsyncUsageClient] = None
         self._analytics: typing.Optional[AsyncAnalyticsClient] = None
         self._tiktok: typing.Optional[AsyncTiktokClient] = None
         self._capabilities: typing.Optional[AsyncCapabilitiesClient] = None
@@ -607,6 +618,14 @@ class AsyncPeal:
 
             self._billing = AsyncBillingClient(client_wrapper=self._client_wrapper)
         return self._billing
+
+    @property
+    def usage(self):
+        if self._usage is None:
+            from .usage.client import AsyncUsageClient  # noqa: E402
+
+            self._usage = AsyncUsageClient(client_wrapper=self._client_wrapper)
+        return self._usage
 
     @property
     def analytics(self):

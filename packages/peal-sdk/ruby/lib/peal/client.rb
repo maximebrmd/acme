@@ -80,6 +80,11 @@ module Peal
       @billing ||= Peal::Billing::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Usage::Client]
+    def usage
+      @usage ||= Peal::Usage::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::Analytics::Client]
     def analytics
       @analytics ||= Peal::Analytics::Client.new(client: @raw_client)

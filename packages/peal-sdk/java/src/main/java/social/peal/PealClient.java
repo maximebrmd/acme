@@ -33,6 +33,7 @@ import social.peal.resources.signatures.SignaturesClient;
 import social.peal.resources.system.SystemClient;
 import social.peal.resources.tags.TagsClient;
 import social.peal.resources.tiktok.TiktokClient;
+import social.peal.resources.usage.UsageClient;
 import social.peal.resources.webhooks.WebhooksClient;
 
 public class PealClient implements AutoCloseable {
@@ -61,6 +62,8 @@ public class PealClient implements AutoCloseable {
     protected final Supplier<InvitationsClient> invitationsClient;
 
     protected final Supplier<BillingClient> billingClient;
+
+    protected final Supplier<UsageClient> usageClient;
 
     protected final Supplier<AnalyticsClient> analyticsClient;
 
@@ -108,6 +111,7 @@ public class PealClient implements AutoCloseable {
         this.membersClient = Suppliers.memoize(() -> new MembersClient(clientOptions));
         this.invitationsClient = Suppliers.memoize(() -> new InvitationsClient(clientOptions));
         this.billingClient = Suppliers.memoize(() -> new BillingClient(clientOptions));
+        this.usageClient = Suppliers.memoize(() -> new UsageClient(clientOptions));
         this.analyticsClient = Suppliers.memoize(() -> new AnalyticsClient(clientOptions));
         this.tiktokClient = Suppliers.memoize(() -> new TiktokClient(clientOptions));
         this.capabilitiesClient = Suppliers.memoize(() -> new CapabilitiesClient(clientOptions));
@@ -172,6 +176,10 @@ public class PealClient implements AutoCloseable {
 
     public BillingClient billing() {
         return this.billingClient.get();
+    }
+
+    public UsageClient usage() {
+        return this.usageClient.get();
     }
 
     public AnalyticsClient analytics() {

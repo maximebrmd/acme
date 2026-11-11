@@ -14,6 +14,7 @@
 //! - **members**
 //! - **invitations**
 //! - **billing**
+//! - **usage**
 //! - **analytics**
 //! - **tiktok**
 //! - **capabilities**
@@ -60,6 +61,7 @@ pub mod signatures;
 pub mod system;
 pub mod tags;
 pub mod tiktok;
+pub mod usage;
 pub mod webhooks;
 pub struct PealClient {
     pub config: ClientConfig,
@@ -75,6 +77,7 @@ pub struct PealClient {
     pub members: MembersClient,
     pub invitations: InvitationsClient,
     pub billing: BillingClient,
+    pub usage: UsageClient,
     pub analytics: AnalyticsClient,
     pub tiktok: TiktokClient,
     pub capabilities: CapabilitiesClient,
@@ -109,6 +112,7 @@ impl PealClient {
             members: MembersClient::new(config.clone())?,
             invitations: InvitationsClient::new(config.clone())?,
             billing: BillingClient::new(config.clone())?,
+            usage: UsageClient::new(config.clone())?,
             analytics: AnalyticsClient::new(config.clone())?,
             tiktok: TiktokClient::new(config.clone())?,
             capabilities: CapabilitiesClient::new(config.clone())?,
@@ -156,4 +160,5 @@ pub use signatures::SignaturesClient;
 pub use system::SystemClient;
 pub use tags::TagsClient;
 pub use tiktok::TiktokClient;
+pub use usage::UsageClient;
 pub use webhooks::WebhooksClient;

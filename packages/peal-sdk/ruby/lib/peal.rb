@@ -105,6 +105,8 @@ require_relative "peal/invitations/types/revoke_invitations_request"
 require_relative "peal/billing/client"
 require_relative "peal/billing/types/get_billing_request"
 require_relative "peal/billing/types/standing_billing_request"
+require_relative "peal/usage/client"
+require_relative "peal/usage/types/get_usage_request"
 require_relative "peal/analytics/client"
 require_relative "peal/analytics/types/summary_analytics_request"
 require_relative "peal/analytics/types/dashboard_analytics_request"
@@ -678,6 +680,7 @@ module Peal
     autoload :MediaTooLargeEncodedKind, ::File.join(__dir__, "peal/types/media_too_large_encoded_kind")
     autoload :MediaTooLargeEncoded, ::File.join(__dir__, "peal/types/media_too_large_encoded")
     autoload :MediaUsage, ::File.join(__dir__, "peal/types/media_usage")
+    autoload :MeteredPosts, ::File.join(__dir__, "peal/types/metered_posts")
     autoload :MetricsSnapshot, ::File.join(__dir__, "peal/types/metrics_snapshot")
     autoload :Money, ::File.join(__dir__, "peal/types/money")
     autoload :SpecialAdCategory, ::File.join(__dir__, "peal/types/special_ad_category")
@@ -723,6 +726,7 @@ module Peal
     autoload :PartnerOwnsWorkspacesEncoded, ::File.join(__dir__, "peal/types/partner_owns_workspaces_encoded")
     autoload :PartnerStanding, ::File.join(__dir__, "peal/types/partner_standing")
     autoload :PlanShortfall, ::File.join(__dir__, "peal/types/plan_shortfall")
+    autoload :PlatformPosts, ::File.join(__dir__, "peal/types/platform_posts")
     autoload :PlatformRateLimitedEncoded, ::File.join(__dir__, "peal/types/platform_rate_limited_encoded")
     autoload :PlatformUnreachableEncodedTag, ::File.join(__dir__, "peal/types/platform_unreachable_encoded_tag")
     autoload :PlatformUnreachableEncoded, ::File.join(__dir__, "peal/types/platform_unreachable_encoded")
@@ -803,6 +807,10 @@ module Peal
     autoload :UploadIncompleteEncoded, ::File.join(__dir__, "peal/types/upload_incomplete_encoded")
     autoload :UploadRejectedEncodedTag, ::File.join(__dir__, "peal/types/upload_rejected_encoded_tag")
     autoload :UploadRejectedEncoded, ::File.join(__dir__, "peal/types/upload_rejected_encoded")
+    autoload :UsageDay, ::File.join(__dir__, "peal/types/usage_day")
+    autoload :UsagePeriod, ::File.join(__dir__, "peal/types/usage_period")
+    autoload :UsageSharing, ::File.join(__dir__, "peal/types/usage_sharing")
+    autoload :UsageTotals, ::File.join(__dir__, "peal/types/usage_totals")
     autoload :WebhookAttemptError, ::File.join(__dir__, "peal/types/webhook_attempt_error")
     autoload :WebhookDeliveryFailure, ::File.join(__dir__, "peal/types/webhook_delivery_failure")
     autoload :WebhookDeliveryStatus, ::File.join(__dir__, "peal/types/webhook_delivery_status")
@@ -825,5 +833,6 @@ module Peal
     autoload :WorkspaceBusyEncodedTag, ::File.join(__dir__, "peal/types/workspace_busy_encoded_tag")
     autoload :WorkspaceBusyEncoded, ::File.join(__dir__, "peal/types/workspace_busy_encoded")
     autoload :WorkspaceMember, ::File.join(__dir__, "peal/types/workspace_member")
+    autoload :WorkspaceUsageReport, ::File.join(__dir__, "peal/types/workspace_usage_report")
   end
 end

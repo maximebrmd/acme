@@ -420,6 +420,7 @@ if typing.TYPE_CHECKING:
     from .media_too_large_encoded_kind import MediaTooLargeEncodedKind
     from .media_usage import MediaUsage
     from .membership import Membership
+    from .metered_posts import MeteredPosts
     from .metric_totals import MetricTotals
     from .metrics_snapshot import MetricsSnapshot
     from .money import Money
@@ -525,6 +526,7 @@ if typing.TYPE_CHECKING:
     from .platform_capabilities_analytics_post_counts_item import PlatformCapabilitiesAnalyticsPostCountsItem
     from .platform_capabilities_options import PlatformCapabilitiesOptions
     from .platform_dashboard import PlatformDashboard
+    from .platform_posts import PlatformPosts
     from .platform_rate_limited_encoded import PlatformRateLimitedEncoded
     from .platform_unreachable_encoded import PlatformUnreachableEncoded
     from .platform_unreachable_encoded_tag import PlatformUnreachableEncodedTag
@@ -711,6 +713,10 @@ if typing.TYPE_CHECKING:
     from .upload_target_multipart import UploadTargetMultipart
     from .upload_target_single import UploadTargetSingle
     from .usage import Usage
+    from .usage_day import UsageDay
+    from .usage_period import UsagePeriod
+    from .usage_sharing import UsageSharing
+    from .usage_totals import UsageTotals
     from .webhook_attempt_error import WebhookAttemptError
     from .webhook_delivery import WebhookDelivery
     from .webhook_delivery_failure import WebhookDeliveryFailure
@@ -736,6 +742,7 @@ if typing.TYPE_CHECKING:
     from .workspace_member import WorkspaceMember
     from .workspace_not_found_encoded import WorkspaceNotFoundEncoded
     from .workspace_not_found_encoded_tag import WorkspaceNotFoundEncodedTag
+    from .workspace_usage_report import WorkspaceUsageReport
     from .you_tube_options import YouTubeOptions
     from .you_tube_playlist import YouTubePlaylist
     from .you_tube_privacy import YouTubePrivacy
@@ -1144,6 +1151,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "MediaTooLargeEncodedKind": ".media_too_large_encoded_kind",
     "MediaUsage": ".media_usage",
     "Membership": ".membership",
+    "MeteredPosts": ".metered_posts",
     "MetricTotals": ".metric_totals",
     "MetricsSnapshot": ".metrics_snapshot",
     "Money": ".money",
@@ -1243,6 +1251,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PlatformCapabilitiesAnalyticsPostCountsItem": ".platform_capabilities_analytics_post_counts_item",
     "PlatformCapabilitiesOptions": ".platform_capabilities_options",
     "PlatformDashboard": ".platform_dashboard",
+    "PlatformPosts": ".platform_posts",
     "PlatformRateLimitedEncoded": ".platform_rate_limited_encoded",
     "PlatformUnreachableEncoded": ".platform_unreachable_encoded",
     "PlatformUnreachableEncodedTag": ".platform_unreachable_encoded_tag",
@@ -1428,6 +1437,10 @@ _dynamic_imports: typing.Dict[str, str] = {
     "UploadTarget_Multipart": ".upload_target",
     "UploadTarget_Single": ".upload_target",
     "Usage": ".usage",
+    "UsageDay": ".usage_day",
+    "UsagePeriod": ".usage_period",
+    "UsageSharing": ".usage_sharing",
+    "UsageTotals": ".usage_totals",
     "WebhookAttemptError": ".webhook_attempt_error",
     "WebhookDelivery": ".webhook_delivery",
     "WebhookDeliveryFailure": ".webhook_delivery_failure",
@@ -1453,6 +1466,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WorkspaceMember": ".workspace_member",
     "WorkspaceNotFoundEncoded": ".workspace_not_found_encoded",
     "WorkspaceNotFoundEncodedTag": ".workspace_not_found_encoded_tag",
+    "WorkspaceUsageReport": ".workspace_usage_report",
     "YouTubeOptions": ".you_tube_options",
     "YouTubePlaylist": ".you_tube_playlist",
     "YouTubePrivacy": ".you_tube_privacy",
@@ -1885,6 +1899,7 @@ __all__ = [
     "MediaTooLargeEncodedKind",
     "MediaUsage",
     "Membership",
+    "MeteredPosts",
     "MetricTotals",
     "MetricsSnapshot",
     "Money",
@@ -1984,6 +1999,7 @@ __all__ = [
     "PlatformCapabilitiesAnalyticsPostCountsItem",
     "PlatformCapabilitiesOptions",
     "PlatformDashboard",
+    "PlatformPosts",
     "PlatformRateLimitedEncoded",
     "PlatformUnreachableEncoded",
     "PlatformUnreachableEncodedTag",
@@ -2169,6 +2185,10 @@ __all__ = [
     "UploadTarget_Multipart",
     "UploadTarget_Single",
     "Usage",
+    "UsageDay",
+    "UsagePeriod",
+    "UsageSharing",
+    "UsageTotals",
     "WebhookAttemptError",
     "WebhookDelivery",
     "WebhookDeliveryFailure",
@@ -2194,6 +2214,7 @@ __all__ = [
     "WorkspaceMember",
     "WorkspaceNotFoundEncoded",
     "WorkspaceNotFoundEncodedTag",
+    "WorkspaceUsageReport",
     "YouTubeOptions",
     "YouTubePlaylist",
     "YouTubePrivacy",
