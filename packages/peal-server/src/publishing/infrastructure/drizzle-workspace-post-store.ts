@@ -168,17 +168,21 @@ const recordOf = Effect.fnUntraced(function* recordOf(
       textOverrides: part.overrides,
     })),
     id: row.id,
-    liveChanges: changeRows
-      .filter((change) => change.postId === row.id)
-      .map((change) => ({
-        alreadyGone: change.alreadyGone,
-        failureCode: change.failureCode,
-        finishedAt: utcOrNull(change.finishedAt),
-        kind: change.kind,
-        requestedAt: DateTime.fromDateUnsafe(change.requestedAt),
-        status: change.status,
-        targetId: change.targetId,
-      })),
+    liveChanges: changeRows.flatMap((change) =>
+      change.postId === row.id
+        ? [
+            {
+              alreadyGone: change.alreadyGone,
+              failureCode: change.failureCode,
+              finishedAt: utcOrNull(change.finishedAt),
+              kind: change.kind,
+              requestedAt: DateTime.fromDateUnsafe(change.requestedAt),
+              status: change.status,
+              targetId: change.targetId,
+            },
+          ]
+        : []
+    ),
     media: exportedMedia(media),
     scheduledAt: utcOrNull(row.scheduledAt),
     scheduledVia: yield* originRecord(row, "scheduledVia"),

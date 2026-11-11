@@ -295,13 +295,13 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE user_id = ${id}`,
   "notifications.notification_preferences": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notification_preferences WHERE user_id = ${id}`,
+  // The changes they asked of live posts stay, without them.
+  "publishing.live_post_changes": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.live_post_changes WHERE requested_by = ${id}`,
   // Their posts stay with the workspace, without who wrote or scheduled
   // them.
   "publishing.posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id} OR scheduled_by = ${id}`,
-  // The changes they asked of live posts stay, without them.
-  "publishing.live_post_changes": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM publishing.live_post_changes WHERE requested_by = ${id}`,
   // What they wrote and decided in reviews stays with its workspace,
   // without them, as do the links and the policy they made.
   "review.approval_requests": (sql, id) =>

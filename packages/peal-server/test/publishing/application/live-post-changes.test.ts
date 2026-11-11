@@ -709,6 +709,7 @@ describe("erasing a workspace with a change of a live post", () => {
         const changes = yield* LivePostChanges;
         const removals = yield* FakeRemovals;
         const records = yield* PostRecords;
+
         const { actor, channelId, postId, target } =
           yield* published("mastodon");
 
@@ -750,6 +751,7 @@ describe("erasing a workspace with a change of a live post", () => {
         const changes = yield* LivePostChanges;
         const removals = yield* FakeRemovals;
         const records = yield* PostRecords;
+
         const { actor, channelId, postId, target } =
           yield* published("mastodon");
 
