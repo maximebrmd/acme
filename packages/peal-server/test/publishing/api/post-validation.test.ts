@@ -183,7 +183,9 @@ describe("the validate endpoint", () => {
             memberOf(workspaceId, permissionsFor("viewer"))
           );
 
-          const checkedWith = (options: object) =>
+          const checkedWith = (options: {
+            readonly format: "feed" | "story";
+          }) =>
             viewer.posts.validate({
               params,
               payload: {
