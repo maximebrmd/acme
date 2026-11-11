@@ -180,6 +180,39 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   refuse one with a pending change, and leave such targets out of
   `PromotablePosts` (`test/publishing/domain/live-post-boost-hold.test.ts`
   fails the day one does).
+- An edit is a kind of change too (`kind` `edit`): `LivePostChanges.editTarget`
+  replaces the text of one part (`part`, from 0) on one channel. It takes
+  the same permission, and is refused `approvalRequired` to a member the
+  approval gate holds (`ApprovalGate.holds`; unpublishing stays open to
+  them); `editable` answers the part or the reason (a failed removal
+  leaves the target editable; a part not live is `noPlatformId`). The text
+  is made storable (`storableText`), checked as scheduling checks that
+  part (`editViolationsOn`, `domain/live-post-edit.ts`: `violationsOn` on
+  `partAlone`, options counted, empty refused), and held on the change
+  (`live_post_changes.text`) only while it is pending: `finishChange` and
+  `failChange` clear it, and the job's history, its payload and the gate's
+  call (`EditLivePost`, `{ changeId, channelId, platformPostId }`) never
+  hold it; the gate's side reads it, and the target's options, through
+  `LivePostEdits`. The job is `ChangeLivePostV1`, its call decided by
+  `decideRemoval` (`edited` beside `removed`: an edit is safe to repeat),
+  under the same activity and clock names (`fixtures/persisted/
+  ChangeLivePostV1/edit-call.json`). Settling makes the text that part's
+  own on the channel (`PostRepository.amendText`, which writes the part's
+  overrides alone, never `update`), sets `post_targets.edited_at`
+  (`markEdited`), keeps the new digest (`remember`) and tells
+  `post.edited` or `post.edit_failed` (with `part`, never the text; the
+  webhooks only). Peal keeps no earlier text. The registry's entry per
+  platform is `{ remove, edit }`, each an adapter or a marker
+  (`notDeleting`, `notEditing`), and `livePostClientsWith` refuses on the
+  blocker of the kind asked (`livePostSupport[platform].edit`, a test keeps
+  both equal). Mastodon's editor reads the status first (`read:statuses`;
+  a 403 with Mastodon's JSON is `permissionDenied`, the channel to
+  reconnect) and sends `media_ids`, `spoiler_text` and `sensitive` again,
+  as Mastodon clears whatever an edit leaves out, refusing a status with a
+  poll (`pollNotEditable`), which the edit would destroy; Google's patches
+  `summary` under `updateMask=summary`. A post gone from the platform is
+  `BadRequest` `postGone` (a 404 counts only with the platform's own JSON).
+  LinkedIn, Facebook Pages, Pinterest and X stay `unverified` for edits.
 - Every way of scheduling passes the `ApprovalGate` in the transaction that
   saves the post: `schedule`, `scheduleDraft`, `reschedule` and `send` (so
   `posts.send`, `create_post`, `publish_post` and `peal post` too) ask

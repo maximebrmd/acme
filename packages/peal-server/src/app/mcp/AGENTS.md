@@ -43,7 +43,11 @@
   `publishingTools`) is `destructive` and `openWorld`: its description
   says the post is deleted from the platform for everyone, for good, and
   that an agent calls it only when the user asked for that post;
-  `list_post_changes` reads. Their refusals have their words in
+  `list_post_changes` reads. `edit_published_post` (in
+  `publishingTools`) is not destructive, idempotent and `openWorld`: it
+  names one channel by `channelId` or `targetId`, exactly one, checks
+  `post:publish` before it reads the post, and says the change is public
+  at once and which platforms take it. Their refusals have their words in
   `refusals.ts` (`livePostRefusals`). Instants are
   `Schema.DateTimeUtcFromString` in tool parameters. The tools of
   `PostTools` and `MediaTools` that change something are `contentTools`,
