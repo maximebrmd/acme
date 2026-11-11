@@ -167,7 +167,9 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   `test/publishing/platforms/live-post-clients.test.ts` keeps it equal to
   the table. Each refuses an id it cannot tell is the account's before any
   call (`invalidPlatformId`). Mastodon's 404, Pinterest's 404 and a 401 or
-  403 count only with the platform's own JSON error; Bluesky's PDS answers
+  403 count only with the platform's own JSON error, X's "gone" only
+  with its `resource-not-found` problem (a bare 404 is X unreachable, and
+  no message's words count); Bluesky's PDS answers
   a record gone with no `commit`; LinkedIn and Facebook Pages stay
   `unverified` until their permission for a deletion is confirmed.
 - Every way of scheduling passes the `ApprovalGate` in the transaction that

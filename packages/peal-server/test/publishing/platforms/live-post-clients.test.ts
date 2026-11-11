@@ -35,7 +35,11 @@ import {
   pinterestAccountId,
 } from "#test/publishing/fakes/fake-pinterest-api.ts";
 import { fakeXApi, xAccountId } from "#test/publishing/fakes/fake-x-api.ts";
-import { empty, json } from "#test/publishing/fakes/platform-server.ts";
+import {
+  empty,
+  json,
+  rawJson,
+} from "#test/publishing/fakes/platform-server.ts";
 import type { PlatformServer } from "#test/publishing/fakes/platform-server.ts";
 
 import {
@@ -344,6 +348,79 @@ describe("deleting posts on X", () => {
         assert.strictEqual(refused._tag, "PlatformUnavailable");
         assert.isTrue(
           refused instanceof PlatformUnavailable && refused.code !== undefined
+        );
+      }).pipe(Effect.scoped)
+  );
+});
+
+describe("deleting posts on X, when X answers otherwise", () => {
+  const onX = Effect.fn("test.onX")(function* onX() {
+    const x = yield* fakeXApi();
+
+    const credentials = Layer.succeedContext(
+      yield* Layer.build(
+        credentialsOf({ accountId: xAccountId, platform: "x" }, ["x-access-1"])
+      )
+    );
+
+    const live = yield* liveClientsOn({
+      credentials,
+      platforms: { xApi: new URL(x.url) },
+    });
+
+    return { live, x };
+  });
+
+  const platformPostId = PlatformPostIdSchema.make("1850000000000000009");
+
+  it.live(
+    "takes only X's own resource-not-found problem as gone, never a bare 404 or a message",
+    () =>
+      Effect.gen(function* notGone() {
+        const { live, x } = yield* onX();
+
+        x.script("DELETE /2/tweets/:id", [
+          rawJson("<html><body>Not Found</body></html>", 404),
+          empty(404),
+          json(
+            {
+              errors: [{ message: "Tweet not found for this user" }],
+              title: "Forbidden",
+              type: "about:blank",
+            },
+            403
+          ),
+          json(
+            {
+              detail: "Could not find tweet.",
+              title: "Not Found Error",
+              type: "https://api.x.com/2/problems/resource-not-found",
+            },
+            404
+          ),
+        ]);
+
+        const bare = yield* failureOf(
+          live.remove({ channelId, platformPostId })
+        );
+
+        const empty404 = yield* failureOf(
+          live.remove({ channelId, platformPostId })
+        );
+
+        const forbidden = yield* Effect.result(
+          live.remove({ channelId, platformPostId })
+        );
+
+        assert.strictEqual(bare._tag, "PlatformUnavailable");
+        assert.strictEqual(empty404._tag, "PlatformUnavailable");
+        assert.isTrue(
+          forbidden._tag === "Failure",
+          "A refusal that says not found is still a refusal"
+        );
+        assert.strictEqual(
+          yield* live.remove({ channelId, platformPostId }),
+          "alreadyGone"
         );
       }).pipe(Effect.scoped)
   );
