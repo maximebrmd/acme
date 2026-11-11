@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 // written to be enough on its own; the files of its folder it links to are
 // served at the paths its links give, so none leads nowhere.
 //
-// The skills live in the repository's skills/ folder, under their own
+// The skills live in packages/peal-skills/skills/, under their own
 // licence. The site builds from its own folder alone, so what it serves is
 // committed under public/.well-known/agent-skills, written from the skills
 // by `bun packages/peal-site/src/write-agent-skills.ts`.
@@ -23,7 +23,7 @@ export const skillsRoot = "/.well-known/agent-skills";
 /** The file every skill is served as. */
 export const skillDocument = "SKILL.md";
 
-/** The skills served, by the name of their folder in skills/. */
+/** The skills served, by the name of their folder in packages/peal-skills/skills/. */
 export const servedSkills = ["peal"] as const;
 
 /**

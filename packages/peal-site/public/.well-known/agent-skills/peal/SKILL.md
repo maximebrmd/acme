@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Needs the peal command line or curl, and network access to a Peal server. Reads PEAL_API_URL, PEAL_API_KEY and PEAL_WORKSPACE from the environment.
 metadata:
   homepage: https://peal.social
-  source: https://github.com/peal-social/peal/tree/main/skills/peal
+  source: https://github.com/peal-social/peal/tree/main/packages/peal-skills/skills/peal
   version: "0.1.0"
 ---
 
