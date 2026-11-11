@@ -4,7 +4,8 @@
 // keeping only the files the folder's .fernignore names, which are ours. The
 // SDKs' license and notice then go in, and scripts/finish.ts fills what the
 // generator leaves out of the package's manifest.
-import { copyFile, mkdir, rm } from "node:fs/promises";
+import { copyFile, mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { $ } from "bun";
@@ -88,11 +89,16 @@ await $`docker tag ${pinned} ${generator.image}:${generator.version}`;
 // Fern copies the SDK's folder, builds included (a Rust `target/` weighs
 // gigabytes), into temporary folders it never deletes: it gets a folder of
 // its own, emptied before and after each run, even one that failed or was
-// killed.
-const temporaryFolder = path.join(cacheRoot, "fern", language.name, "tmp");
+// killed. The folder stays in the system's temporary folder: on macOS, Fern
+// prefixes that path with /private, the real path of /var and /tmp.
+const systemTemporaryFolder = tmpdir();
+const temporaryName = `peal-sdk-fern-${language.name}`;
+const temporaryFolder = path.join(systemTemporaryFolder, temporaryName);
 
+// The generator's container writes there as root on Linux, where the calling
+// user cannot delete what it wrote: root deletes it, in the generator's image.
 const removeTemporaryFolder = async () => {
-  await rm(temporaryFolder, { force: true, recursive: true });
+  await $`docker run --rm --volume ${systemTemporaryFolder}:/temporary --entrypoint rm ${pinned} -rf ${`/temporary/${temporaryName}`}`.quiet();
 };
 
 await removeTemporaryFolder();
