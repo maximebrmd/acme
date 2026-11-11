@@ -17,6 +17,10 @@ class TargetOptions extends JsonSerializableType
      *   |'pinterest'
      *   |'googleBusiness'
      *   |'linkedin'
+     *   |'mastodon'
+     *   |'bluesky'
+     *   |'threads'
+     *   |'x'
      *   |'_unknown'
      * ) $platform
      */
@@ -29,6 +33,10 @@ class TargetOptions extends JsonSerializableType
      *   |PinterestOptions
      *   |GoogleBusinessOptions
      *   |LinkedInOptions
+     *   |MastodonOptions
+     *   |BlueskyOptions
+     *   |ThreadsOptions
+     *   |XOptions
      *   |mixed
      * ) $value
      */
@@ -42,6 +50,10 @@ class TargetOptions extends JsonSerializableType
      *   |'pinterest'
      *   |'googleBusiness'
      *   |'linkedin'
+     *   |'mastodon'
+     *   |'bluesky'
+     *   |'threads'
+     *   |'x'
      *   |'_unknown'
      * ),
      *   value: (
@@ -50,6 +62,10 @@ class TargetOptions extends JsonSerializableType
      *   |PinterestOptions
      *   |GoogleBusinessOptions
      *   |LinkedInOptions
+     *   |MastodonOptions
+     *   |BlueskyOptions
+     *   |ThreadsOptions
+     *   |XOptions
      *   |mixed
      * ),
      * } $values
@@ -118,6 +134,54 @@ class TargetOptions extends JsonSerializableType
         return new TargetOptions([
             'platform' => 'linkedin',
             'value' => $linkedin,
+        ]);
+    }
+
+    /**
+     * @param MastodonOptions $mastodon
+     * @return TargetOptions
+     */
+    public static function mastodon(MastodonOptions $mastodon): TargetOptions
+    {
+        return new TargetOptions([
+            'platform' => 'mastodon',
+            'value' => $mastodon,
+        ]);
+    }
+
+    /**
+     * @param BlueskyOptions $bluesky
+     * @return TargetOptions
+     */
+    public static function bluesky(BlueskyOptions $bluesky): TargetOptions
+    {
+        return new TargetOptions([
+            'platform' => 'bluesky',
+            'value' => $bluesky,
+        ]);
+    }
+
+    /**
+     * @param ThreadsOptions $threads
+     * @return TargetOptions
+     */
+    public static function threads(ThreadsOptions $threads): TargetOptions
+    {
+        return new TargetOptions([
+            'platform' => 'threads',
+            'value' => $threads,
+        ]);
+    }
+
+    /**
+     * @param XOptions $x
+     * @return TargetOptions
+     */
+    public static function x(XOptions $x): TargetOptions
+    {
+        return new TargetOptions([
+            'platform' => 'x',
+            'value' => $x,
         ]);
     }
 
@@ -232,6 +296,94 @@ class TargetOptions extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isMastodon(): bool
+    {
+        return $this->value instanceof MastodonOptions && $this->platform === 'mastodon';
+    }
+
+    /**
+     * @return MastodonOptions
+     */
+    public function asMastodon(): MastodonOptions
+    {
+        if (!($this->value instanceof MastodonOptions && $this->platform === 'mastodon')) {
+            throw new Exception(
+                "Expected mastodon; got " . $this->platform . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isBluesky(): bool
+    {
+        return $this->value instanceof BlueskyOptions && $this->platform === 'bluesky';
+    }
+
+    /**
+     * @return BlueskyOptions
+     */
+    public function asBluesky(): BlueskyOptions
+    {
+        if (!($this->value instanceof BlueskyOptions && $this->platform === 'bluesky')) {
+            throw new Exception(
+                "Expected bluesky; got " . $this->platform . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isThreads(): bool
+    {
+        return $this->value instanceof ThreadsOptions && $this->platform === 'threads';
+    }
+
+    /**
+     * @return ThreadsOptions
+     */
+    public function asThreads(): ThreadsOptions
+    {
+        if (!($this->value instanceof ThreadsOptions && $this->platform === 'threads')) {
+            throw new Exception(
+                "Expected threads; got " . $this->platform . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isX(): bool
+    {
+        return $this->value instanceof XOptions && $this->platform === 'x';
+    }
+
+    /**
+     * @return XOptions
+     */
+    public function asX(): XOptions
+    {
+        if (!($this->value instanceof XOptions && $this->platform === 'x')) {
+            throw new Exception(
+                "Expected x; got " . $this->platform . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -269,6 +421,22 @@ class TargetOptions extends JsonSerializableType
                 break;
             case 'linkedin':
                 $value = $this->asLinkedin()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'mastodon':
+                $value = $this->asMastodon()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'bluesky':
+                $value = $this->asBluesky()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'threads':
+                $value = $this->asThreads()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'x':
+                $value = $this->asX()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -321,6 +489,18 @@ class TargetOptions extends JsonSerializableType
                 break;
             case 'linkedin':
                 $args['value'] = LinkedInOptions::jsonDeserialize($data);
+                break;
+            case 'mastodon':
+                $args['value'] = MastodonOptions::jsonDeserialize($data);
+                break;
+            case 'bluesky':
+                $args['value'] = BlueskyOptions::jsonDeserialize($data);
+                break;
+            case 'threads':
+                $args['value'] = ThreadsOptions::jsonDeserialize($data);
+                break;
+            case 'x':
+                $args['value'] = XOptions::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

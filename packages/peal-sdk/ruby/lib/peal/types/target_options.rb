@@ -20,6 +20,14 @@ module Peal
       member -> { Peal::Types::GoogleBusinessOptions }, key: "GOOGLE_BUSINESS"
 
       member -> { Peal::Types::LinkedInOptions }, key: "LINKEDIN"
+
+      member -> { Peal::Types::MastodonOptions }, key: "MASTODON"
+
+      member -> { Peal::Types::BlueskyOptions }, key: "BLUESKY"
+
+      member -> { Peal::Types::ThreadsOptions }, key: "THREADS"
+
+      member -> { Peal::Types::XOptions }, key: "X"
     end
   end
 end

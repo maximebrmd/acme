@@ -10,7 +10,11 @@ export type TargetOptions =
     | Peal.TargetOptions.Tiktok
     | Peal.TargetOptions.Pinterest
     | Peal.TargetOptions.GoogleBusiness
-    | Peal.TargetOptions.Linkedin;
+    | Peal.TargetOptions.Linkedin
+    | Peal.TargetOptions.Mastodon
+    | Peal.TargetOptions.Bluesky
+    | Peal.TargetOptions.Threads
+    | Peal.TargetOptions.X;
 
 export namespace TargetOptions {
     export interface Youtube extends Peal.YouTubeOptions {
@@ -31,5 +35,21 @@ export namespace TargetOptions {
 
     export interface Linkedin extends Peal.LinkedInOptions {
         platform: "linkedin";
+    }
+
+    export interface Mastodon extends Peal.MastodonOptions {
+        platform: "mastodon";
+    }
+
+    export interface Bluesky extends Peal.BlueskyOptions {
+        platform: "bluesky";
+    }
+
+    export interface Threads extends Peal.ThreadsOptions {
+        platform: "threads";
+    }
+
+    export interface X extends Peal.XOptions {
+        platform: "x";
     }
 }

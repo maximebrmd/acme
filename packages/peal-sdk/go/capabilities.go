@@ -73,11 +73,12 @@ func (p *PlatformsCapabilitiesRequest) SetWorkspaceID(workspaceID string) {
 }
 
 type AccountRestriction struct {
-	Type              string
-	OptionValues      *AccountRestrictionOptionValues
-	OptionFixed       *AccountRestrictionOptionFixed
-	VideoDuration     *AccountRestrictionVideoDuration
-	MediaTypesRefused *AccountRestrictionMediaTypesRefused
+	Type                 string
+	OptionValues         *AccountRestrictionOptionValues
+	OptionFixed          *AccountRestrictionOptionFixed
+	VideoDuration        *AccountRestrictionVideoDuration
+	MediaTypesRefused    *AccountRestrictionMediaTypesRefused
+	OptionNeedsReconnect *AccountRestrictionOptionNeedsReconnect
 
 	rawJSON json.RawMessage
 }
@@ -117,6 +118,13 @@ func (a *AccountRestriction) GetMediaTypesRefused() *AccountRestrictionMediaType
 	return a.MediaTypesRefused
 }
 
+func (a *AccountRestriction) GetOptionNeedsReconnect() *AccountRestrictionOptionNeedsReconnect {
+	if a == nil {
+		return nil
+	}
+	return a.OptionNeedsReconnect
+}
+
 func (a *AccountRestriction) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -153,6 +161,12 @@ func (a *AccountRestriction) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		a.MediaTypesRefused = value
+	case "optionNeedsReconnect":
+		value := new(AccountRestrictionOptionNeedsReconnect)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		a.OptionNeedsReconnect = value
 	}
 	a.rawJSON = json.RawMessage(data)
 	return nil
@@ -174,6 +188,9 @@ func (a AccountRestriction) MarshalJSON() ([]byte, error) {
 	if a.MediaTypesRefused != nil {
 		return internal.MarshalJSONWithExtraProperty(a.MediaTypesRefused, "_tag", "mediaTypesRefused")
 	}
+	if a.OptionNeedsReconnect != nil {
+		return internal.MarshalJSONWithExtraProperty(a.OptionNeedsReconnect, "_tag", "optionNeedsReconnect")
+	}
 	if len(a.rawJSON) > 0 {
 		return a.rawJSON, nil
 	}
@@ -185,6 +202,7 @@ type AccountRestrictionVisitor interface {
 	VisitOptionFixed(*AccountRestrictionOptionFixed) error
 	VisitVideoDuration(*AccountRestrictionVideoDuration) error
 	VisitMediaTypesRefused(*AccountRestrictionMediaTypesRefused) error
+	VisitOptionNeedsReconnect(*AccountRestrictionOptionNeedsReconnect) error
 }
 
 func (a *AccountRestriction) Accept(visitor AccountRestrictionVisitor) error {
@@ -199,6 +217,9 @@ func (a *AccountRestriction) Accept(visitor AccountRestrictionVisitor) error {
 	}
 	if a.MediaTypesRefused != nil {
 		return visitor.VisitMediaTypesRefused(a.MediaTypesRefused)
+	}
+	if a.OptionNeedsReconnect != nil {
+		return visitor.VisitOptionNeedsReconnect(a.OptionNeedsReconnect)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", a)
 }
@@ -219,6 +240,9 @@ func (a *AccountRestriction) validate() error {
 	}
 	if a.MediaTypesRefused != nil {
 		fields = append(fields, "mediaTypesRefused")
+	}
+	if a.OptionNeedsReconnect != nil {
+		fields = append(fields, "optionNeedsReconnect")
 	}
 	if len(fields) == 0 {
 		if a.Type != "" {
@@ -420,6 +444,92 @@ func (a *AccountRestrictionOptionFixed) MarshalJSON() ([]byte, error) {
 }
 
 func (a *AccountRestrictionOptionFixed) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+var (
+	accountRestrictionOptionNeedsReconnectFieldField = big.NewInt(1 << 0)
+)
+
+type AccountRestrictionOptionNeedsReconnect struct {
+	Field string `json:"field" url:"field"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AccountRestrictionOptionNeedsReconnect) GetField() string {
+	if a == nil {
+		return ""
+	}
+	return a.Field
+}
+
+func (a *AccountRestrictionOptionNeedsReconnect) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *AccountRestrictionOptionNeedsReconnect) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+// SetField sets the Field field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AccountRestrictionOptionNeedsReconnect) SetField(field string) {
+	a.Field = field
+	a.require(accountRestrictionOptionNeedsReconnectFieldField)
+}
+
+func (a *AccountRestrictionOptionNeedsReconnect) UnmarshalJSON(data []byte) error {
+	type unmarshaler AccountRestrictionOptionNeedsReconnect
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AccountRestrictionOptionNeedsReconnect(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AccountRestrictionOptionNeedsReconnect) MarshalJSON() ([]byte, error) {
+	type embed AccountRestrictionOptionNeedsReconnect
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *AccountRestrictionOptionNeedsReconnect) String() string {
 	if a == nil {
 		return "<nil>"
 	}

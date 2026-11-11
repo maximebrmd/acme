@@ -10,11 +10,13 @@ if typing.TYPE_CHECKING:
         AccountRestriction,
         AccountRestriction_MediaTypesRefused,
         AccountRestriction_OptionFixed,
+        AccountRestriction_OptionNeedsReconnect,
         AccountRestriction_OptionValues,
         AccountRestriction_VideoDuration,
     )
     from .account_restriction_media_types_refused import AccountRestrictionMediaTypesRefused
     from .account_restriction_option_fixed import AccountRestrictionOptionFixed
+    from .account_restriction_option_needs_reconnect import AccountRestrictionOptionNeedsReconnect
     from .account_restriction_option_values import AccountRestrictionOptionValues
     from .account_restriction_video_duration import AccountRestrictionVideoDuration
     from .account_standing import (
@@ -126,6 +128,9 @@ if typing.TYPE_CHECKING:
     from .billing_interval import BillingInterval
     from .billing_subscription import BillingSubscription
     from .billing_unavailable_encoded import BillingUnavailableEncoded
+    from .bluesky_content_label import BlueskyContentLabel
+    from .bluesky_options import BlueskyOptions
+    from .bluesky_replies import BlueskyReplies
     from .boost import Boost
     from .boost_audience import BoostAudience
     from .boost_budget import BoostBudget
@@ -384,6 +389,9 @@ if typing.TYPE_CHECKING:
     from .lookup_result_tiktok_creator import LookupResultTiktokCreator
     from .lookup_result_youtube_playlists import LookupResultYoutubePlaylists
     from .lookup_result_youtube_video_categories import LookupResultYoutubeVideoCategories
+    from .mastodon_options import MastodonOptions
+    from .mastodon_quote_policy import MastodonQuotePolicy
+    from .mastodon_visibility import MastodonVisibility
     from .me import Me
     from .me_user import MeUser
     from .me_user_locale import MeUserLocale
@@ -647,10 +655,14 @@ if typing.TYPE_CHECKING:
     from .target_metrics import TargetMetrics
     from .target_options import (
         TargetOptions,
+        TargetOptions_Bluesky,
         TargetOptions_GoogleBusiness,
         TargetOptions_Linkedin,
+        TargetOptions_Mastodon,
         TargetOptions_Pinterest,
+        TargetOptions_Threads,
         TargetOptions_Tiktok,
+        TargetOptions_X,
         TargetOptions_Youtube,
     )
     from .target_parts import TargetParts
@@ -660,6 +672,8 @@ if typing.TYPE_CHECKING:
     from .text_limit import TextLimit
     from .text_override import TextOverride
     from .text_unit import TextUnit
+    from .threads_options import ThreadsOptions
+    from .threads_reply_control import ThreadsReplyControl
     from .tik_tok_account import TikTokAccount
     from .tik_tok_account_posting import TikTokAccountPosting, TikTokAccountPosting_Blocked, TikTokAccountPosting_Ready
     from .tik_tok_account_posting_blocked import TikTokAccountPostingBlocked
@@ -736,6 +750,8 @@ if typing.TYPE_CHECKING:
     from .workspace_member import WorkspaceMember
     from .workspace_not_found_encoded import WorkspaceNotFoundEncoded
     from .workspace_not_found_encoded_tag import WorkspaceNotFoundEncodedTag
+    from .x_options import XOptions
+    from .x_reply_settings import XReplySettings
     from .you_tube_options import YouTubeOptions
     from .you_tube_playlist import YouTubePlaylist
     from .you_tube_privacy import YouTubePrivacy
@@ -744,10 +760,12 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AccountRestriction": ".account_restriction",
     "AccountRestrictionMediaTypesRefused": ".account_restriction_media_types_refused",
     "AccountRestrictionOptionFixed": ".account_restriction_option_fixed",
+    "AccountRestrictionOptionNeedsReconnect": ".account_restriction_option_needs_reconnect",
     "AccountRestrictionOptionValues": ".account_restriction_option_values",
     "AccountRestrictionVideoDuration": ".account_restriction_video_duration",
     "AccountRestriction_MediaTypesRefused": ".account_restriction",
     "AccountRestriction_OptionFixed": ".account_restriction",
+    "AccountRestriction_OptionNeedsReconnect": ".account_restriction",
     "AccountRestriction_OptionValues": ".account_restriction",
     "AccountRestriction_VideoDuration": ".account_restriction",
     "AccountStanding": ".account_standing",
@@ -855,6 +873,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "BillingInterval": ".billing_interval",
     "BillingSubscription": ".billing_subscription",
     "BillingUnavailableEncoded": ".billing_unavailable_encoded",
+    "BlueskyContentLabel": ".bluesky_content_label",
+    "BlueskyOptions": ".bluesky_options",
+    "BlueskyReplies": ".bluesky_replies",
     "Boost": ".boost",
     "BoostAudience": ".boost_audience",
     "BoostBudget": ".boost_budget",
@@ -1110,6 +1131,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "LookupResult_TiktokCreator": ".lookup_result",
     "LookupResult_YoutubePlaylists": ".lookup_result",
     "LookupResult_YoutubeVideoCategories": ".lookup_result",
+    "MastodonOptions": ".mastodon_options",
+    "MastodonQuotePolicy": ".mastodon_quote_policy",
+    "MastodonVisibility": ".mastodon_visibility",
     "Me": ".me",
     "MeUser": ".me_user",
     "MeUserLocale": ".me_user_locale",
@@ -1365,10 +1389,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TargetConfirmation_Published": ".target_confirmation",
     "TargetMetrics": ".target_metrics",
     "TargetOptions": ".target_options",
+    "TargetOptions_Bluesky": ".target_options",
     "TargetOptions_GoogleBusiness": ".target_options",
     "TargetOptions_Linkedin": ".target_options",
+    "TargetOptions_Mastodon": ".target_options",
     "TargetOptions_Pinterest": ".target_options",
+    "TargetOptions_Threads": ".target_options",
     "TargetOptions_Tiktok": ".target_options",
+    "TargetOptions_X": ".target_options",
     "TargetOptions_Youtube": ".target_options",
     "TargetParts": ".target_parts",
     "TargetStatusConflictEncoded": ".target_status_conflict_encoded",
@@ -1377,6 +1405,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TextLimit": ".text_limit",
     "TextOverride": ".text_override",
     "TextUnit": ".text_unit",
+    "ThreadsOptions": ".threads_options",
+    "ThreadsReplyControl": ".threads_reply_control",
     "TikTokAccount": ".tik_tok_account",
     "TikTokAccountPosting": ".tik_tok_account_posting",
     "TikTokAccountPostingBlocked": ".tik_tok_account_posting_blocked",
@@ -1453,6 +1483,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WorkspaceMember": ".workspace_member",
     "WorkspaceNotFoundEncoded": ".workspace_not_found_encoded",
     "WorkspaceNotFoundEncodedTag": ".workspace_not_found_encoded_tag",
+    "XOptions": ".x_options",
+    "XReplySettings": ".x_reply_settings",
     "YouTubeOptions": ".you_tube_options",
     "YouTubePlaylist": ".you_tube_playlist",
     "YouTubePrivacy": ".you_tube_privacy",
@@ -1485,10 +1517,12 @@ __all__ = [
     "AccountRestriction",
     "AccountRestrictionMediaTypesRefused",
     "AccountRestrictionOptionFixed",
+    "AccountRestrictionOptionNeedsReconnect",
     "AccountRestrictionOptionValues",
     "AccountRestrictionVideoDuration",
     "AccountRestriction_MediaTypesRefused",
     "AccountRestriction_OptionFixed",
+    "AccountRestriction_OptionNeedsReconnect",
     "AccountRestriction_OptionValues",
     "AccountRestriction_VideoDuration",
     "AccountStanding",
@@ -1596,6 +1630,9 @@ __all__ = [
     "BillingInterval",
     "BillingSubscription",
     "BillingUnavailableEncoded",
+    "BlueskyContentLabel",
+    "BlueskyOptions",
+    "BlueskyReplies",
     "Boost",
     "BoostAudience",
     "BoostBudget",
@@ -1851,6 +1888,9 @@ __all__ = [
     "LookupResult_TiktokCreator",
     "LookupResult_YoutubePlaylists",
     "LookupResult_YoutubeVideoCategories",
+    "MastodonOptions",
+    "MastodonQuotePolicy",
+    "MastodonVisibility",
     "Me",
     "MeUser",
     "MeUserLocale",
@@ -2106,10 +2146,14 @@ __all__ = [
     "TargetConfirmation_Published",
     "TargetMetrics",
     "TargetOptions",
+    "TargetOptions_Bluesky",
     "TargetOptions_GoogleBusiness",
     "TargetOptions_Linkedin",
+    "TargetOptions_Mastodon",
     "TargetOptions_Pinterest",
+    "TargetOptions_Threads",
     "TargetOptions_Tiktok",
+    "TargetOptions_X",
     "TargetOptions_Youtube",
     "TargetParts",
     "TargetStatusConflictEncoded",
@@ -2118,6 +2162,8 @@ __all__ = [
     "TextLimit",
     "TextOverride",
     "TextUnit",
+    "ThreadsOptions",
+    "ThreadsReplyControl",
     "TikTokAccount",
     "TikTokAccountPosting",
     "TikTokAccountPostingBlocked",
@@ -2194,6 +2240,8 @@ __all__ = [
     "WorkspaceMember",
     "WorkspaceNotFoundEncoded",
     "WorkspaceNotFoundEncodedTag",
+    "XOptions",
+    "XReplySettings",
     "YouTubeOptions",
     "YouTubePlaylist",
     "YouTubePrivacy",

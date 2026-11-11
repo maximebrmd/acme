@@ -8,11 +8,17 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .bluesky_content_label import BlueskyContentLabel
+from .bluesky_replies import BlueskyReplies
 from .google_business_call_to_action import GoogleBusinessCallToAction
 from .google_business_post_type import GoogleBusinessPostType
 from .linked_in_mention import LinkedInMention
 from .linked_in_visibility import LinkedInVisibility
+from .mastodon_quote_policy import MastodonQuotePolicy
+from .mastodon_visibility import MastodonVisibility
+from .threads_reply_control import ThreadsReplyControl
 from .tik_tok_privacy_level import TikTokPrivacyLevel
+from .x_reply_settings import XReplySettings
 from .you_tube_privacy import YouTubePrivacy
 
 
@@ -198,6 +204,124 @@ class TargetOptions_Linkedin(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class TargetOptions_Mastodon(UniversalBaseModel):
+    """
+    What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
+    """
+
+    platform: typing.Literal["mastodon"] = "mastodon"
+    content_warning: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="contentWarning"), pydantic.Field(alias="contentWarning")
+    ] = None
+    language: typing.Optional[str] = None
+    quote_policy: typing_extensions.Annotated[
+        typing.Optional[MastodonQuotePolicy], FieldMetadata(alias="quotePolicy"), pydantic.Field(alias="quotePolicy")
+    ] = None
+    sensitive: typing.Optional[bool] = None
+    visibility: typing.Optional[MastodonVisibility] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class TargetOptions_Bluesky(UniversalBaseModel):
+    """
+    What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
+    """
+
+    platform: typing.Literal["bluesky"] = "bluesky"
+    content_label: typing_extensions.Annotated[
+        typing.Optional[BlueskyContentLabel], FieldMetadata(alias="contentLabel"), pydantic.Field(alias="contentLabel")
+    ] = None
+    disable_quotes: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="disableQuotes"), pydantic.Field(alias="disableQuotes")
+    ] = None
+    languages: typing.Optional[typing.List[str]] = None
+    replies: typing.Optional[BlueskyReplies] = None
+    reply_followers: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="replyFollowers"), pydantic.Field(alias="replyFollowers")
+    ] = None
+    reply_following: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="replyFollowing"), pydantic.Field(alias="replyFollowing")
+    ] = None
+    reply_mentioned: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="replyMentioned"), pydantic.Field(alias="replyMentioned")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class TargetOptions_Threads(UniversalBaseModel):
+    """
+    What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
+    """
+
+    platform: typing.Literal["threads"] = "threads"
+    link_attachment: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="linkAttachment"), pydantic.Field(alias="linkAttachment")
+    ] = None
+    reply_control: typing_extensions.Annotated[
+        typing.Optional[ThreadsReplyControl], FieldMetadata(alias="replyControl"), pydantic.Field(alias="replyControl")
+    ] = None
+    topic_tag: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="topicTag"), pydantic.Field(alias="topicTag")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class TargetOptions_X(UniversalBaseModel):
+    """
+    What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
+    """
+
+    platform: typing.Literal["x"] = "x"
+    community_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="communityId"), pydantic.Field(alias="communityId")
+    ] = None
+    made_with_ai: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="madeWithAi"), pydantic.Field(alias="madeWithAi")
+    ] = None
+    paid_partnership: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="paidPartnership"), pydantic.Field(alias="paidPartnership")
+    ] = None
+    reply_settings: typing_extensions.Annotated[
+        typing.Optional[XReplySettings], FieldMetadata(alias="replySettings"), pydantic.Field(alias="replySettings")
+    ] = None
+    share_with_followers: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="shareWithFollowers"), pydantic.Field(alias="shareWithFollowers")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 TargetOptions = typing_extensions.Annotated[
     typing.Union[
         TargetOptions_Youtube,
@@ -205,6 +329,10 @@ TargetOptions = typing_extensions.Annotated[
         TargetOptions_Pinterest,
         TargetOptions_GoogleBusiness,
         TargetOptions_Linkedin,
+        TargetOptions_Mastodon,
+        TargetOptions_Bluesky,
+        TargetOptions_Threads,
+        TargetOptions_X,
     ],
     pydantic.Field(discriminator="platform"),
 ]

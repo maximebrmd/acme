@@ -16,6 +16,8 @@ module Peal
       member -> { Peal::Types::AccountRestrictionVideoDuration }, key: "VIDEO_DURATION"
 
       member -> { Peal::Types::AccountRestrictionMediaTypesRefused }, key: "MEDIA_TYPES_REFUSED"
+
+      member -> { Peal::Types::AccountRestrictionOptionNeedsReconnect }, key: "OPTION_NEEDS_RECONNECT"
     end
   end
 end

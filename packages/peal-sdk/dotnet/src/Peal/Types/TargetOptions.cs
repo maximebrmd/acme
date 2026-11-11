@@ -67,6 +67,42 @@ public record TargetOptions
     }
 
     /// <summary>
+    /// Create an instance of TargetOptions with <see cref="TargetOptions.Mastodon"/>.
+    /// </summary>
+    public TargetOptions(TargetOptions.Mastodon value)
+    {
+        Platform = "mastodon";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of TargetOptions with <see cref="TargetOptions.Bluesky"/>.
+    /// </summary>
+    public TargetOptions(TargetOptions.Bluesky value)
+    {
+        Platform = "bluesky";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of TargetOptions with <see cref="TargetOptions.Threads"/>.
+    /// </summary>
+    public TargetOptions(TargetOptions.Threads value)
+    {
+        Platform = "threads";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of TargetOptions with <see cref="TargetOptions.X"/>.
+    /// </summary>
+    public TargetOptions(TargetOptions.X value)
+    {
+        Platform = "x";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("platform")]
@@ -101,6 +137,26 @@ public record TargetOptions
     /// Returns true if <see cref="Platform"/> is "linkedin"
     /// </summary>
     public bool IsLinkedin => Platform == "linkedin";
+
+    /// <summary>
+    /// Returns true if <see cref="Platform"/> is "mastodon"
+    /// </summary>
+    public bool IsMastodon => Platform == "mastodon";
+
+    /// <summary>
+    /// Returns true if <see cref="Platform"/> is "bluesky"
+    /// </summary>
+    public bool IsBluesky => Platform == "bluesky";
+
+    /// <summary>
+    /// Returns true if <see cref="Platform"/> is "threads"
+    /// </summary>
+    public bool IsThreads => Platform == "threads";
+
+    /// <summary>
+    /// Returns true if <see cref="Platform"/> is "x"
+    /// </summary>
+    public bool IsX => Platform == "x";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.YouTubeOptions"/> if <see cref="Platform"/> is 'youtube', otherwise throws an exception.
@@ -147,12 +203,52 @@ public record TargetOptions
             ? (Peal.LinkedInOptions)Value!
             : throw new global::System.Exception("TargetOptions.Platform is not 'linkedin'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.MastodonOptions"/> if <see cref="Platform"/> is 'mastodon', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'mastodon'.</exception>
+    public Peal.MastodonOptions AsMastodon() =>
+        IsMastodon
+            ? (Peal.MastodonOptions)Value!
+            : throw new global::System.Exception("TargetOptions.Platform is not 'mastodon'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.BlueskyOptions"/> if <see cref="Platform"/> is 'bluesky', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'bluesky'.</exception>
+    public Peal.BlueskyOptions AsBluesky() =>
+        IsBluesky
+            ? (Peal.BlueskyOptions)Value!
+            : throw new global::System.Exception("TargetOptions.Platform is not 'bluesky'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ThreadsOptions"/> if <see cref="Platform"/> is 'threads', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'threads'.</exception>
+    public Peal.ThreadsOptions AsThreads() =>
+        IsThreads
+            ? (Peal.ThreadsOptions)Value!
+            : throw new global::System.Exception("TargetOptions.Platform is not 'threads'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.XOptions"/> if <see cref="Platform"/> is 'x', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'x'.</exception>
+    public Peal.XOptions AsX() =>
+        IsX
+            ? (Peal.XOptions)Value!
+            : throw new global::System.Exception("TargetOptions.Platform is not 'x'");
+
     public T Match<T>(
         Func<Peal.YouTubeOptions, T> onYoutube,
         Func<Peal.TikTokOptions, T> onTiktok,
         Func<Peal.PinterestOptions, T> onPinterest,
         Func<Peal.GoogleBusinessOptions, T> onGoogleBusiness,
         Func<Peal.LinkedInOptions, T> onLinkedin,
+        Func<Peal.MastodonOptions, T> onMastodon,
+        Func<Peal.BlueskyOptions, T> onBluesky,
+        Func<Peal.ThreadsOptions, T> onThreads,
+        Func<Peal.XOptions, T> onX,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -163,6 +259,10 @@ public record TargetOptions
             "pinterest" => onPinterest(AsPinterest()),
             "googleBusiness" => onGoogleBusiness(AsGoogleBusiness()),
             "linkedin" => onLinkedin(AsLinkedin()),
+            "mastodon" => onMastodon(AsMastodon()),
+            "bluesky" => onBluesky(AsBluesky()),
+            "threads" => onThreads(AsThreads()),
+            "x" => onX(AsX()),
             _ => onUnknown_(Platform, Value),
         };
     }
@@ -173,6 +273,10 @@ public record TargetOptions
         Action<Peal.PinterestOptions> onPinterest,
         Action<Peal.GoogleBusinessOptions> onGoogleBusiness,
         Action<Peal.LinkedInOptions> onLinkedin,
+        Action<Peal.MastodonOptions> onMastodon,
+        Action<Peal.BlueskyOptions> onBluesky,
+        Action<Peal.ThreadsOptions> onThreads,
+        Action<Peal.XOptions> onX,
         Action<string, object?> onUnknown_
     )
     {
@@ -192,6 +296,18 @@ public record TargetOptions
                 break;
             case "linkedin":
                 onLinkedin(AsLinkedin());
+                break;
+            case "mastodon":
+                onMastodon(AsMastodon());
+                break;
+            case "bluesky":
+                onBluesky(AsBluesky());
+                break;
+            case "threads":
+                onThreads(AsThreads());
+                break;
+            case "x":
+                onX(AsX());
                 break;
             default:
                 onUnknown_(Platform, Value);
@@ -269,6 +385,62 @@ public record TargetOptions
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.MastodonOptions"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsMastodon(out Peal.MastodonOptions? value)
+    {
+        if (Platform == "mastodon")
+        {
+            value = (Peal.MastodonOptions)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.BlueskyOptions"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsBluesky(out Peal.BlueskyOptions? value)
+    {
+        if (Platform == "bluesky")
+        {
+            value = (Peal.BlueskyOptions)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ThreadsOptions"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsThreads(out Peal.ThreadsOptions? value)
+    {
+        if (Platform == "threads")
+        {
+            value = (Peal.ThreadsOptions)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.XOptions"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsX(out Peal.XOptions? value)
+    {
+        if (Platform == "x")
+        {
+            value = (Peal.XOptions)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator TargetOptions(TargetOptions.Youtube value) => new(value);
@@ -280,6 +452,14 @@ public record TargetOptions
     public static implicit operator TargetOptions(TargetOptions.GoogleBusiness value) => new(value);
 
     public static implicit operator TargetOptions(TargetOptions.Linkedin value) => new(value);
+
+    public static implicit operator TargetOptions(TargetOptions.Mastodon value) => new(value);
+
+    public static implicit operator TargetOptions(TargetOptions.Bluesky value) => new(value);
+
+    public static implicit operator TargetOptions(TargetOptions.Threads value) => new(value);
+
+    public static implicit operator TargetOptions(TargetOptions.X value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<TargetOptions>
@@ -335,6 +515,14 @@ public record TargetOptions
                         ),
                 "linkedin" => jsonWithoutDiscriminator.Deserialize<Peal.LinkedInOptions?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.LinkedInOptions"),
+                "mastodon" => jsonWithoutDiscriminator.Deserialize<Peal.MastodonOptions?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.MastodonOptions"),
+                "bluesky" => jsonWithoutDiscriminator.Deserialize<Peal.BlueskyOptions?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.BlueskyOptions"),
+                "threads" => jsonWithoutDiscriminator.Deserialize<Peal.ThreadsOptions?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.ThreadsOptions"),
+                "x" => jsonWithoutDiscriminator.Deserialize<Peal.XOptions?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.XOptions"),
                 _ => json.Deserialize<object?>(options),
             };
             return new TargetOptions(discriminator, value);
@@ -354,6 +542,10 @@ public record TargetOptions
                     "pinterest" => JsonSerializer.SerializeToNode(value.Value, options),
                     "googleBusiness" => JsonSerializer.SerializeToNode(value.Value, options),
                     "linkedin" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "mastodon" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "bluesky" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "threads" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "x" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["platform"] = value.Platform;
@@ -476,5 +668,80 @@ public record TargetOptions
 
         public static implicit operator TargetOptions.Linkedin(Peal.LinkedInOptions value) =>
             new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for mastodon
+    /// </summary>
+    [Serializable]
+    public struct Mastodon
+    {
+        public Mastodon(Peal.MastodonOptions value)
+        {
+            Value = value;
+        }
+
+        internal Peal.MastodonOptions Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator TargetOptions.Mastodon(Peal.MastodonOptions value) =>
+            new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for bluesky
+    /// </summary>
+    [Serializable]
+    public struct Bluesky
+    {
+        public Bluesky(Peal.BlueskyOptions value)
+        {
+            Value = value;
+        }
+
+        internal Peal.BlueskyOptions Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator TargetOptions.Bluesky(Peal.BlueskyOptions value) =>
+            new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for threads
+    /// </summary>
+    [Serializable]
+    public struct Threads
+    {
+        public Threads(Peal.ThreadsOptions value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ThreadsOptions Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator TargetOptions.Threads(Peal.ThreadsOptions value) =>
+            new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for x
+    /// </summary>
+    [Serializable]
+    public struct X
+    {
+        public X(Peal.XOptions value)
+        {
+            Value = value;
+        }
+
+        internal Peal.XOptions Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator TargetOptions.X(Peal.XOptions value) => new(value);
     }
 }

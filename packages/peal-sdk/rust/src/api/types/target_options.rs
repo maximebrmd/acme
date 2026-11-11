@@ -131,6 +131,81 @@ pub enum TargetOptions {
         visibility: Option<LinkedInVisibility>,
     },
 
+    #[serde(rename = "mastodon")]
+    #[non_exhaustive]
+    Mastodon {
+        #[serde(rename = "contentWarning")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        content_warning: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        language: Option<String>,
+        #[serde(rename = "quotePolicy")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        quote_policy: Option<MastodonQuotePolicy>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        sensitive: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        visibility: Option<MastodonVisibility>,
+    },
+
+    #[serde(rename = "bluesky")]
+    #[non_exhaustive]
+    Bluesky {
+        #[serde(rename = "contentLabel")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        content_label: Option<BlueskyContentLabel>,
+        #[serde(rename = "disableQuotes")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        disable_quotes: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        languages: Option<Vec<String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        replies: Option<BlueskyReplies>,
+        #[serde(rename = "replyFollowers")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        reply_followers: Option<bool>,
+        #[serde(rename = "replyFollowing")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        reply_following: Option<bool>,
+        #[serde(rename = "replyMentioned")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        reply_mentioned: Option<bool>,
+    },
+
+    #[serde(rename = "threads")]
+    #[non_exhaustive]
+    Threads {
+        #[serde(rename = "linkAttachment")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        link_attachment: Option<String>,
+        #[serde(rename = "replyControl")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        reply_control: Option<ThreadsReplyControl>,
+        #[serde(rename = "topicTag")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        topic_tag: Option<String>,
+    },
+
+    #[serde(rename = "x")]
+    #[non_exhaustive]
+    X {
+        #[serde(rename = "communityId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        community_id: Option<String>,
+        #[serde(rename = "madeWithAi")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        made_with_ai: Option<bool>,
+        #[serde(rename = "paidPartnership")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        paid_partnership: Option<bool>,
+        #[serde(rename = "replySettings")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        reply_settings: Option<XReplySettings>,
+        #[serde(rename = "shareWithFollowers")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        share_with_followers: Option<bool>,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -198,6 +273,46 @@ impl TargetOptions {
             link_url: None,
             mentions: None,
             visibility: None,
+        }
+    }
+
+    pub fn mastodon() -> Self {
+        Self::Mastodon {
+            content_warning: None,
+            language: None,
+            quote_policy: None,
+            sensitive: None,
+            visibility: None,
+        }
+    }
+
+    pub fn bluesky() -> Self {
+        Self::Bluesky {
+            content_label: None,
+            disable_quotes: None,
+            languages: None,
+            replies: None,
+            reply_followers: None,
+            reply_following: None,
+            reply_mentioned: None,
+        }
+    }
+
+    pub fn threads() -> Self {
+        Self::Threads {
+            link_attachment: None,
+            reply_control: None,
+            topic_tag: None,
+        }
+    }
+
+    pub fn x() -> Self {
+        Self::X {
+            community_id: None,
+            made_with_ai: None,
+            paid_partnership: None,
+            reply_settings: None,
+            share_with_followers: None,
         }
     }
 
@@ -978,6 +1093,342 @@ impl TargetOptions {
             link_url,
             mentions,
             visibility: Some(visibility),
+        }
+    }
+
+    pub fn mastodon_with_content_warning(
+        content_warning: String,
+        language: Option<String>,
+        quote_policy: Option<MastodonQuotePolicy>,
+        sensitive: Option<bool>,
+        visibility: Option<MastodonVisibility>,
+    ) -> Self {
+        Self::Mastodon {
+            content_warning: Some(content_warning),
+            language,
+            quote_policy,
+            sensitive,
+            visibility,
+        }
+    }
+
+    pub fn mastodon_with_language(
+        content_warning: Option<String>,
+        language: String,
+        quote_policy: Option<MastodonQuotePolicy>,
+        sensitive: Option<bool>,
+        visibility: Option<MastodonVisibility>,
+    ) -> Self {
+        Self::Mastodon {
+            content_warning,
+            language: Some(language),
+            quote_policy,
+            sensitive,
+            visibility,
+        }
+    }
+
+    pub fn mastodon_with_quote_policy(
+        content_warning: Option<String>,
+        language: Option<String>,
+        quote_policy: MastodonQuotePolicy,
+        sensitive: Option<bool>,
+        visibility: Option<MastodonVisibility>,
+    ) -> Self {
+        Self::Mastodon {
+            content_warning,
+            language,
+            quote_policy: Some(quote_policy),
+            sensitive,
+            visibility,
+        }
+    }
+
+    pub fn mastodon_with_sensitive(
+        content_warning: Option<String>,
+        language: Option<String>,
+        quote_policy: Option<MastodonQuotePolicy>,
+        sensitive: bool,
+        visibility: Option<MastodonVisibility>,
+    ) -> Self {
+        Self::Mastodon {
+            content_warning,
+            language,
+            quote_policy,
+            sensitive: Some(sensitive),
+            visibility,
+        }
+    }
+
+    pub fn mastodon_with_visibility(
+        content_warning: Option<String>,
+        language: Option<String>,
+        quote_policy: Option<MastodonQuotePolicy>,
+        sensitive: Option<bool>,
+        visibility: MastodonVisibility,
+    ) -> Self {
+        Self::Mastodon {
+            content_warning,
+            language,
+            quote_policy,
+            sensitive,
+            visibility: Some(visibility),
+        }
+    }
+
+    pub fn bluesky_with_content_label(
+        content_label: BlueskyContentLabel,
+        disable_quotes: Option<bool>,
+        languages: Option<Vec<String>>,
+        replies: Option<BlueskyReplies>,
+        reply_followers: Option<bool>,
+        reply_following: Option<bool>,
+        reply_mentioned: Option<bool>,
+    ) -> Self {
+        Self::Bluesky {
+            content_label: Some(content_label),
+            disable_quotes,
+            languages,
+            replies,
+            reply_followers,
+            reply_following,
+            reply_mentioned,
+        }
+    }
+
+    pub fn bluesky_with_disable_quotes(
+        content_label: Option<BlueskyContentLabel>,
+        disable_quotes: bool,
+        languages: Option<Vec<String>>,
+        replies: Option<BlueskyReplies>,
+        reply_followers: Option<bool>,
+        reply_following: Option<bool>,
+        reply_mentioned: Option<bool>,
+    ) -> Self {
+        Self::Bluesky {
+            content_label,
+            disable_quotes: Some(disable_quotes),
+            languages,
+            replies,
+            reply_followers,
+            reply_following,
+            reply_mentioned,
+        }
+    }
+
+    pub fn bluesky_with_languages(
+        content_label: Option<BlueskyContentLabel>,
+        disable_quotes: Option<bool>,
+        languages: Vec<String>,
+        replies: Option<BlueskyReplies>,
+        reply_followers: Option<bool>,
+        reply_following: Option<bool>,
+        reply_mentioned: Option<bool>,
+    ) -> Self {
+        Self::Bluesky {
+            content_label,
+            disable_quotes,
+            languages: Some(languages),
+            replies,
+            reply_followers,
+            reply_following,
+            reply_mentioned,
+        }
+    }
+
+    pub fn bluesky_with_replies(
+        content_label: Option<BlueskyContentLabel>,
+        disable_quotes: Option<bool>,
+        languages: Option<Vec<String>>,
+        replies: BlueskyReplies,
+        reply_followers: Option<bool>,
+        reply_following: Option<bool>,
+        reply_mentioned: Option<bool>,
+    ) -> Self {
+        Self::Bluesky {
+            content_label,
+            disable_quotes,
+            languages,
+            replies: Some(replies),
+            reply_followers,
+            reply_following,
+            reply_mentioned,
+        }
+    }
+
+    pub fn bluesky_with_reply_followers(
+        content_label: Option<BlueskyContentLabel>,
+        disable_quotes: Option<bool>,
+        languages: Option<Vec<String>>,
+        replies: Option<BlueskyReplies>,
+        reply_followers: bool,
+        reply_following: Option<bool>,
+        reply_mentioned: Option<bool>,
+    ) -> Self {
+        Self::Bluesky {
+            content_label,
+            disable_quotes,
+            languages,
+            replies,
+            reply_followers: Some(reply_followers),
+            reply_following,
+            reply_mentioned,
+        }
+    }
+
+    pub fn bluesky_with_reply_following(
+        content_label: Option<BlueskyContentLabel>,
+        disable_quotes: Option<bool>,
+        languages: Option<Vec<String>>,
+        replies: Option<BlueskyReplies>,
+        reply_followers: Option<bool>,
+        reply_following: bool,
+        reply_mentioned: Option<bool>,
+    ) -> Self {
+        Self::Bluesky {
+            content_label,
+            disable_quotes,
+            languages,
+            replies,
+            reply_followers,
+            reply_following: Some(reply_following),
+            reply_mentioned,
+        }
+    }
+
+    pub fn bluesky_with_reply_mentioned(
+        content_label: Option<BlueskyContentLabel>,
+        disable_quotes: Option<bool>,
+        languages: Option<Vec<String>>,
+        replies: Option<BlueskyReplies>,
+        reply_followers: Option<bool>,
+        reply_following: Option<bool>,
+        reply_mentioned: bool,
+    ) -> Self {
+        Self::Bluesky {
+            content_label,
+            disable_quotes,
+            languages,
+            replies,
+            reply_followers,
+            reply_following,
+            reply_mentioned: Some(reply_mentioned),
+        }
+    }
+
+    pub fn threads_with_link_attachment(
+        link_attachment: String,
+        reply_control: Option<ThreadsReplyControl>,
+        topic_tag: Option<String>,
+    ) -> Self {
+        Self::Threads {
+            link_attachment: Some(link_attachment),
+            reply_control,
+            topic_tag,
+        }
+    }
+
+    pub fn threads_with_reply_control(
+        link_attachment: Option<String>,
+        reply_control: ThreadsReplyControl,
+        topic_tag: Option<String>,
+    ) -> Self {
+        Self::Threads {
+            link_attachment,
+            reply_control: Some(reply_control),
+            topic_tag,
+        }
+    }
+
+    pub fn threads_with_topic_tag(
+        link_attachment: Option<String>,
+        reply_control: Option<ThreadsReplyControl>,
+        topic_tag: String,
+    ) -> Self {
+        Self::Threads {
+            link_attachment,
+            reply_control,
+            topic_tag: Some(topic_tag),
+        }
+    }
+
+    pub fn x_with_community_id(
+        community_id: String,
+        made_with_ai: Option<bool>,
+        paid_partnership: Option<bool>,
+        reply_settings: Option<XReplySettings>,
+        share_with_followers: Option<bool>,
+    ) -> Self {
+        Self::X {
+            community_id: Some(community_id),
+            made_with_ai,
+            paid_partnership,
+            reply_settings,
+            share_with_followers,
+        }
+    }
+
+    pub fn x_with_made_with_ai(
+        community_id: Option<String>,
+        made_with_ai: bool,
+        paid_partnership: Option<bool>,
+        reply_settings: Option<XReplySettings>,
+        share_with_followers: Option<bool>,
+    ) -> Self {
+        Self::X {
+            community_id,
+            made_with_ai: Some(made_with_ai),
+            paid_partnership,
+            reply_settings,
+            share_with_followers,
+        }
+    }
+
+    pub fn x_with_paid_partnership(
+        community_id: Option<String>,
+        made_with_ai: Option<bool>,
+        paid_partnership: bool,
+        reply_settings: Option<XReplySettings>,
+        share_with_followers: Option<bool>,
+    ) -> Self {
+        Self::X {
+            community_id,
+            made_with_ai,
+            paid_partnership: Some(paid_partnership),
+            reply_settings,
+            share_with_followers,
+        }
+    }
+
+    pub fn x_with_reply_settings(
+        community_id: Option<String>,
+        made_with_ai: Option<bool>,
+        paid_partnership: Option<bool>,
+        reply_settings: XReplySettings,
+        share_with_followers: Option<bool>,
+    ) -> Self {
+        Self::X {
+            community_id,
+            made_with_ai,
+            paid_partnership,
+            reply_settings: Some(reply_settings),
+            share_with_followers,
+        }
+    }
+
+    pub fn x_with_share_with_followers(
+        community_id: Option<String>,
+        made_with_ai: Option<bool>,
+        paid_partnership: Option<bool>,
+        reply_settings: Option<XReplySettings>,
+        share_with_followers: bool,
+    ) -> Self {
+        Self::X {
+            community_id,
+            made_with_ai,
+            paid_partnership,
+            reply_settings,
+            share_with_followers: Some(share_with_followers),
         }
     }
 

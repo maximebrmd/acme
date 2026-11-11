@@ -13,6 +13,7 @@ class AccountRestriction extends JsonSerializableType
      *   |'optionFixed'
      *   |'videoDuration'
      *   |'mediaTypesRefused'
+     *   |'optionNeedsReconnect'
      *   |'_unknown'
      * ) $type
      */
@@ -24,6 +25,7 @@ class AccountRestriction extends JsonSerializableType
      *   |AccountRestrictionOptionFixed
      *   |AccountRestrictionVideoDuration
      *   |AccountRestrictionMediaTypesRefused
+     *   |AccountRestrictionOptionNeedsReconnect
      *   |mixed
      * ) $value
      */
@@ -36,6 +38,7 @@ class AccountRestriction extends JsonSerializableType
      *   |'optionFixed'
      *   |'videoDuration'
      *   |'mediaTypesRefused'
+     *   |'optionNeedsReconnect'
      *   |'_unknown'
      * ),
      *   value: (
@@ -43,6 +46,7 @@ class AccountRestriction extends JsonSerializableType
      *   |AccountRestrictionOptionFixed
      *   |AccountRestrictionVideoDuration
      *   |AccountRestrictionMediaTypesRefused
+     *   |AccountRestrictionOptionNeedsReconnect
      *   |mixed
      * ),
      * } $values
@@ -99,6 +103,18 @@ class AccountRestriction extends JsonSerializableType
         return new AccountRestriction([
             'type' => 'mediaTypesRefused',
             'value' => $mediaTypesRefused,
+        ]);
+    }
+
+    /**
+     * @param AccountRestrictionOptionNeedsReconnect $optionNeedsReconnect
+     * @return AccountRestriction
+     */
+    public static function optionNeedsReconnect(AccountRestrictionOptionNeedsReconnect $optionNeedsReconnect): AccountRestriction
+    {
+        return new AccountRestriction([
+            'type' => 'optionNeedsReconnect',
+            'value' => $optionNeedsReconnect,
         ]);
     }
 
@@ -191,6 +207,28 @@ class AccountRestriction extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isOptionNeedsReconnect(): bool
+    {
+        return $this->value instanceof AccountRestrictionOptionNeedsReconnect && $this->type === 'optionNeedsReconnect';
+    }
+
+    /**
+     * @return AccountRestrictionOptionNeedsReconnect
+     */
+    public function asOptionNeedsReconnect(): AccountRestrictionOptionNeedsReconnect
+    {
+        if (!($this->value instanceof AccountRestrictionOptionNeedsReconnect && $this->type === 'optionNeedsReconnect')) {
+            throw new Exception(
+                "Expected optionNeedsReconnect; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -224,6 +262,10 @@ class AccountRestriction extends JsonSerializableType
                 break;
             case 'mediaTypesRefused':
                 $value = $this->asMediaTypesRefused()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'optionNeedsReconnect':
+                $value = $this->asOptionNeedsReconnect()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -273,6 +315,9 @@ class AccountRestriction extends JsonSerializableType
                 break;
             case 'mediaTypesRefused':
                 $args['value'] = AccountRestrictionMediaTypesRefused::jsonDeserialize($data);
+                break;
+            case 'optionNeedsReconnect':
+                $args['value'] = AccountRestrictionOptionNeedsReconnect::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:
