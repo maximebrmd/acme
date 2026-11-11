@@ -5,6 +5,7 @@ import type {
   PostOutcome,
   PostStatusName,
 } from "#publishing/domain/post-status.ts";
+import type { QueueId } from "#publishing/domain/queue-id.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -38,6 +39,8 @@ export interface PostFilter {
   readonly channelIds: Option.Option<readonly ChannelId[]>;
   readonly createdVia: Option.Option<PostOriginVia>;
   readonly outcome: Option.Option<PostOutcome>;
+  /** Posts that queue placed. */
+  readonly queueId: Option.Option<QueueId>;
   /** Scheduled before this instant, excluded. */
   readonly scheduledBefore: Option.Option<DateTime.Utc>;
   /** Scheduled from this instant, included. */

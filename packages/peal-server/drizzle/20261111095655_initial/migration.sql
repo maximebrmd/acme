@@ -737,6 +737,7 @@ CREATE TABLE "publishing"."posts" (
 	"id" uuid PRIMARY KEY,
 	"media" jsonb DEFAULT '[]' NOT NULL,
 	"outcome" text,
+	"queue_id" uuid,
 	"schedule_revision" integer DEFAULT 0 NOT NULL,
 	"schedule_zone" text,
 	"scheduled_at" timestamp with time zone,
@@ -776,6 +777,20 @@ CREATE TABLE "publishing"."publication_calls" (
 	"started_at" timestamp with time zone NOT NULL,
 	"target_id" uuid NOT NULL,
 	CONSTRAINT "publication_calls_target_round_part_attempt" UNIQUE("target_id","round","part","attempt")
+);
+--> statement-breakpoint
+CREATE TABLE "publishing"."queues" (
+	"channel_ids" uuid[] DEFAULT '{}'::uuid[] NOT NULL,
+	"channel_set_id" uuid,
+	"created_at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"is_default" boolean DEFAULT false NOT NULL,
+	"name" text NOT NULL,
+	"name_key" text NOT NULL,
+	"slots" jsonb DEFAULT '[]' NOT NULL,
+	"time_zone" text NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "queues_workspace_name" UNIQUE("workspace_id","name_key")
 );
 --> statement-breakpoint
 CREATE TABLE "publishing"."quota_usage" (
@@ -1369,6 +1384,9 @@ CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_
 CREATE INDEX "posts_scheduled" ON "publishing"."posts" ("scheduled_at") WHERE "status" = 'scheduled';--> statement-breakpoint
 CREATE INDEX "posts_workspace_id" ON "publishing"."posts" ("workspace_id","id");--> statement-breakpoint
 CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint
+CREATE INDEX "posts_queue_scheduled_at" ON "publishing"."posts" ("queue_id","scheduled_at") WHERE "queue_id" is not null;--> statement-breakpoint
+CREATE UNIQUE INDEX "queues_workspace_default" ON "publishing"."queues" ("workspace_id") WHERE "is_default";--> statement-breakpoint
+CREATE INDEX "queues_workspace_id" ON "publishing"."queues" ("workspace_id","id");--> statement-breakpoint
 CREATE UNIQUE INDEX "approval_requests_pending" ON "review"."approval_requests" ("post_id") WHERE "status" = 'pending';--> statement-breakpoint
 CREATE INDEX "approval_requests_post" ON "review"."approval_requests" ("post_id","id");--> statement-breakpoint
 CREATE INDEX "approval_requests_workspace" ON "review"."approval_requests" ("workspace_id","status","id");--> statement-breakpoint

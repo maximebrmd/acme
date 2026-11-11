@@ -133,6 +133,7 @@ export const postView = ({
     createdVia: originOrNull(post.attribution.createdVia),
     id: post.id,
     outcome: post.status._tag === "finished" ? post.status.outcome : null,
+    queueId: Option.getOrNull(post.queueId),
     schedule: scheduleOf(post.status),
     scheduledBy: Option.getOrNull(post.attribution.scheduledBy),
     scheduledVia: originOrNull(post.attribution.scheduledVia),

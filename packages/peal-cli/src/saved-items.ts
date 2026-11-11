@@ -1,7 +1,7 @@
 import { Effect, Match, Option } from "effect";
 import { Flag } from "effect/cli";
 import { maxChannelSetsPerPost } from "peal-contract";
-import type { ChannelSet, PostWarning, Signature } from "peal-contract";
+import type { ChannelSet, PostWarning, Queue, Signature } from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { Refused } from "#refused.ts";
@@ -94,6 +94,34 @@ export const setNamed = (
 /** The channel set a command names, looked up among the workspace's. */
 export const findSet = (session: InWorkspace, given: string) =>
   setsOf(session).pipe(Effect.flatMap((sets) => setNamed(sets, given)));
+
+/** The workspace's queues, the default first, then by name. */
+export const queuesOf = ({ client, url, workspace }: InWorkspace) =>
+  client.queues
+    .list({ params: { workspaceId: workspace.id } })
+    .pipe(Effect.mapError(explain(url)));
+
+/**
+ * The queue a command names: by its id, or by its exact name, whatever its
+ * case. A workspace has no two queues of one name.
+ */
+export const queueNamed = (
+  queues: readonly Queue[],
+  given: string
+): Effect.Effect<Queue, Refused> =>
+  savedNamed(
+    queues,
+    given,
+    (wanted) =>
+      new Refused({
+        code: "queue_unknown",
+        reason: `The workspace has no queue ${wanted}, by id or by name: peal queues list shows them.`,
+      })
+  );
+
+/** The queue a command names, looked up among the workspace's. */
+export const findQueue = (session: InWorkspace, given: string) =>
+  queuesOf(session).pipe(Effect.flatMap((queues) => queueNamed(queues, given)));
 
 /** `--set <id-or-name>`, repeated: the channel sets a post goes to. */
 export const setsFlag = (description: string) =>

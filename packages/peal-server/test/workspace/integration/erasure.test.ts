@@ -171,6 +171,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${id}`,
   "publishing.publication_attempts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.publication_attempts a JOIN publishing.post_targets t ON t.id = a.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
+  "publishing.queues": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.queues WHERE workspace_id = ${id}`,
   "publishing.publication_calls": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.publication_calls c JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.signatures": (sql, id) =>
@@ -436,6 +438,9 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO publishing.channel_defaults (channel_id, workspace_id, options, updated_at)
     VALUES (${savedChannel}, ${workspaceId}, '{"platform":"youtube"}'::jsonb, now())`;
+
+  yield* sql`INSERT INTO publishing.queues (id, workspace_id, name, name_key, time_zone, slots, channel_ids, is_default, created_at)
+    VALUES (${uuid7()}, ${workspaceId}, 'Synthetic', 'synthetic', 'Europe/Paris', '[{"day":"monday","time":{"hour":9,"minute":0}}]'::jsonb, ARRAY[${savedChannel}]::uuid[], true, now())`;
 
   // The key of the request that made it, as `posts.send` keeps it.
   yield* sql`INSERT INTO publishing.idempotency_keys (workspace_id, key_digest, request_digest, post_id, created_at)

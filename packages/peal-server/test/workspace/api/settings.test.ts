@@ -284,6 +284,7 @@ const PortsLive = Layer.mergeAll(
             saved: {
               channelDefaults: [],
               channelSets: [],
+              queues: [],
               signatures: [],
               tags: [
                 {

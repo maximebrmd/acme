@@ -29,6 +29,7 @@ import { PostSearch } from "#publishing/application/post-search.ts";
 import { PostTags } from "#publishing/application/post-tags.ts";
 import { PostUsage } from "#publishing/application/post-usage.ts";
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
+import { Queues } from "#publishing/application/queues.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { Signatures } from "#publishing/application/signatures.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
@@ -51,6 +52,7 @@ import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-r
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
 import { DrizzlePublishedTargets } from "#publishing/infrastructure/drizzle-published-targets.ts";
+import { DrizzleQueueStore } from "#publishing/infrastructure/drizzle-queue-store.ts";
 import { DrizzleRecordedPosts } from "#publishing/infrastructure/drizzle-recorded-posts.ts";
 import { DrizzleSignatureStore } from "#publishing/infrastructure/drizzle-signature-store.ts";
 import { DrizzleTagStore } from "#publishing/infrastructure/drizzle-tag-store.ts";
@@ -105,6 +107,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
     PostTags.layer,
     Signatures.layer,
     ChannelSets.layer,
+    Queues.layer,
     ChannelDefaults.layer,
     HeldPosts.layer,
     PostFollowUp.layer,
@@ -121,6 +124,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
         DrizzlePostRepository,
         DrizzlePublicationJournal,
         DrizzlePublishedTargets,
+        DrizzleQueueStore,
         DrizzleSignatureStore,
         DrizzleTagStore,
         DrizzleWorkspacePostStore,
@@ -139,7 +143,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
  * The publishing context's use cases (`PostBatches`, `PostChecks`,
  * `PostDrafts`, `PostOutcomes`, `PostQueries`, `PostSearch`,
  * `PostScheduling`, `PostFollowUp`, `PostTags`, `Signatures`, `ChannelSets`,
- * `ChannelDefaults`, for the handlers, and `PostPresets`, which fills a
+ * `Queues`, `ChannelDefaults`, for the handlers, and `PostPresets`, which fills a
  * new post in from them; `HeldPosts`, for the
  * review context; `PostRecords`, for the workspace context's exports and
  * erasures; `PostUsage`, for billing; `PublishedTargets`, which analytics
@@ -279,6 +283,8 @@ export { PostsHandlers as PostsApiLive } from "#publishing/api/posts.ts";
 export { SignaturesHandlers as SignaturesApiLive } from "#publishing/api/signatures.ts";
 
 export { ChannelSetsHandlers as ChannelSetsApiLive } from "#publishing/api/channel-sets.ts";
+
+export { QueuesHandlers as QueuesApiLive } from "#publishing/api/queues.ts";
 
 export { ChannelDefaultsHandlers as ChannelDefaultsApiLive } from "#publishing/api/channel-defaults.ts";
 

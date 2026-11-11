@@ -14,6 +14,7 @@ import type {
   PostPage,
   PostSearchRequest,
 } from "#publishing/application/post-search.ts";
+import { QueueIdSchema } from "#publishing/domain/queue-id.ts";
 import { TagIdSchema } from "#publishing/domain/tag-id.ts";
 import { ChannelIdSchema, UserIdSchema } from "#shared/domain/ids.ts";
 
@@ -29,6 +30,7 @@ export interface SearchInput {
   readonly limit?: number;
   readonly outcome?: PostOutcome;
   readonly platform?: Platform;
+  readonly queueId?: string;
   readonly sort?: PostSort;
   readonly status?: PostStatus;
   readonly tagId?: string;
@@ -49,6 +51,10 @@ const decodeTagId = Schema.decodeUnknownOption(TagIdSchema);
 
 const noTag = TagIdSchema.make("00000000-0000-7000-8000-000000000000");
 
+const decodeQueueId = Schema.decodeUnknownOption(QueueIdSchema);
+
+const noQueue = QueueIdSchema.make("00000000-0000-7000-8000-000000000000");
+
 /** What to list, with ids decoded and defaults filled in. */
 export const searchRequestFrom = (input: SearchInput): PostSearchRequest => ({
   authorId: Option.fromUndefinedOr(input.authorId).pipe(
@@ -63,6 +69,9 @@ export const searchRequestFrom = (input: SearchInput): PostSearchRequest => ({
   limit: input.limit ?? defaultPostPageSize,
   outcome: Option.fromUndefinedOr(input.outcome),
   platform: Option.fromUndefinedOr(input.platform),
+  queueId: Option.fromUndefinedOr(input.queueId).pipe(
+    Option.map((id) => Option.getOrElse(decodeQueueId(id), () => noQueue))
+  ),
   sort: input.sort ?? "createdDesc",
   status: Option.fromUndefinedOr(input.status),
   tagId: Option.fromUndefinedOr(input.tagId).pipe(

@@ -363,6 +363,7 @@ describe(valuesOfPost, () => {
         createdVia: null,
         id: "00000000-0000-7000-8000-000000000009",
         outcome: null,
+        queueId: null,
         schedule: null,
         scheduledBy: null,
         scheduledVia: null,

@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "fdc96161-f856-4b08-89da-f53586d7cbf3",
+  "id": "0cabd16d-10ae-4292-a35a-4625d023c05a",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -1175,6 +1175,26 @@
         "n|type|publishing.publication_calls",
         "n|rel|publishing.publication_calls_pkey",
         "n|rel|publishing.publication_calls_target_round_part_attempt"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "queues"
+      ],
+      "writes": [
+        "s|tbl|publishing.queues",
+        "n|tbl|publishing.queues",
+        "e|tbl|publishing.queues",
+        "n|rel|publishing.queues",
+        "n|type|publishing.queues",
+        "n|rel|publishing.queues_pkey",
+        "n|rel|publishing.queues_workspace_name"
       ],
       "reads": [
         "n|sch|publishing"
@@ -3886,6 +3906,68 @@
       "statementType": "create_index",
       "statementTarget": [
         "index",
+        "publishing",
+        "posts",
+        "posts_queue_scheduled_at"
+      ],
+      "writes": [
+        "s|idx|publishing.posts_queue_scheduled_at",
+        "n|idx|publishing.posts_queue_scheduled_at",
+        "e|idx|publishing.posts_queue_scheduled_at",
+        "n|rel|publishing.posts_queue_scheduled_at"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
+        "n|col|publishing.posts.queue_id",
+        "n|col|publishing.posts.scheduled_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "queues",
+        "queues_workspace_default"
+      ],
+      "writes": [
+        "s|idx|publishing.queues_workspace_default",
+        "n|idx|publishing.queues_workspace_default",
+        "e|idx|publishing.queues_workspace_default",
+        "n|rel|publishing.queues_workspace_default"
+      ],
+      "reads": [
+        "n|tbl|publishing.queues",
+        "n|sch|publishing",
+        "n|col|publishing.queues.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "queues",
+        "queues_workspace_id"
+      ],
+      "writes": [
+        "s|idx|publishing.queues_workspace_id",
+        "n|idx|publishing.queues_workspace_id",
+        "e|idx|publishing.queues_workspace_id",
+        "n|rel|publishing.queues_workspace_id"
+      ],
+      "reads": [
+        "n|tbl|publishing.queues",
+        "n|sch|publishing",
+        "n|col|publishing.queues.workspace_id",
+        "n|col|publishing.queues.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
         "review",
         "approval_requests",
         "approval_requests_pending"
@@ -6220,6 +6302,12 @@
     {
       "schema": "publishing",
       "name": "publication_calls",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "queues",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -13111,6 +13199,19 @@
     {
       "schema": "publishing",
       "table": "posts",
+      "name": "queue_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
       "name": "schedule_revision",
       "type": "integer",
       "typeSchema": null,
@@ -13502,6 +13603,136 @@
       "schema": "publishing",
       "table": "publication_calls",
       "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "channel_ids",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": "'{}'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "channel_set_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "is_default",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "name_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "slots",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "time_zone",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
@@ -20714,6 +20945,83 @@
       "entityType": "indexes"
     },
     {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "posts_queue_scheduled_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "queue_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "scheduled_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"queue_id\" is not null",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "queues_workspace_default",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"is_default\"",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "queues_workspace_id",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "review",
       "table": "approval_requests",
       "name": "approval_requests_pending",
@@ -23137,6 +23445,16 @@
     },
     {
       "schema": "publishing",
+      "table": "queues",
+      "name": "queues_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
       "table": "signatures",
       "name": "signatures_pkey",
       "columns": [
@@ -23584,6 +23902,18 @@
         "round",
         "part",
         "attempt"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "queues_workspace_name",
+      "nameExplicit": true,
+      "columns": [
+        "workspace_id",
+        "name_key"
       ],
       "nullsNotDistinct": false,
       "entityType": "uniques"

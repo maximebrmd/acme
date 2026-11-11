@@ -313,6 +313,10 @@ export const PostSchema = Schema.Struct({
   id: Schema.String,
   // How it ended, once it finished.
   outcome: Schema.NullOr(PostOutcomeSchema),
+  // The queue that gave it its time; null for a time chosen by hand, and
+  // once that queue is deleted. A post moved by hand keeps it, and holds
+  // the queue's slot only while it is on its instant.
+  queueId: Schema.NullOr(Schema.String),
   // Its time, unless it is a draft. A cancelled post keeps the time it had.
   schedule: Schema.NullOr(PostScheduleSchema),
   // The member who last scheduled or moved it; null on a draft, when an API
@@ -802,6 +806,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
         ),
         outcome: Schema.optionalKey(PostOutcomeSchema),
         platform: Schema.optionalKey(PlatformSchema),
+        queueId: Schema.optionalKey(Schema.String),
         sort: Schema.optionalKey(PostSortSchema),
         status: Schema.optionalKey(PostStatusSchema),
         tagId: Schema.optionalKey(Schema.String),
@@ -810,7 +815,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
       success: PostPageSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Lists the workspace's posts, whatever their state, a page at a time: ${defaultPostPageSize} unless \`limit\` (at most ${maxPostPageSize}) says otherwise. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended, such as \`failed\` or \`partiallyPublished\`), \`channelId\` (posts with a target on that channel), \`platform\` (posts with a target on a connected channel of that platform), \`tagId\` (posts filed under that tag), \`from\` (included) and \`to\` (excluded), on the scheduled instant, which leave out posts without a time, \`createdVia\` (\`web\`, \`apiKey\` or \`application\`) and \`authorId\`. \`sort\` orders them by creation (\`createdDesc\`, the default, or \`createdAsc\`) or by scheduled instant (\`scheduledDesc\`, \`scheduledAsc\`, which list only posts with a time). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and \`channels\` gives the platform of each channel the page names. Needs post:read and channel:read.`,
+        description: `Lists the workspace's posts, whatever their state, a page at a time: ${defaultPostPageSize} unless \`limit\` (at most ${maxPostPageSize}) says otherwise. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended, such as \`failed\` or \`partiallyPublished\`), \`channelId\` (posts with a target on that channel), \`platform\` (posts with a target on a connected channel of that platform), \`tagId\` (posts filed under that tag), \`queueId\` (posts that queue placed), \`from\` (included) and \`to\` (excluded), on the scheduled instant, which leave out posts without a time, \`createdVia\` (\`web\`, \`apiKey\` or \`application\`) and \`authorId\`. \`sort\` orders them by creation (\`createdDesc\`, the default, or \`createdAsc\`) or by scheduled instant (\`scheduledDesc\`, \`scheduledAsc\`, which list only posts with a time). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and \`channels\` gives the platform of each channel the page names. Needs post:read and channel:read.`,
         summary: "List posts",
       })
     ),

@@ -2,7 +2,11 @@ import { Effect, Match, Option } from "effect";
 import type { Schema } from "effect";
 import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
-import { duplicateWindowHours, maxImportRows } from "peal-contract";
+import {
+  duplicateWindowHours,
+  maxImportRows,
+  queueHorizonDays,
+} from "peal-contract";
 import type {
   AdAccountUnusable,
   BoostViolation,
@@ -503,6 +507,20 @@ const reasonOf =
         ),
       PostStatusConflict: ({ status }) =>
         refused(`The post is ${status}, which does not allow this.`),
+      QueueHasNoRoom: ({ reason }) =>
+        refused(
+          reason === "noSlots"
+            ? "The queue has no slot: add some with peal queues update --slot, or give the post a time with --at. Nothing was made or moved."
+            : `Every slot of the queue's next ${String(queueHorizonDays)} days is taken: add slots with peal queues update --slot, or give the post a time with --at. Nothing was made or moved.`
+        ),
+      QueueNameTaken: () =>
+        refused(
+          "The workspace already has a queue of that name, whatever its case: nothing was changed. peal queues list shows them."
+        ),
+      QueueNotFound: () =>
+        refused(
+          "The workspace has no such queue, or no default queue: peal queues list shows them, and peal queues update --default makes one the default."
+        ),
       ReplyInvalid: ({ length, maximum, reason, unit }) =>
         refused(
           reason === "empty" || length === null || maximum === null
@@ -566,6 +584,10 @@ const reasonOf =
       TooManyInvitations: () =>
         refused(
           "The workspace has 100 invitations pending, the most it may: revoke some first."
+        ),
+      TooManyQueues: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} queues, the most it may: delete one first, with peal queues delete.`
         ),
       TooManyRequests: ({ limit, retryAfterSeconds, windowSeconds }) =>
         refused(

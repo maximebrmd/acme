@@ -188,7 +188,8 @@ The staff context follows these rules too. What the law has a host keep is in
   billing state (plan and subscription statuses, never a card or Stripe's
   ids): those `CloseAccount` deletes. Such a workspace comes with what it
   saved to write and file posts (`saved`, from `PostRecords.exportSaved`:
-  its tags, signatures, channel sets and channels' default options), and
+  its tags, signatures, channel sets, channels' default options and
+  queues), and
   each channel with the name the workspace gave it. Posts come with their
   tags' ids, each target's
   platform options and whether YouTube kept the video private, and the

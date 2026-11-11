@@ -131,6 +131,8 @@ import {
 } from "./studio-capabilities.ts";
 import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
 import type { InboxState } from "./studio-inbox.ts";
+import { studioQueues, studioQueuesOf } from "./studio-queues.ts";
+import type { StudioQueue } from "./studio-queues.ts";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
@@ -446,6 +448,7 @@ const posts: readonly Post[] = [
     createdVia: null,
     id: draftId,
     outcome: null,
+    queueId: null,
     schedule: null,
     scheduledBy: null,
     scheduledVia: null,
@@ -459,6 +462,7 @@ const posts: readonly Post[] = [
     createdVia: null,
     id: scheduledId,
     outcome: null,
+    queueId: null,
     schedule: { at: at("2026-11-20T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: null,
     scheduledVia: null,
@@ -472,6 +476,7 @@ const posts: readonly Post[] = [
     createdVia: null,
     id: awaitingId,
     outcome: null,
+    queueId: null,
     schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: contributorId,
     scheduledVia: null,
@@ -485,6 +490,7 @@ const posts: readonly Post[] = [
     createdVia: null,
     id: finishedId,
     outcome: "failed",
+    queueId: null,
     schedule: { at: at("2026-11-08T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: null,
     scheduledVia: null,
@@ -987,6 +993,8 @@ export interface StudioState {
   readonly media: readonly Media[];
   readonly policy: ApprovalPolicy;
   readonly posts: readonly Post[];
+  /** The workspace's queues, oldest first. */
+  readonly queues: readonly StudioQueue[];
   /** The posts made under an idempotency key, with the request's body. */
   readonly sent: Readonly<
     Record<string, { readonly body: string; readonly postId: string }>
@@ -1081,6 +1089,7 @@ export const makeStudio = (
       overPlan: false,
       policy: "contributorsAndApplications",
       posts,
+      queues: studioQueues(mastodonId),
       sent: {},
       signatures,
       signingKeys: true,
@@ -2062,6 +2071,7 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
       createdVia: viaCommandLine,
       id,
       outcome: null,
+      queueId: null,
       schedule: when,
       scheduledBy: userId,
       scheduledVia: viaCommandLine,
@@ -2537,6 +2547,15 @@ const madeRow = (
 export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
     adsGroupLive(studio),
+    studioQueuesOf({
+      allowed,
+      checkChannels,
+      isConnected,
+      now: studioNow,
+      record,
+      setIds: [launchSetId, videosSetId],
+      workspaceId: studioId,
+    }).groupLive(studio),
     HttpApiBuilder.group(Api, "session", (handlers) =>
       handlers.handleAll({
         me: () => inPerson.pipe(Effect.as(studio.me)),
@@ -2739,6 +2758,7 @@ export const studioGroupsLive = (studio: Studio) =>
               createdVia: null,
               id,
               outcome: null,
+              queueId: null,
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,
@@ -2833,6 +2853,7 @@ export const studioGroupsLive = (studio: Studio) =>
               createdVia: null,
               id,
               outcome: null,
+              queueId: null,
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,
