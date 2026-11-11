@@ -11,6 +11,7 @@ import { DatabaseTest } from "#test/channels/support.ts";
 import {
   clusterOver,
   eventually,
+  eventuallyNow,
   setTime,
   settle,
 } from "#test/publishing/infrastructure/harness.ts";
@@ -277,7 +278,9 @@ describe("DeliverWebhookV1", () => {
 
           assert(first !== undefined && second !== undefined);
 
-          yield* eventually(
+          // The virtual clock stays where it is until the first is sent,
+          // however long the machine takes: the second waits for it.
+          yield* eventuallyNow(
             "the first is sent at once",
             attemptsOf(first.id).pipe(Effect.map((attempts) => attempts === 1))
           );
@@ -285,7 +288,15 @@ describe("DeliverWebhookV1", () => {
 
           assert.strictEqual(yield* attemptsOf(second.id), 0);
 
-          yield* TestClock.adjust(bulkReplaySpacing);
+          // Not a moment before the quarter of a second.
+          yield* TestClock.adjust(
+            Duration.subtract(bulkReplaySpacing, Duration.millis(1))
+          );
+          yield* settle(10);
+
+          assert.strictEqual(yield* attemptsOf(second.id), 0);
+
+          yield* TestClock.adjust(Duration.millis(1));
           yield* eventually(
             "the second follows",
             attemptsOf(second.id).pipe(Effect.map((attempts) => attempts === 1))
