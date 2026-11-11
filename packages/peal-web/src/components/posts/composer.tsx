@@ -67,6 +67,7 @@ import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits } from "#posts/media-fit.ts";
 import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
+import { queuedSlotFormat, queuedSlotWeek } from "#posts/queued-slot.ts";
 import { startChoiceOf } from "#posts/start-time.ts";
 import {
   channelOptionsOf,
@@ -364,16 +365,37 @@ export const Composer = ({
       ...timeOptions,
     });
 
-  // A post put on a queue: told the time it got there.
+  // A post put on a queue: told the time it got there, on the queue's
+  // clock with its zone named.
   const placed = (queued: Post) => {
-    if (queued.schedule !== null) {
-      toast.success(
-        t(
-          queued.status === "awaitingApproval" ? "queuedForApproval" : "queued",
-          { at: formatted(queued.schedule.at, queued.schedule.timeZone) }
-        )
-      );
+    if (queued.schedule === null) {
+      return;
     }
+
+    const { at, timeZone } = queued.schedule;
+
+    toast.success(
+      t(queued.status === "awaitingApproval" ? "queuedForApproval" : "queued", {
+        at: format.dateTime(DateTime.toDate(at), {
+          ...queuedSlotFormat(timeZone),
+          ...timeOptions,
+        }),
+      })
+    );
+  };
+
+  // The calendar, on the week of the slot a queue gave the post.
+  const toSlotWeek = (queued: Post) => {
+    const week =
+      queued.schedule === null
+        ? undefined
+        : queuedSlotWeek(queued.schedule, browserTimeZone());
+
+    router.push(
+      week === undefined
+        ? `/app/${workspaceId}/calendar`
+        : calendarOf(workspaceId, week)
+    );
   };
 
   const opened = (saved: Post) => {
@@ -473,7 +495,7 @@ export const Composer = ({
       }
 
       placed(queued.value);
-      router.push(`/app/${workspaceId}/calendar`);
+      toSlotWeek(queued.value);
 
       return;
     }
