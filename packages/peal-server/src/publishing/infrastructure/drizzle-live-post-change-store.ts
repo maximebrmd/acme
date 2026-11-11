@@ -2,7 +2,10 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { LivePostChangeStore } from "#publishing/application/live-post-change-store.ts";
-import type { OpenChange } from "#publishing/application/live-post-change-store.ts";
+import type {
+  CallStart,
+  OpenChange,
+} from "#publishing/application/live-post-change-store.ts";
 import { LivePostChangeIdSchema } from "#publishing/domain/live-post-change-id.ts";
 import {
   LivePostChange,
@@ -106,10 +109,20 @@ export const DrizzleLivePostChangeStore = Layer.effect(
               eq(livePostChanges.status, "pending")
             )
           )
-          .returning({ id: livePostChanges.id })
+          // The row before the change (`old`, Postgres 18): a call that
+          // began and never ended.
+          .returning({
+            resumed: sql<boolean>`(old.call_started_at is not null and old.call_finished_at is null)`,
+          })
           .pipe(
             Effect.mapError(failed),
-            Effect.map((rows) => rows.length === 1)
+            Effect.map(([row]): CallStart => {
+              if (row === undefined) {
+                return "refused";
+              }
+
+              return row.resumed ? "resumed" : "begun";
+            })
           ),
       endCall: (changeId, at) =>
         db

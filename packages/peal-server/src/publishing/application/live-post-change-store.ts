@@ -14,6 +14,9 @@ export interface OpenChange {
   readonly inFlight: boolean;
 }
 
+/** How a call to the platform began, as `beginCall` recorded it. */
+export type CallStart = "begun" | "refused" | "resumed";
+
 /**
  * The changes asked of live posts (`publishing.live_post_changes`), and
  * the journal of their calls to the platforms. A target has one pending
@@ -55,13 +58,15 @@ export class LivePostChangeStore extends Context.Service<
     ) => Effect.Effect<boolean, DatabaseError>;
     /**
      * Records that a call to the platform begins for the pending change:
-     * false when the change is not pending, or gone, and nothing may be
-     * called. Committed before the call is made, so an erasure sees it.
+     * `refused` when the change is not pending, or gone, and nothing may
+     * be called; `resumed` when an earlier call began and never ended, so
+     * it may have deleted the part already; `begun` otherwise. Committed
+     * before the call is made, so an erasure sees it.
      */
     readonly beginCall: (
       changeId: LivePostChangeId,
       at: DateTime.Utc
-    ) => Effect.Effect<boolean, DatabaseError>;
+    ) => Effect.Effect<CallStart, DatabaseError>;
     /** Records that the call ended, however it did. */
     readonly endCall: (
       changeId: LivePostChangeId,

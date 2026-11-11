@@ -147,7 +147,8 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   every gate call). Each call writes `call_started_at` and commits before
   the platform is called, so an erasure sees it in flight; a run that
   finds a call begun calls again, as deleting is safe to repeat and "not
-  found" is success (`alreadyGone`). So, unlike a publish, a call that
+  found" is success (`alreadyGone`, but not after a call of Peal's that
+  never ended, which may have deleted it: `beginCall` answers `resumed`). So, unlike a publish, a call that
   failed is retried (`decideRemoval`, `domain/removal-decision.ts`): the
   policy's `unavailableBackoff`, its rate-limit bounds, then `failed` with
   a code. `settle` writes the change, the target's `removedAt` and tells

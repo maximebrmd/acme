@@ -143,10 +143,12 @@ layer(StoreTest)("the live post changes", (it) => {
         assert.deepStrictEqual(yield* store.lockOpen(post.workspaceId), [
           { changeId: change.id, inFlight: false },
         ]);
-        assert.isTrue(yield* store.beginCall(change.id, now));
+        assert.strictEqual(yield* store.beginCall(change.id, now), "begun");
         assert.deepStrictEqual(yield* store.lockOpen(post.workspaceId), [
           { changeId: change.id, inFlight: true },
         ]);
+        // Begun again before the first ended: it may have deleted already.
+        assert.strictEqual(yield* store.beginCall(change.id, now), "resumed");
 
         yield* store.endCall(change.id, now);
 
@@ -168,7 +170,7 @@ layer(StoreTest)("the live post changes", (it) => {
         yield* store.update(failed, removed);
 
         // Nothing is called for a change that ended.
-        assert.isFalse(yield* store.beginCall(change.id, now));
+        assert.strictEqual(yield* store.beginCall(change.id, now), "refused");
         assert.deepStrictEqual(yield* store.lockOpen(post.workspaceId), []);
       }).pipe(Effect.ensuring(deletePost(post.postId)));
     })

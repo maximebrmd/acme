@@ -109,7 +109,9 @@ export const removalAttemptRun = Effect.fn("LivePostRemoval.attempt")(
       return done;
     }
 
-    if (!(yield* store.beginCall(call.changeId, yield* DateTime.now))) {
+    const started = yield* store.beginCall(call.changeId, yield* DateTime.now);
+
+    if (started === "refused") {
       return gone;
     }
 
@@ -119,9 +121,11 @@ export const removalAttemptRun = Effect.fn("LivePostRemoval.attempt")(
         platformPostId: part.platformPostId,
       })
       .pipe(
+        // Found gone after a call of Peal's that never ended: that call
+        // may have deleted it, so nobody is said to have before.
         Effect.map((outcome): RemovalAttempt => ({
           _tag: "removed",
-          alreadyGone: outcome === "alreadyGone",
+          alreadyGone: outcome === "alreadyGone" && started === "begun",
         })),
         Effect.catch((error) => Effect.succeed(error))
       );

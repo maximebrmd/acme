@@ -499,9 +499,16 @@ describe("unpublishing a live post", () => {
       Effect.gen(function* inFlight() {
         const store = yield* LivePostChangeStore;
         const jobs = yield* LivePostJobs;
+        const removals = yield* FakeRemovals;
 
         const { actor, channelId, postId, target } =
           yield* published("mastodon");
+
+        // The call in flight deleted it: the one made again finds it gone,
+        // which is Peal's own deletion, not one made before.
+        yield* removals.script(channelId, [
+          { _tag: "answer", outcome: "alreadyGone" },
+        ]);
 
         // A change whose job's first run began its call and died: the
         // journal says the call is in flight.
@@ -531,6 +538,7 @@ describe("unpublishing a live post", () => {
         yield* eventually("the change is done", hasStatus(change.id, "done"));
 
         assert.strictEqual((yield* deletedOn(channelId)).length, 1);
+        assert.isFalse((yield* changeOf(change.id)).alreadyGone);
         assert.deepStrictEqual(yield* store.lockOpen(actor.workspaceId), []);
       })
     )
