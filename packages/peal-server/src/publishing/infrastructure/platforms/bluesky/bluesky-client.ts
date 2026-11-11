@@ -17,6 +17,7 @@ import type {
   Readiness,
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
+import { BlueskyOptions } from "#publishing/domain/bluesky-options.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { platformRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import {
@@ -177,6 +178,13 @@ const VideoEmbedSchema = Schema.Struct({
   video: BlobRefSchema,
 });
 
+// The author's own labels on what a post shows
+// (`com.atproto.label.defs#selfLabels`).
+const SelfLabelsSchema = Schema.Struct({
+  $type: Schema.Literal("com.atproto.label.defs#selfLabels"),
+  values: Schema.Array(Schema.Struct({ val: Schema.String })),
+});
+
 const PostRecordSchema = Schema.Struct({
   $type: Schema.Literal(postCollection),
   createdAt: Schema.String,
@@ -184,6 +192,8 @@ const PostRecordSchema = Schema.Struct({
     Schema.Union([ImagesEmbedSchema, VideoEmbedSchema])
   ),
   facets: Schema.OptionFromOptionalKey(Schema.Array(FacetSchema)),
+  labels: Schema.OptionFromOptionalKey(SelfLabelsSchema),
+  langs: Schema.OptionFromOptionalKey(Schema.Array(Schema.String)),
   reply: Schema.OptionFromOptionalKey(ReplySchema),
   text: Schema.String,
 });
@@ -316,6 +326,33 @@ const embedOf = (media: BlueskyMedia): Embed => {
         $type: "app.bsky.embed.images" as const,
         images: media.images,
       });
+};
+
+const isBluesky = Schema.is(BlueskyOptions);
+
+/**
+ * What the post's options put in each part's record: its languages, and
+ * its label on a part with media, as a label describes what is shown.
+ */
+const optionFieldsOf = (post: OutgoingPost, hasMedia: boolean) => {
+  const chosen = post.options.pipe(Option.filter(isBluesky));
+
+  return {
+    labels: chosen.pipe(
+      Option.flatMap(({ contentLabel }) =>
+        Option.fromUndefinedOr(contentLabel)
+      ),
+      Option.filter(() => hasMedia),
+      Option.map((label) => ({
+        $type: "com.atproto.label.defs#selfLabels" as const,
+        values: [{ val: label }],
+      }))
+    ),
+    langs: chosen.pipe(
+      Option.flatMap(({ languages }) => Option.fromUndefinedOr(languages)),
+      Option.filter((languages) => languages.length > 0)
+    ),
+  };
 };
 
 /** A post's public address on the Bluesky app. */
@@ -565,12 +602,14 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
       reply: Option.Option<Reply>
     ) => {
       const facets = facetsOf(post.text);
+      const embed = embedOf(prepared);
 
       return encodeRecord({
         $type: postCollection,
         createdAt: DateTime.formatIso(post.startedAt),
-        embed: embedOf(prepared),
+        embed,
         facets: facets.length === 0 ? Option.none() : Option.some(facets),
+        ...optionFieldsOf(post, Option.isSome(embed)),
         reply,
         text: post.text,
       });

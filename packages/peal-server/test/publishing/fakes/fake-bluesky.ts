@@ -128,6 +128,26 @@ const CreateSchema = Schema.Struct({
 
 const createOf = jsonBodyOf(CreateSchema);
 
+// What a post's record may say of its languages and labels, by the
+// lexicons: three languages at most, and self-labels of known values.
+const PostFieldsSchema = Schema.Struct({
+  labels: Schema.optionalKey(
+    Schema.Struct({
+      $type: Schema.Literal("com.atproto.label.defs#selfLabels"),
+      values: Schema.Array(
+        Schema.Struct({
+          val: Schema.Literals(["sexual", "nudity", "porn", "graphic-media"]),
+        })
+      ),
+    })
+  ),
+  langs: Schema.optionalKey(
+    Schema.Array(Schema.String).check(Schema.isMaxLength(3))
+  ),
+});
+
+const isValidPost = Schema.is(PostFieldsSchema);
+
 const tidPattern = /^[234567a-j][234567a-z]{12}$/u;
 
 const sha256 = (text: string) =>
@@ -233,7 +253,11 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
   const create = (request: PlatformRequest) => {
     const body = createOf(request);
 
-    if (!tidPattern.test(body.rkey) || body.repo !== blueskyDid) {
+    if (
+      !tidPattern.test(body.rkey) ||
+      body.repo !== blueskyDid ||
+      !isValidPost(body.record)
+    ) {
       return json({ error: "InvalidRequest", message: "Bad record" }, 400);
     }
 
