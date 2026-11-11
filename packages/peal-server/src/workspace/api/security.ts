@@ -10,6 +10,7 @@ import {
   CurrentMember,
   CurrentPrincipal,
   CurrentStaff,
+  Forbidden,
   ReviewVisitor,
   ReviewVisitorAddress,
   StaffAccess,
@@ -446,6 +447,14 @@ export const StaffAccessLive = Layer.effect(
             Effect.catchTags({
               DirectoryUnavailable: Effect.die,
               NotStaff: notFound,
+              StaffTwoStepRequired: () =>
+                Effect.fail(
+                  new Forbidden({
+                    message:
+                      "This server requires staff to have two-step verification on: turn it on in your account settings, then open the console again.",
+                    reason: "twoStepRequired",
+                  })
+                ),
             })
           );
 

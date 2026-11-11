@@ -100,6 +100,7 @@ const userView = (user: UserProfile): StaffUser => ({
   name: user.name,
   sessions: user.sessions,
   staff: user.staff,
+  twoStepEnabled: user.twoStepEnabled,
   workspaces: user.workspaces,
 });
 
@@ -169,6 +170,7 @@ const workspaceView = Effect.fn("StaffWorkspace.view")(function* workspaceView(
     name: workspace.name,
     posts: workspace.posts,
     slug: workspace.slug,
+    twoStepRequired: workspace.twoStepRequired,
     webhooks: workspace.webhooks.map((endpoint) => ({
       disabledReason: orNull(endpoint.disabledReason),
       enabled: endpoint.enabled,
@@ -363,6 +365,12 @@ export const StaffHandlers = HttpApiBuilder.group(
           yield* actions
             .resendVerification(action)
             .pipe(Effect.catchTags(failures));
+        }),
+      resetTwoStep: ({ params, payload }) =>
+        Effect.gen(function* resetTwoStep() {
+          const action = yield* actionOn(params.userId, payload.reason);
+
+          yield* actions.resetTwoStep(action).pipe(Effect.catchTags(failures));
         }),
       revokeSessions: ({ params, payload }) =>
         Effect.gen(function* revokeSessions() {

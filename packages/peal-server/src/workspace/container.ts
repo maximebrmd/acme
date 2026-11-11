@@ -74,6 +74,7 @@ import { PrivacyDeclarationLive } from "#workspace/infrastructure/privacy-declar
 import { RandomPartnerKeyTokens } from "#workspace/infrastructure/random-partner-key-tokens.ts";
 import { S3ErasureLedger } from "#workspace/infrastructure/s3-erasure-ledger.ts";
 import { StaffImpersonationLog } from "#workspace/infrastructure/staff-impersonation-log.ts";
+import { StaffSettingsLive } from "#workspace/infrastructure/staff-settings.ts";
 
 // Where the partner accounts, their keys and the workspaces they own are
 // kept: the database alone.
@@ -101,6 +102,7 @@ const AdaptersLive = Layer.mergeAll(
   PartnerStoresLive,
   RandomPartnerKeyTokens,
   PartnerSettingsLive,
+  StaffSettingsLive,
   DrizzleAccountStore
 );
 

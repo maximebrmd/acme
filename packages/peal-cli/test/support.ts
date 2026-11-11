@@ -290,6 +290,7 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
     impersonate: () => notStaff,
     partner: () => notStaff,
     resendVerification: () => notStaff,
+    resetTwoStep: () => notStaff,
     revokeSessions: () => notStaff,
     session: () => notStaff,
     system: () => notStaff,

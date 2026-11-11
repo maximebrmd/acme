@@ -26,6 +26,10 @@ export const AccountsModeration = Layer.effect(
           .pipe(failed),
       resendVerification: (account) =>
         accounts.resendVerification(account).pipe(failed),
+      resetTwoStep: ({ staff, userId }) =>
+        accounts
+          .resetTwoStep({ staffSession: staff.session, userId })
+          .pipe(failed),
       revokeSessions: ({ staff, userId }) =>
         accounts
           .revokeSessions({ staffSession: staff.session, userId })

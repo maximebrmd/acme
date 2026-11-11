@@ -27,11 +27,15 @@ export interface AccountListing {
   readonly staff: boolean;
 }
 
-/** An account, its workspaces, and how many sessions it has open. */
+/**
+ * An account, its workspaces, how many sessions it has open and whether
+ * two-step verification is on.
+ */
 export interface AccountProfile extends AccountListing {
   readonly locale: Locale;
   /** Its own sessions that have not expired, not those staff opened. */
   readonly sessions: number;
+  readonly twoStepEnabled: boolean;
   readonly workspaces: readonly WorkspaceMembership[];
 }
 
@@ -52,13 +56,17 @@ export interface WorkspacePerson {
   readonly userId: UserId;
 }
 
-/** A workspace and its members. */
+/**
+ * A workspace, its members, and whether it requires two-step verification
+ * of them.
+ */
 export interface WorkspaceProfile {
   readonly createdAt: DateTime.Utc;
   readonly id: WorkspaceId;
   readonly members: readonly WorkspacePerson[];
   readonly name: string;
   readonly slug: string;
+  readonly twoStepRequired: boolean;
 }
 
 /** Who an id names, for the audit log. */
@@ -118,6 +126,8 @@ export class AccountDirectory extends Context.Service<
         /** Whether it may also answer legal requests (`legalRole`). */
         readonly legal: boolean;
         readonly staff: boolean;
+        /** Whether its two-step verification is on. */
+        readonly twoStepEnabled: boolean;
       }>,
       DirectoryUnavailable
     >;

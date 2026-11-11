@@ -49,6 +49,7 @@ export const profileOf = (
   name: "Synthetic Person",
   sessions: 1,
   staff: false,
+  twoStepEnabled: false,
   workspaces: [
     { id: workspaceId, name: "Studio", role: "owner", slug: "studio" },
   ],
@@ -145,6 +146,10 @@ export const memoryStaff = (
                   accounts.find((account) => account.email === email)?.id ??
                   memberId,
               }),
+            resetTwoStep: ({ userId }) =>
+              carry({ action: "resetTwoStep", userId }).pipe(
+                Effect.as(options.ending ?? [])
+              ),
             revokeSessions: ({ userId }) =>
               carry({ action: "revokeSessions", userId }).pipe(
                 Effect.as(options.ending ?? [])

@@ -4,6 +4,7 @@ import { TestClock } from "effect/testing";
 
 import { UserIdSchema } from "#shared/domain/ids.ts";
 import { AccountDirectory } from "#workspace/application/account-directory.ts";
+import { StaffSettings } from "#workspace/application/staff-settings.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import type { Ban } from "#workspace/domain/ban.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
@@ -15,9 +16,12 @@ const standingWith = (
     readonly ban: Option.Option<Ban>;
     readonly legal: boolean;
     readonly staff: boolean;
-  }>
+    readonly twoStepEnabled: boolean;
+  }>,
+  staffTwoStep = false
 ) =>
   StaffStanding.layer.pipe(
+    Layer.provide(StaffSettings.layerTest(staffTwoStep)),
     Layer.provide(
       Layer.succeed(
         AccountDirectory,
@@ -33,7 +37,12 @@ const standingWith = (
     )
   );
 
-const asStaff = Option.some({ ban: Option.none(), legal: false, staff: true });
+const asStaff = Option.some({
+  ban: Option.none(),
+  legal: false,
+  staff: true,
+  twoStepEnabled: false,
+});
 
 const verdict = (principal: UserPrincipal) =>
   StaffStanding.use((standing) => standing.staffOf(principal)).pipe(
@@ -92,10 +101,16 @@ describe(StaffStanding, () => {
         }),
         legal: false,
         staff: true,
+        twoStepEnabled: false,
       });
 
       for (const found of [
-        Option.some({ ban: Option.none(), legal: false, staff: false }),
+        Option.some({
+          ban: Option.none(),
+          legal: false,
+          staff: false,
+          twoStepEnabled: false,
+        }),
         Option.none(),
         bannedUntilTomorrow,
       ]) {
@@ -105,5 +120,47 @@ describe(StaffStanding, () => {
         );
       }
     })
+  );
+
+  it.effect(
+    "refuses staff without two-step verification where the server requires it, and only staff",
+    () =>
+      Effect.gen(function* twoStep() {
+        const withIt = Option.some({
+          ban: Option.none(),
+          legal: false,
+          staff: true,
+          twoStepEnabled: true,
+        });
+
+        assert.strictEqual(
+          yield* verdict(own).pipe(Effect.provide(standingWith(asStaff, true))),
+          "StaffTwoStepRequired"
+        );
+        assert.strictEqual(
+          yield* verdict(own).pipe(Effect.provide(standingWith(withIt, true))),
+          "staff"
+        );
+        assert.strictEqual(
+          yield* verdict(own).pipe(
+            Effect.provide(
+              standingWith(
+                Option.some({
+                  ban: Option.none(),
+                  legal: false,
+                  staff: false,
+                  twoStepEnabled: false,
+                }),
+                true
+              )
+            )
+          ),
+          "NotStaff"
+        );
+        assert.strictEqual(
+          yield* verdict(own).pipe(Effect.provide(standingWith(asStaff))),
+          "staff"
+        );
+      })
   );
 });
