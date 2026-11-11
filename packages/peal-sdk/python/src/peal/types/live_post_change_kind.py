@@ -2,4 +2,4 @@
 
 import typing
 
-LivePostChangeKind = typing.Union[typing.Literal["unpublish"], typing.Any]
+LivePostChangeKind = typing.Union[typing.Literal["unpublish", "edit"], typing.Any]

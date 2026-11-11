@@ -5,6 +5,9 @@ pub struct PostTarget {
     #[serde(rename = "channelId")]
     #[serde(default)]
     pub channel_id: String,
+    #[serde(rename = "editedAt")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub edited_at: Option<String>,
     #[serde(rename = "failureReason")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failure_reason: Option<FailureReason>,
@@ -46,6 +49,7 @@ impl PostTarget {
 #[non_exhaustive]
 pub struct PostTargetBuilder {
     channel_id: Option<String>,
+    edited_at: Option<String>,
     failure_reason: Option<FailureReason>,
     id: Option<String>,
     kept_private: Option<bool>,
@@ -63,6 +67,11 @@ pub struct PostTargetBuilder {
 impl PostTargetBuilder {
     pub fn channel_id(mut self, value: impl Into<String>) -> Self {
         self.channel_id = Some(value.into());
+        self
+    }
+
+    pub fn edited_at(mut self, value: impl Into<String>) -> Self {
+        self.edited_at = Some(value.into());
         self
     }
 
@@ -138,6 +147,7 @@ impl PostTargetBuilder {
             channel_id: self
                 .channel_id
                 .ok_or_else(|| BuildError::missing_field("channel_id"))?,
+            edited_at: self.edited_at,
             failure_reason: self.failure_reason,
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             kept_private: self.kept_private,

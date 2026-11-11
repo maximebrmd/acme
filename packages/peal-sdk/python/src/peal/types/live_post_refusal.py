@@ -11,6 +11,7 @@ LivePostRefusal = typing.Union[
         "changeInProgress",
         "channelUnavailable",
         "boostRunning",
+        "approvalRequired",
     ],
     typing.Any,
 ]

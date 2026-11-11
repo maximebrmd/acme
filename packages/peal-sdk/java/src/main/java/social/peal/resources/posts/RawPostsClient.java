@@ -44,6 +44,7 @@ import social.peal.resources.posts.requests.DraftsPostsRequest;
 import social.peal.resources.posts.requests.DuplicatePostsRequest;
 import social.peal.resources.posts.requests.GetPostsRequest;
 import social.peal.resources.posts.requests.ListPostsRequest;
+import social.peal.resources.posts.requests.LivePostEdit;
 import social.peal.resources.posts.requests.NewPost;
 import social.peal.resources.posts.requests.OutcomePostsRequest;
 import social.peal.resources.posts.requests.PostImport;
@@ -2230,6 +2231,103 @@ public class RawPostsClient {
     }
 
     /**
+     * Replaces the text of one part of the post (<code>part</code>, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' <code>livePost.edit</code> say where, and <code>editBlockedBy</code> why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is <code>failed</code> with its <code>code</code> (<code>postGone</code> when the platform no longer has the post, <code>pollNotEditable</code> for a Mastodon post with a poll, which the edit would remove, <code>permissionDenied</code> for a Mastodon channel to reconnect) and may be asked again. <code>wait</code> waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its <code>editedAt</code>, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (<code>approvalRequired</code>: an approver makes the edit). Webhooks hear <code>post.edited</code> or <code>post.edit_failed</code>. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public PealClientHttpResponse<LivePostChange> editTarget(
+            String workspaceId, String postId, String targetId, LivePostEdit request) {
+        return editTarget(workspaceId, postId, targetId, request, null);
+    }
+
+    /**
+     * Replaces the text of one part of the post (<code>part</code>, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' <code>livePost.edit</code> say where, and <code>editBlockedBy</code> why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is <code>failed</code> with its <code>code</code> (<code>postGone</code> when the platform no longer has the post, <code>pollNotEditable</code> for a Mastodon post with a poll, which the edit would remove, <code>permissionDenied</code> for a Mastodon channel to reconnect) and may be asked again. <code>wait</code> waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its <code>editedAt</code>, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (<code>approvalRequired</code>: an approver makes the edit). Webhooks hear <code>post.edited</code> or <code>post.edit_failed</code>. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public PealClientHttpResponse<LivePostChange> editTarget(
+            String workspaceId, String postId, String targetId, LivePostEdit request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("posts")
+                .addPathSegment(PathSegments.validate(postId))
+                .addPathSegments("targets")
+                .addPathSegment(PathSegments.validate(targetId))
+                .addPathSegments("edit");
+        if (request.getWait().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "wait", request.getWait().get(), false);
+        }
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        RequestBody body;
+        try {
+            body = RequestBody.create(
+                    ObjectMappers.JSON_MAPPER.writeValueAsBytes(BodyProperties.merge(
+                            request, requestOptions != null ? requestOptions.getBodyProperties() : null)),
+                    MediaTypes.APPLICATION_JSON);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method("POST", body)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        okhttpRequest = okhttpRequest
+                .newBuilder()
+                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
+                .build();
+        try (Response response = client.newCall(okhttpRequest).execute()) {
+            ResponseBody responseBody = response.body();
+            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+            if (response.isSuccessful()) {
+                return new PealClientHttpResponse<>(
+                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, LivePostChange.class), response);
+            }
+            try {
+                switch (response.code()) {
+                    case 401:
+                        throw new UnauthorizedError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
+                                response);
+                    case 403:
+                        throw new ForbiddenError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 404:
+                        throw new NotFoundError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 409:
+                        throw new ConflictError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 422:
+                        throw new UnprocessableEntityError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 429:
+                        throw new TooManyRequestsError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                }
+            } catch (JsonProcessingException ignored) {
+                // unable to map error response, throwing generic error
+            }
+            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+            throw new PealClientApiException(
+                    "Error with status code " + response.code(), response.code(), errorBody, response);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new PealClientException("Network error executing HTTP request", e);
+        }
+    }
+
+    /**
      * Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (<code>changes</code>) and, beside them, why it could not be on the others (<code>refused</code>, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
      */
     public PealClientHttpResponse<PostUnpublish> unpublish(String workspaceId, String postId) {
@@ -2324,14 +2422,14 @@ public class RawPostsClient {
     }
 
     /**
-     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its <code>kind</code> and where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
      */
     public PealClientHttpResponse<LivePostChanges> changes(String workspaceId, String postId) {
         return changes(workspaceId, postId, ChangesPostsRequest.builder().build());
     }
 
     /**
-     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its <code>kind</code> and where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
      */
     public PealClientHttpResponse<LivePostChanges> changes(
             String workspaceId, String postId, RequestOptions requestOptions) {
@@ -2339,7 +2437,7 @@ public class RawPostsClient {
     }
 
     /**
-     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its <code>kind</code> and where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
      */
     public PealClientHttpResponse<LivePostChanges> changes(
             String workspaceId, String postId, ChangesPostsRequest request) {
@@ -2347,7 +2445,7 @@ public class RawPostsClient {
     }
 
     /**
-     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its <code>kind</code> and where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
      */
     public PealClientHttpResponse<LivePostChanges> changes(
             String workspaceId, String postId, ChangesPostsRequest request, RequestOptions requestOptions) {

@@ -14,6 +14,9 @@ public record PostTarget : IJsonOnDeserialized
     [JsonPropertyName("channelId")]
     public required string ChannelId { get; set; }
 
+    [JsonPropertyName("editedAt")]
+    public string? EditedAt { get; set; }
+
     [JsonPropertyName("failureReason")]
     public FailureReason? FailureReason { get; set; }
 

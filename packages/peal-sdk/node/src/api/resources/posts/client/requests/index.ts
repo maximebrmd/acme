@@ -9,6 +9,7 @@ export type { DraftsPostsRequest } from "./DraftsPostsRequest.js";
 export type { DuplicatePostsRequest } from "./DuplicatePostsRequest.js";
 export type { GetPostsRequest } from "./GetPostsRequest.js";
 export type { ListPostsRequest } from "./ListPostsRequest.js";
+export type { LivePostEdit } from "./LivePostEdit.js";
 export type { NewPost } from "./NewPost.js";
 export type { OutcomePostsRequest } from "./OutcomePostsRequest.js";
 export type { PostImport } from "./PostImport.js";

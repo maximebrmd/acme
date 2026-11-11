@@ -19,6 +19,7 @@ import social.peal.resources.posts.requests.DraftsPostsRequest;
 import social.peal.resources.posts.requests.DuplicatePostsRequest;
 import social.peal.resources.posts.requests.GetPostsRequest;
 import social.peal.resources.posts.requests.ListPostsRequest;
+import social.peal.resources.posts.requests.LivePostEdit;
 import social.peal.resources.posts.requests.NewPost;
 import social.peal.resources.posts.requests.OutcomePostsRequest;
 import social.peal.resources.posts.requests.PostImport;
@@ -1074,6 +1075,38 @@ public class AsyncPostsClient {
     }
 
     /**
+     * Replaces the text of one part of the post (<code>part</code>, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' <code>livePost.edit</code> say where, and <code>editBlockedBy</code> why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is <code>failed</code> with its <code>code</code> (<code>postGone</code> when the platform no longer has the post, <code>pollNotEditable</code> for a Mastodon post with a poll, which the edit would remove, <code>permissionDenied</code> for a Mastodon channel to reconnect) and may be asked again. <code>wait</code> waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its <code>editedAt</code>, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (<code>approvalRequired</code>: an approver makes the edit). Webhooks hear <code>post.edited</code> or <code>post.edit_failed</code>. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public CompletableFuture<LivePostChange> editTarget(
+            String workspaceId, String postId, String targetId, LivePostEdit request) {
+        CompletableFuture<PealClientHttpResponse<LivePostChange>> rawFuture =
+                this.rawClient.editTarget(workspaceId, postId, targetId, request);
+        CompletableFuture<LivePostChange> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Replaces the text of one part of the post (<code>part</code>, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' <code>livePost.edit</code> say where, and <code>editBlockedBy</code> why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is <code>failed</code> with its <code>code</code> (<code>postGone</code> when the platform no longer has the post, <code>pollNotEditable</code> for a Mastodon post with a poll, which the edit would remove, <code>permissionDenied</code> for a Mastodon channel to reconnect) and may be asked again. <code>wait</code> waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its <code>editedAt</code>, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (<code>approvalRequired</code>: an approver makes the edit). Webhooks hear <code>post.edited</code> or <code>post.edit_failed</code>. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     */
+    public CompletableFuture<LivePostChange> editTarget(
+            String workspaceId, String postId, String targetId, LivePostEdit request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<LivePostChange>> rawFuture =
+                this.rawClient.editTarget(workspaceId, postId, targetId, request, requestOptions);
+        CompletableFuture<LivePostChange> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
      * Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (<code>changes</code>) and, beside them, why it could not be on the others (<code>refused</code>, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
      */
     public CompletableFuture<PostUnpublish> unpublish(String workspaceId, String postId) {
@@ -1137,7 +1170,7 @@ public class AsyncPostsClient {
     }
 
     /**
-     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its <code>kind</code> and where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
      */
     public CompletableFuture<LivePostChanges> changes(String workspaceId, String postId) {
         CompletableFuture<PealClientHttpResponse<LivePostChanges>> rawFuture =
@@ -1152,7 +1185,7 @@ public class AsyncPostsClient {
     }
 
     /**
-     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its <code>kind</code> and where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
      */
     public CompletableFuture<LivePostChanges> changes(
             String workspaceId, String postId, RequestOptions requestOptions) {
@@ -1168,7 +1201,7 @@ public class AsyncPostsClient {
     }
 
     /**
-     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its <code>kind</code> and where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
      */
     public CompletableFuture<LivePostChanges> changes(String workspaceId, String postId, ChangesPostsRequest request) {
         CompletableFuture<PealClientHttpResponse<LivePostChanges>> rawFuture =
@@ -1183,7 +1216,7 @@ public class AsyncPostsClient {
     }
 
     /**
-     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its <code>kind</code> and where it stands: <code>pending</code>, <code>done</code> or <code>failed</code> with its <code>code</code>. Needs post:read.
      */
     public CompletableFuture<LivePostChanges> changes(
             String workspaceId, String postId, ChangesPostsRequest request, RequestOptions requestOptions) {

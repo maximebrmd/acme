@@ -7,6 +7,7 @@ export const LivePostRefusal = {
         NotSupported: "notSupported",
         ChangeInProgress: "changeInProgress",
         ChannelUnavailable: "channelUnavailable",
-        BoostRunning: "boostRunning"
+        BoostRunning: "boostRunning",
+        ApprovalRequired: "approvalRequired"
     } as const;
 export type LivePostRefusal = typeof LivePostRefusal[keyof typeof LivePostRefusal];

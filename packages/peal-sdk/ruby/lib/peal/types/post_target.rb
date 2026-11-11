@@ -7,6 +7,8 @@ module Peal
     class PostTarget < Internal::Types::Model
       field :channel_id, -> { String }, optional: false, nullable: false, api_name: "channelId"
 
+      field :edited_at, -> { String }, optional: false, nullable: true, api_name: "editedAt"
+
       field :failure_reason, -> { Peal::Types::FailureReason }, optional: false, nullable: true, api_name: "failureReason"
 
       field :id, -> { String }, optional: false, nullable: false

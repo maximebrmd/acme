@@ -21,6 +21,9 @@ public final class LivePostRefusal {
     public static final LivePostRefusal CHANNEL_UNAVAILABLE =
             new LivePostRefusal(Value.CHANNEL_UNAVAILABLE, "channelUnavailable");
 
+    public static final LivePostRefusal APPROVAL_REQUIRED =
+            new LivePostRefusal(Value.APPROVAL_REQUIRED, "approvalRequired");
+
     public static final LivePostRefusal BOOST_RUNNING = new LivePostRefusal(Value.BOOST_RUNNING, "boostRunning");
 
     private final Value value;
@@ -67,6 +70,8 @@ public final class LivePostRefusal {
                 return visitor.visitNoPlatformId();
             case CHANNEL_UNAVAILABLE:
                 return visitor.visitChannelUnavailable();
+            case APPROVAL_REQUIRED:
+                return visitor.visitApprovalRequired();
             case BOOST_RUNNING:
                 return visitor.visitBoostRunning();
             case UNKNOWN:
@@ -90,6 +95,8 @@ public final class LivePostRefusal {
                 return NO_PLATFORM_ID;
             case "channelUnavailable":
                 return CHANNEL_UNAVAILABLE;
+            case "approvalRequired":
+                return APPROVAL_REQUIRED;
             case "boostRunning":
                 return BOOST_RUNNING;
             default:
@@ -112,6 +119,8 @@ public final class LivePostRefusal {
 
         BOOST_RUNNING,
 
+        APPROVAL_REQUIRED,
+
         UNKNOWN
     }
 
@@ -129,6 +138,8 @@ public final class LivePostRefusal {
         T visitChannelUnavailable();
 
         T visitBoostRunning();
+
+        T visitApprovalRequired();
 
         T visitUnknown(String unknownType);
     }

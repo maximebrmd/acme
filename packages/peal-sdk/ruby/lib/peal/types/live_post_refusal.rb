@@ -14,6 +14,7 @@ module Peal
       CHANGE_IN_PROGRESS = "changeInProgress"
       CHANNEL_UNAVAILABLE = "channelUnavailable"
       BOOST_RUNNING = "boostRunning"
+      APPROVAL_REQUIRED = "approvalRequired"
     end
   end
 end

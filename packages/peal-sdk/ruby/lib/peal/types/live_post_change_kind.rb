@@ -8,6 +8,7 @@ module Peal
       extend Peal::Internal::Types::Enum
 
       UNPUBLISH = "unpublish"
+      EDIT = "edit"
     end
   end
 end
