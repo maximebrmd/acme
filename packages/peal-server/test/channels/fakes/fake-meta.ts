@@ -307,6 +307,7 @@ export const fakeMeta = Effect.fnUntraced(function* fakeMeta(
   const hosts: MetaHosts = {
     facebookDialog: new URL(server.url),
     facebookGraph: new URL(server.url),
+    facebookUpload: new URL(server.url),
     instagramApi: new URL(server.url),
     instagramAuthorize: new URL(server.url),
     instagramGraph: new URL(server.url),
