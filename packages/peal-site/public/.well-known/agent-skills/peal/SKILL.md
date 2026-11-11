@@ -166,11 +166,11 @@ What any channel takes is read, never guessed: the limits on its text and
 media, the options its platform asks for, and the lookups that answer their
 values (a board, a playlist, a category).
 
-Set an option only when the user chose it: who may reply, a content warning,
-a community, a language or a disclosure label. Left out, each platform does
-what its description says (`ifLeftOut`), most often the account's own
-default. A `media` option names a file of the workspace's media by its id;
-Instagram `collaborators` are invited, so set them only when named.
+Set an option only when the user chose it: who may reply, a content warning, a
+community, a language, a disclosure label or Instagram `collaborators` (who
+are invited). Left out, each platform does what its description says
+(`ifLeftOut`), most often the account's own default. A `media` option names a
+file of the workspace's media by its id.
 
 ```sh
 peal channels capabilities <channel-id> --json
@@ -484,10 +484,9 @@ The codes of ads are listed in [references/ads.md](references/ads.md).
 A key or a sign-in sends a limited number of requests in a window. Every
 answer says where it stands, in the `RateLimit-Policy` and `RateLimit`
 headers. Past the limit the API answers 429 `too_many_requests`, with
-`retryAfterSeconds` and a `Retry-After` header, and does nothing.
-
-Wait as long as it says, then send the same request once. Do not retry in
-parallel, and do not retry faster. Send requests one after another.
+`retryAfterSeconds` and a `Retry-After` header, and does nothing. Wait as
+long as it says, then send the same request once: never in parallel, never
+faster, one request after another.
 
 ## Other ways in
 
