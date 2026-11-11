@@ -5,6 +5,7 @@
 // SDKs' license and notice then go in, and scripts/finish.ts fills what the
 // generator leaves out of the package's manifest.
 import { copyFile, mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { $ } from "bun";
@@ -85,21 +86,46 @@ await $`docker pull --quiet ${pinned}`.quiet();
 
 await $`docker tag ${pinned} ${generator.image}:${generator.version}`;
 
+// Fern copies the SDK's folder, builds included (a Rust `target/` weighs
+// gigabytes), into temporary folders it never deletes: it gets a folder of
+// its own, emptied before and after each run, even one that failed or was
+// killed. The folder stays in the system's temporary folder: on macOS, Fern
+// prefixes that path with /private, the real path of /var and /tmp.
+const systemTemporaryFolder = tmpdir();
+const temporaryName = `peal-sdk-fern-${language.name}`;
+const temporaryFolder = path.join(systemTemporaryFolder, temporaryName);
+
+// The generator's container writes there as root on Linux, where the calling
+// user cannot delete what it wrote: root deletes it, in the generator's image.
+const removeTemporaryFolder = async () => {
+  await $`docker run --rm --volume ${systemTemporaryFolder}:/temporary --entrypoint rm ${pinned} -rf ${`/temporary/${temporaryName}`}`.quiet();
+};
+
+await removeTemporaryFolder();
+
+await mkdir(temporaryFolder, { recursive: true });
+
 // --generate-tests makes Fern write the whole project (manifest, build
 // files, its unit tests) rather than the client's source alone.
-const result =
-  await $`node ${path.join(cliFolder, "cli.cjs")} generate --local --group ${language.name} --version ${language.version} --generate-tests --force --no-prompt --log-level warn`
-    .cwd(path.dirname(fernFolder))
-    .env({
-      ...process.env,
-      FERN_DISABLE_AUTO_BOOTSTRAP: "true",
-      FERN_DISABLE_TELEMETRY: "true",
-      FERN_DISABLE_UPGRADE_CHECK: "true",
-      FERN_NO_VERSION_REDIRECTION: "true",
-      FERN_TELEMETRY_DISABLED: "true",
-    })
-    .quiet()
-    .nothrow();
+const result = await (async () => {
+  try {
+    return await $`node ${path.join(cliFolder, "cli.cjs")} generate --local --group ${language.name} --version ${language.version} --generate-tests --force --no-prompt --log-level warn`
+      .cwd(path.dirname(fernFolder))
+      .env({
+        ...process.env,
+        FERN_DISABLE_AUTO_BOOTSTRAP: "true",
+        FERN_DISABLE_TELEMETRY: "true",
+        FERN_DISABLE_UPGRADE_CHECK: "true",
+        FERN_NO_VERSION_REDIRECTION: "true",
+        FERN_TELEMETRY_DISABLED: "true",
+        TMPDIR: temporaryFolder,
+      })
+      .quiet()
+      .nothrow();
+  } finally {
+    await removeTemporaryFolder();
+  }
+})();
 
 if (result.exitCode !== 0) {
   process.stderr.write(result.stdout);
