@@ -83,14 +83,15 @@ To send the same post at several times, duplicate it and schedule each copy.
 
 Everything above is in the [HTTP API](/api-overview), under `/api/workspaces/{workspaceId}`, in the [MCP tools](/mcp#tools) and on the [command line](/cli).
 
-| What                    | Endpoints                                                                           |
-| ----------------------- | ----------------------------------------------------------------------------------- |
-| Tags                    | `GET`, `POST …/tags`, `PATCH`, `DELETE …/tags/{tagId}`, `PUT …/posts/{postId}/tags` |
-| Signatures              | `GET`, `POST …/signatures`, `PUT`, `DELETE …/signatures/{signatureId}`              |
-| Channel sets            | `GET`, `POST …/channel-sets`, `PUT`, `DELETE …/channel-sets/{channelSetId}`         |
-| Default options         | `GET`, `PUT`, `DELETE …/channels/{channelId}/default-options`                       |
-| Duplicate               | `POST …/posts/{postId}/duplicate`                                                   |
-| Posts filed under a tag | `GET …/posts/search?tagId=…`                                                        |
+| What                    | Endpoints                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| Tags                    | `GET`, `POST …/tags`, `PATCH`, `DELETE …/tags/{tagId}`, `PUT …/posts/{postId}/tags`               |
+| Signatures              | `GET`, `POST …/signatures`, `PUT`, `DELETE …/signatures/{signatureId}`                            |
+| Channel sets            | `GET`, `POST …/channel-sets`, `PUT`, `DELETE …/channel-sets/{channelSetId}`                       |
+| Queues                  | `GET`, `POST …/queues`, `GET`, `PUT`, `DELETE …/queues/{queueId}`, `GET …/queues/{queueId}/slots` |
+| Default options         | `GET`, `PUT`, `DELETE …/channels/{channelId}/default-options`                                     |
+| Duplicate               | `POST …/posts/{postId}/duplicate`                                                                 |
+| Posts filed under a tag | `GET …/posts/search?tagId=…`                                                                      |
 
 A post names what it takes when it is made. This one goes to the channels of the set "Launch", takes each channel's default signature, and is filed under a tag:
 

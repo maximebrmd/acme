@@ -3,7 +3,12 @@ import type { DateTime, Option } from "effect";
 
 import type { Reviewer } from "#review/domain/reviewer.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type {
+  ChannelId,
+  PostId,
+  UserId,
+  WorkspaceId,
+} from "#shared/domain/ids.ts";
 
 /** What every outcome says of its post. */
 interface AboutPost {
@@ -15,13 +20,18 @@ interface AboutPost {
   readonly workspaceId: WorkspaceId;
 }
 
-export interface ApprovalRequested extends AboutPost {
+/** Where the post goes, for those who follow some channels only. */
+interface AboutPostChannels extends AboutPost {
+  readonly channelIds: readonly ChannelId[];
+}
+
+export interface ApprovalRequested extends AboutPostChannels {
   /** The member who asked, if a member did. */
   readonly requestedBy: Option.Option<UserId>;
   readonly scheduledAt: DateTime.Utc;
 }
 
-export interface ApprovalDecided extends AboutPost {
+export interface ApprovalDecided extends AboutPostChannels {
   readonly by: Reviewer;
   readonly requestedBy: Option.Option<UserId>;
 }

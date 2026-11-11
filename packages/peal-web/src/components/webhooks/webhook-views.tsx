@@ -1,12 +1,15 @@
 "use client";
 
-import { DateTime } from "effect";
+import { DateTime, Option } from "effect";
 import { useTranslations } from "next-intl";
 import {
   maxWebhookAttempts,
   maxWebhookDescriptionLength,
+  maxWebhookFilterWorkspaces,
   maxWebhookUrlLength,
   SubscribableWebhookEventTypeSchema,
+  WebhookDeliveryStatusSchema,
+  WebhookEventTypeSchema,
   webhookFailingDays,
 } from "peal-contract";
 import type {
@@ -21,6 +24,13 @@ import { Checkbox } from "peal-ui/components/checkbox";
 import { Input } from "peal-ui/components/input";
 import { Label } from "peal-ui/components/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "peal-ui/components/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -28,11 +38,15 @@ import {
   TableHeader,
   TableRow,
 } from "peal-ui/components/table";
+import { Textarea } from "peal-ui/components/textarea";
 import { useId } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 
+import type { LogFilter } from "#webhooks/atoms.ts";
 import {
   everyTypeChosen,
+  goneChannelIds,
+  withChannel,
   withEveryType,
   withType,
 } from "#webhooks/endpoint-draft.ts";
@@ -203,6 +217,16 @@ export const EndpointItemView = ({
             </li>
           ))}
         </ul>
+        {endpoint.channelIds.length === 0 ? null : (
+          <span className="text-muted-foreground text-sm">
+            {t("channelsFilter", { count: endpoint.channelIds.length })}
+          </span>
+        )}
+        {endpoint.workspaceIds.length === 0 ? null : (
+          <span className="text-muted-foreground text-sm">
+            {t("workspacesFilter", { count: endpoint.workspaceIds.length })}
+          </span>
+        )}
       </div>
       {actions === undefined ? null : (
         <div className="flex flex-wrap gap-2">{actions}</div>
@@ -244,12 +268,73 @@ const EventChoice = ({
   );
 };
 
+/** A channel an endpoint may listen to, by the name members know it by. */
+export interface ChannelChoice {
+  readonly id: string;
+  readonly label: string;
+}
+
+// The channels an endpoint listens to: none ticked for every channel.
+const ChannelsFieldset = ({
+  channels,
+  disabled,
+  draft,
+  idPrefix,
+  onChange,
+}: {
+  readonly channels: readonly ChannelChoice[];
+  readonly disabled: boolean;
+  readonly draft: EndpointDraft;
+  readonly idPrefix: string;
+  readonly onChange: (draft: EndpointDraft) => void;
+}) => {
+  const t = useTranslations("Webhooks");
+  const hintId = `${idPrefix}-webhook-channels-hint`;
+  const gone = goneChannelIds(draft, channels);
+
+  const choice = (id: string, label: string) => (
+    <div key={id} className="flex items-center gap-3">
+      <Checkbox
+        id={`${idPrefix}-webhook-channel-${id}`}
+        checked={draft.channelIds.has(id)}
+        disabled={disabled}
+        onCheckedChange={(checked) => {
+          onChange(withChannel(draft, id, checked));
+        }}
+      />
+      <Label htmlFor={`${idPrefix}-webhook-channel-${id}`}>{label}</Label>
+    </div>
+  );
+
+  return (
+    <fieldset className="flex flex-col gap-3" aria-describedby={hintId}>
+      <legend className="mb-2 font-medium">{t("channelsLegend")}</legend>
+      <p id={hintId} className="text-muted-foreground text-sm">
+        {t("channelsHint")}
+      </p>
+      {channels.length === 0 && gone.length === 0 ? (
+        <p className="text-muted-foreground text-sm">{t("channelsNone")}</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {channels.map((channel) => choice(channel.id, channel.label))}
+          {gone.map((id) => choice(id, t("channelGone", { id })))}
+        </div>
+      )}
+      {gone.length > 0 ? (
+        <p className="text-muted-foreground text-sm">{t("channelsGoneHint")}</p>
+      ) : null}
+    </fieldset>
+  );
+};
+
 /**
  * The fields of an endpoint: its address, what it is for, the events it is
- * sent and, for a new one, whether it starts on, under why saving them
- * failed last.
+ * sent, the channels it listens to, the workspaces a partner endpoint
+ * listens to and, for a new one, whether it starts on, under why saving
+ * them failed last.
  */
 export const EndpointFieldsView = ({
+  channels,
   disabled,
   draft,
   error,
@@ -257,6 +342,8 @@ export const EndpointFieldsView = ({
   onChange,
   withEnabled,
 }: {
+  /** The workspace's channels, to listen to some only. */
+  readonly channels: readonly ChannelChoice[];
   readonly disabled: boolean;
   readonly draft: EndpointDraft;
   readonly error: WebhookError | null;
@@ -272,6 +359,7 @@ export const EndpointFieldsView = ({
   const allId = `${idPrefix}-webhook-all-events`;
   const enabledId = `${idPrefix}-webhook-enabled`;
   const eventsHintId = `${idPrefix}-webhook-events-hint`;
+  const workspacesId = `${idPrefix}-webhook-workspaces`;
 
   const handleUrl = (event: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...draft, url: event.target.value });
@@ -355,6 +443,36 @@ export const EndpointFieldsView = ({
           ))}
         </div>
       </fieldset>
+      <ChannelsFieldset
+        channels={channels}
+        disabled={disabled}
+        draft={draft}
+        idPrefix={idPrefix}
+        onChange={onChange}
+      />
+      {draft.scope === "partner" ? (
+        <div className="flex max-w-xl flex-col gap-2">
+          <Label htmlFor={workspacesId}>{t("workspacesLabel")}</Label>
+          <Textarea
+            id={workspacesId}
+            name={workspacesId}
+            rows={4}
+            value={draft.workspaceIds}
+            disabled={disabled}
+            aria-describedby={`${workspacesId}-hint`}
+            aria-invalid={error?.key === "filterRefused" ? true : undefined}
+            onChange={(event) => {
+              onChange({ ...draft, workspaceIds: event.target.value });
+            }}
+          />
+          <p
+            id={`${workspacesId}-hint`}
+            className="text-muted-foreground text-xs"
+          >
+            {t("workspacesHint", { max: maxWebhookFilterWorkspaces })}
+          </p>
+        </div>
+      ) : null}
       {withEnabled ? (
         <div className="flex items-center gap-3">
           <Checkbox
@@ -455,9 +573,12 @@ const DeliveryStatus = ({
 export const DeliveryLogView = ({
   actionFor,
   deliveries,
+  endpointOf,
 }: {
   readonly actionFor?: (delivery: WebhookDelivery) => ReactNode;
   readonly deliveries: readonly WebhookDelivery[];
+  /** The endpoint each went to, in a log across endpoints. */
+  readonly endpointOf?: (delivery: WebhookDelivery) => string;
 }) => {
   const t = useTranslations("Webhooks");
 
@@ -465,6 +586,9 @@ export const DeliveryLogView = ({
     <Table>
       <TableHeader>
         <TableRow>
+          {endpointOf === undefined ? null : (
+            <TableHead>{t("columnEndpoint")}</TableHead>
+          )}
           <TableHead>{t("columnEvent")}</TableHead>
           <TableHead>{t("columnStatus")}</TableHead>
           <TableHead>{t("columnAnswer")}</TableHead>
@@ -480,6 +604,13 @@ export const DeliveryLogView = ({
       <TableBody>
         {deliveries.map((delivery) => (
           <TableRow key={delivery.id}>
+            {endpointOf === undefined ? null : (
+              <TableCell>
+                <code className="font-mono text-xs break-all">
+                  {endpointOf(delivery)}
+                </code>
+              </TableCell>
+            )}
             <TableCell>
               <span className="flex flex-col gap-0.5">
                 {t(`events.${delivery.eventType}`)}
@@ -510,5 +641,143 @@ export const DeliveryLogView = ({
         ))}
       </TableBody>
     </Table>
+  );
+};
+
+const anyValue = "any";
+
+/** What a delivery log shows: a status and an event, or any. */
+export const DeliveryFilterView = ({
+  filter,
+  idPrefix,
+  onChange,
+}: {
+  readonly filter: LogFilter;
+  readonly idPrefix: string;
+  readonly onChange: (filter: LogFilter) => void;
+}) => {
+  const t = useTranslations("Webhooks");
+  const statusId = `${idPrefix}-delivery-status`;
+  const eventId = `${idPrefix}-delivery-event`;
+  const status = Option.getOrUndefined(filter.status);
+  const eventType = Option.getOrUndefined(filter.eventType);
+
+  return (
+    <div className="flex flex-wrap gap-4">
+      <div className="flex flex-col gap-1">
+        <Label htmlFor={statusId}>{t("statusFilter")}</Label>
+        <Select
+          value={status ?? anyValue}
+          onValueChange={(value) => {
+            onChange({
+              ...filter,
+              status: Option.fromUndefinedOr(
+                WebhookDeliveryStatusSchema.literals.find(
+                  (literal) => literal === value
+                )
+              ),
+            });
+          }}
+        >
+          <SelectTrigger id={statusId}>
+            <SelectValue>
+              {status === undefined
+                ? t("anyStatus")
+                : t("deliveryStatus", { status })}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={anyValue}>{t("anyStatus")}</SelectItem>
+            {WebhookDeliveryStatusSchema.literals.map((literal) => (
+              <SelectItem key={literal} value={literal}>
+                {t("deliveryStatus", { status: literal })}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor={eventId}>{t("eventFilter")}</Label>
+        <Select
+          value={eventType ?? anyValue}
+          onValueChange={(value) => {
+            onChange({
+              ...filter,
+              eventType: Option.fromUndefinedOr(
+                WebhookEventTypeSchema.literals.find(
+                  (literal) => literal === value
+                )
+              ),
+            });
+          }}
+        >
+          <SelectTrigger id={eventId}>
+            <SelectValue>
+              {eventType === undefined
+                ? t("anyEvent")
+                : t(`events.${eventType}`)}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={anyValue}>{t("anyEvent")}</SelectItem>
+            {WebhookEventTypeSchema.literals.map((literal) => (
+              <SelectItem key={literal} value={literal}>
+                {t(`events.${literal}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+};
+
+/** Which test event to send: the plain one, or a sample of a type. */
+export const TestEventPicker = ({
+  id,
+  onChange,
+  value,
+}: {
+  readonly id: string;
+  readonly onChange: (
+    value: Option.Option<SubscribableWebhookEventType>
+  ) => void;
+  readonly value: Option.Option<SubscribableWebhookEventType>;
+}) => {
+  const t = useTranslations("Webhooks");
+  const chosen = Option.getOrUndefined(value);
+
+  return (
+    <span className="flex items-center gap-2">
+      <Label htmlFor={id} className="sr-only">
+        {t("testEventLabel")}
+      </Label>
+      <Select
+        value={chosen ?? anyValue}
+        onValueChange={(picked) => {
+          onChange(
+            Option.fromUndefinedOr(
+              SubscribableWebhookEventTypeSchema.literals.find(
+                (literal) => literal === picked
+              )
+            )
+          );
+        }}
+      >
+        <SelectTrigger id={id} size="sm">
+          <SelectValue>
+            {chosen === undefined ? t("testEventPlain") : t(`events.${chosen}`)}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={anyValue}>{t("testEventPlain")}</SelectItem>
+          {SubscribableWebhookEventTypeSchema.literals.map((literal) => (
+            <SelectItem key={literal} value={literal}>
+              {t(`events.${literal}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </span>
   );
 };

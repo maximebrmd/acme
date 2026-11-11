@@ -10,7 +10,7 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     /**
      * @var (
      *    'UnknownChannels'
-     *   |'PostContentInvalid'
+     *   |'InvalidTimeZone'
      *   |'_unknown'
      * ) $type
      */
@@ -19,7 +19,7 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     /**
      * @var (
      *    UnknownChannelsEncoded
-     *   |PostContentInvalidEncoded
+     *   |InvalidTimeZoneEncoded
      *   |mixed
      * ) $value
      */
@@ -29,12 +29,12 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
      * @param array{
      *   type: (
      *    'UnknownChannels'
-     *   |'PostContentInvalid'
+     *   |'InvalidTimeZone'
      *   |'_unknown'
      * ),
      *   value: (
      *    UnknownChannelsEncoded
-     *   |PostContentInvalidEncoded
+     *   |InvalidTimeZoneEncoded
      *   |mixed
      * ),
      * } $values
@@ -59,14 +59,14 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param PostContentInvalidEncoded $postContentInvalid
+     * @param InvalidTimeZoneEncoded $invalidTimeZone
      * @return UnprocessableEntityErrorBody
      */
-    public static function postContentInvalid(PostContentInvalidEncoded $postContentInvalid): UnprocessableEntityErrorBody
+    public static function invalidTimeZone(InvalidTimeZoneEncoded $invalidTimeZone): UnprocessableEntityErrorBody
     {
         return new UnprocessableEntityErrorBody([
-            'type' => 'PostContentInvalid',
-            'value' => $postContentInvalid,
+            'type' => 'InvalidTimeZone',
+            'value' => $invalidTimeZone,
         ]);
     }
 
@@ -95,19 +95,19 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isPostContentInvalid(): bool
+    public function isInvalidTimeZone(): bool
     {
-        return $this->value instanceof PostContentInvalidEncoded && $this->type === 'PostContentInvalid';
+        return $this->value instanceof InvalidTimeZoneEncoded && $this->type === 'InvalidTimeZone';
     }
 
     /**
-     * @return PostContentInvalidEncoded
+     * @return InvalidTimeZoneEncoded
      */
-    public function asPostContentInvalid(): PostContentInvalidEncoded
+    public function asInvalidTimeZone(): InvalidTimeZoneEncoded
     {
-        if (!($this->value instanceof PostContentInvalidEncoded && $this->type === 'PostContentInvalid')) {
+        if (!($this->value instanceof InvalidTimeZoneEncoded && $this->type === 'InvalidTimeZone')) {
             throw new Exception(
-                "Expected PostContentInvalid; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected InvalidTimeZone; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -138,8 +138,8 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
                 $value = $this->asUnknownChannels()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'PostContentInvalid':
-                $value = $this->asPostContentInvalid()->jsonSerialize();
+            case 'InvalidTimeZone':
+                $value = $this->asInvalidTimeZone()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -181,8 +181,8 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
             case 'UnknownChannels':
                 $args['value'] = UnknownChannelsEncoded::jsonDeserialize($data);
                 break;
-            case 'PostContentInvalid':
-                $args['value'] = PostContentInvalidEncoded::jsonDeserialize($data);
+            case 'InvalidTimeZone':
+                $args['value'] = InvalidTimeZoneEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

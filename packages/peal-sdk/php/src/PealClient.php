@@ -14,6 +14,7 @@ use Peal\Assistant\AssistantClient;
 use Peal\Members\MembersClient;
 use Peal\Invitations\InvitationsClient;
 use Peal\Billing\BillingClient;
+use Peal\Usage\UsageClient;
 use Peal\Analytics\AnalyticsClient;
 use Peal\Tiktok\TiktokClient;
 use Peal\Capabilities\CapabilitiesClient;
@@ -29,6 +30,7 @@ use Peal\Review\ReviewClient;
 use Peal\Tags\TagsClient;
 use Peal\Signatures\SignaturesClient;
 use Peal\ChannelSets\ChannelSetsClient;
+use Peal\Queues\QueuesClient;
 use Peal\ChannelDefaults\ChannelDefaultsClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
@@ -94,6 +96,11 @@ class PealClient
      * @var BillingClient $billing
      */
     public BillingClient $billing;
+
+    /**
+     * @var UsageClient $usage
+     */
+    public UsageClient $usage;
 
     /**
      * @var AnalyticsClient $analytics
@@ -171,6 +178,11 @@ class PealClient
     public ChannelSetsClient $channelSets;
 
     /**
+     * @var QueuesClient $queues
+     */
+    public QueuesClient $queues;
+
+    /**
      * @var ChannelDefaultsClient $channelDefaults
      */
     public ChannelDefaultsClient $channelDefaults;
@@ -238,6 +250,7 @@ class PealClient
         $this->members = new MembersClient($this->client, $this->options);
         $this->invitations = new InvitationsClient($this->client, $this->options);
         $this->billing = new BillingClient($this->client, $this->options);
+        $this->usage = new UsageClient($this->client, $this->options);
         $this->analytics = new AnalyticsClient($this->client, $this->options);
         $this->tiktok = new TiktokClient($this->client, $this->options);
         $this->capabilities = new CapabilitiesClient($this->client, $this->options);
@@ -253,6 +266,7 @@ class PealClient
         $this->tags = new TagsClient($this->client, $this->options);
         $this->signatures = new SignaturesClient($this->client, $this->options);
         $this->channelSets = new ChannelSetsClient($this->client, $this->options);
+        $this->queues = new QueuesClient($this->client, $this->options);
         $this->channelDefaults = new ChannelDefaultsClient($this->client, $this->options);
     }
 }

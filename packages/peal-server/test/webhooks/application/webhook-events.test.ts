@@ -6,9 +6,11 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import {
   ChannelIdSchema,
+  MediaAssetIdSchema,
   PostIdSchema,
   PostTargetIdSchema,
 } from "#shared/domain/ids.ts";
+import type { ChannelId } from "#shared/domain/ids.ts";
 import { StartedJobs } from "#test/webhooks/fakes/started-jobs.ts";
 import {
   freshEndpoint,
@@ -21,14 +23,18 @@ import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
 import type { EventToPublish } from "#webhooks/application/webhook-events.ts";
 
-// A post that went live in the actor's workspace, under a key of its own.
-const published = Effect.fn("published")(function* published(actor: Actor) {
+// A post that went live in the actor's workspace, under a key of its own,
+// on a channel of its own unless one is given.
+const published = Effect.fn("published")(function* published(
+  actor: Actor,
+  channel?: ChannelId
+) {
   const targetId = yield* newId(PostTargetIdSchema);
 
   const request: EventToPublish = {
     event: {
       data: {
-        channelId: yield* newId(ChannelIdSchema),
+        channelId: channel ?? (yield* newId(ChannelIdSchema)),
         permalink: "https://social.example/@peal_example/1",
         platform: "mastodon",
         postId: yield* newId(PostIdSchema),
@@ -179,6 +185,115 @@ layer(WebhooksTest)("webhook events", (it) => {
       yield* events.publish(yield* published(owner));
 
       assert.lengthOf(yield* logOf(owner, kept.endpoint.id), 1);
+    })
+  );
+
+  it.effect("go only to the endpoints whose filters match", () =>
+    Effect.gen(function* filtered() {
+      const owner = yield* freshOwner;
+      const events = yield* WebhookEvents;
+
+      const [listed, other, third] = yield* Effect.all([
+        newId(ChannelIdSchema),
+        newId(ChannelIdSchema),
+        newId(ChannelIdSchema),
+      ]);
+
+      const everyChannel = yield* freshEndpoint(owner, {
+        eventTypes: ["post.published", "post.scheduled", "media.ready"],
+      });
+
+      const someChannels = yield* freshEndpoint(owner, {
+        channelIds: [listed],
+        eventTypes: ["post.published", "post.scheduled", "media.ready"],
+      });
+
+      yield* events.publish(yield* published(owner, listed));
+      yield* events.publish(yield* published(owner, other));
+
+      const postId = yield* newId(PostIdSchema);
+
+      const targets = [other, listed, third].map((channelId) => ({
+        channelId,
+        platform: "mastodon" as const,
+        targetId: PostTargetIdSchema.make(channelId),
+      }));
+
+      // A whole post with one listed channel out of three.
+      yield* events.publish({
+        event: {
+          data: {
+            postId,
+            scheduledAt: yield* DateTime.now,
+            targets,
+            timeZone: "Europe/Paris",
+            workspaceId: owner.workspaceId,
+          },
+          type: "post.scheduled",
+        },
+        key: `post:${postId}:scheduled:1`,
+      });
+
+      // A whole post whose data names no channel: its teller does.
+      yield* events.publish({
+        event: {
+          data: { postId, workspaceId: owner.workspaceId },
+          type: "post.unscheduled",
+        },
+        key: `post:${postId}:unscheduled:1`,
+        postChannelIds: [other, third],
+      });
+
+      // An event about no channel.
+      const mediaId = yield* newId(MediaAssetIdSchema);
+
+      yield* events.publish({
+        event: {
+          data: {
+            contentType: "image/png",
+            mediaId,
+            workspaceId: owner.workspaceId,
+          },
+          type: "media.ready",
+        },
+        key: `media:${mediaId}:ready`,
+      });
+
+      const typesOf = (endpointId: string) =>
+        logOf(owner, endpointId).pipe(
+          Effect.map((log) => log.map(({ eventType }) => eventType).toSorted())
+        );
+
+      assert.deepStrictEqual(yield* typesOf(everyChannel.endpoint.id), [
+        "media.ready",
+        "post.published",
+        "post.published",
+        "post.scheduled",
+      ]);
+      assert.deepStrictEqual(yield* typesOf(someChannels.endpoint.id), [
+        "media.ready",
+        "post.published",
+        "post.scheduled",
+      ]);
+    })
+  );
+
+  it.effect("keep no event when every endpoint's filter leaves it out", () =>
+    Effect.gen(function* nobodyMatches() {
+      const owner = yield* freshOwner;
+      const events = yield* WebhookEvents;
+      const elsewhere = yield* newId(ChannelIdSchema);
+      const request = yield* published(owner);
+
+      yield* freshEndpoint(owner, { channelIds: [elsewhere] });
+      yield* events.publish(request);
+
+      // Nothing was kept: a new endpoint hears the same key.
+      const late = yield* freshEndpoint(owner);
+
+      yield* events.publish(request);
+
+      assert.lengthOf(yield* logOf(owner, late.endpoint.id), 1);
     })
   );
 });

@@ -837,7 +837,9 @@
         "unknownTags": "Some tags no longer exist. Choose the post's tags again.",
         "unknownChannelSet": "This channel set no longer exists. Choose the post's channels again.",
         "unknownSignature": "This signature no longer exists. Choose another one.",
-        "content": "Fix these before scheduling:"
+        "content": "Fix these before scheduling:",
+        "queueNoRoom": "{reason, select, noSlots {The queue has no slot: add some in its settings, or choose a time.} other {Every slot of the queue’s next {days, number} days is taken: add slots, or choose a time.}}",
+        "queueNotFound": "This queue no longer exists: choose another."
       },
       "violation": {
         "inPart": "Part {part}: {text}",
@@ -858,7 +860,21 @@
         "optionInvalid": "{channel}: {reason}",
         "forbiddenCharacters": "{channel}: the text cannot hold {characters}."
       },
-      "channelDetail": "{handle} on {platform}"
+      "channelDetail": "{handle} on {platform}",
+      "placementLabel": "When the post goes out",
+      "atTime": "At a time",
+      "addToQueue": "Add to queue",
+      "queueLabel": "Queue",
+      "queueLoading": "Reading the queues…",
+      "queueFailed": "The queues could not be read.",
+      "queueNone": "This workspace has no queue yet.",
+      "queueSettings": "Set up queues",
+      "queueDefault": "{name} (default)",
+      "nextFreeLoading": "Reading the next free slot…",
+      "nextFreeSlot": "Next free slot: {at} ({zone}). The slot is decided when the post is added.",
+      "queueNoRoom": "{reason, select, noSlots {The queue has no slot: add some in its settings.} other {Every slot of the next {days, number} days is taken.}}",
+      "queued": "Added to the queue: it goes out {at}.",
+      "queuedForApproval": "Added to the queue for {at}: it waits for an approval."
     },
     "Parts": {
       "legend": "Thread",
@@ -1133,11 +1149,15 @@
       "filterChannels": "{count, plural, =0 {Channels} other {Channels (#)}}",
       "filterChannelsLabel": "Show the posts that go to one of these channels",
       "clearFilters": "Clear filters",
-      "hiddenByFilters": "{count, plural, =0 {No post hidden by filters} one {# post hidden by filters} other {# posts hidden by filters}}"
+      "hiddenByFilters": "{count, plural, =0 {No post hidden by filters} one {# post hidden by filters} other {# posts hidden by filters}}",
+      "queueMark": "Queue: {name}",
+      "filterQueues": "{count, plural, =0 {Queues} other {Queues (#)}}",
+      "filterQueuesLabel": "Show the posts these queues placed"
     },
     "Links": {
       "suspicious": "This does not look like a working link: {link}"
-    }
+    },
+    "queueOf": "Queue: {name}"
   },
   "Drafts": {
     "title": "Drafts",
@@ -1556,7 +1576,34 @@
       "unlimited": "{used, number}, no limit",
       "resets": "Starts again on {date}",
       "ofStorage": "{used} of {allowed}",
-      "unlimitedStorage": "{used}, no limit"
+      "unlimitedStorage": "{used}, no limit",
+      "history": {
+        "title": "Usage by day",
+        "description": "What the workspace did each UTC day, and what it held when the day's snapshot ran, shortly after.",
+        "rangeLabel": "Period",
+        "range": "Last {days, number} days",
+        "loading": "Loading the usage…",
+        "loadFailed": "The usage could not be loaded.",
+        "retry": "Try again",
+        "published": "{count, plural, one {# post published} other {# posts published}}",
+        "onPlatform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} {count, number}",
+        "channelDays": "{count, plural, one {# channel-day} other {# channel-days}}, over {days, plural, one {# day counted} other {# days counted}}",
+        "metered": "{count, plural, one {# post} other {# posts}} on {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} in {month}, {withLinks, number} with a link",
+        "shared": "This workspace's channels count against the plan of its partner's workspace.",
+        "nothing": "Nothing has been counted in this period yet.",
+        "views": "Show the usage as",
+        "chart": "Chart",
+        "table": "Table",
+        "caption": "Posts published and channels connected each UTC day, from {from} to {to}. The table gives the same figures.",
+        "tableCaption": "Usage each UTC day",
+        "day": "Day (UTC)",
+        "posts": "Posts published",
+        "channels": "Channels connected",
+        "members": "Members",
+        "media": "Media stored",
+        "assistant": "Assistant requests",
+        "note": "Counts only, kept {days, number} days: nothing here is priced. A dash is a day without a snapshot."
+      }
     },
     "plans": {
       "title": "Plans",
@@ -1831,7 +1878,8 @@
       "partner": "Partner",
       "tags": "Tags",
       "signatures": "Signatures",
-      "channelSets": "Channel sets"
+      "channelSets": "Channel sets",
+      "queues": "Queues"
     },
     "general": {
       "title": "Name",
@@ -2076,6 +2124,32 @@
     "sendAgain": "Send again",
     "sendingAgain": "Sending…",
     "sentAgain": "Sent again, as a new delivery of the same event.",
+    "channelsLegend": "Only these channels",
+    "channelsHint": "Leave all unticked to hear every channel. Events about no channel, such as files and boosts, still come: leave their types out above if you do not want them.",
+    "channelsNone": "The workspace has no channel yet.",
+    "channelGone": "A channel no longer connected ({id})",
+    "channelsGoneHint": "Untick a channel no longer connected to stop filtering on it.",
+    "workspacesLabel": "Only these workspaces",
+    "workspacesHint": "Ids of the partner’s workspaces, one a line, at most {max, number}. Leave it empty to hear every workspace; the home workspace is heard only if it is listed.",
+    "channelsFilter": "Only events about {count, plural, one {# channel} other {# channels}}, and those about no channel",
+    "workspacesFilter": "Only {count, plural, one {# workspace} other {# workspaces}}",
+    "statusFilter": "Status",
+    "eventFilter": "Event",
+    "anyStatus": "Any status",
+    "anyEvent": "Any event",
+    "tabEndpoints": "Endpoints",
+    "tabFailed": "Failed",
+    "failedTitle": "Failed deliveries, across endpoints",
+    "failedEmpty": "No delivery failed for good in the last {days, number} days.",
+    "columnEndpoint": "Endpoint",
+    "sendAllFailed": "Send all failed again",
+    "sendAllFailedTitle": "Send the failed deliveries to {host} again?",
+    "sendAllFailedDescription": "{more, select, true {The oldest failed deliveries are sent again, {max, number} a call, each as a new delivery of its event: send again for the rest.} other {{count, plural, =0 {No delivery to this endpoint failed for good.} one {# failed delivery is sent again, as a new delivery of the same event.} other {# failed deliveries are sent again, as new deliveries of the same events.}}}} The workspace sends {perHour, number} deliveries again this way an hour.",
+    "sendingAllFailed": "Sending again…",
+    "sentAllAgain": "{sent, plural, =0 {Nothing was sent again.} one {# delivery sent again.} other {# deliveries sent again.}} {skipped, plural, =0 {} one {# skipped: already sent again, or its endpoint is off.} other {# skipped: already sent again, or their endpoint is off.}} {remaining, plural, =0 {} other {# more are left.}}",
+    "testEventLabel": "Test event type",
+    "testEventPlain": "Plain test event (webhook.test)",
+    "sampleSent": "Sample sent. Its body is an example, marked sample: true: the receiver must not act on it.",
     "errors": {
       "forbidden": "Your role does not allow this.",
       "notFound": "This endpoint no longer exists.",
@@ -2085,7 +2159,8 @@
       "tooManySends": "The workspace sent as many test events and deliveries again as it may in an hour. Try again later.",
       "tooMany": "The workspace already has {allowed, number} endpoints, the most it may. Delete one first.",
       "urlRefused": "{reason, select, malformed {This is not an address.} notHttps {The address must be HTTPS, on the default port.} credentials {The address must not carry a user name or a password.} tooLong {The address is too long.} notPublic {The address’s host is not public, so Peal does not send requests to it.} unknownHost {The address’s host does not exist.} other {Peal does not deliver to this address.}}",
-      "unknown": "Something went wrong. Try again."
+      "unknown": "Something went wrong. Try again.",
+      "filterRefused": "Only a partner endpoint takes a list of workspaces, and each must be an id."
     }
   },
   "AccountSettings": {
@@ -2726,11 +2801,13 @@
     "errors": {
       "forbidden": "Your role does not allow this.",
       "invalid": "{kind, select, channelSet {The options kept for one of these channels are not those of its platform. Choose the channels again.} other {This could not be saved as it is.}}",
-      "nameTaken": "{kind, select, tag {The workspace already has a tag of this name.} signature {The workspace already has a signature of this name.} other {The workspace already has a channel set of this name.}}",
-      "notFound": "{kind, select, tag {This tag no longer exists.} signature {This signature no longer exists.} other {This channel set no longer exists.}}",
-      "tooMany": "{kind, select, tag {The workspace keeps {allowed, number} tags, the most it may. Delete one before adding another.} signature {The workspace keeps {allowed, number} signatures, the most it may. Delete one before adding another.} other {The workspace keeps {allowed, number} channel sets, the most it may. Delete one before adding another.}}",
+      "nameTaken": "{kind, select, tag {The workspace already has a tag of this name.} signature {The workspace already has a signature of this name.} queue {The workspace already has a queue of this name.} other {The workspace already has a channel set of this name.}}",
+      "notFound": "{kind, select, tag {This tag no longer exists.} signature {This signature no longer exists.} queue {This queue no longer exists.} other {This channel set no longer exists.}}",
+      "tooMany": "{kind, select, tag {The workspace keeps {allowed, number} tags, the most it may. Delete one before adding another.} signature {The workspace keeps {allowed, number} signatures, the most it may. Delete one before adding another.} queue {The workspace keeps {allowed, number} queues, the most it may. Delete one before adding another.} other {The workspace keeps {allowed, number} channel sets, the most it may. Delete one before adding another.}}",
       "unknown": "Something went wrong. Try again.",
-      "unknownChannels": "Some of these channels are no longer connected. Choose the channels again."
+      "unknownChannels": "Some of these channels are no longer connected. Choose the channels again.",
+      "invalidTimeZone": "This time zone is not one Peal knows.",
+      "setNotFound": "The channel set chosen no longer exists. Choose another, or none."
     }
   },
   "Tags": {
@@ -2831,6 +2908,51 @@
     "saveSelection": "Save selection as a set",
     "saveSelectionTitle": "Save the selection as a channel set",
     "saveSelectionDescription": "{count, plural, one {The channel ticked, with the options filled for it, is kept under this name.} other {The # channels ticked, with the options filled for them, are kept under this name.}}"
+  },
+  "Queues": {
+    "description": "A queue is a weekly timetable of slots in a time zone. Add a post to a queue instead of choosing a time: it takes the queue’s next free slot.",
+    "rules": "A slot is taken while a post of the queue is scheduled, waiting for approval or publishing at its time. Changing the slots moves no post. A workspace keeps {max, number} queues at most.",
+    "readOnly": "You can see the queues. Adding, changing or deleting one takes the permission to change posts.",
+    "listTitle": "Queues",
+    "empty": "The workspace has no queue yet.",
+    "name": "Name",
+    "timeZone": "Time zone",
+    "slots": "Slots",
+    "noSlot": "No slot yet: a post cannot be added to this queue.",
+    "slotDay": "Day",
+    "slotTime": "Time",
+    "addSlot": "Add the slot",
+    "removeSlot": "Remove the slot {slot}",
+    "slotsHint": "Times of day in {zone}, kept whatever daylight saving does. {max, number} slots at most.",
+    "slot": "{day}, {time}",
+    "day": "{day, select, monday {Monday} tuesday {Tuesday} wednesday {Wednesday} thursday {Thursday} friday {Friday} saturday {Saturday} other {Sunday}}",
+    "week": "{slots}, in {zone}",
+    "channels": "Channels",
+    "channelsHint": "A post added to the queue goes to these channels when it names none. {max, number} at most.",
+    "noChannels": "The workspace has no connected channel yet.",
+    "channelSet": "Channel set",
+    "noChannelSet": "No channel set",
+    "isDefault": "Default queue: a post added to a queue goes to this one unless another is chosen.",
+    "defaultBadge": "Default",
+    "channelsOf": "Channels of {name}",
+    "missing": "{count, plural, one {# channel of this queue is no longer connected: posts added to it go without it.} other {# channels of this queue are no longer connected: posts added to it go without them.}}",
+    "editDrops": "{count, plural, one {Saving takes out the channel that is no longer connected.} other {Saving takes out the # channels that are no longer connected.}}",
+    "edit": "Edit",
+    "save": "Save",
+    "saved": "The queue is saved. Its posts keep their times.",
+    "deleteTitle": "Delete the queue “{name}”?",
+    "deleteDescription": "The posts it placed stay scheduled at their times. This is final.",
+    "deleted": "The queue is deleted.",
+    "createTitle": "Add a queue",
+    "create": "Add the queue",
+    "creating": "Adding…",
+    "created": "The queue is added.",
+    "upcoming": "Next slots, in {zone}:",
+    "upcomingSlot": "{at}: {taken, select, taken {taken} other {free}}",
+    "upcomingLoading": "Reading the next slots…",
+    "upcomingFailed": "The next slots could not be read.",
+    "nextFree": "Next free slot: {at}.",
+    "noRoom": "{reason, select, noSlots {No free slot: the queue has no slot.} other {No free slot in the next {days, number} days.}}"
   },
   "Inbox": {
     "open": "Inbox",

@@ -5,7 +5,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum ConflictErrorBody {
     #[non_exhaustive]
-    ChannelSetNameTaken {
+    QueueNameTaken {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -16,7 +16,7 @@ pub enum ConflictErrorBody {
     },
 
     #[non_exhaustive]
-    TooManyChannelSets {
+    TooManyQueues {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -36,16 +36,16 @@ pub enum ConflictErrorBody {
 }
 
 impl ConflictErrorBody {
-    pub fn channel_set_name_taken() -> Self {
-        Self::ChannelSetNameTaken {
+    pub fn queue_name_taken() -> Self {
+        Self::QueueNameTaken {
             code: None,
             message: None,
             request_id: None,
         }
     }
 
-    pub fn too_many_channel_sets(allowed: i64) -> Self {
-        Self::TooManyChannelSets {
+    pub fn too_many_queues(allowed: i64) -> Self {
+        Self::TooManyQueues {
             code: None,
             message: None,
             request_id: None,
@@ -53,49 +53,49 @@ impl ConflictErrorBody {
         }
     }
 
-    pub fn channel_set_name_taken_with_code(
+    pub fn queue_name_taken_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
     ) -> Self {
-        Self::ChannelSetNameTaken {
+        Self::QueueNameTaken {
             code: Some(code),
             message,
             request_id,
         }
     }
 
-    pub fn channel_set_name_taken_with_message(
+    pub fn queue_name_taken_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
     ) -> Self {
-        Self::ChannelSetNameTaken {
+        Self::QueueNameTaken {
             code,
             message: Some(message),
             request_id,
         }
     }
 
-    pub fn channel_set_name_taken_with_request_id(
+    pub fn queue_name_taken_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
     ) -> Self {
-        Self::ChannelSetNameTaken {
+        Self::QueueNameTaken {
             code,
             message,
             request_id: Some(request_id),
         }
     }
 
-    pub fn too_many_channel_sets_with_code(
+    pub fn too_many_queues_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
         allowed: i64,
     ) -> Self {
-        Self::TooManyChannelSets {
+        Self::TooManyQueues {
             code: Some(code),
             message,
             request_id,
@@ -103,13 +103,13 @@ impl ConflictErrorBody {
         }
     }
 
-    pub fn too_many_channel_sets_with_message(
+    pub fn too_many_queues_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
         allowed: i64,
     ) -> Self {
-        Self::TooManyChannelSets {
+        Self::TooManyQueues {
             code,
             message: Some(message),
             request_id,
@@ -117,13 +117,13 @@ impl ConflictErrorBody {
         }
     }
 
-    pub fn too_many_channel_sets_with_request_id(
+    pub fn too_many_queues_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
         allowed: i64,
     ) -> Self {
-        Self::TooManyChannelSets {
+        Self::TooManyQueues {
             code,
             message,
             request_id: Some(request_id),

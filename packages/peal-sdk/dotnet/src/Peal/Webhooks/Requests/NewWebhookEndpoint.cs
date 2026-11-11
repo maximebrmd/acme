@@ -9,6 +9,9 @@ public record NewWebhookEndpoint
     [JsonIgnore]
     public required string WorkspaceId { get; set; }
 
+    [JsonPropertyName("channelIds")]
+    public IEnumerable<string>? ChannelIds { get; set; }
+
     [JsonPropertyName("description")]
     public string? Description { get; set; }
 
@@ -24,6 +27,9 @@ public record NewWebhookEndpoint
 
     [JsonPropertyName("url")]
     public required string Url { get; set; }
+
+    [JsonPropertyName("workspaceIds")]
+    public IEnumerable<string>? WorkspaceIds { get; set; }
 
     /// <inheritdoc />
     public override string ToString()

@@ -28,6 +28,7 @@ import { channelIdsOf, channelsFlag } from "#post-flags.ts";
 import { channelsOf, namesFor, printPost, timeOf } from "#post-result.ts";
 import { columns, excerpt, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
+import { queueOf } from "#saved-items.ts";
 import { tagsFlag, tagsNamed, tagsOf } from "#tags.ts";
 import { atFlag, instantOf, timeZoneFlag } from "#when.ts";
 import { channelNames, inWorkspace, named, workspaceFlag } from "#workspace.ts";
@@ -627,6 +628,60 @@ const reschedule = Command.make(
   )
 );
 
+const queue = Command.make(
+  "queue",
+  {
+    channels: channelsFlag(
+      "For a draft: a channel it goes to, as peal channels list shows its id; repeat it. Without it a draft goes to the channels it has, or, when it has none, to the queue's channels and its channel set's. A scheduled post keeps its channels."
+    ),
+    json: jsonFlag,
+    postId: postArgument,
+    queue: Flag.String("queue").pipe(
+      Flag.withMetavar("<name-or-id>"),
+      Flag.withDescription(
+        "The queue, by its id or its name, as peal queues list shows them; without it, the workspace's default queue."
+      ),
+      Flag.optional
+    ),
+    workspace: workspaceFlag,
+  },
+  Effect.fn("posts.queue")(function* queuePost(input) {
+    const session = yield* inWorkspace(input.workspace);
+    const { client, url, workspace } = session;
+
+    const chosen = yield* queueOf(
+      session,
+      Option.getOrElse(input.queue, () => "")
+    );
+
+    const channelIds = channelIdsOf(input.channels);
+    const [first, ...others] = channelIds;
+
+    const post = yield* client.posts
+      .enqueue({
+        params: { postId: input.postId, workspaceId: workspace.id },
+        payload:
+          first === undefined
+            ? { queueId: chosen.id }
+            : { channelIds: [first, ...others], queueId: chosen.id },
+      })
+      .pipe(explainingPublishing(url));
+
+    const names = yield* namesFor(input.json, client, workspace.id);
+
+    yield* printPost(
+      post,
+      input.json,
+      () =>
+        `Put post ${post.id} on queue ${chosen.name}, on its slot at ${timeOf(post)}, on ${channelsOf(post, names)}.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "Put a post on the next free slot of a queue: a draft is scheduled there, and a scheduled post, or one waiting for an approval, is moved there. The slot is decided when the server answers; its own slot counts as free, so a post added again to its queue stays there, unless a slot before it was freed since."
+  )
+);
+
 const cancel = Command.make(
   "cancel",
   { json: jsonFlag, postId: postArgument, workspace: workspaceFlag },
@@ -788,6 +843,7 @@ export const posts = Command.make("posts").pipe(
     schedule,
     publish,
     reschedule,
+    queue,
     unschedule,
     cancel,
     repost,

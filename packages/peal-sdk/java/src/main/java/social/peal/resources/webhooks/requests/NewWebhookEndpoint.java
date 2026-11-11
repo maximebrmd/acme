@@ -25,6 +25,8 @@ import social.peal.types.WebhookEndpointScope;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = NewWebhookEndpoint.Builder.class)
 public final class NewWebhookEndpoint {
+    private final Optional<List<String>> channelIds;
+
     private final Optional<String> description;
 
     private final Optional<Boolean> enabled;
@@ -35,21 +37,32 @@ public final class NewWebhookEndpoint {
 
     private final String url;
 
+    private final Optional<List<String>> workspaceIds;
+
     private final Map<String, Object> additionalProperties;
 
     private NewWebhookEndpoint(
+            Optional<List<String>> channelIds,
             Optional<String> description,
             Optional<Boolean> enabled,
             List<SubscribableWebhookEventType> eventTypes,
             Optional<WebhookEndpointScope> scope,
             String url,
+            Optional<List<String>> workspaceIds,
             Map<String, Object> additionalProperties) {
+        this.channelIds = channelIds;
         this.description = description;
         this.enabled = enabled;
         this.eventTypes = eventTypes;
         this.scope = scope;
         this.url = url;
+        this.workspaceIds = workspaceIds;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("channelIds")
+    public Optional<List<String>> getChannelIds() {
+        return channelIds;
     }
 
     @JsonProperty("description")
@@ -77,6 +90,11 @@ public final class NewWebhookEndpoint {
         return url;
     }
 
+    @JsonProperty("workspaceIds")
+    public Optional<List<String>> getWorkspaceIds() {
+        return workspaceIds;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -89,16 +107,25 @@ public final class NewWebhookEndpoint {
     }
 
     private boolean equalTo(NewWebhookEndpoint other) {
-        return description.equals(other.description)
+        return channelIds.equals(other.channelIds)
+                && description.equals(other.description)
                 && enabled.equals(other.enabled)
                 && eventTypes.equals(other.eventTypes)
                 && scope.equals(other.scope)
-                && url.equals(other.url);
+                && url.equals(other.url)
+                && workspaceIds.equals(other.workspaceIds);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.description, this.enabled, this.eventTypes, this.scope, this.url);
+        return Objects.hash(
+                this.channelIds,
+                this.description,
+                this.enabled,
+                this.eventTypes,
+                this.scope,
+                this.url,
+                this.workspaceIds);
     }
 
     @java.lang.Override
@@ -123,6 +150,10 @@ public final class NewWebhookEndpoint {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage channelIds(Optional<List<String>> channelIds);
+
+        _FinalStage channelIds(List<String> channelIds);
+
         _FinalStage description(Optional<String> description);
 
         _FinalStage description(String description);
@@ -140,11 +171,17 @@ public final class NewWebhookEndpoint {
         _FinalStage scope(Optional<WebhookEndpointScope> scope);
 
         _FinalStage scope(WebhookEndpointScope scope);
+
+        _FinalStage workspaceIds(Optional<List<String>> workspaceIds);
+
+        _FinalStage workspaceIds(List<String> workspaceIds);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements UrlStage, _FinalStage {
         private String url;
+
+        private Optional<List<String>> workspaceIds = Optional.empty();
 
         private Optional<WebhookEndpointScope> scope = Optional.empty();
 
@@ -154,17 +191,21 @@ public final class NewWebhookEndpoint {
 
         private Optional<String> description = Optional.empty();
 
+        private Optional<List<String>> channelIds = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(NewWebhookEndpoint other) {
+            channelIds(other.getChannelIds());
             description(other.getDescription());
             enabled(other.getEnabled());
             eventTypes(other.getEventTypes());
             scope(other.getScope());
             url(other.getUrl());
+            workspaceIds(other.getWorkspaceIds());
             return this;
         }
 
@@ -172,6 +213,19 @@ public final class NewWebhookEndpoint {
         @JsonSetter("url")
         public _FinalStage url(@NotNull String url) {
             this.url = Objects.requireNonNull(url, "url must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage workspaceIds(List<String> workspaceIds) {
+            this.workspaceIds = Optional.ofNullable(workspaceIds);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "workspaceIds", nulls = Nulls.SKIP)
+        public _FinalStage workspaceIds(Optional<List<String>> workspaceIds) {
+            this.workspaceIds = workspaceIds;
             return this;
         }
 
@@ -239,17 +293,33 @@ public final class NewWebhookEndpoint {
         }
 
         @java.lang.Override
+        public _FinalStage channelIds(List<String> channelIds) {
+            this.channelIds = Optional.ofNullable(channelIds);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "channelIds", nulls = Nulls.SKIP)
+        public _FinalStage channelIds(Optional<List<String>> channelIds) {
+            this.channelIds = channelIds;
+            return this;
+        }
+
+        @java.lang.Override
         public NewWebhookEndpoint build() {
-            return new NewWebhookEndpoint(description, enabled, eventTypes, scope, url, additionalProperties);
+            return new NewWebhookEndpoint(
+                    channelIds, description, enabled, eventTypes, scope, url, workspaceIds, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("description")
+            if (key.equalsIgnoreCase("channelIds")
+                    || key.equalsIgnoreCase("description")
                     || key.equalsIgnoreCase("enabled")
                     || key.equalsIgnoreCase("eventTypes")
                     || key.equalsIgnoreCase("scope")
-                    || key.equalsIgnoreCase("url")) {
+                    || key.equalsIgnoreCase("url")
+                    || key.equalsIgnoreCase("workspaceIds")) {
                 return;
             }
             this.additionalProperties.put(key, value);

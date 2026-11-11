@@ -18,6 +18,8 @@ import type { PostOrigin } from "./post-origin.ts";
 import { PostStatusSchema } from "./post-status.ts";
 import type { PostOutcome, PostStatus } from "./post-status.ts";
 import type { PostTarget } from "./post-target.ts";
+import { QueueIdSchema } from "./queue-id.ts";
+import type { QueueId } from "./queue-id.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
 import { Schedule } from "./schedule.ts";
 import type { TagId } from "./tag-id.ts";
@@ -50,6 +52,12 @@ import { PostTagIdsSchema } from "./tag.ts";
  * (`./post-origin.ts`). Its tags (`./tag.ts`) file it for its workspace:
  * they are no part of what it says, and change whatever its status.
  *
+ * `queueId` is the queue that gave it its time, if one did (`./queue.ts`):
+ * it holds that queue's slot while it is scheduled, awaiting approval or
+ * publishing at exactly the slot's instant. A move by hand keeps it, and
+ * so does a move back to draft: the slot follows from the time and the
+ * status, never from this alone.
+ *
  * `scheduleRevision` counts the times the post was scheduled or taken back
  * to draft. The job that publishes a post is started for one revision, and
  * only publishes while the post still has it, so a job left from an earlier
@@ -65,6 +73,10 @@ export class Post extends Schema.Class<Post>(
   authorId: Schema.Option(UserIdSchema),
   content: PostContent,
   id: PostIdSchema,
+  // None unless a queue placed it.
+  queueId: Schema.Option(QueueIdSchema).pipe(
+    Schema.withConstructorDefault(Effect.succeed(Option.none()))
+  ),
   scheduleRevision: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   status: PostStatusSchema,
   // None unless given: the labels its workspace filed it under.
@@ -86,6 +98,7 @@ const withStatus = (
     authorId: post.authorId,
     content: post.content,
     id: post.id,
+    queueId: post.queueId,
     scheduleRevision,
     status,
     tagIds: post.tagIds,
@@ -157,6 +170,7 @@ export const editDraft = (post: Post, content: PostContent): Transition =>
           authorId: post.authorId,
           content,
           id: post.id,
+          queueId: post.queueId,
           scheduleRevision: post.scheduleRevision,
           status: post.status,
           tagIds: post.tagIds,
@@ -196,6 +210,7 @@ const attributed = (
     authorId: post.authorId,
     content: post.content,
     id: post.id,
+    queueId: post.queueId,
     scheduleRevision: post.scheduleRevision,
     status: post.status,
     tagIds: post.tagIds,
@@ -212,9 +227,27 @@ export const tagPost = (post: Post, tagIds: readonly TagId[]): Post =>
     authorId: post.authorId,
     content: post.content,
     id: post.id,
+    queueId: post.queueId,
     scheduleRevision: post.scheduleRevision,
     status: post.status,
     tagIds,
+    workspaceId: post.workspaceId,
+  });
+
+/**
+ * The post as a queue placed it: it holds the queue's slot at its time.
+ * Placing it on another queue's slot names that queue instead.
+ */
+export const placedBy = (post: Post, queueId: QueueId): Post =>
+  new Post({
+    attribution: post.attribution,
+    authorId: post.authorId,
+    content: post.content,
+    id: post.id,
+    queueId: Option.some(queueId),
+    scheduleRevision: post.scheduleRevision,
+    status: post.status,
+    tagIds: post.tagIds,
     workspaceId: post.workspaceId,
   });
 

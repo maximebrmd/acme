@@ -5,6 +5,7 @@ import type {
   PostOutcome,
   PostStatusName,
 } from "#publishing/domain/post-status.ts";
+import type { QueueId } from "#publishing/domain/queue-id.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
@@ -38,6 +39,8 @@ export interface PostSearchRequest {
   readonly limit: number;
   readonly outcome: Option.Option<PostOutcome>;
   readonly platform: Option.Option<Platform>;
+  /** Posts this queue placed. */
+  readonly queueId: Option.Option<QueueId>;
   readonly sort: PostSort;
   readonly status: Option.Option<PostStatusName>;
   /** Posts filed under this tag. */
@@ -70,7 +73,7 @@ const encodeCursor = Schema.encodeEffect(CursorSchema);
 
 /**
  * Listing a workspace's posts, whatever their state: filtered by status,
- * outcome, channel, platform, tag, scheduled time, author and how they
+ * outcome, channel, platform, tag, queue, scheduled time, author and how they
  * were created, ordered by creation or by scheduled time, a page at a time.
  * Needs post:read, and channel:read for the channels it names.
  *
@@ -173,6 +176,7 @@ export class PostSearch extends Context.Service<
             channelIds,
             createdVia: request.createdVia,
             outcome: request.outcome,
+            queueId: request.queueId,
             scheduledBefore: to,
             scheduledFrom: from,
             status: request.status,

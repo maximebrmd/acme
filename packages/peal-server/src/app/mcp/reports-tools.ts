@@ -10,9 +10,13 @@ import {
   ChannelSeriesSchema,
   CurrentMember,
   dashboardPeriods,
+  defaultUsageRangeDays,
+  maxUsageRangeDays,
+  usageRetentionDays,
   maxTopPosts,
   maxActivityPageSize,
   PostAnalyticsSchema,
+  WorkspaceUsageReportSchema,
 } from "peal-contract";
 
 import { reading } from "#app/mcp/annotations.ts";
@@ -98,6 +102,19 @@ export const GetBilling = Tool.make("get_billing", {
   .annotateMerge(reading)
   .annotate(Tool.Title, "Get billing");
 
+export const GetUsage = Tool.make("get_usage", {
+  dependencies: [CurrentMember],
+  description: `Answers what the workspace uses of its plan now, then for each UTC day from \`from\` to \`to\` (both included, ${String(maxUsageRangeDays)} at most; the last ${String(defaultUsageRangeDays)} by default): posts that went out, one per channel, by platform; assistant requests, channels, members and media bytes as the daily snapshot took them (null for a day without one, today's included). Then totals: channel-days, and posts on platforms that bill per post by month. \`sharedWith\` names the partner workspace whose plan it is on. Kept ${String(usageRetentionDays)} days. Counts only, never priced; \`plan\` is null on a server that does not bill.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    from: Schema.optionalKey(CalendarDaySchema),
+    to: Schema.optionalKey(CalendarDaySchema),
+  }),
+  success: WorkspaceUsageReportSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Get usage");
+
 export const ListActivity = Tool.make("list_activity", {
   dependencies: [CurrentMember],
   description: `Lists the requests that asked to change something in the workspace, newest first: who asked (a member's id or an API key's), how they authenticated (\`session\`, \`apiKey\`, \`oauth\`, \`mcp\`, \`partnerKey\` or \`connectLink\`), the key or the application it came through, the operation (\`posts.schedule\`, or \`mcp.create_draft\` for a tool), the ids it named, the status answered and the error's code when it was refused. What this connection did is there too: use it to check what was done after a failure, before doing it again. Never what a request carried. Events are kept ${String(activityRetentionDays)} days. \`operation\` keeps one operation, \`actor\` one member or key; pass \`nextCursor\` as \`cursor\` for the next page. Owners only (activity:read).`,
@@ -118,8 +135,8 @@ export const ListActivity = Tool.make("list_activity", {
   .annotate(Tool.Title, "List activity");
 
 /**
- * The tools that read how the workspace's posts did, its plan, and what
- * was changed in it, by whom.
+ * The tools that read how the workspace's posts did, its plan and what it
+ * used of it, and what was changed in it, by whom.
  */
 export const ReportTools = Toolkit.make(
   AnalyticsSummary,
@@ -127,5 +144,6 @@ export const ReportTools = Toolkit.make(
   ChannelAnalytics,
   PostAnalytics,
   GetBilling,
+  GetUsage,
   ListActivity
 );

@@ -224,6 +224,11 @@ each channel would receive and everything that would refuse it. With it,
 peal post "Our spring catalogue is out." --channel <channel-id> --at 2026-11-20T09:00:00Z --dry-run --json
 ```
 
+When the user keeps a timetable rather than a time ("add this to the
+queue"), put the post on a queue's next free slot with `--queue <name>` or
+`--default-queue` (see
+[references/saved.md](references/saved.md#queues)) instead of `--at`.
+
 A thread is a post with parts after it: each `--then` adds one, in order,
 sent as a reply to the part before it where the platform has threads (a
 channel's capabilities say so, under `followUps`; elsewhere the post is
@@ -348,18 +353,9 @@ only when the user wants it sent again:
 peal posts repost <post-id> <target-id> --json
 ```
 
-Counts, once a post is live:
-
-```sh
-peal analytics post <post-id> --json
-peal analytics summary --from 2026-11-01 --to 2026-11-30 --json
-peal analytics dashboard --days 30 --json
-peal analytics channel <channel-id> --days 30 --json
-peal analytics export posts --output posts.csv --days 30
-```
-
-A thread's counts are its first part's. A number a platform does not give
-is `null`, never zero.
+Counts once a post is live (`peal analytics`), and what the workspace used
+of its plan by UTC day (`peal usage`, needs billing:read):
+[references/reports.md](references/reports.md).
 
 ## Comments
 
@@ -407,6 +403,11 @@ peal ads boost stop <boost-id> --yes --json
 units (5000). A sign-in spends only when made with `peal login --ads`.
 Everything else, the states of a boost, reading what ads did, and what to
 do with each error: [references/ads.md](references/ads.md).
+
+## Webhooks
+
+Endpoints, their filters, the delivery log and sending failed deliveries
+again: [references/webhooks.md](references/webhooks.md).
 
 ## What did I do
 

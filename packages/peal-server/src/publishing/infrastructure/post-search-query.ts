@@ -67,6 +67,7 @@ export const pageConditions = ({
     some(filter.status, (status) => eq(posts.status, status)),
     some(filter.outcome, (outcome) => eq(posts.outcome, outcome)),
     some(filter.authorId, (authorId) => eq(posts.authorId, authorId)),
+    some(filter.queueId, (queueId) => eq(posts.queueId, queueId)),
     some(
       filter.createdVia,
       (via) => sql`${posts.createdVia} ->> '_tag' = ${via}`

@@ -11,9 +11,9 @@ pub enum UnprocessableEntityErrorBody {
     },
 
     #[non_exhaustive]
-    PostContentInvalid {
+    InvalidTimeZone {
         #[serde(flatten)]
-        data: PostContentInvalidEncoded,
+        data: InvalidTimeZoneEncoded,
     },
 
     /// Catch-all variant for unrecognized discriminant values.
@@ -28,8 +28,8 @@ impl UnprocessableEntityErrorBody {
         Self::UnknownChannels { data }
     }
 
-    pub fn post_content_invalid(data: PostContentInvalidEncoded) -> Self {
-        Self::PostContentInvalid { data }
+    pub fn invalid_time_zone(data: InvalidTimeZoneEncoded) -> Self {
+        Self::InvalidTimeZone { data }
     }
 
     pub fn unknown(value: serde_json::Value) -> Self {

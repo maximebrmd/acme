@@ -80,6 +80,11 @@ module Peal
       @billing ||= Peal::Billing::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Usage::Client]
+    def usage
+      @usage ||= Peal::Usage::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::Analytics::Client]
     def analytics
       @analytics ||= Peal::Analytics::Client.new(client: @raw_client)
@@ -153,6 +158,11 @@ module Peal
     # @return [Peal::ChannelSets::Client]
     def channel_sets
       @channel_sets ||= Peal::ChannelSets::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::Queues::Client]
+    def queues
+      @queues ||= Peal::Queues::Client.new(client: @raw_client)
     end
 
     # @return [Peal::ChannelDefaults::Client]

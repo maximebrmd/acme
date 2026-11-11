@@ -5,13 +5,23 @@ import {
   ChannelSetDetailsSchema,
   ChannelSetSchema,
   CurrentMember,
+  defaultQueuePreview,
   maxChannelSetNameLength,
   maxChannelSetsPerWorkspace,
+  maxChannelsPerQueue,
   maxChannelsPerSet,
+  maxQueueNameLength,
+  maxQueuePreview,
+  maxQueuesPerWorkspace,
   maxSignatureLength,
   maxSignatureNameLength,
   maxSignaturesPerWorkspace,
+  maxSlotsPerQueue,
   NewChannelDefaultsSchema,
+  queueHorizonDays,
+  QueueDetailsSchema,
+  QueuePreviewSchema,
+  QueueSchema,
   SignatureDetailsSchema,
   SignatureSchema,
   SignatureScopeSchema,
@@ -227,9 +237,129 @@ export const ClearChannelDefaults = Tool.make("clear_channel_defaults", {
   )
   .annotate(Tool.Title, "Clear a channel's default options");
 
+const queueId = Schema.String.annotate({
+  description: "The queue's id, as list_queues answers it.",
+});
+
+const queueFields = QueueDetailsSchema.fields;
+
+const queueName = queueFields.name.annotate({
+  description: `The queue's name: ${String(maxQueueNameLength)} characters at most, on one line, without spaces around it, which no other queue of the workspace has, whatever its case.`,
+});
+
+const queueZone = queueFields.timeZone.annotate({
+  description:
+    "The IANA time zone its slots are wall-clock times of, such as Europe/Paris: a slot keeps its time of day there whatever daylight saving does. Offsets such as +01:00 are refused.",
+});
+
+const queueSlots = queueFields.slots.annotate({
+  description: `Its week: each slot a \`day\` (monday to sunday) and a \`time\` of day on a 24-hour clock (\`HH:mm\`), each pair once, ${String(maxSlotsPerQueue)} at most. A time daylight saving skips moves to the moment the clocks jump; one it repeats happens once.`,
+});
+
+const queueChannels = queueFields.channelIds.schema.annotate({
+  description: `The channels a post added to the queue goes to when it names none, as list_channels answers their ids, each once, ${String(maxChannelsPerQueue)} at most, every one connected now.`,
+});
+
+const queueIsDefault = queueFields.isDefault.schema.annotate({
+  description:
+    "True to make it the workspace's default queue, the one a post added to no queue in particular takes, instead of the one that was.",
+});
+
+const queueTaken = `A slot is taken while a post the queue placed is scheduled, awaiting approval or publishing at exactly its instant: a post added to the queue (create_post or create_posts with \`when\` \`queue\`, queue_post) takes the first free slot after the call, within ${String(queueHorizonDays)} days.`;
+
+export const ListQueues = Tool.make("list_queues", {
+  dependencies: [CurrentMember],
+  description: `Lists the workspace's queues, the default first, then by name: weekly timetables of slots in a time zone, each with its id, its name, its zone, its \`slots\`, the channels a post added to it goes to when it names none (\`channelIds\`, those disconnected since in \`unavailableChannelIds\`), its channel set, and whether it is the default. ${queueTaken}`,
+  failure: ToolRefused,
+  success: Schema.Struct({ queues: Schema.Array(QueueSchema) }),
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "List queues");
+
+export const PreviewQueue = Tool.make("preview_queue", {
+  dependencies: [CurrentMember],
+  description: `Lists a queue's coming slots after now (\`count\`, ${String(defaultQueuePreview)} unless given, ${String(maxQueuePreview)} at most), each with the post that holds it or null, and \`nextFree\`, the slot a post added now would take, or null with \`noRoom\` (\`noSlots\`: it has none; \`full\`: every slot of the next ${String(queueHorizonDays)} days is taken). It holds nothing: the slot is decided when the post is added.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    count: Schema.optionalKey(
+      Schema.Int.check(
+        Schema.isBetween({ maximum: maxQueuePreview, minimum: 1 })
+      )
+    ),
+    queueId,
+  }),
+  success: QueuePreviewSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Preview a queue's slots");
+
+export const CreateQueue = Tool.make("create_queue", {
+  dependencies: [CurrentMember],
+  description: `Saves a queue for every member: a weekly timetable of slots in a time zone, and the channels and channel set a post added to it goes to when it names none. No post and no channel changes. The first queue of a workspace is its default. A workspace keeps ${String(maxQueuesPerWorkspace)} queues at most, and a name another queue has, whatever its case, is refused: read list_queues first. ${queueTaken}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelIds: Schema.optionalKey(queueChannels),
+    channelSetId: Schema.optionalKey(
+      Schema.String.annotate({
+        description:
+          "A channel set a post added to the queue goes to as well when it names no channel, as list_channel_sets answers its id.",
+      })
+    ),
+    isDefault: Schema.optionalKey(queueIsDefault),
+    name: queueName,
+    slots: queueSlots,
+    timeZone: queueZone,
+  }),
+  success: QueueSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: false })
+  )
+  .annotate(Tool.Title, "Create a queue");
+
+export const UpdateQueue = Tool.make("update_queue", {
+  dependencies: [CurrentMember],
+  description:
+    "Changes a queue of the workspace, for every member: its name, zone, slots, channels or channel set, or makes it the default. What is left out stays as it is, but the channels disconnected since, which a queue cannot keep: without `channelIds`, it keeps its channels still connected. `channelSetId` null takes the set off. Posts the queue placed keep their times: changing slots moves no post. A name another queue has, whatever its case, is refused.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelIds: Schema.optionalKey(queueChannels),
+    channelSetId: Schema.optionalKey(
+      Schema.NullOr(Schema.String).annotate({
+        description:
+          "The channel set it goes to as well, as list_channel_sets answers its id; null for none.",
+      })
+    ),
+    isDefault: Schema.optionalKey(queueIsDefault),
+    name: Schema.optionalKey(queueName),
+    queueId,
+    slots: Schema.optionalKey(queueSlots),
+    timeZone: Schema.optionalKey(queueZone),
+  }),
+  success: QueueSchema,
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Update a queue");
+
+export const DeleteQueue = Tool.make("delete_queue", {
+  dependencies: [CurrentMember],
+  description:
+    "Deletes a queue of the workspace for good. The posts it placed stay scheduled at their times, and no longer name it; nothing goes out differently. Deleting the default leaves the workspace without one. It cannot be brought back: do it only when the user asked for this queue to be deleted.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ queueId }),
+  success: Schema.Struct({ deleted: Schema.String }),
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Delete a queue");
+
 /**
  * The tools that read and change what a workspace saves to write its posts
- * with: its signatures, its channel sets and its channels' default options.
+ * with: its signatures, its channel sets, its channels' default options
+ * and its queues.
  */
 export const SavedTools = Toolkit.make(
   ListSignatures,
@@ -242,5 +372,10 @@ export const SavedTools = Toolkit.make(
   DeleteChannelSet,
   GetChannelDefaults,
   SetChannelDefaults,
-  ClearChannelDefaults
+  ClearChannelDefaults,
+  ListQueues,
+  PreviewQueue,
+  CreateQueue,
+  UpdateQueue,
+  DeleteQueue
 );

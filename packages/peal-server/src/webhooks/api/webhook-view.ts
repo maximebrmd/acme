@@ -1,9 +1,11 @@
 import { Option } from "effect";
 import type {
+  WebhookBulkRedelivery,
   WebhookDelivery as WebhookDeliveryView,
   WebhookEndpoint as WebhookEndpointView,
 } from "peal-contract";
 
+import type { Redelivered } from "#webhooks/application/webhook-deliveries.ts";
 import type { WebhookDelivery } from "#webhooks/domain/webhook-delivery.ts";
 import type { WebhookEndpoint } from "#webhooks/domain/webhook-endpoint.ts";
 
@@ -15,6 +17,7 @@ export const toEndpointView = (
   const off = status._tag === "disabled" ? status : undefined;
 
   return {
+    channelIds: endpoint.channelIds,
     createdAt: endpoint.createdAt,
     description: endpoint.description,
     disabledAt: off?.at ?? null,
@@ -27,6 +30,7 @@ export const toEndpointView = (
     scope: endpoint.scope,
     updatedAt: endpoint.updatedAt,
     url: endpoint.url,
+    workspaceIds: endpoint.workspaceIds,
   };
 };
 
@@ -43,6 +47,7 @@ export const toDeliveryView = (
     completedAt: status._tag === "pending" ? null : status.at,
     createdAt: delivery.createdAt,
     durationMs: last?.durationMs ?? null,
+    endpointId: delivery.endpointId,
     error: outcome?._tag === "unanswered" ? outcome.reason : null,
     eventId: delivery.eventId,
     eventType: delivery.eventType,
@@ -51,9 +56,23 @@ export const toDeliveryView = (
     lastAttemptAt: last?.at ?? null,
     nextAttemptAt:
       status._tag === "pending" ? Option.getOrNull(status.nextAttemptAt) : null,
+    redeliveryOf: Option.getOrNull(delivery.redeliveryOf),
     responseExcerpt:
       outcome?._tag === "answered" ? Option.getOrNull(outcome.excerpt) : null,
     responseStatus: outcome?._tag === "answered" ? outcome.status : null,
     status: status._tag,
+    workspaceExternalId: Option.getOrNull(delivery.externalId),
+    workspaceId: delivery.eventWorkspaceId,
   };
 };
+
+/** What a call to send many deliveries again did, as the API shows it. */
+export const toBulkRedeliveryView = ({
+  redelivered,
+  remaining,
+  skipped,
+}: Redelivered): WebhookBulkRedelivery => ({
+  redelivered: redelivered.map(toDeliveryView),
+  remaining,
+  skipped: skipped.map(({ deliveryId, reason }) => ({ deliveryId, reason })),
+});

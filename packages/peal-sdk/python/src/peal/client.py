@@ -31,12 +31,14 @@ if typing.TYPE_CHECKING:
     from .partner.client import AsyncPartnerClient, PartnerClient
     from .partner_account.client import AsyncPartnerAccountClient, PartnerAccountClient
     from .posts.client import AsyncPostsClient, PostsClient
+    from .queues.client import AsyncQueuesClient, QueuesClient
     from .review.client import AsyncReviewClient, ReviewClient
     from .session.client import AsyncSessionClient, SessionClient
     from .signatures.client import AsyncSignaturesClient, SignaturesClient
     from .system.client import AsyncSystemClient, SystemClient
     from .tags.client import AsyncTagsClient, TagsClient
     from .tiktok.client import AsyncTiktokClient, TiktokClient
+    from .usage.client import AsyncUsageClient, UsageClient
     from .webhooks.client import AsyncWebhooksClient, WebhooksClient
 
 
@@ -136,6 +138,7 @@ class Peal:
         self._members: typing.Optional[MembersClient] = None
         self._invitations: typing.Optional[InvitationsClient] = None
         self._billing: typing.Optional[BillingClient] = None
+        self._usage: typing.Optional[UsageClient] = None
         self._analytics: typing.Optional[AnalyticsClient] = None
         self._tiktok: typing.Optional[TiktokClient] = None
         self._capabilities: typing.Optional[CapabilitiesClient] = None
@@ -151,6 +154,7 @@ class Peal:
         self._tags: typing.Optional[TagsClient] = None
         self._signatures: typing.Optional[SignaturesClient] = None
         self._channel_sets: typing.Optional[ChannelSetsClient] = None
+        self._queues: typing.Optional[QueuesClient] = None
         self._channel_defaults: typing.Optional[ChannelDefaultsClient] = None
 
     @property
@@ -248,6 +252,14 @@ class Peal:
 
             self._billing = BillingClient(client_wrapper=self._client_wrapper)
         return self._billing
+
+    @property
+    def usage(self):
+        if self._usage is None:
+            from .usage.client import UsageClient  # noqa: E402
+
+            self._usage = UsageClient(client_wrapper=self._client_wrapper)
+        return self._usage
 
     @property
     def analytics(self):
@@ -368,6 +380,14 @@ class Peal:
 
             self._channel_sets = ChannelSetsClient(client_wrapper=self._client_wrapper)
         return self._channel_sets
+
+    @property
+    def queues(self):
+        if self._queues is None:
+            from .queues.client import QueuesClient  # noqa: E402
+
+            self._queues = QueuesClient(client_wrapper=self._client_wrapper)
+        return self._queues
 
     @property
     def channel_defaults(self):
@@ -495,6 +515,7 @@ class AsyncPeal:
         self._members: typing.Optional[AsyncMembersClient] = None
         self._invitations: typing.Optional[AsyncInvitationsClient] = None
         self._billing: typing.Optional[AsyncBillingClient] = None
+        self._usage: typing.Optional[AsyncUsageClient] = None
         self._analytics: typing.Optional[AsyncAnalyticsClient] = None
         self._tiktok: typing.Optional[AsyncTiktokClient] = None
         self._capabilities: typing.Optional[AsyncCapabilitiesClient] = None
@@ -510,6 +531,7 @@ class AsyncPeal:
         self._tags: typing.Optional[AsyncTagsClient] = None
         self._signatures: typing.Optional[AsyncSignaturesClient] = None
         self._channel_sets: typing.Optional[AsyncChannelSetsClient] = None
+        self._queues: typing.Optional[AsyncQueuesClient] = None
         self._channel_defaults: typing.Optional[AsyncChannelDefaultsClient] = None
 
     @property
@@ -607,6 +629,14 @@ class AsyncPeal:
 
             self._billing = AsyncBillingClient(client_wrapper=self._client_wrapper)
         return self._billing
+
+    @property
+    def usage(self):
+        if self._usage is None:
+            from .usage.client import AsyncUsageClient  # noqa: E402
+
+            self._usage = AsyncUsageClient(client_wrapper=self._client_wrapper)
+        return self._usage
 
     @property
     def analytics(self):
@@ -727,6 +757,14 @@ class AsyncPeal:
 
             self._channel_sets = AsyncChannelSetsClient(client_wrapper=self._client_wrapper)
         return self._channel_sets
+
+    @property
+    def queues(self):
+        if self._queues is None:
+            from .queues.client import AsyncQueuesClient  # noqa: E402
+
+            self._queues = AsyncQueuesClient(client_wrapper=self._client_wrapper)
+        return self._queues
 
     @property
     def channel_defaults(self):

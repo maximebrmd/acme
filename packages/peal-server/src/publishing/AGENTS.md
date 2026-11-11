@@ -625,6 +625,35 @@ publishing's schema, naming nobody: each goes with its workspace
   takes defaults, never a draft that is changed. Nothing is applied unless
   the request asks, but default options: an API caller's text is never
   signed unasked.
+- A queue (`queue.ts`, `Queues`, `publishing.queues`) is a weekly timetable
+  of slots (a weekday and a wall-clock time, through `fromWallClock`) in an
+  IANA zone, for some channels and one channel set at most; one per name
+  whatever its case, `maxQueuesPerWorkspace` (20), one default (a partial
+  unique index): the first queue is the default, saving one as the default
+  takes it from the other, written first. Its limits are constants of
+  `queue.ts`, copied in the contract and kept equal by
+  `saved-items-contract.test.ts`. A slot is taken while a post with that
+  `posts.queue_id` is scheduled, awaiting approval or publishing at exactly
+  its instant (`QueueStore.takenFrom`): nothing else is stored, so moving,
+  unscheduling or cancelling frees a slot with no write, a slot change
+  moves no post, and a hand move keeps `queueId`. `PostRepository.update`
+  writes `queue_id` only when a placement changed it, so a write that
+  settles a post never brings back a queue deleted meanwhile; deleting a
+  queue clears its posts' `queue_id` under the queue's lock, deleting a
+  channel set clears `queues.channel_set_id`.
+- A post is placed (`Placement`: now, at, queue) by `PostScheduling`: for a
+  queue, the slot is decided inside the transaction that saves the post
+  (`onQueue`: `QueueStore.lock`, the queue read again, `nextFreeSlot` from
+  `received`, the post's own slot left out), then every rule of a time
+  chosen by hand applies, `roomInMonth` in the slot's month (never a later
+  one). Lock order, always: the idempotency key's claim, the queue, the
+  post's row, then the month and what the gate takes; `enqueue` locks the
+  queue before the post, as a queue's deletion holds the queue and then
+  writes its posts. A request naming no channel and no set goes to the
+  queue's (`queueChannelsDropped` for those disconnected since).
+  `PostChecks` computes the slot unlocked. `QueueHasNoRoom` (`noSlots`,
+  `full` within `queueHorizonDays`). Part 2 (recycling, reshuffling) reuses
+  `onQueue` and `move`: add no other way of placing a post.
 - `PostDrafts.duplicate` copies a post, whatever its status, into a new
   draft of whoever asked, every part included: what the workspace no
   longer has (a channel, a media, a tag) is left out rather than refused.

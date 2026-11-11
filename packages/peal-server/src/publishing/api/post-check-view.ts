@@ -1,4 +1,4 @@
-import { Effect, Option } from "effect";
+import { Effect, Option, Result } from "effect";
 import type {
   ChannelPreview as PreviewView,
   CurrentMember,
@@ -85,9 +85,19 @@ const validationView = (
     ),
   };
 
+  // The slot a queue would give it, or why it has none.
+  const placed = Option.match(check.queueSlot, {
+    onNone: () => view,
+    onSome: ({ slot }) =>
+      Result.match(slot, {
+        onFailure: (queueNoRoom): PostValidation => ({ ...view, queueNoRoom }),
+        onSuccess: (queueSlot): PostValidation => ({ ...view, queueSlot }),
+      }),
+  });
+
   return check.dropped.length === 0
-    ? view
-    : { ...view, warnings: droppedWarnings(check.dropped) };
+    ? placed
+    : { ...placed, warnings: droppedWarnings(check.dropped) };
 };
 
 /**

@@ -1,9 +1,13 @@
 import { Context, DateTime, Effect, Layer } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import { deliveryRetention } from "#webhooks/domain/delivery-policy.ts";
+import {
+  deliveryRetention,
+  manualSendCountRetention,
+} from "#webhooks/domain/delivery-policy.ts";
 
 import { DeliveryStore } from "./ports/delivery-store.ts";
+import { ManualSends } from "./ports/manual-sends.ts";
 
 // Deliveries deleted per statement, so one run never holds long locks.
 const batchSize = 500;
@@ -11,7 +15,8 @@ const batchSize = 500;
 /**
  * Ends the delivery logs' retention: a delivery leaves its endpoint's log
  * `deliveryRetention` after it was made, and an event once none of its
- * deliveries is left.
+ * deliveries is left; the counts of manual sends go a day after their
+ * hour.
  */
 export class PurgeDeliveries extends Context.Service<
   PurgeDeliveries,
@@ -24,6 +29,7 @@ export class PurgeDeliveries extends Context.Service<
     PurgeDeliveries,
     Effect.gen(function* PurgeDeliveriesLive() {
       const deliveries = yield* DeliveryStore;
+      const manual = yield* ManualSends;
 
       const untilShort = (
         before: DateTime.Utc,
@@ -41,7 +47,13 @@ export class PurgeDeliveries extends Context.Service<
 
       const purge = DateTime.now.pipe(
         Effect.flatMap((now) =>
-          untilShort(DateTime.subtractDuration(now, deliveryRetention), 0)
+          manual
+            .purge(DateTime.subtractDuration(now, manualSendCountRetention))
+            .pipe(
+              Effect.andThen(
+                untilShort(DateTime.subtractDuration(now, deliveryRetention), 0)
+              )
+            )
         ),
         Effect.withSpan("PurgeDeliveries.purge")
       );

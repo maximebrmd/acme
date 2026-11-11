@@ -10,9 +10,10 @@ import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
-import type { EventToPublish } from "#webhooks/application/webhook-events.ts";
+import type { ChannelNamingEvent } from "#webhooks/application/webhook-events.ts";
 
-type Event = EventToPublish["event"];
+// The events told here that name their channels in their data.
+type Event = ChannelNamingEvent;
 
 // What webhook endpoints hear of posts, from publishing's two seams: what
 // members do to a post's schedule (PostEvents) and how each target ends
@@ -130,6 +131,25 @@ export const WebhookPostEvents = Layer.effect(
   PostEvents,
   Effect.gen(function* WebhookPostEvents() {
     const { publish, refsOf, settled } = yield* makeTelling;
+    const posts = yield* PostRepository;
+    const webhooks = yield* WebhookEvents;
+
+    // A post taken back to draft names none of its channels: they are
+    // told beside it, for the endpoints that listen to some channels only.
+    const unscheduled = Effect.fn("PostEvents.unscheduled")(
+      function* unscheduled(post: Post) {
+        const targets = yield* posts.targets(post.id);
+
+        yield* webhooks.publish({
+          event: {
+            data: { postId: post.id, workspaceId: post.workspaceId },
+            type: "post.unscheduled",
+          },
+          key: `post:${post.id}:unscheduled:${post.scheduleRevision}`,
+          postChannelIds: targets.map(({ channelId }) => channelId),
+        });
+      }
+    );
 
     const scheduled = Effect.fn("PostEvents.scheduled")(function* scheduled(
       post: Post,
@@ -176,13 +196,7 @@ export const WebhookPostEvents = Layer.effect(
       confirmed: (post, target) =>
         neverStopping(settled(post, target, "confirmed")),
       scheduled: (post, targets) => neverStopping(scheduled(post, targets)),
-      unscheduled: (post) =>
-        neverStopping(
-          publish(`post:${post.id}:unscheduled:${post.scheduleRevision}`, {
-            data: { postId: post.id, workspaceId: post.workspaceId },
-            type: "post.unscheduled",
-          })
-        ),
+      unscheduled: (post) => neverStopping(unscheduled(post)),
     });
   })
 );

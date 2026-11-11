@@ -11,6 +11,7 @@ from .content_violation import ContentViolation
 from .duplicate_on_channel import DuplicateOnChannel
 from .plan_shortfall import PlanShortfall
 from .post_warning import PostWarning
+from .queue_no_room import QueueNoRoom
 from .schedule_check import ScheduleCheck
 
 
@@ -22,6 +23,12 @@ class PostValidation(UniversalBaseModel):
     duplicates: typing.List[DuplicateOnChannel]
     plan_limit: typing_extensions.Annotated[
         typing.Optional[PlanShortfall], FieldMetadata(alias="planLimit"), pydantic.Field(alias="planLimit")
+    ] = None
+    queue_no_room: typing_extensions.Annotated[
+        typing.Optional[QueueNoRoom], FieldMetadata(alias="queueNoRoom"), pydantic.Field(alias="queueNoRoom")
+    ] = None
+    queue_slot: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="queueSlot"), pydantic.Field(alias="queueSlot")
     ] = None
     schedule: typing.Optional[ScheduleCheck] = None
     unknown_channels: typing_extensions.Annotated[

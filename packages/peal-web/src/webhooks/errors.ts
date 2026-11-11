@@ -9,6 +9,7 @@ import type { WebhookUrlRefusal } from "peal-contract";
 export const WebhookErrorKeySchema = Schema.Literals([
   "deliveryNotFound",
   "endpointDisabled",
+  "filterRefused",
   "forbidden",
   "notConfigured",
   "notFound",
@@ -31,6 +32,7 @@ const reasons = new Map<string, WebhookErrorKey>([
   ["WebhookEndpointDisabled", "endpointDisabled"],
   ["TooManyWebhookSends", "tooManySends"],
   ["WebhookEndpointNotFound", "notFound"],
+  ["WebhookFilterRefused", "filterRefused"],
   ["WebhooksNotConfigured", "notConfigured"],
 ]);
 

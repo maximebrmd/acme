@@ -97,6 +97,7 @@ public class DraftsTest : BaseMockServerTest
                   },
                   "id": "id",
                   "outcome": "published",
+                  "queueId": "queueId",
                   "schedule": {
                     "at": "at",
                     "timeZone": "timeZone"
@@ -299,6 +300,7 @@ public class DraftsTest : BaseMockServerTest
                   },
                   "id": "id",
                   "outcome": "published",
+                  "queueId": "queueId",
                   "schedule": {
                     "at": "at",
                     "timeZone": "timeZone"
@@ -472,6 +474,7 @@ public class DraftsTest : BaseMockServerTest
                   },
                   "id": "id",
                   "outcome": "published",
+                  "queueId": "queueId",
                   "schedule": {
                     "at": "at",
                     "timeZone": "timeZone"

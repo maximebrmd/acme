@@ -15,6 +15,8 @@ module Peal
 
       field :outcome, -> { Peal::Types::PostOutcome }, optional: false, nullable: true
 
+      field :queue_id, -> { String }, optional: false, nullable: true, api_name: "queueId"
+
       field :schedule, -> { Peal::Types::PostSchedule }, optional: false, nullable: true
 
       field :scheduled_by, -> { String }, optional: false, nullable: true, api_name: "scheduledBy"

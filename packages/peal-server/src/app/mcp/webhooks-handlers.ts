@@ -9,7 +9,11 @@ import type { WebhookUrlRefusal } from "peal-contract";
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";
 import { WebhookTools } from "#app/mcp/webhooks-tools.ts";
 import { actorOf } from "#shared/api/actor.ts";
-import { toDeliveryView, toEndpointView } from "#webhooks/api/webhook-view.ts";
+import {
+  toBulkRedeliveryView,
+  toDeliveryView,
+  toEndpointView,
+} from "#webhooks/api/webhook-view.ts";
 import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
 import { WebhookDeliveryIdSchema } from "#webhooks/domain/webhook-delivery-id.ts";
@@ -34,6 +38,42 @@ const urlRefused = ({ reason }: { readonly reason: WebhookUrlRefusal }) =>
 const noEndpoint = () =>
   refuse("The workspace has no webhook endpoint with this id.");
 
+const filterRefused = ({
+  field,
+}: {
+  readonly field: "channelIds" | "workspaceIds";
+}) =>
+  refuse(
+    field === "workspaceIds"
+      ? "Only a partner endpoint, in a partner account's home workspace, takes workspaceIds: an endpoint of the workspace scope hears its own workspace only."
+      : "channelIds must be a list of channel ids, as list_channels answers them."
+  );
+
+const tooManySends = ({
+  allowed,
+  retryAfterSeconds,
+}: {
+  readonly allowed: number;
+  readonly retryAfterSeconds: number;
+}) =>
+  refuse(
+    `The workspace sent ${String(allowed)} of these an hour, the most it may, or this call would send more than are left: nothing was sent. Try again in ${String(retryAfterSeconds)} seconds.`
+  );
+
+const offEndpoint = () =>
+  refuse(
+    "The endpoint is turned off: turn it back on with update_webhook (enabled: true) first."
+  );
+
+// A cursor is the id of the last delivery of the page before.
+const cursorOf = (cursor: string | undefined) => {
+  const after = Option.fromUndefinedOr(cursor).pipe(Option.map(decodeCursor));
+
+  return Option.isSome(after) && Option.isNone(after.value)
+    ? refuse("That cursor is not one a page of deliveries answered.")
+    : Effect.succeed(Option.flatten(after));
+};
+
 /** What the webhook tools do, through the webhooks context's use cases. */
 export const WebhookToolsLive = WebhookTools.toLayer(
   Effect.gen(function* webhookTools() {
@@ -47,17 +87,20 @@ export const WebhookToolsLive = WebhookTools.toLayer(
         Effect.gen(function* create() {
           const { endpoint, secret } = yield* endpoints
             .create(yield* actor, {
+              channelIds: asked.channelIds ?? [],
               description: asked.description ?? "",
               enabled: asked.enabled ?? true,
               eventTypes: asked.eventTypes,
+              scope: asked.scope ?? "workspace",
               url: asked.url,
+              workspaceIds: asked.workspaceIds ?? [],
             })
             .pipe(
               Effect.catchTags({
                 DatabaseError: Effect.die,
+                FilterRefused: filterRefused,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: notAllowed("manage webhooks"),
-                // The tool adds endpoints that hear their own workspace.
                 PartnerScopeUnavailable: () =>
                   refuse("The workspace has no partner account."),
                 SecretsNotConfigured: () =>
@@ -77,31 +120,52 @@ export const WebhookToolsLive = WebhookTools.toLayer(
             secret: Redacted.value(secret),
           };
         }),
-      list_webhook_deliveries: ({ cursor, endpointId, limit }) =>
+      list_webhook_deliveries: ({
+        cursor,
+        endpointId,
+        eventType,
+        limit,
+        status,
+      }) =>
         Effect.gen(function* listDeliveries() {
-          // A cursor is the id of the last delivery of the page before.
-          const after = Option.fromUndefinedOr(cursor).pipe(
-            Option.map(decodeCursor)
-          );
+          const request = {
+            after: yield* cursorOf(cursor),
+            limit: limit ?? defaultWebhookDeliveryPageSize,
+          };
 
-          if (Option.isSome(after) && Option.isNone(after.value)) {
-            return yield* refuse(
-              "That cursor is not one a page of deliveries answered."
-            );
-          }
+          const filters = {
+            eventType: Option.fromUndefinedOr(eventType),
+            status: Option.fromUndefinedOr(status),
+          };
 
-          const page = yield* deliveries
-            .page(yield* actor, endpointId, {
-              after: Option.flatten(after),
-              limit: limit ?? defaultWebhookDeliveryPageSize,
-            })
-            .pipe(
-              Effect.catchTags({
-                DatabaseError: Effect.die,
-                EndpointNotFound: noEndpoint,
-                MissingPermission: notAllowed("read webhooks"),
-              })
-            );
+          const page =
+            endpointId === undefined
+              ? yield* deliveries
+                  .search(
+                    yield* actor,
+                    {
+                      ...filters,
+                      endpointId: Option.none(),
+                      since: Option.none(),
+                      until: Option.none(),
+                    },
+                    request
+                  )
+                  .pipe(
+                    Effect.catchTags({
+                      DatabaseError: Effect.die,
+                      MissingPermission: notAllowed("read webhooks"),
+                    })
+                  )
+              : yield* deliveries
+                  .page(yield* actor, endpointId, request, filters)
+                  .pipe(
+                    Effect.catchTags({
+                      DatabaseError: Effect.die,
+                      EndpointNotFound: noEndpoint,
+                      MissingPermission: notAllowed("read webhooks"),
+                    })
+                  );
 
           return {
             items: page.items.map(toDeliveryView),
@@ -118,6 +182,67 @@ export const WebhookToolsLive = WebhookTools.toLayer(
           );
 
           return { endpoints: found.map(toEndpointView) };
+        }),
+      redeliver_webhooks: (asked) =>
+        Effect.gen(function* redeliver() {
+          if (
+            (asked.deliveryIds === undefined) ===
+            (asked.endpointId === undefined)
+          ) {
+            return yield* refuse(
+              "Give either deliveryIds or endpointId, not both and not neither."
+            );
+          }
+
+          const redelivery =
+            asked.endpointId === undefined
+              ? { _tag: "ids" as const, deliveryIds: asked.deliveryIds ?? [] }
+              : {
+                  _tag: "failed" as const,
+                  endpointId: asked.endpointId,
+                  eventType: Option.fromUndefinedOr(asked.eventType),
+                  since: Option.fromUndefinedOr(asked.since),
+                  until: Option.fromUndefinedOr(asked.until),
+                };
+
+          return yield* deliveries.redeliverMany(yield* actor, redelivery).pipe(
+            Effect.map(toBulkRedeliveryView),
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              EndpointNotFound: noEndpoint,
+              MissingPermission: notAllowed("manage webhooks"),
+              TooManyManualSends: tooManySends,
+            })
+          );
+        }),
+      send_test_webhook: ({ endpointId, eventType }) =>
+        Effect.gen(function* sendTest() {
+          return yield* endpoints
+            .sendTest(yield* actor, endpointId, eventType)
+            .pipe(
+              Effect.map(toDeliveryView),
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                EndpointDisabled: offEndpoint,
+                EndpointNotFound: noEndpoint,
+                MissingPermission: notAllowed("manage webhooks"),
+                TooManyManualSends: tooManySends,
+              })
+            );
+        }),
+      update_webhook: ({ change, endpointId }) =>
+        Effect.gen(function* update() {
+          return yield* endpoints.update(yield* actor, endpointId, change).pipe(
+            Effect.map(toEndpointView),
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              EndpointNotFound: noEndpoint,
+              FilterRefused: filterRefused,
+              InvalidWebhookUrl: urlRefused,
+              MissingPermission: notAllowed("manage webhooks"),
+              UrlNotDeliverable: urlRefused,
+            })
+          );
         }),
     });
   })

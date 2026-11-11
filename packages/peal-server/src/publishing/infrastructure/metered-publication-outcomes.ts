@@ -1,6 +1,7 @@
 import { Effect, Layer, Option } from "effect";
 
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
+import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
@@ -11,7 +12,12 @@ import { countLinks } from "#publishing/domain/text-length.ts";
 
 /**
  * Outcomes told through `told`, after billing counted each post that went
- * out (MeteredPosts), in the transaction that settled it: billing keeps the
+ * out, in the transaction that settled it. Its usage ledger
+ * (RecordedUsage) counts one post per target, on any platform, on the day
+ * its first part went out: a thread is one post, and the round that sent
+ * its first part counts it, so a round that finishes a thread adds none
+ * and a repost that sends it again from the start adds one. Its metered
+ * posts (MeteredPosts) count each part instead: billing keeps the
  * platforms that bill the server per post, and whether the post's text on
  * the channel held a link, as X finds links (`countLinks`). Each part of a
  * post is a post to the platform, so every part the round sent is counted,
@@ -31,6 +37,7 @@ export const meteredOutcomes = <E, R>(
       const outcomes = yield* PublicationOutcomes;
       const channels = yield* ChannelRepository;
       const metered = yield* MeteredPosts;
+      const usage = yield* RecordedUsage;
       const posts = yield* PostRepository;
 
       const count = Effect.fn("PublicationOutcomes.count")(function* count(
@@ -55,6 +62,15 @@ export const meteredOutcomes = <E, R>(
 
         const { post } = found.value;
         const texts = partsOn(post.content, target.channelId);
+        const first = sent.find(({ index }) => index === 0);
+
+        if (first !== undefined) {
+          yield* usage.postWentOut({
+            platform: channel.value.platform,
+            publishedAt: first.publishedAt,
+            workspaceId: post.workspaceId,
+          });
+        }
 
         yield* Effect.forEach(
           sent,

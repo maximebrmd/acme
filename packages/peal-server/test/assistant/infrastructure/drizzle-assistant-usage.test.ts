@@ -57,6 +57,29 @@ layer(UsageTest)("the assistant's usage in Postgres", (it) => {
     })
   );
 
+  it.effect("reads many workspaces' day in one call", () =>
+    Effect.gen(function* many() {
+      const usage = yield* AssistantUsage;
+      const workspaceId = yield* freshWorkspace;
+      const other = yield* freshWorkspace;
+      const idle = yield* freshWorkspace;
+
+      yield* usage.claim(workspaceId, ninth, 5);
+      yield* usage.claim(workspaceId, ninth, 5);
+      yield* usage.claim(other, ninth, 5);
+      yield* usage.claim(other, tenth, 5);
+
+      assert.deepStrictEqual(
+        yield* usage.usedIn([workspaceId, other, idle], ninth),
+        new Map([
+          [workspaceId, 2],
+          [other, 1],
+        ])
+      );
+      assert.deepStrictEqual(yield* usage.usedIn([], ninth), new Map());
+    })
+  );
+
   it.effect("takes back a request, never below zero", () =>
     Effect.gen(function* release() {
       const usage = yield* AssistantUsage;

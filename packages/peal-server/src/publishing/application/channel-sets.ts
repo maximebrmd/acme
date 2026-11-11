@@ -28,6 +28,7 @@ import { ChannelSetNameTaken } from "./channel-set-name-taken.ts";
 import { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import { ChannelSetStore } from "./channel-set-store.ts";
 import { channelsFor } from "./post-references.ts";
+import { QueueStore } from "./queue-store.ts";
 import { TooManyChannelSets } from "./too-many-channel-sets.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import { WorkspaceChannels } from "./workspace-channels.ts";
@@ -67,7 +68,8 @@ const nameFree = (
  * as editing a post does. A set is saved with channels of the workspace
  * only, and options of their own platforms, unfinished as a draft's may
  * be: they are checked when a post that takes them is scheduled. A
- * workspace has one set per name, whatever its case.
+ * workspace has one set per name, whatever its case. Deleting a set takes
+ * it off the queues that name it, in the same transaction.
  */
 export class ChannelSets extends Context.Service<
   ChannelSets,
@@ -101,6 +103,7 @@ export class ChannelSets extends Context.Service<
     ChannelSets,
     Effect.gen(function* ChannelSetsLive() {
       const store = yield* ChannelSetStore;
+      const queues = yield* QueueStore;
       const channels = yield* WorkspaceChannels;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<Ids | WorkspaceChannels>();
@@ -227,6 +230,9 @@ export class ChannelSets extends Context.Service<
             if (!kept.some(({ id }) => id === setId)) {
               return yield* new ChannelSetNotFound({ channelSet: setId });
             }
+
+            // No queue goes on naming it.
+            yield* queues.forgetChannelSet(actor.workspaceId, setId);
 
             return yield* store.remove(actor.workspaceId, setId);
           })

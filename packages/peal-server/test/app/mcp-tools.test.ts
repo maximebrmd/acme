@@ -18,6 +18,8 @@ import {
   ChannelDefaultsSchema,
   ChannelSchema,
   ChannelSetSchema,
+  QueuePreviewSchema,
+  QueueSchema,
   InboxCommentSchema,
   InboxReplySchema,
   InboxThreadDetailSchema,
@@ -201,6 +203,12 @@ const ToolsFixtureLive = Layer.effect(
 // Replies are JSON, which writes instants as strings.
 const PostJsonSchema = Schema.toCodecJson(PostSchema);
 
+// Instants, as text to compare.
+const iso = (instant: DateTime.Utc | null | undefined) =>
+  instant === null || instant === undefined
+    ? null
+    : DateTime.formatIso(instant);
+
 const DraftPageJsonSchema = Schema.toCodecJson(
   Schema.Struct({
     items: Schema.Array(PostSchema),
@@ -368,6 +376,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           create_draft: [false, false, false, false],
           create_post: [false, false, false, true],
           create_posts: [false, false, false, true],
+          create_queue: [false, false, false, false],
           // As a default, it takes the place of the one its scope had.
           create_signature: [false, true, false, false],
           create_tag: [false, false, false, false],
@@ -375,6 +384,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // workspace.
           create_webhook: [false, false, false, true],
           delete_channel_set: [false, true, true, false],
+          delete_queue: [false, true, true, false],
           delete_signature: [false, true, true, false],
           // Its posts lose it, and stay.
           delete_tag: [false, true, true, false],
@@ -400,6 +410,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           get_post_ad_performance: [true, false, true, false],
           get_post_review: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
+          get_usage: [true, false, true, false],
           import_media: [false, false, false, true],
           invite_member: [false, true, false, true],
           list_activity: [true, false, true, false],
@@ -417,6 +428,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_partner_workspaces: [true, false, true, false],
           list_post_attempts: [true, false, true, false],
           list_posts: [true, false, true, false],
+          list_queues: [true, false, true, false],
           list_signatures: [true, false, true, false],
           list_tags: [true, false, true, false],
           list_webhook_deliveries: [true, false, true, false],
@@ -426,9 +438,13 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           moderate_comment: [false, true, true, true],
           pause_boost: [false, false, true, true],
           post_analytics: [true, false, true, false],
+          preview_queue: [true, false, true, false],
           publish_post: [false, false, false, true],
+          queue_post: [false, true, true, true],
           quote_boost: [true, false, true, false],
           // It takes the place of the name the channel had.
+          // Peal calls receivers outside it again.
+          redeliver_webhooks: [false, false, false, true],
           rename_channel: [false, true, true, false],
           // A reply is a public message from the account.
           reply_to_comment: [false, false, false, true],
@@ -440,6 +456,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           revoke_invitation: [false, true, true, false],
           run_channel_lookup: [true, false, true, true],
           schedule_post: [false, false, false, true],
+          // Peal calls the receiver, a server outside it.
+          send_test_webhook: [false, false, false, true],
           server_health: [true, false, true, false],
           // They replace the options the channel had.
           set_channel_defaults: [false, true, true, false],
@@ -450,8 +468,11 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           unschedule_post: [false, true, true, false],
           update_channel_set: [false, true, true, false],
           update_draft: [false, true, true, false],
+          update_queue: [false, true, true, false],
           update_signature: [false, true, true, false],
           update_tag: [false, true, true, false],
+          // Its address may name another server outside Peal.
+          update_webhook: [false, false, true, true],
           // It asks TikTok what a creator takes.
           validate_post: [true, false, true, true],
           whoami: [true, false, true, false],
@@ -562,6 +583,11 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               ["get_channel_defaults", "workspace:read"],
               ["set_channel_defaults", "workspace:write"],
               ["clear_channel_defaults", "workspace:write"],
+              ["list_queues", "workspace:read"],
+              ["preview_queue", "workspace:read"],
+              ["create_queue", "workspace:write"],
+              ["update_queue", "workspace:write"],
+              ["delete_queue", "workspace:write"],
             ]
           );
 
@@ -676,6 +702,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             mark_comment_answered: { answered: true, commentId: postId },
             moderate_comment: { action: "like", commentId: postId },
             publish_post: { postId },
+            queue_post: { postId },
             reply_to_comment: { commentId: postId, text: "Never sent." },
             repost_target: { postId, targetId: postId },
             request_changes: { ...decision, comment: "Never read." },
@@ -1822,6 +1849,151 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
         })
     );
 
+    it.effect("keep queues, and add posts to their next free slot", () =>
+      Effect.gen(function* queues() {
+        const fixture = yield* ToolsFixture;
+        const writer = yield* connected(fixture.writing);
+        const reader = yield* connected(fixture.reading);
+        const publisher = yield* connected(fixture.publishing);
+
+        const QueueJsonSchema = Schema.toCodecJson(QueueSchema);
+        const PreviewJsonSchema = Schema.toCodecJson(QueuePreviewSchema);
+
+        const everyDay = (
+          [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+          ] as const
+        ).map((day) => ({ day, time: "09:30" }));
+
+        const queue = yield* writer.call("create_queue", QueueJsonSchema, {
+          channelIds: [fixture.channelId],
+          name: "Synthetic evergreen",
+          slots: everyDay,
+          timeZone: "Europe/Paris",
+        });
+
+        assert.isTrue(queue.isDefault);
+        assert.include(
+          yield* reader.refused("create_queue", {
+            name: "Not for a reader",
+            slots: [],
+            timeZone: "UTC",
+          }),
+          "did not give this client the scope workspace:write"
+        );
+        assert.include(
+          yield* writer.refused("create_queue", {
+            name: "SYNTHETIC EVERGREEN",
+            slots: [],
+            timeZone: "UTC",
+          }),
+          "The workspace already has a queue of this name"
+        );
+
+        const listed = yield* reader.call(
+          "list_queues",
+          Schema.Struct({ queues: Schema.Array(QueueJsonSchema) })
+        );
+
+        assert.include(
+          listed.queues.map(({ id }) => id),
+          queue.id
+        );
+
+        const before = yield* reader.call("preview_queue", PreviewJsonSchema, {
+          count: 2,
+          queueId: queue.id,
+        });
+
+        assert.lengthOf(before.slots, 2);
+
+        assert.strictEqual(iso(before.nextFree), iso(before.slots[0]?.at));
+
+        // Named by its name, whatever its case, a post is checked at the
+        // slot the preview said, on the queue's channels.
+        const checked = yield* reader.call(
+          "validate_post",
+          Schema.toCodecJson(PostValidationSchema),
+          {
+            channelIds: [],
+            content: content("A synthetic evergreen post."),
+            when: { _tag: "queue", queue: "synthetic EVERGREEN" },
+          }
+        );
+
+        assert.isTrue(checked.valid);
+        assert.strictEqual(iso(checked.queueSlot), iso(before.nextFree));
+        assert.deepStrictEqual(
+          checked.channels.map(({ channelId }) => channelId),
+          [fixture.channelId]
+        );
+
+        // A queue the workspace lacks, or one without slots, is told in
+        // words the user acts on.
+        assert.include(
+          yield* publisher.refused("create_post", {
+            channelIds: [fixture.channelId],
+            content: content("Never sent."),
+            when: { _tag: "queue", queue: "No such queue" },
+          }),
+          "The workspace has no queue No such queue"
+        );
+
+        const empty = yield* writer.call("create_queue", QueueJsonSchema, {
+          name: "Synthetic empty",
+          slots: [],
+          timeZone: "UTC",
+        });
+
+        const draft = yield* writer.call("create_draft", PostJsonSchema, {
+          channelIds: [fixture.channelId],
+          content: content("A synthetic draft for the queue."),
+        });
+
+        assert.include(
+          yield* publisher.refused("queue_post", {
+            postId: draft.id,
+            queue: empty.id,
+          }),
+          "The queue has no slot"
+        );
+        assert.include(
+          yield* writer.refused("queue_post", { postId: draft.id }),
+          "workspace:publish"
+        );
+
+        // What an update leaves out stays as it is.
+        const renamed = yield* writer.call("update_queue", QueueJsonSchema, {
+          name: "Synthetic mornings",
+          queueId: queue.id,
+        });
+
+        assert.deepStrictEqual(renamed.slots, queue.slots);
+        assert.deepStrictEqual(renamed.channelIds, queue.channelIds);
+        assert.isTrue(renamed.isDefault);
+
+        for (const queueId of [queue.id, empty.id]) {
+          yield* writer.call(
+            "delete_queue",
+            Schema.Struct({ deleted: Schema.String }),
+            { queueId }
+          );
+        }
+
+        yield* writer.call(
+          "discard_draft",
+          Schema.Struct({ discarded: Schema.String }),
+          { postId: draft.id }
+        );
+      })
+    );
+
     it.effect(
       "write, list, change and discard drafts, and refuse a connection that reads only",
       () =>
@@ -2165,6 +2337,34 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               })
             ),
             { enabled: false, plan: null }
+          );
+
+          // Its usage, counted all the same, without a plan.
+          assert.deepStrictEqual(
+            yield* reader.call(
+              "get_usage",
+              Schema.Struct({
+                allowances: Schema.Null,
+                period: Schema.Struct({
+                  from: Schema.String,
+                  to: Schema.String,
+                }),
+                plan: Schema.Null,
+              }),
+              { from: "2026-11-01", to: "2026-11-07" }
+            ),
+            {
+              allowances: null,
+              period: { from: "2026-11-01", to: "2026-11-07" },
+              plan: null,
+            }
+          );
+          assert.include(
+            yield* reader.refused("get_usage", {
+              from: "2026-08-01",
+              to: "2026-11-07",
+            }),
+            "92 days at most"
           );
         })
     );

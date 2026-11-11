@@ -150,6 +150,17 @@
       },
       "default": "./dist/cjs/api/resources/billing/exports.js"
     },
+    "./usage": {
+      "import": {
+        "types": "./dist/esm/api/resources/usage/exports.d.mts",
+        "default": "./dist/esm/api/resources/usage/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/usage/exports.d.ts",
+        "default": "./dist/cjs/api/resources/usage/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/usage/exports.js"
+    },
     "./analytics": {
       "import": {
         "types": "./dist/esm/api/resources/analytics/exports.d.mts",
@@ -314,6 +325,17 @@
         "default": "./dist/cjs/api/resources/channelSets/exports.js"
       },
       "default": "./dist/cjs/api/resources/channelSets/exports.js"
+    },
+    "./queues": {
+      "import": {
+        "types": "./dist/esm/api/resources/queues/exports.d.mts",
+        "default": "./dist/esm/api/resources/queues/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/queues/exports.d.ts",
+        "default": "./dist/cjs/api/resources/queues/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/queues/exports.js"
     },
     "./channelDefaults": {
       "import": {

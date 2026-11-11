@@ -22,6 +22,8 @@ module Peal
 
         field :platform, -> { Peal::Types::Platform }, optional: true, nullable: false
 
+        field :queue_id, -> { String }, optional: true, nullable: false, api_name: "queueId"
+
         field :sort, -> { Peal::Types::PostSort }, optional: true, nullable: false
 
         field :status, -> { Peal::Types::PostStatus }, optional: true, nullable: false

@@ -10,10 +10,10 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 
 
-class ConflictErrorBody_ChannelSetNameTaken(UniversalBaseModel):
+class ConflictErrorBody_QueueNameTaken(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["ChannelSetNameTaken"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "ChannelSetNameTaken"
+        typing.Literal["QueueNameTaken"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "QueueNameTaken"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
@@ -30,10 +30,10 @@ class ConflictErrorBody_ChannelSetNameTaken(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class ConflictErrorBody_TooManyChannelSets(UniversalBaseModel):
+class ConflictErrorBody_TooManyQueues(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["TooManyChannelSets"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "TooManyChannelSets"
+        typing.Literal["TooManyQueues"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "TooManyQueues"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
@@ -52,6 +52,6 @@ class ConflictErrorBody_TooManyChannelSets(UniversalBaseModel):
 
 
 ConflictErrorBody = typing_extensions.Annotated[
-    typing.Union[ConflictErrorBody_ChannelSetNameTaken, ConflictErrorBody_TooManyChannelSets],
+    typing.Union[ConflictErrorBody_QueueNameTaken, ConflictErrorBody_TooManyQueues],
     pydantic.Field(discriminator="type"),
 ]

@@ -14,6 +14,7 @@
 //! - **members**
 //! - **invitations**
 //! - **billing**
+//! - **usage**
 //! - **analytics**
 //! - **tiktok**
 //! - **capabilities**
@@ -29,6 +30,7 @@
 //! - **tags**
 //! - **signatures**
 //! - **channelSets**
+//! - **queues**
 //! - **channelDefaults**
 
 use crate::{ApiError, ClientConfig};
@@ -54,12 +56,14 @@ pub mod notification_preferences;
 pub mod partner;
 pub mod partner_account;
 pub mod posts;
+pub mod queues;
 pub mod review;
 pub mod session;
 pub mod signatures;
 pub mod system;
 pub mod tags;
 pub mod tiktok;
+pub mod usage;
 pub mod webhooks;
 pub struct PealClient {
     pub config: ClientConfig,
@@ -75,6 +79,7 @@ pub struct PealClient {
     pub members: MembersClient,
     pub invitations: InvitationsClient,
     pub billing: BillingClient,
+    pub usage: UsageClient,
     pub analytics: AnalyticsClient,
     pub tiktok: TiktokClient,
     pub capabilities: CapabilitiesClient,
@@ -90,6 +95,7 @@ pub struct PealClient {
     pub tags: TagsClient,
     pub signatures: SignaturesClient,
     pub channel_sets: ChannelSetsClient,
+    pub queues: QueuesClient,
     pub channel_defaults: ChannelDefaultsClient,
 }
 
@@ -109,6 +115,7 @@ impl PealClient {
             members: MembersClient::new(config.clone())?,
             invitations: InvitationsClient::new(config.clone())?,
             billing: BillingClient::new(config.clone())?,
+            usage: UsageClient::new(config.clone())?,
             analytics: AnalyticsClient::new(config.clone())?,
             tiktok: TiktokClient::new(config.clone())?,
             capabilities: CapabilitiesClient::new(config.clone())?,
@@ -124,6 +131,7 @@ impl PealClient {
             tags: TagsClient::new(config.clone())?,
             signatures: SignaturesClient::new(config.clone())?,
             channel_sets: ChannelSetsClient::new(config.clone())?,
+            queues: QueuesClient::new(config.clone())?,
             channel_defaults: ChannelDefaultsClient::new(config.clone())?,
         })
     }
@@ -150,10 +158,12 @@ pub use notification_preferences::NotificationPreferencesClient;
 pub use partner::PartnerClient;
 pub use partner_account::PartnerAccountClient;
 pub use posts::PostsClient;
+pub use queues::QueuesClient;
 pub use review::ReviewClient;
 pub use session::SessionClient;
 pub use signatures::SignaturesClient;
 pub use system::SystemClient;
 pub use tags::TagsClient;
 pub use tiktok::TiktokClient;
+pub use usage::UsageClient;
 pub use webhooks::WebhooksClient;

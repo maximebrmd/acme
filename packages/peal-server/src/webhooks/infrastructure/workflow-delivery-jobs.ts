@@ -1,4 +1,4 @@
-import { Effect, Layer } from "effect";
+import { Duration, Effect, Layer } from "effect";
 import { WorkflowEngine } from "effect/workflow";
 
 import { DeliveryJobs } from "#webhooks/application/ports/delivery-jobs.ts";
@@ -18,9 +18,9 @@ export const WorkflowDeliveryJobs = Layer.effect(
     const engine = yield* WorkflowEngine.WorkflowEngine;
 
     return DeliveryJobs.of({
-      start: (deliveryId) =>
+      start: (deliveryId, startAfter = Duration.zero) =>
         DeliverWebhookV1.execute(
-          { deliveryId },
+          { deliveryId, startAfterMillis: Duration.toMillis(startAfter) },
           { detached: true, discard: true }
         ).pipe(
           Effect.provideService(WorkflowEngine.WorkflowEngine, engine),

@@ -7,19 +7,21 @@ import { newId } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
+import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
-import {
-  manualSendsPerHour,
-  maxEndpointsPerWorkspace,
-} from "#webhooks/domain/delivery-policy.ts";
+import { maxEndpointsPerWorkspace } from "#webhooks/domain/delivery-policy.ts";
 import type { InvalidWebhookUrl } from "#webhooks/domain/invalid-webhook-url.ts";
 import { RecordedEvent } from "#webhooks/domain/recorded-event.ts";
+import { sampleOf } from "#webhooks/domain/sample-events.ts";
 import type { WebhookDelivery } from "#webhooks/domain/webhook-delivery.ts";
 import { WebhookEndpointIdSchema } from "#webhooks/domain/webhook-endpoint-id.ts";
 import {
   changeEndpoint,
   createEndpoint,
+  ChannelFilterSchema,
   rotateSecret,
+  takesWorkspaceFilter,
+  WorkspaceFilterSchema,
 } from "#webhooks/domain/webhook-endpoint.ts";
 import type {
   EndpointScope,
@@ -27,11 +29,14 @@ import type {
   WebhookEndpoint,
 } from "#webhooks/domain/webhook-endpoint.ts";
 import { WebhookEventIdSchema } from "#webhooks/domain/webhook-event-id.ts";
+import type { SubscribableEventType } from "#webhooks/domain/webhook-event-type.ts";
+import type { WebhookEvent } from "#webhooks/domain/webhook-event.ts";
 import { parseWebhookUrl } from "#webhooks/domain/webhook-url.ts";
 
 import { dispatch } from "./dispatch.ts";
 import { EndpointDisabled } from "./endpoint-disabled.ts";
 import { EndpointNotFound } from "./endpoint-not-found.ts";
+import { FilterRefused } from "./filter-refused.ts";
 import { PartnerScopeUnavailable } from "./partner-scope-unavailable.ts";
 import type { DeliveryJobs } from "./ports/delivery-jobs.ts";
 import { DeliveryStore } from "./ports/delivery-store.ts";
@@ -40,16 +45,25 @@ import { EndpointStore } from "./ports/endpoint-store.ts";
 import { EventOrigins } from "./ports/event-origins.ts";
 import { ManualSends } from "./ports/manual-sends.ts";
 import { WebhookTransport } from "./ports/webhook-transport.ts";
+import { refusedSends } from "./refused-sends.ts";
 import type { SecretsNotConfigured } from "./secrets-not-configured.ts";
 import { TooManyEndpoints } from "./too-many-endpoints.ts";
-import { TooManyManualSends } from "./too-many-manual-sends.ts";
+import type { TooManyManualSends } from "./too-many-manual-sends.ts";
 import type { UrlNotDeliverable } from "./url-not-deliverable.ts";
 
-/** A new endpoint, as a member asks for one: its address not yet checked. */
-export interface NewEndpoint extends Omit<EndpointSettings, "url"> {
+/**
+ * A new endpoint, as a member asks for one: its address and its filters
+ * not yet checked.
+ */
+export interface NewEndpoint extends Omit<
+  EndpointSettings,
+  "channelIds" | "url" | "workspaceIds"
+> {
+  readonly channelIds?: readonly string[];
   /** What it hears: its workspace's events, unless `partner` says more. */
   readonly scope?: EndpointScope;
   readonly url: string;
+  readonly workspaceIds?: readonly string[];
 }
 
 /** What to change of an endpoint: what is left out stays. */
@@ -70,6 +84,63 @@ const managing = (actor: Actor) =>
   Effect.fromResult(authorize(actor, "webhook:manage"));
 
 const decodeEndpointId = Schema.decodeUnknownOption(WebhookEndpointIdSchema);
+
+/** The filters a member asked for, as an endpoint keeps them. */
+interface EndpointFilters {
+  channelIds?: readonly ChannelId[];
+  workspaceIds?: readonly WorkspaceId[];
+}
+
+const decodeChannels = Schema.decodeUnknownEffect(ChannelFilterSchema);
+
+const decodeWorkspaces = Schema.decodeUnknownEffect(WorkspaceFilterSchema);
+
+// The filters as an endpoint of the scope keeps them, once each is a list
+// of ids it may take: a list of workspaces only on one that hears more
+// than its own.
+const filtersFor = Effect.fn("WebhookEndpoints.filtersFor")(
+  function* filtersFor(
+    scope: EndpointScope,
+    asked: {
+      readonly channelIds: readonly string[] | undefined;
+      readonly workspaceIds: readonly string[] | undefined;
+    }
+  ) {
+    const channelIds =
+      asked.channelIds === undefined
+        ? undefined
+        : yield* decodeChannels(asked.channelIds).pipe(
+            Effect.mapError(() => new FilterRefused({ field: "channelIds" }))
+          );
+
+    if (
+      asked.workspaceIds !== undefined &&
+      asked.workspaceIds.length > 0 &&
+      !takesWorkspaceFilter(scope)
+    ) {
+      return yield* new FilterRefused({ field: "workspaceIds" });
+    }
+
+    const workspaceIds =
+      asked.workspaceIds === undefined
+        ? undefined
+        : yield* decodeWorkspaces(asked.workspaceIds).pipe(
+            Effect.mapError(() => new FilterRefused({ field: "workspaceIds" }))
+          );
+
+    const filters: EndpointFilters = {};
+
+    if (channelIds !== undefined) {
+      filters.channelIds = channelIds;
+    }
+
+    if (workspaceIds !== undefined) {
+      filters.workspaceIds = workspaceIds;
+    }
+
+    return filters;
+  }
+);
 
 /**
  * A workspace's webhook endpoints, for someone acting in it: each use case
@@ -113,6 +184,7 @@ export class WebhookEndpoints extends Context.Service<
     ) => Effect.Effect<
       EndpointWithSecret,
       | DatabaseError
+      | FilterRefused
       | MissingPermission
       | PartnerScopeUnavailable
       | SecretsNotConfigured
@@ -125,7 +197,11 @@ export class WebhookEndpoints extends Context.Service<
       change: EndpointChange
     ) => Effect.Effect<
       WebhookEndpoint,
-      DatabaseError | EndpointNotFound | MissingPermission | UrlRefused
+      | DatabaseError
+      | EndpointNotFound
+      | FilterRefused
+      | MissingPermission
+      | UrlRefused
     >;
     /** Deletes the endpoint, its secrets and its delivery log. */
     readonly remove: (
@@ -151,12 +227,15 @@ export class WebhookEndpoints extends Context.Service<
       | SecretsNotConfigured
     >;
     /**
-     * Sends the endpoint a `webhook.test` event, whatever it subscribes
-     * to, and answers with its delivery, not yet attempted.
+     * Sends the endpoint a `webhook.test` event, or, given a type, a
+     * sample of that type (`sampleOf`, marked `sample`), whatever it
+     * subscribes to or filters, and answers with its delivery, not yet
+     * attempted.
      */
     readonly sendTest: (
       actor: Actor,
-      endpointId: string
+      endpointId: string,
+      eventType?: SubscribableEventType
     ) => Effect.Effect<
       WebhookDelivery,
       | DatabaseError
@@ -212,7 +291,14 @@ export class WebhookEndpoints extends Context.Service<
       ) {
         yield* managing(actor);
 
-        const { scope = "workspace", ...settings } = asked;
+        const {
+          channelIds,
+          scope = "workspace",
+          workspaceIds,
+          ...settings
+        } = asked;
+
+        const filters = yield* filtersFor(scope, { channelIds, workspaceIds });
 
         if (
           scope === "partner" &&
@@ -228,7 +314,7 @@ export class WebhookEndpoints extends Context.Service<
         const endpoint = createEndpoint(
           yield* newId(WebhookEndpointIdSchema),
           actor.workspaceId,
-          { ...settings, url },
+          { ...settings, ...filters, url },
           yield* DateTime.now,
           scope
         );
@@ -256,17 +342,22 @@ export class WebhookEndpoints extends Context.Service<
       const update = Effect.fn("WebhookEndpoints.update")(function* update(
         actor: Actor,
         endpointId: string,
-        { url, ...change }: EndpointChange
+        { channelIds, url, workspaceIds, ...change }: EndpointChange
       ) {
         yield* managing(actor);
 
         const current = yield* found(actor, endpointId);
 
+        const filters = yield* filtersFor(current.scope, {
+          channelIds,
+          workspaceIds,
+        });
+
         const changed = changeEndpoint(
           current,
           url === undefined
-            ? change
-            : { ...change, url: yield* deliverable(url) },
+            ? { ...change, ...filters }
+            : { ...change, ...filters, url: yield* deliverable(url) },
           yield* DateTime.now
         );
 
@@ -313,7 +404,11 @@ export class WebhookEndpoints extends Context.Service<
       );
 
       const sendTest = Effect.fn("WebhookEndpoints.sendTest")(
-        function* sendTest(actor: Actor, endpointId: string) {
+        function* sendTest(
+          actor: Actor,
+          endpointId: string,
+          eventType?: SubscribableEventType
+        ) {
           yield* managing(actor);
 
           const endpoint = yield* found(actor, endpointId);
@@ -322,29 +417,37 @@ export class WebhookEndpoints extends Context.Service<
             return yield* new EndpointDisabled({ endpointId: endpoint.id });
           }
 
-          if (!(yield* manual.take(actor.workspaceId))) {
-            return yield* new TooManyManualSends({
-              allowed: manualSendsPerHour,
-            });
-          }
+          const event: WebhookEvent =
+            eventType === undefined
+              ? {
+                  data: {
+                    endpointId: endpoint.id,
+                    workspaceId: endpoint.workspaceId,
+                  },
+                  type: "webhook.test",
+                }
+              : sampleOf(eventType, endpoint.workspaceId);
 
           const recorded = new RecordedEvent({
-            event: {
-              data: {
-                endpointId: endpoint.id,
-                workspaceId: endpoint.workspaceId,
-              },
-              type: "webhook.test",
-            },
+            event,
             id: yield* newId(WebhookEventIdSchema),
             occurredAt: yield* DateTime.now,
+            sample: eventType !== undefined,
             workspaceId: endpoint.workspaceId,
           });
 
           return yield* transaction(
-            deliveries
-              .recordEvent(recorded, `webhook-test:${recorded.id}`)
-              .pipe(Effect.andThen(dispatch(endpoint, recorded)))
+            Effect.gen(function* sendWithinBudget() {
+              yield* refusedSends(
+                yield* manual.take(actor.workspaceId, "single", 1)
+              );
+              yield* deliveries.recordEvent(
+                recorded,
+                `webhook-test:${recorded.id}`
+              );
+
+              return yield* dispatch(endpoint, recorded);
+            })
           );
         },
         Effect.provideContext(ports)

@@ -29,6 +29,13 @@ const UsageSchema = Schema.Struct({
   workspaces: Schema.Number,
 });
 
+// Whose plan a workspace's usage counts against.
+const SharingSchema = Schema.Struct({
+  sharedWith: Schema.NullOr(
+    Schema.Struct({ partnerWorkspaceId: Schema.String })
+  ),
+});
+
 const StandingSchema = Schema.Struct({
   canOpen: Schema.Boolean,
   partner: Schema.NullOr(PartnerSchema),
@@ -109,6 +116,7 @@ const reads = (workspaceId: string) => [
   `/api/workspaces/${workspaceId}/media`,
   `/api/workspaces/${workspaceId}/webhooks`,
   `/api/workspaces/${workspaceId}/billing`,
+  `/api/workspaces/${workspaceId}/usage`,
   `/api/workspaces/${workspaceId}/assistant`,
   `/api/workspaces/${workspaceId}/analytics/summary?from=2026-11-01&to=2026-11-07&timeZone=Europe/Paris`,
   `/api/workspaces/${workspaceId}/posts/search`,
@@ -116,6 +124,7 @@ const reads = (workspaceId: string) => [
   `/api/workspaces/${workspaceId}/approvals`,
   `/api/workspaces/${workspaceId}/review/settings`,
   `/api/workspaces/${workspaceId}/connect-links`,
+  `/api/workspaces/${workspaceId}/queues`,
   // The numbers and their exports, and the comments under its posts.
   `/api/workspaces/${workspaceId}/analytics/dashboard?days=7&timeZone=Europe/Paris`,
   `/api/workspaces/${workspaceId}/analytics/export?kind=posts&days=7&timeZone=Europe/Paris`,
@@ -690,6 +699,18 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.deepStrictEqual(
             yield* statusesOf(ofAlpha.id, bearer(alphaKey)),
             reads(ofAlpha.id).map(() => 200)
+          );
+
+          // Its channels count against its partner's plan, which its usage
+          // says.
+          const usage = yield* app.request(
+            `/api/workspaces/${ofAlpha.id}/usage`,
+            { headers: bearer(alphaKey) }
+          );
+
+          assert.deepStrictEqual(
+            (yield* bodyOf(SharingSchema, usage)).sharedWith,
+            { partnerWorkspaceId: alpha.home }
           );
 
           // Another partner's workspace, an ordinary workspace, and its

@@ -26,6 +26,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = WebhookEndpoint.Builder.class)
 public final class WebhookEndpoint {
+    private final List<String> channelIds;
+
     private final String createdAt;
 
     private final String description;
@@ -50,9 +52,12 @@ public final class WebhookEndpoint {
 
     private final String url;
 
+    private final List<String> workspaceIds;
+
     private final Map<String, Object> additionalProperties;
 
     private WebhookEndpoint(
+            List<String> channelIds,
             String createdAt,
             String description,
             Optional<String> disabledAt,
@@ -65,7 +70,9 @@ public final class WebhookEndpoint {
             WebhookEndpointScope scope,
             String updatedAt,
             String url,
+            List<String> workspaceIds,
             Map<String, Object> additionalProperties) {
+        this.channelIds = channelIds;
         this.createdAt = createdAt;
         this.description = description;
         this.disabledAt = disabledAt;
@@ -78,7 +85,13 @@ public final class WebhookEndpoint {
         this.scope = scope;
         this.updatedAt = updatedAt;
         this.url = url;
+        this.workspaceIds = workspaceIds;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("channelIds")
+    public List<String> getChannelIds() {
+        return channelIds;
     }
 
     @JsonProperty("createdAt")
@@ -153,6 +166,11 @@ public final class WebhookEndpoint {
         return url;
     }
 
+    @JsonProperty("workspaceIds")
+    public List<String> getWorkspaceIds() {
+        return workspaceIds;
+    }
+
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("disabledAt")
     private Optional<String> _getDisabledAt() {
@@ -189,7 +207,8 @@ public final class WebhookEndpoint {
     }
 
     private boolean equalTo(WebhookEndpoint other) {
-        return createdAt.equals(other.createdAt)
+        return channelIds.equals(other.channelIds)
+                && createdAt.equals(other.createdAt)
                 && description.equals(other.description)
                 && disabledAt.equals(other.disabledAt)
                 && disabledReason.equals(other.disabledReason)
@@ -200,12 +219,14 @@ public final class WebhookEndpoint {
                 && previousSecretExpiresAt.equals(other.previousSecretExpiresAt)
                 && scope.equals(other.scope)
                 && updatedAt.equals(other.updatedAt)
-                && url.equals(other.url);
+                && url.equals(other.url)
+                && workspaceIds.equals(other.workspaceIds);
     }
 
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
+                this.channelIds,
                 this.createdAt,
                 this.description,
                 this.disabledAt,
@@ -217,7 +238,8 @@ public final class WebhookEndpoint {
                 this.previousSecretExpiresAt,
                 this.scope,
                 this.updatedAt,
-                this.url);
+                this.url,
+                this.workspaceIds);
     }
 
     @java.lang.Override
@@ -266,6 +288,12 @@ public final class WebhookEndpoint {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage channelIds(List<String> channelIds);
+
+        _FinalStage addChannelIds(String channelIds);
+
+        _FinalStage addAllChannelIds(List<String> channelIds);
+
         _FinalStage disabledAt(Optional<String> disabledAt);
 
         _FinalStage disabledAt(String disabledAt);
@@ -295,6 +323,12 @@ public final class WebhookEndpoint {
         _FinalStage previousSecretExpiresAt(String previousSecretExpiresAt);
 
         _FinalStage previousSecretExpiresAt(Nullable<String> previousSecretExpiresAt);
+
+        _FinalStage workspaceIds(List<String> workspaceIds);
+
+        _FinalStage addWorkspaceIds(String workspaceIds);
+
+        _FinalStage addAllWorkspaceIds(List<String> workspaceIds);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -321,6 +355,8 @@ public final class WebhookEndpoint {
 
         private String url;
 
+        private List<String> workspaceIds = new ArrayList<>();
+
         private Optional<String> previousSecretExpiresAt = Optional.empty();
 
         private Optional<String> failingSince = Optional.empty();
@@ -331,12 +367,15 @@ public final class WebhookEndpoint {
 
         private Optional<String> disabledAt = Optional.empty();
 
+        private List<String> channelIds = new ArrayList<>();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(WebhookEndpoint other) {
+            channelIds(other.getChannelIds());
             createdAt(other.getCreatedAt());
             description(other.getDescription());
             disabledAt(other.getDisabledAt());
@@ -349,6 +388,7 @@ public final class WebhookEndpoint {
             scope(other.getScope());
             updatedAt(other.getUpdatedAt());
             url(other.getUrl());
+            workspaceIds(other.getWorkspaceIds());
             return this;
         }
 
@@ -398,6 +438,30 @@ public final class WebhookEndpoint {
         @JsonSetter("url")
         public _FinalStage url(@NotNull String url) {
             this.url = Objects.requireNonNull(url, "url must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addAllWorkspaceIds(List<String> workspaceIds) {
+            if (workspaceIds != null) {
+                this.workspaceIds.addAll(workspaceIds);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addWorkspaceIds(String workspaceIds) {
+            this.workspaceIds.add(workspaceIds);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "workspaceIds", nulls = Nulls.SKIP)
+        public _FinalStage workspaceIds(List<String> workspaceIds) {
+            this.workspaceIds.clear();
+            if (workspaceIds != null) {
+                this.workspaceIds.addAll(workspaceIds);
+            }
             return this;
         }
 
@@ -526,8 +590,33 @@ public final class WebhookEndpoint {
         }
 
         @java.lang.Override
+        public _FinalStage addAllChannelIds(List<String> channelIds) {
+            if (channelIds != null) {
+                this.channelIds.addAll(channelIds);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addChannelIds(String channelIds) {
+            this.channelIds.add(channelIds);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "channelIds", nulls = Nulls.SKIP)
+        public _FinalStage channelIds(List<String> channelIds) {
+            this.channelIds.clear();
+            if (channelIds != null) {
+                this.channelIds.addAll(channelIds);
+            }
+            return this;
+        }
+
+        @java.lang.Override
         public WebhookEndpoint build() {
             return new WebhookEndpoint(
+                    channelIds,
                     createdAt,
                     description,
                     disabledAt,
@@ -540,12 +629,14 @@ public final class WebhookEndpoint {
                     scope,
                     updatedAt,
                     url,
+                    workspaceIds,
                     additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("createdAt")
+            if (key.equalsIgnoreCase("channelIds")
+                    || key.equalsIgnoreCase("createdAt")
                     || key.equalsIgnoreCase("description")
                     || key.equalsIgnoreCase("disabledAt")
                     || key.equalsIgnoreCase("disabledReason")
@@ -556,7 +647,8 @@ public final class WebhookEndpoint {
                     || key.equalsIgnoreCase("previousSecretExpiresAt")
                     || key.equalsIgnoreCase("scope")
                     || key.equalsIgnoreCase("updatedAt")
-                    || key.equalsIgnoreCase("url")) {
+                    || key.equalsIgnoreCase("url")
+                    || key.equalsIgnoreCase("workspaceIds")) {
                 return;
             }
             this.additionalProperties.put(key, value);

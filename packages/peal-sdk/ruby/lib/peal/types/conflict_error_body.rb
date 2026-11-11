@@ -9,9 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::ChannelSetNameTakenEncoded }, key: "CHANNEL_SET_NAME_TAKEN"
+      member -> { Peal::Types::QueueNameTakenEncoded }, key: "QUEUE_NAME_TAKEN"
 
-      member -> { Peal::Types::TooManyChannelSetsEncoded }, key: "TOO_MANY_CHANNEL_SETS"
+      member -> { Peal::Types::TooManyQueuesEncoded }, key: "TOO_MANY_QUEUES"
     end
   end
 end

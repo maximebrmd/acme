@@ -56,6 +56,7 @@ const post: Post = {
   createdVia: null,
   id: "00000000-0000-7000-8000-000000000001",
   outcome: "unconfirmed",
+  queueId: null,
   schedule: { at: utc("2026-06-15T08:00:00Z"), timeZone: "Europe/Paris" },
   scheduledBy: null,
   scheduledVia: null,

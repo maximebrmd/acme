@@ -1792,7 +1792,7 @@ client.posts.create(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L206-L290">search</a>(...) -> PostPage</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L206-L294">search</a>(...) -> PostPage</code></summary>
 <dl>
 <dd>
 
@@ -1804,7 +1804,7 @@ client.posts.create(
 <dl>
 <dd>
 
-Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 </dd>
 </dl>
 </dd>
@@ -1917,6 +1917,14 @@ client.posts.search(
 <dl>
 <dd>
 
+**queue_id:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **sort:** `typing.Optional[PostSort]` 
     
 </dd>
@@ -1961,7 +1969,7 @@ client.posts.search(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L292-L395">send</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L296-L399">send</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -1973,7 +1981,7 @@ client.posts.search(
 <dl>
 <dd>
 
-Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. Instead of listing channels, or beside them, it may name channel sets (`channelSets`, by id or name): it goes to their connected channels, with the options each set keeps where it gives none, and a channel of a set that is no longer connected is left out and told in the answer's `warnings`, never silently; a set none of whose channels is left, with no other channel, is refused (UnknownChannels). A channel on which it gives no options takes the channel's default options. `defaultSignatures` puts each channel's default signature under its text, and `signatureId` one signature on every channel: signatures are text of the post, counted against each platform's limit, and never added twice. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says `allowDuplicate: true`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless `wait` says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, `at` an instant, kept with its IANA time zone, or `queue`, which puts it on the next free slot of a queue (`queueId`, or the workspace's default queue), decided when the request is received so that posts sent together never take the same slot; it is then an ordinary scheduled post, through every rule a time chosen by hand goes through, the plan's room counted in the slot's month (PlanLimitReached, never a later month), and with no channel or channel set named it goes to the queue's (QueueHasNoRoom when the queue has no free slot within 366 days). Instead of listing channels, or beside them, it may name channel sets (`channelSets`, by id or name): it goes to their connected channels, with the options each set keeps where it gives none, and a channel of a set that is no longer connected is left out and told in the answer's `warnings`, never silently; a set none of whose channels is left, with no other channel, is refused (UnknownChannels). A channel on which it gives no options takes the channel's default options. `defaultSignatures` puts each channel's default signature under its text, and `signatureId` one signature on every channel: signatures are text of the post, counted against each platform's limit, and never added twice. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says `allowDuplicate: true`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless `wait` says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
 </dd>
 </dl>
 </dd>
@@ -2141,7 +2149,7 @@ client.posts.send(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L397-L466">bulk</a>(...) -> BulkResult</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L401-L470">bulk</a>(...) -> BulkResult</code></summary>
 <dl>
 <dd>
 
@@ -2351,7 +2359,7 @@ client.posts.import_(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L515-L599">validate</a>(...) -> PostValidation</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L519-L603">validate</a>(...) -> PostValidation</code></summary>
 <dl>
 <dd>
 
@@ -2363,7 +2371,7 @@ client.posts.import_(
 <dl>
 <dd>
 
-Checks a post without making it, and changes nothing: send what `send` takes, or a draft (no `when`). It answers 200 whether or not the post would go through, with `valid` and everything that would refuse it, all at once: per channel, the text the channel receives, counted as its platform counts it against each of its limits, its hashtags, mentions, links and media, and every violation of the platform's rules (text, media formats, sizes, counts and durations, options) and of the account's own where its platform tells them; the channels and media that are not the workspace's; and, when `when` is given, whether the time can be kept, whether the workspace's plan has room, and the channels that already have the same content from another post (`duplicates`, as DuplicatePost tells them; none with `allowDuplicate`). A post that is valid now can still be refused later: a channel disconnected, a plan's month filled meanwhile. Needs post:read and channel:read, and media:read when it shows media.
+Checks a post without making it, and changes nothing: send what `send` takes, or a draft (no `when`). It answers 200 whether or not the post would go through, with `valid` and everything that would refuse it, all at once: per channel, the text the channel receives, counted as its platform counts it against each of its limits, its hashtags, mentions, links and media, and every violation of the platform's rules (text, media formats, sizes, counts and durations, options) and of the account's own where its platform tells them; the channels and media that are not the workspace's; and, when `when` is given, whether the time can be kept (for `queue`, the slot it would take now, `queueSlot`, or why there is none, `queueNoRoom`: QueueNotFound when the queue is not the workspace's), whether the workspace's plan has room, and the channels that already have the same content from another post (`duplicates`, as DuplicatePost tells them; none with `allowDuplicate`). A post that is valid now can still be refused later: a channel disconnected, a plan's month filled meanwhile. Needs post:read and channel:read, and media:read when it shows media.
 </dd>
 </dl>
 </dd>
@@ -2506,7 +2514,7 @@ client.posts.validate(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L601-L632">get</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L605-L636">get</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2588,7 +2596,7 @@ client.posts.get(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L634-L719">update</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L638-L723">update</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2696,7 +2704,7 @@ client.posts.update(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L721-L753">discard</a>(...)</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L725-L757">discard</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -2778,7 +2786,7 @@ client.posts.discard(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L755-L795">outcome</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L759-L799">outcome</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -2868,7 +2876,7 @@ client.posts.outcome(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L797-L830">attempts</a>(...) -> typing.List[PublicationAttempt]</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L801-L834">attempts</a>(...) -> typing.List[PublicationAttempt]</code></summary>
 <dl>
 <dd>
 
@@ -2950,7 +2958,7 @@ client.posts.attempts(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L832-L873">tag</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L836-L877">tag</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3043,7 +3051,7 @@ client.posts.tag(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L875-L908">duplicate</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L879-L912">duplicate</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3125,7 +3133,7 @@ client.posts.duplicate(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L910-L961">schedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L914-L965">schedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3236,7 +3244,7 @@ client.posts.schedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L963-L1010">reschedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L967-L1014">reschedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3328,7 +3336,105 @@ client.posts.reschedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1012-L1045">unschedule</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1016-L1061">enqueue</a>(...) -> Post</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Puts a post on the next free slot of a queue (`queueId`, or the workspace's default queue), decided when the request is received so that posts added together never take the same slot. A draft is scheduled there as `schedule` schedules it, on `channelIds` when given, on the channels it has otherwise, or, when it has none, where the same content sent with `when: queue` would go: the queue's connected channels and its channel set's, with the options the set keeps and the channels' default options; a channel of either that is no longer connected is left out and told in `warnings` (`queueChannelsDropped`, `channelsDropped`), and none left is UnknownChannels; a scheduled post, or one awaiting approval, is moved there as `reschedule` moves it, on the channels it has. Every rule of scheduling applies at that time, the approval gate and the plan's room in the slot's month included (PlanLimitReached, never a later month). A queue without a free slot within 366 days is QueueHasNoRoom, and nothing is changed. Needs post:schedule and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.posts.enqueue(
+    workspace_id="workspaceId",
+    post_id="postId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_ids:** `typing.Optional[typing.List[str]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**queue_id:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1063-L1096">unschedule</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3410,7 +3516,7 @@ client.posts.unschedule(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1047-L1088">repost</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1098-L1139">repost</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3501,7 +3607,7 @@ client.posts.repost(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1090-L1137">confirm</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1141-L1188">confirm</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -3603,7 +3709,7 @@ client.posts.confirm(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1139-L1172">cancel</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1190-L1223">cancel</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
@@ -5442,6 +5548,96 @@ client.billing.standing(
 </dl>
 </details>
 
+## usage
+<details><summary><code>client.usage.<a href="src/peal/usage/client.py#L27-L66">get</a>(...) -> WorkspaceUsageReport</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers what the workspace uses of its plan now, and day by day from `from` to `to` (UTC days, both included, at most 92; by default the 30 days that end today): each day's posts that went out, one per channel they went out on, by platform, and its requests to the writing assistant; the channels it connected, its members and the media it stored as the daily snapshot found them shortly after each day ended, null (requests included) for a day the server took no snapshot of, today's among them; then the period's totals, with its channel-days and, for each calendar month it touches, its posts on platforms that bill the server per post, each part of a thread counted as the platform bills it (a thread is one of the day's posts). Usage is kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, `plan` and `allowances` are null. Needs billing:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.usage.get(
+    workspace_id="workspaceId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `typing.Optional[CalendarDay]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `typing.Optional[CalendarDay]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## analytics
 <details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L32-L79">summary</a>(...) -> AnalyticsSummary</code></summary>
 <dl>
@@ -6439,7 +6635,7 @@ client.lookups.run(
 </details>
 
 ## webhooks
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L34-L64">list</a>(...) -> typing.List[WebhookEndpoint]</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L38-L68">list</a>(...) -> typing.List[WebhookEndpoint]</code></summary>
 <dl>
 <dd>
 
@@ -6512,7 +6708,7 @@ client.webhooks.list(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L66-L124">create</a>(...) -> WebhookEndpointSecret</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L70-L136">create</a>(...) -> WebhookEndpointSecret</code></summary>
 <dl>
 <dd>
 
@@ -6524,7 +6720,7 @@ client.webhooks.list(
 <dl>
 <dd>
 
-Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. Needs webhook:manage.
+Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
 </dd>
 </dl>
 </dd>
@@ -6593,6 +6789,14 @@ client.webhooks.create(
 <dl>
 <dd>
 
+**channel_ids:** `typing.Optional[typing.List[str]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **description:** `typing.Optional[str]` 
     
 </dd>
@@ -6617,6 +6821,14 @@ client.webhooks.create(
 <dl>
 <dd>
 
+**workspace_ids:** `typing.Optional[typing.List[str]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
     
 </dd>
@@ -6629,7 +6841,222 @@ client.webhooks.create(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L126-L159">get</a>(...) -> WebhookEndpoint</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L138-L202">search_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's deliveries across its endpoints, newest first, 30 a page unless `limit` (at most 100) says otherwise, filtered by `status`, `endpointId`, `eventType`, and when they were made: `since` (included) and `until` (excluded). The deliveries of a `partner` endpoint include those of the partner's other workspaces, each naming its workspace (`workspaceId`, `workspaceExternalId`). A delivery that failed for good (`failed`) stays 30 days, with the receiver's last answer: send it again with `POST …/webhooks/deliveries/redeliver`. Pass the page's `nextCursor` as `cursor` for the next one. Needs webhook:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.webhooks.search_deliveries(
+    workspace_id="workspaceId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**event_type:** `typing.Optional[WebhookEventType]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `typing.Optional[WebhookDeliveryStatus]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**endpoint_id:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**since:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**until:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L204-L243">redeliver_many</a>(...) -> WebhookBulkRedelivery</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sends many deliveries again, 100 a call at most: those named by `deliveryIds`, or the failed deliveries of the endpoint `endpointId` (made from `since`, before `until`, of `eventType`, each left out for any), oldest first, the last of each event only. Each goes to its own endpoint whatever the endpoint's filters are now, as a new delivery of the same event: the same `webhook-id` and body, signed anew. A delivery is skipped when its endpoint is off, when it is not the workspace's, and when its event was sent again since and that delivery is pending or went through, so calling again after a partial run sends nothing twice; `remaining` says how many more failed deliveries the selection holds. The new deliveries of an endpoint start a quarter of a second apart. A workspace sends 1000 deliveries again this way an hour, apart from the test events and single sends: a call that would pass it sends nothing (429 `TooManyWebhookSends`). Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal, WebhookRedeliveryByIds
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.webhooks.redeliver_many(
+    workspace_id="workspaceId",
+    request=WebhookRedeliveryByIds(
+        delivery_ids=[
+            "deliveryIds"
+        ],
+    ),
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `WebhookRedeliveryRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L245-L278">get</a>(...) -> WebhookEndpoint</code></summary>
 <dl>
 <dd>
 
@@ -6711,7 +7138,7 @@ client.webhooks.get(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L161-L193">delete</a>(...)</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L280-L312">delete</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -6793,7 +7220,7 @@ client.webhooks.delete(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L195-L252">update</a>(...) -> WebhookEndpoint</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L314-L379">update</a>(...) -> WebhookEndpoint</code></summary>
 <dl>
 <dd>
 
@@ -6805,7 +7232,7 @@ client.webhooks.delete(
 <dl>
 <dd>
 
-Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
 </dd>
 </dl>
 </dd>
@@ -6863,6 +7290,14 @@ client.webhooks.update(
 <dl>
 <dd>
 
+**channel_ids:** `typing.Optional[typing.List[str]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **description:** `typing.Optional[str]` 
     
 </dd>
@@ -6895,6 +7330,14 @@ client.webhooks.update(
 <dl>
 <dd>
 
+**workspace_ids:** `typing.Optional[typing.List[str]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
     
 </dd>
@@ -6907,7 +7350,7 @@ client.webhooks.update(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L254-L287">rotate_secret</a>(...) -> WebhookEndpointSecret</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L381-L414">rotate_secret</a>(...) -> WebhookEndpointSecret</code></summary>
 <dl>
 <dd>
 
@@ -6989,7 +7432,7 @@ client.webhooks.rotate_secret(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L289-L322">send_test</a>(...) -> WebhookDelivery</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L416-L458">send_test</a>(...) -> WebhookDelivery</code></summary>
 <dl>
 <dd>
 
@@ -7001,7 +7444,7 @@ client.webhooks.rotate_secret(
 <dl>
 <dd>
 
-Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
+Sends the endpoint a `webhook.test` event, or, with `eventType`, a sample of that type: its real shape, with ids that name nothing, the workspace's own id and `sample: true`, which the receiver must never act on. Either goes whatever the endpoint subscribes to or filters. It answers with the delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
 </dd>
 </dl>
 </dd>
@@ -7059,6 +7502,14 @@ client.webhooks.send_test(
 <dl>
 <dd>
 
+**event_type:** `typing.Optional[SubscribableWebhookEventType]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
     
 </dd>
@@ -7071,7 +7522,7 @@ client.webhooks.send_test(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L324-L369">list_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L460-L517">list_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
 <dl>
 <dd>
 
@@ -7083,7 +7534,7 @@ client.webhooks.send_test(
 <dl>
 <dd>
 
-Lists the endpoint's deliveries, newest first, 30 a page unless `limit` (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's `nextCursor` as `cursor` for the next one. A delivery is kept 30 days. Needs webhook:read.
+Lists the endpoint's deliveries, newest first, of a `status` and an `eventType` when given, 30 a page unless `limit` (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's `nextCursor` as `cursor` for the next one. A delivery is kept 30 days. Needs webhook:read.
 </dd>
 </dl>
 </dd>
@@ -7157,6 +7608,22 @@ client.webhooks.list_deliveries(
 <dl>
 <dd>
 
+**event_type:** `typing.Optional[WebhookEventType]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `typing.Optional[WebhookDeliveryStatus]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
     
 </dd>
@@ -7169,7 +7636,7 @@ client.webhooks.list_deliveries(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L371-L412">redeliver</a>(...) -> WebhookDelivery</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L519-L560">redeliver</a>(...) -> WebhookDelivery</code></summary>
 <dl>
 <dd>
 
@@ -13623,6 +14090,521 @@ client.channel_sets.delete(
 <dd>
 
 **channel_set_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## queues
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L31-L59">list</a>(...) -> typing.List[Queue]</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's queues, the default first, then by name, each with its slots, its channels and those of them disconnected since (`unavailableChannelIds`). Needs post:read and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.queues.list(
+    workspace_id="workspaceId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L61-L129">create</a>(...) -> Queue</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Saves a queue. A slot is a weekday and a time of day (`HH:mm`) in the queue's IANA time zone, each pair once, 100 at most: a time daylight saving skips moves to the moment the clocks jump, and a time it repeats happens once. A queue may be for some of the workspace's channels (`channelIds`, connected ones, 50 at most) and one channel set (`channelSetId`), which a post added to it goes to when it names none. Its name is one no other queue of the workspace has, whatever its case. `isDefault` makes it the workspace's default queue, the one a post added to no queue in particular takes, instead of the one that was. The first queue of a workspace is its default. A workspace keeps 20 queues at most. Needs post:update and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal, QueueSlot
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.queues.create(
+    workspace_id="workspaceId",
+    name="name",
+    slots=[
+        QueueSlot(
+            day="monday",
+            time="time",
+        )
+    ],
+    time_zone="timeZone",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `QueueDetails` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L131-L164">get</a>(...) -> Queue</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers with a queue of the workspace. Needs post:read and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.queues.get(
+    workspace_id="workspaceId",
+    queue_id="queueId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**queue_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L166-L239">update</a>(...) -> Queue</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces a queue's name, zone, slots and channels: every channel must be connected now, so this is also how a disconnected one is taken out. A slot is a weekday and a time of day (`HH:mm`) in the queue's IANA time zone, each pair once, 100 at most: a time daylight saving skips moves to the moment the clocks jump, and a time it repeats happens once. A queue may be for some of the workspace's channels (`channelIds`, connected ones, 50 at most) and one channel set (`channelSetId`), which a post added to it goes to when it names none. Its name is one no other queue of the workspace has, whatever its case. `isDefault` makes it the workspace's default queue, the one a post added to no queue in particular takes, instead of the one that was. Posts the queue placed keep their times: a slot that changed frees nothing and moves nothing. Saving the default with `isDefault` false, or without `isDefault`, leaves the workspace without one, and a post then sent to the default queue is refused (QueueNotFound): send `isDefault` true to keep it the default. Needs post:update and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal, QueueSlot
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.queues.update(
+    workspace_id="workspaceId",
+    queue_id="queueId",
+    name="name",
+    slots=[
+        QueueSlot(
+            day="monday",
+            time="time",
+        )
+    ],
+    time_zone="timeZone",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**queue_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `QueueDetails` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L241-L273">delete</a>(...)</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a queue. The posts it placed stay scheduled at their times, and no longer name it (`queueId` null). Deleting the default leaves the workspace without one until another is made default. Needs post:update.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.queues.delete(
+    workspace_id="workspaceId",
+    queue_id="queueId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**queue_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L275-L315">slots</a>(...) -> QueuePreview</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the queue's next `count` slots after now (10 unless given, 50 at most), each with the post that holds it, or null, and `nextFree`, the slot a post added now would take, which may come after them; null with `noRoom` when there is none: the queue has no slot (`noSlots`), or every slot of the next 366 days is taken (`full`). A slot is taken while a post the queue placed is scheduled, awaiting approval or publishing at exactly that instant. The preview holds nothing: the slot is decided when the post is added. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.queues.slots(
+    workspace_id="workspaceId",
+    queue_id="queueId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**queue_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**count:** `typing.Optional[str]` 
     
 </dd>
 </dl>

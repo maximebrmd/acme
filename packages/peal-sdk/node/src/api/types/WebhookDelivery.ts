@@ -7,6 +7,7 @@ export interface WebhookDelivery {
     completedAt: string | null;
     createdAt: string;
     durationMs: number | null;
+    endpointId: string;
     error: Peal.WebhookAttemptError | null;
     eventId: string;
     eventType: Peal.WebhookEventType;
@@ -14,7 +15,10 @@ export interface WebhookDelivery {
     id: string;
     lastAttemptAt: string | null;
     nextAttemptAt: string | null;
+    redeliveryOf: string | null;
     responseExcerpt: string | null;
     responseStatus: number | null;
     status: Peal.WebhookDeliveryStatus;
+    workspaceExternalId: string | null;
+    workspaceId: string;
 }

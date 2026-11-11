@@ -45,6 +45,24 @@ class PostTiming_At(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class PostTiming_Queue(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["queue"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "queue"
+    queue_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="queueId"), pydantic.Field(alias="queueId")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 PostTiming = typing_extensions.Annotated[
-    typing.Union[PostTiming_Now, PostTiming_At], pydantic.Field(discriminator="type")
+    typing.Union[PostTiming_Now, PostTiming_At, PostTiming_Queue], pydantic.Field(discriminator="type")
 ]

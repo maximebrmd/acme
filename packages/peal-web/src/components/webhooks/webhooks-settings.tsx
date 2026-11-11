@@ -5,10 +5,17 @@ import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import {
+  maxWebhookBulkRedelivery,
+  webhookBulkRedeliveriesPerHour,
   webhookDeliveryRetentionDays,
   webhookSecretOverlapHours,
 } from "peal-contract";
-import type { WebhookDelivery, WebhookEndpoint } from "peal-contract";
+import type {
+  Channel,
+  SubscribableWebhookEventType,
+  WebhookDelivery,
+  WebhookEndpoint,
+} from "peal-contract";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,29 +28,41 @@ import {
   AlertDialogTrigger,
 } from "peal-ui/components/alert-dialog";
 import { Button } from "peal-ui/components/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "peal-ui/components/tabs";
 import { useId, useState, useTransition } from "react";
 import type { SubmitEvent } from "react";
 import { toast } from "sonner";
 
+import { channelName } from "#channels/channel-name.ts";
 import { useHydrated } from "#components/media/use-hydrated.ts";
 import { InTimeZone } from "#components/notices/in-time-zone.tsx";
 import {
   SettingsLoadFailed,
   SettingsLoading,
 } from "#components/settings/settings-status.tsx";
+import { workspaceChannels } from "#posts/api.ts";
 import { browserTimeZone } from "#posts/zoned-time.ts";
 import {
+  anyDelivery,
   createWebhook,
   deleteWebhook,
   deliveriesChanged,
   deliveryPage,
   endpointsChanged,
   redeliverWebhook,
+  redeliverWebhooks,
   rotateWebhookSecret,
+  searchPage,
   sendWebhookTest,
   updateWebhook,
   workspaceWebhooks,
 } from "#webhooks/atoms.ts";
+import type { LogFilter } from "#webhooks/atoms.ts";
 import {
   changeOf,
   draftOf,
@@ -53,15 +72,32 @@ import {
 import type { EndpointDraft } from "#webhooks/endpoint-draft.ts";
 import { webhookErrorOf } from "#webhooks/errors.ts";
 import type { WebhookError } from "#webhooks/errors.ts";
+import { failedToSendAgain } from "#webhooks/failed-again.ts";
 import { hostOf } from "#webhooks/host.ts";
 
 import {
+  DeliveryFilterView,
   DeliveryLogView,
   EndpointFieldsView,
   EndpointItemView,
+  TestEventPicker,
   useWebhookErrorText,
   WebhookSecretView,
 } from "./webhook-views.tsx";
+import type { ChannelChoice } from "./webhook-views.tsx";
+
+// The workspace's channels, as the endpoint form offers them; none while
+// they load, or for a member who may not read them.
+const useChannelChoices = (workspaceId: string): readonly ChannelChoice[] =>
+  Option.getOrElse(
+    AsyncResult.value(useAtomValue(workspaceChannels(workspaceId))),
+    (): readonly Channel[] => []
+  ).map((channel) => ({ id: channel.id, label: channelName(channel) }));
+
+const failedOnly: LogFilter = {
+  ...anyDelivery,
+  status: Option.some("failed"),
+};
 
 /** A secret to show once, and whether it replaced another. */
 interface ShownSecret {
@@ -120,6 +156,7 @@ const SendAgain = ({
 const DeliveryPages = ({
   cursor,
   endpointId,
+  filter,
   mayManage,
   more,
   onMore,
@@ -127,6 +164,7 @@ const DeliveryPages = ({
 }: {
   readonly cursor: Option.Option<string>;
   readonly endpointId: string;
+  readonly filter: LogFilter;
   readonly mayManage: boolean;
   // How many pages to show after this one.
   readonly more: number;
@@ -134,7 +172,7 @@ const DeliveryPages = ({
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Webhooks");
-  const page = deliveryPage(workspaceId, endpointId, cursor);
+  const page = deliveryPage(workspaceId, endpointId, cursor, filter);
   const result = useAtomValue(page);
   const reload = useAtomRefresh(page);
 
@@ -172,6 +210,7 @@ const DeliveryPages = ({
             <DeliveryPages
               cursor={next}
               endpointId={endpointId}
+              filter={filter}
               mayManage={mayManage}
               more={more - 1}
               workspaceId={workspaceId}
@@ -189,6 +228,111 @@ const DeliveryPages = ({
   });
 };
 
+// Sends an endpoint's failed deliveries again, oldest first, once the
+// member confirmed how many and the hour's budget.
+const SendAllFailed = ({
+  endpoint,
+  workspaceId,
+}: {
+  readonly endpoint: WebhookEndpoint;
+  readonly workspaceId: string;
+}) => {
+  const t = useTranslations("Webhooks");
+  const settings = useTranslations("Settings");
+  const explain = useWebhookErrorText();
+  const redeliver = useAtomSet(redeliverWebhooks, { mode: "promiseExit" });
+  const [isSending, startSending] = useTransition();
+
+  // The endpoint's latest deliveries, whatever their status, to name how
+  // many it sends: the events whose last delivery failed, as the server
+  // picks them. Past one page, older ones may be sent too.
+  const latest = Option.getOrUndefined(
+    AsyncResult.value(
+      useAtomValue(
+        searchPage(
+          workspaceId,
+          Option.some(endpoint.id),
+          Option.none(),
+          anyDelivery,
+          maxWebhookBulkRedelivery
+        )
+      )
+    )
+  );
+
+  const count = failedToSendAgain(latest?.items ?? []);
+  const more = latest !== undefined && latest.nextCursor !== null;
+
+  const handleSend = () => {
+    startSending(async () => {
+      const exit = await redeliver({
+        params: { workspaceId },
+        payload: { endpointId: endpoint.id },
+        reactivityKeys: deliveriesChanged(endpoint.id),
+      });
+
+      if (Exit.isSuccess(exit)) {
+        toast.success(
+          t("sentAllAgain", {
+            remaining: exit.value.remaining,
+            sent: exit.value.redelivered.length,
+            skipped: exit.value.skipped.length,
+          })
+        );
+
+        return;
+      }
+
+      Option.match(webhookErrorOf(exit), {
+        onNone: () => {
+          // A failure always has a reason.
+        },
+        onSome: (error) => {
+          toast.error(explain(error));
+        },
+      });
+    });
+  };
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isSending || (count === 0 && !more)}
+            focusableWhenDisabled
+          />
+        }
+      >
+        {isSending ? t("sendingAllFailed") : t("sendAllFailed")}
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {t("sendAllFailedTitle", { host: hostOf(endpoint.url) })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("sendAllFailedDescription", {
+              count,
+              max: maxWebhookBulkRedelivery,
+              more: more ? "true" : "false",
+              perHour: webhookBulkRedeliveriesPerHour,
+            })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{settings("cancel")}</AlertDialogCancel>
+          <AlertDialogAction onClick={handleSend}>
+            {t("sendAllFailed")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 // An endpoint's delivery log, which changes as attempts are made: the
 // member refreshes it to see how a delivery ended.
 const DeliveryLog = ({
@@ -203,9 +347,10 @@ const DeliveryLog = ({
   const t = useTranslations("Webhooks");
   const titleId = useId();
   const [more, setMore] = useState(0);
+  const [filter, setFilter] = useState<LogFilter>(anyDelivery);
 
   const refresh = useAtomRefresh(
-    deliveryPage(workspaceId, endpoint.id, Option.none())
+    deliveryPage(workspaceId, endpoint.id, Option.none(), filter)
   );
 
   const handleRefresh = () => {
@@ -219,13 +364,27 @@ const DeliveryLog = ({
         <h3 id={titleId} className="font-medium">
           {t("deliveriesTitle", { host: hostOf(endpoint.url) })}
         </h3>
-        <Button variant="outline" size="sm" onClick={handleRefresh}>
-          {t("refresh")}
-        </Button>
+        <span className="flex flex-wrap gap-2">
+          {mayManage && endpoint.enabled ? (
+            <SendAllFailed endpoint={endpoint} workspaceId={workspaceId} />
+          ) : null}
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
+            {t("refresh")}
+          </Button>
+        </span>
       </div>
+      <DeliveryFilterView
+        filter={filter}
+        idPrefix={endpoint.id}
+        onChange={(next) => {
+          setMore(0);
+          setFilter(next);
+        }}
+      />
       <DeliveryPages
         cursor={Option.none()}
         endpointId={endpoint.id}
+        filter={filter}
         mayManage={mayManage}
         more={more}
         workspaceId={workspaceId}
@@ -253,6 +412,7 @@ const EditForm = ({
   const [draft, setDraft] = useState<EndpointDraft>(() => draftOf(endpoint));
   const [error, setError] = useState<WebhookError | null>(null);
   const [isPending, startTransition] = useTransition();
+  const channels = useChannelChoices(workspaceId);
   const change = changeOf(draft);
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
@@ -282,6 +442,7 @@ const EditForm = ({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <EndpointFieldsView
+        channels={channels}
         draft={draft}
         error={error}
         disabled={isPending}
@@ -331,6 +492,12 @@ const EndpointActions = ({
   const [isTesting, startTesting] = useTransition();
   const [isRotating, startRotating] = useTransition();
   const [isDeleting, startDeleting] = useTransition();
+
+  const [testType, setTestType] = useState<
+    Option.Option<SubscribableWebhookEventType>
+  >(Option.none());
+
+  const testTypeId = useId();
   const params = { endpointId: endpoint.id, workspaceId };
   const host = hostOf(endpoint.url);
 
@@ -359,12 +526,18 @@ const EndpointActions = ({
     startTesting(async () => {
       const exit = await sendTest({
         params,
+        query: Option.match(testType, {
+          onNone: () => ({}),
+          onSome: (eventType) => ({ eventType }),
+        }),
         reactivityKeys: deliveriesChanged(endpoint.id),
       });
 
       Option.match(webhookErrorOf(exit), {
         onNone: () => {
-          toast.success(t("testSent"));
+          toast.success(
+            Option.isSome(testType) ? t("sampleSent") : t("testSent")
+          );
         },
         onSome: failed,
       });
@@ -431,16 +604,23 @@ const EndpointActions = ({
         {isSwitching ? switching : switchTo}
       </Button>
       {endpoint.enabled ? (
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isTesting}
-          focusableWhenDisabled
-          aria-describedby={describedBy}
-          onClick={handleTest}
-        >
-          {isTesting ? t("sendingTest") : t("sendTest")}
-        </Button>
+        <span className="flex flex-wrap items-center gap-2">
+          <TestEventPicker
+            id={testTypeId}
+            value={testType}
+            onChange={setTestType}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isTesting}
+            focusableWhenDisabled
+            aria-describedby={describedBy}
+            onClick={handleTest}
+          >
+            {isTesting ? t("sendingTest") : t("sendTest")}
+          </Button>
+        </span>
       ) : null}
       <AlertDialog>
         <AlertDialogTrigger
@@ -612,6 +792,140 @@ const LoadedEndpoints = ({
   });
 };
 
+// The workspace's failed deliveries across its endpoints, a page at a
+// time, each named by its endpoint's host and sent again on its own.
+const FailedPages = ({
+  cursor,
+  hosts,
+  mayManage,
+  more,
+  onMore,
+  workspaceId,
+}: {
+  readonly cursor: Option.Option<string>;
+  readonly hosts: ReadonlyMap<string, string>;
+  readonly mayManage: boolean;
+  readonly more: number;
+  readonly onMore: () => void;
+  readonly workspaceId: string;
+}) => {
+  const t = useTranslations("Webhooks");
+  const page = searchPage(workspaceId, Option.none(), cursor, failedOnly);
+  const result = useAtomValue(page);
+  const reload = useAtomRefresh(page);
+
+  const endpointOf = (delivery: WebhookDelivery) =>
+    hosts.get(delivery.endpointId) ?? delivery.endpointId;
+
+  return AsyncResult.match(result, {
+    onFailure: () => <SettingsLoadFailed onRetry={reload} />,
+    onInitial: () => <SettingsLoading />,
+    onSuccess: ({ value }) => {
+      if (Option.isNone(cursor) && value.items.length === 0) {
+        return (
+          <p className="text-muted-foreground text-sm">
+            {t("failedEmpty", { days: webhookDeliveryRetentionDays })}
+          </p>
+        );
+      }
+
+      const next = Option.fromNullOr(value.nextCursor);
+
+      return (
+        <>
+          {mayManage ? (
+            <DeliveryLogView
+              deliveries={value.items}
+              endpointOf={endpointOf}
+              actionFor={(delivery) => (
+                <SendAgain
+                  delivery={delivery}
+                  endpointId={delivery.endpointId}
+                  workspaceId={workspaceId}
+                />
+              )}
+            />
+          ) : (
+            <DeliveryLogView deliveries={value.items} endpointOf={endpointOf} />
+          )}
+          {Option.isSome(next) && more > 0 ? (
+            <FailedPages
+              cursor={next}
+              hosts={hosts}
+              mayManage={mayManage}
+              more={more - 1}
+              workspaceId={workspaceId}
+              onMore={onMore}
+            />
+          ) : null}
+          {Option.isSome(next) && more === 0 ? (
+            <Button variant="outline" className="self-center" onClick={onMore}>
+              {t("loadMore")}
+            </Button>
+          ) : null}
+        </>
+      );
+    },
+  });
+};
+
+const FailedDeliveries = ({
+  mayManage,
+  workspaceId,
+}: {
+  readonly mayManage: boolean;
+  readonly workspaceId: string;
+}) => {
+  const t = useTranslations("Webhooks");
+  const [more, setMore] = useState(0);
+
+  const endpoints = Option.getOrElse(
+    AsyncResult.value(useAtomValue(workspaceWebhooks(workspaceId))),
+    (): readonly WebhookEndpoint[] => []
+  );
+
+  const hosts = new Map(
+    endpoints.map((endpoint) => [endpoint.id, hostOf(endpoint.url)])
+  );
+
+  const refresh = useAtomRefresh(
+    searchPage(workspaceId, Option.none(), Option.none(), failedOnly)
+  );
+
+  return (
+    <section
+      aria-labelledby="failed-deliveries-title"
+      className="flex flex-col gap-3"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="failed-deliveries-title" className="text-xl font-semibold">
+          {t("failedTitle")}
+        </h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setMore(0);
+            refresh();
+          }}
+        >
+          {t("refresh")}
+        </Button>
+      </div>
+      <FailedPages
+        cursor={Option.none()}
+        hosts={hosts}
+        mayManage={mayManage}
+        more={more}
+        workspaceId={workspaceId}
+        onMore={() => {
+          setMore((current) => current + 1);
+        }}
+      />
+    </section>
+  );
+};
+
 // A new endpoint: its address, what it is for, its events, and whether it
 // starts on.
 const CreateForm = ({
@@ -626,6 +940,7 @@ const CreateForm = ({
   const [draft, setDraft] = useState<EndpointDraft>(emptyDraft);
   const [error, setError] = useState<WebhookError | null>(null);
   const [isPending, startTransition] = useTransition();
+  const channels = useChannelChoices(workspaceId);
   const payload = newEndpointOf(draft);
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
@@ -659,6 +974,7 @@ const CreateForm = ({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <EndpointFieldsView
+        channels={channels}
         draft={draft}
         error={error}
         disabled={isPending}
@@ -714,22 +1030,45 @@ export const WebhooksSettings = ({
           }}
         />
       )}
-      <section aria-labelledby="webhooks-title" className="flex flex-col gap-2">
-        <h2 id="webhooks-title" className="text-xl font-semibold">
-          {t("listTitle")}
-        </h2>
-        {hydrated ? (
-          <InTimeZone timeZone={browserTimeZone()}>
-            <LoadedEndpoints
-              mayManage={mayManage}
-              workspaceId={workspaceId}
-              onSecret={setShown}
-            />
-          </InTimeZone>
-        ) : (
-          <SettingsLoading />
-        )}
-      </section>
+      <Tabs defaultValue="endpoints">
+        <TabsList>
+          <TabsTrigger value="endpoints">{t("tabEndpoints")}</TabsTrigger>
+          <TabsTrigger value="failed">{t("tabFailed")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="endpoints">
+          <section
+            aria-labelledby="webhooks-title"
+            className="flex flex-col gap-2"
+          >
+            <h2 id="webhooks-title" className="text-xl font-semibold">
+              {t("listTitle")}
+            </h2>
+            {hydrated ? (
+              <InTimeZone timeZone={browserTimeZone()}>
+                <LoadedEndpoints
+                  mayManage={mayManage}
+                  workspaceId={workspaceId}
+                  onSecret={setShown}
+                />
+              </InTimeZone>
+            ) : (
+              <SettingsLoading />
+            )}
+          </section>
+        </TabsContent>
+        <TabsContent value="failed">
+          {hydrated ? (
+            <InTimeZone timeZone={browserTimeZone()}>
+              <FailedDeliveries
+                mayManage={mayManage}
+                workspaceId={workspaceId}
+              />
+            </InTimeZone>
+          ) : (
+            <SettingsLoading />
+          )}
+        </TabsContent>
+      </Tabs>
       {mayManage ? (
         <section
           aria-labelledby="create-webhook-title"

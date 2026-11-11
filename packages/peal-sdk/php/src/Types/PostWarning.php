@@ -10,6 +10,7 @@ class PostWarning extends JsonSerializableType
     /**
      * @var (
      *    'channelsDropped'
+     *   |'queueChannelsDropped'
      *   |'_unknown'
      * ) $type
      */
@@ -18,6 +19,7 @@ class PostWarning extends JsonSerializableType
     /**
      * @var (
      *    PostWarningChannelsDropped
+     *   |PostWarningQueueChannelsDropped
      *   |mixed
      * ) $value
      */
@@ -27,10 +29,12 @@ class PostWarning extends JsonSerializableType
      * @param array{
      *   type: (
      *    'channelsDropped'
+     *   |'queueChannelsDropped'
      *   |'_unknown'
      * ),
      *   value: (
      *    PostWarningChannelsDropped
+     *   |PostWarningQueueChannelsDropped
      *   |mixed
      * ),
      * } $values
@@ -55,6 +59,18 @@ class PostWarning extends JsonSerializableType
     }
 
     /**
+     * @param PostWarningQueueChannelsDropped $queueChannelsDropped
+     * @return PostWarning
+     */
+    public static function queueChannelsDropped(PostWarningQueueChannelsDropped $queueChannelsDropped): PostWarning
+    {
+        return new PostWarning([
+            'type' => 'queueChannelsDropped',
+            'value' => $queueChannelsDropped,
+        ]);
+    }
+
+    /**
      * @return bool
      */
     public function isChannelsDropped(): bool
@@ -70,6 +86,28 @@ class PostWarning extends JsonSerializableType
         if (!($this->value instanceof PostWarningChannelsDropped && $this->type === 'channelsDropped')) {
             throw new Exception(
                 "Expected channelsDropped; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isQueueChannelsDropped(): bool
+    {
+        return $this->value instanceof PostWarningQueueChannelsDropped && $this->type === 'queueChannelsDropped';
+    }
+
+    /**
+     * @return PostWarningQueueChannelsDropped
+     */
+    public function asQueueChannelsDropped(): PostWarningQueueChannelsDropped
+    {
+        if (!($this->value instanceof PostWarningQueueChannelsDropped && $this->type === 'queueChannelsDropped')) {
+            throw new Exception(
+                "Expected queueChannelsDropped; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -98,6 +136,10 @@ class PostWarning extends JsonSerializableType
         switch ($this->type) {
             case 'channelsDropped':
                 $value = $this->asChannelsDropped()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'queueChannelsDropped':
+                $value = $this->asQueueChannelsDropped()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -138,6 +180,9 @@ class PostWarning extends JsonSerializableType
         switch ($type) {
             case 'channelsDropped':
                 $args['value'] = PostWarningChannelsDropped::jsonDeserialize($data);
+                break;
+            case 'queueChannelsDropped':
+                $args['value'] = PostWarningQueueChannelsDropped::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

@@ -27,12 +27,14 @@ import social.peal.resources.notificationpreferences.NotificationPreferencesClie
 import social.peal.resources.partner.PartnerClient;
 import social.peal.resources.partneraccount.PartnerAccountClient;
 import social.peal.resources.posts.PostsClient;
+import social.peal.resources.queues.QueuesClient;
 import social.peal.resources.review.ReviewClient;
 import social.peal.resources.session.SessionClient;
 import social.peal.resources.signatures.SignaturesClient;
 import social.peal.resources.system.SystemClient;
 import social.peal.resources.tags.TagsClient;
 import social.peal.resources.tiktok.TiktokClient;
+import social.peal.resources.usage.UsageClient;
 import social.peal.resources.webhooks.WebhooksClient;
 
 public class PealClient implements AutoCloseable {
@@ -61,6 +63,8 @@ public class PealClient implements AutoCloseable {
     protected final Supplier<InvitationsClient> invitationsClient;
 
     protected final Supplier<BillingClient> billingClient;
+
+    protected final Supplier<UsageClient> usageClient;
 
     protected final Supplier<AnalyticsClient> analyticsClient;
 
@@ -92,6 +96,8 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<ChannelSetsClient> channelSetsClient;
 
+    protected final Supplier<QueuesClient> queuesClient;
+
     protected final Supplier<ChannelDefaultsClient> channelDefaultsClient;
 
     public PealClient(ClientOptions clientOptions) {
@@ -108,6 +114,7 @@ public class PealClient implements AutoCloseable {
         this.membersClient = Suppliers.memoize(() -> new MembersClient(clientOptions));
         this.invitationsClient = Suppliers.memoize(() -> new InvitationsClient(clientOptions));
         this.billingClient = Suppliers.memoize(() -> new BillingClient(clientOptions));
+        this.usageClient = Suppliers.memoize(() -> new UsageClient(clientOptions));
         this.analyticsClient = Suppliers.memoize(() -> new AnalyticsClient(clientOptions));
         this.tiktokClient = Suppliers.memoize(() -> new TiktokClient(clientOptions));
         this.capabilitiesClient = Suppliers.memoize(() -> new CapabilitiesClient(clientOptions));
@@ -123,6 +130,7 @@ public class PealClient implements AutoCloseable {
         this.tagsClient = Suppliers.memoize(() -> new TagsClient(clientOptions));
         this.signaturesClient = Suppliers.memoize(() -> new SignaturesClient(clientOptions));
         this.channelSetsClient = Suppliers.memoize(() -> new ChannelSetsClient(clientOptions));
+        this.queuesClient = Suppliers.memoize(() -> new QueuesClient(clientOptions));
         this.channelDefaultsClient = Suppliers.memoize(() -> new ChannelDefaultsClient(clientOptions));
     }
 
@@ -172,6 +180,10 @@ public class PealClient implements AutoCloseable {
 
     public BillingClient billing() {
         return this.billingClient.get();
+    }
+
+    public UsageClient usage() {
+        return this.usageClient.get();
     }
 
     public AnalyticsClient analytics() {
@@ -232,6 +244,10 @@ public class PealClient implements AutoCloseable {
 
     public ChannelSetsClient channelSets() {
         return this.channelSetsClient.get();
+    }
+
+    public QueuesClient queues() {
+        return this.queuesClient.get();
     }
 
     public ChannelDefaultsClient channelDefaults() {

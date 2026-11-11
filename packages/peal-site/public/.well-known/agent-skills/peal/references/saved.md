@@ -1,4 +1,4 @@
-# Tags, signatures, channel sets and channels' names
+# Tags, signatures, channel sets, queues and channels' names
 
 What a workspace saves to file and write its posts with, from the command
 line. Read [SKILL.md](../SKILL.md) first: its rules about drafts,
@@ -63,3 +63,29 @@ peal channels enable <channel-id> --json
 Turn a channel off only when the user asked: nothing is deleted, but a post
 that reaches its time on it meanwhile fails there (`channelDisabled`) and is
 not sent later. Once it is back on, schedule such a post anew.
+
+## Queues
+
+A queue is a weekly timetable of slots in a time zone. Queue a post when the
+user wants it to go out "on the next slot" rather than at a time they name:
+Peal decides the slot when the post is sent, the first one free after that
+moment, so two posts sent together never take the same one. Preview first,
+and say back the slot the post will take:
+
+```sh
+peal queues list --json
+peal queues preview Weekdays --count 5 --json
+peal post "An evergreen tip." --default-queue --dry-run --json
+peal post "An evergreen tip." --queue Weekdays --json
+peal posts queue <post-id> --queue Weekdays --json
+peal posts list --queue Weekdays --json
+```
+
+- `--queue <name-or-id>` names the queue, `--default-queue` takes the
+  workspace's default one. Either replaces `--at` and `--now`. Without
+  `--channel` or `--set`, the post goes to the queue's channels.
+- `queue_has_no_room` means the queue has no slot (`noSlots`) or every slot
+  of the next 366 days is taken (`full`): tell the user, never pick a time
+  yourself. A full month in the plan is `plan_limit_reached`.
+- `peal queues create` and `update` change what every member's posts are
+  queued into: only when the user asked. Changing slots moves no post.

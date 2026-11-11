@@ -441,6 +441,26 @@ curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/search?status=f
 
 `GET …/posts?from=…&to=…` stays, for calendars: it lists the posts scheduled between two instants, at most 62 days apart, by scheduled instant, in one answer. Drafts are not among them.
 
+## Add a post to a queue [#queues]
+
+A queue is a weekly timetable of slots in a time zone ([Queues](/scheduling#queues)): `GET`, `POST …/queues`, `GET`, `PUT`, `DELETE …/queues/{queueId}` keep them, with post:read to read and post:update to change. `when: { "_tag": "queue", "queueId": "…" }` on `send`, on each item of `bulk` and on `validate` puts a post on the queue's next free slot instead of a time; leave `queueId` out for the workspace's default queue. The slot is decided in the transaction that saves the post, under the queue's lock, so posts sent together take different slots, and a request sent again with its `Idempotency-Key` takes none. A post that names no channel and no set goes to the queue's channels and channel set, and its answer's `warnings` name the queue's channels disconnected since (`queueChannelsDropped`).
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/send" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"channelIds": [], "content": {"text": "An evergreen tip.", "media": [], "overrides": []}, "when": {"_tag": "queue"}}'
+```
+
+`POST …/posts/{postId}/queue`, with `{ "queueId"?, "channelIds"? }`, puts a draft on the next free slot (on `channelIds`, else its own channels, else the queue's channels and channel set, as a post sent onto the queue, with the same `warnings`), or moves a scheduled post, or one awaiting approval, there. Its own slot counts as free: a post added again to its queue stays where it is, unless a slot before it was freed since, which it then takes. `GET …/queues/{queueId}/slots?count=…` previews the next slots, each with the post that holds it, and `nextFree`, where a post added now would go: advice, as nothing is held.
+
+- A queue without a slot, or with every slot of the next 366 days taken, answers 409 `queue_has_no_room`, with `reason` `noSlots` or `full`.
+- A queue that is not the workspace's, or a default the workspace does not have, answers 404 `queue_not_found`.
+- The plan's room is counted in the slot's month: `plan_limit_reached` when it is full, never a later month.
+- `validate` answers `queueSlot`, the slot the post would take now, at which everything else was checked, or `queueNoRoom`.
+
+Posts carry the queue that placed them (`queueId`, null once it is deleted), and `GET …/posts/search?queueId=…` lists them.
+
 ## From MCP and the command line [#tools]
 
 | Request                        | MCP tool                          | Command                              |
@@ -451,5 +471,7 @@ curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/search?status=f
 | `POST …/posts/bulk`            | `create_posts`                    |                                      |
 | `POST …/posts/import`          |                                   | `peal posts import <file.csv>`       |
 | `GET …/posts/search`           | `list_posts`                      | `peal posts list`                    |
+| `POST …/posts/{postId}/queue`  | `queue_post`                      | `peal posts queue <post-id>`         |
+| `GET …/queues/{queueId}/slots` | `preview_queue`                   | `peal queues preview <queue>`        |
 
 [Connect an MCP client](/mcp#tools) describes the tools, and [Command line](/cli#post) the commands.

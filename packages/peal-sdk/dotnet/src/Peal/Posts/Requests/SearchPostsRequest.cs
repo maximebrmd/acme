@@ -34,6 +34,9 @@ public record SearchPostsRequest
     public Platform? Platform { get; set; }
 
     [JsonIgnore]
+    public string? QueueId { get; set; }
+
+    [JsonIgnore]
     public PostSort? Sort { get; set; }
 
     [JsonIgnore]

@@ -12,6 +12,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -50,6 +51,12 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * no part of what it says, and written apart from its status
  * (`PostRepository.setTags`), so a job that settles the post never undoes
  * a tagging made meanwhile.
+ *
+ * `queue_id` is the queue (`queues`) that gave it its time, null for a
+ * time chosen by hand: the post holds that queue's slot while it is
+ * scheduled, awaiting approval or publishing at exactly the slot's
+ * instant, which is all a slot's being taken is. No foreign key, as
+ * elsewhere here: deleting a queue clears the column in its transaction.
  */
 export const posts = publishing.table(
   "posts",
@@ -63,6 +70,7 @@ export const posts = publishing.table(
     id: uuid("id").primaryKey(),
     media: jsonb("media").notNull().default([]),
     outcome: text("outcome"),
+    queueId: uuid("queue_id"),
     scheduleRevision: integer("schedule_revision").notNull().default(0),
     scheduleZone: text("schedule_zone"),
     scheduledAt: instant("scheduled_at"),
@@ -96,6 +104,10 @@ export const posts = publishing.table(
     index("posts_workspace_drafts")
       .on(table.workspaceId, table.id)
       .where(sql`${table.status} = 'draft'`),
+    // The posts a queue placed, by their time: the slots they take.
+    index("posts_queue_scheduled_at")
+      .on(table.queueId, table.scheduledAt)
+      .where(sql`${table.queueId} is not null`),
   ]
 );
 
@@ -356,6 +368,44 @@ export const channelSets = publishing.table(
   },
   (table) => [
     unique("channel_sets_workspace_name").on(table.workspaceId, table.nameKey),
+  ]
+);
+
+/**
+ * A workspace's queues: weekly timetables a post is added to instead of
+ * being given a time. `slots` is JSON the domain's `QueueSlotsSchema`
+ * decodes (weekdays and wall-clock times), read in `time_zone`, an IANA
+ * zone as written. `channel_ids` and `channel_set_id` are what a post
+ * added to it goes to when it names none; a channel disconnected since
+ * stays listed, and a deleted set is cleared in the transaction that
+ * deletes it. `name_key` is the name as two names are compared, so a
+ * workspace has one queue per name whatever its case, and one default
+ * at most. Workspace content, naming nobody; rows go with their
+ * workspace.
+ */
+export const queues = publishing.table(
+  "queues",
+  {
+    channelIds: uuid("channel_ids")
+      .array()
+      .notNull()
+      .default(sql`'{}'::uuid[]`),
+    channelSetId: uuid("channel_set_id"),
+    createdAt: instant("created_at").notNull(),
+    id: uuid("id").primaryKey(),
+    isDefault: boolean("is_default").notNull().default(false),
+    name: text("name").notNull(),
+    nameKey: text("name_key").notNull(),
+    slots: jsonb("slots").notNull().default([]),
+    timeZone: text("time_zone").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    unique("queues_workspace_name").on(table.workspaceId, table.nameKey),
+    uniqueIndex("queues_workspace_default")
+      .on(table.workspaceId)
+      .where(sql`${table.isDefault}`),
+    index("queues_workspace_id").on(table.workspaceId, table.id),
   ]
 );
 

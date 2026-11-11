@@ -7,6 +7,8 @@ export interface PostValidation {
     channels: Peal.ChannelPreview[];
     duplicates: Peal.DuplicateOnChannel[];
     planLimit: Peal.PlanShortfall | null;
+    queueNoRoom?: Peal.QueueNoRoom | undefined;
+    queueSlot?: string | undefined;
     schedule: Peal.ScheduleCheck | null;
     unknownChannels: string[];
     unknownMedia: string[];

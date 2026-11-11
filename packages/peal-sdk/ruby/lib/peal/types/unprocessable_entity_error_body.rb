@@ -11,7 +11,7 @@ module Peal
 
       member -> { Peal::Types::UnknownChannelsEncoded }, key: "UNKNOWN_CHANNELS"
 
-      member -> { Peal::Types::PostContentInvalidEncoded }, key: "POST_CONTENT_INVALID"
+      member -> { Peal::Types::InvalidTimeZoneEncoded }, key: "INVALID_TIME_ZONE"
     end
   end
 end

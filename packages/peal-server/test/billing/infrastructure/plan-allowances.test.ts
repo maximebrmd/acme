@@ -41,7 +41,10 @@ const allowancesWith = (
     Layer.provide(
       Layer.succeed(
         WorkspaceSeats,
-        WorkspaceSeats.of({ taken: () => Effect.succeed(3) })
+        WorkspaceSeats.of({
+          page: () => Effect.succeed([]),
+          taken: () => Effect.succeed(3),
+        })
       )
     ),
     Layer.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))

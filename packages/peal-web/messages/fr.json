@@ -837,7 +837,9 @@
         "unknownTags": "Certaines étiquettes n’existent plus. Choisissez à nouveau celles de la publication.",
         "unknownChannelSet": "Ce groupe de canaux n’existe plus. Choisissez à nouveau les canaux de la publication.",
         "unknownSignature": "Cette signature n’existe plus. Choisissez-en une autre.",
-        "content": "À corriger avant de programmer :"
+        "content": "À corriger avant de programmer :",
+        "queueNoRoom": "{reason, select, noSlots {La file n’a aucun créneau : ajoutez-en dans ses réglages, ou choisissez une heure.} other {Tous les créneaux des {days, number} prochains jours de la file sont pris : ajoutez des créneaux, ou choisissez une heure.}}",
+        "queueNotFound": "Cette file d’attente n’existe plus : choisissez-en une autre."
       },
       "violation": {
         "inPart": "Partie {part} : {text}",
@@ -858,7 +860,21 @@
         "optionInvalid": "{channel} : {reason}",
         "forbiddenCharacters": "{channel} : le texte ne peut pas contenir {characters}."
       },
-      "channelDetail": "{handle} sur {platform}"
+      "channelDetail": "{handle} sur {platform}",
+      "placementLabel": "Quand la publication part",
+      "atTime": "À une heure",
+      "addToQueue": "Ajouter à la file",
+      "queueLabel": "File d’attente",
+      "queueLoading": "Lecture des files d’attente…",
+      "queueFailed": "Les files d’attente n’ont pas pu être lues.",
+      "queueNone": "Cet espace de travail n’a pas encore de file d’attente.",
+      "queueSettings": "Créer des files d’attente",
+      "queueDefault": "{name} (par défaut)",
+      "nextFreeLoading": "Lecture du prochain créneau libre…",
+      "nextFreeSlot": "Prochain créneau libre : {at} ({zone}). Le créneau est décidé à l’ajout de la publication.",
+      "queueNoRoom": "{reason, select, noSlots {La file n’a aucun créneau : ajoutez-en dans ses réglages.} other {Tous les créneaux des {days, number} prochains jours sont pris.}}",
+      "queued": "Ajoutée à la file : elle part {at}.",
+      "queuedForApproval": "Ajoutée à la file pour {at} : elle attend une approbation."
     },
     "Parts": {
       "legend": "Fil",
@@ -1133,11 +1149,15 @@
       "filterChannels": "{count, plural, =0 {Canaux} other {Canaux (#)}}",
       "filterChannelsLabel": "Afficher les publications qui vont sur l’un de ces canaux",
       "clearFilters": "Effacer les filtres",
-      "hiddenByFilters": "{count, plural, =0 {Aucune publication masquée par les filtres} one {# publication masquée par les filtres} other {# publications masquées par les filtres}}"
+      "hiddenByFilters": "{count, plural, =0 {Aucune publication masquée par les filtres} one {# publication masquée par les filtres} other {# publications masquées par les filtres}}",
+      "queueMark": "File d’attente : {name}",
+      "filterQueues": "{count, plural, =0 {Files} other {Files (#)}}",
+      "filterQueuesLabel": "Afficher les publications placées par ces files"
     },
     "Links": {
       "suspicious": "Ceci ne ressemble pas à un lien qui fonctionne : {link}"
-    }
+    },
+    "queueOf": "File d’attente : {name}"
   },
   "Drafts": {
     "title": "Brouillons",
@@ -1556,7 +1576,34 @@
       "unlimited": "{used, number}, sans limite",
       "resets": "Remis à zéro le {date}",
       "ofStorage": "{used} sur {allowed}",
-      "unlimitedStorage": "{used}, sans limite"
+      "unlimitedStorage": "{used}, sans limite",
+      "history": {
+        "title": "Utilisation par jour",
+        "description": "Ce que l’espace de travail a fait chaque jour (UTC), et ce qu’il détenait lors du relevé du jour, peu après.",
+        "rangeLabel": "Période",
+        "range": "{days, number} derniers jours",
+        "loading": "Chargement de l’utilisation…",
+        "loadFailed": "L’utilisation n’a pas pu être chargée.",
+        "retry": "Réessayer",
+        "published": "{count, plural, one {# publication mise en ligne} other {# publications mises en ligne}}",
+        "onPlatform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} {count, number}",
+        "channelDays": "{count, plural, one {# jour-canal} other {# jours-canal}}, sur {days, plural, one {# jour compté} other {# jours comptés}}",
+        "metered": "{count, plural, one {# publication} other {# publications}} sur {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} en {month}, dont {withLinks, number} avec un lien",
+        "shared": "Les canaux de cet espace de travail comptent dans l’offre de l’espace de travail de son partenaire.",
+        "nothing": "Rien n’a encore été compté sur cette période.",
+        "views": "Afficher l’utilisation en",
+        "chart": "Graphique",
+        "table": "Tableau",
+        "caption": "Publications mises en ligne et canaux connectés chaque jour (UTC), du {from} au {to}. Le tableau donne les mêmes chiffres.",
+        "tableCaption": "Utilisation chaque jour (UTC)",
+        "day": "Jour (UTC)",
+        "posts": "Publications mises en ligne",
+        "channels": "Canaux connectés",
+        "members": "Membres",
+        "media": "Médias stockés",
+        "assistant": "Demandes à l’assistant",
+        "note": "Des décomptes seulement, conservés {days, number} jours : rien n’est facturé d’après eux. Un tiret marque un jour sans relevé."
+      }
     },
     "plans": {
       "title": "Abonnements",
@@ -1831,7 +1878,8 @@
       "partner": "Partenaire",
       "tags": "Étiquettes",
       "signatures": "Signatures",
-      "channelSets": "Groupes de canaux"
+      "channelSets": "Groupes de canaux",
+      "queues": "Files d’attente"
     },
     "general": {
       "title": "Nom",
@@ -2076,6 +2124,32 @@
     "sendAgain": "Renvoyer",
     "sendingAgain": "Envoi…",
     "sentAgain": "Renvoyée, comme une nouvelle livraison du même événement.",
+    "channelsLegend": "Seulement ces chaînes",
+    "channelsHint": "Ne cochez rien pour entendre toutes les chaînes. Les événements sans chaîne, comme les fichiers et les promotions, arrivent toujours : retirez leurs types ci-dessus si vous n’en voulez pas.",
+    "channelsNone": "L’espace de travail n’a encore aucune chaîne.",
+    "channelGone": "Une chaîne qui n’est plus connectée ({id})",
+    "channelsGoneHint": "Décochez une chaîne qui n’est plus connectée pour ne plus filtrer sur elle.",
+    "workspacesLabel": "Seulement ces espaces de travail",
+    "workspacesHint": "Les identifiants des espaces de travail du partenaire, un par ligne, {max, number} au plus. Laissez vide pour entendre tous les espaces de travail ; l’espace de travail principal n’est entendu que s’il est listé.",
+    "channelsFilter": "Seulement les événements {count, plural, one {d’# chaîne} other {de # chaînes}}, et ceux sans chaîne",
+    "workspacesFilter": "Seulement {count, plural, one {# espace de travail} other {# espaces de travail}}",
+    "statusFilter": "Statut",
+    "eventFilter": "Événement",
+    "anyStatus": "Tous les statuts",
+    "anyEvent": "Tous les événements",
+    "tabEndpoints": "Points de terminaison",
+    "tabFailed": "Échouées",
+    "failedTitle": "Livraisons échouées, tous points de terminaison confondus",
+    "failedEmpty": "Aucune livraison n’a échoué pour de bon ces {days, number} derniers jours.",
+    "columnEndpoint": "Point de terminaison",
+    "sendAllFailed": "Renvoyer toutes les livraisons échouées",
+    "sendAllFailedTitle": "Renvoyer les livraisons échouées vers {host} ?",
+    "sendAllFailedDescription": "{more, select, true {Les livraisons échouées les plus anciennes sont renvoyées, {max, number} par appel, chacune comme une nouvelle livraison de son événement : renvoyez ensuite le reste.} other {{count, plural, =0 {Aucune livraison vers ce point de terminaison n’a échoué pour de bon.} one {# livraison échouée est renvoyée, comme une nouvelle livraison du même événement.} other {# livraisons échouées sont renvoyées, comme de nouvelles livraisons des mêmes événements.}}}} L’espace de travail renvoie {perHour, number} livraisons de cette façon par heure.",
+    "sendingAllFailed": "Renvoi…",
+    "sentAllAgain": "{sent, plural, =0 {Rien n’a été renvoyé.} one {# livraison renvoyée.} other {# livraisons renvoyées.}} {skipped, plural, =0 {} one {# ignorée : déjà renvoyée, ou son point de terminaison est désactivé.} other {# ignorées : déjà renvoyées, ou leur point de terminaison est désactivé.}} {remaining, plural, =0 {} other {Il en reste #.}}",
+    "testEventLabel": "Type de l’événement de test",
+    "testEventPlain": "Événement de test simple (webhook.test)",
+    "sampleSent": "Exemple envoyé. Son corps est un exemple, marqué sample: true : le destinataire ne doit pas agir dessus.",
     "errors": {
       "forbidden": "Votre rôle ne le permet pas.",
       "notFound": "Ce point de terminaison n’existe plus.",
@@ -2085,7 +2159,8 @@
       "tooManySends": "L’espace de travail a envoyé autant d’événements de test et de renvois qu’il le peut en une heure. Réessayez plus tard.",
       "tooMany": "L’espace de travail a déjà {allowed, number} points de terminaison, le maximum. Supprimez-en un d’abord.",
       "urlRefused": "{reason, select, malformed {Ce n’est pas une adresse.} notHttps {L’adresse doit être en HTTPS, sur le port par défaut.} credentials {L’adresse ne doit porter ni nom d’utilisateur ni mot de passe.} tooLong {L’adresse est trop longue.} notPublic {L’hôte de l’adresse n’est pas public, donc Peal ne lui envoie aucune requête.} unknownHost {L’hôte de l’adresse n’existe pas.} other {Peal ne livre pas à cette adresse.}}",
-      "unknown": "Une erreur est survenue. Réessayez."
+      "unknown": "Une erreur est survenue. Réessayez.",
+      "filterRefused": "Seul un point de terminaison partenaire prend une liste d’espaces de travail, et chacun doit être un identifiant."
     }
   },
   "AccountSettings": {
@@ -2726,11 +2801,13 @@
     "errors": {
       "forbidden": "Votre rôle ne le permet pas.",
       "invalid": "{kind, select, channelSet {Les options gardées pour l’un de ces canaux ne sont pas celles de sa plateforme. Choisissez à nouveau les canaux.} other {Impossible d’enregistrer cela tel quel.}}",
-      "nameTaken": "{kind, select, tag {L’espace de travail a déjà une étiquette de ce nom.} signature {L’espace de travail a déjà une signature de ce nom.} other {L’espace de travail a déjà un groupe de canaux de ce nom.}}",
-      "notFound": "{kind, select, tag {Cette étiquette n’existe plus.} signature {Cette signature n’existe plus.} other {Ce groupe de canaux n’existe plus.}}",
-      "tooMany": "{kind, select, tag {L’espace de travail a {allowed, number} étiquettes, le maximum. Supprimez-en une avant d’en ajouter une autre.} signature {L’espace de travail a {allowed, number} signatures, le maximum. Supprimez-en une avant d’en ajouter une autre.} other {L’espace de travail a {allowed, number} groupes de canaux, le maximum. Supprimez-en un avant d’en ajouter un autre.}}",
+      "nameTaken": "{kind, select, tag {L’espace de travail a déjà une étiquette de ce nom.} signature {L’espace de travail a déjà une signature de ce nom.} queue {L’espace de travail a déjà une file d’attente de ce nom.} other {L’espace de travail a déjà un groupe de canaux de ce nom.}}",
+      "notFound": "{kind, select, tag {Cette étiquette n’existe plus.} signature {Cette signature n’existe plus.} queue {Cette file d’attente n’existe plus.} other {Ce groupe de canaux n’existe plus.}}",
+      "tooMany": "{kind, select, tag {L’espace de travail a {allowed, number} étiquettes, le maximum. Supprimez-en une avant d’en ajouter une autre.} signature {L’espace de travail a {allowed, number} signatures, le maximum. Supprimez-en une avant d’en ajouter une autre.} queue {L’espace de travail garde {allowed, number} files d’attente, le maximum permis. Supprimez-en une avant d’en ajouter une autre.} other {L’espace de travail a {allowed, number} groupes de canaux, le maximum. Supprimez-en un avant d’en ajouter un autre.}}",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "unknownChannels": "Certains de ces canaux ne sont plus connectés. Choisissez à nouveau les canaux."
+      "unknownChannels": "Certains de ces canaux ne sont plus connectés. Choisissez à nouveau les canaux.",
+      "invalidTimeZone": "Ce fuseau horaire n’est pas connu de Peal.",
+      "setNotFound": "Le groupe de canaux choisi n’existe plus. Choisissez-en un autre, ou aucun."
     }
   },
   "Tags": {
@@ -2831,6 +2908,51 @@
     "saveSelection": "Enregistrer la sélection comme groupe",
     "saveSelectionTitle": "Enregistrer la sélection comme groupe de canaux",
     "saveSelectionDescription": "{count, plural, one {Le canal coché, avec les options remplies pour lui, est gardé sous ce nom.} other {Les # canaux cochés, avec les options remplies pour eux, sont gardés sous ce nom.}}"
+  },
+  "Queues": {
+    "description": "Une file d’attente est un emploi du temps hebdomadaire de créneaux dans un fuseau horaire. Ajoutez une publication à la file au lieu de choisir une heure : elle prend le prochain créneau libre.",
+    "rules": "Un créneau est pris tant qu’une publication de la file est programmée, en attente d’approbation ou en cours de publication à son heure. Changer les créneaux ne déplace aucune publication. Un espace de travail garde {max, number} files d’attente au plus.",
+    "readOnly": "Vous voyez les files d’attente. En ajouter, en modifier ou en supprimer demande le droit de modifier les publications.",
+    "listTitle": "Files d’attente",
+    "empty": "L’espace de travail n’a pas encore de file d’attente.",
+    "name": "Nom",
+    "timeZone": "Fuseau horaire",
+    "slots": "Créneaux",
+    "noSlot": "Aucun créneau pour l’instant : on ne peut pas ajouter de publication à cette file.",
+    "slotDay": "Jour",
+    "slotTime": "Heure",
+    "addSlot": "Ajouter le créneau",
+    "removeSlot": "Retirer le créneau {slot}",
+    "slotsHint": "Heures du jour en {zone}, gardées quel que soit le changement d’heure. {max, number} créneaux au plus.",
+    "slot": "{day}, {time}",
+    "day": "{day, select, monday {lundi} tuesday {mardi} wednesday {mercredi} thursday {jeudi} friday {vendredi} saturday {samedi} other {dimanche}}",
+    "week": "{slots}, en {zone}",
+    "channels": "Canaux",
+    "channelsHint": "Une publication ajoutée à la file va sur ces canaux quand elle n’en nomme aucun. {max, number} au plus.",
+    "noChannels": "L’espace de travail n’a pas encore de canal connecté.",
+    "channelSet": "Groupe de canaux",
+    "noChannelSet": "Aucun groupe de canaux",
+    "isDefault": "File par défaut : une publication ajoutée à une file va dans celle-ci, sauf si une autre est choisie.",
+    "defaultBadge": "Par défaut",
+    "channelsOf": "Canaux de {name}",
+    "missing": "{count, plural, one {# canal de cette file n’est plus connecté : les publications ajoutées partent sans lui.} other {# canaux de cette file ne sont plus connectés : les publications ajoutées partent sans eux.}}",
+    "editDrops": "{count, plural, one {L’enregistrement retire le canal qui n’est plus connecté.} other {L’enregistrement retire les # canaux qui ne sont plus connectés.}}",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saved": "La file d’attente est enregistrée. Ses publications gardent leur heure.",
+    "deleteTitle": "Supprimer la file d’attente « {name} » ?",
+    "deleteDescription": "Les publications qu’elle a placées restent programmées à leur heure. C’est définitif.",
+    "deleted": "La file d’attente est supprimée.",
+    "createTitle": "Ajouter une file d’attente",
+    "create": "Ajouter la file d’attente",
+    "creating": "Ajout…",
+    "created": "La file d’attente est ajoutée.",
+    "upcoming": "Prochains créneaux, en {zone} :",
+    "upcomingSlot": "{at} : {taken, select, taken {pris} other {libre}}",
+    "upcomingLoading": "Lecture des prochains créneaux…",
+    "upcomingFailed": "Les prochains créneaux n’ont pas pu être lus.",
+    "nextFree": "Prochain créneau libre : {at}.",
+    "noRoom": "{reason, select, noSlots {Aucun créneau libre : la file n’a aucun créneau.} other {Aucun créneau libre dans les {days, number} prochains jours.}}"
   },
   "Inbox": {
     "open": "Boîte de réception",

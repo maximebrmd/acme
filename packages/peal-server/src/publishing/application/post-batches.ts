@@ -38,6 +38,8 @@ import { nothingAsked } from "./post-presets.ts";
 import { PostRepository } from "./post-repository.ts";
 import { PostScheduling } from "./post-scheduling.ts";
 import type { SendPostRequest, SentPost } from "./post-scheduling.ts";
+import type { QueueHasNoRoom } from "./queue-has-no-room.ts";
+import type { QueueNotFound } from "./queue-not-found.ts";
 import type { SignatureNotFound } from "./signature-not-found.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
@@ -53,6 +55,8 @@ export const maxBulkPosts = 50;
  */
 export type SendRefusal =
   | DuplicateContent
+  | QueueHasNoRoom
+  | QueueNotFound
   | IdempotencyKeyReused
   | MissingPermission
   | PlanLimitReached
@@ -89,7 +93,7 @@ export type RequestCheck =
   // It names a channel set or a signature the workspace does not have.
   | {
       readonly _tag: "unfilled";
-      readonly missing: ChannelSetNotFound | SignatureNotFound;
+      readonly missing: ChannelSetNotFound | QueueNotFound | SignatureNotFound;
     };
 
 /** What became of one post of several: made, or why not. */
@@ -233,6 +237,8 @@ export class PostBatches extends Context.Service<
             PlanLimitReached: refused,
             PostContentRejected: refused,
             PostNotFound: refused,
+            QueueHasNoRoom: refused,
+            QueueNotFound: refused,
             ScheduleInPast: refused,
             SignatureNotFound: refused,
             UnknownChannels: refused,
@@ -274,11 +280,11 @@ export class PostBatches extends Context.Service<
           Effect.fnUntraced(function* checkOne(
             {
               allowDuplicate = false,
-              at,
               channelIds,
               content,
               idempotency,
               options = [],
+              placement,
               presets,
             },
             place
@@ -319,7 +325,7 @@ export class PostBatches extends Context.Service<
                 content,
                 options,
                 presets: presets ?? nothingAsked,
-                when: Option.some({ at }),
+                when: Option.some(placement),
               })
               .pipe(
                 Effect.map(
@@ -327,11 +333,13 @@ export class PostBatches extends Context.Service<
                     done
                   ): Result.Result<
                     PostCheck,
-                    ChannelSetNotFound | SignatureNotFound
+                    ChannelSetNotFound | QueueNotFound | SignatureNotFound
                   > => Result.succeed(done)
                 ),
                 Effect.catchTags({
                   ChannelSetNotFound: (missing) =>
+                    Effect.succeed(Result.fail(missing)),
+                  QueueNotFound: (missing) =>
                     Effect.succeed(Result.fail(missing)),
                   SignatureNotFound: (missing) =>
                     Effect.succeed(Result.fail(missing)),
@@ -355,8 +363,9 @@ export class PostBatches extends Context.Service<
               return alone;
             }
 
-            // Sendable alone: now as one of the file's, after the others.
-            const when = Option.getOrElse(at, () => now);
+            // Sendable alone: now as one of the file's, after the others,
+            // or at the slot its queue would give it.
+            const when = Option.getOrElse(found.at, () => now);
 
             const repeated = allowDuplicate
               ? Option.none<RepeatedRequest>()

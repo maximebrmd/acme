@@ -12,9 +12,9 @@
   allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `tags`, `signatures`, `sets`, `media`, `approvals`, `review`,
-  `analytics`, `inbox`, `billing`, `members`, `invitations`, `webhooks`
-  and `ads`, which act in the
+  `post`, `tags`, `signatures`, `sets`, `queues`, `media`, `approvals`,
+  `review`, `analytics`, `inbox`, `billing`, `usage`, `members`,
+  `invitations`, `webhooks` and `ads`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read
@@ -87,6 +87,17 @@
   each in prose after the rest (`warningLines`); `--json` prints the answer
   as it came. The MCP toolkit `saved-tools.ts` has the same, by id, and
   its posts name sets by id or name.
+- `peal queues` (list, show, preview, create, update, delete) keeps a
+  workspace's queues (`--slot mon@09:00`, repeated; `--zone`; `--channel`;
+  `--set`; `--default`; on `update`, `--clear-channels` and `--clear-slots`
+  empty them), named by id or name (`saved-items.ts`:
+  `findQueue`, `queueOf`, which takes "" for the default). `peal post
+  --queue <name-or-id>` (an ordinary valued flag: effect/cli never takes
+  the next word as an optional value, which would read a name as the
+  post's text) or `--default-queue` is one of `--at`, `--now`, `--queue`
+  and `--default-queue`; `peal posts queue` and `peal posts list --queue` follow
+  `posts.enqueue` and `search?queueId`. The studio's queues are in
+  `test/studio-queues.ts`, built over what `studio.ts` hands them.
 - `peal channels rename`, `disable` and `enable`
   (`commands/channel-settings.ts`) name a channel and turn it off or back
   on, and `peal posts duplicate` makes a draft of a post, reading it first
@@ -116,6 +127,10 @@
   printed through `printableConsole` like everything else, and a reply
   that is `unconfirmed` is never sent again, so `explain` sends the user
   to the platform, then to `peal inbox confirm`.
+- `peal usage` (`--from`, `--to`: UTC days) reads `usage.get`: the plan
+  line, the limits against what is used now (`usageLines`, shared with
+  `peal billing`), the period's totals, then a row per day that has
+  anything. `peal billing` stays as it is.
 - `peal ads` reads ad accounts, campaigns, ads, insights and boosts, and
   `peal ads boost` quotes, creates, shows, pauses, resumes and stops one.
   No command signs in to an ad network, connects an ad account or sets a
@@ -145,3 +160,13 @@
   `test/studio-ads.ts` (`StudioState.ads`: the server's mode, two ad
   accounts, the boosts), whose handlers refuse a bearer credential what
   only a person does.
+- `peal webhooks`: `--channel`, `--workspace-id` (with `--partner` on
+  `create`), `--clear-channels` and `--clear-workspaces` set an endpoint's
+  filters, ids as given; `deliveries` without an endpoint, or with
+  `--since`/`--until`, reads `searchDeliveries`; `redeliver` sends one
+  delivery with `--endpoint` (`redeliver`, the single sends' budget), several
+  by id or `--failed --endpoint` (`redeliverMany`), which refuses
+  `--since`, `--until` and `--event` without `--failed`, names an
+  endpoint's id given as a delivery, and ends as a refusal
+  (`nothing_redelivered`) when nothing was sent again; `test --event` sends a
+  sample.

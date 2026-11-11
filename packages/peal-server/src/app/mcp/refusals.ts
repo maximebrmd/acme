@@ -1,5 +1,5 @@
 import { Effect, Option } from "effect";
-import { CurrentMember } from "peal-contract";
+import { CurrentMember, queueHorizonDays } from "peal-contract";
 import type { Member, Permission } from "peal-contract";
 
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
@@ -130,6 +130,27 @@ export const unknownChannelSet = () =>
 export const unknownSignature = () =>
   refuse(
     "The signature this names is not the workspace's: list_signatures answers its signatures. Nothing was made."
+  );
+
+/**
+ * A queue a post is added to is not the workspace's, or the workspace has
+ * no default queue.
+ */
+export const unknownQueue = () =>
+  refuse(
+    "The queue this names is not the workspace's, or the workspace has no default queue: list_queues answers its queues, the default first. Nothing was made or moved."
+  );
+
+/** The queue a post is added to has no free slot. */
+export const queueHasNoRoom = ({
+  reason,
+}: {
+  readonly reason: "full" | "noSlots";
+}) =>
+  refuse(
+    reason === "noSlots"
+      ? "The queue has no slot: add slots with update_queue, or give the post a time. Nothing was made or moved."
+      : `Every slot of the queue's next ${String(queueHorizonDays)} days is taken: add slots with update_queue, or give the post a time. Nothing was made or moved.`
   );
 
 /** What a post that names saved items is refused with when one is gone. */

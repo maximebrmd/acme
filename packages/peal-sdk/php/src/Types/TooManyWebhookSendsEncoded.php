@@ -32,8 +32,15 @@ class TooManyWebhookSendsEncoded extends JsonSerializableType
     public int $allowed;
 
     /**
+     * @var int $retryAfterSeconds
+     */
+    #[JsonProperty('retryAfterSeconds')]
+    public int $retryAfterSeconds;
+
+    /**
      * @param array{
      *   allowed: int,
+     *   retryAfterSeconds: int,
      *   code?: ?string,
      *   message?: ?string,
      *   requestId?: ?string,
@@ -46,6 +53,7 @@ class TooManyWebhookSendsEncoded extends JsonSerializableType
         $this->message = $values['message'] ?? null;
         $this->requestId = $values['requestId'] ?? null;
         $this->allowed = $values['allowed'];
+        $this->retryAfterSeconds = $values['retryAfterSeconds'];
     }
 
     /**

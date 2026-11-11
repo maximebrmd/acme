@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import social.peal.core.ObjectMappers;
+import social.peal.types.WebhookDeliveryStatus;
+import social.peal.types.WebhookEventType;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ListDeliveriesWebhooksRequest.Builder.class)
@@ -24,12 +26,22 @@ public final class ListDeliveriesWebhooksRequest {
 
     private final Optional<String> limit;
 
+    private final Optional<WebhookEventType> eventType;
+
+    private final Optional<WebhookDeliveryStatus> status;
+
     private final Map<String, Object> additionalProperties;
 
     private ListDeliveriesWebhooksRequest(
-            Optional<String> cursor, Optional<String> limit, Map<String, Object> additionalProperties) {
+            Optional<String> cursor,
+            Optional<String> limit,
+            Optional<WebhookEventType> eventType,
+            Optional<WebhookDeliveryStatus> status,
+            Map<String, Object> additionalProperties) {
         this.cursor = cursor;
         this.limit = limit;
+        this.eventType = eventType;
+        this.status = status;
         this.additionalProperties = additionalProperties;
     }
 
@@ -41,6 +53,16 @@ public final class ListDeliveriesWebhooksRequest {
     @JsonProperty("limit")
     public Optional<String> getLimit() {
         return limit;
+    }
+
+    @JsonProperty("eventType")
+    public Optional<WebhookEventType> getEventType() {
+        return eventType;
+    }
+
+    @JsonProperty("status")
+    public Optional<WebhookDeliveryStatus> getStatus() {
+        return status;
     }
 
     @java.lang.Override
@@ -55,12 +77,15 @@ public final class ListDeliveriesWebhooksRequest {
     }
 
     private boolean equalTo(ListDeliveriesWebhooksRequest other) {
-        return cursor.equals(other.cursor) && limit.equals(other.limit);
+        return cursor.equals(other.cursor)
+                && limit.equals(other.limit)
+                && eventType.equals(other.eventType)
+                && status.equals(other.status);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.cursor, this.limit);
+        return Objects.hash(this.cursor, this.limit, this.eventType, this.status);
     }
 
     @java.lang.Override
@@ -78,6 +103,10 @@ public final class ListDeliveriesWebhooksRequest {
 
         private Optional<String> limit = Optional.empty();
 
+        private Optional<WebhookEventType> eventType = Optional.empty();
+
+        private Optional<WebhookDeliveryStatus> status = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -85,6 +114,8 @@ public final class ListDeliveriesWebhooksRequest {
         public Builder from(ListDeliveriesWebhooksRequest other) {
             cursor(other.getCursor());
             limit(other.getLimit());
+            eventType(other.getEventType());
+            status(other.getStatus());
             return this;
         }
 
@@ -110,13 +141,38 @@ public final class ListDeliveriesWebhooksRequest {
             return this;
         }
 
+        @JsonSetter(value = "eventType", nulls = Nulls.SKIP)
+        public Builder eventType(Optional<WebhookEventType> eventType) {
+            this.eventType = eventType;
+            return this;
+        }
+
+        public Builder eventType(WebhookEventType eventType) {
+            this.eventType = Optional.ofNullable(eventType);
+            return this;
+        }
+
+        @JsonSetter(value = "status", nulls = Nulls.SKIP)
+        public Builder status(Optional<WebhookDeliveryStatus> status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder status(WebhookDeliveryStatus status) {
+            this.status = Optional.ofNullable(status);
+            return this;
+        }
+
         public ListDeliveriesWebhooksRequest build() {
-            return new ListDeliveriesWebhooksRequest(cursor, limit, additionalProperties);
+            return new ListDeliveriesWebhooksRequest(cursor, limit, eventType, status, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("cursor") || key.equalsIgnoreCase("limit")) {
+            if (key.equalsIgnoreCase("cursor")
+                    || key.equalsIgnoreCase("limit")
+                    || key.equalsIgnoreCase("eventType")
+                    || key.equalsIgnoreCase("status")) {
                 return;
             }
             this.additionalProperties.put(key, value);

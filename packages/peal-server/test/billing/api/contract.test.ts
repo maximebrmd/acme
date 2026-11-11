@@ -2,7 +2,10 @@ import { describe, expect, it } from "@effect/vitest";
 import { Duration, Option } from "effect";
 import {
   billingCurrency,
+  defaultUsageRangeDays as contractDefaultRange,
   desiredDayHorizonDays,
+  maxUsageRangeDays as contractMaxRange,
+  usageRetentionDays as contractRetention,
   BillingIntervalSchema as ContractIntervalSchema,
   displayVatRate as contractVatRate,
   planCatalogue,
@@ -27,10 +30,21 @@ import {
   planPrices,
 } from "#billing/domain/prices.ts";
 import { SubscriptionStatusSchema } from "#billing/domain/subscription.ts";
+import {
+  defaultUsageRangeDays,
+  maxUsageRangeDays,
+  usageRetentionDays,
+} from "#billing/domain/usage-meter.ts";
 import { PlanLimitSchema } from "#shared/domain/plan-limit.ts";
 import { PaidPlanSchema, PlanSchema } from "#shared/domain/plan.ts";
 
 describe("the contract", () => {
+  it("states the usage reports' ranges and retention the server keeps", () => {
+    expect(contractMaxRange).toBe(maxUsageRangeDays);
+    expect(contractDefaultRange).toBe(defaultUsageRangeDays);
+    expect(contractRetention).toBe(usageRetentionDays);
+  });
+
   it("lists the plans, limits and statuses the server knows", () => {
     expect(ContractPlanSchema.literals).toStrictEqual(PlanSchema.literals);
     expect(ContractPlanSchema.literals).toStrictEqual(plans);

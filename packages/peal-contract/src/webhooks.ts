@@ -19,6 +19,7 @@ import {
   SubscribableWebhookEventTypeSchema,
   WebhookEventTypeSchema,
 } from "./webhook-events.ts";
+import { WebhookFilterRefused } from "./webhook-filter-refused.ts";
 import { WebhookUrlRefused } from "./webhook-url-refused.ts";
 import { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
@@ -50,6 +51,22 @@ export const webhookFailingDays = 5;
 /** How many days a delivery stays in its endpoint's log. */
 export const webhookDeliveryRetentionDays = 30;
 
+/** How many channels an endpoint may listen to. */
+export const maxWebhookFilterChannels = 50;
+
+/** How many workspaces a partner endpoint may listen to. */
+export const maxWebhookFilterWorkspaces = 200;
+
+/**
+ * How many deliveries a workspace's members may send again by the many in
+ * an hour, apart from the test events and single sends of
+ * `webhookManualSendsPerHour`.
+ */
+export const webhookBulkRedeliveriesPerHour = 1000;
+
+/** How many deliveries one call sends again at most. */
+export const maxWebhookBulkRedelivery = 100;
+
 /**
  * Why an endpoint is off: a member turned it off (`manual`), every attempt
  * failed for days (`failing`), or the receiver answered 410 Gone (`gone`).
@@ -79,6 +96,9 @@ export type WebhookEndpointScope = typeof WebhookEndpointScopeSchema.Type;
  * which is shown once, when it is created or rotated.
  */
 export const WebhookEndpointSchema = Schema.Struct({
+  // The channels it hears about, as saved; empty for every channel. An
+  // event about no channel (a file, a boost) reaches it whatever it lists.
+  channelIds: Schema.Array(Schema.String),
   createdAt: Schema.DateTimeUtc,
   description: Schema.String,
   // When it was turned off, and why; null while it is on.
@@ -97,6 +117,9 @@ export const WebhookEndpointSchema = Schema.Struct({
   scope: WebhookEndpointScopeSchema,
   updatedAt: Schema.DateTimeUtc,
   url: Schema.String,
+  // The workspaces a partner endpoint hears, as saved; empty for every
+  // one it hears. Always empty on an endpoint of the `workspace` scope.
+  workspaceIds: Schema.Array(Schema.String),
 }).annotate({ identifier: "WebhookEndpoint" });
 
 export type WebhookEndpoint = typeof WebhookEndpointSchema.Type;
@@ -113,7 +136,20 @@ const EventTypesSchema = Schema.NonEmptyArray(
   SubscribableWebhookEventTypeSchema
 );
 
+// Ids are checked for their shape only: one that names nothing matches
+// nothing.
+const ChannelFilterSchema = Schema.Array(
+  Schema.String.check(Schema.isUUID(7), Schema.isLowercased())
+).check(Schema.isMaxLength(maxWebhookFilterChannels));
+
+const WorkspaceFilterSchema = Schema.Array(
+  Schema.String.check(Schema.isUUID(), Schema.isLowercased())
+).check(Schema.isMaxLength(maxWebhookFilterWorkspaces));
+
 export const NewWebhookEndpointSchema = Schema.Struct({
+  // The channels it hears about, `maxWebhookFilterChannels` at most; every
+  // channel when left out or empty.
+  channelIds: Schema.optionalKey(ChannelFilterSchema),
   // What it is for; empty when left out.
   description: Schema.optionalKey(DescriptionSchema),
   // On unless false.
@@ -124,16 +160,37 @@ export const NewWebhookEndpointSchema = Schema.Struct({
   scope: Schema.optionalKey(WebhookEndpointScopeSchema),
   // HTTPS, on the default port, on a public host, without credentials.
   url: UrlSchema,
-}).annotate({ identifier: "NewWebhookEndpoint" });
+  // The workspaces a `partner` endpoint hears, its home workspace only if
+  // listed; every one when left out or empty. Refused on any other scope.
+  workspaceIds: Schema.optionalKey(WorkspaceFilterSchema),
+})
+  .check(
+    Schema.makeFilter(
+      (endpoint) =>
+        endpoint.scope === "partner" ||
+        (endpoint.workspaceIds ?? []).length === 0 || {
+          issue: "Only an endpoint of the `partner` scope takes workspaceIds",
+          path: ["workspaceIds"],
+        }
+    )
+  )
+  .annotate({ identifier: "NewWebhookEndpoint" });
 
 export type NewWebhookEndpoint = typeof NewWebhookEndpointSchema.Type;
 
-/** What to change of an endpoint: what is left out stays as it is. */
+/**
+ * What to change of an endpoint: what is left out stays as it is, and an
+ * empty filter hears everything again.
+ */
 export const WebhookEndpointChangeSchema = Schema.Struct({
+  channelIds: Schema.optionalKey(ChannelFilterSchema),
   description: Schema.optionalKey(DescriptionSchema),
   enabled: Schema.optionalKey(Schema.Boolean),
   eventTypes: Schema.optionalKey(EventTypesSchema),
   url: Schema.optionalKey(UrlSchema),
+  // Only for an endpoint of the `partner` scope (422
+  // `WebhookFilterRefused` on any other).
+  workspaceIds: Schema.optionalKey(WorkspaceFilterSchema),
 }).annotate({ identifier: "WebhookEndpointChange" });
 
 export type WebhookEndpointChange = typeof WebhookEndpointChangeSchema.Type;
@@ -193,6 +250,8 @@ export const WebhookDeliverySchema = Schema.Struct({
   createdAt: Schema.DateTimeUtc,
   // How long the last attempt took, in milliseconds.
   durationMs: Schema.NullOr(Schema.Int),
+  // The endpoint it goes to.
+  endpointId: Schema.String,
   // Why the last attempt got no answer, when it got none.
   error: Schema.NullOr(WebhookAttemptErrorSchema),
   // The event's id, which the receiver gets as `webhook-id`.
@@ -204,12 +263,19 @@ export const WebhookDeliverySchema = Schema.Struct({
   lastAttemptAt: Schema.NullOr(Schema.DateTimeUtc),
   // When the next attempt is made, while one is left.
   nextAttemptAt: Schema.NullOr(Schema.DateTimeUtc),
+  // The delivery this one sends again; null for an event's first.
+  redeliveryOf: Schema.NullOr(Schema.String),
   // The start of what the receiver answered the last attempt with, when
   // that was not a success: one line, 256 characters at most.
   responseExcerpt: Schema.NullOr(Schema.String),
   // The status the receiver answered the last attempt with.
   responseStatus: Schema.NullOr(Schema.Int),
   status: WebhookDeliveryStatusSchema,
+  // The workspace the event happened in: for a partner endpoint, one of
+  // the partner's workspaces, which the partner knows by
+  // `workspaceExternalId` (null when it gave none, and for any other).
+  workspaceExternalId: Schema.NullOr(Schema.String),
+  workspaceId: Schema.String,
 }).annotate({ identifier: "WebhookDelivery" });
 
 export type WebhookDelivery = typeof WebhookDeliverySchema.Type;
@@ -222,6 +288,60 @@ export const WebhookDeliveryPageSchema = Schema.Struct({
 
 export type WebhookDeliveryPage = typeof WebhookDeliveryPageSchema.Type;
 
+/**
+ * Why a delivery asked for was not sent again: its endpoint is off
+ * (`endpointDisabled`), it is not one of the workspace's (`notFound`), or
+ * its event was sent again already, and that delivery is pending or went
+ * through (`alreadySent`), so calling again sends nothing twice.
+ */
+export const WebhookRedeliverySkipSchema = Schema.Literals([
+  "alreadySent",
+  "endpointDisabled",
+  "notFound",
+]).annotate({ identifier: "WebhookRedeliverySkip" });
+
+export type WebhookRedeliverySkip = typeof WebhookRedeliverySkipSchema.Type;
+
+/** What a call to send many deliveries again did. */
+export const WebhookBulkRedeliverySchema = Schema.Struct({
+  // The new deliveries, still pending: one per delivery sent again.
+  redelivered: Schema.Array(WebhookDeliverySchema),
+  // How many more failed deliveries the selection holds: call again for
+  // them. 0 for a call by ids.
+  remaining: Schema.Int,
+  skipped: Schema.Array(
+    Schema.Struct({
+      deliveryId: Schema.String,
+      reason: WebhookRedeliverySkipSchema,
+    }).annotate({ identifier: "WebhookRedeliverySkipped" })
+  ),
+}).annotate({ identifier: "WebhookBulkRedelivery" });
+
+export type WebhookBulkRedelivery = typeof WebhookBulkRedeliverySchema.Type;
+
+/**
+ * Which deliveries to send again: these (`deliveryIds`), or an endpoint's
+ * failed deliveries made in a time range, of a type.
+ */
+export const WebhookRedeliveryRequestSchema = Schema.Union([
+  Schema.Struct({
+    deliveryIds: Schema.NonEmptyArray(Schema.String).check(
+      Schema.isMaxLength(maxWebhookBulkRedelivery)
+    ),
+  }).annotate({ identifier: "WebhookRedeliveryByIds" }),
+  Schema.Struct({
+    endpointId: Schema.String,
+    eventType: Schema.optionalKey(SubscribableWebhookEventTypeSchema),
+    // Made at or after it.
+    since: Schema.optionalKey(Schema.DateTimeUtc),
+    // Made before it.
+    until: Schema.optionalKey(Schema.DateTimeUtc),
+  }).annotate({ identifier: "WebhookRedeliveryOfFailed" }),
+]).annotate({ identifier: "WebhookRedeliveryRequest" });
+
+export type WebhookRedeliveryRequest =
+  typeof WebhookRedeliveryRequestSchema.Type;
+
 /** How many deliveries a page holds, unless `limit` says otherwise. */
 export const defaultWebhookDeliveryPageSize = 30;
 
@@ -231,6 +351,24 @@ export const maxWebhookDeliveryPageSize = 100;
 const workspace = { workspaceId: Schema.String };
 
 const endpoint = { ...workspace, endpointId: Schema.String };
+
+const pageQuery = {
+  cursor: Schema.optionalKey(Schema.String),
+  limit: Schema.optionalKey(
+    Schema.Int.check(
+      Schema.isBetween({
+        maximum: maxWebhookDeliveryPageSize,
+        minimum: 1,
+      })
+    )
+  ),
+};
+
+const logQuery = {
+  ...pageQuery,
+  eventType: Schema.optionalKey(WebhookEventTypeSchema),
+  status: Schema.optionalKey(WebhookDeliveryStatusSchema),
+};
 
 /**
  * A workspace's webhook endpoints: Peal sends each the events it subscribes
@@ -257,14 +395,43 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
         WebhookUrlRefused,
         WebhooksNotConfigured,
         PartnerNotFound,
+        WebhookFilterRefused,
       ],
       params: workspace,
       payload: NewWebhookEndpointSchema,
       success: WebhookEndpointSecretSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has ${maxWebhookEndpoints} endpoints at most, whatever its plan. With \`scope\` \`partner\`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (\`workspaceExternalId\`); any other workspace answers 404 \`PartnerNotFound\`. Needs webhook:manage.`,
+        description: `Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has ${maxWebhookEndpoints} endpoints at most, whatever its plan. With \`scope\` \`partner\`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (\`workspaceExternalId\`); any other workspace answers 404 \`PartnerNotFound\`. \`channelIds\` (${maxWebhookFilterChannels} at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of \`eventTypes\` when they are not wanted. \`workspaceIds\` (${maxWebhookFilterWorkspaces} at most), on a \`partner\` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.`,
         summary: "Create a webhook endpoint",
+      })
+    ),
+    // Declared before the routes of one endpoint, which `deliveries` is not.
+    HttpApiEndpoint.get("searchDeliveries", "/deliveries", {
+      error: [Forbidden, HttpApiError.BadRequest],
+      params: workspace,
+      query: {
+        ...logQuery,
+        endpointId: Schema.optionalKey(Schema.String),
+        since: Schema.optionalKey(Schema.DateTimeUtc),
+        until: Schema.optionalKey(Schema.DateTimeUtc),
+      },
+      success: WebhookDeliveryPageSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Lists the workspace's deliveries across its endpoints, newest first, ${defaultWebhookDeliveryPageSize} a page unless \`limit\` (at most ${maxWebhookDeliveryPageSize}) says otherwise, filtered by \`status\`, \`endpointId\`, \`eventType\`, and when they were made: \`since\` (included) and \`until\` (excluded). The deliveries of a \`partner\` endpoint include those of the partner's other workspaces, each naming its workspace (\`workspaceId\`, \`workspaceExternalId\`). A delivery that failed for good (\`failed\`) stays ${webhookDeliveryRetentionDays} days, with the receiver's last answer: send it again with \`POST …/webhooks/deliveries/redeliver\`. Pass the page's \`nextCursor\` as \`cursor\` for the next one. Needs webhook:read.`,
+        summary: "List deliveries across endpoints",
+      })
+    ),
+    HttpApiEndpoint.post("redeliverMany", "/deliveries/redeliver", {
+      error: [Forbidden, WebhookEndpointNotFound, TooManyWebhookSends],
+      params: workspace,
+      payload: WebhookRedeliveryRequestSchema,
+      success: WebhookBulkRedeliverySchema.pipe(HttpApiSchema.status(202)),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Sends many deliveries again, ${maxWebhookBulkRedelivery} a call at most: those named by \`deliveryIds\`, or the failed deliveries of the endpoint \`endpointId\` (made from \`since\`, before \`until\`, of \`eventType\`, each left out for any), oldest first, the last of each event only. Each goes to its own endpoint whatever the endpoint's filters are now, as a new delivery of the same event: the same \`webhook-id\` and body, signed anew. A delivery is skipped when its endpoint is off, when it is not the workspace's, and when its event was sent again since and that delivery is pending or went through, so calling again after a partial run sends nothing twice; \`remaining\` says how many more failed deliveries the selection holds. The new deliveries of an endpoint start a quarter of a second apart. A workspace sends ${webhookBulkRedeliveriesPerHour} deliveries again this way an hour, apart from the test events and single sends: a call that would pass it sends nothing (429 \`TooManyWebhookSends\`). Needs webhook:manage.`,
+        summary: "Send many deliveries again",
       })
     ),
     HttpApiEndpoint.get("get", "/:endpointId", {
@@ -279,14 +446,19 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
       })
     ),
     HttpApiEndpoint.patch("update", "/:endpointId", {
-      error: [Forbidden, WebhookEndpointNotFound, WebhookUrlRefused],
+      error: [
+        Forbidden,
+        WebhookEndpointNotFound,
+        WebhookUrlRefused,
+        WebhookFilterRefused,
+      ],
       params: endpoint,
       payload: WebhookEndpointChangeSchema,
       success: WebhookEndpointSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.",
+          "Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.",
         summary: "Update a webhook endpoint",
       })
     ),
@@ -319,31 +491,25 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
         TooManyWebhookSends,
       ],
       params: endpoint,
+      query: {
+        // A sample of this type instead of `webhook.test`.
+        eventType: Schema.optionalKey(SubscribableWebhookEventTypeSchema),
+      },
       success: WebhookDeliverySchema.pipe(HttpApiSchema.status(202)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Sends the endpoint a \`webhook.test\` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends ${webhookManualSendsPerHour} test events and deliveries again an hour at most (429 \`TooManyWebhookSends\`). Needs webhook:manage.`,
+        description: `Sends the endpoint a \`webhook.test\` event, or, with \`eventType\`, a sample of that type: its real shape, with ids that name nothing, the workspace's own id and \`sample: true\`, which the receiver must never act on. Either goes whatever the endpoint subscribes to or filters. It answers with the delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends ${webhookManualSendsPerHour} test events and deliveries again an hour at most (429 \`TooManyWebhookSends\`). Needs webhook:manage.`,
         summary: "Send a test event",
       })
     ),
     HttpApiEndpoint.get("listDeliveries", "/:endpointId/deliveries", {
       error: [Forbidden, WebhookEndpointNotFound, HttpApiError.BadRequest],
       params: endpoint,
-      query: {
-        cursor: Schema.optionalKey(Schema.String),
-        limit: Schema.optionalKey(
-          Schema.Int.check(
-            Schema.isBetween({
-              maximum: maxWebhookDeliveryPageSize,
-              minimum: 1,
-            })
-          )
-        ),
-      },
+      query: logQuery,
       success: WebhookDeliveryPageSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Lists the endpoint's deliveries, newest first, ${defaultWebhookDeliveryPageSize} a page unless \`limit\` (at most ${maxWebhookDeliveryPageSize}) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's \`nextCursor\` as \`cursor\` for the next one. A delivery is kept ${webhookDeliveryRetentionDays} days. Needs webhook:read.`,
+        description: `Lists the endpoint's deliveries, newest first, of a \`status\` and an \`eventType\` when given, ${defaultWebhookDeliveryPageSize} a page unless \`limit\` (at most ${maxWebhookDeliveryPageSize}) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's \`nextCursor\` as \`cursor\` for the next one. A delivery is kept ${webhookDeliveryRetentionDays} days. Needs webhook:read.`,
         summary: "List an endpoint's deliveries",
       })
     ),

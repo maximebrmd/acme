@@ -6,8 +6,15 @@ pub use crate::prelude::*;
 pub enum PostRefusal {
     #[non_exhaustive]
     PostContentInvalid {
-        #[serde(flatten)]
-        data: PostContentInvalidEncoded,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+        #[serde(default)]
+        violations: Vec<ContentViolation>,
     },
 
     #[non_exhaustive]
@@ -43,16 +50,8 @@ pub enum PostRefusal {
 
     #[non_exhaustive]
     InvalidTimeZone {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        code: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        message: Option<String>,
-        #[serde(rename = "requestId")]
-        #[serde(skip_serializing_if = "Option::is_none")]
-        request_id: Option<String>,
-        #[serde(rename = "timeZone")]
-        #[serde(default)]
-        time_zone: String,
+        #[serde(flatten)]
+        data: InvalidTimeZoneEncoded,
     },
 
     #[non_exhaustive]
@@ -138,6 +137,32 @@ pub enum PostRefusal {
         request_id: Option<String>,
     },
 
+    #[non_exhaustive]
+    QueueNotFound {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+    },
+
+    #[non_exhaustive]
+    QueueHasNoRoom {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+        #[serde(rename = "queueId")]
+        #[serde(default)]
+        queue_id: String,
+        reason: QueueNoRoom,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -146,8 +171,13 @@ pub enum PostRefusal {
 }
 
 impl PostRefusal {
-    pub fn post_content_invalid(data: PostContentInvalidEncoded) -> Self {
-        Self::PostContentInvalid { data }
+    pub fn post_content_invalid(violations: Vec<ContentViolation>) -> Self {
+        Self::PostContentInvalid {
+            code: None,
+            message: None,
+            request_id: None,
+            violations,
+        }
     }
 
     pub fn unknown_channels(data: UnknownChannelsEncoded) -> Self {
@@ -171,13 +201,8 @@ impl PostRefusal {
         }
     }
 
-    pub fn invalid_time_zone(time_zone: String) -> Self {
-        Self::InvalidTimeZone {
-            code: None,
-            message: None,
-            request_id: None,
-            time_zone,
-        }
+    pub fn invalid_time_zone(data: InvalidTimeZoneEncoded) -> Self {
+        Self::InvalidTimeZone { data }
     }
 
     pub fn plan_limit_reached(data: PlanLimitReachedEncoded) -> Self {
@@ -235,6 +260,66 @@ impl PostRefusal {
             code: None,
             message: None,
             request_id: None,
+        }
+    }
+
+    pub fn queue_not_found() -> Self {
+        Self::QueueNotFound {
+            code: None,
+            message: None,
+            request_id: None,
+        }
+    }
+
+    pub fn queue_has_no_room(queue_id: String, reason: QueueNoRoom) -> Self {
+        Self::QueueHasNoRoom {
+            code: None,
+            message: None,
+            request_id: None,
+            queue_id,
+            reason,
+        }
+    }
+
+    pub fn post_content_invalid_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        violations: Vec<ContentViolation>,
+    ) -> Self {
+        Self::PostContentInvalid {
+            code: Some(code),
+            message,
+            request_id,
+            violations,
+        }
+    }
+
+    pub fn post_content_invalid_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        violations: Vec<ContentViolation>,
+    ) -> Self {
+        Self::PostContentInvalid {
+            code,
+            message: Some(message),
+            request_id,
+            violations,
+        }
+    }
+
+    pub fn post_content_invalid_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        violations: Vec<ContentViolation>,
+    ) -> Self {
+        Self::PostContentInvalid {
+            code,
+            message,
+            request_id: Some(request_id),
+            violations,
         }
     }
 
@@ -313,48 +398,6 @@ impl PostRefusal {
             code,
             message,
             request_id: Some(request_id),
-        }
-    }
-
-    pub fn invalid_time_zone_with_code(
-        code: String,
-        message: Option<String>,
-        request_id: Option<String>,
-        time_zone: String,
-    ) -> Self {
-        Self::InvalidTimeZone {
-            code: Some(code),
-            message,
-            request_id,
-            time_zone,
-        }
-    }
-
-    pub fn invalid_time_zone_with_message(
-        code: Option<String>,
-        message: String,
-        request_id: Option<String>,
-        time_zone: String,
-    ) -> Self {
-        Self::InvalidTimeZone {
-            code,
-            message: Some(message),
-            request_id,
-            time_zone,
-        }
-    }
-
-    pub fn invalid_time_zone_with_request_id(
-        code: Option<String>,
-        message: Option<String>,
-        request_id: String,
-        time_zone: String,
-    ) -> Self {
-        Self::InvalidTimeZone {
-            code,
-            message,
-            request_id: Some(request_id),
-            time_zone,
         }
     }
 
@@ -583,6 +626,90 @@ impl PostRefusal {
             code,
             message,
             request_id: Some(request_id),
+        }
+    }
+
+    pub fn queue_not_found_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::QueueNotFound {
+            code: Some(code),
+            message,
+            request_id,
+        }
+    }
+
+    pub fn queue_not_found_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::QueueNotFound {
+            code,
+            message: Some(message),
+            request_id,
+        }
+    }
+
+    pub fn queue_not_found_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+    ) -> Self {
+        Self::QueueNotFound {
+            code,
+            message,
+            request_id: Some(request_id),
+        }
+    }
+
+    pub fn queue_has_no_room_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        queue_id: String,
+        reason: QueueNoRoom,
+    ) -> Self {
+        Self::QueueHasNoRoom {
+            code: Some(code),
+            message,
+            request_id,
+            queue_id,
+            reason,
+        }
+    }
+
+    pub fn queue_has_no_room_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        queue_id: String,
+        reason: QueueNoRoom,
+    ) -> Self {
+        Self::QueueHasNoRoom {
+            code,
+            message: Some(message),
+            request_id,
+            queue_id,
+            reason,
+        }
+    }
+
+    pub fn queue_has_no_room_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        queue_id: String,
+        reason: QueueNoRoom,
+    ) -> Self {
+        Self::QueueHasNoRoom {
+            code,
+            message,
+            request_id: Some(request_id),
+            queue_id,
+            reason,
         }
     }
 

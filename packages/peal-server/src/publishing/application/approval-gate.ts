@@ -1,10 +1,16 @@
 import { Context, Effect, Layer } from "effect";
 import type { DateTime, Option } from "effect";
 
+import { channelsOfSubject } from "#publishing/domain/approval-subject.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { can } from "#shared/domain/access.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import type { PostId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type {
+  ChannelId,
+  PostId,
+  UserId,
+  WorkspaceId,
+} from "#shared/domain/ids.ts";
 import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 
 /** A post someone asks to send at a time, as the gate is shown it. */
@@ -21,6 +27,11 @@ export interface Submission {
   readonly timeZone: TimeZoneId;
   readonly workspaceId: WorkspaceId;
 }
+
+/** The channels a submitted post goes to, as its subject names them. */
+export const channelsSubmitted = (
+  submission: Pick<Submission, "subject">
+): readonly ChannelId[] => channelsOfSubject(submission.subject);
 
 /**
  * Whether the post gets its job: `admitted`, or `held` until someone

@@ -6,6 +6,8 @@ import type {
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
+  QueueHasNoRoom,
+  QueueNotFound,
   ScheduleInPast,
   SignatureNotFound,
   TooManyRequests,
@@ -25,6 +27,8 @@ export type ComposerFailure =
   | PostContentInvalid
   | PostNotFound
   | PostStatusConflict
+  | QueueHasNoRoom
+  | QueueNotFound
   | ScheduleInPast
   | SignatureNotFound
   // Answered to keys and applications only: the web app signs in with a

@@ -1,4 +1,4 @@
-import { duplicateWindowHours } from "peal-contract";
+import { duplicateWindowHours, queueHorizonDays } from "peal-contract";
 import type {
   ChannelPreview,
   LimitedCount,
@@ -117,6 +117,13 @@ export const problemsOf = (
           `These media are not the workspace's, or not ready: ${validation.unknownMedia.join(", ")}.`,
         ]),
     ...scheduleProblem(validation.schedule, timeZone),
+    ...(validation.queueNoRoom === undefined
+      ? []
+      : [
+          validation.queueNoRoom === "noSlots"
+            ? "The queue has no slot: add some with peal queues update --slot, or give the post a time with --at."
+            : `Every slot of the queue's next ${String(queueHorizonDays)} days is taken: add slots with peal queues update --slot, or give the post a time with --at.`,
+        ]),
     ...(validation.planLimit === null
       ? []
       : [planLimitReason(validation.planLimit)]),
