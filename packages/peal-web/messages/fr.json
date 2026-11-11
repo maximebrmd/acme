@@ -2507,6 +2507,14 @@
         "description": "Vous êtes connecté avec ce compte pendant une heure, et voyez ce qu’il voit, publications et médias compris. Vous ne pouvez modifier ni le compte ni ses espaces de travail, ni publier, ni gérer les clés et la facturation.",
         "confirm": "Agir à sa place",
         "pending": "Connexion…"
+      },
+      "resetTwoStep": {
+        "open": "Réinitialiser la validation en deux étapes",
+        "title": "Réinitialiser la validation en deux étapes de {name} ?",
+        "description": "La désactive, supprime les codes de secours et déconnecte le compte partout. Vérifiez d’abord qui en fait la demande : un e-mail envoyé depuis l’adresse du compte n’est pas une preuve, la boîte de réception peut être ce qui a été pris.",
+        "confirm": "La réinitialiser",
+        "pending": "Réinitialisation…",
+        "done": "La validation en deux étapes est désactivée pour {name}, déconnecté partout."
       }
     },
     "errors": {

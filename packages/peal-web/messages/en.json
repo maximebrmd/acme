@@ -2507,6 +2507,14 @@
         "description": "You are signed in as the account for an hour, and see what it sees, its posts and media included. You cannot change the account or its workspaces, publish or manage keys and billing.",
         "confirm": "Act as the account",
         "pending": "Signing in…"
+      },
+      "resetTwoStep": {
+        "open": "Reset two-step verification",
+        "title": "Reset two-step verification for {name}?",
+        "description": "Turns it off, deletes the recovery codes and signs the account out everywhere. Check who is asking first: an email from the account’s address is not proof, as the mailbox may be what was taken.",
+        "confirm": "Reset it",
+        "pending": "Resetting…",
+        "done": "Two-step verification is off for {name}, who is signed out everywhere."
       }
     },
     "errors": {

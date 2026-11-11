@@ -33,6 +33,7 @@ import {
   banUser,
   impersonateUser,
   resendVerification,
+  resetTwoStep,
   revokeUserSessions,
   unbanUser,
 } from "#staff/atoms.ts";
@@ -43,6 +44,7 @@ type ActionName =
   | "ban"
   | "impersonate"
   | "resendVerification"
+  | "resetTwoStep"
   | "revokeSessions"
   | "unban";
 
@@ -181,6 +183,8 @@ export interface UserActionsProps {
   // Whether the account is the staff member's own, or other staff's.
   readonly self: boolean;
   readonly staff: boolean;
+  // Whether the account's two-step verification is on.
+  readonly twoStepEnabled: boolean;
   readonly userId: string;
 }
 
@@ -193,6 +197,7 @@ export const UserActions = ({
   name,
   self,
   staff,
+  twoStepEnabled,
   userId,
 }: UserActionsProps) => {
   const t = useTranslations("Staff.actions");
@@ -206,6 +211,7 @@ export const UserActions = ({
   const revoke = useAtomSet(revokeUserSessions, { mode: "promiseExit" });
   const resend = useAtomSet(resendVerification, { mode: "promiseExit" });
   const impersonate = useAtomSet(impersonateUser, { mode: "promiseExit" });
+  const reset = useAtomSet(resetTwoStep, { mode: "promiseExit" });
 
   const refreshWith = (message: string) => () => {
     toast.success(message);
@@ -276,6 +282,17 @@ export const UserActions = ({
             staffErrorKey(await revoke({ params, payload: { reason } }))
           }
           onDone={refreshWith(t("revokeSessions.done", { name }))}
+        />
+      )}
+      {self || !twoStepEnabled ? null : (
+        <ActionDialog
+          action="resetTwoStep"
+          destructive
+          name={name}
+          onConfirm={async (reason) =>
+            staffErrorKey(await reset({ params, payload: { reason } }))
+          }
+          onDone={refreshWith(t("resetTwoStep.done", { name }))}
         />
       )}
       {emailVerified ? null : (

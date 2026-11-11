@@ -50,6 +50,7 @@ const WorkspacePage = async ({
   );
 
   const t = await getTranslations("Staff.workspace");
+  const twoStep = await getTranslations("TwoStep");
   const staffT = await getTranslations("Staff");
   const posts = await getTranslations("Posts");
   const channels = await getTranslations("ChannelsPage");
@@ -76,7 +77,11 @@ const WorkspacePage = async ({
         </h1>
         <p className="text-muted-foreground text-sm">
           <code>{workspace.slug}</code> · {t("created")}{" "}
-          <Instant value={DateTime.formatIso(workspace.createdAt)} />
+          <Instant value={DateTime.formatIso(workspace.createdAt)} /> ·{" "}
+          {twoStep("staffRequiredField")}:{" "}
+          {twoStep("staffRequiredValue", {
+            required: String(workspace.twoStepRequired),
+          })}
         </p>
       </div>
       <Section title={t("membersTitle")}>

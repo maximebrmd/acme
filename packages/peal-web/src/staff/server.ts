@@ -1,4 +1,4 @@
-import { Effect, Option } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
 import { headers } from "next/headers";
@@ -60,6 +60,36 @@ const consoleRead = async <A, E extends { readonly _tag: string }>(
       Effect.provide(FetchHttpClient.layer)
     )
   );
+};
+
+// The console's refusal of staff whose account lacks the two-step
+// verification this server requires of them.
+const isTwoStepRefusal = Schema.is(
+  Schema.Struct({
+    _tag: Schema.Literal("Forbidden"),
+    reason: Schema.Literal("twoStepRequired"),
+  })
+);
+
+/**
+ * Who opens the console: staff, with their address; or staff whose
+ * account lacks the two-step verification this server requires of them,
+ * who are told so. Anyone else gets the not-found page.
+ */
+export const consoleVisitor = async (): Promise<
+  | { readonly _tag: "staff"; readonly email: string }
+  | { readonly _tag: "twoStepRequired" }
+> => {
+  const answered = await consoleRead(({ staff }) =>
+    staff.session().pipe(
+      Effect.map(({ email }) => ({ _tag: "staff" as const, email })),
+      Effect.catchIf(isTwoStepRefusal, () =>
+        Effect.succeed({ _tag: "twoStepRequired" as const })
+      )
+    )
+  );
+
+  return Option.getOrElse(answered, () => notFound());
 };
 
 /**
