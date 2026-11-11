@@ -7,6 +7,9 @@ pub struct PlatformCapabilities {
     #[serde(rename = "followUps")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub follow_ups: Option<FollowUpCapabilities>,
+    #[serde(rename = "livePost")]
+    #[serde(default)]
+    pub live_post: LivePostCapabilities,
     #[serde(default)]
     pub lookups: Vec<LookupDescription>,
     #[serde(default)]
@@ -31,6 +34,7 @@ impl PlatformCapabilities {
 pub struct PlatformCapabilitiesBuilder {
     analytics: Option<PlatformCapabilitiesAnalytics>,
     follow_ups: Option<FollowUpCapabilities>,
+    live_post: Option<LivePostCapabilities>,
     lookups: Option<Vec<LookupDescription>>,
     media: Option<MediaCapabilities>,
     options: Option<PlatformCapabilitiesOptions>,
@@ -47,6 +51,11 @@ impl PlatformCapabilitiesBuilder {
 
     pub fn follow_ups(mut self, value: FollowUpCapabilities) -> Self {
         self.follow_ups = Some(value);
+        self
+    }
+
+    pub fn live_post(mut self, value: LivePostCapabilities) -> Self {
+        self.live_post = Some(value);
         self
     }
 
@@ -83,6 +92,7 @@ impl PlatformCapabilitiesBuilder {
     /// Consumes the builder and constructs a [`PlatformCapabilities`].
     /// This method will fail if any of the following fields are not set:
     /// - [`analytics`](PlatformCapabilitiesBuilder::analytics)
+    /// - [`live_post`](PlatformCapabilitiesBuilder::live_post)
     /// - [`lookups`](PlatformCapabilitiesBuilder::lookups)
     /// - [`media`](PlatformCapabilitiesBuilder::media)
     /// - [`options`](PlatformCapabilitiesBuilder::options)
@@ -95,6 +105,9 @@ impl PlatformCapabilitiesBuilder {
                 .analytics
                 .ok_or_else(|| BuildError::missing_field("analytics"))?,
             follow_ups: self.follow_ups,
+            live_post: self
+                .live_post
+                .ok_or_else(|| BuildError::missing_field("live_post"))?,
             lookups: self
                 .lookups
                 .ok_or_else(|| BuildError::missing_field("lookups"))?,

@@ -68,6 +68,12 @@
   row refused or unreadable ends as a refusal, after printing every row, and
   never prints the file. No command sends `posts.bulk`: a CSV file is the
   command line's way to several posts.
+- `peal posts unpublish` (`commands/posts-unpublish.ts`) deletes a post
+  from its platforms (`--channel`, by id or handle, or every channel), and
+  asks first through `confirmed`; `--json` needs `--yes`
+  (`neverAsksInJson`). `peal posts changes` reads `posts.changes`, and
+  `peal posts list --removed` `search?removed=true`. Refusal reasons have
+  their words in `src/live-post-refusals.ts`, typed by the contract.
 - `peal tags` (list, create, update, delete) keeps a workspace's tags, and
   `peal posts tag`, `peal posts list --tag`, `peal drafts save --tag` and
   `peal post --tag` file posts under them. Wherever a command takes a tag

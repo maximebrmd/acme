@@ -297,6 +297,32 @@ Une publication qui n’a pas pu partir dans l’heure qui suit son heure prévu
 
 Chaque image ou vidéo est envoyée comme la plateforme le demande, et certaines plateformes traitent d’abord les vidéos : Peal les attend jusqu’à 15 minutes, puis réessaie plus tard, comme pour une plateforme qui ne répond pas.
 
+## Dépublier une publication [#unpublish]
+
+Une publication partie peut être reprise : **Dépublier**, sur sa page, la supprime de la plateforme de ce canal pour tout le monde, toutes les parties d’un fil, la dernière d’abord, si bien qu’une suppression qui s’arrête en chemin laisse un fil plus court qui se lit toujours depuis le début. C’est définitif, depuis Peal comme sur la plateforme : Peal demande donc d’abord, en nommant le canal. Les propriétaires, les administrateurs et les éditeurs peuvent dépublier (la permission qui publie, `post:publish`), ainsi qu’une clé d’API qui l’a reçue, ou une application autorisée à publier.
+
+La suppression se fait en arrière-plan, avec les autres appels du canal, un à la fois : le canal indique **Suppression en cours…**, puis **Supprimé de** la plateforme, avec la date ; la publication reste **Publiée** dans Peal, car elle est bien partie, si bien que le compte du mois et l’utilisation ne changent pas, et son adresse reste, barrée, pour mémoire. Une partie que la plateforme n’a déjà plus, supprimée chez elle auparavant, compte comme supprimée. Une plateforme qui ne répond pas est relancée après 1, 5, 15, 60 et 60 minutes, et une qui demande à Peal de ralentir, au moment qu’elle indique ; ensuite la suppression **a échoué**, avec la raison, et **Réessayer** supprime ce qui reste.
+
+Les statistiques s’arrêtent : les statistiques ne lisent plus la publication et gardent les chiffres déjà lus, et la boîte de réception ne lit plus ses commentaires et garde ceux qu’elle a pendant leurs 30 jours. Une publication montrée par une mise en avant qui n’est pas terminée ne peut pas être dépubliée : arrêtez d’abord la mise en avant, car la publicité continuerait de dépenser pour une publication disparue.
+
+Là où Peal supprime des publications :
+
+| Plateforme              | Dépublier | Pourquoi pas                                                                              |
+| ----------------------- | --------- | ----------------------------------------------------------------------------------------- |
+| Mastodon                | Oui       |                                                                                           |
+| Bluesky                 | Oui       |                                                                                           |
+| X                       | Oui       |                                                                                           |
+| Pinterest               | Oui       |                                                                                           |
+| Google Business Profile | Oui       |                                                                                           |
+| LinkedIn                | Non       | LinkedIn ne dit pas quelle permission une suppression demande                             |
+| Facebook Pages          | Non       | Meta indique que seules certaines applications peuvent supprimer les publications de Page |
+| Threads                 | Non       | Il faut une permission que Meta accorde après examen                                      |
+| Instagram               | Non       | Il faut une permission que Meta accorde après examen                                      |
+| YouTube                 | Non       | Il faut une permission plus large que celle que Peal demande                              |
+| TikTok                  | Non       | L’API de TikTok n’a aucun appel pour supprimer une publication                            |
+
+Là où ce n’est pas possible, supprimez la publication sur la plateforme elle-même. Une publication confirmée à la main ne peut pas non plus être dépubliée depuis Peal : Peal n’a pas son identifiant. Un canal déconnecté, désactivé ou à reconnecter ne peut pas être dépublié tant qu’il n’est pas revenu.
+
 ## Depuis un agent, la ligne de commande ou l’API [#api]
 
 Ce que fait l’éditeur, un [client MCP](/mcp#tools), la [ligne de commande](/cli#posts) et l’[API HTTP](/api-overview) le font aussi, avec les mêmes vérifications : rédiger un brouillon, le programmer, le publier maintenant, le déplacer, le repasser en brouillon et l’annuler. `POST /api/workspaces/{workspaceId}/posts/send` crée une publication et l’envoie en une seule requête, maintenant ou à un instant, et la refuse en entier, en listant toutes les violations d’un coup, quand elle enfreint une règle de la plateforme de l’un de ses canaux. [Publier par l’API](/posting-api) montre comment vérifier d’abord une publication, en envoyer plusieurs d’un coup, les importer depuis un fichier CSV et les lister.

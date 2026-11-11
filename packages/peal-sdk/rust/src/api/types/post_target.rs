@@ -22,6 +22,9 @@ pub struct PostTarget {
     #[serde(rename = "publishedAt")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub published_at: Option<String>,
+    #[serde(rename = "removedAt")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub removed_at: Option<String>,
     #[serde(default)]
     pub round: i64,
     pub status: PostTargetStatus,
@@ -50,6 +53,7 @@ pub struct PostTargetBuilder {
     parts: Option<TargetParts>,
     permalink: Option<String>,
     published_at: Option<String>,
+    removed_at: Option<String>,
     round: Option<i64>,
     status: Option<PostTargetStatus>,
     thumbnail_not_set: Option<bool>,
@@ -97,6 +101,11 @@ impl PostTargetBuilder {
         self
     }
 
+    pub fn removed_at(mut self, value: impl Into<String>) -> Self {
+        self.removed_at = Some(value.into());
+        self
+    }
+
     pub fn round(mut self, value: i64) -> Self {
         self.round = Some(value);
         self
@@ -138,6 +147,7 @@ impl PostTargetBuilder {
                 .ok_or_else(|| BuildError::missing_field("parts"))?,
             permalink: self.permalink,
             published_at: self.published_at,
+            removed_at: self.removed_at,
             round: self
                 .round
                 .ok_or_else(|| BuildError::missing_field("round"))?,

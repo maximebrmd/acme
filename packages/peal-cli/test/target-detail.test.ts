@@ -12,6 +12,7 @@ const published: PostTarget = {
   parts: { count: 1, live: [] },
   permalink: "https://www.youtube.com/watch?v=synthetic",
   publishedAt: null,
+  removedAt: null,
   round: 1,
   status: "published",
   unconfirmedReason: null,

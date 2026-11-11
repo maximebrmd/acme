@@ -207,6 +207,7 @@ const PortsLive = Layer.mergeAll(
                 createdVia: { name: null, via: "web" },
                 followUps: [],
                 id: "019a6f10-0000-7000-8000-000000000001",
+                liveChanges: [],
                 media: [],
                 scheduledAt: null,
                 scheduledVia: null,

@@ -21,6 +21,7 @@ import { PostTools } from "#app/mcp/posts-tools.ts";
 import type { ToolTiming } from "#app/mcp/posts-tools.ts";
 import { queueReferenced } from "#app/mcp/queue-reference.ts";
 import {
+  livePostRefusals,
   notAllowed,
   planRefusal,
   presetRefusals,
@@ -31,6 +32,10 @@ import {
   unknownTags,
 } from "#app/mcp/refusals.ts";
 import type { ToolRefused } from "#app/mcp/tool-refused.ts";
+import {
+  livePostChangeView,
+  postUnpublishView,
+} from "#publishing/api/live-post-change-view.ts";
 import { keyAt, readPost, sendRead } from "#publishing/api/post-batch.ts";
 import { checkRequestFrom } from "#publishing/api/post-check-input.ts";
 import { validationOf } from "#publishing/api/post-check-view.ts";
@@ -51,6 +56,7 @@ import { pageView, searchRequestFrom } from "#publishing/api/post-search.ts";
 import { attemptView, postView } from "#publishing/api/post-view.ts";
 import { reshuffleView } from "#publishing/api/queue-view.ts";
 import { tiktokAccountView } from "#publishing/api/tiktok-account-view.ts";
+import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
 import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
@@ -161,6 +167,7 @@ export const PostToolsLive = PostTools.toLayer(
     const tiktok = yield* TikTokCreatorInfo;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
+    const live = yield* LivePostChanges;
     const queues = yield* Queues;
 
     // A post's time as the API takes it: a queue named by its id or its
@@ -251,6 +258,44 @@ export const PostToolsLive = PostTools.toLayer(
       MissingPermission: notAllowed("follow up on posts"),
       PostNotFound: notFound,
     } as const;
+
+    const unpublishFailures = {
+      DatabaseError: Effect.die,
+      MissingPermission: notAllowed("remove posts from their platforms"),
+      PostNotFound: notFound,
+    } as const;
+
+    // The target of the post on the channel named, by the channel's id or
+    // the target's: a channel the post is not on is refused.
+    const targetNamed = Effect.fn("UnpublishPost.targetNamed")(
+      function* targetNamed(
+        member: Actor,
+        id: PostId,
+        named: {
+          readonly channelId: string | undefined;
+          readonly targetId: string | undefined;
+        }
+      ) {
+        const { targets } = yield* queries.get(member, id).pipe(
+          Effect.catchTags({
+            DatabaseError: Effect.die,
+            MissingPermission: notAllowed("read posts"),
+            PostNotFound: notFound,
+          })
+        );
+
+        const found = targets.find(
+          (target) =>
+            target.id === named.targetId || target.channelId === named.channelId
+        );
+
+        return found === undefined
+          ? yield* refuse(
+              "The post is not on that channel: get_post answers its targets and their channels."
+            )
+          : found.id;
+      }
+    );
 
     // The member, once they may decide what goes out: said before anything
     // else about the post is.
@@ -591,6 +636,20 @@ export const PostToolsLive = PostTools.toLayer(
 
           return { attempts: made.map(attemptView) };
         }).pipe(Effect.catchTags(malformedPost)),
+      list_post_changes: ({ postId }) =>
+        Effect.gen(function* listChanges() {
+          const listed = yield* live
+            .list(yield* actor, yield* postIdFrom(postId))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("read posts"),
+                PostNotFound: notFound,
+              })
+            );
+
+          return { items: listed.map(livePostChangeView) };
+        }).pipe(Effect.catchTags(malformedPost)),
       list_posts: (query) =>
         Effect.gen(function* listPosts() {
           const page = yield* searching
@@ -771,6 +830,41 @@ export const PostToolsLive = PostTools.toLayer(
             UnknownChannels: unknownChannels,
           })
         ),
+      unpublish_post: ({ channelId, postId, targetId }) =>
+        Effect.gen(function* unpublishPost() {
+          const member = yield* actor;
+          const id = yield* postIdFrom(postId);
+
+          // A channel, or a target, names one channel of the post.
+          const onChannel =
+            channelId === undefined && targetId === undefined
+              ? Option.none()
+              : Option.some(
+                  yield* targetNamed(member, id, { channelId, targetId })
+                );
+
+          if (Option.isNone(onChannel)) {
+            const made = yield* live
+              .unpublishPost(member, id)
+              .pipe(Effect.catchTags(unpublishFailures));
+
+            return postUnpublishView(made);
+          }
+
+          const change = yield* live
+            .unpublishTarget(member, id, onChannel.value)
+            .pipe(
+              Effect.catchTags({
+                ...unpublishFailures,
+                LivePostNotChangeable: ({ reason }) =>
+                  refuse(
+                    `The post was not removed from that channel: ${livePostRefusals[reason]}.`
+                  ),
+              })
+            );
+
+          return postUnpublishView({ changes: [change], refused: [] });
+        }).pipe(Effect.catchTags(malformedPost)),
       unschedule_post: ({ postId }) =>
         Effect.gen(function* unschedule() {
           const draft = yield* scheduling

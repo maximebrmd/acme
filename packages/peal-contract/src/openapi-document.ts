@@ -41,6 +41,9 @@ const summaries = {
   "post.published": "A post went live on a channel",
   "post.scheduled": "A post was scheduled, or moved to another time",
   "post.unconfirmed": "Peal cannot tell whether a post went live on a channel",
+  "post.unpublish_failed":
+    "Peal could not delete a post from a channel's platform",
+  "post.unpublished": "A post was deleted from a channel's platform",
   "post.unscheduled":
     "A scheduled post, or one that waited, was taken back to draft",
   "webhook.test": "Someone asked for a test event",

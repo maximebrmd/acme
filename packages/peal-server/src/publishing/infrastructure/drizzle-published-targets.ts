@@ -1,4 +1,13 @@
-import { and, asc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
@@ -69,6 +78,7 @@ export const DrizzlePublishedTargets = Layer.effect(
             eq(postTargets.status, "published"),
             isNotNull(postTargets.platformPostId),
             isNotNull(postTargets.listedAt),
+            isNull(postTargets.removedAt),
             // After a target: compared as a row, which the index's order
             // starts from, where an OR of the two columns scans it all.
             Option.match(cursor.targetId, {
@@ -104,6 +114,7 @@ export const DrizzlePublishedTargets = Layer.effect(
             eq(postTargets.status, "published"),
             isNotNull(postTargets.platformPostId),
             isNotNull(postTargets.listedAt),
+            isNull(postTargets.removedAt),
             where
           )
         )

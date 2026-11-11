@@ -28,6 +28,9 @@ class PostTarget(UniversalBaseModel):
     published_at: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="publishedAt"), pydantic.Field(alias="publishedAt")
     ] = None
+    removed_at: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="removedAt"), pydantic.Field(alias="removedAt")
+    ] = None
     round: int
     status: PostTargetStatus
     thumbnail_not_set: typing_extensions.Annotated[

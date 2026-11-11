@@ -2,4 +2,6 @@
 
 import typing
 
-InboxCollectionEnd = typing.Union[typing.Literal["window", "disconnected", "unsupported", "missing"], typing.Any]
+InboxCollectionEnd = typing.Union[
+    typing.Literal["window", "disconnected", "unsupported", "missing", "removed"], typing.Any
+]

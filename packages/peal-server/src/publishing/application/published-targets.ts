@@ -48,7 +48,9 @@ export interface PublishedCursor {
  * several parts whose first went out before: without one nothing can read
  * it back, and it is not listed. A target some of whose parts are live and
  * that failed, was cancelled or waits to be checked is not published: it
- * is listed once a repost, or a member, completes it.
+ * is listed once a repost, or a member, completes it. A target Peal
+ * deleted from its platform (`removedAt`) is no longer listed: nothing is
+ * there to read, promote or answer.
  */
 export class PublishedTargets extends Context.Service<
   PublishedTargets,

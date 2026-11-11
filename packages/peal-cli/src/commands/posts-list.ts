@@ -127,6 +127,12 @@ export const list = Command.make(
       ),
       Flag.optional
     ),
+    removed: Flag.Boolean("removed").pipe(
+      Flag.withDescription(
+        "Only the posts Peal deleted from at least one channel's platform (peal posts unpublish)."
+      ),
+      Flag.withDefault(false)
+    ),
     sort: Flag.Literals("sort", PostSortSchema.literals).pipe(
       Flag.withDescription(
         "Their order: by creation (createdDesc, newest first, unless given; createdAsc), or by time (scheduledDesc, scheduledAsc), which lists only the posts with a time."
@@ -194,6 +200,10 @@ export const list = Command.make(
           ...given(input.outcome, (outcome) => ({ outcome })),
           ...given(input.platform, (platform) => ({ platform })),
           ...given(queueId, (placedBy) => ({ queueId: placedBy })),
+          ...given(
+            input.removed ? Option.some("true" as const) : Option.none(),
+            (removed) => ({ removed })
+          ),
           ...given(input.sort, (sort) => ({ sort })),
           ...given(input.status, (status) => ({ status })),
           ...given(tagId, (filedUnder) => ({ tagId: filedUnder })),

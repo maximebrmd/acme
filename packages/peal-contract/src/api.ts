@@ -512,6 +512,7 @@ export {
   CapabilitiesApi,
   capabilitiesVersion,
   ChannelCapabilitiesSchema,
+  LivePostBlockerSchema,
   MediaCapabilitiesSchema,
   MediaFormatSchema,
   OptionConstraintSchema,
@@ -525,6 +526,7 @@ export type {
   AccountRestriction,
   AccountStanding,
   ChannelCapabilities,
+  LivePostBlocker,
   MediaFormat,
   OptionConstraint,
   PlatformCapabilities,
@@ -831,6 +833,28 @@ export type {
   LinkedInConnection,
   Platform,
 } from "./platform.ts";
+
+export {
+  LivePostChangeKindSchema,
+  LivePostChangeSchema,
+  LivePostChangesSchema,
+  LivePostChangeStatusSchema,
+  LivePostRefusalSchema,
+  LivePostRefusedTargetSchema,
+  PostUnpublishSchema,
+} from "./live-post-changes.ts";
+
+export type {
+  LivePostChange,
+  LivePostChangeKind,
+  LivePostChanges,
+  LivePostChangeStatus,
+  LivePostRefusal,
+  LivePostRefusedTarget,
+  PostUnpublish,
+} from "./live-post-changes.ts";
+
+export { LivePostNotChangeable } from "./live-post-not-changeable.ts";
 
 export {
   ContentViolationSchema,

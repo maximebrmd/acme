@@ -25,6 +25,7 @@ import { TestClock } from "effect/testing";
 import { AccountRules } from "#publishing/application/account-rules.ts";
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import { ChannelHealth } from "#publishing/application/channel-health.ts";
+import { LivePostEvents } from "#publishing/application/live-post-events.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostPresets } from "#publishing/application/post-presets.ts";
@@ -42,6 +43,7 @@ import { DrizzleChannelDefaultsStore } from "#publishing/infrastructure/drizzle-
 import { DrizzleChannelSetStore } from "#publishing/infrastructure/drizzle-channel-set-store.ts";
 import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
+import { DrizzleLivePostChangeStore } from "#publishing/infrastructure/drizzle-live-post-change-store.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import { DrizzleQueueStore } from "#publishing/infrastructure/drizzle-queue-store.ts";
@@ -163,7 +165,9 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
         ReferencesTest,
         AccountRules.none,
         ApprovalGate.open,
-        PostEvents.none
+        PostEvents.none,
+        DrizzleLivePostChangeStore,
+        LivePostEvents.none
       )
     ),
     Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),

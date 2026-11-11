@@ -79,6 +79,9 @@ require_relative "peal/posts/types/queue_post"
 require_relative "peal/posts/types/unschedule_posts_request"
 require_relative "peal/posts/types/repost_posts_request"
 require_relative "peal/posts/types/confirm_posts_request"
+require_relative "peal/posts/types/unpublish_target_posts_request"
+require_relative "peal/posts/types/unpublish_posts_request"
+require_relative "peal/posts/types/changes_posts_request"
 require_relative "peal/posts/types/cancel_posts_request"
 require_relative "peal/media/client"
 require_relative "peal/media/types/list_media_request"
@@ -231,6 +234,12 @@ require_relative "peal/channel_defaults/types/clear_channel_defaults_request"
 require_relative "peal/environment"
 
 module Peal
+  module Posts
+    module Types
+      autoload :SearchPostsRequestRemoved, ::File.join(__dir__, "peal/posts/types/search_posts_request_removed")
+    end
+  end
+
   module NotificationPreferences
     module Types
       autoload :NotificationPreferencesChangeEmail, ::File.join(__dir__, "peal/notification_preferences/types/notification_preferences_change_email")
@@ -560,6 +569,8 @@ module Peal
     autoload :FieldDescription, ::File.join(__dir__, "peal/types/field_description")
     autoload :FollowUpCapabilitiesKind, ::File.join(__dir__, "peal/types/follow_up_capabilities_kind")
     autoload :FollowUpCapabilities, ::File.join(__dir__, "peal/types/follow_up_capabilities")
+    autoload :LivePostBlocker, ::File.join(__dir__, "peal/types/live_post_blocker")
+    autoload :LivePostCapabilities, ::File.join(__dir__, "peal/types/live_post_capabilities")
     autoload :LookupDescription, ::File.join(__dir__, "peal/types/lookup_description")
     autoload :MediaCapabilitiesAltText, ::File.join(__dir__, "peal/types/media_capabilities_alt_text")
     autoload :MediaKind, ::File.join(__dir__, "peal/types/media_kind")
@@ -671,6 +682,14 @@ module Peal
     autoload :Invitation, ::File.join(__dir__, "peal/types/invitation")
     autoload :InvitationNotFoundEncoded, ::File.join(__dir__, "peal/types/invitation_not_found_encoded")
     autoload :LinkedInOrganization, ::File.join(__dir__, "peal/types/linked_in_organization")
+    autoload :LivePostChangeKind, ::File.join(__dir__, "peal/types/live_post_change_kind")
+    autoload :LivePostChangeStatus, ::File.join(__dir__, "peal/types/live_post_change_status")
+    autoload :LivePostChange, ::File.join(__dir__, "peal/types/live_post_change")
+    autoload :LivePostChanges, ::File.join(__dir__, "peal/types/live_post_changes")
+    autoload :LivePostNotChangeableEncodedTag, ::File.join(__dir__, "peal/types/live_post_not_changeable_encoded_tag")
+    autoload :LivePostRefusal, ::File.join(__dir__, "peal/types/live_post_refusal")
+    autoload :LivePostNotChangeableEncoded, ::File.join(__dir__, "peal/types/live_post_not_changeable_encoded")
+    autoload :LivePostRefusedTarget, ::File.join(__dir__, "peal/types/live_post_refused_target")
     autoload :LookupInputInvalidEncodedTag, ::File.join(__dir__, "peal/types/lookup_input_invalid_encoded_tag")
     autoload :LookupInputInvalidEncoded, ::File.join(__dir__, "peal/types/lookup_input_invalid_encoded")
     autoload :LookupNotFoundEncoded, ::File.join(__dir__, "peal/types/lookup_not_found_encoded")
@@ -783,6 +802,7 @@ module Peal
     autoload :PostSort, ::File.join(__dir__, "peal/types/post_sort")
     autoload :PostStatusConflictEncodedTag, ::File.join(__dir__, "peal/types/post_status_conflict_encoded_tag")
     autoload :PostStatusConflictEncoded, ::File.join(__dir__, "peal/types/post_status_conflict_encoded")
+    autoload :PostUnpublish, ::File.join(__dir__, "peal/types/post_unpublish")
     autoload :ScheduleCheck, ::File.join(__dir__, "peal/types/schedule_check")
     autoload :PostValidation, ::File.join(__dir__, "peal/types/post_validation")
     autoload :SignedRequestMethod, ::File.join(__dir__, "peal/types/signed_request_method")

@@ -6,7 +6,11 @@ import type {
   AccountSnapshotRecord,
   AnalyticsRecord,
 } from "#shared/application/personal-data.ts";
-import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import type {
+  ChannelId,
+  PostTargetId,
+  WorkspaceId,
+} from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 /** A channel as analytics follows it, and the account it connects. */
@@ -66,6 +70,16 @@ export class AnalyticsRecords extends Context.Service<
      * `disconnectedKeptFor` ago, its days and its posts continue under the
      * new channel.
      */
+    /**
+     * A post Peal deleted from its platform, in the caller's transaction:
+     * it is no longer read from that moment, and what was read of it
+     * stays, in the reports too, until its retention ends. Nothing
+     * happens to a post not followed, or no longer read.
+     */
+    readonly postRemoved: (
+      targetId: PostTargetId,
+      at: DateTime.Utc
+    ) => Effect.Effect<void, DatabaseError>;
     readonly channelBack: (
       channel: FollowedAccount,
       at: DateTime.Utc

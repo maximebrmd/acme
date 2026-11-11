@@ -9491,6 +9491,175 @@ func (l LinkedInVisibility) Ptr() *LinkedInVisibility {
 }
 
 var (
+	livePostNotChangeableEncodedFieldTag       = big.NewInt(1 << 0)
+	livePostNotChangeableEncodedFieldCode      = big.NewInt(1 << 1)
+	livePostNotChangeableEncodedFieldMessage   = big.NewInt(1 << 2)
+	livePostNotChangeableEncodedFieldRequestID = big.NewInt(1 << 3)
+	livePostNotChangeableEncodedFieldReason    = big.NewInt(1 << 4)
+)
+
+type LivePostNotChangeableEncoded struct {
+	Tag       LivePostNotChangeableEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                         `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                         `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                         `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Reason    LivePostRefusal                 `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LivePostNotChangeableEncoded) GetTag() LivePostNotChangeableEncodedTag {
+	if l == nil {
+		return ""
+	}
+	return l.Tag
+}
+
+func (l *LivePostNotChangeableEncoded) GetCode() *string {
+	if l == nil {
+		return nil
+	}
+	return l.Code
+}
+
+func (l *LivePostNotChangeableEncoded) GetMessage() *string {
+	if l == nil {
+		return nil
+	}
+	return l.Message
+}
+
+func (l *LivePostNotChangeableEncoded) GetRequestID() *string {
+	if l == nil {
+		return nil
+	}
+	return l.RequestID
+}
+
+func (l *LivePostNotChangeableEncoded) GetReason() LivePostRefusal {
+	if l == nil {
+		return ""
+	}
+	return l.Reason
+}
+
+func (l *LivePostNotChangeableEncoded) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LivePostNotChangeableEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostNotChangeableEncoded) SetTag(tag LivePostNotChangeableEncodedTag) {
+	l.Tag = tag
+	l.require(livePostNotChangeableEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostNotChangeableEncoded) SetCode(code *string) {
+	l.Code = code
+	l.require(livePostNotChangeableEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostNotChangeableEncoded) SetMessage(message *string) {
+	l.Message = message
+	l.require(livePostNotChangeableEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostNotChangeableEncoded) SetRequestID(requestID *string) {
+	l.RequestID = requestID
+	l.require(livePostNotChangeableEncodedFieldRequestID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostNotChangeableEncoded) SetReason(reason LivePostRefusal) {
+	l.Reason = reason
+	l.require(livePostNotChangeableEncodedFieldReason)
+}
+
+func (l *LivePostNotChangeableEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler LivePostNotChangeableEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LivePostNotChangeableEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LivePostNotChangeableEncoded) MarshalJSON() ([]byte, error) {
+	type embed LivePostNotChangeableEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LivePostNotChangeableEncoded) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+type LivePostNotChangeableEncodedTag string
+
+const (
+	LivePostNotChangeableEncodedTagLivePostNotChangeable LivePostNotChangeableEncodedTag = "LivePostNotChangeable"
+)
+
+func NewLivePostNotChangeableEncodedTagFromString(s string) (LivePostNotChangeableEncodedTag, error) {
+	switch s {
+	case "LivePostNotChangeable":
+		return LivePostNotChangeableEncodedTagLivePostNotChangeable, nil
+	}
+	var t LivePostNotChangeableEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (l LivePostNotChangeableEncodedTag) Ptr() *LivePostNotChangeableEncodedTag {
+	return &l
+}
+
+var (
 	lookupDescriptionFieldFills    = big.NewInt(1 << 0)
 	lookupDescriptionFieldInput    = big.NewInt(1 << 1)
 	lookupDescriptionFieldName     = big.NewInt(1 << 2)

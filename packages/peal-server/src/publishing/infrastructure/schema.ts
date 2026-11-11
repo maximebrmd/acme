@@ -151,6 +151,10 @@ export const postTargets = publishing.table(
     postId: uuid("post_id")
       .notNull()
       .references(() => posts.id, { onDelete: "cascade" }),
+    // When Peal deleted it from the platform at a member's request, every
+    // part of it (`live_post_changes`); it stays published. Null while it
+    // is there.
+    removedAt: instant("removed_at"),
     round: integer("round").notNull().default(1),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
@@ -239,6 +243,58 @@ export const publicationCalls = publishing.table(
       table.part,
       table.attempt
     ),
+  ]
+);
+
+/**
+ * The changes members ask of posts that are live on a channel (deleting
+ * them from the platform), each run by its own job (`ChangeLivePostV1`).
+ * `parts_left` lists the parts still to delete, last first, by place and
+ * platform id: never content. `call_started_at` is written and committed
+ * before each call to the platform, and `call_finished_at` once it
+ * answered: a call begun and not ended is in flight, which an erasure
+ * waits for. `requested_via` is the `PostOrigin` JSON the domain decodes
+ * (persisted contract), `requested_by` the member (a Better Auth user
+ * id), null for an API key and once they are forgotten. A target has one
+ * pending change at most (`live_post_changes_pending`). Rows go with
+ * their target.
+ */
+export const livePostChanges = publishing.table(
+  "live_post_changes",
+  {
+    alreadyGone: boolean("already_gone").notNull().default(false),
+    attempts: integer("attempts").notNull().default(0),
+    callFinishedAt: instant("call_finished_at"),
+    callStartedAt: instant("call_started_at"),
+    channelId: uuid("channel_id").notNull(),
+    failureCode: text("failure_code"),
+    finishedAt: instant("finished_at"),
+    id: uuid("id").primaryKey(),
+    kind: text("kind").notNull(),
+    partsLeft: jsonb("parts_left").notNull(),
+    postId: uuid("post_id").notNull(),
+    requestedAt: instant("requested_at").notNull(),
+    requestedBy: uuid("requested_by"),
+    requestedVia: jsonb("requested_via"),
+    status: text("status").notNull(),
+    targetId: uuid("target_id")
+      .notNull()
+      .references(() => postTargets.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    // One change at a time on a target: requests sent together make one.
+    uniqueIndex("live_post_changes_pending")
+      .on(table.targetId)
+      .where(sql`${table.status} = 'pending'`),
+    // A post's changes, newest first: ids are UUIDv7s.
+    index("live_post_changes_post").on(
+      table.workspaceId,
+      table.postId,
+      table.id
+    ),
+    // The latest change of a target.
+    index("live_post_changes_target").on(table.targetId, table.id),
   ]
 );
 

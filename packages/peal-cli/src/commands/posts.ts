@@ -22,6 +22,7 @@ import type {
 
 import { importPosts } from "#commands/posts-import.ts";
 import { list } from "#commands/posts-list.ts";
+import { changes, unpublish } from "#commands/posts-unpublish.ts";
 import { explain, explainingPublishing } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { channelIdsOf, channelsFlag } from "#post-flags.ts";
@@ -840,7 +841,7 @@ const tag = Command.make(
 
 export const posts = Command.make("posts").pipe(
   Command.withDescription(
-    "A workspace's posts: listing them, scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, following up where it failed, filing it under tags, and importing a file of them. peal post writes and sends one in a single command."
+    "A workspace's posts: listing them, scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, following up where it failed, deleting it from the platforms once live, filing it under tags, and importing a file of them. peal post writes and sends one in a single command."
   ),
   Command.withSubcommands([
     list,
@@ -855,6 +856,8 @@ export const posts = Command.make("posts").pipe(
     cancel,
     repost,
     confirm,
+    unpublish,
+    changes,
     tag,
     duplicate,
     importPosts,

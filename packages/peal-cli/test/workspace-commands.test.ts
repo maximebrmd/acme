@@ -689,6 +689,7 @@ describe("peal posts", () => {
             parts: { count: 1, live: [] },
             permalink: "https://studio.example.test/post/1",
             publishedAt: null,
+            removedAt: null,
             round: 1,
             status: "published",
             unconfirmedReason: null,

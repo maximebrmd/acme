@@ -21,6 +21,8 @@ module Peal
 
       field :published_at, -> { String }, optional: false, nullable: true, api_name: "publishedAt"
 
+      field :removed_at, -> { String }, optional: false, nullable: true, api_name: "removedAt"
+
       field :round, -> { Integer }, optional: false, nullable: false
 
       field :status, -> { Peal::Types::PostTargetStatus }, optional: false, nullable: false

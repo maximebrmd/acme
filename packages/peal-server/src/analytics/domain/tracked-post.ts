@@ -18,11 +18,14 @@ import { PostMetrics } from "./post-metrics.ts";
  * - `window`: it is 30 days old, and its counts move no more.
  * - `disconnected`: its channel left the workspace.
  * - `unsupported`: Peal cannot read counts on its platform.
+ * - `removed`: Peal deleted it from its platform at a member's request;
+ *   the counts read until then are kept.
  */
 export const CollectionEndSchema = Schema.Literals([
   "window",
   "disconnected",
   "unsupported",
+  "removed",
 ]);
 
 export type CollectionEnd = typeof CollectionEndSchema.Type;

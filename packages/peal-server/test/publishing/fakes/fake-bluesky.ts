@@ -304,6 +304,14 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
     size: blob.size,
   });
 
+  const deleteOf = jsonBodyOf(
+    Schema.Struct({
+      collection: Schema.String,
+      repo: Schema.String,
+      rkey: Schema.String,
+    })
+  );
+
   const create = (request: PlatformRequest) => {
     const body = createOf(request);
 
@@ -445,6 +453,24 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
         const answer = applyWrites(request);
 
         return script?._tag === "createThenDrop" ? dropped : answer;
+      }
+
+      // As the PDS deletes: only in the session's own repository, and a
+      // record already gone is a success without a commit.
+      case "POST /xrpc/com.atproto.repo.deleteRecord": {
+        const body = deleteOf(request);
+
+        if (body.repo !== blueskyDid) {
+          return json({ error: "AuthRequired" }, 401);
+        }
+
+        const key = keyOf(body.collection, body.rkey);
+
+        if (!records.delete(key)) {
+          return json({});
+        }
+
+        return json({ commit: { cid: `bafycommit${records.size}`, rev: "1" } });
       }
 
       case "GET /xrpc/com.atproto.server.getServiceAuth": {

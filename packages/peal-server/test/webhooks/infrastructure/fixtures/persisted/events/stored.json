@@ -111,6 +111,30 @@
   },
   {
     "data": {
+      "alreadyGone": false,
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "platform": "mastodon",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
+      "removedAt": "2026-11-13T09:00:00.000Z",
+      "targetId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c04",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "post.unpublished"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "code": "unavailable",
+      "failedAt": "2026-11-13T10:00:00.000Z",
+      "platform": "mastodon",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
+      "targetId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c04",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "post.unpublish_failed"
+  },
+  {
+    "data": {
       "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
       "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f",
       "scheduledAt": "2026-11-12T08:00:00.000Z"

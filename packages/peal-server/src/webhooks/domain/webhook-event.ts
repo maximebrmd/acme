@@ -216,6 +216,29 @@ export const WebhookEventSchema = Schema.Union([
     }),
     type: Schema.Literal("post.finished"),
   }),
+  // Peal deleted the post from the channel's platform, every part of it,
+  // at a member's request: it stays published in Peal, with `removedAt`.
+  // `alreadyGone` when the platform had it no longer, deleted there before.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...post,
+      ...EventTargetSchema.fields,
+      alreadyGone: Schema.Boolean,
+      removedAt: Schema.DateTimeUtc,
+    }),
+    type: Schema.Literal("post.unpublished"),
+  }),
+  // Peal could not delete the post from the channel's platform: `code`
+  // says why; the post may still be there, and a member may ask again.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...post,
+      ...EventTargetSchema.fields,
+      code: Schema.NonEmptyString,
+      failedAt: Schema.DateTimeUtc,
+    }),
+    type: Schema.Literal("post.unpublish_failed"),
+  }),
   // Someone asked for the post to go out at `scheduledAt`, in a workspace
   // that asks for approvals: it waits, and no `post.scheduled` is sent
   // until it is approved.
@@ -403,6 +426,8 @@ export const channelsOf: (event: WebhookEvent) => EventChannels =
       "post.published": ofChannel,
       "post.scheduled": ofTargets,
       "post.unconfirmed": ofChannel,
+      "post.unpublish_failed": ofChannel,
+      "post.unpublished": ofChannel,
       "post.unscheduled": () => ofPost,
       "webhook.test": noChannel,
     })

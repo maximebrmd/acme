@@ -9,6 +9,8 @@ module Peal
 
       field :follow_ups, -> { Peal::Types::FollowUpCapabilities }, optional: false, nullable: true, api_name: "followUps"
 
+      field :live_post, -> { Peal::Types::LivePostCapabilities }, optional: false, nullable: false, api_name: "livePost"
+
       field :lookups, -> { Internal::Types::Array[Peal::Types::LookupDescription] }, optional: false, nullable: false
 
       field :media, -> { Peal::Types::MediaCapabilities }, optional: false, nullable: false

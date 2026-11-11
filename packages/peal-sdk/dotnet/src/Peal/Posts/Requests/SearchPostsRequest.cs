@@ -37,6 +37,9 @@ public record SearchPostsRequest
     public string? QueueId { get; set; }
 
     [JsonIgnore]
+    public SearchPostsRequestRemoved? Removed { get; set; }
+
+    [JsonIgnore]
     public PostSort? Sort { get; set; }
 
     [JsonIgnore]

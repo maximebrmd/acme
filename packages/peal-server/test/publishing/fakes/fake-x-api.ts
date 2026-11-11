@@ -181,6 +181,12 @@ const routeOf = (request: PlatformRequest) => {
     };
   }
 
+  const deleted = /^\/2\/tweets\/(?<id>\d+)$/u.exec(request.path)?.groups;
+
+  if (request.method === "DELETE" && deleted !== undefined) {
+    return { id: deleted["id"] ?? "", route: "DELETE /2/tweets/:id" };
+  }
+
   const timeline = /^\/2\/users\/(?<id>\d+)\/tweets$/u.exec(
     request.path
   )?.groups;
@@ -502,6 +508,20 @@ export const fakeXApi = Effect.fnUntraced(function* fakeXApi(
 
       case "GET /2/users/:id/tweets": {
         return recent(id, request);
+      }
+
+      // The account's own posts only: another's, or one gone, X does not
+      // find for it.
+      case "DELETE /2/tweets/:id": {
+        const index = posts.findIndex((post) => post.id === id);
+
+        if (index === -1) {
+          return problem(404, "resource-not-found", "Could not find tweet.");
+        }
+
+        posts.splice(index, 1);
+
+        return json({ data: { deleted: true } });
       }
 
       default: {

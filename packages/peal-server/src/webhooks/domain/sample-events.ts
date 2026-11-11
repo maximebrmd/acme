@@ -234,6 +234,30 @@ const samples: Samples = {
     data: { ...onChannel(workspaceId), attemptedAt: at, reason: "noResponse" },
     type: "post.unconfirmed",
   }),
+  "post.unpublish_failed": (workspaceId) => ({
+    data: {
+      channelId,
+      code: "unavailable",
+      failedAt: at,
+      platform: "mastodon",
+      postId,
+      targetId,
+      workspaceId,
+    },
+    type: "post.unpublish_failed",
+  }),
+  "post.unpublished": (workspaceId) => ({
+    data: {
+      alreadyGone: false,
+      channelId,
+      platform: "mastodon",
+      postId,
+      removedAt: at,
+      targetId,
+      workspaceId,
+    },
+    type: "post.unpublished",
+  }),
   "post.unscheduled": (workspaceId) => ({
     data: { postId, workspaceId },
     type: "post.unscheduled",

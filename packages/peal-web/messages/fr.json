@@ -728,6 +728,19 @@
     "unavailable": "L’état de la demande n’a pas pu être lu. Réessayez plus tard."
   },
   "Posts": {
+    "Live": {
+      "unpublish": "Dépublier",
+      "confirmTitle": "Supprimer ce post de {platform} ?",
+      "confirmDescription": "Il est supprimé de {channel} pour tout le monde, toutes ses parties. Cette action est définitive.",
+      "keep": "Le garder",
+      "removing": "Suppression en cours…",
+      "requested": "Suppression de la publication de {channel}.",
+      "removed": "Supprimé de {platform} le {at, date, medium}",
+      "failed": "La suppression a échoué ({code}). La publication est peut-être encore en ligne.",
+      "retry": "Réessayer",
+      "blocked": "{by, select, noApi {{platform} n’offre aucun moyen à Peal de supprimer des publications.} permission {{platform} ne permet pas encore à Peal de supprimer des publications.} unverified {Peal ne supprime pas encore de publications sur {platform}.} other {Peal ne peut pas supprimer de publications sur {platform}.}}",
+      "refused": "{reason, select, notPublished {La publication n’est pas en ligne sur ce canal.} alreadyRemoved {La publication a déjà été supprimée de ce canal.} noPlatformId {Peal n’a pas l’identifiant de cette publication sur la plateforme : supprimez-la là-bas.} notSupported {La plateforme ne permet pas à Peal de supprimer cette publication : supprimez-la là-bas.} changeInProgress {La publication est déjà en cours de suppression.} channelUnavailable {Le canal est déconnecté, désactivé ou doit être reconnecté.} boostRunning {Une mise en avant montre cette publication : arrêtez-la d’abord.} forbidden {Votre rôle ne vous permet pas de dépublier des publications.} other {La publication n’a pas pu être supprimée. Réessayez.}}"
+    },
     "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {{platform}}}",
     "status": "{status, select, draft {Brouillon} awaitingApproval {En attente d’approbation} scheduled {Programmé} publishing {En cours de publication} finished {Terminé} cancelled {Annulé} other {{status}}}",
     "targetStatus": "{status, select, pending {En attente} publishing {En cours} published {Publié} failed {Échec} unconfirmed {À vérifier} cancelled {Annulé} other {{status}}}",
@@ -2104,6 +2117,8 @@
         "unconfirmed": "Une publication est peut-être partie sur un canal",
         "cancelled": "Une publication est annulée",
         "finished": "Une publication a son résultat sur chaque canal",
+        "unpublished": "Une publication est supprimée de la plateforme d’un canal",
+        "unpublish_failed": "Une publication n’a pas pu être supprimée de la plateforme d’un canal",
         "approval_requested": "Une publication attend une approbation",
         "approved": "Une publication est approuvée",
         "changes_requested": "Des modifications sont demandées sur une publication"
@@ -3083,7 +3098,7 @@
       "noComment": "Aucun commentaire ne reste sur la plateforme.",
       "openPost": "Ouvrir la publication",
       "onPlatform": "Voir la publication sur la plateforme",
-      "ended": "{reason, select, window {Ses commentaires ne sont plus lus : la publication a dépassé les jours pendant lesquels Peal les lit.} disconnected {Ses commentaires ne sont plus lus : son canal a été déconnecté.} unsupported {Ses commentaires ne sont plus lus : Peal n’en lit aucun sur cette plateforme.} missing {Ses commentaires ne sont plus lus : la plateforme n’affiche plus la publication.} other {Ses commentaires ne sont plus lus.}}"
+      "ended": "{reason, select, window {Ses commentaires ne sont plus lus : la publication a dépassé les jours pendant lesquels Peal les lit.} disconnected {Ses commentaires ne sont plus lus : son canal a été déconnecté.} unsupported {Ses commentaires ne sont plus lus : Peal n’en lit aucun sur cette plateforme.} missing {Ses commentaires ne sont plus lus : la plateforme n’affiche plus la publication.} removed {Ses commentaires ne sont plus lus : la publication a été supprimée de la plateforme depuis Peal.} other {Ses commentaires ne sont plus lus.}}"
     },
     "thread": {
       "title": "Commentaires",

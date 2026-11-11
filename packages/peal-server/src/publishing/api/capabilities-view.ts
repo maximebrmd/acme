@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
 import { accountNumberNames, postCountNames } from "peal-contract";
 import type {
   AccountStanding as AccountStandingView,
@@ -49,6 +49,22 @@ const fieldView = (field: FieldDescription<LookupName>): FieldView => ({
  * A lookup as the contract describes it, to the API and the MCP tools
  * alike.
  */
+// What Peal can do to a post once it is live, as clients read it: each
+// action, and why not, when it is known. Editing is not built yet: it is
+// false everywhere, with the reason only where the platform stops it.
+const livePostView = (ability: PlatformCapabilities["livePost"]) => ({
+  edit: false,
+  ...Option.match(ability.editBlockedBy, {
+    onNone: () => ({}),
+    onSome: (blocker) => ({ editBlockedBy: blocker }),
+  }),
+  unpublish: Option.isNone(ability.unpublish),
+  ...Option.match(ability.unpublish, {
+    onNone: () => ({}),
+    onSome: (blocker) => ({ unpublishBlockedBy: blocker }),
+  }),
+});
+
 export const lookupDescriptionView = (
   lookup: OptionLookup
 ): LookupDescriptionView => ({
@@ -108,6 +124,7 @@ export const platformCapabilitiesView = (
       rules.followUps === undefined
         ? null
         : { kind: rules.followUps.kind, maxCount: rules.followUps.maximum },
+    livePost: livePostView(capabilities.livePost),
     lookups: capabilities.lookups.map(lookupDescriptionView),
     media: {
       altText: {

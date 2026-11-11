@@ -56,6 +56,19 @@ export interface PostRecord {
     }[];
   }[];
   readonly id: string;
+  /**
+   * The changes asked of it once it was live (deleting it from a
+   * platform), oldest first, without who asked.
+   */
+  readonly liveChanges: readonly {
+    readonly alreadyGone: boolean;
+    readonly failureCode: string | null;
+    readonly finishedAt: DateTime.Utc | null;
+    readonly kind: string;
+    readonly requestedAt: DateTime.Utc;
+    readonly status: string;
+    readonly targetId: string;
+  }[];
   readonly media: readonly {
     readonly altText: string | null;
     readonly mediaId: string;
@@ -76,6 +89,8 @@ export interface PostRecord {
     /** How many of the post's parts are live there. */
     readonly partsLive: number;
     readonly permalink: string | null;
+    /** When Peal deleted it from that channel's platform, if it did. */
+    readonly removedAt: DateTime.Utc | null;
     readonly status: string;
     /** The video went live without the thumbnail its options named. */
     readonly thumbnailNotSet: boolean;

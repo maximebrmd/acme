@@ -1422,6 +1422,165 @@ func (f FollowUpCapabilitiesKind) Ptr() *FollowUpCapabilitiesKind {
 	return &f
 }
 
+type LivePostBlocker string
+
+const (
+	LivePostBlockerNoAPI      LivePostBlocker = "noApi"
+	LivePostBlockerPermission LivePostBlocker = "permission"
+	LivePostBlockerUnverified LivePostBlocker = "unverified"
+)
+
+func NewLivePostBlockerFromString(s string) (LivePostBlocker, error) {
+	switch s {
+	case "noApi":
+		return LivePostBlockerNoAPI, nil
+	case "permission":
+		return LivePostBlockerPermission, nil
+	case "unverified":
+		return LivePostBlockerUnverified, nil
+	}
+	var t LivePostBlocker
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (l LivePostBlocker) Ptr() *LivePostBlocker {
+	return &l
+}
+
+var (
+	livePostCapabilitiesFieldEdit               = big.NewInt(1 << 0)
+	livePostCapabilitiesFieldEditBlockedBy      = big.NewInt(1 << 1)
+	livePostCapabilitiesFieldUnpublish          = big.NewInt(1 << 2)
+	livePostCapabilitiesFieldUnpublishBlockedBy = big.NewInt(1 << 3)
+)
+
+type LivePostCapabilities struct {
+	Edit               bool             `json:"edit" url:"edit"`
+	EditBlockedBy      *LivePostBlocker `json:"editBlockedBy,omitempty" url:"editBlockedBy,omitempty"`
+	Unpublish          bool             `json:"unpublish" url:"unpublish"`
+	UnpublishBlockedBy *LivePostBlocker `json:"unpublishBlockedBy,omitempty" url:"unpublishBlockedBy,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LivePostCapabilities) GetEdit() bool {
+	if l == nil {
+		return false
+	}
+	return l.Edit
+}
+
+func (l *LivePostCapabilities) GetEditBlockedBy() *LivePostBlocker {
+	if l == nil {
+		return nil
+	}
+	return l.EditBlockedBy
+}
+
+func (l *LivePostCapabilities) GetUnpublish() bool {
+	if l == nil {
+		return false
+	}
+	return l.Unpublish
+}
+
+func (l *LivePostCapabilities) GetUnpublishBlockedBy() *LivePostBlocker {
+	if l == nil {
+		return nil
+	}
+	return l.UnpublishBlockedBy
+}
+
+func (l *LivePostCapabilities) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LivePostCapabilities) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetEdit sets the Edit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostCapabilities) SetEdit(edit bool) {
+	l.Edit = edit
+	l.require(livePostCapabilitiesFieldEdit)
+}
+
+// SetEditBlockedBy sets the EditBlockedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostCapabilities) SetEditBlockedBy(editBlockedBy *LivePostBlocker) {
+	l.EditBlockedBy = editBlockedBy
+	l.require(livePostCapabilitiesFieldEditBlockedBy)
+}
+
+// SetUnpublish sets the Unpublish field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostCapabilities) SetUnpublish(unpublish bool) {
+	l.Unpublish = unpublish
+	l.require(livePostCapabilitiesFieldUnpublish)
+}
+
+// SetUnpublishBlockedBy sets the UnpublishBlockedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostCapabilities) SetUnpublishBlockedBy(unpublishBlockedBy *LivePostBlocker) {
+	l.UnpublishBlockedBy = unpublishBlockedBy
+	l.require(livePostCapabilitiesFieldUnpublishBlockedBy)
+}
+
+func (l *LivePostCapabilities) UnmarshalJSON(data []byte) error {
+	type unmarshaler LivePostCapabilities
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LivePostCapabilities(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LivePostCapabilities) MarshalJSON() ([]byte, error) {
+	type embed LivePostCapabilities
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LivePostCapabilities) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
 var (
 	mediaCapabilitiesFieldAltText    = big.NewInt(1 << 0)
 	mediaCapabilitiesFieldFormats    = big.NewInt(1 << 1)
@@ -2632,12 +2791,13 @@ func (o *OptionConstraintOnlyWith) String() string {
 var (
 	platformCapabilitiesFieldAnalytics = big.NewInt(1 << 0)
 	platformCapabilitiesFieldFollowUps = big.NewInt(1 << 1)
-	platformCapabilitiesFieldLookups   = big.NewInt(1 << 2)
-	platformCapabilitiesFieldMedia     = big.NewInt(1 << 3)
-	platformCapabilitiesFieldOptions   = big.NewInt(1 << 4)
-	platformCapabilitiesFieldPlatform  = big.NewInt(1 << 5)
-	platformCapabilitiesFieldText      = big.NewInt(1 << 6)
-	platformCapabilitiesFieldVersion   = big.NewInt(1 << 7)
+	platformCapabilitiesFieldLivePost  = big.NewInt(1 << 2)
+	platformCapabilitiesFieldLookups   = big.NewInt(1 << 3)
+	platformCapabilitiesFieldMedia     = big.NewInt(1 << 4)
+	platformCapabilitiesFieldOptions   = big.NewInt(1 << 5)
+	platformCapabilitiesFieldPlatform  = big.NewInt(1 << 6)
+	platformCapabilitiesFieldText      = big.NewInt(1 << 7)
+	platformCapabilitiesFieldVersion   = big.NewInt(1 << 8)
 )
 
 // platformCapabilitiesNullableFields maps the wire names of PlatformCapabilities's nullable fields (required or optional) to their field bits.
@@ -2648,6 +2808,7 @@ var platformCapabilitiesNullableFields = map[string]*big.Int{
 type PlatformCapabilities struct {
 	Analytics *PlatformCapabilitiesAnalytics `json:"analytics" url:"analytics"`
 	FollowUps *FollowUpCapabilities          `json:"followUps,omitempty" url:"followUps,omitempty"`
+	LivePost  *LivePostCapabilities          `json:"livePost" url:"livePost"`
 	Lookups   []*LookupDescription           `json:"lookups" url:"lookups"`
 	Media     *MediaCapabilities             `json:"media" url:"media"`
 	Options   *PlatformCapabilitiesOptions   `json:"options" url:"options"`
@@ -2674,6 +2835,13 @@ func (p *PlatformCapabilities) GetFollowUps() *FollowUpCapabilities {
 		return nil
 	}
 	return p.FollowUps
+}
+
+func (p *PlatformCapabilities) GetLivePost() *LivePostCapabilities {
+	if p == nil {
+		return nil
+	}
+	return p.LivePost
 }
 
 func (p *PlatformCapabilities) GetLookups() []*LookupDescription {
@@ -2746,6 +2914,13 @@ func (p *PlatformCapabilities) SetAnalytics(analytics *PlatformCapabilitiesAnaly
 func (p *PlatformCapabilities) SetFollowUps(followUps *FollowUpCapabilities) {
 	p.FollowUps = followUps
 	p.require(platformCapabilitiesFieldFollowUps)
+}
+
+// SetLivePost sets the LivePost field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformCapabilities) SetLivePost(livePost *LivePostCapabilities) {
+	p.LivePost = livePost
+	p.require(platformCapabilitiesFieldLivePost)
 }
 
 // SetLookups sets the Lookups field and marks it as non-optional;

@@ -1,0 +1,31 @@
+[
+  {
+    "_tag": "removed",
+    "alreadyGone": false
+  },
+  {
+    "_tag": "removed",
+    "alreadyGone": true
+  },
+  {
+    "_tag": "retry",
+    "delay": 60000,
+    "rateLimited": false
+  },
+  {
+    "_tag": "retry",
+    "delay": 1200000,
+    "rateLimited": true
+  },
+  {
+    "_tag": "failed",
+    "code": "unavailable"
+  },
+  {
+    "_tag": "failed",
+    "code": "channelUnavailable"
+  },
+  {
+    "_tag": "gone"
+  }
+]

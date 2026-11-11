@@ -24,6 +24,8 @@ module Peal
 
         field :queue_id, -> { String }, optional: true, nullable: false, api_name: "queueId"
 
+        field :removed, -> { Peal::Posts::Types::SearchPostsRequestRemoved }, optional: true, nullable: false
+
         field :sort, -> { Peal::Types::PostSort }, optional: true, nullable: false
 
         field :status, -> { Peal::Types::PostStatus }, optional: true, nullable: false

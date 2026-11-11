@@ -17,6 +17,9 @@ public record PlatformCapabilities : IJsonOnDeserialized
     [JsonPropertyName("followUps")]
     public FollowUpCapabilities? FollowUps { get; set; }
 
+    [JsonPropertyName("livePost")]
+    public required LivePostCapabilities LivePost { get; set; }
+
     [JsonPropertyName("lookups")]
     public IEnumerable<LookupDescription> Lookups { get; set; } = new List<LookupDescription>();
 

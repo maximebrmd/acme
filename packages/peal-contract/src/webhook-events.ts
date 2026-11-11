@@ -21,6 +21,8 @@ export const SubscribableWebhookEventTypeSchema = Schema.Literals([
   "post.unconfirmed",
   "post.cancelled",
   "post.finished",
+  "post.unpublished",
+  "post.unpublish_failed",
   "post.approval_requested",
   "post.approved",
   "post.changes_requested",
@@ -307,6 +309,33 @@ export const WebhookPayloadSchema = Schema.Union([
       targets: Schema.Array(WebhookFinishedTargetSchema),
     }),
     type: Schema.Literal("post.finished"),
+  }),
+  // Peal deleted the post from the channel's platform, every part of it,
+  // at a member's request: it stays `published` in Peal, with the
+  // target's `removedAt`. `alreadyGone` when the platform had it no
+  // longer, deleted there before.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...post,
+      ...WebhookTargetSchema.fields,
+      alreadyGone: Schema.Boolean,
+      removedAt: Schema.DateTimeUtc,
+    }),
+    type: Schema.Literal("post.unpublished"),
+  }),
+  // Peal could not delete the post from the channel's platform: `code`
+  // says why (as the change's `code`); the post may still be there, and a
+  // member may ask again.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...post,
+      ...WebhookTargetSchema.fields,
+      code: Schema.String,
+      failedAt: Schema.DateTimeUtc,
+    }),
+    type: Schema.Literal("post.unpublish_failed"),
   }),
   // Someone asked for the post to go out at `scheduledAt`, in a workspace
   // that asks for approvals: it waits, and no `post.scheduled` is sent

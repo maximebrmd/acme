@@ -8,4 +8,5 @@ enum InboxCollectionEnd: string
     case Disconnected = "disconnected";
     case Unsupported = "unsupported";
     case Missing = "missing";
+    case Removed = "removed";
 }

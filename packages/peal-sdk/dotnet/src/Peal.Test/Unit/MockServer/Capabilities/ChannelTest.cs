@@ -33,6 +33,12 @@ public class ChannelTest : BaseMockServerTest
                   "kind": "thread",
                   "maxCount": 1
                 },
+                "livePost": {
+                  "edit": true,
+                  "editBlockedBy": "noApi",
+                  "unpublish": true,
+                  "unpublishBlockedBy": "noApi"
+                },
                 "lookups": [
                   {
                     "fills": [
@@ -330,6 +336,12 @@ public class ChannelTest : BaseMockServerTest
                 "followUps": {
                   "kind": "thread",
                   "maxCount": 1
+                },
+                "livePost": {
+                  "edit": true,
+                  "editBlockedBy": "noApi",
+                  "unpublish": true,
+                  "unpublishBlockedBy": "noApi"
                 },
                 "lookups": [
                   {

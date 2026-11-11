@@ -1,9 +1,9 @@
 import { Context } from "effect";
-import type { Effect } from "effect";
+import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { SentReplyRecord } from "#shared/application/personal-data.ts";
-import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { PostTargetId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 /**
  * What engagement keeps about a workspace or a user, for the workspace
@@ -30,5 +30,15 @@ export class EngagementRecords extends Context.Service<
      * workspaces that remain: the replies stay, as the workspace's.
      */
     readonly forgetUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
+    /**
+     * A post Peal deleted from its platform, in the caller's transaction:
+     * its thread is no longer read from that moment, and the comments read
+     * until then stay for their retention. Nothing happens to a thread not
+     * followed, or no longer read.
+     */
+    readonly postRemoved: (
+      targetId: PostTargetId,
+      at: DateTime.Utc
+    ) => Effect.Effect<void, DatabaseError>;
   }
 >()("peal-server/engagement/application/EngagementRecords") {}

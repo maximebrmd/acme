@@ -31,7 +31,7 @@ Un point de terminaison, c’est une adresse, les événements qu’il veut rece
 - **La description**, de 200 caractères au plus, dit à quoi sert le point de terminaison.
 - **Activé ou désactivé.** Tant qu’un point de terminaison est désactivé, Peal ne lui envoie rien, ses livraisons encore en attente échouent, et ce qui se passe entre-temps n’est pas gardé pour lui : le réactiver ne le rejoue pas.
 - **La portée**, par l’API : `workspace`, par défaut, entend cet espace de travail ; `partner`, sur l’espace de travail principal d’un [compte partenaire](/embedding#webhooks) seulement, entend aussi chaque espace de travail que le compte possède. Ailleurs, `partner` répond 404 `PartnerNotFound`. Elle est fixée à la création du point de terminaison, et reste.
-- **Seulement ces chaînes** (`channelIds`, 50 au plus). Le point de terminaison ne reçoit alors que les événements de ces chaînes : un événement d’une chaîne (`post.published`, `post.failed`, `post.unconfirmed`, `channel.*`, `comment.*`) quand sa chaîne est listée, et un événement d’une publication entière (`post.scheduled`, `post.unscheduled`, `post.cancelled`, les événements d’approbation) quand l’une des chaînes de la publication l’est, son corps inchangé. Un événement qui ne concerne aucune chaîne (`media.*`, `boost.*`) lui parvient quoi qu’il liste : retirez ces types de ses événements si vous n’en voulez pas. Sans liste, toutes les chaînes.
+- **Seulement ces chaînes** (`channelIds`, 50 au plus). Le point de terminaison ne reçoit alors que les événements de ces chaînes : un événement d’une chaîne (`post.published`, `post.failed`, `post.unconfirmed`, `post.unpublished`, `post.unpublish_failed`, `channel.*`, `comment.*`) quand sa chaîne est listée, et un événement d’une publication entière (`post.scheduled`, `post.unscheduled`, `post.cancelled`, les événements d’approbation) quand l’une des chaînes de la publication l’est, son corps inchangé. Un événement qui ne concerne aucune chaîne (`media.*`, `boost.*`) lui parvient quoi qu’il liste : retirez ces types de ses événements si vous n’en voulez pas. Sans liste, toutes les chaînes.
 - **Seulement ces espaces de travail** (`workspaceIds`, 200 au plus), sur un point de terminaison `partner` seulement : il n’entend alors que ceux-là, et son espace de travail principal seulement s’il est listé. Un point de terminaison de portée `workspace` refuse le champ (`WebhookFilterRefused`, ou `InvalidRequest` à sa création). Sans liste, tous les espaces de travail qu’il entend.
 
 Les filtres ne vérifient que la forme de leurs identifiants : un identifiant qui ne désigne rien ne correspond à rien, et un filtre reste tel que vous l’avez enregistré quand une chaîne est déconnectée ou qu’un espace de travail quitte le compte partenaire. Le formulaire du point de terminaison liste une telle chaîne à part, cochée, comme **Une chaîne qui n’est plus connectée** : décochez-la pour la retirer. Ils s’appliquent au moment où chaque événement se produit, avec le point de terminaison tel qu’il est alors ; [renvoyer une livraison](#log) l’envoie à son point de terminaison quoi que disent ses filtres aujourd’hui.
@@ -109,6 +109,8 @@ Le document OpenAPI de l’API, à `/api/openapi.json`, décrit chaque événeme
 | [`post.unconfirmed`](#post-unconfirmed)                 | Peal ne peut pas savoir si une publication est en ligne sur un canal                                       |
 | [`post.cancelled`](#post-cancelled)                     | Une publication a été annulée                                                                              |
 | [`post.finished`](#post-finished)                       | Chaque canal d’une publication a son résultat                                                              |
+| [`post.unpublished`](#post-unpublished)                 | Une publication a été supprimée de la plateforme d’un canal                                                |
+| [`post.unpublish_failed`](#post-unpublish-failed)       | Peal n’a pas pu supprimer une publication de la plateforme d’un canal                                      |
 | [`post.approval_requested`](#post-approval-requested)   | Une publication attend une approbation                                                                     |
 | [`post.approved`](#post-approved)                       | Une publication qui attendait a été approuvée                                                              |
 | [`post.changes_requested`](#post-changes-requested)     | Des modifications ont été demandées sur une publication qui attendait                                      |
@@ -417,6 +419,72 @@ Chaque canal de la publication a son résultat : elle y est en ligne, y a échou
         "permalink": null
       }
     ]
+  }
+}
+```
+
+### post.unpublished [#post-unpublished]
+
+Peal a supprimé la publication de la plateforme du canal, toutes ses parties, à la demande d’un membre, d’une clé ou d’une application ([Dépublier une publication](/scheduling#unpublish)). La publication reste `published` dans Peal : sa cible reçoit `removedAt` et garde son lien permanent pour mémoire.
+
+| Champ         | Type           | Ce qu’il contient                                                             |
+| ------------- | -------------- | ----------------------------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                                           |
+| `postId`      | chaîne         | La publication                                                                |
+| `targetId`    | chaîne         | La publication sur ce canal                                                   |
+| `channelId`   | chaîne         | Le canal                                                                      |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté                    |
+| `removedAt`   | chaîne         | Le moment où la dernière partie a été supprimée, en instant UTC               |
+| `alreadyGone` | booléen        | Si la plateforme n’avait déjà plus une partie, supprimée chez elle auparavant |
+
+```json title="post.unpublished"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e21",
+  "type": "post.unpublished",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "removedAt": "2026-11-10T09:00:00.000Z",
+    "alreadyGone": false
+  }
+}
+```
+
+### post.unpublish_failed [#post-unpublish-failed]
+
+Peal n’a pas pu supprimer la publication de la plateforme du canal, après les essais qu’une suppression fait : `code` dit pourquoi, comme le `code` du changement (`unavailable`, `rateLimited`, `channelUnavailable`, ou celui de la plateforme). La publication peut y être encore, entière ou en partie : un membre peut redemander, ce qui supprime les parties restantes.
+
+| Champ         | Type           | Ce qu’il contient                                          |
+| ------------- | -------------- | ---------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                        |
+| `postId`      | chaîne         | La publication                                             |
+| `targetId`    | chaîne         | La publication sur ce canal                                |
+| `channelId`   | chaîne         | Le canal                                                   |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté |
+| `code`        | chaîne         | Pourquoi la suppression s’est arrêtée                      |
+| `failedAt`    | chaîne         | Le moment où Peal a renoncé, en instant UTC                |
+
+```json title="post.unpublish_failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e22",
+  "type": "post.unpublish_failed",
+  "version": 1,
+  "timestamp": "2026-11-10T11:22:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "code": "unavailable",
+    "failedAt": "2026-11-10T11:22:00.000Z"
   }
 }
 ```

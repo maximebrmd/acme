@@ -68,6 +68,11 @@ export const pageConditions = ({
     some(filter.outcome, (outcome) => eq(posts.outcome, outcome)),
     some(filter.authorId, (authorId) => eq(posts.authorId, authorId)),
     some(filter.queueId, (queueId) => eq(posts.queueId, queueId)),
+    some(filter.removed, (removed) =>
+      removed
+        ? sql`EXISTS (SELECT 1 FROM ${postTargets} WHERE ${postTargets.postId} = ${posts.id} AND ${postTargets.removedAt} IS NOT NULL)`
+        : sql`NOT EXISTS (SELECT 1 FROM ${postTargets} WHERE ${postTargets.postId} = ${posts.id} AND ${postTargets.removedAt} IS NOT NULL)`
+    ),
     some(
       filter.createdVia,
       (via) => sql`${posts.createdVia} ->> '_tag' = ${via}`

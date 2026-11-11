@@ -14,6 +14,7 @@ import {
   AdsWorkersLive,
   DirectAds,
   GatedAds,
+  PostBoostsLive,
 } from "#ads/container.ts";
 import {
   AnalyticsApiLive,
@@ -255,12 +256,17 @@ const ReviewGateContextLive = ReviewGateLive.pipe(
 // Publishing posts to the channels the channels context lists, with the
 // media the media context holds, once the review context's gate admits
 // them.
+// A post deleted from its platform is no longer followed by analytics
+// nor the inbox, and none is while a boost of the ads context shows it.
 const PublishingContextLive = PublishingLive.pipe(
   Layer.provide(
     Layer.mergeAll(
       ChannelsWithNoticesLive,
       MediaContextLive,
-      ReviewGateContextLive
+      ReviewGateContextLive,
+      AnalyticsRecordsLive,
+      EngagementRecordsLive,
+      PostBoostsLive
     )
   )
 );

@@ -6,6 +6,7 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   lt,
   ne,
   notInArray,
@@ -129,11 +130,16 @@ const targetStatusOf = (row: TargetRow) => {
   // decoded from this, and keeps no note it lacks.
   let noted: typeof status & {
     readonly keptPrivate?: true;
+    readonly removedAt?: DateTime.Utc;
     readonly thumbnailNotSet?: true;
   } = status;
 
   if (row.keptPrivate) {
     noted = { ...noted, keptPrivate: true };
+  }
+
+  if (row.removedAt !== null) {
+    noted = { ...noted, removedAt: DateTime.fromDateUnsafe(row.removedAt) };
   }
 
   if (row.thumbnailNotSet) {
@@ -258,6 +264,7 @@ const targetColumns = (status: PostTargetStatus) => {
     listedAt: null,
     permalink: null,
     platformPostId: null,
+    removedAt: null,
     startedAt: null,
     status: status._tag,
     thumbnailNotSet: false,
@@ -281,6 +288,7 @@ const targetColumns = (status: PostTargetStatus) => {
       permalink,
       platformPostId,
       publishedAt,
+      removedAt,
       thumbnailNotSet,
     }) => ({
       ...cleared,
@@ -291,6 +299,7 @@ const targetColumns = (status: PostTargetStatus) => {
       listedAt: date(publishedAt),
       permalink: Option.getOrNull(permalink),
       platformPostId: Option.getOrNull(platformPostId),
+      removedAt: removedAt === undefined ? null : date(removedAt),
       thumbnailNotSet: thumbnailNotSet === true,
     }),
     publishing: ({ cancelRequested, startedAt }) => ({
@@ -593,6 +602,22 @@ export const DrizzlePostRepository = Layer.effect(
           .pipe(
             Effect.mapError(failed),
             Effect.flatMap(Effect.forEach(toTarget))
+          ),
+      markRemoved: (targetId, removedAt) =>
+        db
+          .update(postTargets)
+          .set({ removedAt: date(removedAt) })
+          .where(
+            and(
+              eq(postTargets.id, targetId),
+              eq(postTargets.status, "published"),
+              isNull(postTargets.removedAt)
+            )
+          )
+          .returning({ id: postTargets.id })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length === 1)
           ),
       remove: (postId) =>
         db

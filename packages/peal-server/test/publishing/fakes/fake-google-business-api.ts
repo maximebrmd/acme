@@ -368,6 +368,21 @@ export const fakeGoogleBusinessApi = Effect.fnUntraced(
         return list(request);
       }
 
+      // The location's own posts only, as Google finds no other there.
+      const removed = posts.findIndex(
+        ({ name }) => route === `DELETE /v4/${name}`
+      );
+
+      if (removed !== -1) {
+        posts.splice(removed, 1);
+
+        return json({});
+      }
+
+      if (request.method === "DELETE") {
+        return businessError(404, "NOT_FOUND");
+      }
+
       const post = posts.find(({ name }) => route === `GET /v4/${name}`);
 
       return post === undefined
