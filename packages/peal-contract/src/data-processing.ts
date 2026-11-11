@@ -445,8 +445,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "For each workspace and each day (UTC): how many posts went out, by platform, and how many requests it made to the writing assistant; and, as the day ended, how many channels it had connected, how many members it had and how many bytes of media it stored. Counts only, never what a post says or which member did what",
-      fr: "Pour chaque espace de travail et chaque jour (UTC) : combien de publications sont parties, par plateforme, et combien de demandes il a faites à l’assistant de rédaction ; et, à la fin du jour, combien de canaux il avait connectés, combien de membres il comptait et combien d’octets de médias il stockait. Des décomptes seulement, jamais le texte d’une publication ni ce qu’a fait chaque membre",
+      en: "For each workspace and each day (UTC): how many posts went out, by platform, and how many requests it made to the writing assistant; and, as the daily count found them shortly after the day ended, how many channels it had connected, how many members it had and how many bytes of media it stored. Counts only, never what a post says or which member did what",
+      fr: "Pour chaque espace de travail et chaque jour (UTC) : combien de publications sont parties, par plateforme, et combien de demandes il a faites à l’assistant de rédaction ; et, tels que le relevé quotidien les trouve peu après la fin du jour, combien de canaux il avait connectés, combien de membres il comptait et combien d’octets de médias il stockait. Des décomptes seulement, jamais le texte d’une publication ni ce qu’a fait chaque membre",
     },
     id: "usage",
     legalBasis: contract,

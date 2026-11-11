@@ -484,7 +484,7 @@ peal usage
 peal usage --from 2026-10-01 --to 2026-10-31
 ```
 
-`peal usage` prints the workspace's plan, each limit against what is used now, then, over UTC days (the last 30 unless `--from` and `--to` say otherwise, 92 at most), the posts that went out by platform, the channel-days, the posts on platforms that bill per post, and a row for each day that has anything: its posts, the channels, members and media as the day ended (a dash for a day without a snapshot), and its assistant requests. `--json` prints the API's answer as it came. It changes nothing, and nothing in it is priced ([Usage](/billing#usage)).
+`peal usage` prints the workspace's plan, each limit against what is used now, then, over UTC days (the last 30 unless `--from` and `--to` say otherwise, 92 at most), the posts that went out by platform, the channel-days, the posts on platforms that bill per post, and a row for each day that has anything: its posts, the channels, members and media as the day's snapshot found them (a dash for a day without a snapshot), and its assistant requests. `--json` prints the API's answer as it came. It changes nothing, and nothing in it is priced ([Usage](/billing#usage)).
 
 ## Members and invitations [#members]
 

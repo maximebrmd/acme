@@ -1496,7 +1496,7 @@
       "unlimitedStorage": "{used}, sans limite",
       "history": {
         "title": "Utilisation par jour",
-        "description": "Ce que l’espace de travail a fait chaque jour (UTC), et ce qu’il détenait à la fin de la journée.",
+        "description": "Ce que l’espace de travail a fait chaque jour (UTC), et ce qu’il détenait lors du relevé du jour, peu après.",
         "rangeLabel": "Période",
         "range": "{days, number} derniers jours",
         "loading": "Chargement de l’utilisation…",

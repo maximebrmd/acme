@@ -29,7 +29,8 @@ export const PlatformPostsSchema = Schema.Struct({
 export type PlatformPosts = typeof PlatformPostsSchema.Type;
 
 /**
- * A day (UTC) of a workspace's usage: what it held at the end of the day,
+ * A day (UTC) of a workspace's usage: what it held when the daily snapshot
+ * ran, shortly after the day ended (00:11 UTC, or up to 12 hours later),
  * null for a day the server took no snapshot of, and what happened that
  * day.
  */
@@ -40,10 +41,11 @@ export const UsageDaySchema = Schema.Struct({
   assistantRequests: Schema.NullOr(Schema.Int),
   // The day's posts by platform, by the platforms' names.
   byPlatform: Schema.Array(PlatformPostsSchema),
-  // The channels the workspace itself had connected at the end of the day.
+  // The channels the workspace itself had connected when the day's snapshot
+  // ran, shortly after the day ended.
   channels: Schema.NullOr(Schema.Int),
   day: CalendarDaySchema,
-  // Bytes of media stored at the end of the day.
+  // Bytes of media stored when the day's snapshot ran.
   mediaStorage: Schema.NullOr(ByteCountSchema),
   members: Schema.NullOr(Schema.Int),
   // The posts that went out that day, one per channel; a thread is one.

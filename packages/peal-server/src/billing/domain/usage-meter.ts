@@ -123,10 +123,13 @@ export interface UsageDay {
   readonly assistantRequests: Option.Option<number>;
   /** The day's posts by platform, in the platforms' order by name. */
   readonly byPlatform: readonly PlatformPosts[];
-  /** Connected at the end of the day; none for a day without a snapshot. */
+  /**
+   * Connected when the day's snapshot ran, shortly after the day ended;
+   * none for a day without a snapshot.
+   */
   readonly channels: Option.Option<number>;
   readonly day: DateTime.Utc;
-  /** Bytes stored at the end of the day. */
+  /** Bytes stored when the day's snapshot ran. */
   readonly mediaStorage: Option.Option<number>;
   readonly members: Option.Option<number>;
   /** The posts that went out that day, one per channel. */

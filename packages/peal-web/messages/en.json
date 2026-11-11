@@ -1496,7 +1496,7 @@
       "unlimitedStorage": "{used}, no limit",
       "history": {
         "title": "Usage by day",
-        "description": "What the workspace did each UTC day, and what it held as the day ended.",
+        "description": "What the workspace did each UTC day, and what it held when the day's snapshot ran, shortly after.",
         "rangeLabel": "Period",
         "range": "Last {days, number} days",
         "loading": "Loading the usage…",
