@@ -218,7 +218,9 @@ describe(mediaFitOn, () => {
     expect(mediaFitOn("instagram", attached).missingAltText).toBe(2);
     expect(mediaFitOn("tiktok", attached).missingAltText).toBe(0);
     expect(
-      (["mastodon", "instagram", "tiktok"] as const).map(showsAltText)
+      (["mastodon", "instagram", "tiktok"] as const).map((platform) =>
+        showsAltText(platform)
+      )
     ).toStrictEqual([true, true, false]);
   });
 
@@ -270,4 +272,30 @@ describe("a document attached to a post", () => {
       ]);
     }
   );
+});
+
+describe("the media of a story or a reel", () => {
+  const story = { format: "story", platform: "instagram" } as const;
+  const tall = file("a", { dimensions: { height: 1920, width: 1080 } });
+
+  it("follow the format the channel's options choose", () => {
+    expect(
+      mediaFits(mediaFitOn("instagram", [loaded(tall)], story))
+    ).toBeTruthy();
+    expect(mediaFits(mediaFitOn("instagram", [loaded(tall)]))).toBeFalsy();
+    expect(
+      mediaFitOn("facebook", [loaded(video("a", 91_000))], {
+        format: "reel",
+        platform: "facebook",
+      }).problems.map(({ _tag }) => _tag)
+    ).toStrictEqual(["videoTooLong"]);
+  });
+
+  it("ask no alt text on a story, which keeps none", () => {
+    expect(showsAltText("instagram")).toBeTruthy();
+    expect(showsAltText("instagram", story)).toBeFalsy();
+    expect(
+      mediaFitOn("instagram", [loaded(tall, "")], story).missingAltText
+    ).toBe(0);
+  });
 });

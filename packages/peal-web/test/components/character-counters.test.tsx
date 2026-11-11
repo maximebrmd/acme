@@ -92,3 +92,35 @@ describe(CharacterCounters, () => {
     expect(html).toContain("Pick channels to see how the text fits each one.");
   });
 });
+
+const renderStory = async (locale: Locale) => {
+  const messages = await loadMessages(locale);
+
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <CharacterCounters
+        fits={[
+          {
+            channel: channel("instagram"),
+            fit: fitOn("instagram", "A caption", 1, {
+              format: "story",
+              platform: "instagram",
+            }),
+          },
+        ]}
+      />
+    </NextIntlClientProvider>
+  );
+};
+
+describe("the counters of a story", () => {
+  it("show no limit, and say the text is not sent", async () => {
+    const english = await renderStory("en");
+
+    expect(english).toContain("A story is sent without text.");
+    expect(english).not.toContain("of 2,200 characters");
+    await expect(renderStory("fr")).resolves.toContain(
+      "Une story est envoyée sans texte."
+    );
+  });
+});

@@ -26,7 +26,7 @@ import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PlainTextEditor } from "#components/posts/plain-text-editor.tsx";
 import { useAttachedMedia } from "#posts/attached-media.ts";
 import { fitOn } from "#posts/character-count.ts";
-import { mediaFitOn } from "#posts/media-fit.ts";
+import { mediaFitOn, showsAltText } from "#posts/media-fit.ts";
 import {
   addPart,
   delayChoices,
@@ -107,6 +107,9 @@ const PartEditor = ({
       .map(({ text }) => ({ channel, text }))
   );
 
+  const optionsOn = (channelId: string) =>
+    options.find((chosen) => chosen.channelId === channelId)?.options;
+
   const fits = selected.map((channel) => ({
     channel,
     // Counted as it goes out there: the channel's own text when it has one.
@@ -114,9 +117,9 @@ const PartEditor = ({
       channel.platform,
       partTextOn(part, channel.id),
       part.media.length,
-      options.find(({ channelId }) => channelId === channel.id)?.options
+      optionsOn(channel.id)
     ),
-    media: mediaFitOn(channel.platform, attached),
+    media: mediaFitOn(channel.platform, attached, optionsOn(channel.id)),
   }));
 
   return (
@@ -271,7 +274,9 @@ const PartEditor = ({
           canUpload={permissions.includes("media:upload")}
           disabled={disabled}
           editable={editable}
-          platforms={selected.map(({ platform }) => platform)}
+          platforms={selected.flatMap(({ id: channelId, platform }) =>
+            showsAltText(platform, optionsOn(channelId)) ? [platform] : []
+          )}
           workspaceId={workspaceId}
           onChange={changeMedia}
         />
@@ -319,7 +324,11 @@ export const FollowUpParts = ({
   const locked = disabled || !editable;
 
   const refusing = selected.flatMap((channel) => {
-    const taken = partsTaken(channel.platform, parts.length);
+    const taken = partsTaken(
+      channel.platform,
+      parts.length,
+      options.find(({ channelId }) => channelId === channel.id)?.options
+    );
 
     return taken._tag === "taken" ? [] : [{ channel, taken }];
   });

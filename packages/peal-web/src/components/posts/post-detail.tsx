@@ -12,6 +12,7 @@ import type {
   PublicationAttempt,
   TargetConfirmation,
 } from "peal-contract";
+import { postFormatOf } from "peal-contract/post-text";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import {
   AlertDialog,
@@ -362,12 +363,64 @@ const Check = ({
   );
 };
 
+// The format the target's options chose: a story, a reel, or none for a
+// feed post.
+const formatOf = (target: PostTarget) =>
+  target.options === null
+    ? undefined
+    : postFormatOf(target.options.platform, target.options);
+
+/** A story's or a reel's badge; nothing for a feed post. */
+const FormatBadge = ({ target }: { readonly target: PostTarget }) => {
+  const t = useTranslations("Posts.Formats");
+  const format = formatOf(target);
+
+  return format === "story" || format === "reel" ? (
+    <Badge variant="secondary">{t(format)}</Badge>
+  ) : null;
+};
+
+/**
+ * The link to a target's post, kept struck through once Peal removed it.
+ * A story has no lasting page: none.
+ */
+const TargetLink = ({
+  platform,
+  target,
+}: {
+  readonly platform: string;
+  readonly target: PostTarget;
+}) => {
+  const t = useTranslations("PostDetail");
+
+  return target.permalink === null || formatOf(target) === "story" ? null : (
+    <a
+      href={target.permalink}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={cn(
+        "text-sm underline underline-offset-4",
+        // Kept as a record: the post is no longer there.
+        target.removedAt === null ? null : "line-through"
+      )}
+    >
+      {t("viewPost", { platform })}
+    </a>
+  );
+};
+
 /** What a published target says of how it went out, each when it holds. */
 const PublishedNotes = ({ target }: { readonly target: PostTarget }) => {
   const t = useTranslations("PostDetail");
+  const tFormats = useTranslations("Posts.Formats");
 
   return (
     <>
+      {formatOf(target) === "story" && target.status === "published" ? (
+        <p className="text-muted-foreground text-sm">
+          {tFormats("storiesExpire")}
+        </p>
+      ) : null}
       {target.keptPrivate === true ? (
         <Alert>
           <AlertDescription>{t("keptPrivate")}</AlertDescription>
@@ -431,11 +484,14 @@ export const TargetView = ({
             {statusText(t, reasonOf, target, platform)}
           </CardDescription>
           <CardAction>
-            <Badge
-              variant={target.status === "failed" ? "destructive" : "outline"}
-            >
-              {tPosts("targetStatus", { status: target.status })}
-            </Badge>
+            <span className="flex flex-wrap gap-1">
+              <FormatBadge target={target} />
+              <Badge
+                variant={target.status === "failed" ? "destructive" : "outline"}
+              >
+                {tPosts("targetStatus", { status: target.status })}
+              </Badge>
+            </span>
           </CardAction>
         </CardHeader>
         <CardContent>
@@ -460,20 +516,7 @@ export const TargetView = ({
                 {tLive("removed", { at: at(target.removedAt), platform })}
               </p>
             )}
-            {target.permalink === null ? null : (
-              <a
-                href={target.permalink}
-                target="_blank"
-                rel="noreferrer noopener"
-                className={cn(
-                  "text-sm underline underline-offset-4",
-                  // Kept as a record: the post is no longer there.
-                  target.removedAt === null ? null : "line-through"
-                )}
-              >
-                {t("viewPost", { platform })}
-              </a>
-            )}
+            <TargetLink platform={platform} target={target} />
           </div>
         </CardContent>
         {acts || hasExtra ? (

@@ -37,6 +37,7 @@ describe("the options fields", () => {
     }
 
     expect(fieldsOf("facebook").map(({ name }) => name)).toStrictEqual([
+      "format",
       "videoTitle",
     ]);
     expect(Option.isSome(fieldOf("youtube", "title"))).toBeTruthy();
@@ -884,6 +885,7 @@ describe("fields that follow the post's media", () => {
 
   it("show a reel's fields on a post of one video alone", () => {
     expect(shownInstagram(["video"])).toStrictEqual([
+      "format",
       ...reelFields,
       "collaborators",
     ]);
@@ -895,10 +897,32 @@ describe("fields that follow the post's media", () => {
     ];
 
     expect(others.map(shownInstagram)).toStrictEqual([
-      ["collaborators"],
-      ["collaborators"],
-      ["collaborators"],
+      ["format", "collaborators"],
+      ["format", "collaborators"],
+      ["format", "collaborators"],
     ]);
+  });
+
+  it("show a story its format alone, and send none of a feed post's", () => {
+    const story = { collaborators: "peal.example", format: "story" };
+
+    expect(
+      fieldsOf("instagram")
+        .filter((field) => isShown("instagram", field, story, ["video"]))
+        .map(({ name }) => name)
+    ).toStrictEqual(["format"]);
+    expect(optionsOf("instagram", story, ["video"])).toStrictEqual(
+      Result.succeed(Option.some({ format: "story", platform: "instagram" }))
+    );
+    expect(
+      fieldOf("facebook", "format").pipe(
+        Option.map((field) =>
+          field.kind === "choice"
+            ? [field.none, ...field.choices.map(({ value }) => value)]
+            : []
+        )
+      )
+    ).toStrictEqual(Option.some(["facebook.formatFeed", "story", "reel"]));
   });
 
   it("send no field the media hide", () => {

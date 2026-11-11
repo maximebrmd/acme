@@ -151,7 +151,13 @@ describe(TargetOptionsPanel, () => {
     expect(html).toContain("Title (required)");
     expect(html).toContain("Made for kids (required)");
     expect(html).toContain("Who can view this post (required)");
-    expect(html).not.toContain("Synthetic Bakery");
+  });
+
+  it("asks a Facebook post without media its format only", async () => {
+    const html = await render("en");
+
+    expect(html).toContain("Synthetic Bakery on Facebook: options");
+    expect(html).not.toContain("Video title");
   });
 
   it("starts TikTok's interactions off, and its disclosure untold", async () => {
@@ -458,7 +464,8 @@ describe(TargetOptionsPanel, () => {
   });
 
   it("shows only for platforms that take options on the post's media", () => {
-    expect(takesOptions([facebookPage], ["image"])).toBeFalsy();
+    // Facebook's format is chosen whatever the media.
+    expect(takesOptions([facebookPage], ["image"])).toBeTruthy();
     expect(takesOptions([facebookPage], ["video"])).toBeTruthy();
     // While the media are read, every field shows.
     expect(takesOptions([facebookPage])).toBeTruthy();
@@ -911,7 +918,7 @@ describe("fields that follow the post's media", () => {
     const french = await renderChannels("fr", [facebookPage], ["video"]);
 
     expect(video).toContain("Video title");
-    expect(images).not.toContain("Synthetic Bakery");
+    expect(images).not.toContain("Video title");
     expect(french).toContain("Titre de la vidéo");
   });
 
@@ -1048,5 +1055,46 @@ describe(MediaOptionView, () => {
     expect(html).toContain("Remove");
     expect(empty).toContain("No image chosen.");
     expect(empty).not.toContain("choose from the library");
+  });
+});
+
+describe("a post's format", () => {
+  it("is chosen first on Instagram and Facebook, a feed post by default", async () => {
+    const english = await renderChannels("en", [instagram, facebookPage], []);
+    const french = await renderChannels("fr", [instagram, facebookPage], []);
+
+    expect(english).toContain("Format");
+    expect(english).toContain(
+      "A story shows one image or video for 24 hours, without the post"
+    );
+    expect(english.indexOf("Format")).toBeLessThan(
+      english.indexOf("Collaborators")
+    );
+    expect(french).toContain(
+      "Une story montre une image ou une vidéo pendant 24 heures"
+    );
+  });
+
+  it("hides on a story what a story does not take", async () => {
+    const story = await renderChannels("en", [instagram], ["video"], {
+      format: "story",
+    });
+
+    for (const label of ["Trial reel", "Audio name", "Collaborators"]) {
+      expect(story).not.toContain(label);
+    }
+  });
+
+  it("shows a Facebook title on a reel and a feed video, never on a story", async () => {
+    const story = await renderChannels("en", [facebookPage], ["video"], {
+      format: "story",
+    });
+
+    const reel = await renderChannels("en", [facebookPage], ["video"], {
+      format: "reel",
+    });
+
+    expect(story).not.toContain("Video title");
+    expect(reel).toContain("Video title");
   });
 });

@@ -219,7 +219,10 @@ interface MediaAttachmentsProps {
   readonly onChange: (
     update: (current: readonly MediaAttachment[]) => readonly MediaAttachment[]
   ) => void;
-  /** The platforms of the channels the post goes to. */
+  /**
+   * The platforms of the channels the post goes to that show alt text with
+   * the options it has there (`showsAltText`: a story keeps none).
+   */
   readonly platforms: readonly Platform[];
   readonly workspaceId: string;
 }
@@ -255,9 +258,9 @@ export const MediaAttachments = ({
   const room = roomLeft(attached);
   const count = attached.length;
 
-  const showing = Arr.dedupe(platforms.filter(showsAltText)).map((platform) =>
-    tPosts("platform", { platform })
-  );
+  const showing = Arr.dedupe(
+    platforms.filter((platform) => showsAltText(platform))
+  ).map((platform) => tPosts("platform", { platform }));
 
   const add = (added: readonly Media[]) => {
     const ids = new Set(attached.map(({ mediaId }) => mediaId));

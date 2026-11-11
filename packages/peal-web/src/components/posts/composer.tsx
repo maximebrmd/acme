@@ -64,7 +64,7 @@ import { useAttachedMedia } from "#posts/attached-media.ts";
 import { connectedTargets } from "#posts/channel-selection.ts";
 import { fitOn, fits } from "#posts/character-count.ts";
 import { capabilitiesOf } from "#posts/composer-capabilities.ts";
-import { mediaFitOn, mediaFits } from "#posts/media-fit.ts";
+import { mediaFitOn, mediaFits, showsAltText } from "#posts/media-fit.ts";
 import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
 import { queuedSlotFormat, queuedSlotWeek } from "#posts/queued-slot.ts";
@@ -366,7 +366,11 @@ export const Composer = ({
         media.length,
         optionsOfChannel(channel.id)
       ),
-      media: mediaFitOn(channel.platform, attached),
+      media: mediaFitOn(
+        channel.platform,
+        attached,
+        optionsOfChannel(channel.id)
+      ),
     };
   });
 
@@ -375,7 +379,8 @@ export const Composer = ({
   // videos are checked where they are shown, and again by the server.
   const partsFit = selected.every(
     ({ id, platform }) =>
-      partsTaken(platform, parts.length)._tag === "taken" &&
+      partsTaken(platform, parts.length, optionsOfChannel(id))._tag ===
+        "taken" &&
       parts.every((part) =>
         fits(
           fitOn(
@@ -826,7 +831,9 @@ export const Composer = ({
               canUpload={permissions.includes("media:upload")}
               disabled={locked}
               editable={canWrite}
-              platforms={selected.map(({ platform }) => platform)}
+              platforms={selected.flatMap(({ id, platform }) =>
+                showsAltText(platform, optionsOfChannel(id)) ? [platform] : []
+              )}
               workspaceId={workspaceId}
               onChange={setMedia}
             />

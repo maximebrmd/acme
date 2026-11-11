@@ -1172,6 +1172,10 @@
       "mediaPickerDescription": "Pick one ready image of the workspace’s library. Only those this option takes can be picked.",
       "mediaUse": "Use this image",
       "instagram": {
+        "format": "Format",
+        "formatHint": "A story shows one image or video for 24 hours, without the post's text. A feed post when not chosen.",
+        "formatFeed": "Feed post",
+        "formatStory": "Story",
         "shareToFeed": "Also share to the feed",
         "shareToFeedHint": "For a reel: shown in the feed as well as in the Reels tab. Instagram decides when not chosen.",
         "shareToFeedYes": "Yes, share it to the feed",
@@ -1195,10 +1199,23 @@
         "collaboratorsInvalid": "Each is an Instagram username, without @: letters, digits, periods and underscores, 30 at most, each once."
       },
       "facebook": {
+        "format": "Format",
+        "formatHint": "A story shows one image or video for 24 hours, without the post's text; a reel is one vertical video. A feed post when not chosen.",
+        "formatFeed": "Feed post",
+        "formatStory": "Story",
+        "formatReel": "Reel",
         "videoTitle": "Video title",
         "videoTitleHint": "For a post with a video: one line, 255 characters at most.",
         "videoTitleInvalid": "A title is one line, 255 characters at most, for a post with a video."
       }
+    },
+    "Formats": {
+      "title": "Format",
+      "feed": "Feed post",
+      "story": "Story",
+      "reel": "Reel",
+      "textNotSent": "A story is sent without text.",
+      "storiesExpire": "Stories disappear after 24 hours and have no statistics in Peal."
     },
     "Calendar": {
       "title": "Calendar",
