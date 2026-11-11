@@ -254,6 +254,8 @@ Every payload names its workspace twice: `data.workspaceId`, Peal's id, and `wor
 
 [Webhooks](/webhooks) tells how deliveries are signed, verified, retried and logged. An endpoint of one customer's workspace, with the default scope, hears that workspace alone.
 
+To mark a customer's post done in your product once, subscribe to [`post.finished`](/webhooks#post-finished): it comes when every channel of the post has its result, with each one's. [`channel.expiring`](/webhooks#channel-expiring) warns, a week ahead at most, that a channel's sign-in cannot be renewed: send your customer a [connect link](#reconnect) before it lapses. When your receiver sits behind a gateway that wants a token, give the endpoint [headers of its own](/webhooks#headers) (`headers`): their values are write-only.
+
 ### Staging apart, with a workspace filter [#webhooks-staging]
 
 To keep your staging environment's customers apart from production's, give each environment a partner endpoint of its own and list, in `workspaceIds` (200 at most), the workspaces it should hear: your staging endpoint hears your test customers, and your production endpoint, with no list, every workspace. Your home workspace is heard only when it is listed. Change the list as you add test customers with `PATCH …/webhooks/{endpointId}`. The deliveries of every endpoint, with each one's workspace and your id for it, are in your home workspace's [log across endpoints](/webhooks#log), where the failed ones can be sent again together.
