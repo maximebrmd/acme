@@ -508,7 +508,7 @@ describe(channelOptionsOf, () => {
           { id: "c1", platform: "tiktok" },
           { id: "c2", platform: "facebook" },
         ],
-        {}
+        { c1: { ...initialValues("tiktok"), privacyLevel: "SELF_ONLY" } }
       )
     ).toStrictEqual({
       options: [
@@ -523,11 +523,86 @@ describe(channelOptionsOf, () => {
             disableDuet: true,
             disableStitch: true,
             platform: "tiktok",
+            privacyLevel: "SELF_ONLY",
           },
         },
       ],
       problems: [],
     });
+  });
+
+  it("sends no options where the member chose none, so the channel's defaults apply", () => {
+    const channels = [
+      { id: "c1", platform: "mastodon" },
+      { id: "c2", platform: "bluesky" },
+      { id: "c3", platform: "x" },
+      { id: "c4", platform: "tiktok" },
+      { id: "c5", platform: "youtube" },
+    ] as const;
+
+    expect(channelOptionsOf(channels, {})).toStrictEqual({
+      options: [],
+      problems: [],
+    });
+    // A box ticked then unticked, a text typed then erased: nothing chosen.
+    expect(
+      channelOptionsOf(channels, {
+        c1: { contentWarning: "" },
+        c3: { ...initialValues("x"), paidPartnership: false },
+      })
+    ).toStrictEqual({ options: [], problems: [] });
+    expect(
+      channelOptionsOf(channels, { c1: { visibility: "private" } }).options
+    ).toStrictEqual([
+      {
+        channelId: "c1",
+        options: { platform: "mastodon", visibility: "private" },
+      },
+    ]);
+  });
+
+  it("keeps the defaults a new draft took on its next save", () => {
+    const platforms = new Map<string, Platform>([["c1", "mastodon"]]);
+
+    // The draft the server made, which took the channel's defaults.
+    const values = valuesOfPost(
+      {
+        authorId: null,
+        content: { media: [], overrides: [], text: "A synthetic toot" },
+        createdVia: null,
+        id: "00000000-0000-7000-8000-000000000009",
+        outcome: null,
+        schedule: null,
+        scheduledBy: null,
+        scheduledVia: null,
+        status: "draft",
+        tagIds: [],
+        targets: [
+          {
+            channelId: "c1",
+            failureReason: null,
+            id: "target-c1",
+            options: { platform: "mastodon", visibility: "private" },
+            parts: { count: 1, live: [] },
+            permalink: null,
+            publishedAt: null,
+            round: 1,
+            status: "pending",
+            unconfirmedReason: null,
+          },
+        ],
+      },
+      (id) => Option.fromUndefinedOr(platforms.get(id))
+    );
+
+    expect(
+      channelOptionsOf([{ id: "c1", platform: "mastodon" }], values).options
+    ).toStrictEqual([
+      {
+        channelId: "c1",
+        options: { platform: "mastodon", visibility: "private" },
+      },
+    ]);
   });
 });
 

@@ -385,6 +385,17 @@ export const Composer = ({
     if (postId === undefined) {
       const signed = signing.textsOf(saved);
 
+      // A new draft takes the defaults of the channels it was sent no
+      // options for: the fields show them, and the next save keeps them.
+      setOptionValues((current) => ({
+        ...current,
+        ...valuesOfPost(saved, (channelId) =>
+          Option.fromUndefinedOr(
+            channels.find(({ id }) => id === channelId)?.platform
+          )
+        ),
+      }));
+
       // Saved with the default signatures: the texts are now the server's.
       if (signed !== undefined) {
         setText(signed.text);

@@ -1090,15 +1090,39 @@ export type ChannelOptionProblem = OptionProblem & {
 
 /** What the composer has of the options of its channels. */
 export interface ChannelOptionsState {
-  /** The options to send, on each channel whose platform takes some. */
+  /**
+   * The options to send, on each channel where the member chose one at
+   * least.
+   */
   readonly options: readonly ChannelOptions[];
   /** What is wrong with what was filled in: nothing is sent until fixed. */
   readonly problems: readonly ChannelOptionProblem[];
 }
 
+// What leaving the options out gives on a new target, as the fields show
+// it: every box as its field says.
+const leftOutOf = (platform: Platform): string =>
+  JSON.stringify(
+    optionsOf(platform, initialValues(platform)).pipe(
+      Result.getOrElse(() => Option.none<TargetOptions>()),
+      Option.getOrUndefined
+    )
+  );
+
+// Whether the options choose anything leaving them out does not give.
+const chooses = (
+  platform: Platform,
+  options: Option.Option<TargetOptions>
+): options is Option.Some<TargetOptions> =>
+  Option.isSome(options) &&
+  JSON.stringify(options.value) !== leftOutOf(platform);
+
 /**
  * The options of the post on each of these channels whose platform takes
- * some, and what is wrong with those filled in.
+ * some and where the member chose one at least, and what is wrong with
+ * those filled in. A channel where nothing was chosen gets no entry, so a
+ * new post takes the channel's default options, as it does through the
+ * API.
  */
 export const channelOptionsOf = (
   channels: readonly { readonly id: string; readonly platform: Platform }[],
@@ -1114,7 +1138,7 @@ export const channelOptionsOf = (
       problems.push(
         ...given.failure.map((problem) => ({ ...problem, channelId: id }))
       );
-    } else if (Option.isSome(given.success)) {
+    } else if (chooses(platform, given.success)) {
       options.push({ channelId: id, options: given.success.value });
     }
   }

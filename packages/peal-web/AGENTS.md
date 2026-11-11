@@ -124,7 +124,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   is wrong (`OptionProblem`: too many tags or mentions for its `maximum`,
   a value the API would refuse), never "no options": the field shows it
   as typed, and the composer neither saves nor schedules until it is
-  fixed, so no choice is dropped unseen. On a TikTok
+  fixed, so no choice is dropped unseen. `channelOptionsOf` sends a
+  channel's options only when the member chose one at least (a value its
+  field does not start with): elsewhere a new draft takes the channel's
+  defaults, as through the API, and the composer then shows the options
+  the saved draft holds, so its next save keeps them. On a TikTok
   channel, `TikTokChannelOptions` reads `GET …/channels/:id/tiktok-creator`
   and limits the fields by the creator (`#posts/tiktok-account.ts`): their
   nickname, their audiences, interactions they turned off (and set off),
