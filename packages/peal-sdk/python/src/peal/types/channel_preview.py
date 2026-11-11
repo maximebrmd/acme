@@ -25,6 +25,9 @@ class ChannelPreview(UniversalBaseModel):
     text_counts: typing_extensions.Annotated[
         typing.List[TextCount], FieldMetadata(alias="textCounts"), pydantic.Field(alias="textCounts")
     ]
+    text_not_sent: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="textNotSent"), pydantic.Field(alias="textNotSent")
+    ] = None
     violations: typing.List[ContentViolation]
 
     if IS_PYDANTIC_V2:

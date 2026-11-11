@@ -27,6 +27,8 @@ public final class InstagramOptions {
 
     private final Optional<String> coverMediaId;
 
+    private final Optional<InstagramFormat> format;
+
     private final Optional<Boolean> shareToFeed;
 
     private final Optional<Integer> thumbOffsetMs;
@@ -39,6 +41,7 @@ public final class InstagramOptions {
             Optional<String> audioName,
             Optional<List<String>> collaborators,
             Optional<String> coverMediaId,
+            Optional<InstagramFormat> format,
             Optional<Boolean> shareToFeed,
             Optional<Integer> thumbOffsetMs,
             Optional<InstagramTrialReel> trialReel,
@@ -46,6 +49,7 @@ public final class InstagramOptions {
         this.audioName = audioName;
         this.collaborators = collaborators;
         this.coverMediaId = coverMediaId;
+        this.format = format;
         this.shareToFeed = shareToFeed;
         this.thumbOffsetMs = thumbOffsetMs;
         this.trialReel = trialReel;
@@ -65,6 +69,11 @@ public final class InstagramOptions {
     @JsonProperty("coverMediaId")
     public Optional<String> getCoverMediaId() {
         return coverMediaId;
+    }
+
+    @JsonProperty("format")
+    public Optional<InstagramFormat> getFormat() {
+        return format;
     }
 
     @JsonProperty("shareToFeed")
@@ -97,6 +106,7 @@ public final class InstagramOptions {
         return audioName.equals(other.audioName)
                 && collaborators.equals(other.collaborators)
                 && coverMediaId.equals(other.coverMediaId)
+                && format.equals(other.format)
                 && shareToFeed.equals(other.shareToFeed)
                 && thumbOffsetMs.equals(other.thumbOffsetMs)
                 && trialReel.equals(other.trialReel);
@@ -108,6 +118,7 @@ public final class InstagramOptions {
                 this.audioName,
                 this.collaborators,
                 this.coverMediaId,
+                this.format,
                 this.shareToFeed,
                 this.thumbOffsetMs,
                 this.trialReel);
@@ -130,6 +141,8 @@ public final class InstagramOptions {
 
         private Optional<String> coverMediaId = Optional.empty();
 
+        private Optional<InstagramFormat> format = Optional.empty();
+
         private Optional<Boolean> shareToFeed = Optional.empty();
 
         private Optional<Integer> thumbOffsetMs = Optional.empty();
@@ -144,6 +157,7 @@ public final class InstagramOptions {
             audioName(other.getAudioName());
             collaborators(other.getCollaborators());
             coverMediaId(other.getCoverMediaId());
+            format(other.getFormat());
             shareToFeed(other.getShareToFeed());
             thumbOffsetMs(other.getThumbOffsetMs());
             trialReel(other.getTrialReel());
@@ -180,6 +194,17 @@ public final class InstagramOptions {
 
         public Builder coverMediaId(String coverMediaId) {
             this.coverMediaId = Optional.ofNullable(coverMediaId);
+            return this;
+        }
+
+        @JsonSetter(value = "format", nulls = Nulls.SKIP)
+        public Builder format(Optional<InstagramFormat> format) {
+            this.format = format;
+            return this;
+        }
+
+        public Builder format(InstagramFormat format) {
+            this.format = Optional.ofNullable(format);
             return this;
         }
 
@@ -221,6 +246,7 @@ public final class InstagramOptions {
                     audioName,
                     collaborators,
                     coverMediaId,
+                    format,
                     shareToFeed,
                     thumbOffsetMs,
                     trialReel,
@@ -232,6 +258,7 @@ public final class InstagramOptions {
             if (key.equalsIgnoreCase("audioName")
                     || key.equalsIgnoreCase("collaborators")
                     || key.equalsIgnoreCase("coverMediaId")
+                    || key.equalsIgnoreCase("format")
                     || key.equalsIgnoreCase("shareToFeed")
                     || key.equalsIgnoreCase("thumbOffsetMs")
                     || key.equalsIgnoreCase("trialReel")) {

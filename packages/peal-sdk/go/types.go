@@ -6493,19 +6493,53 @@ func (e ExternalIDTakenEncodedTag) Ptr() *ExternalIDTakenEncodedTag {
 	return &e
 }
 
-var (
-	facebookOptionsFieldVideoTitle = big.NewInt(1 << 0)
+type FacebookFormat string
+
+const (
+	FacebookFormatFeed  FacebookFormat = "feed"
+	FacebookFormatStory FacebookFormat = "story"
+	FacebookFormatReel  FacebookFormat = "reel"
 )
 
-// How a post goes out on a Facebook Page. Scheduling needs none of them; `videoTitle` is for a post of a video.
+func NewFacebookFormatFromString(s string) (FacebookFormat, error) {
+	switch s {
+	case "feed":
+		return FacebookFormatFeed, nil
+	case "story":
+		return FacebookFormatStory, nil
+	case "reel":
+		return FacebookFormatReel, nil
+	}
+	var t FacebookFormat
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FacebookFormat) Ptr() *FacebookFormat {
+	return &f
+}
+
+var (
+	facebookOptionsFieldFormat     = big.NewInt(1 << 0)
+	facebookOptionsFieldVideoTitle = big.NewInt(1 << 1)
+)
+
+// How a post goes out on a Facebook Page. Scheduling needs none of them; `format` makes it a `story`, sent without the post's text, or a `reel`; `videoTitle` is for a post of a video or a reel.
 type FacebookOptions struct {
-	VideoTitle *string `json:"videoTitle,omitempty" url:"videoTitle,omitempty"`
+	Format     *FacebookFormat `json:"format,omitempty" url:"format,omitempty"`
+	VideoTitle *string         `json:"videoTitle,omitempty" url:"videoTitle,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FacebookOptions) GetFormat() *FacebookFormat {
+	if f == nil {
+		return nil
+	}
+	return f.Format
 }
 
 func (f *FacebookOptions) GetVideoTitle() *string {
@@ -6529,6 +6563,13 @@ func (f *FacebookOptions) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	f.explicitFields = next
+}
+
+// SetFormat sets the Format field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FacebookOptions) SetFormat(format *FacebookFormat) {
+	f.Format = format
+	f.require(facebookOptionsFieldFormat)
 }
 
 // SetVideoTitle sets the VideoTitle field and marks it as non-optional;
@@ -8567,20 +8608,44 @@ func (i *InboxThreadNotFoundEncoded) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
+type InstagramFormat string
+
+const (
+	InstagramFormatFeed  InstagramFormat = "feed"
+	InstagramFormatStory InstagramFormat = "story"
+)
+
+func NewInstagramFormatFromString(s string) (InstagramFormat, error) {
+	switch s {
+	case "feed":
+		return InstagramFormatFeed, nil
+	case "story":
+		return InstagramFormatStory, nil
+	}
+	var t InstagramFormat
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i InstagramFormat) Ptr() *InstagramFormat {
+	return &i
+}
+
 var (
 	instagramOptionsFieldAudioName     = big.NewInt(1 << 0)
 	instagramOptionsFieldCollaborators = big.NewInt(1 << 1)
 	instagramOptionsFieldCoverMediaID  = big.NewInt(1 << 2)
-	instagramOptionsFieldShareToFeed   = big.NewInt(1 << 3)
-	instagramOptionsFieldThumbOffsetMs = big.NewInt(1 << 4)
-	instagramOptionsFieldTrialReel     = big.NewInt(1 << 5)
+	instagramOptionsFieldFormat        = big.NewInt(1 << 3)
+	instagramOptionsFieldShareToFeed   = big.NewInt(1 << 4)
+	instagramOptionsFieldThumbOffsetMs = big.NewInt(1 << 5)
+	instagramOptionsFieldTrialReel     = big.NewInt(1 << 6)
 )
 
-// How a post goes out on an Instagram account. Scheduling needs none of them; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
+// How a post goes out on an Instagram account. Scheduling needs none of them; `format` `story` makes it a story, sent without the post's text and taking none of the other options; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
 type InstagramOptions struct {
 	AudioName     *string             `json:"audioName,omitempty" url:"audioName,omitempty"`
 	Collaborators []string            `json:"collaborators,omitempty" url:"collaborators,omitempty"`
 	CoverMediaID  *string             `json:"coverMediaId,omitempty" url:"coverMediaId,omitempty"`
+	Format        *InstagramFormat    `json:"format,omitempty" url:"format,omitempty"`
 	ShareToFeed   *bool               `json:"shareToFeed,omitempty" url:"shareToFeed,omitempty"`
 	ThumbOffsetMs *int                `json:"thumbOffsetMs,omitempty" url:"thumbOffsetMs,omitempty"`
 	TrialReel     *InstagramTrialReel `json:"trialReel,omitempty" url:"trialReel,omitempty"`
@@ -8611,6 +8676,13 @@ func (i *InstagramOptions) GetCoverMediaID() *string {
 		return nil
 	}
 	return i.CoverMediaID
+}
+
+func (i *InstagramOptions) GetFormat() *InstagramFormat {
+	if i == nil {
+		return nil
+	}
+	return i.Format
 }
 
 func (i *InstagramOptions) GetShareToFeed() *bool {
@@ -8669,6 +8741,13 @@ func (i *InstagramOptions) SetCollaborators(collaborators []string) {
 func (i *InstagramOptions) SetCoverMediaID(coverMediaID *string) {
 	i.CoverMediaID = coverMediaID
 	i.require(instagramOptionsFieldCoverMediaID)
+}
+
+// SetFormat sets the Format field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InstagramOptions) SetFormat(format *InstagramFormat) {
+	i.Format = format
+	i.require(instagramOptionsFieldFormat)
 }
 
 // SetShareToFeed sets the ShareToFeed field and marks it as non-optional;

@@ -2789,15 +2789,16 @@ func (o *OptionConstraintOnlyWith) String() string {
 }
 
 var (
-	platformCapabilitiesFieldAnalytics = big.NewInt(1 << 0)
-	platformCapabilitiesFieldFollowUps = big.NewInt(1 << 1)
-	platformCapabilitiesFieldLivePost  = big.NewInt(1 << 2)
-	platformCapabilitiesFieldLookups   = big.NewInt(1 << 3)
-	platformCapabilitiesFieldMedia     = big.NewInt(1 << 4)
-	platformCapabilitiesFieldOptions   = big.NewInt(1 << 5)
-	platformCapabilitiesFieldPlatform  = big.NewInt(1 << 6)
-	platformCapabilitiesFieldText      = big.NewInt(1 << 7)
-	platformCapabilitiesFieldVersion   = big.NewInt(1 << 8)
+	platformCapabilitiesFieldAnalytics   = big.NewInt(1 << 0)
+	platformCapabilitiesFieldFollowUps   = big.NewInt(1 << 1)
+	platformCapabilitiesFieldLivePost    = big.NewInt(1 << 2)
+	platformCapabilitiesFieldLookups     = big.NewInt(1 << 3)
+	platformCapabilitiesFieldMedia       = big.NewInt(1 << 4)
+	platformCapabilitiesFieldOptions     = big.NewInt(1 << 5)
+	platformCapabilitiesFieldPlatform    = big.NewInt(1 << 6)
+	platformCapabilitiesFieldPostFormats = big.NewInt(1 << 7)
+	platformCapabilitiesFieldText        = big.NewInt(1 << 8)
+	platformCapabilitiesFieldVersion     = big.NewInt(1 << 9)
 )
 
 // platformCapabilitiesNullableFields maps the wire names of PlatformCapabilities's nullable fields (required or optional) to their field bits.
@@ -2806,15 +2807,16 @@ var platformCapabilitiesNullableFields = map[string]*big.Int{
 }
 
 type PlatformCapabilities struct {
-	Analytics *PlatformCapabilitiesAnalytics `json:"analytics" url:"analytics"`
-	FollowUps *FollowUpCapabilities          `json:"followUps,omitempty" url:"followUps,omitempty"`
-	LivePost  *LivePostCapabilities          `json:"livePost" url:"livePost"`
-	Lookups   []*LookupDescription           `json:"lookups" url:"lookups"`
-	Media     *MediaCapabilities             `json:"media" url:"media"`
-	Options   *PlatformCapabilitiesOptions   `json:"options" url:"options"`
-	Platform  Platform                       `json:"platform" url:"platform"`
-	Text      *TextCapabilities              `json:"text" url:"text"`
-	Version   int                            `json:"version" url:"version"`
+	Analytics   *PlatformCapabilitiesAnalytics `json:"analytics" url:"analytics"`
+	FollowUps   *FollowUpCapabilities          `json:"followUps,omitempty" url:"followUps,omitempty"`
+	LivePost    *LivePostCapabilities          `json:"livePost" url:"livePost"`
+	Lookups     []*LookupDescription           `json:"lookups" url:"lookups"`
+	Media       *MediaCapabilities             `json:"media" url:"media"`
+	Options     *PlatformCapabilitiesOptions   `json:"options" url:"options"`
+	Platform    Platform                       `json:"platform" url:"platform"`
+	PostFormats []*PostFormatCapabilities      `json:"postFormats,omitempty" url:"postFormats,omitempty"`
+	Text        *TextCapabilities              `json:"text" url:"text"`
+	Version     int                            `json:"version" url:"version"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2870,6 +2872,13 @@ func (p *PlatformCapabilities) GetPlatform() Platform {
 		return ""
 	}
 	return p.Platform
+}
+
+func (p *PlatformCapabilities) GetPostFormats() []*PostFormatCapabilities {
+	if p == nil {
+		return nil
+	}
+	return p.PostFormats
 }
 
 func (p *PlatformCapabilities) GetText() *TextCapabilities {
@@ -2949,6 +2958,13 @@ func (p *PlatformCapabilities) SetOptions(options *PlatformCapabilitiesOptions) 
 func (p *PlatformCapabilities) SetPlatform(platform Platform) {
 	p.Platform = platform
 	p.require(platformCapabilitiesFieldPlatform)
+}
+
+// SetPostFormats sets the PostFormats field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformCapabilities) SetPostFormats(postFormats []*PostFormatCapabilities) {
+	p.PostFormats = postFormats
+	p.require(platformCapabilitiesFieldPostFormats)
 }
 
 // SetText sets the Text field and marks it as non-optional;
@@ -3291,6 +3307,140 @@ func (p *PlatformCapabilitiesOptions) MarshalJSON() ([]byte, error) {
 }
 
 func (p *PlatformCapabilitiesOptions) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	postFormatCapabilitiesFieldDescription = big.NewInt(1 << 0)
+	postFormatCapabilitiesFieldMedia       = big.NewInt(1 << 1)
+	postFormatCapabilitiesFieldName        = big.NewInt(1 << 2)
+	postFormatCapabilitiesFieldSendsText   = big.NewInt(1 << 3)
+)
+
+type PostFormatCapabilities struct {
+	Description string             `json:"description" url:"description"`
+	Media       *MediaCapabilities `json:"media" url:"media"`
+	Name        string             `json:"name" url:"name"`
+	SendsText   bool               `json:"sendsText" url:"sendsText"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostFormatCapabilities) GetDescription() string {
+	if p == nil {
+		return ""
+	}
+	return p.Description
+}
+
+func (p *PostFormatCapabilities) GetMedia() *MediaCapabilities {
+	if p == nil {
+		return nil
+	}
+	return p.Media
+}
+
+func (p *PostFormatCapabilities) GetName() string {
+	if p == nil {
+		return ""
+	}
+	return p.Name
+}
+
+func (p *PostFormatCapabilities) GetSendsText() bool {
+	if p == nil {
+		return false
+	}
+	return p.SendsText
+}
+
+func (p *PostFormatCapabilities) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostFormatCapabilities) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetDescription sets the Description field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostFormatCapabilities) SetDescription(description string) {
+	p.Description = description
+	p.require(postFormatCapabilitiesFieldDescription)
+}
+
+// SetMedia sets the Media field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostFormatCapabilities) SetMedia(media *MediaCapabilities) {
+	p.Media = media
+	p.require(postFormatCapabilitiesFieldMedia)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostFormatCapabilities) SetName(name string) {
+	p.Name = name
+	p.require(postFormatCapabilitiesFieldName)
+}
+
+// SetSendsText sets the SendsText field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostFormatCapabilities) SetSendsText(sendsText bool) {
+	p.SendsText = sendsText
+	p.require(postFormatCapabilitiesFieldSendsText)
+}
+
+func (p *PostFormatCapabilities) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostFormatCapabilities
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostFormatCapabilities(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostFormatCapabilities) MarshalJSON() ([]byte, error) {
+	type embed PostFormatCapabilities
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostFormatCapabilities) String() string {
 	if p == nil {
 		return "<nil>"
 	}

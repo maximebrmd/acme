@@ -291,6 +291,7 @@ if typing.TYPE_CHECKING:
     from .excess import Excess
     from .external_id_taken_encoded import ExternalIdTakenEncoded
     from .external_id_taken_encoded_tag import ExternalIdTakenEncodedTag
+    from .facebook_format import FacebookFormat
     from .facebook_options import FacebookOptions
     from .failure_reason import FailureReason
     from .field_default import FieldDefault
@@ -355,6 +356,7 @@ if typing.TYPE_CHECKING:
     from .inbox_thread_not_found_encoded import InboxThreadNotFoundEncoded
     from .inbox_thread_page import InboxThreadPage
     from .instagram_connection import InstagramConnection
+    from .instagram_format import InstagramFormat
     from .instagram_options import InstagramOptions
     from .instagram_trial_reel import InstagramTrialReel
     from .invalid_date_range_encoded import InvalidDateRangeEncoded
@@ -562,6 +564,7 @@ if typing.TYPE_CHECKING:
     from .post_content_invalid_encoded import PostContentInvalidEncoded
     from .post_content_invalid_encoded_tag import PostContentInvalidEncodedTag
     from .post_draft import PostDraft
+    from .post_format_capabilities import PostFormatCapabilities
     from .post_metrics import PostMetrics
     from .post_not_found_encoded import PostNotFoundEncoded
     from .post_not_promotable_encoded import PostNotPromotableEncoded
@@ -1096,6 +1099,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Excess": ".excess",
     "ExternalIdTakenEncoded": ".external_id_taken_encoded",
     "ExternalIdTakenEncodedTag": ".external_id_taken_encoded_tag",
+    "FacebookFormat": ".facebook_format",
     "FacebookOptions": ".facebook_options",
     "FailureReason": ".failure_reason",
     "FieldDefault": ".field_default",
@@ -1156,6 +1160,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "InboxThreadNotFoundEncoded": ".inbox_thread_not_found_encoded",
     "InboxThreadPage": ".inbox_thread_page",
     "InstagramConnection": ".instagram_connection",
+    "InstagramFormat": ".instagram_format",
     "InstagramOptions": ".instagram_options",
     "InstagramTrialReel": ".instagram_trial_reel",
     "InvalidDateRangeEncoded": ".invalid_date_range_encoded",
@@ -1353,6 +1358,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostContentInvalidEncoded": ".post_content_invalid_encoded",
     "PostContentInvalidEncodedTag": ".post_content_invalid_encoded_tag",
     "PostDraft": ".post_draft",
+    "PostFormatCapabilities": ".post_format_capabilities",
     "PostMetrics": ".post_metrics",
     "PostNotFoundEncoded": ".post_not_found_encoded",
     "PostNotPromotableEncoded": ".post_not_promotable_encoded",
@@ -1912,6 +1918,7 @@ __all__ = [
     "Excess",
     "ExternalIdTakenEncoded",
     "ExternalIdTakenEncodedTag",
+    "FacebookFormat",
     "FacebookOptions",
     "FailureReason",
     "FieldDefault",
@@ -1972,6 +1979,7 @@ __all__ = [
     "InboxThreadNotFoundEncoded",
     "InboxThreadPage",
     "InstagramConnection",
+    "InstagramFormat",
     "InstagramOptions",
     "InstagramTrialReel",
     "InvalidDateRangeEncoded",
@@ -2169,6 +2177,7 @@ __all__ = [
     "PostContentInvalidEncoded",
     "PostContentInvalidEncodedTag",
     "PostDraft",
+    "PostFormatCapabilities",
     "PostMetrics",
     "PostNotFoundEncoded",
     "PostNotPromotableEncoded",

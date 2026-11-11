@@ -146,6 +146,7 @@ public class ValidateTest : BaseMockServerTest
                       "unit": "graphemes"
                     }
                   ],
+                  "textNotSent": true,
                   "violations": [
                     {
                       "_tag": "noChannels"
@@ -253,6 +254,7 @@ public class ValidateTest : BaseMockServerTest
                       "unit": "graphemes"
                     }
                   ],
+                  "textNotSent": true,
                   "violations": [
                     {
                       "_tag": "noChannels"
@@ -449,6 +451,7 @@ public class ValidateTest : BaseMockServerTest
                       "unit": "graphemes"
                     }
                   ],
+                  "textNotSent": true,
                   "violations": [
                     {
                       "_tag": "noChannels"

@@ -7,7 +7,7 @@ use Peal\Core\Json\JsonProperty;
 use Peal\Core\Types\ArrayType;
 
 /**
- * How a post goes out on an Instagram account. Scheduling needs none of them; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
+ * How a post goes out on an Instagram account. Scheduling needs none of them; `format` `story` makes it a story, sent without the post's text and taking none of the other options; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
  */
 class InstagramOptions extends JsonSerializableType
 {
@@ -28,6 +28,12 @@ class InstagramOptions extends JsonSerializableType
      */
     #[JsonProperty('coverMediaId')]
     public ?string $coverMediaId;
+
+    /**
+     * @var ?value-of<InstagramFormat> $format
+     */
+    #[JsonProperty('format')]
+    public ?string $format;
 
     /**
      * @var ?bool $shareToFeed
@@ -52,6 +58,7 @@ class InstagramOptions extends JsonSerializableType
      *   audioName?: ?string,
      *   collaborators?: ?array<string>,
      *   coverMediaId?: ?string,
+     *   format?: ?value-of<InstagramFormat>,
      *   shareToFeed?: ?bool,
      *   thumbOffsetMs?: ?int,
      *   trialReel?: ?value-of<InstagramTrialReel>,
@@ -63,6 +70,7 @@ class InstagramOptions extends JsonSerializableType
         $this->audioName = $values['audioName'] ?? null;
         $this->collaborators = $values['collaborators'] ?? null;
         $this->coverMediaId = $values['coverMediaId'] ?? null;
+        $this->format = $values['format'] ?? null;
         $this->shareToFeed = $values['shareToFeed'] ?? null;
         $this->thumbOffsetMs = $values['thumbOffsetMs'] ?? null;
         $this->trialReel = $values['trialReel'] ?? null;

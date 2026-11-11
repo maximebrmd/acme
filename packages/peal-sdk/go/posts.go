@@ -1980,29 +1980,31 @@ func (b *BulkResult) String() string {
 }
 
 var (
-	channelPreviewFieldChannelID  = big.NewInt(1 << 0)
-	channelPreviewFieldHashtags   = big.NewInt(1 << 1)
-	channelPreviewFieldLinks      = big.NewInt(1 << 2)
-	channelPreviewFieldMedia      = big.NewInt(1 << 3)
-	channelPreviewFieldMentions   = big.NewInt(1 << 4)
-	channelPreviewFieldParts      = big.NewInt(1 << 5)
-	channelPreviewFieldPlatform   = big.NewInt(1 << 6)
-	channelPreviewFieldText       = big.NewInt(1 << 7)
-	channelPreviewFieldTextCounts = big.NewInt(1 << 8)
-	channelPreviewFieldViolations = big.NewInt(1 << 9)
+	channelPreviewFieldChannelID   = big.NewInt(1 << 0)
+	channelPreviewFieldHashtags    = big.NewInt(1 << 1)
+	channelPreviewFieldLinks       = big.NewInt(1 << 2)
+	channelPreviewFieldMedia       = big.NewInt(1 << 3)
+	channelPreviewFieldMentions    = big.NewInt(1 << 4)
+	channelPreviewFieldParts       = big.NewInt(1 << 5)
+	channelPreviewFieldPlatform    = big.NewInt(1 << 6)
+	channelPreviewFieldText        = big.NewInt(1 << 7)
+	channelPreviewFieldTextCounts  = big.NewInt(1 << 8)
+	channelPreviewFieldTextNotSent = big.NewInt(1 << 9)
+	channelPreviewFieldViolations  = big.NewInt(1 << 10)
 )
 
 type ChannelPreview struct {
-	ChannelID  string              `json:"channelId" url:"channelId"`
-	Hashtags   *LimitedCount       `json:"hashtags" url:"hashtags"`
-	Links      *LimitedCount       `json:"links" url:"links"`
-	Media      *LimitedCount       `json:"media" url:"media"`
-	Mentions   *LimitedCount       `json:"mentions" url:"mentions"`
-	Parts      []*PartPreview      `json:"parts" url:"parts"`
-	Platform   Platform            `json:"platform" url:"platform"`
-	Text       string              `json:"text" url:"text"`
-	TextCounts []*TextCount        `json:"textCounts" url:"textCounts"`
-	Violations []*ContentViolation `json:"violations" url:"violations"`
+	ChannelID   string              `json:"channelId" url:"channelId"`
+	Hashtags    *LimitedCount       `json:"hashtags" url:"hashtags"`
+	Links       *LimitedCount       `json:"links" url:"links"`
+	Media       *LimitedCount       `json:"media" url:"media"`
+	Mentions    *LimitedCount       `json:"mentions" url:"mentions"`
+	Parts       []*PartPreview      `json:"parts" url:"parts"`
+	Platform    Platform            `json:"platform" url:"platform"`
+	Text        string              `json:"text" url:"text"`
+	TextCounts  []*TextCount        `json:"textCounts" url:"textCounts"`
+	TextNotSent *bool               `json:"textNotSent,omitempty" url:"textNotSent,omitempty"`
+	Violations  []*ContentViolation `json:"violations" url:"violations"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2072,6 +2074,13 @@ func (c *ChannelPreview) GetTextCounts() []*TextCount {
 		return nil
 	}
 	return c.TextCounts
+}
+
+func (c *ChannelPreview) GetTextNotSent() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.TextNotSent
 }
 
 func (c *ChannelPreview) GetViolations() []*ContentViolation {
@@ -2158,6 +2167,13 @@ func (c *ChannelPreview) SetText(text string) {
 func (c *ChannelPreview) SetTextCounts(textCounts []*TextCount) {
 	c.TextCounts = textCounts
 	c.require(channelPreviewFieldTextCounts)
+}
+
+// SetTextNotSent sets the TextNotSent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelPreview) SetTextNotSent(textNotSent *bool) {
+	c.TextNotSent = textNotSent
+	c.require(channelPreviewFieldTextNotSent)
 }
 
 // SetViolations sets the Violations field and marks it as non-optional;
