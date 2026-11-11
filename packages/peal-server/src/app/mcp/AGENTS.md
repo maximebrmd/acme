@@ -128,4 +128,7 @@
   change, what is left out stays) take the filters; `send_test_webhook`
   (`eventType` for a sample) and `redeliver_webhooks` (ids, or an
   endpoint's failed ones) are `openWorld`, as they make Peal call
-  receivers. No tool returns a secret but `create_webhook`'s answer.
+  receivers. No tool returns a secret but `create_webhook`'s answer, and
+  none a header's value: `create_webhook` and `update_webhook` take
+  `headers` (write-only, the whole list replaced), and answer
+  `headerNames`.

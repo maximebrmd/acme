@@ -169,4 +169,7 @@
   `--since`, `--until` and `--event` without `--failed`, names an
   endpoint's id given as a delivery, and ends as a refusal
   (`nothing_redelivered`) when nothing was sent again; `test --event` sends a
-  sample.
+  sample. `--header "Name: value"` (repeated) is checked against the
+  contract's `WebhookHeaderSchema` before any request, `update` sends the
+  whole list or `[]` with `--clear-headers`, and prose prints the names
+  only, never a value.
