@@ -1,8 +1,9 @@
 import { Array as Arr, Effect } from "effect";
 
+import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { MediaFile } from "#publishing/domain/media-file.ts";
-import { shownMedia } from "#publishing/domain/post-content.ts";
+import { referencedMedia } from "#publishing/domain/named-media.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
 import type { Actor } from "#shared/domain/access.ts";
@@ -53,16 +54,18 @@ export const channelsFor = Effect.fn("Publishing.channelsFor")(
 );
 
 /**
- * The files of the media the content shows in any of its parts, each once,
- * in its order. Fails with
- * UnknownMedia when it shows media the actor's posts may not: another
- * workspace's, or media that is not ready.
+ * The files the post depends on, each once, in its order: the media the
+ * content shows in any of its parts, then the files its options name on
+ * its channels (`referencedMedia`). Fails with UnknownMedia when one is a
+ * file the actor's posts may not use: another workspace's, or one that is
+ * not ready.
  */
 export const mediaFor = Effect.fn("Publishing.mediaFor")(function* mediaFor(
   actor: Actor,
-  content: PostContent
+  content: PostContent,
+  options: readonly ChannelOptions[] = []
 ) {
-  const requested = shownMedia(content).map(({ mediaId }) => mediaId);
+  const requested = referencedMedia(content, options);
 
   if (requested.length === 0) {
     const none: readonly MediaFile[] = [];

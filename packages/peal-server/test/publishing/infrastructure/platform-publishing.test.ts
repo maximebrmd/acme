@@ -68,6 +68,7 @@ const platformsOn = (instanceUrl: string) =>
         videoService: new URL(instanceUrl),
         xApi: new URL(instanceUrl),
         youtubeApi: new URL(instanceUrl),
+        youtubeDailyThumbnails: 100,
         youtubeDailyUploads: 100,
       })
     ),

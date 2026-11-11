@@ -973,7 +973,29 @@
         "categoryIdHint": "The number of a YouTube category, such as 22 for People & Blogs.",
         "categoryIdInvalid": "A category is a number, such as 22.",
         "notifySubscribers": "Notify subscribers",
-        "containsSyntheticMedia": "Contains altered or synthetic content that looks real"
+        "containsSyntheticMedia": "Contains altered or synthetic content that looks real",
+        "thumbnail": "Thumbnail",
+        "thumbnailHint": "A JPEG or PNG image of the library, 8 MB at most, set once the video is uploaded. YouTube takes custom thumbnails only from channels allowed them.",
+        "thumbnailInvalid": "Choose a JPEG or PNG image of the library, 8 MB at most.",
+        "license": "License",
+        "licenseHint": "The channel’s upload default unless you choose otherwise.",
+        "channelDefault": "The channel’s default",
+        "licenseYouTube": "Standard YouTube License",
+        "licenseCreativeCommon": "Creative Commons – Attribution",
+        "embeddable": "Embedding allowed",
+        "embeddableHint": "Whether other sites may embed the video. YouTube decides when not chosen.",
+        "embeddableYes": "Yes, other sites may embed it",
+        "embeddableNo": "No, keep it on YouTube",
+        "publicStatsViewable": "Public statistics",
+        "publicStatsViewableHint": "Whether anyone can see the video’s extended statistics on its page. YouTube decides when not chosen.",
+        "publicStatsViewableYes": "Yes, show them",
+        "publicStatsViewableNo": "No, keep them hidden",
+        "defaultLanguage": "Language of the title and description",
+        "defaultLanguageHint": "A language tag, as en or pt-BR.",
+        "defaultLanguageInvalid": "A language is a tag such as en or pt-BR.",
+        "recordingDate": "Recording date",
+        "recordingDateHint": "The day the video was recorded.",
+        "recordingDateInvalid": "Choose a day."
       },
       "googleBusiness": {
         "postType": "Post type",
@@ -1035,7 +1057,17 @@
         "noPhotos": "This server cannot post photos to TikTok: attach one video instead.",
         "processing": "Once published, the post may take a few minutes to process before it shows on the profile.",
         "consentMusic": "By posting, you agree to TikTok’s <music>Music Usage Confirmation</music>.",
-        "consentBranded": "By posting, you agree to TikTok’s <brand>Branded Content Policy</brand> and <music>Music Usage Confirmation</music>."
+        "consentBranded": "By posting, you agree to TikTok’s <brand>Branded Content Policy</brand> and <music>Music Usage Confirmation</music>.",
+        "videoCover": "Cover frame, in milliseconds",
+        "videoCoverHint": "For a video: the frame that becomes the cover, in milliseconds from its start, such as 1500. The first frame when left empty.",
+        "videoCoverInvalid": "A whole number of milliseconds within the video, such as 1500.",
+        "photoTitle": "Photo post title",
+        "photoTitleHint": "At most 90 characters. The post’s text is its description.",
+        "photoTitleInvalid": "A title is one line, 90 characters at most.",
+        "photoCover": "Cover photo",
+        "photoCoverHint": "The cover’s place among the photos: 0 for the first, 1 for the second, and so on. The first when left empty.",
+        "photoCoverInvalid": "A place among the photos: a whole number from 0, below the number of photos.",
+        "autoAddMusic": "Add music automatically"
       },
       "mastodon": {
         "accountDefault": "The account’s default",
@@ -1116,6 +1148,43 @@
         "paidPartnershipHint": "X labels every part of the thread as a paid promotion.",
         "madeWithAi": "Made with AI",
         "madeWithAiHint": "X labels each part with images or a video as containing AI-generated media."
+      },
+      "mediaNone": "No image chosen.",
+      "mediaLoading": "Reading the image…",
+      "mediaFailed": "The image could not be read: it may have been deleted from the library. Choose another, or remove it.",
+      "mediaChoose": "{label}: choose from the library",
+      "mediaReplace": "{label}: choose another",
+      "mediaRemove": "Remove",
+      "mediaPickerTitle": "{label}: choose an image",
+      "mediaPickerDescription": "Pick one ready image of the workspace’s library. Only those this option takes can be picked.",
+      "mediaUse": "Use this image",
+      "instagram": {
+        "shareToFeed": "Also share to the feed",
+        "shareToFeedHint": "For a reel: shown in the feed as well as in the Reels tab. Instagram decides when not chosen.",
+        "shareToFeedYes": "Yes, share it to the feed",
+        "shareToFeedNo": "No, the Reels tab only",
+        "cover": "Cover image",
+        "coverHint": "For a reel: a JPEG image of the library, 8 MB at most. It wins over the cover frame.",
+        "coverInvalid": "Choose a JPEG image of the library, 8 MB at most, for a post of one video.",
+        "thumbOffset": "Cover frame, in milliseconds",
+        "thumbOffsetHint": "For a reel: the frame that becomes the cover, in milliseconds from its start, such as 1500. The first frame when left empty.",
+        "thumbOffsetInvalid": "A whole number of milliseconds within the video, such as 1500.",
+        "audioName": "Audio name",
+        "audioNameHint": "For a reel: the name its audio shows, on one line, 100 characters at most. Instagram lets it be renamed once.",
+        "audioNameInvalid": "One line, 100 characters at most, for a post of one video.",
+        "trialReel": "Trial reel",
+        "trialReelHint": "For a reel: shown to accounts that do not follow you first, then shared with your followers when you choose, or when it performs well.",
+        "trialReelNone": "Not a trial reel",
+        "trialReelManual": "Share with followers when I choose",
+        "trialReelPerformance": "Share with followers if it performs well",
+        "collaborators": "Collaborators",
+        "collaboratorsHint": "Up to three usernames of other Instagram accounts, without @, separated by commas. Each account receives an invitation to co-author the post: name only accounts you mean to invite.",
+        "collaboratorsInvalid": "Each is an Instagram username, without @: letters, digits, periods and underscores, 30 at most, each once."
+      },
+      "facebook": {
+        "videoTitle": "Video title",
+        "videoTitleHint": "For a post with a video: one line, 255 characters at most.",
+        "videoTitleInvalid": "A title is one line, 255 characters at most, for a post with a video."
       }
     },
     "Calendar": {
@@ -1230,7 +1299,8 @@
       "notFound": "This post no longer exists.",
       "conflict": "The post changed meanwhile: reload it to see where it is."
     },
-    "keptPrivate": "YouTube made the video private, although it was to be seen by more people: the account's settings, or Google's restrictions on the server's API project, keep it so. Change its visibility in YouTube Studio."
+    "keptPrivate": "YouTube made the video private, although it was to be seen by more people: the account's settings, or Google's restrictions on the server's API project, keep it so. Change its visibility in YouTube Studio.",
+    "thumbnailNotSet": "The thumbnail was not set: the channel may not be allowed custom thumbnails, or YouTube refused the image."
   },
   "Media": {
     "page": {
@@ -1369,7 +1439,8 @@
       "notReady": "Not ready yet",
       "attach": "{count, plural, =0 {Attach} one {Attach # item} other {Attach # items}}",
       "cancel": "Cancel",
-      "close": "Close"
+      "close": "Close",
+      "notAccepted": "Not a file this option takes"
     },
     "problem": {
       "tooManyVideos": "Too many videos ({count} of {maximum})",

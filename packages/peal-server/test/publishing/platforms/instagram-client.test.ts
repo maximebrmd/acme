@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import { assert, describe, it } from "@effect/vitest";
 import { Context, Effect, Layer, Option } from "effect";
 
+import { InstagramOptions } from "#publishing/domain/instagram-options.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import {
@@ -71,6 +72,7 @@ describe("publishing on Instagram", () => {
       const [post] = graph.posts();
 
       assert.deepStrictEqual(container?.params, {
+        alt_text: "A synthetic picture",
         caption: "A caption #launch",
         image_url: `https://media.test/${photo.media.mediaId}`,
       });
@@ -137,6 +139,7 @@ describe("publishing on Instagram", () => {
 
       assert.strictEqual(result._tag, "published");
       assert.deepStrictEqual(image?.params, {
+        alt_text: "A synthetic picture",
         image_url: `https://media.test/${photo.media.mediaId}`,
         is_carousel_item: "true",
       });
@@ -434,6 +437,7 @@ describe("publishing on Instagram through Instagram Login", () => {
           platformPostId: PlatformPostIdSchema.make(post?.id ?? "missing"),
         });
         assert.deepStrictEqual(instagram.containers()[0]?.params, {
+          alt_text: "A synthetic picture",
           caption: "Straight from the account",
           image_url: `https://media.test/${photo.media.mediaId}`,
         });
@@ -577,5 +581,168 @@ describe("publishing on Instagram through Instagram Login", () => {
       assert.strictEqual(found._tag, "published");
       assert.lengthOf(instagram.posts(), 1);
     }).pipe(Effect.scoped)
+  );
+});
+
+describe("an Instagram post's options", () => {
+  it.live("give a reel its settings, a cover winning over a frame", () =>
+    Effect.gen(function* reel() {
+      const clip = testFile("video", 4096);
+      const cover = jpeg();
+
+      const { client, graph } = yield* onInstagram({ files: [clip, cover] });
+
+      yield* client.publish(
+        yield* outgoing({
+          accountId: instagramUserId,
+          media: [attached(clip)],
+          options: Option.some(
+            new InstagramOptions({
+              audioName: "Synthetic theme",
+              collaborators: ["synthetic.friend", "another_one"],
+              coverMediaId: cover.media.mediaId,
+              shareToFeed: false,
+              thumbOffsetMs: 1500,
+              trialReel: "performance",
+            })
+          ),
+        })
+      );
+
+      assert.deepStrictEqual(graph.containers()[0]?.params, {
+        audio_name: "Synthetic theme",
+        caption: "Hello from a synthetic account",
+        collaborators: '["synthetic.friend","another_one"]',
+        cover_url: `https://media.test/${cover.media.mediaId}`,
+        media_type: "REELS",
+        share_to_feed: "false",
+        trial_params: '{"graduation_strategy":"SS_PERFORMANCE"}',
+        video_url: `https://media.test/${clip.media.mediaId}`,
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("give a reel the frame chosen when no cover is", () =>
+    Effect.gen(function* frame() {
+      const clip = testFile("video", 4096);
+      const { client, graph } = yield* onInstagram({ files: [clip] });
+
+      yield* client.publish(
+        yield* outgoing({
+          accountId: instagramUserId,
+          media: [attached(clip)],
+          options: Option.some(
+            new InstagramOptions({ thumbOffsetMs: 1500, trialReel: "manual" })
+          ),
+        })
+      );
+
+      assert.deepStrictEqual(graph.containers()[0]?.params, {
+        caption: "Hello from a synthetic account",
+        media_type: "REELS",
+        thumb_offset: "1500",
+        trial_params: '{"graduation_strategy":"MANUAL"}',
+        video_url: `https://media.test/${clip.media.mediaId}`,
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "invite collaborators on a carousel's own container, alt text on its images only",
+    () =>
+      Effect.gen(function* carousel() {
+        const photo = jpeg();
+        const clip = testFile("video", 4096);
+        const { client, graph } = yield* onInstagram({ files: [photo, clip] });
+
+        yield* client.publish(
+          yield* outgoing({
+            accountId: instagramUserId,
+            media: [attached(photo, "A synthetic sunrise"), attached(clip)],
+            options: Option.some(
+              new InstagramOptions({ collaborators: ["synthetic.friend"] })
+            ),
+            text: "Both",
+          })
+        );
+
+        const [image, video, album] = graph.containers();
+
+        assert.deepStrictEqual(image?.params, {
+          alt_text: "A synthetic sunrise",
+          image_url: `https://media.test/${photo.media.mediaId}`,
+          is_carousel_item: "true",
+        });
+        assert.deepStrictEqual(video?.params, {
+          is_carousel_item: "true",
+          media_type: "VIDEO",
+          video_url: `https://media.test/${clip.media.mediaId}`,
+        });
+        assert.deepStrictEqual(album?.params, {
+          caption: "Both",
+          children: `${image?.id ?? ""},${video?.id ?? ""}`,
+          collaborators: '["synthetic.friend"]',
+          media_type: "CAROUSEL",
+        });
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("send no alt text on an image without one", () =>
+    Effect.gen(function* noAltText() {
+      const photo = jpeg();
+      const { client, graph } = yield* onInstagram({ files: [photo] });
+
+      yield* client.publish(
+        yield* outgoing({
+          accountId: instagramUserId,
+          media: [attached(photo, "")],
+          options: Option.some(
+            new InstagramOptions({ collaborators: ["synthetic.friend"] })
+          ),
+          text: "A caption",
+        })
+      );
+
+      assert.deepStrictEqual(graph.containers()[0]?.params, {
+        caption: "A caption",
+        collaborators: '["synthetic.friend"]',
+        image_url: `https://media.test/${photo.media.mediaId}`,
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  // Meta's error names no parameter in a code (its message is never read):
+  // a container refused while it names collaborators keeps Meta's code,
+  // as any container's refusal, and is not told to be about the option.
+  it.live(
+    "keep Meta's code when it refuses a post that names collaborators",
+    () =>
+      Effect.gen(function* refused() {
+        const photo = jpeg();
+        const { client, graph } = yield* onInstagram({ files: [photo] });
+
+        graph.script.push(`POST /v27.0/${instagramUserId}/media`, [
+          metaError(100),
+        ]);
+
+        const failure = yield* Effect.flip(
+          client.publish(
+            yield* outgoing({
+              accountId: instagramUserId,
+              media: [attached(photo)],
+              options: Option.some(
+                new InstagramOptions({ collaborators: ["synthetic.friend"] })
+              ),
+            })
+          )
+        );
+
+        assert.strictEqual(failure._tag, "MediaRejected");
+        assert.strictEqual(
+          "code" in failure ? failure.code : undefined,
+          "graph100"
+        );
+        assert.lengthOf(graph.posts(), 0);
+      }).pipe(Effect.scoped)
   );
 });

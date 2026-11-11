@@ -108,13 +108,19 @@ public class ThreadTest : BaseMockServerTest
                     "platform": "youtube",
                     "categoryId": "categoryId",
                     "containsSyntheticMedia": true,
+                    "defaultLanguage": "defaultLanguage",
+                    "embeddable": true,
+                    "license": "youtube",
                     "madeForKids": true,
                     "notifySubscribers": true,
                     "privacy": "public",
+                    "publicStatsViewable": true,
+                    "recordingDate": "recordingDate",
                     "tags": [
                       "tags",
                       "tags"
                     ],
+                    "thumbnailMediaId": "thumbnailMediaId",
                     "title": "title"
                   },
                   "platform": "x",
@@ -165,13 +171,19 @@ public class ThreadTest : BaseMockServerTest
                     "platform": "youtube",
                     "categoryId": "categoryId",
                     "containsSyntheticMedia": true,
+                    "defaultLanguage": "defaultLanguage",
+                    "embeddable": true,
+                    "license": "youtube",
                     "madeForKids": true,
                     "notifySubscribers": true,
                     "privacy": "public",
+                    "publicStatsViewable": true,
+                    "recordingDate": "recordingDate",
                     "tags": [
                       "tags",
                       "tags"
                     ],
+                    "thumbnailMediaId": "thumbnailMediaId",
                     "title": "title"
                   },
                   "platform": "x",

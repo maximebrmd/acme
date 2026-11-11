@@ -86,9 +86,18 @@ const targetView = (target: PostTarget, count: number): TargetView => {
     unconfirmedReason: status._tag === "unconfirmed" ? status.reason : null,
   };
 
-  return status._tag === "published" && status.keptPrivate === true
-    ? { ...view, keptPrivate: true }
-    : view;
+  // A published target's notes, each only when it holds.
+  let noted = view;
+
+  if (status._tag === "published" && status.keptPrivate === true) {
+    noted = { ...noted, keptPrivate: true };
+  }
+
+  if (status._tag === "published" && status.thumbnailNotSet === true) {
+    noted = { ...noted, thumbnailNotSet: true };
+  }
+
+  return noted;
 };
 
 // How a post was created or scheduled, as the contract describes it.

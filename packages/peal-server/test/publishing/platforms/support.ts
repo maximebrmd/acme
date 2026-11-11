@@ -605,8 +605,17 @@ export const uploadLedgerOf = (ledger: UploadLedger) =>
               byteSize: session.byteSize,
               finalPartSent: false,
               sessionUrl: Option.some(session.sessionUrl),
+              thumbnailSet: false,
               videoId: Option.none(),
             });
+          }),
+        thumbnailSet: (key) =>
+          Effect.sync(() => {
+            const found = ledger.sessions.get(key);
+
+            if (found !== undefined) {
+              ledger.sessions.set(key, { ...found, thumbnailSet: true });
+            }
           }),
       })
     ),
@@ -646,6 +655,7 @@ export const youtubeClientWith = Effect.fn("test.youtubeClient")(
   function* youtubeClientWith(options: {
     readonly api: string;
     readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly dailyThumbnails?: number;
     readonly dailyUploads?: number;
     readonly files?: readonly TestFile[];
     readonly ledger: UploadLedger;
@@ -656,6 +666,7 @@ export const youtubeClientWith = Effect.fn("test.youtubeClient")(
       api,
       apiUrl: new URL(options.api),
       chunkSize: 256 * 1024,
+      dailyThumbnails: options.dailyThumbnails ?? 100,
       dailyUploads: options.dailyUploads ?? 100,
       timing: testTiming,
       uploads: api,

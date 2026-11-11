@@ -27,6 +27,8 @@ import { mediaPage } from "#media/atoms.ts";
 const grid = "grid grid-cols-2 gap-3 sm:grid-cols-3";
 
 interface Choice {
+  /** Whether the media may be picked here, when only some may. */
+  readonly accepts: ((media: Media) => boolean) | undefined;
   /** Already in the post. */
   readonly attached: ReadonlySet<string>;
   /** Picked so far, in order. */
@@ -48,6 +50,7 @@ const MediaChoice = ({
   const order = choice.picked.findIndex(({ id }) => id === media.id) + 1;
   const attached = choice.attached.has(media.id);
   const ready = media.status._tag === "ready";
+  const fits = choice.accepts?.(media) ?? true;
   const full = order === 0 && choice.picked.length >= choice.room;
 
   const state = (() => {
@@ -59,6 +62,10 @@ const MediaChoice = ({
       return t("notReady");
     }
 
+    if (!fits) {
+      return t("notAccepted");
+    }
+
     return order === 0 ? null : t("picked", { order });
   })();
 
@@ -67,7 +74,7 @@ const MediaChoice = ({
       <button
         type="button"
         aria-pressed={order > 0}
-        disabled={attached || !ready || full}
+        disabled={attached || !ready || !fits || full}
         className="group/option border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-pressed:border-primary aria-pressed:ring-primary/30 flex w-full flex-col overflow-hidden rounded-lg border text-left outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60 aria-pressed:ring-3"
         onClick={() => {
           choice.onToggle(media);
@@ -187,26 +194,43 @@ const Pages = ({
   });
 };
 
+/**
+ * The words of a picker that chooses something else than the post's
+ * attachments, as an option's image: they replace the button's, the
+ * dialog's and the confirmation's, and the dialog counts no room.
+ */
+export interface MediaPickerTexts {
+  readonly attach: string;
+  readonly description: string;
+  readonly open: string;
+  readonly title: string;
+}
+
 interface MediaPickerProps {
+  /** Whether the media may be picked, when only some may: others show why not. */
+  readonly accepts?: (media: Media) => boolean;
   /** The media the post shows already. */
   readonly attached: readonly string[];
   readonly disabled: boolean;
   readonly onPick: (media: readonly Media[]) => void;
   /** How many more the post can show. */
   readonly room: number;
+  readonly texts?: MediaPickerTexts;
   readonly workspaceId: string;
 }
 
 /**
  * Picks images and videos from the workspace's library, newest first, in
  * the order the post should show them: only ready media, not yet in the
- * post, as many as it has room for.
+ * post, that `accepts` takes, as many as it has room for.
  */
 export const MediaPicker = ({
+  accepts,
   attached,
   disabled,
   onPick,
   room,
+  texts,
   workspaceId,
 }: MediaPickerProps) => {
   const t = useTranslations("PostMedia.picker");
@@ -221,6 +245,7 @@ export const MediaPicker = ({
   };
 
   const choice: Choice = {
+    accepts,
     attached: new Set(attached),
     onToggle: (media) => {
       setPicked((current) =>
@@ -239,17 +264,21 @@ export const MediaPicker = ({
         render={<Button variant="outline" disabled={disabled || room === 0} />}
       >
         <LibraryIcon aria-hidden data-icon="inline-start" />
-        {t("open")}
+        {texts?.open ?? t("open")}
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl" closeLabel={t("close")}>
         <DialogHeader>
-          <DialogTitle>{t("title")}</DialogTitle>
-          <DialogDescription>{t("description")}</DialogDescription>
+          <DialogTitle>{texts?.title ?? t("title")}</DialogTitle>
+          <DialogDescription>
+            {texts?.description ?? t("description")}
+          </DialogDescription>
         </DialogHeader>
         <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto p-1">
-          <output className="text-muted-foreground text-sm">
-            {t("room", { count: Math.max(0, room - picked.length) })}
-          </output>
+          {texts === undefined ? (
+            <output className="text-muted-foreground text-sm">
+              {t("room", { count: Math.max(0, room - picked.length) })}
+            </output>
+          ) : null}
           {open ? (
             <Pages
               choice={choice}
@@ -270,7 +299,7 @@ export const MediaPicker = ({
               handleOpenChange(false);
             }}
           >
-            {t("attach", { count: picked.length })}
+            {texts?.attach ?? t("attach", { count: picked.length })}
           </Button>
         </DialogFooter>
       </DialogContent>

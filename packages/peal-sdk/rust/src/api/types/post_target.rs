@@ -25,6 +25,9 @@ pub struct PostTarget {
     #[serde(default)]
     pub round: i64,
     pub status: PostTargetStatus,
+    #[serde(rename = "thumbnailNotSet")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thumbnail_not_set: Option<bool>,
     #[serde(rename = "unconfirmedReason")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unconfirmed_reason: Option<UnconfirmedReason>,
@@ -49,6 +52,7 @@ pub struct PostTargetBuilder {
     published_at: Option<String>,
     round: Option<i64>,
     status: Option<PostTargetStatus>,
+    thumbnail_not_set: Option<bool>,
     unconfirmed_reason: Option<UnconfirmedReason>,
 }
 
@@ -103,6 +107,11 @@ impl PostTargetBuilder {
         self
     }
 
+    pub fn thumbnail_not_set(mut self, value: bool) -> Self {
+        self.thumbnail_not_set = Some(value);
+        self
+    }
+
     pub fn unconfirmed_reason(mut self, value: UnconfirmedReason) -> Self {
         self.unconfirmed_reason = Some(value);
         self
@@ -135,6 +144,7 @@ impl PostTargetBuilder {
             status: self
                 .status
                 .ok_or_else(|| BuildError::missing_field("status"))?,
+            thumbnail_not_set: self.thumbnail_not_set,
             unconfirmed_reason: self.unconfirmed_reason,
         })
     }

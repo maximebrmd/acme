@@ -30,9 +30,11 @@ import type {
 const orNull = <A>(value: A | undefined): A | null => value ?? null;
 
 const fieldView = (field: FieldDescription<LookupName>): FieldView => ({
+  contentTypes: field.contentTypes ?? [],
   forbiddenCharacters: field.forbiddenCharacters ?? [],
   ifLeftOut: orNull(field.ifLeftOut),
   lookup: orNull(field.lookup),
+  maxByteSize: orNull(field.maxByteSize),
   maxLength: orNull(field.maxLength),
   maximum: orNull(field.maximum),
   minimum: orNull(field.minimum),

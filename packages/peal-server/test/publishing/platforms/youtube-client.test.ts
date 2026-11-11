@@ -7,7 +7,10 @@ import {
   quotaDayOf,
   untilQuotaReset,
 } from "#publishing/infrastructure/platforms/youtube/quota-day.ts";
-import { uploadsBucket } from "#publishing/infrastructure/platforms/youtube/youtube-client.ts";
+import {
+  thumbnailsBucket,
+  uploadsBucket,
+} from "#publishing/infrastructure/platforms/youtube/youtube-client.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
@@ -39,16 +42,26 @@ const kib = 1024;
 // Three parts of 256 KiB, the last one shorter.
 const video = testFile("video", 600 * kib);
 
-const finished = new YouTubeOptions({
+// An image of the library, chosen as the video's thumbnail.
+const thumbnail = testFile("image", 40 * kib, "image/png");
+
+// A WebP, which YouTube takes no thumbnail as.
+const webp = testFile("image", 40 * kib, "image/webp");
+
+const finishedFields = {
   categoryId: "22",
   madeForKids: false,
   tags: ["field notes", "launch"],
   title: "A synthetic launch video",
-});
+};
+
+const finished = new YouTubeOptions(finishedFields);
 
 // YouTube, and the client publishing to it as the synthetic channel.
 const onYouTube = Effect.fn("test.onYouTube")(function* onYouTube(
   options: {
+    readonly customThumbnails?: boolean;
+    readonly dailyThumbnails?: number;
     readonly dailyUploads?: number;
     readonly ledger?: UploadLedger;
     readonly privacy?: "private" | "public";
@@ -57,6 +70,7 @@ const onYouTube = Effect.fn("test.onYouTube")(function* onYouTube(
   } = {}
 ) {
   const youtube = yield* fakeYouTubeApi({
+    customThumbnails: options.customThumbnails ?? true,
     privacy: options.privacy ?? "public",
     processing: options.processing ?? { _tag: "processed", after: 1 },
     tokens: ["token-2", "token-1"],
@@ -74,8 +88,9 @@ const onYouTube = Effect.fn("test.onYouTube")(function* onYouTube(
   const client = yield* youtubeClientWith({
     api: youtube.url,
     credentials: Layer.succeedContext(credentials),
+    dailyThumbnails: options.dailyThumbnails ?? 100,
     dailyUploads: options.dailyUploads ?? 100,
-    files: [video],
+    files: [video, thumbnail, webp],
     ledger,
   });
 
@@ -278,6 +293,7 @@ describe("publishing on YouTube", () => {
         byteSize: video.media.byteSize,
         finalPartSent: false,
         sessionUrl: Option.some(location),
+        thumbnailSet: false,
         videoId: Option.none(),
       });
 
@@ -323,6 +339,7 @@ describe("publishing on YouTube", () => {
         sessionUrl: Option.some(
           `${youtube.youtube.url}/upload/youtube/v3/videos?uploadType=resumable&upload_id=${session.id}`
         ),
+        thumbnailSet: false,
         videoId: Option.none(),
       });
 
@@ -380,6 +397,7 @@ describe("publishing on YouTube", () => {
           sessionUrl: Option.some(
             `${youtube.url}/upload/youtube/v3/videos?upload_id=99`
           ),
+          thumbnailSet: false,
           videoId: Option.none(),
         });
 
@@ -398,6 +416,7 @@ describe("publishing on YouTube", () => {
           sessionUrl: Option.some(
             `${youtube.url}/upload/youtube/v3/videos?upload_id=98`
           ),
+          thumbnailSet: false,
           videoId: Option.none(),
         });
 
@@ -568,6 +587,240 @@ describe("publishing on YouTube", () => {
         new MediaRejected({ code: "oneVideoRequired" })
       );
       assert.strictEqual(youtube.requests().length, 0);
+    })
+  );
+});
+
+const thumbnailsSpent = (ledger: UploadLedger, sent: OutgoingPost) => {
+  const day = quotaDayOf(sent.startedAt);
+
+  return (
+    ledger.spent.get(
+      `${thumbnailsBucket}:${day.year}-${day.month}-${day.day}`
+    ) ?? 0
+  );
+};
+
+const thumbnailCalls = (requests: readonly PlatformRequest[]) =>
+  requests.filter(
+    ({ method, path }) =>
+      method === "POST" && path === "/upload/youtube/v3/thumbnails/set"
+  );
+
+const withThumbnail = new YouTubeOptions({
+  ...finishedFields,
+  thumbnailMediaId: thumbnail.media.mediaId,
+});
+
+describe("a YouTube video's options", () => {
+  it.live("send nothing new when none of the new ones is chosen", () =>
+    Effect.gen(function* unchanged() {
+      const { client, youtube } = yield* onYouTube();
+      const sent = yield* post();
+
+      yield* client.publish(sent);
+
+      const [opened] = sessionsOpened(youtube.requests());
+
+      assert(opened !== undefined);
+      assert.strictEqual(opened.query.get("part"), "snippet,status");
+      assert.strictEqual(
+        new TextDecoder().decode(opened.body),
+        // As before options were added, in YouTube's order.
+        `{"snippet":{"description":${JSON.stringify(sent.text)},"title":"A synthetic launch video","categoryId":"22","tags":["field notes","launch"]},"status":{"containsSyntheticMedia":false,"privacyStatus":"public","selfDeclaredMadeForKids":false}}`
+      );
+      assert.deepStrictEqual(thumbnailCalls(youtube.requests()), []);
+    })
+  );
+
+  it.live(
+    "name the licence, embedding, statistics, language and recording day",
+    () =>
+      Effect.gen(function* chosen() {
+        const { client, youtube } = yield* onYouTube();
+
+        const sent = yield* post(
+          {},
+          new YouTubeOptions({
+            ...finishedFields,
+            defaultLanguage: "fr-CA",
+            embeddable: false,
+            license: "creativeCommon",
+            publicStatsViewable: false,
+            recordingDate: "2026-11-27",
+          })
+        );
+
+        yield* client.publish(sent);
+
+        const [opened] = sessionsOpened(youtube.requests());
+
+        assert(opened !== undefined);
+        assert.strictEqual(
+          opened.query.get("part"),
+          "snippet,status,recordingDetails"
+        );
+        assert.deepStrictEqual(
+          jsonBodyOf(
+            Schema.Struct({
+              recordingDetails: Schema.Struct({ recordingDate: Schema.String }),
+              snippet: Schema.Struct({ defaultLanguage: Schema.String }),
+              status: Schema.Struct({
+                embeddable: Schema.Boolean,
+                license: Schema.String,
+                publicStatsViewable: Schema.Boolean,
+              }),
+            })
+          )(opened),
+          {
+            recordingDetails: { recordingDate: "2026-11-27T00:00:00.000Z" },
+            snippet: { defaultLanguage: "fr-CA" },
+            status: {
+              embeddable: false,
+              license: "creativeCommon",
+              publicStatsViewable: false,
+            },
+          }
+        );
+      })
+  );
+
+  it.live("set the thumbnail once the video is up, and journal it", () =>
+    Effect.gen(function* thumbnailSet() {
+      const { client, ledger, youtube } = yield* onYouTube();
+      const sent = yield* post({}, withThumbnail);
+
+      const result = yield* client.publish(sent);
+
+      assert.deepStrictEqual(result, published("synthVideo01"));
+
+      const [set] = youtube.thumbnails();
+
+      assert.strictEqual(set?.videoId, "synthVideo01");
+      assert.strictEqual(set?.contentType, "image/png");
+      assert.deepStrictEqual(set?.bytes, thumbnail.bytes);
+      assert.strictEqual(thumbnailsSpent(ledger, sent), 1);
+      assert.isTrue(ledger.sessions.get(sent.idempotencyKey)?.thumbnailSet);
+
+      // The video's own options' request is the same as without one.
+      const [opened] = sessionsOpened(youtube.requests());
+
+      assert.strictEqual(opened?.query.get("part"), "snippet,status");
+    })
+  );
+
+  it.live(
+    "leave the video published without it when the channel may not set one",
+    () =>
+      Effect.gen(function* forbidden() {
+        const { client, ledger, youtube } = yield* onYouTube({
+          customThumbnails: false,
+        });
+
+        const sent = yield* post({}, withThumbnail);
+        const result = yield* client.publish(sent);
+
+        assert.deepStrictEqual(result, {
+          ...published("synthVideo01"),
+          thumbnailNotSet: true,
+        });
+        assert.strictEqual(youtube.videos().length, 1);
+        assert.strictEqual(sessionsOpened(youtube.requests()).length, 1);
+        assert.isFalse(ledger.sessions.get(sent.idempotencyKey)?.thumbnailSet);
+      })
+  );
+
+  it.live(
+    "leave it unset when YouTube refuses the image or limits the channel",
+    () =>
+      Effect.gen(function* refused() {
+        for (const answer of [
+          { reason: "invalidImage", status: 400 },
+          { reason: "uploadRateLimitExceeded", status: 429 },
+        ]) {
+          const { client, youtube } = yield* onYouTube();
+
+          youtube.script.push("POST /upload/youtube/v3/thumbnails/set", [
+            youtube.googleError(answer.status, answer.reason),
+          ]);
+
+          const result = yield* client.publish(yield* post({}, withThumbnail));
+
+          assert.deepStrictEqual(result, {
+            ...published("synthVideo01"),
+            thumbnailNotSet: true,
+          });
+          assert.strictEqual(youtube.videos().length, 1);
+          assert.strictEqual(thumbnailCalls(youtube.requests()).length, 1);
+        }
+      })
+  );
+
+  it.live(
+    "send no thumbnail past the day's, nor one of a type YouTube refuses",
+    () =>
+      Effect.gen(function* notSent() {
+        const spent = yield* onYouTube({ dailyThumbnails: 0 });
+
+        assert.deepStrictEqual(
+          yield* spent.client.publish(yield* post({}, withThumbnail)),
+          { ...published("synthVideo01"), thumbnailNotSet: true }
+        );
+        assert.deepStrictEqual(thumbnailCalls(spent.youtube.requests()), []);
+
+        const other = yield* onYouTube();
+
+        assert.deepStrictEqual(
+          yield* other.client.publish(
+            yield* post(
+              {},
+              new YouTubeOptions({
+                ...finishedFields,
+                thumbnailMediaId: webp.media.mediaId,
+              })
+            )
+          ),
+          { ...published("synthVideo01"), thumbnailNotSet: true }
+        );
+        assert.deepStrictEqual(thumbnailCalls(other.youtube.requests()), []);
+      })
+  );
+
+  it.live("leave it unset when its file is gone", () =>
+    Effect.gen(function* gone() {
+      const { client, youtube } = yield* onYouTube();
+
+      const result = yield* client.publish(
+        yield* post(
+          {},
+          new YouTubeOptions({
+            ...finishedFields,
+            thumbnailMediaId: testFile("image", kib).media.mediaId,
+          })
+        )
+      );
+
+      assert.deepStrictEqual(result, {
+        ...published("synthVideo01"),
+        thumbnailNotSet: true,
+      });
+      assert.deepStrictEqual(thumbnailCalls(youtube.requests()), []);
+    })
+  );
+
+  it.live("set it again on no resumed run once it is set", () =>
+    Effect.gen(function* resumed() {
+      const { client, ledger, youtube } = yield* onYouTube();
+      const sent = yield* post({}, withThumbnail);
+
+      yield* client.publish(sent);
+
+      const again = yield* client.resume(sent);
+
+      assert.deepStrictEqual(again, published("synthVideo01"));
+      assert.strictEqual(youtube.thumbnails().length, 1);
+      assert.strictEqual(thumbnailsSpent(ledger, sent), 1);
+      assert.strictEqual(sessionsOpened(youtube.requests()).length, 1);
     })
   );
 });

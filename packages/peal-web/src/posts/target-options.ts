@@ -1,9 +1,14 @@
 import { Match, Option, Result, Schema } from "effect";
 import type { useTranslations } from "next-intl";
 import {
+  instagramCoverTypes,
   LinkedInMentionSchema,
   maxBlueskyLanguages,
+  maxFacebookVideoTitleLength,
   maxGoogleBusinessTitleLength,
+  maxInstagramAudioNameLength,
+  maxInstagramCollaborators,
+  maxInstagramCoverByteSize,
   maxLinkedInDocumentTitleLength,
   maxLinkedInLinkDescriptionLength,
   maxLinkedInLinkTitleLength,
@@ -14,23 +19,73 @@ import {
   maxPinterestTitleLength,
   maxThreadsLinkLength,
   maxThreadsTopicTagLength,
+  maxTikTokPhotoTitleLength,
   maxYouTubeTagsLength,
+  maxYouTubeThumbnailByteSize,
   maxYouTubeTitleLength,
   TargetOptionsSchema,
+  youTubeThumbnailTypes,
 } from "peal-contract";
 import type {
   ChannelOptions,
   ContentViolation,
   LinkedInMention,
+  MediaKind,
   OptionsPlatform,
   Platform,
   Post,
   TargetOptions,
 } from "peal-contract";
 
+import type { AttachedMedia } from "#posts/media-fit.ts";
+
 // The options a post has on a channel whose platform takes some, as the
 // composer shows them: a field description per platform, the values the
 // member edits, and the options the API takes from them.
+
+/**
+ * The media a field is for: a post with a video among its media
+ * (`video`), a post of images only (`photos`), or a post of one video
+ * alone (`reel`, as Instagram makes it).
+ */
+export type MediaCondition = "photos" | "reel" | "video";
+
+/**
+ * The kinds of the post's media, in order, as the fields that follow them
+ * read it; unknown (`undefined`) while they are read, which shows every
+ * field.
+ */
+export type PostMediaKinds = readonly MediaKind[] | undefined;
+
+/**
+ * The kinds of the post's attachments, once each is read: unknown while
+ * one is not, so every field shows until then.
+ */
+export const mediaKindsOf = (
+  attached: readonly AttachedMedia[]
+): PostMediaKinds => {
+  const kinds = attached.flatMap(({ media }) =>
+    Option.match(media, { onNone: () => [], onSome: ({ kind }) => [kind] })
+  );
+
+  return kinds.length === attached.length ? kinds : undefined;
+};
+
+/** Whether the post's media are those a field is for. */
+export const matchesMedia = (
+  condition: MediaCondition,
+  media: readonly MediaKind[]
+): boolean => {
+  if (condition === "video") {
+    return media.includes("video");
+  }
+
+  if (condition === "reel") {
+    return media.length === 1 && media[0] === "video";
+  }
+
+  return media.length > 0 && media.every((kind) => kind === "image");
+};
 
 /** A message of the `Posts.Options` namespace. */
 export type OptionsText = Parameters<
@@ -58,13 +113,32 @@ interface Described {
         readonly values: readonly string[];
       }
     | { readonly filled: true; readonly name: string };
+  /**
+   * The field shows, and its value is sent, only on a post of these media:
+   * a TikTok cover frame on a video, a reel's audio on one video.
+   */
+  readonly shownFor?: MediaCondition;
 }
 
-/** One line of text; `maxLength` characters (code points) at most. */
+/**
+ * One line of text; `maxLength` characters (code points) at most. With
+ * `date`, a day, as `2026-11-27`.
+ */
 export interface TextField extends Described {
+  readonly date?: true;
   readonly kind: "text";
   readonly maxLength?: number;
   readonly required?: true;
+}
+
+/**
+ * A file of the workspace's library, by its id: one of `contentTypes`,
+ * `maxByteSize` bytes at most.
+ */
+export interface MediaField extends Described {
+  readonly contentTypes: readonly string[];
+  readonly kind: "media";
+  readonly maxByteSize: number;
 }
 
 /** Tags, typed separated by commas: `maximum` of them at most. */
@@ -151,6 +225,7 @@ export type OptionField =
   | ChoiceField
   | LocalTimeField
   | LookupField
+  | MediaField
   | NumberField
   | MentionsField
   | TagsField
@@ -234,6 +309,17 @@ export const optionFields = {
       kind: "toggle",
       label: "bluesky.disableQuotes",
       name: "disableQuotes",
+    },
+  ],
+  facebook: [
+    {
+      hint: "facebook.videoTitleHint",
+      invalid: "facebook.videoTitleInvalid",
+      kind: "text",
+      label: "facebook.videoTitle",
+      maxLength: maxFacebookVideoTitleLength,
+      name: "videoTitle",
+      shownFor: "video",
     },
   ],
   googleBusiness: [
@@ -328,6 +414,65 @@ export const optionFields = {
       label: "googleBusiness.terms",
       name: "terms",
       shownWith: offered,
+    },
+  ],
+  instagram: [
+    {
+      hint: "instagram.shareToFeedHint",
+      kind: "yesNo",
+      label: "instagram.shareToFeed",
+      name: "shareToFeed",
+      no: "instagram.shareToFeedNo",
+      shownFor: "reel",
+      yes: "instagram.shareToFeedYes",
+    },
+    {
+      contentTypes: instagramCoverTypes,
+      hint: "instagram.coverHint",
+      invalid: "instagram.coverInvalid",
+      kind: "media",
+      label: "instagram.cover",
+      maxByteSize: maxInstagramCoverByteSize,
+      name: "coverMediaId",
+      shownFor: "reel",
+    },
+    {
+      hint: "instagram.thumbOffsetHint",
+      invalid: "instagram.thumbOffsetInvalid",
+      kind: "number",
+      label: "instagram.thumbOffset",
+      minimum: 0,
+      name: "thumbOffsetMs",
+      shownFor: "reel",
+    },
+    {
+      hint: "instagram.audioNameHint",
+      invalid: "instagram.audioNameInvalid",
+      kind: "text",
+      label: "instagram.audioName",
+      maxLength: maxInstagramAudioNameLength,
+      name: "audioName",
+      shownFor: "reel",
+    },
+    {
+      choices: [
+        { label: "instagram.trialReelManual", value: "manual" },
+        { label: "instagram.trialReelPerformance", value: "performance" },
+      ],
+      hint: "instagram.trialReelHint",
+      kind: "choice",
+      label: "instagram.trialReel",
+      name: "trialReel",
+      none: "instagram.trialReelNone",
+      shownFor: "reel",
+    },
+    {
+      hint: "instagram.collaboratorsHint",
+      invalid: "instagram.collaboratorsInvalid",
+      kind: "tags",
+      label: "instagram.collaborators",
+      maximum: maxInstagramCollaborators,
+      name: "collaborators",
     },
   ],
   linkedin: [
@@ -590,6 +735,41 @@ export const optionFields = {
       label: "tiktok.aiGenerated",
       name: "aiGenerated",
     },
+    {
+      hint: "tiktok.videoCoverHint",
+      invalid: "tiktok.videoCoverInvalid",
+      kind: "number",
+      label: "tiktok.videoCover",
+      minimum: 0,
+      name: "videoCoverTimestampMs",
+      shownFor: "video",
+    },
+    {
+      hint: "tiktok.photoTitleHint",
+      invalid: "tiktok.photoTitleInvalid",
+      kind: "text",
+      label: "tiktok.photoTitle",
+      maxLength: maxTikTokPhotoTitleLength,
+      name: "photoTitle",
+      shownFor: "photos",
+    },
+    {
+      hint: "tiktok.photoCoverHint",
+      invalid: "tiktok.photoCoverInvalid",
+      kind: "number",
+      label: "tiktok.photoCover",
+      minimum: 0,
+      name: "photoCoverIndex",
+      shownFor: "photos",
+    },
+    {
+      // TikTok adds no music when it is left out.
+      initial: false,
+      kind: "toggle",
+      label: "tiktok.autoAddMusic",
+      name: "autoAddMusic",
+      shownFor: "photos",
+    },
   ],
   x: [
     {
@@ -691,6 +871,57 @@ export const optionFields = {
       kind: "toggle",
       label: "youtube.containsSyntheticMedia",
       name: "containsSyntheticMedia",
+    },
+    {
+      contentTypes: youTubeThumbnailTypes,
+      hint: "youtube.thumbnailHint",
+      invalid: "youtube.thumbnailInvalid",
+      kind: "media",
+      label: "youtube.thumbnail",
+      maxByteSize: maxYouTubeThumbnailByteSize,
+      name: "thumbnailMediaId",
+    },
+    {
+      choices: [
+        { label: "youtube.licenseYouTube", value: "youtube" },
+        { label: "youtube.licenseCreativeCommon", value: "creativeCommon" },
+      ],
+      hint: "youtube.licenseHint",
+      kind: "choice",
+      label: "youtube.license",
+      name: "license",
+      none: "youtube.channelDefault",
+    },
+    {
+      hint: "youtube.embeddableHint",
+      kind: "yesNo",
+      label: "youtube.embeddable",
+      name: "embeddable",
+      no: "youtube.embeddableNo",
+      yes: "youtube.embeddableYes",
+    },
+    {
+      hint: "youtube.publicStatsViewableHint",
+      kind: "yesNo",
+      label: "youtube.publicStatsViewable",
+      name: "publicStatsViewable",
+      no: "youtube.publicStatsViewableNo",
+      yes: "youtube.publicStatsViewableYes",
+    },
+    {
+      hint: "youtube.defaultLanguageHint",
+      invalid: "youtube.defaultLanguageInvalid",
+      kind: "text",
+      label: "youtube.defaultLanguage",
+      name: "defaultLanguage",
+    },
+    {
+      date: true,
+      hint: "youtube.recordingDateHint",
+      invalid: "youtube.recordingDateInvalid",
+      kind: "text",
+      label: "youtube.recordingDate",
+      name: "recordingDate",
     },
   ],
 } satisfies { readonly [P in OptionsPlatform]: readonly OptionField[] };
@@ -798,6 +1029,7 @@ const valueOf = (
       choice: () => decodeText(stored),
       localTime: () => decodeText(stored),
       lookup: () => decodeText(stored),
+      media: () => decodeText(stored),
       mentions: () => decodeMentions(stored).pipe(Option.map(mentionsText)),
       number: () => decodeNumber(stored).pipe(Option.map(String)),
       tags: () =>
@@ -813,15 +1045,26 @@ const initialOf = (field: OptionField): Option.Option<boolean | string> =>
   field.kind === "toggle" ? Option.some(field.initial) : Option.none();
 
 /**
- * Whether the field shows with these values: always, or while the field it
- * depends on, itself shown, holds one of the values it shows with.
+ * Whether the field shows with these values and the post's media: always,
+ * or while the field it depends on, itself shown, holds one of the values
+ * it shows with, and on the media it is for (every field while the media
+ * are unknown).
  */
 export const isShown = (
   platform: Platform,
   field: OptionField,
-  values: OptionValues
+  values: OptionValues,
+  media?: PostMediaKinds
 ): boolean => {
-  const { shownWith } = field;
+  const { shownFor, shownWith } = field;
+
+  if (
+    shownFor !== undefined &&
+    media !== undefined &&
+    !matchesMedia(shownFor, media)
+  ) {
+    return false;
+  }
 
   if (shownWith === undefined) {
     return true;
@@ -831,7 +1074,7 @@ export const isShown = (
     ({ name }) => name === shownWith.name
   );
 
-  if (governing !== undefined && !isShown(platform, governing, values)) {
+  if (governing !== undefined && !isShown(platform, governing, values, media)) {
     return false;
   }
 
@@ -1014,7 +1257,8 @@ const decodeOptions = Schema.decodeUnknownOption(TargetOptionsSchema);
 // so one wrong field never hides the others.
 const filledOf = (
   platform: Platform,
-  values: OptionValues
+  values: OptionValues,
+  media: PostMediaKinds
 ): Result.Result<
   readonly (readonly [string, OptionValue])[],
   readonly OptionProblem[]
@@ -1023,7 +1267,7 @@ const filledOf = (
   const problems: OptionProblem[] = [];
 
   for (const field of fieldsOf(platform)) {
-    if (isShown(platform, field, values)) {
+    if (isShown(platform, field, values, media)) {
       const option = optionOf(field, values[field.name]);
 
       if (Result.isFailure(option)) {
@@ -1047,13 +1291,15 @@ const filledOf = (
  * The options the values give on a channel of the platform, as the API
  * takes them, none on a platform that takes no options; or, when the
  * contract would refuse some field as filled in, what is wrong with each.
- * Never none for options that were filled in.
+ * Never none for options that were filled in. A field the post's `media`
+ * hide is not sent; without them, every field is.
  */
 export const optionsOf = (
   platform: Platform,
-  values: OptionValues
+  values: OptionValues,
+  media?: PostMediaKinds
 ): Result.Result<Option.Option<TargetOptions>, readonly OptionProblem[]> =>
-  filledOf(platform, values).pipe(
+  filledOf(platform, values, media).pipe(
     Result.flatMap((filled) => {
       const options = decodeOptions({
         ...Object.fromEntries(filled),
@@ -1074,10 +1320,11 @@ export const optionsOf = (
 /** What is wrong with the values on a channel of the platform, by field. */
 export const problemsByField = (
   platform: Platform,
-  values: OptionValues
+  values: OptionValues,
+  media?: PostMediaKinds
 ): ReadonlyMap<string, OptionProblem> =>
   new Map(
-    Result.match(optionsOf(platform, values), {
+    Result.match(optionsOf(platform, values, media), {
       onFailure: (problems) =>
         problems.map((problem) => [problem.field, problem] as const),
       onSuccess: () => [],
@@ -1101,10 +1348,10 @@ export interface ChannelOptionsState {
 }
 
 // What leaving the options out gives on a new target, as the fields show
-// it: every box as its field says.
-const leftOutOf = (platform: Platform): string =>
+// it with the post's media: every box shown as its field says.
+const leftOutOf = (platform: Platform, media: PostMediaKinds): string =>
   JSON.stringify(
-    optionsOf(platform, initialValues(platform)).pipe(
+    optionsOf(platform, initialValues(platform), media).pipe(
       Result.getOrElse(() => Option.none<TargetOptions>()),
       Option.getOrUndefined
     )
@@ -1113,33 +1360,39 @@ const leftOutOf = (platform: Platform): string =>
 // Whether the options choose anything leaving them out does not give.
 const chooses = (
   platform: Platform,
-  options: Option.Option<TargetOptions>
+  options: Option.Option<TargetOptions>,
+  media: PostMediaKinds
 ): options is Option.Some<TargetOptions> =>
   Option.isSome(options) &&
-  JSON.stringify(options.value) !== leftOutOf(platform);
+  JSON.stringify(options.value) !== leftOutOf(platform, media);
 
 /**
  * The options of the post on each of these channels whose platform takes
  * some and where the member chose one at least, and what is wrong with
  * those filled in. A channel where nothing was chosen gets no entry, so a
  * new post takes the channel's default options, as it does through the
- * API.
+ * API. A field the post's `media` hide is not sent.
  */
 export const channelOptionsOf = (
   channels: readonly { readonly id: string; readonly platform: Platform }[],
-  values: ValuesByChannel
+  values: ValuesByChannel,
+  media?: PostMediaKinds
 ): ChannelOptionsState => {
   const options: ChannelOptions[] = [];
   const problems: ChannelOptionProblem[] = [];
 
   for (const { id, platform } of channels) {
-    const given = optionsOf(platform, values[id] ?? initialValues(platform));
+    const given = optionsOf(
+      platform,
+      values[id] ?? initialValues(platform),
+      media
+    );
 
     if (Result.isFailure(given)) {
       problems.push(
         ...given.failure.map((problem) => ({ ...problem, channelId: id }))
       );
-    } else if (chooses(platform, given.success)) {
+    } else if (chooses(platform, given.success, media)) {
       options.push({ channelId: id, options: given.success.value });
     }
   }

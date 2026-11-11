@@ -734,6 +734,7 @@ CREATE TABLE "publishing"."post_targets" (
 	"round" integer DEFAULT 1 NOT NULL,
 	"started_at" timestamp with time zone,
 	"status" text NOT NULL,
+	"thumbnail_not_set" boolean DEFAULT false NOT NULL,
 	"unconfirmed_reason" text,
 	CONSTRAINT "post_targets_post_channel" UNIQUE("post_id","channel_id")
 );
@@ -842,6 +843,7 @@ CREATE TABLE "publishing"."upload_sessions" (
 	"idempotency_key" text PRIMARY KEY,
 	"opened_at" timestamp with time zone NOT NULL,
 	"session_url" text,
+	"thumbnail_set" boolean DEFAULT false NOT NULL,
 	"video_id" text
 );
 --> statement-breakpoint

@@ -3,14 +3,20 @@
 import * as Peal from "../index.js";
 
 /**
- * How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`.
+ * How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`; `thumbnailMediaId` names an image of the library, set once the video is uploaded.
  */
 export interface YouTubeOptions {
     categoryId?: string | undefined;
     containsSyntheticMedia?: boolean | undefined;
+    defaultLanguage?: string | undefined;
+    embeddable?: boolean | undefined;
+    license?: Peal.YouTubeLicense | undefined;
     madeForKids?: boolean | undefined;
     notifySubscribers?: boolean | undefined;
     privacy?: Peal.YouTubePrivacy | undefined;
+    publicStatsViewable?: boolean | undefined;
+    recordingDate?: string | undefined;
     tags?: string[] | undefined;
+    thumbnailMediaId?: string | undefined;
     title?: string | undefined;
 }

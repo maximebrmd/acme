@@ -77,6 +77,8 @@ export interface PostRecord {
     readonly partsLive: number;
     readonly permalink: string | null;
     readonly status: string;
+    /** The video went live without the thumbnail its options named. */
+    readonly thumbnailNotSet: boolean;
   }[];
   readonly text: string;
   readonly textOverrides: readonly {

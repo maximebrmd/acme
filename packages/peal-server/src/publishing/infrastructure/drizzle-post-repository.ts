@@ -31,7 +31,10 @@ import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts"
 import { PostTarget } from "#publishing/domain/post-target.ts";
 import { Post } from "#publishing/domain/post.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
-import { TargetOptionsSchema } from "#publishing/domain/target-options.ts";
+import {
+  mediaOptionFields,
+  TargetOptionsSchema,
+} from "#publishing/domain/target-options.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { MediaAssetId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -122,7 +125,22 @@ const targetStatusOf = (row: TargetRow) => {
     startedAt: utc(row.startedAt),
   };
 
-  return row.keptPrivate ? { ...status, keptPrivate: true } : status;
+  // A published target's notes, each only when it holds: a status is
+  // decoded from this, and keeps no note it lacks.
+  let noted: typeof status & {
+    readonly keptPrivate?: true;
+    readonly thumbnailNotSet?: true;
+  } = status;
+
+  if (row.keptPrivate) {
+    noted = { ...noted, keptPrivate: true };
+  }
+
+  if (row.thumbnailNotSet) {
+    noted = { ...noted, thumbnailNotSet: true };
+  }
+
+  return noted;
 };
 
 // The parts that went live, as their column holds them: JSON.
@@ -242,6 +260,7 @@ const targetColumns = (status: PostTargetStatus) => {
     platformPostId: null,
     startedAt: null,
     status: status._tag,
+    thumbnailNotSet: false,
     unconfirmedReason: null,
   };
 
@@ -257,7 +276,13 @@ const targetColumns = (status: PostTargetStatus) => {
       finishedAt: date(failedAt),
     }),
     pending: () => cleared,
-    published: ({ keptPrivate, permalink, platformPostId, publishedAt }) => ({
+    published: ({
+      keptPrivate,
+      permalink,
+      platformPostId,
+      publishedAt,
+      thumbnailNotSet,
+    }) => ({
       ...cleared,
       finishedAt: date(publishedAt),
       keptPrivate: keptPrivate === true,
@@ -266,6 +291,7 @@ const targetColumns = (status: PostTargetStatus) => {
       listedAt: date(publishedAt),
       permalink: Option.getOrNull(permalink),
       platformPostId: Option.getOrNull(platformPostId),
+      thumbnailNotSet: thumbnailNotSet === true,
     }),
     publishing: ({ cancelRequested, startedAt }) => ({
       ...cleared,
@@ -357,10 +383,18 @@ const statusName = (status: PostStatus | PostTargetStatus) => status._tag;
 // What a post's `media` column holds for one attachment, and its
 // `follow_ups` for a part that shows it, to find the posts that show it in
 // any part.
+// A post shows the media in a part, or one of its targets' options names
+// it (a thumbnail, a cover).
 const showingMedia = (mediaId: MediaAssetId) =>
   or(
     sql`${posts.media} @> ${JSON.stringify([{ mediaId }])}::jsonb`,
-    sql`${posts.followUps} @> ${JSON.stringify([{ media: [{ mediaId }] }])}::jsonb`
+    sql`${posts.followUps} @> ${JSON.stringify([{ media: [{ mediaId }] }])}::jsonb`,
+    sql`EXISTS (SELECT 1 FROM ${postTargets} WHERE ${postTargets.postId} = ${posts.id} AND (${or(
+      ...mediaOptionFields.map(
+        (field) =>
+          sql`${postTargets.options} @> ${JSON.stringify({ [field]: mediaId })}::jsonb`
+      )
+    )}))`
   );
 
 /** Posts and targets in the publishing schema, through Drizzle. */

@@ -2,6 +2,9 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FieldDescription {
+    #[serde(rename = "contentTypes")]
+    #[serde(default)]
+    pub content_types: Vec<String>,
     #[serde(rename = "forbiddenCharacters")]
     #[serde(default)]
     pub forbidden_characters: Vec<String>,
@@ -10,6 +13,9 @@ pub struct FieldDescription {
     pub if_left_out: Option<FieldDefault>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lookup: Option<LookupName>,
+    #[serde(rename = "maxByteSize")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_byte_size: Option<i64>,
     #[serde(rename = "maxLength")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_length: Option<i64>,
@@ -37,9 +43,11 @@ impl FieldDescription {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct FieldDescriptionBuilder {
+    content_types: Option<Vec<String>>,
     forbidden_characters: Option<Vec<String>>,
     if_left_out: Option<FieldDefault>,
     lookup: Option<LookupName>,
+    max_byte_size: Option<i64>,
     max_length: Option<i64>,
     maximum: Option<i64>,
     minimum: Option<i64>,
@@ -51,6 +59,11 @@ pub struct FieldDescriptionBuilder {
 }
 
 impl FieldDescriptionBuilder {
+    pub fn content_types(mut self, value: Vec<String>) -> Self {
+        self.content_types = Some(value);
+        self
+    }
+
     pub fn forbidden_characters(mut self, value: Vec<String>) -> Self {
         self.forbidden_characters = Some(value);
         self
@@ -63,6 +76,11 @@ impl FieldDescriptionBuilder {
 
     pub fn lookup(mut self, value: LookupName) -> Self {
         self.lookup = Some(value);
+        self
+    }
+
+    pub fn max_byte_size(mut self, value: i64) -> Self {
+        self.max_byte_size = Some(value);
         self
     }
 
@@ -108,6 +126,7 @@ impl FieldDescriptionBuilder {
 
     /// Consumes the builder and constructs a [`FieldDescription`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`content_types`](FieldDescriptionBuilder::content_types)
     /// - [`forbidden_characters`](FieldDescriptionBuilder::forbidden_characters)
     /// - [`name`](FieldDescriptionBuilder::name)
     /// - [`required`](FieldDescriptionBuilder::required)
@@ -115,11 +134,15 @@ impl FieldDescriptionBuilder {
     /// - [`values`](FieldDescriptionBuilder::values)
     pub fn build(self) -> Result<FieldDescription, BuildError> {
         Ok(FieldDescription {
+            content_types: self
+                .content_types
+                .ok_or_else(|| BuildError::missing_field("content_types"))?,
             forbidden_characters: self
                 .forbidden_characters
                 .ok_or_else(|| BuildError::missing_field("forbidden_characters"))?,
             if_left_out: self.if_left_out,
             lookup: self.lookup,
+            max_byte_size: self.max_byte_size,
             max_length: self.max_length,
             maximum: self.maximum,
             minimum: self.minimum,

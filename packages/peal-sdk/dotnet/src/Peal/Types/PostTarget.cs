@@ -41,6 +41,9 @@ public record PostTarget : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required PostTargetStatus Status { get; set; }
 
+    [JsonPropertyName("thumbnailNotSet")]
+    public bool? ThumbnailNotSet { get; set; }
+
     [JsonPropertyName("unconfirmedReason")]
     public UnconfirmedReason? UnconfirmedReason { get; set; }
 

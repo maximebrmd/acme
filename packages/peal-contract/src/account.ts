@@ -149,6 +149,8 @@ const ExportedPostSchema = Schema.Struct({
       partsLive: Schema.Int,
       permalink: nullable(Schema.String),
       status: Schema.String,
+      // The video went live without the thumbnail its options named.
+      thumbnailNotSet: Schema.Boolean,
     })
   ),
   text: Schema.String,

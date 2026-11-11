@@ -39,6 +39,7 @@ export const DrizzleUploadSessions = Layer.effect(
                   byteSize: found.byteSize,
                   finalPartSent: found.finalPartSent,
                   sessionUrl: Option.fromNullOr(found.sessionUrl),
+                  thumbnailSet: found.thumbnailSet,
                   videoId: Option.fromNullOr(found.videoId),
                 }))
               )
@@ -70,6 +71,12 @@ export const DrizzleUploadSessions = Layer.effect(
             setWhere: sql`${uploadSessions.finalPartSent} = false AND ${uploadSessions.videoId} IS NULL`,
             target: uploadSessions.idempotencyKey,
           })
+          .pipe(Effect.mapError(failed), Effect.asVoid),
+      thumbnailSet: (idempotencyKey) =>
+        db
+          .update(uploadSessions)
+          .set({ thumbnailSet: true })
+          .where(byKey(idempotencyKey))
           .pipe(Effect.mapError(failed), Effect.asVoid),
     });
   })

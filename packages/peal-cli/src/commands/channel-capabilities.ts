@@ -123,6 +123,10 @@ const mediaLines = ({ media }: PlatformCapabilities): readonly string[] => [
 
 const fieldNotes = (field: FieldDescription): string =>
   [
+    ...(field.contentTypes.length === 0
+      ? []
+      : [`the id of a library file: ${field.contentTypes.join(" or ")}`]),
+    ...limit(field.maxByteSize, (most) => `up to ${String(most)} bytes`),
     ...(field.values.length === 0 ? [] : [`one of ${field.values.join(", ")}`]),
     ...limit(field.maxLength, (most) => `up to ${String(most)} characters`),
     ...limit(field.minimum, (least) => `from ${String(least)}`),

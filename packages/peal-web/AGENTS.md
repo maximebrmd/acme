@@ -117,7 +117,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `#posts/target-options.ts` describes for each selected channel's platform
   (text, number, tags, choice, yes or no, toggle, and `lookup`, a choice
   among what a lookup answers for the account, shown `under` another once
-  that one is chosen; `initial`, `inverted` and `within` for TikTok's
+  that one is chosen; `media`, a file of the library by its id, picked
+  with `MediaPicker` among the `contentTypes` and size it takes;
+  `initial`, `inverted` and `within` for TikTok's
   boxes), turns them into the contract's `TargetOptions` with
   Schema, and shows each `option*` violation under its field. `optionsOf`
   checks each field filled in against the contract alone and answers what
@@ -136,10 +138,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   the disclosure's label, and TikTok's consent line, as its content sharing
   guidelines require. A field shown once another holds anything (X's
   sharing with followers, once a community is written) has
-  `shownWith: { filled: true }`. The counter takes the channel's options
-  (`fitOn`'s fourth argument), as a Mastodon content warning counts with
-  the text. On a Bluesky channel, `BlueskyChannelOptions` reads the
-  channel's capabilities (`channelCapabilities`) and closes each gate its
+  `shownWith: { filled: true }`. A field for some media only has
+  `shownFor` (`video`, `photos`, or `reel`: one video alone), read from
+  the attachments' kinds (`mediaKindsOf`, passed to `isShown`, `optionsOf`
+  and `channelOptionsOf`; every field shows while one is being read): like
+  one hidden by `shownWith`, it is not sent. The counter takes the
+  channel's options (`fitOn`'s fourth argument), as a Mastodon content
+  warning counts with the text. On a Bluesky channel,
+  `BlueskyChannelOptions` reads the channel's capabilities
+  (`channelCapabilities`) and closes each gate its
   account must be reconnected to set (`optionNeedsReconnect`,
   `#posts/bluesky-account.ts`), with the line saying so; a gate the post
   holds stays, to be taken off. On a Pinterest channel, `PinterestChannelOptions`

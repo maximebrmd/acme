@@ -82,6 +82,8 @@ const PublishedSchema = Schema.TaggedStruct("published", {
   // When the platform accepted the post, or for a post the user confirmed,
   // when the attempt that published it started.
   publishedAt: Schema.DateTimeUtc,
+  // It went live without the thumbnail its options named (YouTube).
+  thumbnailNotSet: Schema.optionalKey(Schema.Boolean),
 });
 
 const FailedSchema = Schema.TaggedStruct("failed", {

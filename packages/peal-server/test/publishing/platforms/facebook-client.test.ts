@@ -1,6 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Duration, Effect } from "effect";
+import { Duration, Effect, Option } from "effect";
 
+import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import {
@@ -152,6 +153,30 @@ describe("publishing on a Facebook Page", () => {
       assert.deepStrictEqual(graph.posts()[0]?.params, {
         description: "A clip",
         file_url: `https://media.test/${clip.media.mediaId}`,
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("gives a video the title its options choose", () =>
+    Effect.gen(function* titled() {
+      const clip = testFile("video", 4096);
+      const { client, graph } = yield* onPage({ files: [clip] });
+
+      yield* client.publish(
+        yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: Option.some(
+            new FacebookOptions({ videoTitle: "A synthetic title" })
+          ),
+          text: "A clip",
+        })
+      );
+
+      assert.deepStrictEqual(graph.posts()[0]?.params, {
+        description: "A clip",
+        file_url: `https://media.test/${clip.media.mediaId}`,
+        title: "A synthetic title",
       });
     }).pipe(Effect.scoped)
   );

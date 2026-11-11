@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Option } from "effect";
+import { DateTime, Option } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
 import { PostContentInvalid } from "peal-contract";
@@ -7,6 +7,7 @@ import type {
   AccountStanding,
   Channel,
   ContentViolation,
+  Media,
   TikTokCreator,
 } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -14,6 +15,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ComposerErrors } from "#components/posts/composer-errors.tsx";
 import {
   BlueskyOptionsFields,
+  MediaOptionView,
   PinterestOptionsFields,
   takesOptions,
   TargetOptionsPanel,
@@ -21,12 +23,13 @@ import {
   TikTokOptionsFields,
 } from "#components/posts/target-options-panel.tsx";
 import type {
+  ChosenMedia,
   LookupSource,
   TikTokAccountState,
 } from "#components/posts/target-options-panel.tsx";
 import { loadMessages } from "#i18n/messages.ts";
-import { initialValues } from "#posts/target-options.ts";
-import type { OptionValues } from "#posts/target-options.ts";
+import { fieldOf, initialValues } from "#posts/target-options.ts";
+import type { OptionValues, PostMediaKinds } from "#posts/target-options.ts";
 
 const channel = (
   id: string,
@@ -118,7 +121,9 @@ const violations: readonly ContentViolation[] = [
 
 const render = async (
   locale: Locale,
-  values: Readonly<Record<string, OptionValues>> = {}
+  values: Readonly<Record<string, OptionValues>> = {},
+  // A post without media: Facebook has nothing to ask.
+  media: PostMediaKinds = []
 ) => {
   const messages = await loadMessages(locale);
 
@@ -127,6 +132,7 @@ const render = async (
       <TargetOptionsPanel
         channels={[youtube, facebookPage, tiktok]}
         disabled={false}
+        media={media}
         valuesOf={(shown) => values[shown.id] ?? initialValues(shown.platform)}
         violations={violations}
         onChange={() => {
@@ -451,9 +457,12 @@ describe(TargetOptionsPanel, () => {
     ).resolves.not.toContain(reconnect);
   });
 
-  it("shows only for platforms that take options", () => {
-    expect(takesOptions([facebookPage])).toBeFalsy();
-    expect(takesOptions([facebookPage, youtube])).toBeTruthy();
+  it("shows only for platforms that take options on the post's media", () => {
+    expect(takesOptions([facebookPage], ["image"])).toBeFalsy();
+    expect(takesOptions([facebookPage], ["video"])).toBeTruthy();
+    // While the media are read, every field shows.
+    expect(takesOptions([facebookPage])).toBeTruthy();
+    expect(takesOptions([facebookPage, youtube], [])).toBeTruthy();
   });
 });
 
@@ -798,5 +807,246 @@ describe("the composer's errors about options", () => {
     expect(html).toContain(
       "Synthetic Bakery on Facebook: these options are for TikTok."
     );
+  });
+});
+
+const instagram = channel(
+  "00000000-0000-7000-8000-000000000007",
+  "instagram",
+  "peal.example"
+);
+
+const renderChannels = async (
+  locale: Locale,
+  channels: readonly Channel[],
+  media: PostMediaKinds,
+  values: OptionValues = {}
+) =>
+  renderToStaticMarkup(
+    <NextIntlClientProvider
+      locale={locale}
+      messages={await loadMessages(locale)}
+    >
+      <TargetOptionsPanel
+        channels={channels}
+        disabled={false}
+        media={media}
+        valuesOf={(shown) =>
+          shown.platform === "tiktok" ? initialValues("tiktok") : values
+        }
+        violations={[]}
+        onChange={() => {
+          // Rendered once, never changed.
+        }}
+      />
+    </NextIntlClientProvider>
+  );
+
+// The labels of TikTok's media fields a render shows, in either language.
+const tiktokLabelsIn = (html: string) =>
+  [
+    "Photo post title",
+    "Cover photo",
+    "Add music automatically",
+    "Cover frame, in milliseconds",
+    "Titre de la publication photo",
+    "Ajouter de la musique automatiquement",
+  ].filter((label) => html.includes(label));
+
+describe("fields that follow the post's media", () => {
+  it("show a reel's settings on one video, and collaborators on any post", async () => {
+    const reel = await renderChannels("en", [instagram], ["video"]);
+    const photos = await renderChannels("en", [instagram], ["image", "image"]);
+    const french = await renderChannels("fr", [instagram], ["video"]);
+
+    for (const label of [
+      "Also share to the feed",
+      "Cover image",
+      "Cover frame, in milliseconds",
+      "Audio name",
+      "Trial reel",
+      "Collaborators",
+    ]) {
+      expect(reel).toContain(label);
+    }
+
+    expect(photos).toContain("Collaborators");
+    expect(photos).not.toContain("Trial reel");
+    expect(photos).not.toContain("Cover image");
+
+    for (const label of [
+      "Partager aussi dans le fil",
+      "Image de couverture",
+      "Reel d’essai",
+      "Collaborateurs",
+    ]) {
+      expect(french).toContain(label);
+    }
+  });
+
+  it("say each collaborator is invited, and refuse a fourth", async () => {
+    const html = await renderChannels("en", [instagram], [], {
+      collaborators: "a.one, b_two, c3, d4",
+    });
+
+    const french = await renderChannels("fr", [instagram], []);
+
+    expect(html).toContain("Each account receives an invitation");
+    expect(html).toContain("name only accounts you mean to invite");
+    expect(html).toContain("4 given: 3 at most.");
+    expect(french).toContain("Chaque compte reçoit une invitation");
+    expect(french).toContain(
+      "ne nommez que des comptes que vous voulez inviter"
+    );
+  });
+
+  it("show a Facebook video's title on a post with a video only", async () => {
+    const video = await renderChannels(
+      "en",
+      [facebookPage],
+      ["image", "video"]
+    );
+
+    const images = await renderChannels("en", [facebookPage], ["image"]);
+    const french = await renderChannels("fr", [facebookPage], ["video"]);
+
+    expect(video).toContain("Video title");
+    expect(images).not.toContain("Synthetic Bakery");
+    expect(french).toContain("Titre de la vidéo");
+  });
+
+  it("show TikTok's photo fields on photos, and its cover frame on a video", async () => {
+    const photos = await renderChannels("en", [tiktok], ["image", "image"]);
+    const video = await renderChannels("en", [tiktok], ["video"]);
+    const french = await renderChannels("fr", [tiktok], ["image"]);
+
+    expect(tiktokLabelsIn(photos)).toStrictEqual([
+      "Photo post title",
+      "Cover photo",
+      "Add music automatically",
+    ]);
+    expect(tiktokLabelsIn(video)).toStrictEqual([
+      "Cover frame, in milliseconds",
+    ]);
+    expect(tiktokLabelsIn(french)).toStrictEqual([
+      "Titre de la publication photo",
+      "Ajouter de la musique automatiquement",
+    ]);
+  });
+
+  it("show every field while the media are read", async () => {
+    const html = await renderChannels("en", [tiktok, instagram], undefined);
+
+    for (const label of [
+      "Photo post title",
+      "Cover frame, in milliseconds",
+      "Trial reel",
+    ]) {
+      expect(html).toContain(label);
+    }
+  });
+
+  it("show what the API would refuse in a number field", async () => {
+    const html = await renderChannels("en", [instagram], ["video"], {
+      thumbOffsetMs: "about two seconds",
+    });
+
+    expect(html).toContain(
+      "A whole number of milliseconds within the video, such as 1500."
+    );
+    expect(html).toContain('aria-invalid="true"');
+  });
+});
+
+const created = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
+
+const cover: Media = {
+  altText: "A synthetic cover",
+  byteSize: 200_000,
+  codec: null,
+  contentType: "image/jpeg",
+  createdAt: created,
+  dimensions: { height: 720, width: 1280 },
+  durationMs: null,
+  id: "019a0000-0000-7000-8000-00000000000c",
+  kind: "image",
+  pageCount: null,
+  status: { _tag: "ready" },
+  updatedAt: created,
+  url: "https://media.example.test/synthetic-cover.jpg",
+};
+
+const thumbnailField = Option.getOrThrow(
+  fieldOf("youtube", "thumbnailMediaId")
+);
+
+const renderMedia = async (locale: Locale, chosen: ChosenMedia) =>
+  renderToStaticMarkup(
+    <NextIntlClientProvider
+      locale={locale}
+      messages={await loadMessages(locale)}
+    >
+      {thumbnailField.kind === "media" ? (
+        <MediaOptionView
+          chosen={chosen}
+          disabled={false}
+          field={thumbnailField}
+          id="option-thumbnail"
+          limits={{}}
+          picker={<button type="button">Picker</button>}
+          problem={undefined}
+          onRemove={() => {
+            // Never clicked in a static render.
+          }}
+        />
+      ) : null}
+    </NextIntlClientProvider>
+  );
+
+describe(MediaOptionView, () => {
+  it("shows that nothing is chosen, with the picker and no remove button", async () => {
+    const html = await renderMedia("en", { _tag: "none" });
+    const french = await renderMedia("fr", { _tag: "none" });
+
+    for (const text of [
+      "Thumbnail",
+      "No image chosen.",
+      "Picker",
+      "A JPEG or PNG image of the library",
+    ]) {
+      expect(html).toContain(text);
+    }
+
+    expect(html).not.toContain("Remove");
+    expect(french).toContain("Miniature</legend>");
+    expect(french).toContain("Aucune image choisie.");
+  });
+
+  it("shows the image chosen, and a button to take it away", async () => {
+    const html = await renderMedia("en", { _tag: "loaded", media: cover });
+
+    expect(html).toContain("https://media.example.test/synthetic-cover.jpg");
+    expect(html).toContain("Remove");
+    expect(html).not.toContain("No image chosen.");
+  });
+
+  it("says when the image chosen could not be read, and still takes it away", async () => {
+    const html = await renderMedia("en", { _tag: "failed" });
+
+    expect(html).toContain("may have been deleted from the library");
+    expect(html).toContain("Remove");
+  });
+
+  it("shows in the panel the image a YouTube video holds, without a library to pick from", async () => {
+    const html = await renderChannels("en", [youtube], ["video"], {
+      thumbnailMediaId: cover.id,
+    });
+
+    const empty = await renderChannels("en", [youtube], ["video"]);
+
+    expect(html).toContain("Reading the image…");
+    expect(html).toContain("Remove");
+    expect(empty).toContain("No image chosen.");
+    expect(empty).not.toContain("choose from the library");
   });
 });

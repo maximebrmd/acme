@@ -79,10 +79,12 @@ Certaines plateformes demandent à chaque publication plus que son texte et ses 
 
 | Plateforme              | Options                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| YouTube                 | **Titre** (obligatoire : 100 caractères au plus, sans `<` ni `>`), **Conçue pour les enfants** (obligatoire, sans valeur par défaut), **Visibilité** (publique sauf choix contraire), **Tags** (500 caractères en tout), **Numéro de catégorie**, **Prévenir les abonnés** (activé), contenus modifiés ou synthétiques                                                                                                               |
-| TikTok                  | **Qui peut voir cette publication** (obligatoire, sans valeur par défaut), **Autoriser les commentaires**, **Autoriser le Duo** et **Autoriser le Collage** (désactivés tant que vous ne les activez pas), divulgation d’un contenu commercial, contenu généré par IA                                                                                                                                                                |
+| YouTube                 | **Titre** (obligatoire : 100 caractères au plus, sans `<` ni `>`), **Conçue pour les enfants** (obligatoire, sans valeur par défaut), **Visibilité** (publique sauf choix contraire), **Tags** (500 caractères en tout), **Numéro de catégorie**, **Prévenir les abonnés** (activé), contenus modifiés ou synthétiques, et [d’autres](#media-options)                                                                                |
+| TikTok                  | **Qui peut voir cette publication** (obligatoire, sans valeur par défaut), **Autoriser les commentaires**, **Autoriser le Duo** et **Autoriser le Collage** (désactivés tant que vous ne les activez pas), divulgation d’un contenu commercial, contenu généré par IA, et [d’autres](#media-options)                                                                                                                                 |
 | LinkedIn                | **Qui peut voir cette publication** (tout le monde, sauf choix contraire ; relations uniquement vaut pour un profil), **Empêcher les autres de republier cette publication**, **Pages à mentionner** (des pages d’entreprise, chacune écrite `@Nom` dans le texte), **Lien à afficher sous forme de carte** avec son **Titre du lien** (obligatoire avec un lien) et sa **Description du lien**, **Titre du document** (pour un PDF) |
 | Pinterest               | **Tableau** (obligatoire, l’un de ceux du compte), **Section du tableau**, **Titre** (100 caractères au plus), **Lien** (là où mène un clic sur l’épingle, commençant par `http://` ou `https://`), **Couverture de la vidéo, à la seconde** (la première image sauf choix contraire), **Couleur dominante** (comme `#6E7874`)                                                                                                       |
+| Instagram               | Les réglages d’un reel et les **Collaborateurs** (voir [plus bas](#media-options))                                                                                                                                                                                                                                                                                                                                                   |
+| Facebook                | Le **Titre de la vidéo** d’une vidéo (voir [plus bas](#media-options))                                                                                                                                                                                                                                                                                                                                                               |
 | Google Business Profile | **Type de publication** (une actualité, sauf si vous choisissez un événement ou une offre), **Titre**, **Début** et **Fin** (obligatoires pour un événement ou une offre ; un titre de 58 caractères au plus), **Bouton** et son **Lien du bouton** (sur une actualité ou un événement), **Code promotionnel**, **Lien pour profiter de l’offre** et **Conditions générales** (sur une offre)                                        |
 
 Le texte de la publication est la description de la vidéo YouTube, la légende de la publication TikTok, la description de l’épingle Pinterest, le commentaire de la publication LinkedIn et la description de la publication Google Business Profile. Les tags sont séparés par des virgules ; YouTube compte les virgules, et deux caractères de plus pour un tag qui contient une espace.
@@ -144,6 +146,55 @@ Sur **X** :
 | **Fait avec l’IA**                  | `madeWithAi`         | Oui ou non                                               | Non                   | Chaque partie avec des images ou une vidéo |
 
 X ne documente pas quels comptes peuvent utiliser chacune d’elles. Quand X refuse une publication qui en porte, et que sa réponse en nomme une (le champ, ou la communauté), le canal indique **Échec**, avec le code `optionRefused` : Peal ne la renvoie pas, et le message de X n’est pas gardé, donc il ne dit pas quelle option X a refusée. Changez les options et republiez-la. Quand X refuse une telle publication pour autre chose, comme un compte restreint, le code est le type de problème de X lui-même, comme pour une publication sans options (`client-forbidden`, ou `http403` quand X n’en nomme aucun), et changer les options n’y fera rien.
+
+### YouTube, TikTok, Instagram et Facebook [#media-options]
+
+Ces options ne sont pas obligatoires non plus, hormis le titre et la réponse « conçue pour les enfants » de YouTube et l’audience de TikTok, plus haut. Chacune n’est envoyée que si vous la choisissez, et certaines ne valent que pour certains médias : l’éditeur les montre pour ceux-là, et la programmation les refuse sur une autre publication.
+
+Sur **YouTube**, en plus des options ci-dessus :
+
+| Option                                   | Nom dans l’API        | Valeurs                                                             | Par défaut                  |
+| ---------------------------------------- | --------------------- | ------------------------------------------------------------------- | --------------------------- |
+| **Miniature**                            | `thumbnailMediaId`    | Une image JPEG ou PNG de la [médiathèque](/media), de 8 Mio au plus | L’image que choisit YouTube |
+| **Licence**                              | `license`             | `youtube` ou `creativeCommon`                                       | Celle de la chaîne          |
+| **Intégration autorisée**                | `embeddable`          | Oui ou non                                                          | Le réglage de la chaîne     |
+| **Statistiques publiques**               | `publicStatsViewable` | Oui ou non                                                          | Le réglage de la chaîne     |
+| **Langue du titre et de la description** | `defaultLanguage`     | Une étiquette de langue, comme `en` ou `pt-BR`                      | Aucune                      |
+| **Date d’enregistrement**                | `recordingDate`       | Un jour, comme `2026-11-27`                                         | Aucune                      |
+
+YouTube définit la miniature une fois la vidéo mise en ligne, et seulement sur une chaîne qui a droit aux miniatures personnalisées. Sinon, ou s’il refuse l’image, la vidéo est publiée quand même, avec sa propre miniature : la page de la publication dit **La miniature n’a pas été définie**, et par l’API sa cible porte `thumbnailNotSet: true`. Peal définit au plus `YOUTUBE_DAILY_THUMBNAILS` miniatures par jour pour tout le serveur (voir [les variables d’environnement](/environment-variables)), car chacune puise dans le quota général du projet Google ; au-delà, une vidéo part avec celle de YouTube.
+
+Sur **TikTok**, en plus des options ci-dessus :
+
+| Option                                    | Nom dans l’API          | Valeurs                                                                 | Par défaut        |
+| ----------------------------------------- | ----------------------- | ----------------------------------------------------------------------- | ----------------- |
+| **Image de couverture, en millisecondes** | `videoCoverTimestampMs` | Une image d’une vidéo, en millisecondes depuis son début, dans sa durée | La première image |
+| **Titre de la publication photo**         | `photoTitle`            | Photos : 90 caractères au plus, comptés comme TikTok les compte         | Pas de titre      |
+| **Ajouter de la musique automatiquement** | `autoAddMusic`          | Photos : oui ou non                                                     | Non               |
+| **Photo de couverture**                   | `photoCoverIndex`       | Photos : la place de la couverture, à partir de 0 pour la première      | La première photo |
+
+Le texte d’une publication photo en est la description, et son titre est à part.
+
+Sur **Instagram** :
+
+| Option                                               | Nom dans l’API  | Valeurs                                                               | Par défaut                  |
+| ---------------------------------------------------- | --------------- | --------------------------------------------------------------------- | --------------------------- |
+| **Partager aussi dans le fil**                       | `shareToFeed`   | Un reel : oui ou non                                                  | Comme Instagram le décide   |
+| **Image de couverture**                              | `coverMediaId`  | Un reel : une image JPEG de la médiathèque, de 8 Mio au plus          | L’image prise dans la vidéo |
+| **Couverture prise dans la vidéo, en millisecondes** | `thumbOffsetMs` | Un reel : son image, en millisecondes depuis son début, dans sa durée | La première image           |
+| **Nom de l’audio**                                   | `audioName`     | Un reel : une ligne, 100 caractères au plus                           | Le nom d’Instagram          |
+| **Reel d’essai**                                     | `trialReel`     | Un reel : `manual` ou `performance`                                   | Pas un essai                |
+| **Collaborateurs**                                   | `collaborators` | Un à trois noms d’utilisateur Instagram                               | Aucun                       |
+
+Un reel est une publication d’une seule vidéo. Une image de couverture l’emporte sur l’image prise dans la vidéo : seule l’image est alors envoyée. Instagram ne renomme l’audio d’un reel qu’une fois. Un reel d’essai est d’abord montré aux comptes qui ne suivent pas le vôtre, et atteint vos abonnés quand vous le partagez dans l’application (`manual`) ou de lui-même s’il marche bien (`performance`). Chaque collaborateur est un autre compte, qui reçoit une invitation à être nommé coauteur : ne nommez que des comptes que vous voulez inviter. Instagram ne documente pas les collaborateurs pour les comptes connectés avec Instagram Login : quand Instagram refuse une telle publication, le canal indique **Échec** avec le code de Meta. Instagram montre aussi le texte alternatif des images d’une publication, jusqu’à 1 000 caractères, et aucun sur une vidéo.
+
+Sur **Facebook** :
+
+| Option                | Nom dans l’API | Valeurs                                       | Par défaut   |
+| --------------------- | -------------- | --------------------------------------------- | ------------ |
+| **Titre de la vidéo** | `videoTitle`   | Une vidéo : une ligne, 255 caractères au plus | Pas de titre |
+
+Une miniature ou une couverture est un fichier de la médiathèque que la publication ne montre pas : il doit être prêt et appartenir à l’espace de travail, il ne peut pas être supprimé tant qu’une publication qui part le nomme, un brouillon le perd quand il est supprimé, et une copie de la publication le laisse de côté une fois qu’il n’est plus là. Un ensemble de canaux ou les options par défaut d’un canal ne peuvent pas en nommer un.
 
 Par l’API, un brouillon prend ses options dans `options`, une entrée par canal, chacune marquée de sa `platform` ; chacune des cibles de la publication répond avec les siennes. Mettre à jour un brouillon remplace ses options : celles qui manquent sont retirées. Un canal ajouté seulement au moment de programmer n’en a pas encore : sur YouTube, TikTok ou Pinterest, donnez-lui d’abord ses options dans le brouillon.
 

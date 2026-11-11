@@ -88,7 +88,14 @@ const partsDetail = ({ parts }: PostTarget): string =>
     ? `; ${String(parts.live.length)} of ${String(parts.count)} parts live`
     : "";
 
-const targetDetail = (target: PostTarget): string => {
+// What else a published target says of how it went out.
+const publishedNotes = (target: PostTarget): string =>
+  target.thumbnailNotSet === true
+    ? "; its thumbnail was not set: the channel may not be allowed custom thumbnails, or YouTube refused the image"
+    : "";
+
+/** How a target went, as `peal posts show` prints it after its channel. */
+export const targetDetail = (target: PostTarget): string => {
   if (target.status === "failed" && target.failureReason !== null) {
     return `failed: ${target.failureReason} (${failureReasons[target.failureReason]})${partsDetail(target)}`;
   }
@@ -104,8 +111,8 @@ const targetDetail = (target: PostTarget): string => {
         : "published";
 
     return target.permalink === null
-      ? `${published}${partsDetail(target)}`
-      : `${published} at ${target.permalink}${partsDetail(target)}`;
+      ? `${published}${partsDetail(target)}${publishedNotes(target)}`
+      : `${published} at ${target.permalink}${partsDetail(target)}${publishedNotes(target)}`;
   }
 
   return `${target.status}${partsDetail(target)}`;

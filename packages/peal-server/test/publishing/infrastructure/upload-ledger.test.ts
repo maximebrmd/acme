@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option } from "effect";
+import { Context, DateTime, Effect, Layer, Option } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { PlatformQuota } from "#publishing/application/platform-quota.ts";
@@ -14,6 +14,7 @@ import { createDraft } from "#publishing/domain/post.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
+import { thumbnailsBucket } from "#publishing/infrastructure/platforms/youtube/youtube-client.ts";
 import { newId } from "#shared/application/ids.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
@@ -68,6 +69,7 @@ layer(StorageTest)("the journal of YouTube's uploads", (it) => {
             byteSize: 2048,
             finalPartSent: false,
             sessionUrl: Option.some(sessionUrl),
+            thumbnailSet: false,
             videoId: Option.none(),
           })
         );
@@ -93,6 +95,7 @@ layer(StorageTest)("the journal of YouTube's uploads", (it) => {
         );
 
         yield* uploads.made(key, "synthVideo01");
+        yield* uploads.thumbnailSet(key);
 
         assert.deepStrictEqual(
           yield* uploads.find(key),
@@ -100,6 +103,7 @@ layer(StorageTest)("the journal of YouTube's uploads", (it) => {
             byteSize: 2048,
             finalPartSent: true,
             sessionUrl: Option.none(),
+            thumbnailSet: true,
             videoId: Option.some("synthVideo01"),
           })
         );
@@ -150,5 +154,44 @@ layer(StorageTest)("the journal of YouTube's uploads", (it) => {
         })
       );
     })
+  );
+
+  it.effect(
+    "counts YouTube's thumbnails for the whole server, whatever process sets them",
+    () =>
+      Effect.gen(function* shared() {
+        // Two servers on one database, each with its own ledger.
+        const one = Context.get(
+          yield* Layer.build(Layer.fresh(DrizzlePlatformQuota)),
+          PlatformQuota
+        );
+
+        const other = Context.get(
+          yield* Layer.build(Layer.fresh(DrizzlePlatformQuota)),
+          PlatformQuota
+        );
+
+        // A day no other test spends on.
+        const day = {
+          day: 1 + Math.floor(Math.random() * 28),
+          month: 1 + Math.floor(Math.random() * 12),
+          year: 2100 + Math.floor(Math.random() * 800),
+        };
+
+        const spend = (ledger: typeof one) =>
+          ledger.spend({
+            allowance: 3,
+            bucket: thumbnailsBucket,
+            day,
+            units: 1,
+          });
+
+        const spent = yield* Effect.all(
+          [one, other, one, other, one].map(spend),
+          { concurrency: 5 }
+        );
+
+        assert.strictEqual(spent.filter(Boolean).length, 3);
+      }).pipe(Effect.scoped)
   );
 });

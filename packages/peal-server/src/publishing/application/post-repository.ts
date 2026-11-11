@@ -140,7 +140,10 @@ export class PostRepository extends Context.Service<
     readonly channelsUsed: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly ChannelId[], DatabaseError>;
-    /** The workspace's posts in one of `statuses` that show the media. */
+    /**
+     * The workspace's posts in one of `statuses` that show the media, in
+     * any part, or whose options name it on a channel.
+     */
     readonly showing: (
       workspaceId: WorkspaceId,
       mediaId: MediaAssetId,

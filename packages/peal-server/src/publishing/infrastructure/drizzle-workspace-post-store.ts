@@ -147,6 +147,7 @@ const recordOf = Effect.fnUntraced(function* recordOf(
                     : live.length,
                 permalink: target.permalink,
                 status: target.status,
+                thumbnailNotSet: target.thumbnailNotSet,
               }))
             ),
           ]

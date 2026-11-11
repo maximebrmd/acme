@@ -62,6 +62,14 @@ public final class TargetOptions {
         return new TargetOptions(new XValue(value));
     }
 
+    public static TargetOptions instagram(InstagramOptions value) {
+        return new TargetOptions(new InstagramValue(value));
+    }
+
+    public static TargetOptions facebook(FacebookOptions value) {
+        return new TargetOptions(new FacebookValue(value));
+    }
+
     public boolean isYoutube() {
         return value instanceof YoutubeValue;
     }
@@ -96,6 +104,14 @@ public final class TargetOptions {
 
     public boolean isX() {
         return value instanceof XValue;
+    }
+
+    public boolean isInstagram() {
+        return value instanceof InstagramValue;
+    }
+
+    public boolean isFacebook() {
+        return value instanceof FacebookValue;
     }
 
     public boolean _isUnknown() {
@@ -165,6 +181,20 @@ public final class TargetOptions {
         return Optional.empty();
     }
 
+    public Optional<InstagramOptions> getInstagram() {
+        if (isInstagram()) {
+            return Optional.of(((InstagramValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<FacebookOptions> getFacebook() {
+        if (isFacebook()) {
+            return Optional.of(((FacebookValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<Object> _getUnknown() {
         if (_isUnknown()) {
             return Optional.of(((_UnknownValue) value).value);
@@ -212,6 +242,10 @@ public final class TargetOptions {
 
         T visitX(XOptions x);
 
+        T visitInstagram(InstagramOptions instagram);
+
+        T visitFacebook(FacebookOptions facebook);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -225,7 +259,9 @@ public final class TargetOptions {
         @JsonSubTypes.Type(MastodonValue.class),
         @JsonSubTypes.Type(BlueskyValue.class),
         @JsonSubTypes.Type(ThreadsValue.class),
-        @JsonSubTypes.Type(XValue.class)
+        @JsonSubTypes.Type(XValue.class),
+        @JsonSubTypes.Type(InstagramValue.class),
+        @JsonSubTypes.Type(FacebookValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -578,6 +614,86 @@ public final class TargetOptions {
         }
 
         private boolean equalTo(XValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("instagram")
+    @JsonIgnoreProperties("platform")
+    private static final class InstagramValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private InstagramOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private InstagramValue() {}
+
+        private InstagramValue(InstagramOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitInstagram(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof InstagramValue && equalTo((InstagramValue) other);
+        }
+
+        private boolean equalTo(InstagramValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("facebook")
+    @JsonIgnoreProperties("platform")
+    private static final class FacebookValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private FacebookOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private FacebookValue() {}
+
+        private FacebookValue(FacebookOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitFacebook(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof FacebookValue && equalTo((FacebookValue) other);
+        }
+
+        private boolean equalTo(FacebookValue other) {
             return value.equals(other.value);
         }
 

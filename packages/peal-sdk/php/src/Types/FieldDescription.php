@@ -10,6 +10,12 @@ use Peal\Core\Types\Union;
 class FieldDescription extends JsonSerializableType
 {
     /**
+     * @var array<string> $contentTypes
+     */
+    #[JsonProperty('contentTypes'), ArrayType(['string'])]
+    public array $contentTypes;
+
+    /**
      * @var array<string> $forbiddenCharacters
      */
     #[JsonProperty('forbiddenCharacters'), ArrayType(['string'])]
@@ -30,6 +36,12 @@ class FieldDescription extends JsonSerializableType
      */
     #[JsonProperty('lookup')]
     public ?string $lookup;
+
+    /**
+     * @var ?int $maxByteSize
+     */
+    #[JsonProperty('maxByteSize')]
+    public ?int $maxByteSize;
 
     /**
      * @var ?int $maxLength
@@ -81,6 +93,7 @@ class FieldDescription extends JsonSerializableType
 
     /**
      * @param array{
+     *   contentTypes: array<string>,
      *   forbiddenCharacters: array<string>,
      *   name: string,
      *   required: bool,
@@ -92,6 +105,7 @@ class FieldDescription extends JsonSerializableType
      *   |string
      * )|null,
      *   lookup?: ?value-of<LookupName>,
+     *   maxByteSize?: ?int,
      *   maxLength?: ?int,
      *   maximum?: ?int,
      *   minimum?: ?int,
@@ -101,9 +115,11 @@ class FieldDescription extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->contentTypes = $values['contentTypes'];
         $this->forbiddenCharacters = $values['forbiddenCharacters'];
         $this->ifLeftOut = $values['ifLeftOut'] ?? null;
         $this->lookup = $values['lookup'] ?? null;
+        $this->maxByteSize = $values['maxByteSize'] ?? null;
         $this->maxLength = $values['maxLength'] ?? null;
         $this->maximum = $values['maximum'] ?? null;
         $this->minimum = $values['minimum'] ?? null;

@@ -12,9 +12,11 @@ import type {
 const field = (
   described: Partial<FieldDescription> & Pick<FieldDescription, "name" | "type">
 ): FieldDescription => ({
+  contentTypes: [],
   forbiddenCharacters: [],
   ifLeftOut: null,
   lookup: null,
+  maxByteSize: null,
   maxLength: null,
   maximum: null,
   minimum: null,

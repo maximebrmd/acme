@@ -2,7 +2,10 @@ import { DateTime, Effect, Option, Schema } from "effect";
 import type { Redacted } from "effect";
 
 import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
-import type { PublishableMedia } from "#publishing/application/media-for-publishing.ts";
+import type {
+  MediaFailure,
+  PublishableMedia,
+} from "#publishing/application/media-for-publishing.ts";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import type { PublishingAccount } from "#publishing/application/platform-credentials.ts";
 import {
@@ -13,8 +16,10 @@ import type {
   PublicationSteps,
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
+import { InstagramOptions } from "#publishing/domain/instagram-options.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
+import type { MediaAssetId } from "#shared/domain/ids.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
@@ -98,6 +103,65 @@ const formats: ReadonlySet<string> = new Set([
   "video/mp4",
   "video/quicktime",
 ]);
+
+// How Instagram names a trial reel's graduation (`trial_params`).
+const graduations = {
+  manual: "MANUAL",
+  performance: "SS_PERFORMANCE",
+} as const;
+
+const instagramOptionsOf = (post: OutgoingPost) =>
+  post.options.pipe(Option.filter(Schema.is(InstagramOptions)));
+
+// The collaborators the options invite: on a feed image, a reel or a
+// carousel's own container, never on an item of one.
+const collaboratorsOf = (
+  chosen: Option.Option<InstagramOptions>
+): Record<string, string> =>
+  Option.match(
+    chosen.pipe(
+      Option.flatMapNullishOr(({ collaborators }) => collaborators),
+      Option.filter((names) => names.length > 0)
+    ),
+    {
+      onNone: () => ({}),
+      onSome: (names) => ({ collaborators: JSON.stringify(names) }),
+    }
+  );
+
+// What a reel's container takes of the options, each only when chosen. A
+// cover image wins over a frame, as Instagram documents: only the cover
+// is sent then.
+const reelParams = Effect.fn("InstagramClient.reelParams")(function* reelParams(
+  chosen: InstagramOptions,
+  coverUrl: (mediaId: MediaAssetId) => Effect.Effect<string, MediaFailure>
+) {
+  const params: Record<string, string> = {};
+
+  if (chosen.shareToFeed !== undefined) {
+    params["share_to_feed"] = String(chosen.shareToFeed);
+  }
+
+  if (chosen.coverMediaId === undefined) {
+    if (chosen.thumbOffsetMs !== undefined) {
+      params["thumb_offset"] = String(chosen.thumbOffsetMs);
+    }
+  } else {
+    params["cover_url"] = yield* coverUrl(chosen.coverMediaId);
+  }
+
+  if (chosen.audioName !== undefined) {
+    params["audio_name"] = chosen.audioName;
+  }
+
+  if (chosen.trialReel !== undefined) {
+    params["trial_params"] = JSON.stringify({
+      graduation_strategy: graduations[chosen.trialReel],
+    });
+  }
+
+  return params;
+});
 
 // An error's status reads "Error: … error code 2207026": the code is kept.
 const errorCodeOf = (status: string | undefined) => {
@@ -202,8 +266,13 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
       return described;
     });
 
-    // A container's media: an image by its URL, or a video, which is a reel
-    // on its own and a plain video in a carousel.
+    const publicUrlOf = (post: OutgoingPost, mediaId: MediaAssetId) =>
+      media.publicUrl(post.workspaceId, mediaId, mediaUrlLifetime);
+
+    // A container's media: an image by its URL, with its alt text when it
+    // has one ("Only supported on a single image or image media in a
+    // carousel"), or a video, which is a reel on its own, with the reel's
+    // options, and a plain video in a carousel.
     const mediaParams = Effect.fn("InstagramClient.mediaParams")(
       function* mediaParams(
         post: OutgoingPost,
@@ -211,18 +280,23 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
         described: PublishableMedia,
         inCarousel: boolean
       ) {
-        const url = yield* media.publicUrl(
-          post.workspaceId,
-          attachment.mediaId,
-          mediaUrlLifetime
-        );
+        const url = yield* publicUrlOf(post, attachment.mediaId);
 
-        const params: Record<string, string> =
-          described.kind === "image"
-            ? { image_url: url }
-            : { media_type: inCarousel ? "VIDEO" : "REELS", video_url: url };
+        if (described.kind === "image") {
+          return withText({ image_url: url }, "alt_text", attachment.altText);
+        }
 
-        return params;
+        if (inCarousel) {
+          return { media_type: "VIDEO", video_url: url };
+        }
+
+        const reel = yield* Option.match(instagramOptionsOf(post), {
+          onNone: () => Effect.succeed({}),
+          onSome: (chosen) =>
+            reelParams(chosen, (mediaId) => publicUrlOf(post, mediaId)),
+        });
+
+        return { media_type: "REELS", video_url: url, ...reel };
       }
     );
 
@@ -270,10 +344,10 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
           false
         );
 
-        const id = yield* container(
-          post,
-          withText(params, "caption", post.text)
-        );
+        const id = yield* container(post, {
+          ...withText(params, "caption", post.text),
+          ...collaboratorsOf(instagramOptionsOf(post)),
+        });
 
         return processing({ items: [], post: Option.some(id), video });
       }
@@ -335,14 +409,14 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
       }
 
       // Every item is processed: the carousel's own container comes next.
-      const id = yield* container(
-        post,
-        withText(
+      const id = yield* container(post, {
+        ...withText(
           { children: prepared.items.join(","), media_type: "CAROUSEL" },
           "caption",
           post.text
-        )
-      );
+        ),
+        ...collaboratorsOf(instagramOptionsOf(post)),
+      });
 
       return processing({ ...prepared, post: Option.some(id) });
     });

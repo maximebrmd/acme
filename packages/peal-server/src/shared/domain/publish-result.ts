@@ -15,6 +15,10 @@ export const PublishedSchema = Schema.TaggedStruct("published", {
   // The post's public address, when the platform gives one.
   permalink: Schema.optionalKey(Schema.String),
   platformPostId: PlatformPostIdSchema,
+  // The video went live without the thumbnail its options named: the
+  // channel may not set custom thumbnails, or the platform refused the
+  // image (YouTube). Never a reason to fail the post.
+  thumbnailNotSet: Schema.optionalKey(Schema.Boolean),
 });
 
 export type Published = typeof PublishedSchema.Type;

@@ -214,9 +214,12 @@ describe(mediaFitOn, () => {
     ];
 
     expect(mediaFitOn("bluesky", attached).missingAltText).toBe(2);
-    expect(mediaFitOn("instagram", attached).missingAltText).toBe(0);
-    expect(showsAltText("mastodon")).toBeTruthy();
-    expect(showsAltText("tiktok")).toBeFalsy();
+    // Instagram shows alt text too; TikTok none.
+    expect(mediaFitOn("instagram", attached).missingAltText).toBe(2);
+    expect(mediaFitOn("tiktok", attached).missingAltText).toBe(0);
+    expect(
+      (["mastodon", "instagram", "tiktok"] as const).map(showsAltText)
+    ).toStrictEqual([true, true, false]);
   });
 
   it("checks media once the API described it, and none where no rule is known", () => {

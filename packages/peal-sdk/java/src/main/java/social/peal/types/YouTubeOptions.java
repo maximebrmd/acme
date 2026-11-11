@@ -25,13 +25,25 @@ public final class YouTubeOptions {
 
     private final Optional<Boolean> containsSyntheticMedia;
 
+    private final Optional<String> defaultLanguage;
+
+    private final Optional<Boolean> embeddable;
+
+    private final Optional<YouTubeLicense> license;
+
     private final Optional<Boolean> madeForKids;
 
     private final Optional<Boolean> notifySubscribers;
 
     private final Optional<YouTubePrivacy> privacy;
 
+    private final Optional<Boolean> publicStatsViewable;
+
+    private final Optional<String> recordingDate;
+
     private final Optional<List<String>> tags;
+
+    private final Optional<String> thumbnailMediaId;
 
     private final Optional<String> title;
 
@@ -40,18 +52,30 @@ public final class YouTubeOptions {
     private YouTubeOptions(
             Optional<String> categoryId,
             Optional<Boolean> containsSyntheticMedia,
+            Optional<String> defaultLanguage,
+            Optional<Boolean> embeddable,
+            Optional<YouTubeLicense> license,
             Optional<Boolean> madeForKids,
             Optional<Boolean> notifySubscribers,
             Optional<YouTubePrivacy> privacy,
+            Optional<Boolean> publicStatsViewable,
+            Optional<String> recordingDate,
             Optional<List<String>> tags,
+            Optional<String> thumbnailMediaId,
             Optional<String> title,
             Map<String, Object> additionalProperties) {
         this.categoryId = categoryId;
         this.containsSyntheticMedia = containsSyntheticMedia;
+        this.defaultLanguage = defaultLanguage;
+        this.embeddable = embeddable;
+        this.license = license;
         this.madeForKids = madeForKids;
         this.notifySubscribers = notifySubscribers;
         this.privacy = privacy;
+        this.publicStatsViewable = publicStatsViewable;
+        this.recordingDate = recordingDate;
         this.tags = tags;
+        this.thumbnailMediaId = thumbnailMediaId;
         this.title = title;
         this.additionalProperties = additionalProperties;
     }
@@ -64,6 +88,21 @@ public final class YouTubeOptions {
     @JsonProperty("containsSyntheticMedia")
     public Optional<Boolean> getContainsSyntheticMedia() {
         return containsSyntheticMedia;
+    }
+
+    @JsonProperty("defaultLanguage")
+    public Optional<String> getDefaultLanguage() {
+        return defaultLanguage;
+    }
+
+    @JsonProperty("embeddable")
+    public Optional<Boolean> getEmbeddable() {
+        return embeddable;
+    }
+
+    @JsonProperty("license")
+    public Optional<YouTubeLicense> getLicense() {
+        return license;
     }
 
     @JsonProperty("madeForKids")
@@ -81,9 +120,24 @@ public final class YouTubeOptions {
         return privacy;
     }
 
+    @JsonProperty("publicStatsViewable")
+    public Optional<Boolean> getPublicStatsViewable() {
+        return publicStatsViewable;
+    }
+
+    @JsonProperty("recordingDate")
+    public Optional<String> getRecordingDate() {
+        return recordingDate;
+    }
+
     @JsonProperty("tags")
     public Optional<List<String>> getTags() {
         return tags;
+    }
+
+    @JsonProperty("thumbnailMediaId")
+    public Optional<String> getThumbnailMediaId() {
+        return thumbnailMediaId;
     }
 
     @JsonProperty("title")
@@ -105,10 +159,16 @@ public final class YouTubeOptions {
     private boolean equalTo(YouTubeOptions other) {
         return categoryId.equals(other.categoryId)
                 && containsSyntheticMedia.equals(other.containsSyntheticMedia)
+                && defaultLanguage.equals(other.defaultLanguage)
+                && embeddable.equals(other.embeddable)
+                && license.equals(other.license)
                 && madeForKids.equals(other.madeForKids)
                 && notifySubscribers.equals(other.notifySubscribers)
                 && privacy.equals(other.privacy)
+                && publicStatsViewable.equals(other.publicStatsViewable)
+                && recordingDate.equals(other.recordingDate)
                 && tags.equals(other.tags)
+                && thumbnailMediaId.equals(other.thumbnailMediaId)
                 && title.equals(other.title);
     }
 
@@ -117,10 +177,16 @@ public final class YouTubeOptions {
         return Objects.hash(
                 this.categoryId,
                 this.containsSyntheticMedia,
+                this.defaultLanguage,
+                this.embeddable,
+                this.license,
                 this.madeForKids,
                 this.notifySubscribers,
                 this.privacy,
+                this.publicStatsViewable,
+                this.recordingDate,
                 this.tags,
+                this.thumbnailMediaId,
                 this.title);
     }
 
@@ -139,13 +205,25 @@ public final class YouTubeOptions {
 
         private Optional<Boolean> containsSyntheticMedia = Optional.empty();
 
+        private Optional<String> defaultLanguage = Optional.empty();
+
+        private Optional<Boolean> embeddable = Optional.empty();
+
+        private Optional<YouTubeLicense> license = Optional.empty();
+
         private Optional<Boolean> madeForKids = Optional.empty();
 
         private Optional<Boolean> notifySubscribers = Optional.empty();
 
         private Optional<YouTubePrivacy> privacy = Optional.empty();
 
+        private Optional<Boolean> publicStatsViewable = Optional.empty();
+
+        private Optional<String> recordingDate = Optional.empty();
+
         private Optional<List<String>> tags = Optional.empty();
+
+        private Optional<String> thumbnailMediaId = Optional.empty();
 
         private Optional<String> title = Optional.empty();
 
@@ -156,10 +234,16 @@ public final class YouTubeOptions {
         public Builder from(YouTubeOptions other) {
             categoryId(other.getCategoryId());
             containsSyntheticMedia(other.getContainsSyntheticMedia());
+            defaultLanguage(other.getDefaultLanguage());
+            embeddable(other.getEmbeddable());
+            license(other.getLicense());
             madeForKids(other.getMadeForKids());
             notifySubscribers(other.getNotifySubscribers());
             privacy(other.getPrivacy());
+            publicStatsViewable(other.getPublicStatsViewable());
+            recordingDate(other.getRecordingDate());
             tags(other.getTags());
+            thumbnailMediaId(other.getThumbnailMediaId());
             title(other.getTitle());
             return this;
         }
@@ -183,6 +267,39 @@ public final class YouTubeOptions {
 
         public Builder containsSyntheticMedia(Boolean containsSyntheticMedia) {
             this.containsSyntheticMedia = Optional.ofNullable(containsSyntheticMedia);
+            return this;
+        }
+
+        @JsonSetter(value = "defaultLanguage", nulls = Nulls.SKIP)
+        public Builder defaultLanguage(Optional<String> defaultLanguage) {
+            this.defaultLanguage = defaultLanguage;
+            return this;
+        }
+
+        public Builder defaultLanguage(String defaultLanguage) {
+            this.defaultLanguage = Optional.ofNullable(defaultLanguage);
+            return this;
+        }
+
+        @JsonSetter(value = "embeddable", nulls = Nulls.SKIP)
+        public Builder embeddable(Optional<Boolean> embeddable) {
+            this.embeddable = embeddable;
+            return this;
+        }
+
+        public Builder embeddable(Boolean embeddable) {
+            this.embeddable = Optional.ofNullable(embeddable);
+            return this;
+        }
+
+        @JsonSetter(value = "license", nulls = Nulls.SKIP)
+        public Builder license(Optional<YouTubeLicense> license) {
+            this.license = license;
+            return this;
+        }
+
+        public Builder license(YouTubeLicense license) {
+            this.license = Optional.ofNullable(license);
             return this;
         }
 
@@ -219,6 +336,28 @@ public final class YouTubeOptions {
             return this;
         }
 
+        @JsonSetter(value = "publicStatsViewable", nulls = Nulls.SKIP)
+        public Builder publicStatsViewable(Optional<Boolean> publicStatsViewable) {
+            this.publicStatsViewable = publicStatsViewable;
+            return this;
+        }
+
+        public Builder publicStatsViewable(Boolean publicStatsViewable) {
+            this.publicStatsViewable = Optional.ofNullable(publicStatsViewable);
+            return this;
+        }
+
+        @JsonSetter(value = "recordingDate", nulls = Nulls.SKIP)
+        public Builder recordingDate(Optional<String> recordingDate) {
+            this.recordingDate = recordingDate;
+            return this;
+        }
+
+        public Builder recordingDate(String recordingDate) {
+            this.recordingDate = Optional.ofNullable(recordingDate);
+            return this;
+        }
+
         @JsonSetter(value = "tags", nulls = Nulls.SKIP)
         public Builder tags(Optional<List<String>> tags) {
             this.tags = tags;
@@ -227,6 +366,17 @@ public final class YouTubeOptions {
 
         public Builder tags(List<String> tags) {
             this.tags = Optional.ofNullable(tags);
+            return this;
+        }
+
+        @JsonSetter(value = "thumbnailMediaId", nulls = Nulls.SKIP)
+        public Builder thumbnailMediaId(Optional<String> thumbnailMediaId) {
+            this.thumbnailMediaId = thumbnailMediaId;
+            return this;
+        }
+
+        public Builder thumbnailMediaId(String thumbnailMediaId) {
+            this.thumbnailMediaId = Optional.ofNullable(thumbnailMediaId);
             return this;
         }
 
@@ -245,10 +395,16 @@ public final class YouTubeOptions {
             return new YouTubeOptions(
                     categoryId,
                     containsSyntheticMedia,
+                    defaultLanguage,
+                    embeddable,
+                    license,
                     madeForKids,
                     notifySubscribers,
                     privacy,
+                    publicStatsViewable,
+                    recordingDate,
                     tags,
+                    thumbnailMediaId,
                     title,
                     additionalProperties);
         }
@@ -257,10 +413,16 @@ public final class YouTubeOptions {
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("categoryId")
                     || key.equalsIgnoreCase("containsSyntheticMedia")
+                    || key.equalsIgnoreCase("defaultLanguage")
+                    || key.equalsIgnoreCase("embeddable")
+                    || key.equalsIgnoreCase("license")
                     || key.equalsIgnoreCase("madeForKids")
                     || key.equalsIgnoreCase("notifySubscribers")
                     || key.equalsIgnoreCase("privacy")
+                    || key.equalsIgnoreCase("publicStatsViewable")
+                    || key.equalsIgnoreCase("recordingDate")
                     || key.equalsIgnoreCase("tags")
+                    || key.equalsIgnoreCase("thumbnailMediaId")
                     || key.equalsIgnoreCase("title")) {
                 return;
             }

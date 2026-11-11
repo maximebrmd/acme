@@ -9,6 +9,7 @@ import {
 } from "#publishing/domain/content-rules.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import { InstagramOptions } from "#publishing/domain/instagram-options.ts";
 import {
   maxPinterestLinkLength,
   maxPinterestTitleLength,
@@ -67,20 +68,24 @@ const on = (target: ChannelOnPlatform, options: TargetOptions) =>
   new ChannelOptions({ channelId: target.channelId, options });
 
 describe("the platforms that take options", () => {
-  it("are every platform but Instagram and Facebook", () => {
+  it("are every platform", () => {
     expect(optionsPlatforms).toStrictEqual([
       "x",
       "linkedin",
       "bluesky",
       "mastodon",
       "threads",
+      "instagram",
+      "facebook",
       "tiktok",
       "youtube",
       "pinterest",
       "googleBusiness",
     ]);
-    expect(takesOptions("facebook")).toBeFalsy();
-    expect(noOptionsOn("instagram")).toStrictEqual(Option.none());
+    expect(takesOptions("facebook")).toBeTruthy();
+    expect(noOptionsOn("instagram")).toStrictEqual(
+      Option.some(new InstagramOptions({}))
+    );
   });
 
   it("start with nothing chosen", () => {
@@ -98,7 +103,7 @@ describe("the platforms that take options", () => {
         privacyLevel: "SELF_ONLY",
       })
     ).toStrictEqual(finishedTikTok);
-    expect(decode({ platform: "facebook" })._tag).toBe("Failure");
+    expect(decode({ platform: "myspace" })._tag).toBe("Failure");
     expect(decode({ platform: "tiktok", privacyLevel: "EVERYONE" })._tag).toBe(
       "Failure"
     );

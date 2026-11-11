@@ -22,10 +22,18 @@ import { maxBlueskyLanguages } from "#publishing/domain/bluesky-options.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import { countedText } from "#publishing/domain/counted-text.ts";
 import { duplicateWindow } from "#publishing/domain/duplicate-window.ts";
+import { maxFacebookVideoTitleLength } from "#publishing/domain/facebook-options.ts";
 import {
   googleBusinessLocalTimePattern,
   maxGoogleBusinessTitleLength,
 } from "#publishing/domain/google-business-options.ts";
+import {
+  instagramCoverTypes,
+  InstagramTrialReelSchema,
+  maxInstagramAudioNameLength,
+  maxInstagramCollaborators,
+  maxInstagramCoverByteSize,
+} from "#publishing/domain/instagram-options.ts";
 import { maxLinkedInMentionNameLength } from "#publishing/domain/linkedin-mentions.ts";
 import {
   LinkedInVisibilitySchema,
@@ -66,10 +74,14 @@ import {
   maxThreadsLinkLength,
   maxThreadsTopicTagLength,
 } from "#publishing/domain/threads-options.ts";
+import { maxTikTokPhotoTitleLength } from "#publishing/domain/tiktok-options.ts";
 import {
   maxYouTubeTagsLength,
+  maxYouTubeThumbnailByteSize,
   maxYouTubeTitleLength,
+  YouTubeLicenseSchema,
   youTubeTagsLength,
+  youTubeThumbnailTypes,
 } from "#publishing/domain/youtube-options.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 import {
@@ -570,6 +582,62 @@ const options: readonly unknown[] = [
   { platform: "x", replySettings: "everyone" },
   { madeWithAi: "yes", platform: "x" },
   { platform: "youtube", title: "A title", unknownOption: true },
+  {
+    defaultLanguage: "pt-BR",
+    embeddable: false,
+    license: "creativeCommon",
+    madeForKids: false,
+    platform: "youtube",
+    publicStatsViewable: false,
+    recordingDate: "2026-11-27",
+    thumbnailMediaId: "00000000-0000-7000-8000-0000000000b1",
+    title: "A synthetic video",
+  },
+  // Refused later: kept until the post is scheduled.
+  { defaultLanguage: "Portuguese", platform: "youtube", recordingDate: "soon" },
+  { license: "public", platform: "youtube" },
+  { platform: "youtube", thumbnailMediaId: "not an id" },
+  {
+    platform: "youtube",
+    thumbnailMediaId: "00000000-0000-4000-8000-0000000000b1",
+  },
+  {
+    platform: "youtube",
+    thumbnailMediaId: "00000000-0000-7000-8000-0000000000B1",
+  },
+  {
+    autoAddMusic: true,
+    photoCoverIndex: 2,
+    photoTitle: "Synthetic photos",
+    platform: "tiktok",
+    privacyLevel: "SELF_ONLY",
+  },
+  { platform: "tiktok", videoCoverTimestampMs: 1500 },
+  { platform: "tiktok", videoCoverTimestampMs: 1.5 },
+  { photoCoverIndex: -1, platform: "tiktok" },
+  { photoTitle: "a".repeat(91), platform: "tiktok" },
+  { platform: "instagram" },
+  {
+    audioName: "Synthetic theme",
+    collaborators: ["synthetic.friend", "another_one"],
+    coverMediaId: "00000000-0000-7000-8000-0000000000b2",
+    platform: "instagram",
+    shareToFeed: false,
+    thumbOffsetMs: 2000,
+    trialReel: "manual",
+  },
+  // Refused later: kept until the post is scheduled.
+  { collaborators: [], platform: "instagram" },
+  { collaborators: ["not a username"], platform: "instagram" },
+  { audioName: "Two\nlines", platform: "instagram" },
+  { collaborators: ["a", "b", "c", "d"], platform: "instagram" },
+  { platform: "instagram", trialReel: "SS_PERFORMANCE" },
+  { platform: "instagram", thumbOffsetMs: -1 },
+  { coverMediaId: 12, platform: "instagram" },
+  { platform: "facebook" },
+  { platform: "facebook", videoTitle: "A synthetic title" },
+  { platform: "facebook", videoTitle: "a".repeat(256) },
+  { platform: "facebook", videoTitle: ["A title"] },
 ];
 
 describe("the contract's longest wait for an outcome", () => {
@@ -635,6 +703,32 @@ describe("the contract's target options", () => {
     expect(contractOptions.LinkedInVisibilitySchema.literals).toStrictEqual(
       LinkedInVisibilitySchema.literals
     );
+  });
+
+  it("hold the limits of YouTube's thumbnails, TikTok's photos, Instagram and Facebook", () => {
+    expect([
+      contractOptions.maxYouTubeThumbnailByteSize,
+      contractOptions.youTubeThumbnailTypes,
+      contractOptions.YouTubeLicenseSchema.literals,
+      contractOptions.maxTikTokPhotoTitleLength,
+      contractOptions.maxInstagramAudioNameLength,
+      contractOptions.maxInstagramCollaborators,
+      contractOptions.maxInstagramCoverByteSize,
+      contractOptions.instagramCoverTypes,
+      contractOptions.InstagramTrialReelSchema.literals,
+      contractOptions.maxFacebookVideoTitleLength,
+    ]).toStrictEqual([
+      maxYouTubeThumbnailByteSize,
+      youTubeThumbnailTypes,
+      YouTubeLicenseSchema.literals,
+      maxTikTokPhotoTitleLength,
+      maxInstagramAudioNameLength,
+      maxInstagramCollaborators,
+      maxInstagramCoverByteSize,
+      instagramCoverTypes,
+      InstagramTrialReelSchema.literals,
+      maxFacebookVideoTitleLength,
+    ]);
   });
 
   it("hold the limits of Mastodon, Bluesky and Threads", () => {

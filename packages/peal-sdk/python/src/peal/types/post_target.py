@@ -30,6 +30,9 @@ class PostTarget(UniversalBaseModel):
     ] = None
     round: int
     status: PostTargetStatus
+    thumbnail_not_set: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="thumbnailNotSet"), pydantic.Field(alias="thumbnailNotSet")
+    ] = None
     unconfirmed_reason: typing_extensions.Annotated[
         typing.Optional[UnconfirmedReason],
         FieldMetadata(alias="unconfirmedReason"),
