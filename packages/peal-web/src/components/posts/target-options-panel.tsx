@@ -655,7 +655,11 @@ const OptionMediaPicker = ({
       texts={{
         attach: t("mediaUse"),
         description: t("mediaPickerDescription"),
-        open: chosen ? t("mediaReplace") : t("mediaChoose"),
+        // Named after the field: the attachments' picker is "Choose from
+        // the library" too.
+        open: chosen
+          ? t("mediaReplace", { label: t(field.label) })
+          : t("mediaChoose", { label: t(field.label) }),
         title: t("mediaPickerTitle", { label: t(field.label) }),
       }}
       workspaceId={workspaceId}

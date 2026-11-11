@@ -1047,6 +1047,6 @@ describe(MediaOptionView, () => {
     expect(html).toContain("Reading the image…");
     expect(html).toContain("Remove");
     expect(empty).toContain("No image chosen.");
-    expect(empty).not.toContain("Choose from the library");
+    expect(empty).not.toContain("choose from the library");
   });
 });
