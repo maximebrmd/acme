@@ -21,6 +21,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = QueueHasNoRoomEncoded.Builder.class)
 public final class QueueHasNoRoomEncoded {
+    private final QueueHasNoRoomEncodedTag tag;
+
     private final Optional<String> code;
 
     private final Optional<String> message;
@@ -34,18 +36,25 @@ public final class QueueHasNoRoomEncoded {
     private final Map<String, Object> additionalProperties;
 
     private QueueHasNoRoomEncoded(
+            QueueHasNoRoomEncodedTag tag,
             Optional<String> code,
             Optional<String> message,
             Optional<String> requestId,
             String queueId,
             QueueNoRoom reason,
             Map<String, Object> additionalProperties) {
+        this.tag = tag;
         this.code = code;
         this.message = message;
         this.requestId = requestId;
         this.queueId = queueId;
         this.reason = reason;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("_tag")
+    public QueueHasNoRoomEncodedTag getTag() {
+        return tag;
     }
 
     @JsonProperty("code")
@@ -85,7 +94,8 @@ public final class QueueHasNoRoomEncoded {
     }
 
     private boolean equalTo(QueueHasNoRoomEncoded other) {
-        return code.equals(other.code)
+        return tag.equals(other.tag)
+                && code.equals(other.code)
                 && message.equals(other.message)
                 && requestId.equals(other.requestId)
                 && queueId.equals(other.queueId)
@@ -94,7 +104,7 @@ public final class QueueHasNoRoomEncoded {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.code, this.message, this.requestId, this.queueId, this.reason);
+        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.queueId, this.reason);
     }
 
     @java.lang.Override
@@ -102,14 +112,18 @@ public final class QueueHasNoRoomEncoded {
         return ObjectMappers.stringify(this);
     }
 
-    public static QueueIdStage builder() {
+    public static TagStage builder() {
         return new Builder();
+    }
+
+    public interface TagStage {
+        QueueIdStage tag(@NotNull QueueHasNoRoomEncodedTag tag);
+
+        Builder from(QueueHasNoRoomEncoded other);
     }
 
     public interface QueueIdStage {
         ReasonStage queueId(@NotNull String queueId);
-
-        Builder from(QueueHasNoRoomEncoded other);
     }
 
     public interface ReasonStage {
@@ -137,7 +151,9 @@ public final class QueueHasNoRoomEncoded {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements QueueIdStage, ReasonStage, _FinalStage {
+    public static final class Builder implements TagStage, QueueIdStage, ReasonStage, _FinalStage {
+        private QueueHasNoRoomEncodedTag tag;
+
         private String queueId;
 
         private QueueNoRoom reason;
@@ -154,11 +170,19 @@ public final class QueueHasNoRoomEncoded {
 
         @java.lang.Override
         public Builder from(QueueHasNoRoomEncoded other) {
+            tag(other.getTag());
             code(other.getCode());
             message(other.getMessage());
             requestId(other.getRequestId());
             queueId(other.getQueueId());
             reason(other.getReason());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("_tag")
+        public QueueIdStage tag(@NotNull QueueHasNoRoomEncodedTag tag) {
+            this.tag = Objects.requireNonNull(tag, "tag must not be null");
             return this;
         }
 
@@ -217,12 +241,13 @@ public final class QueueHasNoRoomEncoded {
 
         @java.lang.Override
         public QueueHasNoRoomEncoded build() {
-            return new QueueHasNoRoomEncoded(code, message, requestId, queueId, reason, additionalProperties);
+            return new QueueHasNoRoomEncoded(tag, code, message, requestId, queueId, reason, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("code")
+            if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("code")
                     || key.equalsIgnoreCase("message")
                     || key.equalsIgnoreCase("requestId")
                     || key.equalsIgnoreCase("queueId")

@@ -818,11 +818,8 @@ public record PostRefusal
                 "QueueNotFound" => jsonWithoutDiscriminator.Deserialize<Peal.QueueNotFoundEncoded?>(
                     options
                 ) ?? throw new JsonException("Failed to deserialize Peal.QueueNotFoundEncoded"),
-                "QueueHasNoRoom" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.QueueHasNoRoomEncoded?>(options)
-                        ?? throw new JsonException(
-                            "Failed to deserialize Peal.QueueHasNoRoomEncoded"
-                        ),
+                "QueueHasNoRoom" => json.Deserialize<Peal.QueueHasNoRoomEncoded?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.QueueHasNoRoomEncoded"),
                 _ => json.Deserialize<object?>(options),
             };
             return new PostRefusal(discriminator, value);

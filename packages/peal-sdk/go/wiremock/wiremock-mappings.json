@@ -6108,6 +6108,45 @@
       }
     },
     {
+      "id": "ee4a9f9d-b506-48a8-b114-3ac4a380fbd4",
+      "name": "Reshuffle a queue - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/queues/{queueId}/reshuffle",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "queueId": {
+            "equalTo": "queueId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"moved\": 1,\n  \"remaining\": 1,\n  \"stoppedBy\": \"planLimit\",\n  \"unchanged\": 1\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ee4a9f9d-b506-48a8-b114-3ac4a380fbd4",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "37f6e4d3-92dc-407c-9664-73c853985cb7",
       "name": "Get a channel's default options - default",
       "request": {
@@ -6226,6 +6265,6 @@
     }
   ],
   "meta": {
-    "total": 166
+    "total": 167
   }
 }

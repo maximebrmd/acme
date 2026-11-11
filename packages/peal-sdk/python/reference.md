@@ -14110,7 +14110,7 @@ client.channel_sets.delete(
 </details>
 
 ## queues
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L31-L59">list</a>(...) -> typing.List[Queue]</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L32-L60">list</a>(...) -> typing.List[Queue]</code></summary>
 <dl>
 <dd>
 
@@ -14183,7 +14183,7 @@ client.queues.list(
 </dl>
 </details>
 
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L61-L129">create</a>(...) -> Queue</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L62-L130">create</a>(...) -> Queue</code></summary>
 <dl>
 <dd>
 
@@ -14272,7 +14272,7 @@ client.queues.create(
 </dl>
 </details>
 
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L131-L164">get</a>(...) -> Queue</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L132-L165">get</a>(...) -> Queue</code></summary>
 <dl>
 <dd>
 
@@ -14354,7 +14354,7 @@ client.queues.get(
 </dl>
 </details>
 
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L166-L239">update</a>(...) -> Queue</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L167-L240">update</a>(...) -> Queue</code></summary>
 <dl>
 <dd>
 
@@ -14452,7 +14452,7 @@ client.queues.update(
 </dl>
 </details>
 
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L241-L273">delete</a>(...)</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L242-L274">delete</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -14534,7 +14534,7 @@ client.queues.delete(
 </dl>
 </details>
 
-<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L275-L315">slots</a>(...) -> QueuePreview</code></summary>
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L276-L316">slots</a>(...) -> QueuePreview</code></summary>
 <dl>
 <dd>
 
@@ -14605,6 +14605,88 @@ client.queues.slots(
 <dd>
 
 **count:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.queues.<a href="src/peal/queues/client.py#L318-L351">reshuffle</a>(...) -> QueueReshuffle</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and `post.scheduled` told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (`stoppedBy` `planLimit`), when no slot is left within 366 days (`full`), or when the queue was saved meanwhile (`changed`); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (`noSlots`) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.queues.reshuffle(
+    workspace_id="workspaceId",
+    queue_id="queueId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**queue_id:** `str` 
     
 </dd>
 </dl>

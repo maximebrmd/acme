@@ -599,11 +599,13 @@ if typing.TYPE_CHECKING:
     from .queue import Queue
     from .queue_details import QueueDetails
     from .queue_has_no_room_encoded import QueueHasNoRoomEncoded
+    from .queue_has_no_room_encoded_tag import QueueHasNoRoomEncodedTag
     from .queue_name_taken_encoded import QueueNameTakenEncoded
     from .queue_name_taken_encoded_tag import QueueNameTakenEncodedTag
     from .queue_no_room import QueueNoRoom
     from .queue_not_found_encoded import QueueNotFoundEncoded
     from .queue_preview import QueuePreview
+    from .queue_reshuffle import QueueReshuffle
     from .queue_slot import QueueSlot
     from .reachable_ad_account import ReachableAdAccount
     from .rejection_reason import RejectionReason
@@ -613,6 +615,7 @@ if typing.TYPE_CHECKING:
     from .reply_pending_encoded import ReplyPendingEncoded
     from .reply_status_conflict_encoded import ReplyStatusConflictEncoded
     from .reply_status_conflict_encoded_tag import ReplyStatusConflictEncodedTag
+    from .reshuffle_stop import ReshuffleStop
     from .return_url_not_allowed_encoded import ReturnUrlNotAllowedEncoded
     from .review_comment import ReviewComment
     from .review_comment_resolved import ReviewCommentResolved
@@ -1367,11 +1370,13 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Queue": ".queue",
     "QueueDetails": ".queue_details",
     "QueueHasNoRoomEncoded": ".queue_has_no_room_encoded",
+    "QueueHasNoRoomEncodedTag": ".queue_has_no_room_encoded_tag",
     "QueueNameTakenEncoded": ".queue_name_taken_encoded",
     "QueueNameTakenEncodedTag": ".queue_name_taken_encoded_tag",
     "QueueNoRoom": ".queue_no_room",
     "QueueNotFoundEncoded": ".queue_not_found_encoded",
     "QueuePreview": ".queue_preview",
+    "QueueReshuffle": ".queue_reshuffle",
     "QueueSlot": ".queue_slot",
     "ReachableAdAccount": ".reachable_ad_account",
     "RejectionReason": ".rejection_reason",
@@ -1381,6 +1386,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ReplyPendingEncoded": ".reply_pending_encoded",
     "ReplyStatusConflictEncoded": ".reply_status_conflict_encoded",
     "ReplyStatusConflictEncodedTag": ".reply_status_conflict_encoded_tag",
+    "ReshuffleStop": ".reshuffle_stop",
     "ReturnUrlNotAllowedEncoded": ".return_url_not_allowed_encoded",
     "ReviewComment": ".review_comment",
     "ReviewCommentResolved": ".review_comment_resolved",
@@ -2157,11 +2163,13 @@ __all__ = [
     "Queue",
     "QueueDetails",
     "QueueHasNoRoomEncoded",
+    "QueueHasNoRoomEncodedTag",
     "QueueNameTakenEncoded",
     "QueueNameTakenEncodedTag",
     "QueueNoRoom",
     "QueueNotFoundEncoded",
     "QueuePreview",
+    "QueueReshuffle",
     "QueueSlot",
     "ReachableAdAccount",
     "RejectionReason",
@@ -2171,6 +2179,7 @@ __all__ = [
     "ReplyPendingEncoded",
     "ReplyStatusConflictEncoded",
     "ReplyStatusConflictEncodedTag",
+    "ReshuffleStop",
     "ReturnUrlNotAllowedEncoded",
     "ReviewComment",
     "ReviewCommentResolved",

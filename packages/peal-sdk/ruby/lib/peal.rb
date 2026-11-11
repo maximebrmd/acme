@@ -223,6 +223,7 @@ require_relative "peal/queues/types/get_queues_request"
 require_relative "peal/queues/types/update_queues_request"
 require_relative "peal/queues/types/delete_queues_request"
 require_relative "peal/queues/types/slots_queues_request"
+require_relative "peal/queues/types/reshuffle_queues_request"
 require_relative "peal/channel_defaults/client"
 require_relative "peal/channel_defaults/types/get_channel_defaults_request"
 require_relative "peal/channel_defaults/types/new_channel_defaults"
@@ -519,6 +520,7 @@ module Peal
     autoload :PostContentInvalidEncodedTag, ::File.join(__dir__, "peal/types/post_content_invalid_encoded_tag")
     autoload :PostContentInvalidEncoded, ::File.join(__dir__, "peal/types/post_content_invalid_encoded")
     autoload :PostNotFoundEncoded, ::File.join(__dir__, "peal/types/post_not_found_encoded")
+    autoload :QueueHasNoRoomEncodedTag, ::File.join(__dir__, "peal/types/queue_has_no_room_encoded_tag")
     autoload :QueueNoRoom, ::File.join(__dir__, "peal/types/queue_no_room")
     autoload :QueueHasNoRoomEncoded, ::File.join(__dir__, "peal/types/queue_has_no_room_encoded")
     autoload :QueueNotFoundEncoded, ::File.join(__dir__, "peal/types/queue_not_found_encoded")
@@ -793,6 +795,8 @@ module Peal
     autoload :Queue, ::File.join(__dir__, "peal/types/queue")
     autoload :QueueDetails, ::File.join(__dir__, "peal/types/queue_details")
     autoload :QueuePreview, ::File.join(__dir__, "peal/types/queue_preview")
+    autoload :ReshuffleStop, ::File.join(__dir__, "peal/types/reshuffle_stop")
+    autoload :QueueReshuffle, ::File.join(__dir__, "peal/types/queue_reshuffle")
     autoload :ReplyInvalidEncodedTag, ::File.join(__dir__, "peal/types/reply_invalid_encoded_tag")
     autoload :ReplyInvalidEncodedReason, ::File.join(__dir__, "peal/types/reply_invalid_encoded_reason")
     autoload :ReplyInvalidEncoded, ::File.join(__dir__, "peal/types/reply_invalid_encoded")
