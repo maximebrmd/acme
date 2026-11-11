@@ -39,7 +39,7 @@ describe(refusedWhileImpersonating, () => {
       path.startsWith("/two-factor/")
     );
 
-    expect(routes).toEqual(
+    expect(routes).toStrictEqual(
       expect.arrayContaining([
         "/two-factor/disable",
         "/two-factor/enable",
@@ -49,9 +49,9 @@ describe(refusedWhileImpersonating, () => {
         "/two-factor/verify-totp",
       ])
     );
-    expect(routes.filter((path) => !refusedWhileImpersonating(path))).toEqual(
-      []
-    );
+    expect(
+      routes.filter((path) => !refusedWhileImpersonating(path))
+    ).toStrictEqual([]);
   });
 
   it.each([
