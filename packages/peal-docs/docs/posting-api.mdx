@@ -461,7 +461,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/send" \
 
 Posts carry the queue that placed them (`queueId`, null once it is deleted), and `GET …/posts/search?queueId=…` lists them.
 
-Saving a queue's slots moves no post. `POST …/queues/{queueId}/reshuffle`, with no body, moves its waiting posts (scheduled or awaiting approval, after now) onto its slots as they are now, in the order of their times, those moved by hand included ([Move the waiting posts onto new slots](/scheduling#reshuffle)). Each move is a `reschedule`: approvals asked again, the plan counted in the new month, `post.scheduled` told; a post on its slot is not written. It needs post:schedule, or post:create where posts wait for an approval, and answers what it did:
+Saving a queue's slots moves no post. `POST …/queues/{queueId}/reshuffle`, with no body, moves its waiting posts (scheduled or awaiting approval, after now) onto its slots as they are now, in the order of their times, those moved by hand included ([Move the waiting posts onto new slots](/scheduling#reshuffle)). Each move is a `reschedule` (the plan counted in the new month, `post.scheduled` told for a scheduled post), but for approvals: a scheduled post goes through the approval policy as the caller's, and a post awaiting approval keeps waiting at its new time, whoever calls, its request still the requester's and `post.approval_requested` told with the new time; a post on its slot is not written. It needs post:schedule, or post:create where posts wait for an approval, and answers what it did:
 
 ```json
 { "moved": 12, "unchanged": 3, "remaining": 0, "stoppedBy": null }

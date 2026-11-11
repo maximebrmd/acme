@@ -3061,7 +3061,7 @@
       "waiting": "{more, select, true {More than {count, number} posts wait in this queue at the times they had.} other {{count, plural, one {# post waits in this queue at the time it had.} other {# posts wait in this queue at the times they had.}}}}",
       "action": "Move the waiting posts onto the new slots",
       "confirmTitle": "Move the waiting posts onto the new slots?",
-      "confirmDescription": "Every post that waits in this queue moves onto its slots as they are now, in the order of their times: the first onto the first free slot, and so on. Posts moved by hand move too. A post already on its slot stays where it is, and what the posts say and where they go do not change.",
+      "confirmDescription": "Every post that waits in this queue moves onto its slots as they are now, in the order of their times: the first onto the first free slot, and so on. Posts moved by hand move too, and posts waiting for an approval keep waiting, at their new times. A post already on its slot stays where it is, and what the posts say and where they go do not change.",
       "confirm": "Move the posts",
       "moving": "Moving…",
       "result": "{moved, plural, one {# post moved} other {# posts moved}}, {unchanged, number} unchanged, {remaining, number} remaining.",

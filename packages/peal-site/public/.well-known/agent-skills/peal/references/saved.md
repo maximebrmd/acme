@@ -90,6 +90,7 @@ peal posts list --queue Weekdays --json
 - `peal queues create` and `update` change what every member's posts are
   queued into: only when the user asked. Changing slots moves no post;
   `peal queues reshuffle <queue> --json` moves the waiting ones (those moved
-  by hand too) onto the slots as they now are, only when the user asks, and
+  by hand too; those awaiting approval keep waiting) onto the slots as they
+  now are, only when the user asks, and
   answers `moved`, `unchanged`, `remaining` and `stoppedBy`: run it again
   after `changed`, tell the user after `planLimit` or `full`.
