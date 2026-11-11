@@ -82,6 +82,10 @@ const PublishedSchema = Schema.TaggedStruct("published", {
   // When the platform accepted the post, or for a post the user confirmed,
   // when the attempt that published it started.
   publishedAt: Schema.DateTimeUtc,
+  // When Peal deleted it from the platform, every part of it, at a
+  // member's request (`./live-post-change.ts`). It stays published: it did
+  // go out, and counts as it did. Absent while it is there.
+  removedAt: Schema.optionalKey(Schema.DateTimeUtc),
 });
 
 const FailedSchema = Schema.TaggedStruct("failed", {
