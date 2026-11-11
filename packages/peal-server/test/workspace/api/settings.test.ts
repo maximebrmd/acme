@@ -399,6 +399,7 @@ const PortsLive = Layer.mergeAll(
       const fakes = yield* Fakes;
 
       return ConnectedAppStore.of({
+        grantIn: () => Effect.succeedNone,
         list: () =>
           Effect.succeed([
             {

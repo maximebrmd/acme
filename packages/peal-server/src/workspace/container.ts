@@ -21,6 +21,7 @@ import { WorkspacesHandlers } from "#workspace/api/workspaces.ts";
 import { AccountData } from "#workspace/application/account-data.ts";
 import { AccountStanding } from "#workspace/application/account-standing.ts";
 import { Accounts } from "#workspace/application/accounts.ts";
+import { ActorsNow } from "#workspace/application/actors-now.ts";
 import { ApiKeys } from "#workspace/application/api-keys.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
@@ -103,6 +104,11 @@ const AdaptersLive = Layer.mergeAll(
 );
 
 const UseCasesLive = Layer.mergeAll(
+  // Who a job that acts for someone acts as now, with their applications'
+  // grants as they now stand.
+  ActorsNow.layer.pipe(
+    Layer.provide(Layer.merge(DrizzleConnectedAppStore, ResolveMember.layer))
+  ),
   Accounts.layer,
   AccountStanding.layer,
   ApiKeys.layer,
