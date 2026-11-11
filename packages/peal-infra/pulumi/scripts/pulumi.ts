@@ -1,12 +1,23 @@
+import path from "node:path";
+
 // Runs the Pulumi CLI in one of this package's projects, with the
-// credentials it needs read from the owner's machine (README.md):
+// credentials it needs read from the owner's login keychain (README.md,
+// "State and credentials"):
 //
 //   bun scripts/pulumi.ts <account|environment> <pulumi arguments…>
 //
-// Each variable already set wins, as in CI. Nothing here prints a secret.
-import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import path from "node:path";
+// Each variable already set wins, as in CI, and the keychain is read only
+// when one is missing: macOS then asks the owner to allow it. They reach
+// Pulumi in its environment alone, never a file. Nothing here prints a
+// secret.
+import { Option } from "effect";
+
+import {
+  credentialNames,
+  credentialsFrom,
+  keychainAccount,
+  keychainService,
+} from "./credentials.ts";
 
 const [project, ...args] = process.argv.slice(2);
 
@@ -17,36 +28,41 @@ if (project !== "account" && project !== "environment") {
   process.exit(2);
 }
 
-const folder = path.join(homedir(), ".config", "peal");
+const missing = credentialNames.filter(
+  (name) => process.env[name] === undefined
+);
+
 const env: Record<string, string> = {};
 
-const token = path.join(folder, "cloudflare-pulumi.token");
+if (missing.length > 0) {
+  const found = Bun.spawnSync(
+    [
+      "security",
+      "find-generic-password",
+      "-a",
+      keychainAccount,
+      "-s",
+      keychainService,
+      "-w",
+    ],
+    { stderr: "ignore", stdin: "ignore", stdout: "pipe" }
+  );
 
-if (process.env["CLOUDFLARE_API_TOKEN"] === undefined && existsSync(token)) {
-  env["CLOUDFLARE_API_TOKEN"] = readFileSync(token, "utf-8").trim();
-}
+  const credentials =
+    found.exitCode === 0
+      ? credentialsFrom(found.stdout.toString().trim())
+      : Option.none();
 
-// The state bucket's own key, as NAME=value lines.
-const state = path.join(folder, "pulumi-state.env");
-
-if (process.env["AWS_ACCESS_KEY_ID"] === undefined && existsSync(state)) {
-  for (const line of readFileSync(state, "utf-8").split("\n")) {
-    const at = line.indexOf("=");
-
-    if (at > 0) {
-      env[line.slice(0, at)] = line.slice(at + 1).trim();
-    }
+  if (Option.isNone(credentials)) {
+    console.error(
+      `No usable keychain item "${keychainService}": run \`bun scripts/keychain.ts\` (README.md), or allow the keychain's prompt. Missing: ${missing.join(", ")}.`
+    );
+    process.exit(1);
   }
-}
 
-const passphrase = path.join(folder, "pulumi-passphrase");
-
-if (
-  process.env["PULUMI_CONFIG_PASSPHRASE"] === undefined &&
-  process.env["PULUMI_CONFIG_PASSPHRASE_FILE"] === undefined &&
-  existsSync(passphrase)
-) {
-  env["PULUMI_CONFIG_PASSPHRASE_FILE"] = passphrase;
+  for (const name of missing) {
+    env[name] = credentials.value[name];
+  }
 }
 
 const run = Bun.spawn(["pulumi", ...args], {

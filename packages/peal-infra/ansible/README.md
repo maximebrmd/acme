@@ -466,7 +466,24 @@ services issue reaches it in one of two ways:
   `inventory/group_vars/<environment>/vault.yml`, which Git ignores, fill it
   in, encrypt it with `uv run ansible-vault encrypt`, and add
   `--ask-vault-pass` to every run. Ansible writes the values to the server and
-  never prints them.
+  never prints them. On a Mac, keep the vault's password in a password
+  manager and a copy in the login keychain, which scripts can read, with no
+  trusted application, so macOS asks before each read (allow it once,
+  never "Always Allow"):
+
+  ```sh
+  security add-generic-password -a peal -s peal-ansible-vault-sandbox -T "" -U -w
+  ```
+
+  `security` then asks for the password, without showing it. Runs then name
+  the vault and `scripts/vault-keychain-client.py`, which Ansible calls with
+  the vault's id, instead of `--ask-vault-pass`:
+
+  ```sh
+  uv run ansible-playbook playbooks/site.yml --limit sandbox \
+    --vault-id sandbox@scripts/vault-keychain-client.py
+  ```
+
 - **On the server**: leave the vault out and write the same values there, as
   `NAME='value'` lines, over SSH:
 
@@ -482,8 +499,8 @@ generated and committed, and the tunnel's token and the buckets' keys in its
 vault. After each `pulumi up` of the environment, run
 
 ```sh
-uv run python scripts/cloudflare_from_pulumi.py --group sandbox \
-  --vault-password-file ~/.config/peal/vault-sandbox.pass
+uv run python scripts/cloudflare_from_pulumi.py \
+  --vault-id sandbox@scripts/vault-keychain-client.py
 ```
 
 then `site.yml`. Steps 3 and 4 of [Before the first run](#before-the-first-run)

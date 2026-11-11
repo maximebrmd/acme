@@ -1,8 +1,8 @@
 """Brings an environment's Cloudflare values from its Pulumi stack into the
 inventory, so they live in one place, Pulumi's (packages/peal-infra/pulumi):
 
-    uv run python scripts/cloudflare_from_pulumi.py --group sandbox \\
-      --vault-password-file ~/.config/peal/vault-sandbox.pass
+    uv run python scripts/cloudflare_from_pulumi.py \\
+      --vault-id sandbox@scripts/vault-keychain-client.py
 
 It writes group_vars/<group>/cloudflare.yml, which is committed and never
 edited by hand: the audience tags of the environment's Access applications,
@@ -25,7 +25,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from ansible.parsing.vault import VaultLib, VaultSecret
+from ansible.parsing.dataloader import DataLoader
+from ansible.parsing.vault import VaultLib, VaultSecret, get_file_vault_secret
 
 INFRA = Path(__file__).resolve().parent.parent
 PULUMI = INFRA.parent / "pulumi" / "scripts" / "pulumi.ts"
@@ -115,24 +116,34 @@ def update_vault(path: Path, password: bytes, tunnel_token: str, credentials: di
     return changed
 
 
+def vault_password(group: str, source: str) -> bytes:
+    secret = get_file_vault_secret(filename=source, vault_id=group, loader=DataLoader())
+    secret.load()
+    return secret.bytes
+
+
 def main(argv: list[str] | None = None, outputs_of: Callable[[str], Outputs] = stack_outputs) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--group", required=True)
-    parser.add_argument("--vault-password-file", required=True, type=Path)
+    # As Ansible takes it: the group, then its password's file or client
+    # script (a name ending in -client, called with --vault-id <group>).
+    parser.add_argument("--vault-id", required=True, metavar="GROUP@SOURCE")
     parser.add_argument("--inventory", type=Path, default=INFRA / "inventory")
     options = parser.parse_args(argv)
+    group, at, source = options.vault_id.partition("@")
+    if not (group and at and source):
+        parser.error("--vault-id takes <group>@<password file or client script>")
 
-    outputs = outputs_of(options.group)
-    folder = options.inventory / "group_vars" / options.group
-    values = yaml.safe_dump(inventory_values(options.group, outputs), sort_keys=False)
-    (folder / "cloudflare.yml").write_text(HEADER.format(group=options.group) + values)
-    print(f"Wrote group_vars/{options.group}/cloudflare.yml")
+    outputs = outputs_of(group)
+    folder = options.inventory / "group_vars" / group
+    values = yaml.safe_dump(inventory_values(group, outputs), sort_keys=False)
+    (folder / "cloudflare.yml").write_text(HEADER.format(group=group) + values)
+    print(f"Wrote group_vars/{group}/cloudflare.yml")
 
     credentials = vault_values(outputs)
     if credentials is None:
         print("The stack has no bucket keys yet: the vault is left as it is")
         return 0
-    password = options.vault_password_file.expanduser().read_bytes().strip()
+    password = vault_password(group, source)
     changed = update_vault(folder / "vault.yml", password, outputs["tunnelToken"], credentials)
     print("Vault: " + (", ".join(changed) if changed else "nothing changed"))
     return 0
