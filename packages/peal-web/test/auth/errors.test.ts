@@ -16,6 +16,25 @@ describe(authErrorKey, () => {
     }
   );
 
+  it("tells an account locked by two-step verification from rate limiting", () => {
+    expect(
+      authErrorKey({ code: "ACCOUNT_TEMPORARILY_LOCKED", status: 429 })
+    ).toBe("ACCOUNT_TEMPORARILY_LOCKED");
+  });
+
+  it.each([
+    "INVALID_CODE",
+    "INVALID_BACKUP_CODE",
+    "TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE",
+    "INVALID_TWO_FACTOR_COOKIE",
+    "TOTP_ALREADY_ENABLED",
+    "EMAIL_NOT_VERIFIED_FOR_TWO_STEP",
+    "TWO_STEP_REQUIRED_BY_WORKSPACE",
+    "TWO_STEP_REQUIRED",
+  ])("explains %s, from two-step verification", (code) => {
+    expect(authErrorKey({ code, status: 400 })).toBe(code);
+  });
+
   it("explains rate limiting by its status", () => {
     expect(authErrorKey({ status: 429 })).toBe("TOO_MANY_REQUESTS");
   });
