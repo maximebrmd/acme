@@ -55,4 +55,11 @@ describe("a Bluesky account's scopes", () => {
     expect(createsRecords(["transition:generic"], gates)).toBeTruthy();
     expect(createsRecords(["atproto"], gates)).toBeFalsy();
   });
+
+  it("grant nothing by a scope that does not decode, and never throw on it", () => {
+    expect(createsRecords(["repo:%zz"], gates)).toBeFalsy();
+    expect(
+      createsRecords(["repo:%zz?action=create", "repo:*"], gates)
+    ).toBeTruthy();
+  });
 });

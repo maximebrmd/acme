@@ -5,7 +5,10 @@
 // (`create`, `update`, `delete`; all when it names none). The PDS checks
 // every write of `com.atproto.repo.applyWrites` against them, with no
 // `rpc` scope of its own. `transition:generic`, the scope of sessions from
-// before granular permissions, allows every write.
+// before granular permissions, allows every write. A scope that does not
+// decode grants nothing: scopes are what the account's server answered.
+
+import { Option } from "effect";
 
 /** The collection of a thread's reply gate. */
 export const threadgateCollection = "app.bsky.feed.threadgate";
@@ -27,6 +30,9 @@ const genericScope = "transition:generic";
 
 const repoScope = /^repo(?::(?<positional>[^?]+))?(?:\?(?<query>.*))?$/u;
 
+// A collection as the scope writes it, none when it does not decode.
+const decodeComponent = Option.liftThrowable(decodeURIComponent);
+
 // Whether one scope lets the account's repository take a new record of
 // `collection`.
 const createsIn = (scope: string, collection: string): boolean => {
@@ -43,8 +49,18 @@ const createsIn = (scope: string, collection: string): boolean => {
   const query = new URLSearchParams(groups["query"] ?? "");
   const { positional } = groups;
 
+  // The collection named before the query, decoded.
+  const positioned: Option.Option<readonly string[]> =
+    positional === undefined
+      ? Option.some([])
+      : decodeComponent(positional).pipe(Option.map((name) => [name]));
+
+  if (Option.isNone(positioned)) {
+    return false;
+  }
+
   const collections = new Set([
-    ...(positional === undefined ? [] : [decodeURIComponent(positional)]),
+    ...positioned.value,
     ...query.getAll("collection"),
   ]);
 
