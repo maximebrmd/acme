@@ -243,6 +243,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   service at `PEAL_TERMS_URL`. Explain a `PlanLimitReached`, and Better
   Auth's `MEMBER_LIMIT_REACHED`, wherever they surface, from the `Billing`
   catalogue and `Auth.errors`.
+- Below it, on a server that bills or not, `UsageHistoryScreen` reads
+  `GET …/usage` for the last 7, 30 or 90 UTC days (`usageOf`): the
+  totals, a partner's plan when `sharedWith` says so, and
+  `UsageHistoryView`'s chart (posts published as bars, channels as a
+  line) with `UsageDaysTable` behind the **Table** tab, a dash for a day
+  without a snapshot. Its strings are `Billing.usage.history`.
 - The sign-up and password reset pages read the Turnstile site key at
   request time (`captchaSiteKey()`, `GET /api/captcha`); `useCaptcha` shows
   the widget only with one, sends its token as `x-captcha-response`, and
