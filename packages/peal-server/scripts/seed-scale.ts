@@ -10,8 +10,12 @@
 // Per user (the sizing model's averages): one workspace, 4 channels, 30
 // posts a month on 2 or 3 channels each, over three months. The posts of
 // the last 30 days are followed by analytics and due at the next
-// collection; a day of posts is still scheduled. It refuses a database
-// whose name does not end in "scale", and one that already holds posts.
+// collection; a day of posts is still scheduled. The first workspace has
+// two webhook endpoints and a million deliveries over the 30 days of the
+// log, one in twenty failed for good, to read the plans of the log across
+// endpoints and of the replay of failed deliveries on. It refuses a
+// database whose name does not end in "scale", and one that already holds
+// posts.
 
 import { Option, Schema } from "effect";
 
@@ -155,6 +159,54 @@ await timed("tracked posts", async () => {
   FROM publishing.post_targets AS target
   JOIN publishing.posts AS post ON post.id = target.post_id
   WHERE target.status = 'published'`;
+});
+
+// A busy workspace's webhooks: two endpoints, a million events, each
+// delivered once, spread over the log's 30 days.
+const deliveriesOfBusiest = 1_000_000;
+
+await timed("webhook deliveries", async () => {
+  await sql`
+  INSERT INTO webhooks.endpoints
+    (id, workspace_id, url, description, event_types, secret, status,
+     created_at, updated_at)
+  SELECT uuidv7(), workspace.id, 'https://hooks.example.com/synthetic-' || slot,
+         '', ARRAY['post.published', 'post.failed'], 'k1.synthetic.synthetic',
+         'enabled', now() - interval '40 days', now() - interval '40 days'
+  FROM seed_workspaces AS workspace
+  CROSS JOIN generate_series(1, 2) AS slot
+  WHERE workspace.number = 1`;
+
+  await sql`
+  CREATE TEMP TABLE seed_events AS
+  SELECT uuidv7() AS id, n,
+         now() - ((${deliveriesOfBusiest} - n)::double precision / ${deliveriesOfBusiest}) * interval '30 days' AS at
+  FROM generate_series(1, ${deliveriesOfBusiest}) AS n`;
+
+  await sql`
+  INSERT INTO webhooks.events (id, workspace_id, key, type, data, occurred_at)
+  SELECT event.id, workspace.id, 'synthetic:' || event.n, 'post.published',
+         '{}'::jsonb, event.at
+  FROM seed_events AS event
+  CROSS JOIN seed_workspaces AS workspace
+  WHERE workspace.number = 1`;
+
+  await sql`
+  INSERT INTO webhooks.deliveries
+    (id, endpoint_id, event_id, event_type, workspace_id, status,
+     failure_reason, attempts, created_at, completed_at)
+  SELECT uuidv7(), endpoint.id, event.id, 'post.published',
+         endpoint.workspace_id,
+         CASE WHEN event.n % 20 = 0 THEN 'failed' ELSE 'succeeded' END,
+         CASE WHEN event.n % 20 = 0 THEN 'exhausted' END,
+         CASE WHEN event.n % 20 = 0 THEN 8 ELSE 1 END,
+         event.at, event.at + interval '1 second'
+  FROM seed_events AS event
+  JOIN (
+    SELECT id, workspace_id, row_number() OVER (ORDER BY id) - 1 AS slot
+    FROM webhooks.endpoints
+  ) AS endpoint ON endpoint.slot = event.n % 2
+  ORDER BY event.n`;
 });
 
 await timed("analyze", async () => {
