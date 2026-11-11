@@ -74,6 +74,7 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "request_changes",
   "reschedule_post",
   "schedule_post",
+  "unpublish_post",
   "unschedule_post",
   "withdraw_comment_reply",
 ]);

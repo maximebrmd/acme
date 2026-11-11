@@ -1,6 +1,6 @@
 import { Effect, Option } from "effect";
 import { CurrentMember, queueHorizonDays } from "peal-contract";
-import type { Member, Permission } from "peal-contract";
+import type { LivePostRefusal, Member, Permission } from "peal-contract";
 
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
@@ -158,3 +158,19 @@ export const presetRefusals = {
   ChannelSetNotFound: unknownChannelSet,
   SignatureNotFound: unknownSignature,
 } as const;
+
+/** Why a post could not be removed from a channel, in the user's words. */
+export const livePostRefusals: Readonly<Record<LivePostRefusal, string>> = {
+  alreadyRemoved: "Peal removed it from the platform already",
+  boostRunning:
+    "a boost that is not over shows it: stop the boost first (stop_boost), then remove the post",
+  changeInProgress:
+    "it is being removed already: list_post_changes says how that goes",
+  channelUnavailable:
+    "its channel is disconnected, turned off or must be reconnected: nothing was asked of the platform",
+  noPlatformId:
+    "Peal has no id for it on the platform, as for a post confirmed by hand: the user removes it there",
+  notPublished: "it is not live on that channel",
+  notSupported:
+    "the platform does not let Peal delete posts (get_channel_capabilities says why, in `livePost`): the user removes it there",
+};
