@@ -89,7 +89,8 @@
   its posts name sets by id or name.
 - `peal queues` (list, show, preview, create, update, delete) keeps a
   workspace's queues (`--slot mon@09:00`, repeated; `--zone`; `--channel`;
-  `--set`; `--default`), named by id or name (`saved-items.ts`:
+  `--set`; `--default`; on `update`, `--clear-channels` and `--clear-slots`
+  empty them), named by id or name (`saved-items.ts`:
   `findQueue`, `queueOf`, which takes "" for the default). `peal post
   --queue <name-or-id>` (an ordinary valued flag: effect/cli never takes
   the next word as an optional value, which would read a name as the

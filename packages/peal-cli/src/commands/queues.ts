@@ -378,6 +378,18 @@ const update = Command.make(
     channels: channelsFlag(
       "A channel of the queue from now on, as peal channels list shows its id; repeat it: those given replace the queue's. Without it the queue keeps its channels that are still connected, and loses those that are not."
     ),
+    clearChannels: Flag.Boolean("clear-channels").pipe(
+      Flag.withDescription(
+        "Take every channel off the queue: a post added to it then names its channels, or goes to the queue's channel set."
+      ),
+      Flag.withDefault(false)
+    ),
+    clearSlots: Flag.Boolean("clear-slots").pipe(
+      Flag.withDescription(
+        "Take every slot off the queue: nothing can be added to it until it has some again. Posts the queue placed keep their times."
+      ),
+      Flag.withDefault(false)
+    ),
     isDefault: Flag.Boolean("default").pipe(
       Flag.withDescription(
         "Make it the workspace's default queue, instead of the one that was."
@@ -415,18 +427,30 @@ const update = Command.make(
     const givenSlots = yield* slotsOf(input.slots);
     const givenChannels = channelIdsOf(input.channels);
 
+    if (input.clearChannels && givenChannels.length > 0) {
+      yield* new Refused({
+        reason: "Give --channel or --clear-channels, not both.",
+      });
+    }
+
+    if (input.clearSlots && givenSlots.length > 0) {
+      yield* new Refused({ reason: "Give --slot or --clear-slots, not both." });
+    }
+
     if (
       Option.isNone(input.name) &&
       Option.isNone(input.zone) &&
       Option.isNone(input.set) &&
       !input.noSet &&
       !input.isDefault &&
+      !input.clearChannels &&
+      !input.clearSlots &&
       givenSlots.length === 0 &&
       givenChannels.length === 0
     ) {
       yield* new Refused({
         reason:
-          "Give --name, --zone, --slot, --channel, --set, --no-set, --default or several: nothing else of a queue changes.",
+          "Give --name, --zone, --slot, --clear-slots, --channel, --clear-channels, --set, --no-set, --default or several: nothing else of a queue changes.",
       });
     }
 
@@ -447,7 +471,7 @@ const update = Command.make(
     // disconnected since: a queue is saved with connected channels only.
     const payload = yield* checkQueue({
       channelIds:
-        givenChannels.length > 0
+        input.clearChannels || givenChannels.length > 0
           ? givenChannels
           : queue.channelIds.filter(
               (channelId) => !queue.unavailableChannelIds.includes(channelId)
@@ -461,7 +485,8 @@ const update = Command.make(
         onNone: () => queue.name,
         onSome: (written) => written.trim(),
       }),
-      slots: givenSlots.length > 0 ? givenSlots : queue.slots,
+      slots:
+        input.clearSlots || givenSlots.length > 0 ? givenSlots : queue.slots,
       timeZone: Option.getOrElse(input.zone, () => queue.timeZone),
     });
 

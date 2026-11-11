@@ -181,14 +181,47 @@ describe("peal queues", () => {
         ...inStudio,
       ]);
 
+      // A queue's channels and slots can be emptied too.
+      yield* session.printed([
+        "queues",
+        "update",
+        "Mornings",
+        "--clear-channels",
+        "--clear-slots",
+        ...inStudio,
+      ]);
+
       assert.deepStrictEqual(yield* changes(session.studio), [
         `queue:update:${evergreenQueueId}:Evergreen:UTC:tuesday@12:00::plain`,
         `queue:update:${weekdaysQueueId}:Mornings:UTC:monday@09:00,wednesday@09:00:${mastodonId}:default`,
+        `queue:update:${weekdaysQueueId}:Mornings:UTC:::default`,
       ]);
+
+      for (const [given, refusal] of [
+        [
+          ["--clear-channels", "--channel", mastodonId],
+          "Give --channel or --clear-channels, not both.",
+        ],
+        [
+          ["--clear-slots", "--slot", "mon@09:00"],
+          "Give --slot or --clear-slots, not both.",
+        ],
+      ] as const) {
+        assert.include(
+          yield* session.refused([
+            "queues",
+            "update",
+            "Mornings",
+            ...given,
+            ...inStudio,
+          ]),
+          refusal
+        );
+      }
 
       assert.include(
         yield* session.refused(["queues", "update", "Mornings", ...inStudio]),
-        "Give --name, --zone, --slot, --channel, --set, --no-set, --default or several"
+        "Give --name, --zone, --slot, --clear-slots, --channel, --clear-channels, --set, --no-set, --default or several"
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
