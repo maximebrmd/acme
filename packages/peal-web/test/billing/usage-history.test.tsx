@@ -64,7 +64,7 @@ const report: WorkspaceUsageReport = {
       publishedPosts: 1,
     },
     {
-      assistantRequests: 0,
+      assistantRequests: null,
       byPlatform: [],
       channels: null,
       day: "2026-11-11",
@@ -94,7 +94,7 @@ const empty: WorkspaceUsageReport = {
   ...report,
   days: report.days.map((day) => ({
     ...day,
-    assistantRequests: 0,
+    assistantRequests: null,
     byPlatform: [],
     channels: null,
     mediaStorage: null,
@@ -164,7 +164,7 @@ describe(UsageDaysTable, () => {
     );
     // Never a zero for what was not taken.
     expect(html).toMatch(
-      /Nov 11, 2026<\/th><td[^>]*>0<\/td><td[^>]*>–<\/td><td[^>]*>–<\/td><td[^>]*>–<\/td>/u
+      /Nov 11, 2026<\/th><td[^>]*>0<\/td><td[^>]*>–<\/td><td[^>]*>–<\/td><td[^>]*>–<\/td><td[^>]*>–<\/td>/u
     );
   });
 });

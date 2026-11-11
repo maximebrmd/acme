@@ -189,7 +189,7 @@ const seeded = Effect.gen(function* seeded() {
 
   const state = (
     on: string,
-    meter: "channels" | "mediaStorage" | "members",
+    meter: "assistantRequests" | "channels" | "mediaStorage" | "members",
     quantity: number
   ) => ({
     record: { day: day(on), dimension: "" as const, meter, quantity },
@@ -200,6 +200,7 @@ const seeded = Effect.gen(function* seeded() {
     state("2026-10-31", "channels", 2),
     state("2026-10-31", "members", 2),
     state("2026-10-31", "mediaStorage", 2_500_000_000),
+    state("2026-10-31", "assistantRequests", 0),
     state("2026-11-01", "channels", 3),
     {
       record: {
@@ -257,7 +258,8 @@ layer(reportsOn(everyWorkspaceOn("pro")))(
               publishedPosts: 2,
             },
             {
-              assistantRequests: 0,
+              // No snapshot yet: nothing counted, not zero.
+              assistantRequests: null,
               byPlatform: [],
               channels: null,
               day: "2026-11-02",

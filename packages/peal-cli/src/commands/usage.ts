@@ -68,7 +68,7 @@ const totalLines = ({ totals }: WorkspaceUsageReport): string[] =>
 // A day with nothing done and no state taken says nothing.
 const hasAnything = (entry: UsageDay): boolean =>
   entry.publishedPosts > 0 ||
-  entry.assistantRequests > 0 ||
+  (entry.assistantRequests ?? 0) > 0 ||
   entry.channels !== null ||
   entry.members !== null ||
   entry.mediaStorage !== null;
@@ -86,7 +86,7 @@ const dayLines = (days: readonly UsageDay[]): string[] => {
           count(entry.channels),
           count(entry.members),
           entry.mediaStorage === null ? count(null) : bytes(entry.mediaStorage),
-          String(entry.assistantRequests),
+          count(entry.assistantRequests),
         ]),
       ]);
 };

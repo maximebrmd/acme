@@ -145,8 +145,10 @@ describe("usage reports", () => {
       day("2026-11-01"),
       day("2026-11-02"),
     ]);
+    // A day without a snapshot, today's among them, has no count of
+    // requests either: never a zero it did not count.
     expect(report.days[0]).toStrictEqual({
-      assistantRequests: 0,
+      assistantRequests: Option.none(),
       byPlatform: [],
       channels: Option.none(),
       day: day("2026-10-30"),
@@ -174,7 +176,7 @@ describe("usage reports", () => {
     );
 
     expect(report.days[1]).toMatchObject({
-      assistantRequests: 7,
+      assistantRequests: Option.some(7),
       byPlatform: [
         { platform: "bluesky", posts: 1 },
         { platform: "x", posts: 2 },

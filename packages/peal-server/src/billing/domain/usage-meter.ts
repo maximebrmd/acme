@@ -116,8 +116,11 @@ export interface PlatformPosts {
 
 /** A day of a workspace's usage. */
 export interface UsageDay {
-  /** The requests sent to the writing assistant that day. */
-  readonly assistantRequests: number;
+  /**
+   * The requests sent to the writing assistant that day, as the snapshot
+   * copied them; none for a day without a snapshot, today's included.
+   */
+  readonly assistantRequests: Option.Option<number>;
   /** The day's posts by platform, in the platforms' order by name. */
   readonly byPlatform: readonly PlatformPosts[];
   /** Connected at the end of the day; none for a day without a snapshot. */
@@ -166,7 +169,6 @@ const addTo = (
 };
 
 interface DayTally {
-  assistantRequests: number;
   readonly byPlatform: Map<Platform, number>;
   readonly states: Map<UsageState, number>;
 }
@@ -186,7 +188,7 @@ export const reportOf = (
   for (let index = 0; index < days; index += 1) {
     tallies.set(
       DateTime.toEpochMillis(DateTime.add(period.from, { days: index })),
-      { assistantRequests: 0, byPlatform: new Map(), states: new Map() }
+      { byPlatform: new Map(), states: new Map() }
     );
   }
 
@@ -196,8 +198,6 @@ export const reportOf = (
     if (tally !== undefined) {
       if (record.meter === "publishedPosts") {
         addTo(tally.byPlatform, record.dimension, record.quantity);
-      } else if (record.meter === "assistantRequests") {
-        tally.assistantRequests += record.quantity;
       } else {
         tally.states.set(record.meter, record.quantity);
       }
@@ -221,7 +221,9 @@ export const reportOf = (
     }
 
     return {
-      assistantRequests: tally.assistantRequests,
+      assistantRequests: Option.fromUndefinedOr(
+        tally.states.get("assistantRequests")
+      ),
       byPlatform: platformPostsOf(tally.byPlatform),
       channels,
       day: DateTime.makeUnsafe(millis),

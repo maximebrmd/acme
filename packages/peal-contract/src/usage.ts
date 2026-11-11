@@ -34,8 +34,10 @@ export type PlatformPosts = typeof PlatformPostsSchema.Type;
  * day.
  */
 export const UsageDaySchema = Schema.Struct({
-  // The requests sent to the writing assistant that day.
-  assistantRequests: Schema.Int,
+  // The requests sent to the writing assistant that day, as the daily
+  // snapshot copied them; null for a day without a snapshot, today's
+  // included.
+  assistantRequests: Schema.NullOr(Schema.Int),
   // The day's posts by platform, by the platforms' names.
   byPlatform: Schema.Array(PlatformPostsSchema),
   // The channels the workspace itself had connected at the end of the day.

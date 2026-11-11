@@ -680,7 +680,7 @@ const usageReport = (period: {
       publishedPosts: 0,
     },
     {
-      assistantRequests: 0,
+      assistantRequests: null,
       byPlatform: [],
       channels: null,
       day: "2026-11-03",

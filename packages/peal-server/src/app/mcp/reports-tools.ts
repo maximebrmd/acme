@@ -104,7 +104,7 @@ export const GetBilling = Tool.make("get_billing", {
 
 export const GetUsage = Tool.make("get_usage", {
   dependencies: [CurrentMember],
-  description: `Answers what the workspace uses of its plan now, then for each UTC day from \`from\` to \`to\` (both included, ${String(maxUsageRangeDays)} at most; the last ${String(defaultUsageRangeDays)} by default): posts that went out, one per channel, by platform; assistant requests; channels, members and media bytes as the day ended (null without a snapshot). Then totals: channel-days, and posts on platforms that bill per post by month. \`sharedWith\` names the partner workspace whose plan it is on. Kept ${String(usageRetentionDays)} days. Counts only, never priced; \`plan\` is null on a server that does not bill.`,
+  description: `Answers what the workspace uses of its plan now, then for each UTC day from \`from\` to \`to\` (both included, ${String(maxUsageRangeDays)} at most; the last ${String(defaultUsageRangeDays)} by default): posts that went out, one per channel, by platform; assistant requests, channels, members and media bytes as the daily snapshot took them (null for a day without one, today's included). Then totals: channel-days, and posts on platforms that bill per post by month. \`sharedWith\` names the partner workspace whose plan it is on. Kept ${String(usageRetentionDays)} days. Counts only, never priced; \`plan\` is null on a server that does not bill.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     from: Schema.optionalKey(CalendarDaySchema),

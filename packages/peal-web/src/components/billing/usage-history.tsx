@@ -146,7 +146,7 @@ export const UsageDaysTable = ({
               {day.mediaStorage === null ? dash : size(day.mediaStorage)}
             </TableCell>
             <TableCell variant="numeric">
-              {format.number(day.assistantRequests)}
+              {count(day.assistantRequests)}
             </TableCell>
           </TableRow>
         ))}
@@ -186,7 +186,7 @@ export const UsageHistoryView = ({ report }: UsageHistoryViewProps) => {
   const counted =
     report.totals.publishedPosts > 0 ||
     report.totals.daysCounted > 0 ||
-    days.some(({ assistantRequests }) => assistantRequests > 0);
+    days.some(({ assistantRequests }) => (assistantRequests ?? 0) > 0);
 
   return (
     <div className="flex flex-col gap-4">

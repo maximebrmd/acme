@@ -26,7 +26,7 @@ export const usageView = ({
   ),
   current,
   days: report.days.map((day) => ({
-    assistantRequests: day.assistantRequests,
+    assistantRequests: Option.getOrNull(day.assistantRequests),
     byPlatform: day.byPlatform,
     channels: Option.getOrNull(day.channels),
     day: dayOf(day.day),
