@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "56515418-ce3b-4ac3-bef0-4b27db663f0c",
+  "id": "f750be33-7f47-41cb-b966-8976cc3f30bf",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -12984,6 +12984,19 @@
       "notNull": true,
       "dimensions": 0,
       "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
+      "name": "email_recycling_ended",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
       "generated": null,
       "identity": null,
       "entityType": "columns"

@@ -133,6 +133,16 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       refunded,
       withdrawnAt,
     }),
+    RecyclingEnded: ({
+      reason,
+      ruleId,
+      sourcePostId,
+    }): NoticeEventRecord => ({
+      _tag: "RecyclingEnded",
+      reason,
+      ruleId,
+      sourcePostId,
+    }),
     TrialEnding: ({ endsAt, over, plan }): NoticeEventRecord => ({
       _tag: "TrialEnding",
       endsAt,
@@ -206,6 +216,7 @@ export const DrizzleNoticeRecords = Layer.effect(
                   postPublished: chosen.emailPostPublished,
                   postReview: chosen.emailPostReview,
                   postUnconfirmed: chosen.emailPostUnconfirmed,
+                  recyclingEnded: chosen.emailRecyclingEnded,
                   webhookFailing: chosen.emailWebhookFailing,
                 },
                 everyPost: chosen.everyPost,

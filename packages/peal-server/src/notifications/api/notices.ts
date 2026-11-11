@@ -168,6 +168,12 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       refunded,
       withdrawnAt,
     }),
+    RecyclingEnded: ({ reason, ruleId, sourcePostId }): NoticeEventView => ({
+      _tag: "RecyclingEnded",
+      reason,
+      ruleId,
+      sourcePostId,
+    }),
     TrialEnding: ({ endsAt, over, plan }): NoticeEventView => ({
       _tag: "TrialEnding",
       endsAt,

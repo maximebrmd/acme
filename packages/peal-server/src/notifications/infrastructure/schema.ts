@@ -77,6 +77,10 @@ export const notificationPreferences = notificationsSchema.table(
     // Comments on posts, approvals asked for and decided: on unless chosen.
     emailPostReview: boolean("email_post_review").notNull().default(true),
     emailPostUnconfirmed: boolean("email_post_unconfirmed").notNull(),
+    // A recycling rule that ended: on unless chosen.
+    emailRecyclingEnded: boolean("email_recycling_ended")
+      .notNull()
+      .default(true),
     // Deliveries to a webhook endpoint failing for good: on unless chosen.
     emailWebhookFailing: boolean("email_webhook_failing")
       .notNull()

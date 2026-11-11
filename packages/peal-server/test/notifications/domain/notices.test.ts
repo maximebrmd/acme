@@ -9,6 +9,7 @@ import type {
 import {
   audienceOf,
   emailKindOf,
+  isAboutPost,
   pageOf,
   readerPermissionOf,
   recipientsOf,
@@ -102,6 +103,12 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     channel: Option.none(),
     postId,
   },
+  RecyclingEnded: {
+    _tag: "RecyclingEnded",
+    reason: "planLimit",
+    ruleId: Uuid7Schema.make("00000000-0000-7000-8000-00000000ec01"),
+    sourcePostId: postId,
+  },
   SubscriptionCancelled: {
     _tag: "SubscriptionCancelled",
     endsAt: DateTime.makeUnsafe("2026-12-09T10:00:00Z"),
@@ -183,6 +190,20 @@ describe("notice events", () => {
       `/app/${workspaceId}/settings/webhooks`
     );
     expect(wantsEmail(nothing, events.WebhookEndpointDisabled)).toBeTruthy();
+  });
+
+  it("tell those who schedule posts that a rule ended, by email unless they turned it off", () => {
+    const off = changePreferences(defaultPreferences, {
+      email: { recyclingEnded: false },
+    });
+
+    expect(audienceOf(events.RecyclingEnded)).toBe("post:schedule");
+    expect(isAboutPost(events.RecyclingEnded)).toBeTruthy();
+    expect(pageOf(events.RecyclingEnded, workspaceId)).toBe(
+      `/app/${workspaceId}/settings/recycling?rule=00000000-0000-7000-8000-00000000ec01`
+    );
+    expect(wantsEmail(defaultPreferences, events.RecyclingEnded)).toBeTruthy();
+    expect(wantsEmail(off, events.RecyclingEnded)).toBeFalsy();
   });
 
   it("tell those who manage webhooks that deliveries fail, by email unless they turned it off", () => {
@@ -367,6 +388,7 @@ describe("notification preferences", () => {
       Option.some("postReview"),
       Option.some("postFailed"),
       Option.some("postUnconfirmed"),
+      Option.some("recyclingEnded"),
       // Billing's five, deliveries failing, then the webhook endpoint
       // turned off.
       Option.none(),
@@ -391,6 +413,7 @@ describe("notification preferences", () => {
       postPublished: true,
       postReview: true,
       postUnconfirmed: true,
+      recyclingEnded: true,
       webhookFailing: true,
     });
     expect(wantsEmail(changed, events.PostPublished)).toBeTruthy();

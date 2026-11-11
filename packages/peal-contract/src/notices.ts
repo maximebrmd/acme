@@ -48,6 +48,19 @@ export const ReviewPartySchema = Schema.Literals([
 
 export type ReviewParty = typeof ReviewPartySchema.Type;
 
+/** Why a recycling rule ended, as its notice tells it. */
+export const RecyclingNoticeReasonSchema = Schema.Literals([
+  "sourceGone",
+  "starterGone",
+  "noChannels",
+  "contentRejected",
+  "planLimit",
+  "queueGone",
+  "queueFull",
+]).annotate({ identifier: "RecyclingNoticeReason" });
+
+export type RecyclingNoticeReason = typeof RecyclingNoticeReasonSchema.Type;
+
 /**
  * What happened, as data: clients write it in the reader's language. A post's
  * channel is null when it was disconnected before the notice was made.
@@ -188,6 +201,17 @@ export const NoticeEventSchema = Schema.Union([
   // is read of them until its person signs in again.
   Schema.TaggedStruct("AdConnectionReconnectRequired", {
     network: Schema.String,
+  }),
+  // A recycling rule stopped repeating its source post (`sourcePostId`)
+  // for `reason`: the source is gone (`sourceGone`), whoever started it
+  // can no longer schedule (`starterGone`), none of its channels is left
+  // (`noChannels`), the platforms refuse what it would say
+  // (`contentRejected`), the month has no room in the plan (`planLimit`),
+  // its queue was deleted (`queueGone`) or has no free slot (`queueFull`).
+  Schema.TaggedStruct("RecyclingEnded", {
+    reason: RecyclingNoticeReasonSchema,
+    ruleId: Schema.String,
+    sourcePostId: Schema.String,
   }),
 ]).annotate({ identifier: "NoticeEvent" });
 

@@ -30,6 +30,7 @@ const kinds: readonly EmailKind[] = [
   "postFailed",
   "postUnconfirmed",
   "postReview",
+  "recyclingEnded",
   "channelReconnect",
   "comments",
   "webhookFailing",

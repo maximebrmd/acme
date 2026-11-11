@@ -214,6 +214,10 @@ const contentOf = (
       messages: catalog.postUnconfirmed,
       values: [["channel", channelPhrase(catalog, channel)]],
     }),
+    RecyclingEnded: ({ reason }): Content => ({
+      messages: catalog.recyclingEnded,
+      values: [["reason", catalog.recyclingEndReasons[reason]]],
+    }),
     SubscriptionCancelled: ({ endsAt, plan }): Content => ({
       messages: catalog.subscriptionCancelled,
       values: [

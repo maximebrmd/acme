@@ -34,9 +34,13 @@ export class RecyclingStore extends Context.Service<
     readonly claim: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
-    readonly insert: (rule: RecyclingRule) => Effect.Effect<void, DatabaseError>;
+    readonly insert: (
+      rule: RecyclingRule
+    ) => Effect.Effect<void, DatabaseError>;
     /** Writes what changes of a rule: everything but what started it. */
-    readonly update: (rule: RecyclingRule) => Effect.Effect<void, DatabaseError>;
+    readonly update: (
+      rule: RecyclingRule
+    ) => Effect.Effect<void, DatabaseError>;
     readonly byId: (
       workspaceId: WorkspaceId,
       ruleId: RecyclingRuleId

@@ -57,6 +57,22 @@ export const PostFailureReasonSchema = Schema.Literals([
 
 export type PostFailureReason = typeof PostFailureReasonSchema.Type;
 
+/**
+ * Why a recycling rule ended without a member stopping it or it making
+ * all it was asked for, as publishing records it: what members are told.
+ */
+export const RecyclingEndReasonSchema = Schema.Literals([
+  "sourceGone",
+  "starterGone",
+  "noChannels",
+  "contentRejected",
+  "planLimit",
+  "queueGone",
+  "queueFull",
+]);
+
+export type RecyclingEndReason = typeof RecyclingEndReasonSchema.Type;
+
 // A post's channel is none when it was disconnected before the notice was
 // made: the notice still says what happened to the post.
 const postOn = {
@@ -199,6 +215,14 @@ export const NoticeEventSchema = Schema.Union([
     endpointId: Schema.NonEmptyString,
     host: Schema.NonEmptyString,
   }),
+  // A recycling rule stopped making occurrences of its source post, for
+  // `reason`: those who expected it to go on hear it once each time it
+  // ends.
+  Schema.TaggedStruct("RecyclingEnded", {
+    reason: RecyclingEndReasonSchema,
+    ruleId: Uuid7Schema,
+    sourcePostId: PostIdSchema,
+  }),
   // An ad network refused a member's sign-in: the ad accounts it connects
   // are no longer read until they sign in again.
   Schema.TaggedStruct("AdConnectionReconnectRequired", {
@@ -236,6 +260,7 @@ export type EmailKind =
   | "postPublished"
   | "postReview"
   | "postUnconfirmed"
+  | "recyclingEnded"
   | "webhookFailing";
 
 /**
@@ -260,6 +285,7 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     PostFailed: () => Option.some<EmailKind>("postFailed"),
     PostPublished: () => Option.some<EmailKind>("postPublished"),
     PostUnconfirmed: () => Option.some<EmailKind>("postUnconfirmed"),
+    RecyclingEnded: () => Option.some<EmailKind>("recyclingEnded"),
     SubscriptionCancelled: () => Option.none<EmailKind>(),
     SubscriptionRenewing: () => Option.none<EmailKind>(),
     SubscriptionStarted: () => Option.none<EmailKind>(),
@@ -293,6 +319,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     PostFailed: (): Permission => "post:schedule",
     PostPublished: (): Permission => "post:schedule",
     PostUnconfirmed: (): Permission => "post:schedule",
+    RecyclingEnded: (): Permission => "post:schedule",
     SubscriptionCancelled: (): Permission => "billing:manage",
     SubscriptionRenewing: (): Permission => "billing:manage",
     SubscriptionStarted: (): Permission => "billing:manage",
@@ -317,6 +344,7 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     PostFailed: () => true,
     PostPublished: () => true,
     PostUnconfirmed: () => true,
+    RecyclingEnded: () => true,
     SubscriptionCancelled: () => false,
     SubscriptionRenewing: () => false,
     SubscriptionStarted: () => false,
@@ -437,6 +465,8 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     PostFailed: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
     PostPublished: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
     PostUnconfirmed: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
+    RecyclingEnded: ({ ruleId }) =>
+      `/app/${workspaceId}/settings/recycling?rule=${ruleId}`,
     SubscriptionCancelled: () => `/app/${workspaceId}/billing`,
     SubscriptionRenewing: () => `/app/${workspaceId}/billing`,
     SubscriptionStarted: () => `/app/${workspaceId}/billing`,

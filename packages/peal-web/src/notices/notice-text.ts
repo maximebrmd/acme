@@ -80,6 +80,12 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
       text,
     });
 
+    const recycling = (ruleId: string, text: string): NoticeText => ({
+      href: `/app/${workspaceId}/settings/recycling?rule=${ruleId}`,
+      open: t("open", { page: "recycling" }),
+      text,
+    });
+
     const plan = (name: string) => t("plan", { plan: name });
 
     return Match.valueTags(event, {
@@ -197,6 +203,8 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
                 workspace,
               })
         ),
+      RecyclingEnded: ({ reason, ruleId }) =>
+        recycling(ruleId, t("event.RecyclingEnded", { reason, workspace })),
       SubscriptionWithdrawn: ({ plan: name, refunded, withdrawnAt }) =>
         billing(
           t("event.SubscriptionWithdrawn", {

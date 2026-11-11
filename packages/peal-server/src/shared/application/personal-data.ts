@@ -599,6 +599,12 @@ export type NoticeEventRecord =
   | {
       readonly _tag: "AdConnectionReconnectRequired";
       readonly network: string;
+    }
+  | {
+      readonly _tag: "RecyclingEnded";
+      readonly reason: string;
+      readonly ruleId: string;
+      readonly sourcePostId: string;
     };
 
 /** An amount in cents of its currency. */
@@ -628,6 +634,7 @@ export interface PreferencesRecord {
     readonly postPublished: boolean;
     readonly postReview: boolean;
     readonly postUnconfirmed: boolean;
+    readonly recyclingEnded: boolean;
     readonly webhookFailing: boolean;
   };
   readonly everyPost: boolean;
