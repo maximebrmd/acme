@@ -2,6 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Context, DateTime, Duration, Effect, Layer, Option } from "effect";
 
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
+import { XOptions } from "#publishing/domain/x-options.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -705,6 +706,164 @@ describe("publishing on X", () => {
         platformPostId: PlatformPostIdSchema.make(published?.id ?? "missing"),
       });
       assert.lengthOf(calls(x, "POST", "/2/tweets"), 1);
+    }).pipe(Effect.scoped)
+  );
+});
+
+const tweetBodies = (x: PlatformServer) =>
+  calls(x, "POST", "/2/tweets").map((call) => textOf(call));
+
+const everyOption = new XOptions({
+  communityId: "1700000000000000001",
+  madeWithAi: true,
+  paidPartnership: true,
+  replySettings: "mentionedUsers",
+  shareWithFollowers: true,
+});
+
+describe("an X post's options", () => {
+  it.live("send the post as before when none is chosen", () =>
+    Effect.gen(function* plain() {
+      const { client, x } = yield* onX();
+
+      yield* client.publish(
+        yield* post({
+          options: Option.some(
+            new XOptions({ madeWithAi: false, paidPartnership: false })
+          ),
+          text: "Plain words",
+        })
+      );
+
+      assert.deepStrictEqual(tweetBodies(x), [
+        JSON.stringify({ text: "Plain words" }),
+      ]);
+    }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "give the first part who may reply, its community and the labels, and later parts the labels alone",
+    () =>
+      Effect.gen(function* thread() {
+        const image = testFile("image", 2048, "image/png");
+        const { client, x } = yield* onX({ files: [image] });
+        const options = Option.some(everyOption);
+
+        const first = yield* client.publish(
+          yield* post({ media: [attached(image)], options, text: "A first" })
+        );
+
+        assert(first._tag === "published");
+
+        const replyTo = Option.some({
+          parent: first.platformPostId,
+          root: first.platformPostId,
+        });
+
+        yield* client.publish(
+          yield* post({
+            idempotencyKey: "0b5e4f2a9c7d4e1f8a3b6c5d2e1f0a9b",
+            options,
+            part: 1,
+            replyTo,
+            text: "A second, without media",
+          })
+        );
+
+        const [opening, reply] = x.posts();
+
+        assert.deepStrictEqual(opening?.options, {
+          community_id: "1700000000000000001",
+          made_with_ai: true,
+          paid_partnership: true,
+          reply_settings: "mentionedUsers",
+          share_with_followers: true,
+        });
+        // AI-generated media is about media: a part without any says nothing.
+        assert.deepStrictEqual(reply?.options, { paid_partnership: true });
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "end a post X refuses for its options as refused, once, with a stable code",
+    () =>
+      Effect.gen(function* refused() {
+        const { client, x } = yield* onX();
+
+        x.script("POST /2/tweets", [
+          json(
+            {
+              detail: "You are not permitted to perform this action.",
+              status: 403,
+              title: "Forbidden",
+              type: "about:blank",
+            },
+            403
+          ),
+          json(
+            {
+              detail: "One or more parameters to your request was invalid.",
+              status: 400,
+              title: "Invalid Request",
+              type: "https://api.x.com/2/problems/invalid-request",
+            },
+            400
+          ),
+        ]);
+
+        const refusals = yield* Effect.forEach(
+          [
+            new XOptions({ replySettings: "subscribers" }),
+            new XOptions({ communityId: "1700000000000000001" }),
+          ],
+          (options, index) =>
+            post({
+              idempotencyKey: `0b5e4f2a9c7d4e1f8a3b6c5d2e1f0a${String(index)}0`,
+              options: Option.some(options),
+              text: `Refused ${String(index)}`,
+            }).pipe(
+              Effect.flatMap((refusedPost) =>
+                client.publish(refusedPost).pipe(Effect.flip)
+              )
+            )
+        );
+
+        assert.deepStrictEqual(refusals, [
+          new BadRequest({ code: "optionRefused" }),
+          new BadRequest({ code: "optionRefused" }),
+        ]);
+        assert.lengthOf(calls(x, "POST", "/2/tweets"), 2);
+        assert.lengthOf(x.posts(), 0);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("leave a refusal of a post without options as it was", () =>
+    Effect.gen(function* withoutOptions() {
+      const { client, x } = yield* onX();
+
+      x.script("POST /2/tweets", [
+        json(
+          {
+            detail: "You are not permitted to perform this action.",
+            status: 403,
+            title: "Forbidden",
+            type: "about:blank",
+          },
+          403
+        ),
+      ]);
+
+      assert.deepStrictEqual(
+        yield* client
+          .publish(
+            yield* post({
+              options: Option.some(new XOptions({ paidPartnership: false })),
+              text: "Alone",
+            })
+          )
+          .pipe(Effect.flip),
+        new BadRequest({ code: "http403" })
+      );
     }).pipe(Effect.scoped)
   );
 });

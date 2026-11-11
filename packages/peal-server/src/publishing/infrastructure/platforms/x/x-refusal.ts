@@ -124,6 +124,14 @@ export const xRetryAfter = (
   );
 };
 
+/**
+ * The code of X's refusal of a post that carries options (who may reply,
+ * a community, a disclosure): X documents no account or access level for
+ * them, and its message is never kept, so the refusal says the post's
+ * options were refused, never which.
+ */
+export const optionRefusedCode = "optionRefused";
+
 const rejected = (call: XCall, code: string): PublishFailure =>
   call === "media" ? new MediaRejected({ code }) : new BadRequest({ code });
 
@@ -131,7 +139,8 @@ const refusal = (
   call: XCall,
   response: HttpClientResponse.HttpClientResponse,
   problem: XProblem,
-  now: DateTime.Utc
+  now: DateTime.Utc,
+  optioned: boolean
 ): XRefusal => {
   const { status } = response;
   const kind = kindOf(problem);
@@ -189,15 +198,23 @@ const refusal = (
     return new MediaRejected({ code: "videoTooLong" });
   }
 
+  // A post with options X would not take from this account or this app.
+  if (optioned && call !== "media" && (status === 400 || status === 403)) {
+    return new BadRequest({ code: optionRefusedCode });
+  }
+
   return rejected(call, codeOf(kind, `http${status}`));
 };
 
 const refused = (
   call: XCall,
-  response: HttpClientResponse.HttpClientResponse
+  response: HttpClientResponse.HttpClientResponse,
+  optioned = false
 ) =>
   Effect.all([problemOf(response), DateTime.now]).pipe(
-    Effect.map(([problem, now]) => refusal(call, response, problem, now))
+    Effect.map(([problem, now]) =>
+      refusal(call, response, problem, now, optioned)
+    )
   );
 
 /**
@@ -215,9 +232,13 @@ export const mediaRefusal = (
     )
   );
 
-/** What X's refusal of the post itself means. */
+/**
+ * What X's refusal of the post itself means; `optioned` when its body
+ * carried the post's options.
+ */
 export const postRefusal = (
   response: HttpClientResponse.HttpClientResponse,
-  call: "post" | "reply" = "post"
+  call: "post" | "reply" = "post",
+  optioned = false
 ): Effect.Effect<never, XRefusal> =>
-  refused(call, response).pipe(Effect.flatMap(Effect.fail));
+  refused(call, response, optioned).pipe(Effect.flatMap(Effect.fail));
