@@ -76,6 +76,7 @@ import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-
 import { NamedPostOrigins } from "#publishing/infrastructure/named-post-origins.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
+import { LivePostClientsLive } from "#publishing/infrastructure/platforms/live-post-clients-live.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platform-lookups-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
@@ -434,7 +435,15 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
 export const publishingWorkersReading = <E, R, E2, R2>(
   readers: GateReaders<E, R>,
   engagement: GateEngagement<E2, R2>
-) => publishingWorkers(PlatformsLive, readers, engagement);
+) =>
+  publishingWorkers(
+    PlatformsLive,
+    readers,
+    engagement,
+    // What deletes the posts members unpublish, with the channels'
+    // tokens.
+    LivePostClientsLive.pipe(Layer.provide(ChannelAccessCredentials))
+  );
 
 /**
  * The MetricsReader that sends each read through its channel's gate, for
