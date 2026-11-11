@@ -171,6 +171,14 @@ a community, a language or a disclosure label. Left out, each platform does
 what its description says (`ifLeftOut`), most often the account's own
 default.
 
+An option of type `media` names a file of the workspace's media by its id
+(a YouTube thumbnail, an Instagram reel's cover), of the types and size its
+description gives: import it first. Some options apply only to some media
+(a reel's settings to a post of one video, a TikTok photo post's title to
+photos). Instagram's `collaborators` are other accounts, each invited to
+co-author the post: set them only when the user named them. A YouTube
+target with `thumbnailNotSet` went out without its thumbnail; say so.
+
 ```sh
 peal channels capabilities <channel-id> --json
 peal channels lookup <channel-id> <lookup> --json
