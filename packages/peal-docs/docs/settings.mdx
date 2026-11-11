@@ -9,15 +9,15 @@ A workspace's settings belong to its members, as their roles allow. Your account
 
 ## Workspace settings [#workspace]
 
-Choose **Settings** on a workspace's card. Every member sees **General** and **Members**; members who may invite people see **Invitations**, those who may handle keys see **API keys**, and those who may manage webhooks see **Webhooks**.
+Choose **Settings** on a workspace's card. Every member sees **General**, **Members** and **Security**; members who may invite people see **Invitations**, those who may handle keys see **API keys**, and those who may manage webhooks see **Webhooks**.
 
-| Role        | In the settings                                                                                   |
-| ----------- | ------------------------------------------------------------------------------------------------- |
-| Owner       | Everything: rename, members, owners included, invitations, API keys, webhooks, and deleting it    |
-| Admin       | Rename, members other than owners, invitations, API keys and webhooks; never owners, nor deleting |
-| Editor      | Sees the members                                                                                  |
-| Contributor | Sees the members                                                                                  |
-| Viewer      | Sees the members                                                                                  |
+| Role        | In the settings                                                                                                                        |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Owner       | Everything: rename, members, owners included, invitations, API keys, webhooks, requiring two-step verification, and deleting it        |
+| Admin       | Rename, members other than owners, invitations, API keys and webhooks; never owners, nor requiring two-step verification, nor deleting |
+| Editor      | Sees the members                                                                                                                       |
+| Contributor | Sees the members                                                                                                                       |
+| Viewer      | Sees the members                                                                                                                       |
 
 Under **General**, owners and admins also choose **Approvals**: whether posts wait for an approval before they are scheduled. See [Review and approval](/review#policy).
 
@@ -28,6 +28,12 @@ Under **General**, owners and admins also choose **Approvals**: whether posts wa
 ### Invitations [#invitations]
 
 Under **Invitations**, enter an email address and a role, then **Send the invitation**. The invitee receives a link to join, valid for 7 days, in their language when they already have an account and in yours otherwise. They join once signed in with that address. Pending invitations are listed with their expiry: **Send again** sends a fresh link, and **Revoke** stops the link working. Only owners invite owners.
+
+### Security: require two-step verification [#require-two-step]
+
+Under **Security**, an owner requires [two-step verification](#two-step) of every member. Only an owner does it, signed in themselves: never an admin, an API key, an application or staff acting as an owner, and only once their own account has it on, so nobody locks themselves out. Before it takes effect, Peal names the members whose account does not have it on: they lose access at once, until they turn it on. Every member sees whether it is required; those who manage members see who has it on, in **Members**.
+
+While their account does not have it on, a member of a workspace that requires it is refused the workspace everywhere they reach it: the web app shows them what the owners require and the way to their account settings instead of any page of it, the [command line](/cli#login) and [MCP clients](/mcp#sign-in) are refused with `twoStepRequired`, and so are the sign-in service's own workspace routes. Their sessions and applications are not signed out: everything works again as soon as they turn it on. Invitations still work: the invitee joins, then is asked to turn it on. The workspace's [API keys](#api-keys) and a partner's keys are not concerned: they belong to the workspace, not to a person. Turning the requirement off takes effect at once too; both are kept in the [activity log](#activity).
 
 ### API keys [#api-keys]
 
@@ -97,6 +103,16 @@ Choose **Account settings** in the account menu.
 - **Password**: your current password confirms it is you. Changing it signs your other sessions out, unless you untick that.
 - **Sessions**: the browsers and devices signed in to your account, with when they signed in and were last active. Sign one out, or every session but the one you use.
 - **Connected applications**: the [command line](/cli) and the [MCP clients](/mcp) you let act for you, with what they may do and in which workspaces. **Revoke** one, and it can no longer renew its access: the access it already holds ends within 15 minutes.
+
+### Two-step verification [#two-step]
+
+With two-step verification on, signing in asks, after your password, for a code from an authenticator app on your phone. Under **Two-step verification**, **Turn on** asks for your password, then shows a QR code to scan with the app, and its key as text to type in instead; enter the 6-digit code the app shows. Peal then shows ten recovery codes, once: copy or download them, and keep them somewhere safe. Each one works once, in place of a code, when you do not have your phone. Turning it on does not sign out the browsers and applications signed in before: sign them out from **Sessions** if you wish. Your email address must be confirmed first.
+
+At sign-in, after your password, enter the app's code, or choose **Use a recovery code**. **Trust this browser for 30 days** skips the second step on that browser until then. After five wrong codes, sign in again with your password; after ten in a row, two-step verification is locked for 15 minutes. The second step expires 10 minutes after the password.
+
+The section says how many recovery codes are left; **New recovery codes** replaces them all, with your password. **Turn off** asks for your password too, and is refused while a workspace you belong to [requires it](#require-two-step): the section names those workspaces. Peal emails your address each time it is turned on or off, new codes are made, or a recovery code is used to sign in: if it was not you, change your password.
+
+If you lose your phone and your recovery codes, write to whoever runs the server: their staff can [reset it](/staff#actions) once they know it is you, which signs you out everywhere. Sign in with your password, then turn it on again. Codes by email or text message are not offered: an emailed code protects nothing when the mailbox is what was taken.
 
 ### Download your data [#export]
 

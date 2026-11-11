@@ -52,6 +52,8 @@ Waiting for you to approve the sign-in (the code works for 10m)…
 
 Le code reste valable 10 minutes. **Refuser** rejette la connexion, et `peal login` s’arrête.
 
+Quand votre compte a activé la [validation en deux étapes](/settings#two-step), le navigateur demande le code de votre application d’authentification, ou un code de secours, quand vous vous y connectez ; la commande ne change pas. Dans un espace de travail qui l’[exige](/settings#require-two-step) alors que votre compte ne l’a pas activée, chaque commande est refusée, et le dit : activez-la dans les paramètres de compte de l’application web, puis relancez la commande, avec la même connexion. `peal doctor` nomme un tel espace. Aucune commande ne gère la validation en deux étapes, et avec `PEAL_API_KEY` rien ne change : les clés ne sont pas concernées.
+
 `peal` demande à faire ce que votre rôle permet dans vos espaces de travail, à programmer et publier des publications, et à rester connecté. Une connexion faite avant que `peal` demande la publication ne l’a pas : les commandes qui font partir des publications le disent alors, et vous demandent de relancer `peal login` et de l’approuver. Il enregistre la connexion à cette instance dans `credentials.json`, que vous seul pouvez lire, dans le premier de ces dossiers qui est défini :
 
 - `PEAL_CONFIG_DIR` ;

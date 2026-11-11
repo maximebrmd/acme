@@ -49,6 +49,8 @@ Inside each workspace it owns, a partner key holds the [permissions](/scheduling
 
 The other way round, an API key of a workspace, a member's session or an OAuth token never calls `/api/partner`: 403.
 
+[Two-step verification](/settings#require-two-step) concerns people: partner keys and your customers' workspaces, which have no member, are not affected by it, while your home workspace's owners may require it of its members like any workspace's.
+
 ## Create a workspace for each customer [#workspaces]
 
 When a customer signs up with you, create their workspace, with **your own id for them** as its `externalId`. Peal keeps it, finds the workspace by it, and writes it in every [webhook](#webhooks) of that workspace, so you keep no table mapping your ids to Peal's.

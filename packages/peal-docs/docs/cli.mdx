@@ -52,6 +52,8 @@ Waiting for you to approve the sign-in (the code works for 10m)…
 
 The code works for 10 minutes. **Deny** refuses the sign-in, and `peal login` stops.
 
+When your account has [two-step verification](/settings#two-step) on, the browser asks for the code from your authenticator app, or a recovery code, when you sign in there; the command does not change. In a workspace that [requires it](/settings#require-two-step) while your account does not have it on, every command is refused, and says so: turn it on in the web app's account settings, then run the command again, with the same sign-in. `peal doctor` names such a workspace. No command manages two-step verification, and with `PEAL_API_KEY` nothing changes: keys are not concerned.
+
 `peal` asks to do what your role allows in your workspaces, to schedule and publish posts, and to stay signed in. A sign-in made before `peal` asked for publishing does not hold it: the commands that put posts out then say so, and ask you to run `peal login` again and approve it. It saves the sign-in for that instance in `credentials.json`, which only you may read, in the first of these folders that is set:
 
 - `PEAL_CONFIG_DIR`;

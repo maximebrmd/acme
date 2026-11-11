@@ -33,6 +33,9 @@ peal_backup_path: /sandbox
 # Few people use the sandbox: the server traces every request there.
 peal_settings:
   OTEL_TRACES_SAMPLER: parentbased_always_on
+  # Refuses the staff console to staff whose own account does not have
+  # two-step verification on: set once every staff account has it on.
+  # PEAL_STAFF_TWO_STEP: "true"
 
 peal_static_build_args:
   SITE_URL: https://sandbox-site.peal.social
