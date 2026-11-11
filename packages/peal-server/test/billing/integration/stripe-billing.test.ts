@@ -449,13 +449,15 @@ layer(BillingIntegration, {
 
         assert.strictEqual(notManaging.status, 401);
 
-        // A reference that is no workspace's id.
+        // A reference that is no workspace's id: refused before the plugin
+        // reads it, as an id the two-step guard cannot read is.
         const nowhere = yield* upgrade(owner, {
           customerType: "organization",
           referenceId: "not-a-workspace",
         });
 
-        assert.strictEqual(nowhere.status, 401);
+        assert.strictEqual(nowhere.status, 400);
+        assert.deepInclude(nowhere.body, { code: "INVALID_ID" });
 
         const personal = yield* upgrade(owner, {});
 
