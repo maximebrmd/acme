@@ -12,6 +12,9 @@ import {
   newEndpointOf,
   withChannel,
   withEveryType,
+  withHeader,
+  withNewHeader,
+  withoutHeader,
   withType,
   workspaceIdsOf,
 } from "#webhooks/endpoint-draft.ts";
@@ -174,5 +177,77 @@ describe("an endpoint's filters", () => {
       )
     ).toStrictEqual(Option.some(false));
     expect(workspaceIdsOf("")).toStrictEqual([]);
+  });
+});
+
+describe("an endpoint's headers", () => {
+  const ready = withType(
+    { ...emptyDraft, url: "https://hooks.example.com/peal" },
+    "post.published",
+    true
+  );
+
+  const saved = draftOf({ ...endpoint, headerNames: ["Authorization"] });
+
+  it("sends a new endpoint's headers once each has a name and a value", () => {
+    const typed = withHeader(withNewHeader(ready), 0, {
+      name: "Authorization",
+      value: "Bearer synthetic-token",
+    });
+
+    expect(
+      Option.map(newEndpointOf(typed), (made) =>
+        "headers" in made ? made.headers : []
+      )
+    ).toStrictEqual(
+      Option.some([{ name: "Authorization", value: "Bearer synthetic-token" }])
+    );
+    // Half written: nothing to send yet.
+    expect(
+      newEndpointOf(withHeader(withNewHeader(ready), 0, { name: "X-Route" }))
+    ).toStrictEqual(Option.none());
+    // An empty row is no header.
+    expect(
+      Option.map(
+        newEndpointOf(withNewHeader(ready)),
+        (made) => "headers" in made
+      )
+    ).toStrictEqual(Option.some(false));
+  });
+
+  it("shows a saved header without its value, and sends none while nothing changed", () => {
+    expect(saved.headers).toStrictEqual([
+      { name: "Authorization", saved: true, value: "" },
+    ]);
+    expect(
+      Option.map(changeOf(saved), (change) => "headers" in change)
+    ).toStrictEqual(Option.some(false));
+  });
+
+  it("keeps a saved value unless it is typed again, and sends the whole list once one changes", () => {
+    const added = withHeader(withNewHeader(saved), 1, {
+      name: "X-Route",
+      value: "synthetic-route",
+    });
+
+    expect(
+      Option.map(changeOf(added), (change) => change.headers)
+    ).toStrictEqual(
+      Option.some([
+        { name: "Authorization" },
+        { name: "X-Route", value: "synthetic-route" },
+      ])
+    );
+    expect(
+      Option.map(
+        changeOf(withHeader(saved, 0, { value: "Bearer synthetic-new" })),
+        (change) => change.headers
+      )
+    ).toStrictEqual(
+      Option.some([{ name: "Authorization", value: "Bearer synthetic-new" }])
+    );
+    expect(
+      Option.map(changeOf(withoutHeader(saved, 0)), (change) => change.headers)
+    ).toStrictEqual(Option.some([]));
   });
 });

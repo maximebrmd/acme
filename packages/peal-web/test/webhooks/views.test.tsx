@@ -12,7 +12,11 @@ import {
   WebhookSecretView,
 } from "#components/webhooks/webhook-views.tsx";
 import { loadMessages } from "#i18n/messages.ts";
-import { emptyDraft } from "#webhooks/endpoint-draft.ts";
+import {
+  draftOf,
+  emptyDraft,
+  withNewHeader,
+} from "#webhooks/endpoint-draft.ts";
 
 const render = async (locale: "en" | "fr", view: ReactNode) =>
   renderToStaticMarkup(
@@ -416,5 +420,59 @@ describe("an endpoint's filters, in the views", () => {
     expect(
       missingFrom(html, ["Point de terminaison", "hooks.example.com"])
     ).toStrictEqual([]);
+  });
+});
+
+describe("an endpoint's headers, in the views", () => {
+  it("shows a saved header by its name, its value as set, and lets one be added", async () => {
+    const draft = withNewHeader(
+      draftOf({ ...on, headerNames: ["Authorization"] })
+    );
+
+    const [english, french] = await Promise.all(
+      (["en", "fr"] as const).map(
+        async (locale) =>
+          await render(
+            locale,
+            <EndpointFieldsView
+              channels={[]}
+              draft={draft}
+              error={null}
+              disabled={false}
+              idPrefix="edit"
+              withEnabled={false}
+              onChange={noop}
+            />
+          )
+      )
+    );
+
+    expect(
+      missingFrom(english ?? "", [
+        "Headers of your own",
+        'value="Authorization"',
+        'placeholder="set"',
+        'type="password"',
+        "Remove the header Authorization",
+        "Remove this header",
+        "Add a header",
+      ])
+    ).toStrictEqual([]);
+    expect(
+      missingFrom(french ?? "", [
+        "Des en-têtes à vous",
+        'placeholder="défini"',
+        "Ajouter un en-tête",
+      ])
+    ).toStrictEqual([]);
+  });
+
+  it("names an endpoint's headers, never their values", async () => {
+    const html = await render(
+      "en",
+      <EndpointItemView endpoint={{ ...on, headerNames: ["Authorization"] }} />
+    );
+
+    expect(html).toContain("Headers: Authorization");
   });
 });
