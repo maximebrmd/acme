@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
+import { usageRetentionDays } from "peal-contract";
 import type { WorkspaceUsageReport } from "peal-contract";
 import {
   ChartContainer,
@@ -271,7 +272,9 @@ export const UsageHistoryView = ({ report }: UsageHistoryViewProps) => {
           <UsageDaysTable days={days} />
         </TabsContent>
       </Tabs>
-      <p className="text-muted-foreground text-xs">{t("note")}</p>
+      <p className="text-muted-foreground text-xs">
+        {t("note", { days: usageRetentionDays })}
+      </p>
     </div>
   );
 };

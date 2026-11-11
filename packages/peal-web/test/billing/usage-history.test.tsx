@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
+import { usageRetentionDays } from "peal-contract";
 import type { WorkspaceUsageReport } from "peal-contract";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -115,6 +116,9 @@ describe(UsageHistoryView, () => {
     const html = await render("en", <UsageHistoryView report={report} />);
 
     expect(html).toContain("4 posts published");
+    expect(html).toContain(
+      `Counts only, kept ${String(usageRetentionDays)} days`
+    );
     expect(html).toContain("5 channel-days, over 2 days counted");
     expect(html).toContain("3 posts on X in November 2026, 1 with a link");
     expect(html).not.toContain("partner");

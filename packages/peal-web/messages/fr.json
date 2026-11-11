@@ -1519,7 +1519,7 @@
         "members": "Membres",
         "media": "Médias stockés",
         "assistant": "Demandes à l’assistant",
-        "note": "Des décomptes seulement, conservés 400 jours : rien n’est facturé d’après eux. Un tiret marque un jour sans relevé."
+        "note": "Des décomptes seulement, conservés {days, number} jours : rien n’est facturé d’après eux. Un tiret marque un jour sans relevé."
       }
     },
     "plans": {

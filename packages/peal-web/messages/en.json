@@ -1519,7 +1519,7 @@
         "members": "Members",
         "media": "Media stored",
         "assistant": "Assistant requests",
-        "note": "Counts only, kept 400 days: nothing here is priced. A dash is a day without a snapshot."
+        "note": "Counts only, kept {days, number} days: nothing here is priced. A dash is a day without a snapshot."
       }
     },
     "plans": {
