@@ -24,6 +24,7 @@ import type {
 import type {
   FormatLimits,
   MediaRules,
+  PlatformRules,
 } from "#publishing/domain/platform-rules.ts";
 
 // Absent values are null in what clients read.
@@ -101,6 +102,23 @@ const formatsView = (media: MediaRules): readonly MediaFormatView[] =>
     return limits === undefined ? [] : [formatView(contentType, limits)];
   });
 
+// What the rules take of a post's images and videos, with the most files
+// and the longest alt text Peal takes there.
+const mediaView = (
+  rules: PlatformRules,
+  limits: { readonly maxAltTextLength: number; readonly maxMedia: number }
+): PlatformCapabilitiesView["media"] => ({
+  altText: {
+    maxLength: limits.maxAltTextLength,
+    shown: orNull(rules.media?.showsAltText),
+  },
+  formats: rules.media === undefined ? null : formatsView(rules.media),
+  maxCount: limits.maxMedia,
+  maxVideos: orNull(rules.media?.maxVideos),
+  mixesKinds: orNull(rules.media?.mixesKinds),
+  required: rules.mediaRequired,
+});
+
 const isPostCount = Schema.is(Schema.Literals(postCountNames));
 
 const isAccountNumber = Schema.is(Schema.Literals(accountNumberNames));
@@ -114,7 +132,7 @@ export const platformCapabilitiesView = (
 ): PlatformCapabilitiesView => {
   const { rules } = capabilities;
 
-  return {
+  const view: PlatformCapabilitiesView = {
     analytics: {
       accountNumbers: capabilities.counted.account.filter(isAccountNumber),
       perPost: capabilities.countsPosts,
@@ -126,17 +144,7 @@ export const platformCapabilitiesView = (
         : { kind: rules.followUps.kind, maxCount: rules.followUps.maximum },
     livePost: livePostView(capabilities.livePost),
     lookups: capabilities.lookups.map(lookupDescriptionView),
-    media: {
-      altText: {
-        maxLength: capabilities.maxAltTextLength,
-        shown: orNull(rules.media?.showsAltText),
-      },
-      formats: rules.media === undefined ? null : formatsView(rules.media),
-      maxCount: capabilities.maxMedia,
-      maxVideos: orNull(rules.media?.maxVideos),
-      mixesKinds: orNull(rules.media?.mixesKinds),
-      required: rules.mediaRequired,
-    },
+    media: mediaView(rules, capabilities),
     options: {
       constraints: capabilities.optionConstraints,
       fields: capabilities.options.map(fieldView),
@@ -151,6 +159,20 @@ export const platformCapabilitiesView = (
     },
     version: capabilities.version,
   };
+
+  const formats = capabilities.postFormats;
+
+  return formats === undefined
+    ? view
+    : {
+        ...view,
+        postFormats: formats.map((format) => ({
+          description: format.description,
+          media: mediaView(format.rules, format),
+          name: format.name,
+          sendsText: format.rules.sendsText !== false,
+        })),
+      };
 };
 
 const standingView = (account: AccountStanding): AccountStandingView =>

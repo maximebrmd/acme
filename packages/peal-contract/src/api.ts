@@ -518,6 +518,7 @@ export {
   OptionConstraintSchema,
   PlatformCapabilitiesSchema,
   postCountNames,
+  PostFormatCapabilitiesSchema,
   TextCapabilitiesSchema,
   TextLimitSchema,
 } from "./capabilities.ts";
@@ -530,6 +531,7 @@ export type {
   MediaFormat,
   OptionConstraint,
   PlatformCapabilities,
+  PostFormatCapabilities,
   TextLimit,
 } from "./capabilities.ts";
 

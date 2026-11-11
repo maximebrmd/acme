@@ -9,7 +9,7 @@ import type { TargetOptions } from "./target-options.ts";
  * options' `format`, never guessed from the files: an Instagram or a
  * Facebook Page `story`, a Facebook `reel`. A feed post is no format.
  */
-export const PostFormatSchema = Schema.Literals(["story", "reel"]);
+export const PostFormatSchema = Schema.Literals(["reel", "story"]);
 
 export type PostFormat = typeof PostFormatSchema.Type;
 

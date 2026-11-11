@@ -12,6 +12,7 @@ import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import { InstagramOptions } from "#publishing/domain/instagram-options.ts";
 import type { MediaFile } from "#publishing/domain/media-file.ts";
+import { capabilitiesOf } from "#publishing/domain/platform-capabilities.ts";
 import { platformRules, rulesFor } from "#publishing/domain/platform-rules.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { postFormatOf } from "#publishing/domain/post-format.ts";
@@ -431,5 +432,32 @@ describe("a story's preview", () => {
         Option.some(new FacebookOptions({ format: "reel" }))
       ).text
     ).toBe("A synthetic story");
+  });
+});
+
+describe("a platform's formats, described", () => {
+  it("are named, described and given their rules, where there are any", () => {
+    const [instagramStory] =
+      capabilitiesOf("instagram", false).postFormats ?? [];
+
+    expect(instagramStory?.name).toBe("story");
+    expect(instagramStory?.description).not.toBe("");
+    expect(instagramStory?.maxMedia).toBe(1);
+    expect(instagramStory?.rules).toStrictEqual(
+      rulesFor("instagram", Option.some(story.instagram))
+    );
+    expect(
+      (capabilitiesOf("facebook", false).postFormats ?? []).map(
+        ({ name }) => name
+      )
+    ).toStrictEqual(["reel", "story"]);
+  });
+
+  it("are left out on the platforms without formats", () => {
+    expect(
+      platforms.filter(
+        (platform) => capabilitiesOf(platform, false).postFormats !== undefined
+      )
+    ).toStrictEqual(["instagram", "facebook"]);
   });
 });

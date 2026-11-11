@@ -4,6 +4,7 @@ import type { Platform } from "#shared/domain/platform.ts";
 
 import type { MediaContentType } from "./media-file.ts";
 import { postFormatOf } from "./post-format.ts";
+import type { PostFormat } from "./post-format.ts";
 import { maxFollowUps } from "./post-part.ts";
 import type { TargetOptions } from "./target-options.ts";
 import type { TextUnit } from "./text-length.ts";
@@ -596,6 +597,20 @@ const withFormat = (
 ): PlatformRules => ({ ...base, ...format });
 
 /**
+ * The rules of a post of `format` on the platform, or none where the
+ * platform has no such format.
+ */
+export const formatRulesOn = (
+  platform: Platform,
+  format: PostFormat
+): PlatformRules | undefined => {
+  const rules = platformRules[platform];
+  const chosen = rules.postFormats?.[format];
+
+  return chosen === undefined ? undefined : withFormat(rules, chosen);
+};
+
+/**
  * The rules a post follows on the platform with the options it has there:
  * those of the format the options choose (`postFormatOf`: a story, a
  * reel), or the platform's own, the same object, for a feed post, for
@@ -604,19 +619,13 @@ const withFormat = (
 export const rulesFor = (
   platform: Platform,
   options: Option.Option<TargetOptions>
-): PlatformRules => {
-  const rules = platformRules[platform];
-
-  return options.pipe(
+): PlatformRules =>
+  options.pipe(
     Option.filter((chosen) => chosen.platform === platform),
     postFormatOf,
-    Option.flatMapNullishOr((format) => rules.postFormats?.[format]),
-    Option.match({
-      onNone: () => rules,
-      onSome: (format) => withFormat(rules, format),
-    })
+    Option.flatMapNullishOr((format) => formatRulesOn(platform, format)),
+    Option.getOrElse(() => platformRules[platform])
   );
-};
 
 /**
  * The parts the platform takes after a post's first, if it takes any,
