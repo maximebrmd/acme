@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "83484f9c-34f3-4735-8a5c-34230b56cd66",
+  "id": "61dc936c-05c5-42fa-8d79-c92773cfd2dd",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -1204,6 +1204,26 @@
       "statementTarget": [
         "table",
         "publishing",
+        "queues"
+      ],
+      "writes": [
+        "s|tbl|publishing.queues",
+        "n|tbl|publishing.queues",
+        "e|tbl|publishing.queues",
+        "n|rel|publishing.queues",
+        "n|type|publishing.queues",
+        "n|rel|publishing.queues_pkey",
+        "n|rel|publishing.queues_workspace_name"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
         "quota_usage"
       ],
       "writes": [
@@ -1425,6 +1445,25 @@
         "n|type|webhooks.events",
         "n|rel|webhooks.events_pkey",
         "n|rel|webhooks.events_key"
+      ],
+      "reads": [
+        "n|sch|webhooks"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "webhooks",
+        "manual_sends"
+      ],
+      "writes": [
+        "s|tbl|webhooks.manual_sends",
+        "n|tbl|webhooks.manual_sends",
+        "e|tbl|webhooks.manual_sends",
+        "n|rel|webhooks.manual_sends",
+        "n|type|webhooks.manual_sends",
+        "n|rel|webhooks.manual_sends_pkey"
       ],
       "reads": [
         "n|sch|webhooks"
@@ -3925,6 +3964,68 @@
       "statementType": "create_index",
       "statementTarget": [
         "index",
+        "publishing",
+        "posts",
+        "posts_queue_scheduled_at"
+      ],
+      "writes": [
+        "s|idx|publishing.posts_queue_scheduled_at",
+        "n|idx|publishing.posts_queue_scheduled_at",
+        "e|idx|publishing.posts_queue_scheduled_at",
+        "n|rel|publishing.posts_queue_scheduled_at"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
+        "n|col|publishing.posts.queue_id",
+        "n|col|publishing.posts.scheduled_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "queues",
+        "queues_workspace_default"
+      ],
+      "writes": [
+        "s|idx|publishing.queues_workspace_default",
+        "n|idx|publishing.queues_workspace_default",
+        "e|idx|publishing.queues_workspace_default",
+        "n|rel|publishing.queues_workspace_default"
+      ],
+      "reads": [
+        "n|tbl|publishing.queues",
+        "n|sch|publishing",
+        "n|col|publishing.queues.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "queues",
+        "queues_workspace_id"
+      ],
+      "writes": [
+        "s|idx|publishing.queues_workspace_id",
+        "n|idx|publishing.queues_workspace_id",
+        "e|idx|publishing.queues_workspace_id",
+        "n|rel|publishing.queues_workspace_id"
+      ],
+      "reads": [
+        "n|tbl|publishing.queues",
+        "n|sch|publishing",
+        "n|col|publishing.queues.workspace_id",
+        "n|col|publishing.queues.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
         "review",
         "approval_requests",
         "approval_requests_pending"
@@ -4306,7 +4407,29 @@
       "reads": [
         "n|tbl|webhooks.deliveries",
         "n|sch|webhooks",
-        "n|col|webhooks.deliveries.workspace_id"
+        "n|col|webhooks.deliveries.workspace_id",
+        "n|col|webhooks.deliveries.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "webhooks",
+        "deliveries",
+        "deliveries_endpoint_failed"
+      ],
+      "writes": [
+        "s|idx|webhooks.deliveries_endpoint_failed",
+        "n|idx|webhooks.deliveries_endpoint_failed",
+        "e|idx|webhooks.deliveries_endpoint_failed",
+        "n|rel|webhooks.deliveries_endpoint_failed"
+      ],
+      "reads": [
+        "n|tbl|webhooks.deliveries",
+        "n|sch|webhooks",
+        "n|col|webhooks.deliveries.endpoint_id",
+        "n|col|webhooks.deliveries.id"
       ]
     },
     {
@@ -4348,6 +4471,26 @@
         "n|tbl|webhooks.events",
         "n|sch|webhooks",
         "n|col|webhooks.events.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "webhooks",
+        "manual_sends",
+        "manual_sends_window_start"
+      ],
+      "writes": [
+        "s|idx|webhooks.manual_sends_window_start",
+        "n|idx|webhooks.manual_sends_window_start",
+        "e|idx|webhooks.manual_sends_window_start",
+        "n|rel|webhooks.manual_sends_window_start"
+      ],
+      "reads": [
+        "n|tbl|webhooks.manual_sends",
+        "n|sch|webhooks",
+        "n|col|webhooks.manual_sends.window_start"
       ]
     },
     {
@@ -6270,6 +6413,12 @@
     },
     {
       "schema": "publishing",
+      "name": "queues",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
       "name": "quota_usage",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -6337,6 +6486,12 @@
     {
       "schema": "webhooks",
       "name": "events",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "webhooks",
+      "name": "manual_sends",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -13221,6 +13376,19 @@
     {
       "schema": "publishing",
       "table": "posts",
+      "name": "queue_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
       "name": "schedule_revision",
       "type": "integer",
       "typeSchema": null,
@@ -13612,6 +13780,136 @@
       "schema": "publishing",
       "table": "publication_calls",
       "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "channel_ids",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": "'{}'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "channel_set_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "is_default",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "name_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "slots",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "time_zone",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
@@ -14820,6 +15118,19 @@
     {
       "schema": "webhooks",
       "table": "deliveries",
+      "name": "redelivery_of",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
       "name": "response_excerpt",
       "type": "text",
       "typeSchema": null,
@@ -14865,6 +15176,19 @@
       "notNull": true,
       "dimensions": 0,
       "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "channel_ids",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": "'{}'",
       "generated": null,
       "identity": null,
       "entityType": "columns"
@@ -15066,6 +15390,19 @@
     },
     {
       "schema": "webhooks",
+      "table": "endpoints",
+      "name": "workspace_ids",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": "'{}'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
       "table": "events",
       "name": "data",
       "type": "jsonb",
@@ -15132,6 +15469,19 @@
     {
       "schema": "webhooks",
       "table": "events",
+      "name": "sample",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
       "name": "type",
       "type": "text",
       "typeSchema": null,
@@ -15145,6 +15495,58 @@
     {
       "schema": "webhooks",
       "table": "events",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "manual_sends",
+      "name": "kind",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "manual_sends",
+      "name": "sent",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "manual_sends",
+      "name": "window_start",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "manual_sends",
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
@@ -20845,6 +21247,83 @@
       "entityType": "indexes"
     },
     {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "posts_queue_scheduled_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "queue_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "scheduled_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"queue_id\" is not null",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "queues_workspace_default",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"is_default\"",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "queues_workspace_id",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "review",
       "table": "approval_requests",
       "name": "approval_requests_pending",
@@ -21290,10 +21769,45 @@
           "asc": true,
           "nullsFirst": false,
           "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
         }
       ],
       "isUnique": false,
       "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "webhooks",
+      "table": "deliveries",
+      "name": "deliveries_endpoint_failed",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "endpoint_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"status\" = 'failed'",
       "with": "",
       "method": "btree",
       "concurrently": false,
@@ -21335,6 +21849,27 @@
       "columns": [
         {
           "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "webhooks",
+      "table": "manual_sends",
+      "name": "manual_sends_window_start",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "window_start",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -22878,6 +23413,18 @@
       "entityType": "pks"
     },
     {
+      "schema": "webhooks",
+      "table": "manual_sends",
+      "name": "manual_sends_pkey",
+      "columns": [
+        "workspace_id",
+        "kind",
+        "window_start"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "workspace",
       "table": "partner_idempotency_keys",
       "name": "partner_idempotency_keys_pkey",
@@ -23275,6 +23822,16 @@
       "name": "publication_calls_pkey",
       "columns": [
         "idempotency_key"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "queues",
+      "name": "queues_pkey",
+      "columns": [
+        "id"
       ],
       "nameExplicit": false,
       "entityType": "pks"
@@ -23734,6 +24291,18 @@
     },
     {
       "schema": "publishing",
+      "table": "queues",
+      "name": "queues_workspace_name",
+      "nameExplicit": true,
+      "columns": [
+        "workspace_id",
+        "name_key"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "publishing",
       "table": "signatures",
       "name": "signatures_workspace_name",
       "nameExplicit": true,
@@ -24168,6 +24737,20 @@
       "table": "endpoints",
       "name": "endpoints_disabled",
       "value": "(\"status\" = 'disabled') = (\"disabled_reason\" IS NOT NULL AND \"disabled_at\" IS NOT NULL)",
+      "entityType": "checks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "manual_sends",
+      "name": "manual_sends_kind",
+      "value": "\"kind\" IN ('single', 'bulk')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "manual_sends",
+      "name": "manual_sends_sent",
+      "value": "\"sent\" > 0",
       "entityType": "checks"
     },
     {
