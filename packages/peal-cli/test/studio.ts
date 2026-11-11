@@ -5436,6 +5436,17 @@ export const studioAccessLive = (studio: Studio) =>
           return yield* new WorkspaceNotFound();
         }
 
+        // A workspace that requires two-step verification refuses a
+        // person whose account does not have it on.
+        if (workspace.twoStepRequired && !studio.me.user.twoStepEnabled) {
+          return yield* new Forbidden({
+            code: "forbidden",
+            message:
+              "This workspace requires two-step verification. Turn it on in your Peal account settings, then try again.",
+            reason: "twoStepRequired",
+          });
+        }
+
         return yield* httpEffect.pipe(
           Effect.provideService(CurrentMember, {
             permissions: workspace.permissions,

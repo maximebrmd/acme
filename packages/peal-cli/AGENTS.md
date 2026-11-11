@@ -54,6 +54,12 @@
   credential is used and whether it works, the publish scope, the workspace
   commands will act in, the MCP endpoint's address), exits with 1 when a
   check fails, and is the first thing the skill tells an agent to run.
+- No command manages two-step verification, which is a person's, in the
+  web app. A workspace that requires it refuses a sign-in whose account
+  does not have it on (`Forbidden`, `twoStepRequired`): `explain` sends
+  the person to the web app's account page (`accountPageOf`, the API's
+  origin), and `peal doctor` fails the workspace's check with the same
+  words. With `PEAL_API_KEY` nothing changes: keys are not concerned.
 - `test/parity.test.ts` maps every endpoint a bearer token can call
   (`test/contract-endpoints.ts`, which copies the SDK spec's rule and its
   `ownSessionTags`: keep them equal) to the command that covers it, or to
