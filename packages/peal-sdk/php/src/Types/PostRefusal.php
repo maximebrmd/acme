@@ -22,6 +22,8 @@ class PostRefusal extends JsonSerializableType
      *   |'UnknownTags'
      *   |'ChannelSetNotFound'
      *   |'SignatureNotFound'
+     *   |'QueueNotFound'
+     *   |'QueueHasNoRoom'
      *   |'_unknown'
      * ) $type
      */
@@ -42,6 +44,8 @@ class PostRefusal extends JsonSerializableType
      *   |UnknownTagsEncoded
      *   |ChannelSetNotFoundEncoded
      *   |SignatureNotFoundEncoded
+     *   |QueueNotFoundEncoded
+     *   |QueueHasNoRoomEncoded
      *   |mixed
      * ) $value
      */
@@ -63,6 +67,8 @@ class PostRefusal extends JsonSerializableType
      *   |'UnknownTags'
      *   |'ChannelSetNotFound'
      *   |'SignatureNotFound'
+     *   |'QueueNotFound'
+     *   |'QueueHasNoRoom'
      *   |'_unknown'
      * ),
      *   value: (
@@ -79,6 +85,8 @@ class PostRefusal extends JsonSerializableType
      *   |UnknownTagsEncoded
      *   |ChannelSetNotFoundEncoded
      *   |SignatureNotFoundEncoded
+     *   |QueueNotFoundEncoded
+     *   |QueueHasNoRoomEncoded
      *   |mixed
      * ),
      * } $values
@@ -243,6 +251,30 @@ class PostRefusal extends JsonSerializableType
         return new PostRefusal([
             'type' => 'SignatureNotFound',
             'value' => $signatureNotFound,
+        ]);
+    }
+
+    /**
+     * @param QueueNotFoundEncoded $queueNotFound
+     * @return PostRefusal
+     */
+    public static function queueNotFound(QueueNotFoundEncoded $queueNotFound): PostRefusal
+    {
+        return new PostRefusal([
+            'type' => 'QueueNotFound',
+            'value' => $queueNotFound,
+        ]);
+    }
+
+    /**
+     * @param QueueHasNoRoomEncoded $queueHasNoRoom
+     * @return PostRefusal
+     */
+    public static function queueHasNoRoom(QueueHasNoRoomEncoded $queueHasNoRoom): PostRefusal
+    {
+        return new PostRefusal([
+            'type' => 'QueueHasNoRoom',
+            'value' => $queueHasNoRoom,
         ]);
     }
 
@@ -533,6 +565,50 @@ class PostRefusal extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isQueueNotFound(): bool
+    {
+        return $this->value instanceof QueueNotFoundEncoded && $this->type === 'QueueNotFound';
+    }
+
+    /**
+     * @return QueueNotFoundEncoded
+     */
+    public function asQueueNotFound(): QueueNotFoundEncoded
+    {
+        if (!($this->value instanceof QueueNotFoundEncoded && $this->type === 'QueueNotFound')) {
+            throw new Exception(
+                "Expected QueueNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isQueueHasNoRoom(): bool
+    {
+        return $this->value instanceof QueueHasNoRoomEncoded && $this->type === 'QueueHasNoRoom';
+    }
+
+    /**
+     * @return QueueHasNoRoomEncoded
+     */
+    public function asQueueHasNoRoom(): QueueHasNoRoomEncoded
+    {
+        if (!($this->value instanceof QueueHasNoRoomEncoded && $this->type === 'QueueHasNoRoom')) {
+            throw new Exception(
+                "Expected QueueHasNoRoom; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -602,6 +678,14 @@ class PostRefusal extends JsonSerializableType
                 break;
             case 'SignatureNotFound':
                 $value = $this->asSignatureNotFound()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'QueueNotFound':
+                $value = $this->asQueueNotFound()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'QueueHasNoRoom':
+                $value = $this->asQueueHasNoRoom()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -678,6 +762,12 @@ class PostRefusal extends JsonSerializableType
                 break;
             case 'SignatureNotFound':
                 $args['value'] = SignatureNotFoundEncoded::jsonDeserialize($data);
+                break;
+            case 'QueueNotFound':
+                $args['value'] = QueueNotFoundEncoded::jsonDeserialize($data);
+                break;
+            case 'QueueHasNoRoom':
+                $args['value'] = QueueHasNoRoomEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

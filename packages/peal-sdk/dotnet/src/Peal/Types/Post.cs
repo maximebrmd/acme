@@ -26,6 +26,9 @@ public record Post : IJsonOnDeserialized
     [JsonPropertyName("outcome")]
     public PostOutcome? Outcome { get; set; }
 
+    [JsonPropertyName("queueId")]
+    public string? QueueId { get; set; }
+
     [JsonPropertyName("schedule")]
     public PostSchedule? Schedule { get; set; }
 

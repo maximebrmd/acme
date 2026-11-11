@@ -15,6 +15,7 @@ from .paid_plan import PaidPlan
 from .permission import Permission
 from .plan import Plan
 from .plan_limit import PlanLimit
+from .queue_no_room import QueueNoRoom
 
 
 class PostRefusal_PostContentInvalid(UniversalBaseModel):
@@ -300,6 +301,48 @@ class PostRefusal_SignatureNotFound(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class PostRefusal_QueueNotFound(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["QueueNotFound"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "QueueNotFound"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class PostRefusal_QueueHasNoRoom(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["QueueHasNoRoom"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "QueueHasNoRoom"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+    queue_id: typing_extensions.Annotated[str, FieldMetadata(alias="queueId"), pydantic.Field(alias="queueId")]
+    reason: QueueNoRoom
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 PostRefusal = typing_extensions.Annotated[
     typing.Union[
         PostRefusal_PostContentInvalid,
@@ -315,6 +358,8 @@ PostRefusal = typing_extensions.Annotated[
         PostRefusal_UnknownTags,
         PostRefusal_ChannelSetNotFound,
         PostRefusal_SignatureNotFound,
+        PostRefusal_QueueNotFound,
+        PostRefusal_QueueHasNoRoom,
     ],
     pydantic.Field(discriminator="type"),
 ]

@@ -69,7 +69,7 @@ func (b *BadRequestError) GetBody() any {
 	return b.Body
 }
 
-// The `Idempotency-Key` was sent before, within the last 24 hours, with another request: nothing was made. Send a new request under a new key. | Another post of the workspace sends the same content (the text the channel receives and the same media, in the same order) to some of the same channels, less than 23 hours from this one's time: nothing was made. `duplicates` names each such channel and that post. Only posts that go out or went out count, those that wait for an approval among them: not drafts, cancelled posts, nor a channel where the post failed. When it is meant, send the request again with `allowDuplicate: true`.
+// The `Idempotency-Key` was sent before, within the last 24 hours, with another request: nothing was made. Send a new request under a new key. | Another post of the workspace sends the same content (the text the channel receives and the same media, in the same order) to some of the same channels, less than 23 hours from this one's time: nothing was made. `duplicates` names each such channel and that post. Only posts that go out or went out count, those that wait for an approval among them: not drafts, cancelled posts, nor a channel where the post failed. When it is meant, send the request again with `allowDuplicate: true`. | The queue `queueId` has no slot for the post: it has no slot at all (`noSlots`), or every slot of the year to come is taken (`full`). Add slots to the queue, or choose a time. Nothing was made or moved.
 type ConflictError struct {
 	*core.APIError
 	Body any

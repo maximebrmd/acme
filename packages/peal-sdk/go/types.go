@@ -4793,9 +4793,9 @@ func (c CommentProblem) Ptr() *CommentProblem {
 }
 
 type ConflictErrorBody struct {
-	Type                string
-	ChannelSetNameTaken *ChannelSetNameTakenEncoded
-	TooManyChannelSets  *TooManyChannelSetsEncoded
+	Type           string
+	QueueNameTaken *QueueNameTakenEncoded
+	TooManyQueues  *TooManyQueuesEncoded
 
 	rawJSON json.RawMessage
 }
@@ -4807,18 +4807,18 @@ func (c *ConflictErrorBody) GetType() string {
 	return c.Type
 }
 
-func (c *ConflictErrorBody) GetChannelSetNameTaken() *ChannelSetNameTakenEncoded {
+func (c *ConflictErrorBody) GetQueueNameTaken() *QueueNameTakenEncoded {
 	if c == nil {
 		return nil
 	}
-	return c.ChannelSetNameTaken
+	return c.QueueNameTaken
 }
 
-func (c *ConflictErrorBody) GetTooManyChannelSets() *TooManyChannelSetsEncoded {
+func (c *ConflictErrorBody) GetTooManyQueues() *TooManyQueuesEncoded {
 	if c == nil {
 		return nil
 	}
-	return c.TooManyChannelSets
+	return c.TooManyQueues
 }
 
 func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
@@ -4833,18 +4833,18 @@ func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", c)
 	}
 	switch unmarshaler.Type {
-	case "ChannelSetNameTaken":
-		value := new(ChannelSetNameTakenEncoded)
+	case "QueueNameTaken":
+		value := new(QueueNameTakenEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		c.ChannelSetNameTaken = value
-	case "TooManyChannelSets":
-		value := new(TooManyChannelSetsEncoded)
+		c.QueueNameTaken = value
+	case "TooManyQueues":
+		value := new(TooManyQueuesEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		c.TooManyChannelSets = value
+		c.TooManyQueues = value
 	}
 	c.rawJSON = json.RawMessage(data)
 	return nil
@@ -4854,11 +4854,11 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
-	if c.ChannelSetNameTaken != nil {
-		return internal.MarshalJSONWithExtraProperty(c.ChannelSetNameTaken, "_tag", "ChannelSetNameTaken")
+	if c.QueueNameTaken != nil {
+		return internal.MarshalJSONWithExtraProperty(c.QueueNameTaken, "_tag", "QueueNameTaken")
 	}
-	if c.TooManyChannelSets != nil {
-		return internal.MarshalJSONWithExtraProperty(c.TooManyChannelSets, "_tag", "TooManyChannelSets")
+	if c.TooManyQueues != nil {
+		return internal.MarshalJSONWithExtraProperty(c.TooManyQueues, "_tag", "TooManyQueues")
 	}
 	if len(c.rawJSON) > 0 {
 		return c.rawJSON, nil
@@ -4867,16 +4867,16 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type ConflictErrorBodyVisitor interface {
-	VisitChannelSetNameTaken(*ChannelSetNameTakenEncoded) error
-	VisitTooManyChannelSets(*TooManyChannelSetsEncoded) error
+	VisitQueueNameTaken(*QueueNameTakenEncoded) error
+	VisitTooManyQueues(*TooManyQueuesEncoded) error
 }
 
 func (c *ConflictErrorBody) Accept(visitor ConflictErrorBodyVisitor) error {
-	if c.ChannelSetNameTaken != nil {
-		return visitor.VisitChannelSetNameTaken(c.ChannelSetNameTaken)
+	if c.QueueNameTaken != nil {
+		return visitor.VisitQueueNameTaken(c.QueueNameTaken)
 	}
-	if c.TooManyChannelSets != nil {
-		return visitor.VisitTooManyChannelSets(c.TooManyChannelSets)
+	if c.TooManyQueues != nil {
+		return visitor.VisitTooManyQueues(c.TooManyQueues)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", c)
 }
@@ -4886,11 +4886,11 @@ func (c *ConflictErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", c)
 	}
 	var fields []string
-	if c.ChannelSetNameTaken != nil {
-		fields = append(fields, "ChannelSetNameTaken")
+	if c.QueueNameTaken != nil {
+		fields = append(fields, "QueueNameTaken")
 	}
-	if c.TooManyChannelSets != nil {
-		fields = append(fields, "TooManyChannelSets")
+	if c.TooManyQueues != nil {
+		fields = append(fields, "TooManyQueues")
 	}
 	if len(fields) == 0 {
 		if c.Type != "" {
@@ -13078,6 +13078,181 @@ func (p PostStatusConflictEncodedTag) Ptr() *PostStatusConflictEncodedTag {
 }
 
 var (
+	queueNameTakenEncodedFieldTag       = big.NewInt(1 << 0)
+	queueNameTakenEncodedFieldCode      = big.NewInt(1 << 1)
+	queueNameTakenEncodedFieldMessage   = big.NewInt(1 << 2)
+	queueNameTakenEncodedFieldRequestID = big.NewInt(1 << 3)
+)
+
+type QueueNameTakenEncoded struct {
+	Tag       QueueNameTakenEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                  `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                  `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                  `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (q *QueueNameTakenEncoded) GetTag() QueueNameTakenEncodedTag {
+	if q == nil {
+		return ""
+	}
+	return q.Tag
+}
+
+func (q *QueueNameTakenEncoded) GetCode() *string {
+	if q == nil {
+		return nil
+	}
+	return q.Code
+}
+
+func (q *QueueNameTakenEncoded) GetMessage() *string {
+	if q == nil {
+		return nil
+	}
+	return q.Message
+}
+
+func (q *QueueNameTakenEncoded) GetRequestID() *string {
+	if q == nil {
+		return nil
+	}
+	return q.RequestID
+}
+
+func (q *QueueNameTakenEncoded) GetExtraProperties() map[string]interface{} {
+	if q == nil {
+		return nil
+	}
+	return q.extraProperties
+}
+
+func (q *QueueNameTakenEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if q.explicitFields != nil {
+		next.Set(q.explicitFields)
+	}
+	next.Or(next, field)
+	q.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueNameTakenEncoded) SetTag(tag QueueNameTakenEncodedTag) {
+	q.Tag = tag
+	q.require(queueNameTakenEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueNameTakenEncoded) SetCode(code *string) {
+	q.Code = code
+	q.require(queueNameTakenEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueNameTakenEncoded) SetMessage(message *string) {
+	q.Message = message
+	q.require(queueNameTakenEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueNameTakenEncoded) SetRequestID(requestID *string) {
+	q.RequestID = requestID
+	q.require(queueNameTakenEncodedFieldRequestID)
+}
+
+func (q *QueueNameTakenEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler QueueNameTakenEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*q = QueueNameTakenEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *q)
+	if err != nil {
+		return err
+	}
+	q.extraProperties = extraProperties
+	q.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (q *QueueNameTakenEncoded) MarshalJSON() ([]byte, error) {
+	type embed QueueNameTakenEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*q),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, q.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (q *QueueNameTakenEncoded) String() string {
+	if q == nil {
+		return "<nil>"
+	}
+	if len(q.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(q.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(q); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", q)
+}
+
+type QueueNameTakenEncodedTag string
+
+const (
+	QueueNameTakenEncodedTagQueueNameTaken QueueNameTakenEncodedTag = "QueueNameTaken"
+)
+
+func NewQueueNameTakenEncodedTagFromString(s string) (QueueNameTakenEncodedTag, error) {
+	switch s {
+	case "QueueNameTaken":
+		return QueueNameTakenEncodedTagQueueNameTaken, nil
+	}
+	var t QueueNameTakenEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (q QueueNameTakenEncodedTag) Ptr() *QueueNameTakenEncodedTag {
+	return &q
+}
+
+type QueueNoRoom string
+
+const (
+	QueueNoRoomNoSlots QueueNoRoom = "noSlots"
+	QueueNoRoomFull    QueueNoRoom = "full"
+)
+
+func NewQueueNoRoomFromString(s string) (QueueNoRoom, error) {
+	switch s {
+	case "noSlots":
+		return QueueNoRoomNoSlots, nil
+	case "full":
+		return QueueNoRoomFull, nil
+	}
+	var t QueueNoRoom
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (q QueueNoRoom) Ptr() *QueueNoRoom {
+	return &q
+}
+
+var (
 	replyInvalidEncodedFieldTag       = big.NewInt(1 << 0)
 	replyInvalidEncodedFieldCode      = big.NewInt(1 << 1)
 	replyInvalidEncodedFieldMessage   = big.NewInt(1 << 2)
@@ -16219,6 +16394,140 @@ func (t *TooManyInvitationsEncoded) String() string {
 }
 
 var (
+	tooManyQueuesEncodedFieldCode      = big.NewInt(1 << 0)
+	tooManyQueuesEncodedFieldMessage   = big.NewInt(1 << 1)
+	tooManyQueuesEncodedFieldRequestID = big.NewInt(1 << 2)
+	tooManyQueuesEncodedFieldAllowed   = big.NewInt(1 << 3)
+)
+
+type TooManyQueuesEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Allowed   int     `json:"allowed" url:"allowed"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TooManyQueuesEncoded) GetCode() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Code
+}
+
+func (t *TooManyQueuesEncoded) GetMessage() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Message
+}
+
+func (t *TooManyQueuesEncoded) GetRequestID() *string {
+	if t == nil {
+		return nil
+	}
+	return t.RequestID
+}
+
+func (t *TooManyQueuesEncoded) GetAllowed() int {
+	if t == nil {
+		return 0
+	}
+	return t.Allowed
+}
+
+func (t *TooManyQueuesEncoded) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TooManyQueuesEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyQueuesEncoded) SetCode(code *string) {
+	t.Code = code
+	t.require(tooManyQueuesEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyQueuesEncoded) SetMessage(message *string) {
+	t.Message = message
+	t.require(tooManyQueuesEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyQueuesEncoded) SetRequestID(requestID *string) {
+	t.RequestID = requestID
+	t.require(tooManyQueuesEncodedFieldRequestID)
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyQueuesEncoded) SetAllowed(allowed int) {
+	t.Allowed = allowed
+	t.require(tooManyQueuesEncodedFieldAllowed)
+}
+
+func (t *TooManyQueuesEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler TooManyQueuesEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TooManyQueuesEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TooManyQueuesEncoded) MarshalJSON() ([]byte, error) {
+	type embed TooManyQueuesEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TooManyQueuesEncoded) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+var (
 	tooManyRequestsEncodedFieldTag               = big.NewInt(1 << 0)
 	tooManyRequestsEncodedFieldCode              = big.NewInt(1 << 1)
 	tooManyRequestsEncodedFieldMessage           = big.NewInt(1 << 2)
@@ -17404,9 +17713,9 @@ func (u UnauthenticatedEncodedTag) Ptr() *UnauthenticatedEncodedTag {
 }
 
 type UnprocessableEntityErrorBody struct {
-	Type               string
-	UnknownChannels    *UnknownChannelsEncoded
-	PostContentInvalid *PostContentInvalidEncoded
+	Type            string
+	UnknownChannels *UnknownChannelsEncoded
+	InvalidTimeZone *InvalidTimeZoneEncoded
 
 	rawJSON json.RawMessage
 }
@@ -17425,11 +17734,11 @@ func (u *UnprocessableEntityErrorBody) GetUnknownChannels() *UnknownChannelsEnco
 	return u.UnknownChannels
 }
 
-func (u *UnprocessableEntityErrorBody) GetPostContentInvalid() *PostContentInvalidEncoded {
+func (u *UnprocessableEntityErrorBody) GetInvalidTimeZone() *InvalidTimeZoneEncoded {
 	if u == nil {
 		return nil
 	}
-	return u.PostContentInvalid
+	return u.InvalidTimeZone
 }
 
 func (u *UnprocessableEntityErrorBody) UnmarshalJSON(data []byte) error {
@@ -17450,12 +17759,12 @@ func (u *UnprocessableEntityErrorBody) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		u.UnknownChannels = value
-	case "PostContentInvalid":
-		value := new(PostContentInvalidEncoded)
+	case "InvalidTimeZone":
+		value := new(InvalidTimeZoneEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		u.PostContentInvalid = value
+		u.InvalidTimeZone = value
 	}
 	u.rawJSON = json.RawMessage(data)
 	return nil
@@ -17468,8 +17777,8 @@ func (u UnprocessableEntityErrorBody) MarshalJSON() ([]byte, error) {
 	if u.UnknownChannels != nil {
 		return internal.MarshalJSONWithExtraProperty(u.UnknownChannels, "_tag", "UnknownChannels")
 	}
-	if u.PostContentInvalid != nil {
-		return internal.MarshalJSONWithExtraProperty(u.PostContentInvalid, "_tag", "PostContentInvalid")
+	if u.InvalidTimeZone != nil {
+		return internal.MarshalJSONWithExtraProperty(u.InvalidTimeZone, "_tag", "InvalidTimeZone")
 	}
 	if len(u.rawJSON) > 0 {
 		return u.rawJSON, nil
@@ -17479,15 +17788,15 @@ func (u UnprocessableEntityErrorBody) MarshalJSON() ([]byte, error) {
 
 type UnprocessableEntityErrorBodyVisitor interface {
 	VisitUnknownChannels(*UnknownChannelsEncoded) error
-	VisitPostContentInvalid(*PostContentInvalidEncoded) error
+	VisitInvalidTimeZone(*InvalidTimeZoneEncoded) error
 }
 
 func (u *UnprocessableEntityErrorBody) Accept(visitor UnprocessableEntityErrorBodyVisitor) error {
 	if u.UnknownChannels != nil {
 		return visitor.VisitUnknownChannels(u.UnknownChannels)
 	}
-	if u.PostContentInvalid != nil {
-		return visitor.VisitPostContentInvalid(u.PostContentInvalid)
+	if u.InvalidTimeZone != nil {
+		return visitor.VisitInvalidTimeZone(u.InvalidTimeZone)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", u)
 }
@@ -17500,8 +17809,8 @@ func (u *UnprocessableEntityErrorBody) validate() error {
 	if u.UnknownChannels != nil {
 		fields = append(fields, "UnknownChannels")
 	}
-	if u.PostContentInvalid != nil {
-		fields = append(fields, "PostContentInvalid")
+	if u.InvalidTimeZone != nil {
+		fields = append(fields, "InvalidTimeZone")
 	}
 	if len(fields) == 0 {
 		if u.Type != "" {

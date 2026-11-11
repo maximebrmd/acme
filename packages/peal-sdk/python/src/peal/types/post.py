@@ -25,6 +25,9 @@ class Post(UniversalBaseModel):
     ] = None
     id: str
     outcome: typing.Optional[PostOutcome] = None
+    queue_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="queueId"), pydantic.Field(alias="queueId")
+    ] = None
     schedule: typing.Optional[PostSchedule] = None
     scheduled_by: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="scheduledBy"), pydantic.Field(alias="scheduledBy")

@@ -28,6 +28,15 @@ public record PostWarning
     }
 
     /// <summary>
+    /// Create an instance of PostWarning with <see cref="PostWarning.QueueChannelsDropped"/>.
+    /// </summary>
+    public PostWarning(PostWarning.QueueChannelsDropped value)
+    {
+        Type = "queueChannelsDropped";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -44,6 +53,11 @@ public record PostWarning
     public bool IsChannelsDropped => Type == "channelsDropped";
 
     /// <summary>
+    /// Returns true if <see cref="Type"/> is "queueChannelsDropped"
+    /// </summary>
+    public bool IsQueueChannelsDropped => Type == "queueChannelsDropped";
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.PostWarningChannelsDropped"/> if <see cref="Type"/> is 'channelsDropped', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'channelsDropped'.</exception>
@@ -52,20 +66,32 @@ public record PostWarning
             ? (Peal.PostWarningChannelsDropped)Value!
             : throw new global::System.Exception("PostWarning.Type is not 'channelsDropped'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.PostWarningQueueChannelsDropped"/> if <see cref="Type"/> is 'queueChannelsDropped', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'queueChannelsDropped'.</exception>
+    public Peal.PostWarningQueueChannelsDropped AsQueueChannelsDropped() =>
+        IsQueueChannelsDropped
+            ? (Peal.PostWarningQueueChannelsDropped)Value!
+            : throw new global::System.Exception("PostWarning.Type is not 'queueChannelsDropped'");
+
     public T Match<T>(
         Func<Peal.PostWarningChannelsDropped, T> onChannelsDropped,
+        Func<Peal.PostWarningQueueChannelsDropped, T> onQueueChannelsDropped,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
             "channelsDropped" => onChannelsDropped(AsChannelsDropped()),
+            "queueChannelsDropped" => onQueueChannelsDropped(AsQueueChannelsDropped()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
         Action<Peal.PostWarningChannelsDropped> onChannelsDropped,
+        Action<Peal.PostWarningQueueChannelsDropped> onQueueChannelsDropped,
         Action<string, object?> onUnknown_
     )
     {
@@ -73,6 +99,9 @@ public record PostWarning
         {
             case "channelsDropped":
                 onChannelsDropped(AsChannelsDropped());
+                break;
+            case "queueChannelsDropped":
+                onQueueChannelsDropped(AsQueueChannelsDropped());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -94,9 +123,26 @@ public record PostWarning
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.PostWarningQueueChannelsDropped"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsQueueChannelsDropped(out Peal.PostWarningQueueChannelsDropped? value)
+    {
+        if (Type == "queueChannelsDropped")
+        {
+            value = (Peal.PostWarningQueueChannelsDropped)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator PostWarning(PostWarning.ChannelsDropped value) => new(value);
+
+    public static implicit operator PostWarning(PostWarning.QueueChannelsDropped value) =>
+        new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<PostWarning>
@@ -144,6 +190,13 @@ public record PostWarning
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.PostWarningChannelsDropped"
                         ),
+                "queueChannelsDropped" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.PostWarningQueueChannelsDropped?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.PostWarningQueueChannelsDropped"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new PostWarning(discriminator, value);
@@ -159,6 +212,7 @@ public record PostWarning
                 value.Type switch
                 {
                     "channelsDropped" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "queueChannelsDropped" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -204,6 +258,26 @@ public record PostWarning
 
         public static implicit operator PostWarning.ChannelsDropped(
             Peal.PostWarningChannelsDropped value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for queueChannelsDropped
+    /// </summary>
+    [Serializable]
+    public struct QueueChannelsDropped
+    {
+        public QueueChannelsDropped(Peal.PostWarningQueueChannelsDropped value)
+        {
+            Value = value;
+        }
+
+        internal Peal.PostWarningQueueChannelsDropped Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator PostWarning.QueueChannelsDropped(
+            Peal.PostWarningQueueChannelsDropped value
         ) => new(value);
     }
 }

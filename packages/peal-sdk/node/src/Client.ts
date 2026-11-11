@@ -21,6 +21,7 @@ import { NotificationPreferencesClient } from "./api/resources/notificationPrefe
 import { PartnerClient } from "./api/resources/partner/client/Client.js";
 import { PartnerAccountClient } from "./api/resources/partnerAccount/client/Client.js";
 import { PostsClient } from "./api/resources/posts/client/Client.js";
+import { QueuesClient } from "./api/resources/queues/client/Client.js";
 import { ReviewClient } from "./api/resources/review/client/Client.js";
 import { SessionClient } from "./api/resources/session/client/Client.js";
 import { SignaturesClient } from "./api/resources/signatures/client/Client.js";
@@ -69,6 +70,7 @@ export class PealClient {
     protected _tags: TagsClient | undefined;
     protected _signatures: SignaturesClient | undefined;
     protected _channelSets: ChannelSetsClient | undefined;
+    protected _queues: QueuesClient | undefined;
     protected _channelDefaults: ChannelDefaultsClient | undefined;
 
     constructor(options: PealClient.Options = {}) {
@@ -182,6 +184,10 @@ export class PealClient {
 
     public get channelSets(): ChannelSetsClient {
         return (this._channelSets ??= new ChannelSetsClient(this._options));
+    }
+
+    public get queues(): QueuesClient {
+        return (this._queues ??= new QueuesClient(this._options));
     }
 
     public get channelDefaults(): ChannelDefaultsClient {

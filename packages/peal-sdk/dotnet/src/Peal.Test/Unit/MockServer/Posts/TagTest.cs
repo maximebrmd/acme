@@ -104,6 +104,7 @@ public class TagTest : BaseMockServerTest
               },
               "id": "id",
               "outcome": "published",
+              "queueId": "queueId",
               "schedule": {
                 "at": "at",
                 "timeZone": "timeZone"
@@ -307,6 +308,7 @@ public class TagTest : BaseMockServerTest
               },
               "id": "id",
               "outcome": "published",
+              "queueId": "queueId",
               "schedule": {
                 "at": "at",
                 "timeZone": "timeZone"

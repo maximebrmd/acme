@@ -34,12 +34,20 @@ public final class PostTiming {
         return new PostTiming(new AtValue(value));
     }
 
+    public static PostTiming queue(PostTimingQueue value) {
+        return new PostTiming(new QueueValue(value));
+    }
+
     public boolean isNow() {
         return value instanceof NowValue;
     }
 
     public boolean isAt() {
         return value instanceof AtValue;
+    }
+
+    public boolean isQueue() {
+        return value instanceof QueueValue;
     }
 
     public boolean _isUnknown() {
@@ -56,6 +64,13 @@ public final class PostTiming {
     public Optional<PostTimingAt> getAt() {
         if (isAt()) {
             return Optional.of(((AtValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<PostTimingQueue> getQueue() {
+        if (isQueue()) {
+            return Optional.of(((QueueValue) value).value);
         }
         return Optional.empty();
     }
@@ -93,11 +108,17 @@ public final class PostTiming {
 
         T visitAt(PostTimingAt at);
 
+        T visitQueue(PostTimingQueue queue);
+
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(NowValue.class), @JsonSubTypes.Type(AtValue.class)})
+    @JsonSubTypes({
+        @JsonSubTypes.Type(NowValue.class),
+        @JsonSubTypes.Type(AtValue.class),
+        @JsonSubTypes.Type(QueueValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
@@ -169,6 +190,46 @@ public final class PostTiming {
         }
 
         private boolean equalTo(AtValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "PostTiming{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("queue")
+    @JsonIgnoreProperties("_tag")
+    private static final class QueueValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private PostTimingQueue value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private QueueValue() {}
+
+        private QueueValue(PostTimingQueue value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitQueue(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof QueueValue && equalTo((QueueValue) other);
+        }
+
+        private boolean equalTo(QueueValue other) {
             return value.equals(other.value);
         }
 

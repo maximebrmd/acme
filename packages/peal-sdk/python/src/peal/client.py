@@ -31,6 +31,7 @@ if typing.TYPE_CHECKING:
     from .partner.client import AsyncPartnerClient, PartnerClient
     from .partner_account.client import AsyncPartnerAccountClient, PartnerAccountClient
     from .posts.client import AsyncPostsClient, PostsClient
+    from .queues.client import AsyncQueuesClient, QueuesClient
     from .review.client import AsyncReviewClient, ReviewClient
     from .session.client import AsyncSessionClient, SessionClient
     from .signatures.client import AsyncSignaturesClient, SignaturesClient
@@ -151,6 +152,7 @@ class Peal:
         self._tags: typing.Optional[TagsClient] = None
         self._signatures: typing.Optional[SignaturesClient] = None
         self._channel_sets: typing.Optional[ChannelSetsClient] = None
+        self._queues: typing.Optional[QueuesClient] = None
         self._channel_defaults: typing.Optional[ChannelDefaultsClient] = None
 
     @property
@@ -370,6 +372,14 @@ class Peal:
         return self._channel_sets
 
     @property
+    def queues(self):
+        if self._queues is None:
+            from .queues.client import QueuesClient  # noqa: E402
+
+            self._queues = QueuesClient(client_wrapper=self._client_wrapper)
+        return self._queues
+
+    @property
     def channel_defaults(self):
         if self._channel_defaults is None:
             from .channel_defaults.client import ChannelDefaultsClient  # noqa: E402
@@ -510,6 +520,7 @@ class AsyncPeal:
         self._tags: typing.Optional[AsyncTagsClient] = None
         self._signatures: typing.Optional[AsyncSignaturesClient] = None
         self._channel_sets: typing.Optional[AsyncChannelSetsClient] = None
+        self._queues: typing.Optional[AsyncQueuesClient] = None
         self._channel_defaults: typing.Optional[AsyncChannelDefaultsClient] = None
 
     @property
@@ -727,6 +738,14 @@ class AsyncPeal:
 
             self._channel_sets = AsyncChannelSetsClient(client_wrapper=self._client_wrapper)
         return self._channel_sets
+
+    @property
+    def queues(self):
+        if self._queues is None:
+            from .queues.client import AsyncQueuesClient  # noqa: E402
+
+            self._queues = AsyncQueuesClient(client_wrapper=self._client_wrapper)
+        return self._queues
 
     @property
     def channel_defaults(self):

@@ -4,7 +4,8 @@ import * as Peal from "../index.js";
 
 export type PostTiming = 
     | Peal.PostTiming.Now
-    | Peal.PostTiming.At;
+    | Peal.PostTiming.At
+    | Peal.PostTiming.Queue;
 
 export namespace PostTiming {
     export interface Now extends Peal.PostTimingNow {
@@ -13,5 +14,9 @@ export namespace PostTiming {
 
     export interface At extends Peal.PostTimingAt {
         _tag: "at";
+    }
+
+    export interface Queue extends Peal.PostTimingQueue {
+        _tag: "queue";
     }
 }

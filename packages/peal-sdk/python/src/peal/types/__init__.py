@@ -192,8 +192,8 @@ if typing.TYPE_CHECKING:
     from .comment_selection_located import CommentSelectionLocated
     from .conflict_error_body import (
         ConflictErrorBody,
-        ConflictErrorBody_ChannelSetNameTaken,
-        ConflictErrorBody_TooManyChannelSets,
+        ConflictErrorBody_QueueNameTaken,
+        ConflictErrorBody_TooManyQueues,
     )
     from .connect_failed_encoded import ConnectFailedEncoded
     from .connect_failed_encoded_tag import ConnectFailedEncodedTag
@@ -558,6 +558,8 @@ if typing.TYPE_CHECKING:
         PostRefusal_PlanLimitReached,
         PostRefusal_PostContentInvalid,
         PostRefusal_PostNotFound,
+        PostRefusal_QueueHasNoRoom,
+        PostRefusal_QueueNotFound,
         PostRefusal_ScheduleInPast,
         PostRefusal_SignatureNotFound,
         PostRefusal_UnknownChannels,
@@ -572,15 +574,27 @@ if typing.TYPE_CHECKING:
     from .post_status_conflict_encoded_tag import PostStatusConflictEncodedTag
     from .post_target import PostTarget
     from .post_target_status import PostTargetStatus
-    from .post_timing import PostTiming, PostTiming_At, PostTiming_Now
+    from .post_timing import PostTiming, PostTiming_At, PostTiming_Now, PostTiming_Queue
     from .post_timing_at import PostTimingAt
     from .post_timing_now import PostTimingNow
+    from .post_timing_queue import PostTimingQueue
     from .post_validation import PostValidation
-    from .post_warning import PostWarning, PostWarning_ChannelsDropped
+    from .post_warning import PostWarning, PostWarning_ChannelsDropped, PostWarning_QueueChannelsDropped
     from .post_warning_channels_dropped import PostWarningChannelsDropped
+    from .post_warning_queue_channels_dropped import PostWarningQueueChannelsDropped
     from .prepared_upload import PreparedUpload
+    from .preview_slot import PreviewSlot
     from .probe_state import ProbeState
     from .publication_attempt import PublicationAttempt
+    from .queue import Queue
+    from .queue_details import QueueDetails
+    from .queue_has_no_room_encoded import QueueHasNoRoomEncoded
+    from .queue_name_taken_encoded import QueueNameTakenEncoded
+    from .queue_name_taken_encoded_tag import QueueNameTakenEncodedTag
+    from .queue_no_room import QueueNoRoom
+    from .queue_not_found_encoded import QueueNotFoundEncoded
+    from .queue_preview import QueuePreview
+    from .queue_slot import QueueSlot
     from .reachable_ad_account import ReachableAdAccount
     from .rejection_reason import RejectionReason
     from .reply_invalid_encoded import ReplyInvalidEncoded
@@ -627,6 +641,7 @@ if typing.TYPE_CHECKING:
     from .signature_scope_workspace import SignatureScopeWorkspace
     from .signed_request import SignedRequest
     from .signed_request_method import SignedRequestMethod
+    from .slot_time import SlotTime
     from .special_ad_category import SpecialAdCategory
     from .spend_ceiling_exceeded_encoded import SpendCeilingExceededEncoded
     from .standing import Standing
@@ -671,6 +686,7 @@ if typing.TYPE_CHECKING:
     from .too_many_channel_sets_encoded import TooManyChannelSetsEncoded
     from .too_many_connect_links_encoded import TooManyConnectLinksEncoded
     from .too_many_invitations_encoded import TooManyInvitationsEncoded
+    from .too_many_queues_encoded import TooManyQueuesEncoded
     from .too_many_requests_encoded import TooManyRequestsEncoded
     from .too_many_requests_encoded_tag import TooManyRequestsEncodedTag
     from .too_many_requests_error_body import (
@@ -697,7 +713,7 @@ if typing.TYPE_CHECKING:
     from .unknown_tags_encoded_tag import UnknownTagsEncodedTag
     from .unprocessable_entity_error_body import (
         UnprocessableEntityErrorBody,
-        UnprocessableEntityErrorBody_PostContentInvalid,
+        UnprocessableEntityErrorBody_InvalidTimeZone,
         UnprocessableEntityErrorBody_UnknownChannels,
     )
     from .unread_notices import UnreadNotices
@@ -731,6 +747,7 @@ if typing.TYPE_CHECKING:
     from .webhook_url_refused_encoded_tag import WebhookUrlRefusedEncodedTag
     from .webhooks_not_configured_encoded import WebhooksNotConfiguredEncoded
     from .webhooks_not_configured_encoded_tag import WebhooksNotConfiguredEncodedTag
+    from .weekday import Weekday
     from .workspace_busy_encoded import WorkspaceBusyEncoded
     from .workspace_busy_encoded_tag import WorkspaceBusyEncodedTag
     from .workspace_member import WorkspaceMember
@@ -925,8 +942,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "CommentSelection": ".comment_selection",
     "CommentSelectionLocated": ".comment_selection_located",
     "ConflictErrorBody": ".conflict_error_body",
-    "ConflictErrorBody_ChannelSetNameTaken": ".conflict_error_body",
-    "ConflictErrorBody_TooManyChannelSets": ".conflict_error_body",
+    "ConflictErrorBody_QueueNameTaken": ".conflict_error_body",
+    "ConflictErrorBody_TooManyQueues": ".conflict_error_body",
     "ConnectFailedEncoded": ".connect_failed_encoded",
     "ConnectFailedEncodedTag": ".connect_failed_encoded_tag",
     "ConnectFailureReason": ".connect_failure_reason",
@@ -1275,6 +1292,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostRefusal_PlanLimitReached": ".post_refusal",
     "PostRefusal_PostContentInvalid": ".post_refusal",
     "PostRefusal_PostNotFound": ".post_refusal",
+    "PostRefusal_QueueHasNoRoom": ".post_refusal",
+    "PostRefusal_QueueNotFound": ".post_refusal",
     "PostRefusal_ScheduleInPast": ".post_refusal",
     "PostRefusal_SignatureNotFound": ".post_refusal",
     "PostRefusal_UnknownChannels": ".post_refusal",
@@ -1291,15 +1310,29 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostTiming": ".post_timing",
     "PostTimingAt": ".post_timing_at",
     "PostTimingNow": ".post_timing_now",
+    "PostTimingQueue": ".post_timing_queue",
     "PostTiming_At": ".post_timing",
     "PostTiming_Now": ".post_timing",
+    "PostTiming_Queue": ".post_timing",
     "PostValidation": ".post_validation",
     "PostWarning": ".post_warning",
     "PostWarningChannelsDropped": ".post_warning_channels_dropped",
+    "PostWarningQueueChannelsDropped": ".post_warning_queue_channels_dropped",
     "PostWarning_ChannelsDropped": ".post_warning",
+    "PostWarning_QueueChannelsDropped": ".post_warning",
     "PreparedUpload": ".prepared_upload",
+    "PreviewSlot": ".preview_slot",
     "ProbeState": ".probe_state",
     "PublicationAttempt": ".publication_attempt",
+    "Queue": ".queue",
+    "QueueDetails": ".queue_details",
+    "QueueHasNoRoomEncoded": ".queue_has_no_room_encoded",
+    "QueueNameTakenEncoded": ".queue_name_taken_encoded",
+    "QueueNameTakenEncodedTag": ".queue_name_taken_encoded_tag",
+    "QueueNoRoom": ".queue_no_room",
+    "QueueNotFoundEncoded": ".queue_not_found_encoded",
+    "QueuePreview": ".queue_preview",
+    "QueueSlot": ".queue_slot",
     "ReachableAdAccount": ".reachable_ad_account",
     "RejectionReason": ".rejection_reason",
     "ReplyInvalidEncoded": ".reply_invalid_encoded",
@@ -1342,6 +1375,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "SignatureScope_Workspace": ".signature_scope",
     "SignedRequest": ".signed_request",
     "SignedRequestMethod": ".signed_request_method",
+    "SlotTime": ".slot_time",
     "SpecialAdCategory": ".special_ad_category",
     "SpendCeilingExceededEncoded": ".spend_ceiling_exceeded_encoded",
     "Standing": ".standing",
@@ -1390,6 +1424,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TooManyChannelSetsEncoded": ".too_many_channel_sets_encoded",
     "TooManyConnectLinksEncoded": ".too_many_connect_links_encoded",
     "TooManyInvitationsEncoded": ".too_many_invitations_encoded",
+    "TooManyQueuesEncoded": ".too_many_queues_encoded",
     "TooManyRequestsEncoded": ".too_many_requests_encoded",
     "TooManyRequestsEncodedTag": ".too_many_requests_encoded_tag",
     "TooManyRequestsErrorBody": ".too_many_requests_error_body",
@@ -1413,7 +1448,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "UnknownTagsEncoded": ".unknown_tags_encoded",
     "UnknownTagsEncodedTag": ".unknown_tags_encoded_tag",
     "UnprocessableEntityErrorBody": ".unprocessable_entity_error_body",
-    "UnprocessableEntityErrorBody_PostContentInvalid": ".unprocessable_entity_error_body",
+    "UnprocessableEntityErrorBody_InvalidTimeZone": ".unprocessable_entity_error_body",
     "UnprocessableEntityErrorBody_UnknownChannels": ".unprocessable_entity_error_body",
     "UnreadNotices": ".unread_notices",
     "UnsupportedMediaTypeEncoded": ".unsupported_media_type_encoded",
@@ -1448,6 +1483,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WebhookUrlRefusedEncodedTag": ".webhook_url_refused_encoded_tag",
     "WebhooksNotConfiguredEncoded": ".webhooks_not_configured_encoded",
     "WebhooksNotConfiguredEncodedTag": ".webhooks_not_configured_encoded_tag",
+    "Weekday": ".weekday",
     "WorkspaceBusyEncoded": ".workspace_busy_encoded",
     "WorkspaceBusyEncodedTag": ".workspace_busy_encoded_tag",
     "WorkspaceMember": ".workspace_member",
@@ -1666,8 +1702,8 @@ __all__ = [
     "CommentSelection",
     "CommentSelectionLocated",
     "ConflictErrorBody",
-    "ConflictErrorBody_ChannelSetNameTaken",
-    "ConflictErrorBody_TooManyChannelSets",
+    "ConflictErrorBody_QueueNameTaken",
+    "ConflictErrorBody_TooManyQueues",
     "ConnectFailedEncoded",
     "ConnectFailedEncodedTag",
     "ConnectFailureReason",
@@ -2016,6 +2052,8 @@ __all__ = [
     "PostRefusal_PlanLimitReached",
     "PostRefusal_PostContentInvalid",
     "PostRefusal_PostNotFound",
+    "PostRefusal_QueueHasNoRoom",
+    "PostRefusal_QueueNotFound",
     "PostRefusal_ScheduleInPast",
     "PostRefusal_SignatureNotFound",
     "PostRefusal_UnknownChannels",
@@ -2032,15 +2070,29 @@ __all__ = [
     "PostTiming",
     "PostTimingAt",
     "PostTimingNow",
+    "PostTimingQueue",
     "PostTiming_At",
     "PostTiming_Now",
+    "PostTiming_Queue",
     "PostValidation",
     "PostWarning",
     "PostWarningChannelsDropped",
+    "PostWarningQueueChannelsDropped",
     "PostWarning_ChannelsDropped",
+    "PostWarning_QueueChannelsDropped",
     "PreparedUpload",
+    "PreviewSlot",
     "ProbeState",
     "PublicationAttempt",
+    "Queue",
+    "QueueDetails",
+    "QueueHasNoRoomEncoded",
+    "QueueNameTakenEncoded",
+    "QueueNameTakenEncodedTag",
+    "QueueNoRoom",
+    "QueueNotFoundEncoded",
+    "QueuePreview",
+    "QueueSlot",
     "ReachableAdAccount",
     "RejectionReason",
     "ReplyInvalidEncoded",
@@ -2083,6 +2135,7 @@ __all__ = [
     "SignatureScope_Workspace",
     "SignedRequest",
     "SignedRequestMethod",
+    "SlotTime",
     "SpecialAdCategory",
     "SpendCeilingExceededEncoded",
     "Standing",
@@ -2131,6 +2184,7 @@ __all__ = [
     "TooManyChannelSetsEncoded",
     "TooManyConnectLinksEncoded",
     "TooManyInvitationsEncoded",
+    "TooManyQueuesEncoded",
     "TooManyRequestsEncoded",
     "TooManyRequestsEncodedTag",
     "TooManyRequestsErrorBody",
@@ -2154,7 +2208,7 @@ __all__ = [
     "UnknownTagsEncoded",
     "UnknownTagsEncodedTag",
     "UnprocessableEntityErrorBody",
-    "UnprocessableEntityErrorBody_PostContentInvalid",
+    "UnprocessableEntityErrorBody_InvalidTimeZone",
     "UnprocessableEntityErrorBody_UnknownChannels",
     "UnreadNotices",
     "UnsupportedMediaTypeEncoded",
@@ -2189,6 +2243,7 @@ __all__ = [
     "WebhookUrlRefusedEncodedTag",
     "WebhooksNotConfiguredEncoded",
     "WebhooksNotConfiguredEncodedTag",
+    "Weekday",
     "WorkspaceBusyEncoded",
     "WorkspaceBusyEncodedTag",
     "WorkspaceMember",

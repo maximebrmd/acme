@@ -36,6 +36,8 @@ public final class Post {
 
     private final Optional<PostOutcome> outcome;
 
+    private final Optional<String> queueId;
+
     private final Optional<PostSchedule> schedule;
 
     private final Optional<String> scheduledBy;
@@ -58,6 +60,7 @@ public final class Post {
             Optional<PostOrigin> createdVia,
             String id,
             Optional<PostOutcome> outcome,
+            Optional<String> queueId,
             Optional<PostSchedule> schedule,
             Optional<String> scheduledBy,
             Optional<PostOrigin> scheduledVia,
@@ -71,6 +74,7 @@ public final class Post {
         this.createdVia = createdVia;
         this.id = id;
         this.outcome = outcome;
+        this.queueId = queueId;
         this.schedule = schedule;
         this.scheduledBy = scheduledBy;
         this.scheduledVia = scheduledVia;
@@ -113,6 +117,14 @@ public final class Post {
             return Optional.empty();
         }
         return outcome;
+    }
+
+    @JsonIgnore
+    public Optional<String> getQueueId() {
+        if (queueId == null) {
+            return Optional.empty();
+        }
+        return queueId;
     }
 
     @JsonIgnore
@@ -178,6 +190,12 @@ public final class Post {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("queueId")
+    private Optional<String> _getQueueId() {
+        return queueId;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("schedule")
     private Optional<PostSchedule> _getSchedule() {
         return schedule;
@@ -212,6 +230,7 @@ public final class Post {
                 && createdVia.equals(other.createdVia)
                 && id.equals(other.id)
                 && outcome.equals(other.outcome)
+                && queueId.equals(other.queueId)
                 && schedule.equals(other.schedule)
                 && scheduledBy.equals(other.scheduledBy)
                 && scheduledVia.equals(other.scheduledVia)
@@ -229,6 +248,7 @@ public final class Post {
                 this.createdVia,
                 this.id,
                 this.outcome,
+                this.queueId,
                 this.schedule,
                 this.scheduledBy,
                 this.scheduledVia,
@@ -286,6 +306,12 @@ public final class Post {
 
         _FinalStage outcome(Nullable<PostOutcome> outcome);
 
+        _FinalStage queueId(Optional<String> queueId);
+
+        _FinalStage queueId(String queueId);
+
+        _FinalStage queueId(Nullable<String> queueId);
+
         _FinalStage schedule(Optional<PostSchedule> schedule);
 
         _FinalStage schedule(PostSchedule schedule);
@@ -341,6 +367,8 @@ public final class Post {
 
         private Optional<PostSchedule> schedule = Optional.empty();
 
+        private Optional<String> queueId = Optional.empty();
+
         private Optional<PostOutcome> outcome = Optional.empty();
 
         private Optional<PostOrigin> createdVia = Optional.empty();
@@ -358,6 +386,7 @@ public final class Post {
             createdVia(other.getCreatedVia());
             id(other.getId());
             outcome(other.getOutcome());
+            queueId(other.getQueueId());
             schedule(other.getSchedule());
             scheduledBy(other.getScheduledBy());
             scheduledVia(other.getScheduledVia());
@@ -526,6 +555,31 @@ public final class Post {
         }
 
         @java.lang.Override
+        public _FinalStage queueId(Nullable<String> queueId) {
+            if (queueId.isNull()) {
+                this.queueId = null;
+            } else if (queueId.isEmpty()) {
+                this.queueId = Optional.empty();
+            } else {
+                this.queueId = Optional.of(queueId.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage queueId(String queueId) {
+            this.queueId = Optional.ofNullable(queueId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "queueId", nulls = Nulls.SKIP)
+        public _FinalStage queueId(Optional<String> queueId) {
+            this.queueId = queueId;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage outcome(Nullable<PostOutcome> outcome) {
             if (outcome.isNull()) {
                 this.outcome = null;
@@ -608,6 +662,7 @@ public final class Post {
                     createdVia,
                     id,
                     outcome,
+                    queueId,
                     schedule,
                     scheduledBy,
                     scheduledVia,
@@ -625,6 +680,7 @@ public final class Post {
                     || key.equalsIgnoreCase("createdVia")
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("outcome")
+                    || key.equalsIgnoreCase("queueId")
                     || key.equalsIgnoreCase("schedule")
                     || key.equalsIgnoreCase("scheduledBy")
                     || key.equalsIgnoreCase("scheduledVia")

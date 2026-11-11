@@ -34,6 +34,10 @@ module Peal
       member -> { Peal::Types::ChannelSetNotFoundEncoded }, key: "CHANNEL_SET_NOT_FOUND"
 
       member -> { Peal::Types::SignatureNotFoundEncoded }, key: "SIGNATURE_NOT_FOUND"
+
+      member -> { Peal::Types::QueueNotFoundEncoded }, key: "QUEUE_NOT_FOUND"
+
+      member -> { Peal::Types::QueueHasNoRoomEncoded }, key: "QUEUE_HAS_NO_ROOM"
     end
   end
 end

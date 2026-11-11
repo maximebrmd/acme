@@ -9,8 +9,8 @@ class ConflictErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'ChannelSetNameTaken'
-     *   |'TooManyChannelSets'
+     *    'QueueNameTaken'
+     *   |'TooManyQueues'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +18,8 @@ class ConflictErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    ChannelSetNameTakenEncoded
-     *   |TooManyChannelSetsEncoded
+     *    QueueNameTakenEncoded
+     *   |TooManyQueuesEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +28,13 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'ChannelSetNameTaken'
-     *   |'TooManyChannelSets'
+     *    'QueueNameTaken'
+     *   |'TooManyQueues'
      *   |'_unknown'
      * ),
      *   value: (
-     *    ChannelSetNameTakenEncoded
-     *   |TooManyChannelSetsEncoded
+     *    QueueNameTakenEncoded
+     *   |TooManyQueuesEncoded
      *   |mixed
      * ),
      * } $values
@@ -47,45 +47,45 @@ class ConflictErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param ChannelSetNameTakenEncoded $channelSetNameTaken
+     * @param QueueNameTakenEncoded $queueNameTaken
      * @return ConflictErrorBody
      */
-    public static function channelSetNameTaken(ChannelSetNameTakenEncoded $channelSetNameTaken): ConflictErrorBody
+    public static function queueNameTaken(QueueNameTakenEncoded $queueNameTaken): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'ChannelSetNameTaken',
-            'value' => $channelSetNameTaken,
+            'type' => 'QueueNameTaken',
+            'value' => $queueNameTaken,
         ]);
     }
 
     /**
-     * @param TooManyChannelSetsEncoded $tooManyChannelSets
+     * @param TooManyQueuesEncoded $tooManyQueues
      * @return ConflictErrorBody
      */
-    public static function tooManyChannelSets(TooManyChannelSetsEncoded $tooManyChannelSets): ConflictErrorBody
+    public static function tooManyQueues(TooManyQueuesEncoded $tooManyQueues): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'TooManyChannelSets',
-            'value' => $tooManyChannelSets,
+            'type' => 'TooManyQueues',
+            'value' => $tooManyQueues,
         ]);
     }
 
     /**
      * @return bool
      */
-    public function isChannelSetNameTaken(): bool
+    public function isQueueNameTaken(): bool
     {
-        return $this->value instanceof ChannelSetNameTakenEncoded && $this->type === 'ChannelSetNameTaken';
+        return $this->value instanceof QueueNameTakenEncoded && $this->type === 'QueueNameTaken';
     }
 
     /**
-     * @return ChannelSetNameTakenEncoded
+     * @return QueueNameTakenEncoded
      */
-    public function asChannelSetNameTaken(): ChannelSetNameTakenEncoded
+    public function asQueueNameTaken(): QueueNameTakenEncoded
     {
-        if (!($this->value instanceof ChannelSetNameTakenEncoded && $this->type === 'ChannelSetNameTaken')) {
+        if (!($this->value instanceof QueueNameTakenEncoded && $this->type === 'QueueNameTaken')) {
             throw new Exception(
-                "Expected ChannelSetNameTaken; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected QueueNameTaken; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -95,19 +95,19 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isTooManyChannelSets(): bool
+    public function isTooManyQueues(): bool
     {
-        return $this->value instanceof TooManyChannelSetsEncoded && $this->type === 'TooManyChannelSets';
+        return $this->value instanceof TooManyQueuesEncoded && $this->type === 'TooManyQueues';
     }
 
     /**
-     * @return TooManyChannelSetsEncoded
+     * @return TooManyQueuesEncoded
      */
-    public function asTooManyChannelSets(): TooManyChannelSetsEncoded
+    public function asTooManyQueues(): TooManyQueuesEncoded
     {
-        if (!($this->value instanceof TooManyChannelSetsEncoded && $this->type === 'TooManyChannelSets')) {
+        if (!($this->value instanceof TooManyQueuesEncoded && $this->type === 'TooManyQueues')) {
             throw new Exception(
-                "Expected TooManyChannelSets; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected TooManyQueues; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +134,12 @@ class ConflictErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'ChannelSetNameTaken':
-                $value = $this->asChannelSetNameTaken()->jsonSerialize();
+            case 'QueueNameTaken':
+                $value = $this->asQueueNameTaken()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'TooManyChannelSets':
-                $value = $this->asTooManyChannelSets()->jsonSerialize();
+            case 'TooManyQueues':
+                $value = $this->asTooManyQueues()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +178,11 @@ class ConflictErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'ChannelSetNameTaken':
-                $args['value'] = ChannelSetNameTakenEncoded::jsonDeserialize($data);
+            case 'QueueNameTaken':
+                $args['value'] = QueueNameTakenEncoded::jsonDeserialize($data);
                 break;
-            case 'TooManyChannelSets':
-                $args['value'] = TooManyChannelSetsEncoded::jsonDeserialize($data);
+            case 'TooManyQueues':
+                $args['value'] = TooManyQueuesEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

@@ -12,6 +12,12 @@ pub struct PostValidation {
     #[serde(rename = "planLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub plan_limit: Option<PlanShortfall>,
+    #[serde(rename = "queueNoRoom")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub queue_no_room: Option<QueueNoRoom>,
+    #[serde(rename = "queueSlot")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub queue_slot: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schedule: Option<ScheduleCheck>,
     #[serde(rename = "unknownChannels")]
@@ -41,6 +47,8 @@ pub struct PostValidationBuilder {
     channels: Option<Vec<ChannelPreview>>,
     duplicates: Option<Vec<DuplicateOnChannel>>,
     plan_limit: Option<PlanShortfall>,
+    queue_no_room: Option<QueueNoRoom>,
+    queue_slot: Option<String>,
     schedule: Option<ScheduleCheck>,
     unknown_channels: Option<Vec<String>>,
     unknown_media: Option<Vec<String>>,
@@ -67,6 +75,16 @@ impl PostValidationBuilder {
 
     pub fn plan_limit(mut self, value: PlanShortfall) -> Self {
         self.plan_limit = Some(value);
+        self
+    }
+
+    pub fn queue_no_room(mut self, value: QueueNoRoom) -> Self {
+        self.queue_no_room = Some(value);
+        self
+    }
+
+    pub fn queue_slot(mut self, value: impl Into<String>) -> Self {
+        self.queue_slot = Some(value.into());
         self
     }
 
@@ -121,6 +139,8 @@ impl PostValidationBuilder {
                 .duplicates
                 .ok_or_else(|| BuildError::missing_field("duplicates"))?,
             plan_limit: self.plan_limit,
+            queue_no_room: self.queue_no_room,
+            queue_slot: self.queue_slot,
             schedule: self.schedule,
             unknown_channels: self
                 .unknown_channels

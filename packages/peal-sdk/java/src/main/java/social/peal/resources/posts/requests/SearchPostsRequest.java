@@ -41,6 +41,8 @@ public final class SearchPostsRequest {
 
     private final Optional<Platform> platform;
 
+    private final Optional<String> queueId;
+
     private final Optional<PostSort> sort;
 
     private final Optional<PostStatus> status;
@@ -60,6 +62,7 @@ public final class SearchPostsRequest {
             Optional<String> limit,
             Optional<PostOutcome> outcome,
             Optional<Platform> platform,
+            Optional<String> queueId,
             Optional<PostSort> sort,
             Optional<PostStatus> status,
             Optional<String> tagId,
@@ -73,6 +76,7 @@ public final class SearchPostsRequest {
         this.limit = limit;
         this.outcome = outcome;
         this.platform = platform;
+        this.queueId = queueId;
         this.sort = sort;
         this.status = status;
         this.tagId = tagId;
@@ -120,6 +124,11 @@ public final class SearchPostsRequest {
         return platform;
     }
 
+    @JsonProperty("queueId")
+    public Optional<String> getQueueId() {
+        return queueId;
+    }
+
     @JsonProperty("sort")
     public Optional<PostSort> getSort() {
         return sort;
@@ -160,6 +169,7 @@ public final class SearchPostsRequest {
                 && limit.equals(other.limit)
                 && outcome.equals(other.outcome)
                 && platform.equals(other.platform)
+                && queueId.equals(other.queueId)
                 && sort.equals(other.sort)
                 && status.equals(other.status)
                 && tagId.equals(other.tagId)
@@ -177,6 +187,7 @@ public final class SearchPostsRequest {
                 this.limit,
                 this.outcome,
                 this.platform,
+                this.queueId,
                 this.sort,
                 this.status,
                 this.tagId,
@@ -210,6 +221,8 @@ public final class SearchPostsRequest {
 
         private Optional<Platform> platform = Optional.empty();
 
+        private Optional<String> queueId = Optional.empty();
+
         private Optional<PostSort> sort = Optional.empty();
 
         private Optional<PostStatus> status = Optional.empty();
@@ -231,6 +244,7 @@ public final class SearchPostsRequest {
             limit(other.getLimit());
             outcome(other.getOutcome());
             platform(other.getPlatform());
+            queueId(other.getQueueId());
             sort(other.getSort());
             status(other.getStatus());
             tagId(other.getTagId());
@@ -326,6 +340,17 @@ public final class SearchPostsRequest {
             return this;
         }
 
+        @JsonSetter(value = "queueId", nulls = Nulls.SKIP)
+        public Builder queueId(Optional<String> queueId) {
+            this.queueId = queueId;
+            return this;
+        }
+
+        public Builder queueId(String queueId) {
+            this.queueId = Optional.ofNullable(queueId);
+            return this;
+        }
+
         @JsonSetter(value = "sort", nulls = Nulls.SKIP)
         public Builder sort(Optional<PostSort> sort) {
             this.sort = sort;
@@ -380,6 +405,7 @@ public final class SearchPostsRequest {
                     limit,
                     outcome,
                     platform,
+                    queueId,
                     sort,
                     status,
                     tagId,
@@ -397,6 +423,7 @@ public final class SearchPostsRequest {
                     || key.equalsIgnoreCase("limit")
                     || key.equalsIgnoreCase("outcome")
                     || key.equalsIgnoreCase("platform")
+                    || key.equalsIgnoreCase("queueId")
                     || key.equalsIgnoreCase("sort")
                     || key.equalsIgnoreCase("status")
                     || key.equalsIgnoreCase("tagId")

@@ -30,16 +30,16 @@ public final class UnprocessableEntityErrorBody {
         return new UnprocessableEntityErrorBody(new UnknownChannelsValue(value));
     }
 
-    public static UnprocessableEntityErrorBody postContentInvalid(PostContentInvalidEncoded value) {
-        return new UnprocessableEntityErrorBody(new PostContentInvalidValue(value));
+    public static UnprocessableEntityErrorBody invalidTimeZone(InvalidTimeZoneEncoded value) {
+        return new UnprocessableEntityErrorBody(new InvalidTimeZoneValue(value));
     }
 
     public boolean isUnknownChannels() {
         return value instanceof UnknownChannelsValue;
     }
 
-    public boolean isPostContentInvalid() {
-        return value instanceof PostContentInvalidValue;
+    public boolean isInvalidTimeZone() {
+        return value instanceof InvalidTimeZoneValue;
     }
 
     public boolean _isUnknown() {
@@ -53,9 +53,9 @@ public final class UnprocessableEntityErrorBody {
         return Optional.empty();
     }
 
-    public Optional<PostContentInvalidEncoded> getPostContentInvalid() {
-        if (isPostContentInvalid()) {
-            return Optional.of(((PostContentInvalidValue) value).value);
+    public Optional<InvalidTimeZoneEncoded> getInvalidTimeZone() {
+        if (isInvalidTimeZone()) {
+            return Optional.of(((InvalidTimeZoneValue) value).value);
         }
         return Optional.empty();
     }
@@ -92,13 +92,13 @@ public final class UnprocessableEntityErrorBody {
     public interface Visitor<T> {
         T visitUnknownChannels(UnknownChannelsEncoded unknownChannels);
 
-        T visitPostContentInvalid(PostContentInvalidEncoded postContentInvalid);
+        T visitInvalidTimeZone(InvalidTimeZoneEncoded invalidTimeZone);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(UnknownChannelsValue.class), @JsonSubTypes.Type(PostContentInvalidValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(UnknownChannelsValue.class), @JsonSubTypes.Type(InvalidTimeZoneValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
@@ -144,32 +144,32 @@ public final class UnprocessableEntityErrorBody {
         }
     }
 
-    @JsonTypeName("PostContentInvalid")
+    @JsonTypeName("InvalidTimeZone")
     @JsonIgnoreProperties("_tag")
-    private static final class PostContentInvalidValue implements Value {
+    private static final class InvalidTimeZoneValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private PostContentInvalidEncoded value;
+        private InvalidTimeZoneEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private PostContentInvalidValue() {}
+        private InvalidTimeZoneValue() {}
 
-        private PostContentInvalidValue(PostContentInvalidEncoded value) {
+        private InvalidTimeZoneValue(InvalidTimeZoneEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitPostContentInvalid(value);
+            return visitor.visitInvalidTimeZone(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof PostContentInvalidValue && equalTo((PostContentInvalidValue) other);
+            return other instanceof InvalidTimeZoneValue && equalTo((InvalidTimeZoneValue) other);
         }
 
-        private boolean equalTo(PostContentInvalidValue other) {
+        private boolean equalTo(InvalidTimeZoneValue other) {
             return value.equals(other.value);
         }
 
