@@ -330,6 +330,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `Idempotency-Key` made when the review opened: never make one per
   click. Explain every refusal with `adsErrorOf` and `useAdsErrorLines`:
   a new contract error gets its words in `Ads.errors`.
+- `PostDetail` offers **Unpublish** on a published channel to members with
+  post:publish (`components/posts/live/`: `LivePostActions` reads the
+  post's changes and the platforms' capabilities, `LivePostView` shows
+  each state of `liveStateOf`, `#posts/live-post.ts`), behind a
+  confirmation that names the channel and says it cannot be undone;
+  `TargetView` shows when a channel was removed and strikes its address
+  through, and the calendar dims a post removed from every channel it went
+  out on (`isRemovedEverywhere`). Strings are in `Posts.Live`.
 - `PostPaid` (ads:read) shows a post's boosts and `PaidSectionView`'s two
   columns, organic and paid: never add them up. Pause and stop take
   ads:spend or ads:manage, resume ads:spend (`controlsOf`); stopping asks

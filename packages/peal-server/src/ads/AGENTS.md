@@ -130,3 +130,7 @@ weaken a rule below to make something pass.
 - Handlers map each refusal to its contract error and `DatabaseError` to a
   defect inside `catchTags`: never `Effect.orDie` after it, which turns
   every refusal into a 500.
+- `PostBoosts` (`application/post-boosts.ts`) answers how many boosts of a
+  published target are not over (requested, active, paused, unconfirmed):
+  publishing refuses to delete such a post from its platform
+  (`boostRunning`), as the ad would go on spending on a post that is gone.

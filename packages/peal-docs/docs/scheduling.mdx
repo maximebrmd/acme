@@ -240,6 +240,32 @@ A post that could not start within an hour of its time, for example because the 
 
 An image or video is sent as the platform needs it, and some platforms process videos first: Peal waits up to 15 minutes for them, then tries again later, as for a platform that does not answer.
 
+## Unpublish a post [#unpublish]
+
+A post that went out can be taken back: **Unpublish**, on its page, deletes it from that channel's platform for everyone, every part of a thread, the last first, so a deletion that stops midway leaves a shorter thread that still reads from its start. It cannot be undone, from Peal or by the platform, so Peal asks first, naming the channel. Owners, admins and editors may unpublish (the permission that publishes, `post:publish`), and so may an API key given it, or an application allowed to publish.
+
+The deletion runs in the background, with the channel's other calls, one at a time: the channel reads **Removing…**, then **Removed from** the platform, with when; the post stays **Published** in Peal, as it did go out, so the month's count and the usage do not change, and its address stays, struck through, as a record. A part the platform no longer has, deleted there before, counts as deleted. A platform that does not answer is tried again after 1, 5, 15, 60 and 60 minutes, and one that asks Peal to slow down, when it says; after that the removal **failed**, with why, and **Try again** deletes what is left.
+
+Statistics stop: analytics reads the post no more and keeps the counts it read, and the inbox stops reading its comments and keeps those it has for their 30 days. A post shown by a boost that is not over cannot be unpublished: stop the boost first, as the ad would go on spending on a post that is gone.
+
+Where Peal deletes posts:
+
+| Platform                | Unpublish | Why not                                                 |
+| ----------------------- | --------- | ------------------------------------------------------- |
+| Mastodon                | Yes       |                                                         |
+| Bluesky                 | Yes       |                                                         |
+| X                       | Yes       |                                                         |
+| Pinterest               | Yes       |                                                         |
+| Google Business Profile | Yes       |                                                         |
+| LinkedIn                | No        | LinkedIn does not say which permission a deletion needs |
+| Facebook Pages          | No        | Meta says that only some apps may delete Page posts     |
+| Threads                 | No        | It needs a permission Meta grants after a review        |
+| Instagram               | No        | It needs a permission Meta grants after a review        |
+| YouTube                 | No        | It needs a wider permission than the one Peal asks for  |
+| TikTok                  | No        | TikTok's API has no call to delete a post               |
+
+Where it cannot, delete the post on the platform itself. A post confirmed by hand cannot be unpublished from Peal either: Peal has no id for it. A channel disconnected, turned off or to reconnect cannot be unpublished on until it is back.
+
 ## From an agent, the command line or the API [#api]
 
 What the composer does, an [MCP client](/mcp#tools), the [command line](/cli#posts) and the [HTTP API](/api-overview) do too, through the same checks: writing a draft, scheduling it, publishing it now, moving it, taking it back to draft and cancelling it. `POST /api/workspaces/{workspaceId}/posts/send` creates a post and sends it in one request, now or at an instant, and refuses it whole, listing every violation at once, when it breaks a rule of one of its channels' platforms. [Posting through the API](/posting-api) shows how to check a post first, send several at once, import them from a CSV file and list them.

@@ -149,6 +149,11 @@
   registry (`retentionPeriods.analytics*`), the privacy policy and the
   docs say the same: change them together. It takes its instant, and its
   Postgres test runs in 1975, before every other suite's rows.
+- A post Peal deleted from its platform ends as `removed`
+  (`AnalyticsRecords.postRemoved`, told by publishing in the transaction
+  that settles the removal): it is read no more, its counts stay, in the
+  reports too, and a read that finishes after it saves nothing
+  (`saveSchedules` and `saveReadings` leave a `removed` post alone).
 - A channel leaves analytics when it leaves its workspace, not when a
   collection finds out: the channels context tells
   `AnalyticsRecords.channelGone` in the transaction that deletes the

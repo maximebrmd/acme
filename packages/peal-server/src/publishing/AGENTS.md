@@ -121,6 +121,55 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   repost's rate-limit deadline counts from the repost. `confirm` records
   what a member found for an unconfirmed target and revises the outcome.
   Both call `PublicationOutcomes.resolved`.
+- `LivePostChanges` (`application/live-post-changes.ts`) unpublishes a
+  live post: it deletes a published target from its platform, every part
+  of a thread the last first, so a run that stops midway leaves a thread
+  that reads from its start. It takes `livePostChangePermission`
+  (`post:publish`, `domain/live-post-change.ts`: an OAuth client needs
+  `workspace:publish`, staff impersonating never have it), and refuses
+  before any call (`removable`, then `LivePostHolds`): `notPublished`,
+  `alreadyRemoved`, `changeInProgress`, `channelUnavailable` (from
+  `PlatformCredentials.account`), `notSupported`, `noPlatformId`,
+  `boostRunning` (`AdsLivePostHolds`: a boost of the ads context that is
+  not over). The change (`publishing.live_post_changes`, ids and platform
+  ids, never content) is inserted with its job (`ChangeLivePostV1`, payload
+  `{ changeId }`) in one transaction under the post's and the target's
+  locks; a partial unique index keeps one pending change a target, so
+  requests sent together make one. A failed change keeps its `partsLeft`,
+  which the next request takes up. Nothing is reposted or reopened: a
+  removed target stays `published` with `removedAt` (the month's count,
+  the usage and X's metered count stay), and `PublishedTargets` lists it
+  no more. X bills each deletion: nothing counts it yet; the priced half
+  of usage must.
+- `ChangeLivePostV1` (`workflows/change-live-post.ts`, persisted contract:
+  `claim`, `call/<part>/<n>`, clocks `retry/<part>/<n>`, `settle`) deletes
+  part by part through the channel's gate (`RemoveLivePost`, volatile like
+  every gate call). Each call writes `call_started_at` and commits before
+  the platform is called, so an erasure sees it in flight; a run that
+  finds a call begun calls again, as deleting is safe to repeat and "not
+  found" is success (`alreadyGone`). So, unlike a publish, a call that
+  failed is retried (`decideRemoval`, `domain/removal-decision.ts`): the
+  policy's `unavailableBackoff`, its rate-limit bounds, then `failed` with
+  a code. `settle` writes the change, the target's `removedAt` and tells
+  `LivePostEvents` (`ToldLivePostEvents`: the webhooks'
+  `post.unpublished` and `post.unpublish_failed`, and analytics' and the
+  inbox's `postRemoved`, which end their collection as `removed` and keep
+  what they read) in one transaction. Erasure stops pending changes'
+  jobs and is refused while a call is in flight
+  (`LivePostChangeStore.lockOpen`).
+- `livePostSupport` (`domain/live-post-support.ts`) says per platform
+  whether Peal deletes there, or why not (`noApi`, `permission`,
+  `unverified`): the one table the capabilities (`livePost`), the use case
+  and the docs' table read (`test/publishing/domain/live-post-docs.test.ts`
+  compares). Deleting adapters are `<platform>/<platform>-live-post.ts`, in
+  `platforms/live-post-clients-live.ts`'s registry, which does not compile
+  without an entry per platform (`notDeleting` where none);
+  `test/publishing/platforms/live-post-clients.test.ts` keeps it equal to
+  the table. Each refuses an id it cannot tell is the account's before any
+  call (`invalidPlatformId`). Mastodon's 404, Pinterest's 404 and a 401 or
+  403 count only with the platform's own JSON error; Bluesky's PDS answers
+  a record gone with no `commit`; LinkedIn and Facebook Pages stay
+  `unverified` until their permission for a deletion is confirmed.
 - Every way of scheduling passes the `ApprovalGate` in the transaction that
   saves the post: `schedule`, `scheduleDraft`, `reschedule` and `send` (so
   `posts.send`, `create_post`, `publish_post` and `peal post` too) ask

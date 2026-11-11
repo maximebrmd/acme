@@ -353,7 +353,7 @@ only when the user wants it sent again:
 peal posts repost <post-id> <target-id> --json
 ```
 
-Counts once a post is live (`peal analytics`), and what the workspace used
+Taking a live post down (`peal posts unpublish`) deletes it for everyone, for good: only when the user asks, as [references/live-posts.md](references/live-posts.md) says. Counts once a post is live (`peal analytics`), and what the workspace used
 of its plan by UTC day (`peal usage`, needs billing:read):
 [references/reports.md](references/reports.md).
 
@@ -445,30 +445,31 @@ Every error of the API carries:
 
 ### Error codes
 
-| Code                     | Status | What to do                                                               |
-| ------------------------ | ------ | ------------------------------------------------------------------------ |
-| `invalid_request`        | 400    | Fix what `issues` lists. Nothing was done.                               |
-| `unauthenticated`        | 401    | No valid credential: the key was revoked, or the sign-in ran out.        |
-| `forbidden`              | 403    | Read `reason`. Do not retry.                                             |
-| `post_not_found`         | 404    | Check the post's id and the workspace.                                   |
-| `workspace_not_found`    | 404    | Check the workspace's id.                                                |
-| `post_content_invalid`   | 422    | Fix every entry of `violations`. Nothing was made.                       |
-| `unknown_channels`       | 422    | `channelIds` are not the workspace's: list channels again.               |
-| `unknown_media`          | 422    | `mediaIds` are not the workspace's, or not ready: list media again.      |
-| `schedule_in_past`       | 422    | Give a later time.                                                       |
-| `invalid_time_zone`      | 422    | Give an IANA zone, such as `Europe/Paris`.                               |
-| `post_status_conflict`   | 409    | The post's `status` does not allow this. Read the post again.            |
-| `target_status_conflict` | 409    | Only a failed or unconfirmed target is reposted or confirmed.            |
-| `idempotency_key_reused` | 409    | The key was sent with another post. Nothing was made.                    |
-| `duplicate_post`         | 409    | `duplicates` names the post that already sends this. Nothing was made.   |
-| `import_unreadable`      | 422    | Fix what `problem` and `column` say of the CSV file. Nothing was made.   |
-| `plan_limit_reached`     | 402    | The workspace's plan has no room. Tell the user.                         |
-| `spend_ceiling_exceeded` | 409    | The ad account's monthly ceiling has no room. Tell the user.             |
-| `boost_invalid`          | 422    | Fix every entry of `violations`. Nothing was reserved or sent.           |
-| `boost_key_reused`       | 409    | The key names another boost. Nothing was made.                           |
-| `ad_network_unavailable` | 503    | Nothing is known to have changed. Wait, then read the boost.             |
-| `too_many_requests`      | 429    | Wait `retryAfterSeconds`, then send again.                               |
-| `internal_error`         | 500    | Retry a read. For `peal post`, retry only with the same idempotency key. |
+| Code                       | Status | What to do                                                               |
+| -------------------------- | ------ | ------------------------------------------------------------------------ |
+| `invalid_request`          | 400    | Fix what `issues` lists. Nothing was done.                               |
+| `unauthenticated`          | 401    | No valid credential: the key was revoked, or the sign-in ran out.        |
+| `forbidden`                | 403    | Read `reason`. Do not retry.                                             |
+| `post_not_found`           | 404    | Check the post's id and the workspace.                                   |
+| `workspace_not_found`      | 404    | Check the workspace's id.                                                |
+| `post_content_invalid`     | 422    | Fix every entry of `violations`. Nothing was made.                       |
+| `unknown_channels`         | 422    | `channelIds` are not the workspace's: list channels again.               |
+| `unknown_media`            | 422    | `mediaIds` are not the workspace's, or not ready: list media again.      |
+| `schedule_in_past`         | 422    | Give a later time.                                                       |
+| `invalid_time_zone`        | 422    | Give an IANA zone, such as `Europe/Paris`.                               |
+| `post_status_conflict`     | 409    | The post's `status` does not allow this. Read the post again.            |
+| `target_status_conflict`   | 409    | Only a failed or unconfirmed target is reposted or confirmed.            |
+| `live_post_not_changeable` | 409    | Read `reason`: [references/live-posts.md](references/live-posts.md).     |
+| `idempotency_key_reused`   | 409    | The key was sent with another post. Nothing was made.                    |
+| `duplicate_post`           | 409    | `duplicates` names the post that already sends this. Nothing was made.   |
+| `import_unreadable`        | 422    | Fix what `problem` and `column` say of the CSV file. Nothing was made.   |
+| `plan_limit_reached`       | 402    | The workspace's plan has no room. Tell the user.                         |
+| `spend_ceiling_exceeded`   | 409    | The ad account's monthly ceiling has no room. Tell the user.             |
+| `boost_invalid`            | 422    | Fix every entry of `violations`. Nothing was reserved or sent.           |
+| `boost_key_reused`         | 409    | The key names another boost. Nothing was made.                           |
+| `ad_network_unavailable`   | 503    | Nothing is known to have changed. Wait, then read the boost.             |
+| `too_many_requests`        | 429    | Wait `retryAfterSeconds`, then send again.                               |
+| `internal_error`           | 500    | Retry a read. For `peal post`, retry only with the same idempotency key. |
 
 The command line adds codes of its own, without a `requestId`: `unreachable`,
 `unexpected_answer`, `not_signed_in`, `sign_in_expired`, `api_key_refused`,
