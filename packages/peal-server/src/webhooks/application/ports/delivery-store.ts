@@ -132,6 +132,16 @@ export class DeliveryStore extends Context.Service<
       DatabaseError
     >;
     /**
+     * Holds back, until the transaction it runs in ends, any other that
+     * holds one of these endpoints' events: sending an event again to an
+     * endpoint takes turns, whichever of its deliveries each call names.
+     * Taken after the deliveries' rows, in one order, so two calls never
+     * wait on each other.
+     */
+    readonly holdEvents: (
+      deliveries: readonly WebhookDelivery[]
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
      * Those of these deliveries whose event has a newer delivery to the
      * same endpoint that is pending or succeeded: sent again already.
      */

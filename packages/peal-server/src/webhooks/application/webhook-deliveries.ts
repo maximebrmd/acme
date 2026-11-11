@@ -244,6 +244,8 @@ export class WebhookDeliveries extends Context.Service<
 
           return yield* transaction(
             Effect.gen(function* sendAgainWithinBudget() {
+              // A replay of many sent meanwhile sees this one.
+              yield* deliveries.holdEvents([original]);
               yield* refusedSends(
                 yield* manual.take(actor.workspaceId, "single", 1)
               );
@@ -328,8 +330,12 @@ export class WebhookDeliveries extends Context.Service<
                 redelivery
               );
 
-              // Read once the deliveries are held: what another call sent
-              // again before it let them go is seen here.
+              // Read once the deliveries, and their events to their
+              // endpoints, are held: what another call sent again before it
+              // let them go is seen here, whichever delivery of the event it
+              // named.
+              yield* deliveries.holdEvents(found);
+
               const sentAgain = yield* deliveries.sentAgain(found);
               const owners = yield* endpointsOf(found);
 

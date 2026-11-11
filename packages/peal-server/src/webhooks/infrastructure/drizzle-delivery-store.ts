@@ -15,6 +15,7 @@ import {
 import type { SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
@@ -217,6 +218,7 @@ export const DrizzleDeliveryStore = Layer.effect(
   DeliveryStore,
   Effect.gen(function* DrizzleDeliveryStore() {
     const db = yield* Drizzle;
+    const client = yield* SqlClient.SqlClient;
 
     return DeliveryStore.of({
       event: (eventId) =>
@@ -252,6 +254,20 @@ export const DrizzleDeliveryStore = Layer.effect(
           .innerJoin(events, withEvent)
           .where(eq(deliveries.id, deliveryId))
           .pipe(Effect.mapError(failed), Effect.flatMap(someDelivery)),
+      // Transactions' advisory locks, in the two-key form: the first key
+      // names what is held, the second the endpoint and the event, taken
+      // in their order.
+      holdEvents: (held) =>
+        Effect.forEach(
+          [
+            ...new Set(
+              held.map(({ endpointId, eventId }) => `${endpointId}:${eventId}`)
+            ),
+          ].toSorted(),
+          (key) =>
+            client`SELECT pg_advisory_xact_lock(hashtext('peal-server/webhooks/redelivery'), hashtext(${key}))`,
+          { discard: true }
+        ).pipe(Effect.mapError(failed)),
       insert: (delivery) =>
         db
           .insert(deliveries)

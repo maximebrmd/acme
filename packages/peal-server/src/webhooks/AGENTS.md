@@ -103,7 +103,9 @@
   `redeliveryOf`. `redeliverMany` takes ids or an endpoint's failed
   deliveries (the last of each event, oldest first, `maxBulkRedelivery`
   100, `remaining` the rest), in one transaction: rows locked `FOR UPDATE`,
-  then `sentAgain` read in a later statement (READ COMMITTED sees what a
+  then each endpoint's event held (`holdEvents`, an advisory lock, taken by
+  the single `redeliver` too, so calls naming different deliveries of one
+  event take turns), then `sentAgain` read in a later statement (READ COMMITTED sees what a
   concurrent call committed), skips (`notFound`, `endpointDisabled`,
   `alreadySent`), the whole call's `bulk` budget, then the deliveries.
 - Test events of a type send `sampleOf` (`domain/sample-events.ts`, one per
