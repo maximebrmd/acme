@@ -225,7 +225,7 @@ peal post "Le catalogue de printemps est sorti" --channel <channel-id> --now --w
 
 `peal post` écrit une publication et l’envoie en une seule commande, au public des comptes que connectent ses canaux. Ce qui part ne peut pas être repris depuis Peal.
 
-- **Quand.** `--at` la programme, `--now` la publie aussitôt, et l’un des deux est obligatoire : publier n’est jamais le comportement par défaut. `--at` prend un instant avec son décalage, comme `2026-11-20T09:00:00Z` ou `2026-11-20T10:00:00+01:00`, ou une heure locale sans décalage, comme `2026-11-20T10:00`, lue dans `--time-zone` (ou `--zone`), un fuseau IANA comme `Europe/Paris`. Sans l’option, le fuseau est `TZ`, puis celui de votre ordinateur. Une heure locale que les horloges sautent ou répètent dans ce fuseau est refusée : donnez l’instant avec son décalage.
+- **Quand.** `--at` la programme, `--now` la publie aussitôt, `--queue` la place sur le prochain créneau libre d’une [file d’attente](#queues), et l’une des trois est obligatoire : publier n’est jamais le comportement par défaut. `--at` prend un instant avec son décalage, comme `2026-11-20T09:00:00Z` ou `2026-11-20T10:00:00+01:00`, ou une heure locale sans décalage, comme `2026-11-20T10:00`, lue dans `--time-zone` (ou `--zone`), un fuseau IANA comme `Europe/Paris`. Sans l’option, le fuseau est `TZ`, puis celui de votre ordinateur. Une heure locale que les horloges sautent ou répètent dans ce fuseau est refusée : donnez l’instant avec son décalage.
 - **Où.** `--channel` (ou `--channels`) nomme un canal par son identifiant ; répétez-le, ou séparez les identifiants par des virgules. `--set <id-ou-nom>` nomme un [groupe de canaux](#sets), et vaut pour ses canaux connectés : il faut au moins un canal ou un groupe. Un canal d’un groupe qui n’est plus connecté est laissé de côté, et `peal` dit lequel après la publication ; quand il n’en reste aucun et qu’aucun `--channel` n’est donné, rien n’est publié.
 - **Médias.** Chaque `--media` est un fichier, importé d’abord ; une adresse `https://`, que le serveur va chercher ; ou l’identifiant d’un média que l’espace de travail a déjà, tel que `peal media list` le montre. Ils s’affichent dans l’ordre donné, 20 au plus. Le premier `--alt` décrit le premier `--media`, le deuxième le deuxième.
 - **Fil.** Chaque `--then <text>` ajoute une partie à la suite de la publication, dans l’ordre donné, en texte seul : une réponse à la partie précédente sur les plateformes qui ont des [fils](/scheduling#threads). `--then-delay <seconds>` fait attendre chaque partie ce temps-là après le départ de la précédente, un jour (86400) au plus ; sans lui, elles se suivent. Une plateforme qui prend une publication seule refuse la publication.
@@ -329,6 +329,27 @@ peal post "Le catalogue de printemps est sorti" --set Lancement --at 2026-11-20T
 - `peal sets list` montre les canaux de chaque groupe, et dit lesquels ne sont plus connectés. Une publication créée avec le groupe les laisse de côté et le dit ; elle ne part jamais sur moins de canaux en silence.
 - `peal sets update` change le nom, les canaux (ceux que nomme `--channel` remplacent ceux du groupe) ou les options, et garde ce que vous laissez de côté, sauf les canaux qui ne sont plus connectés : un groupe n’est enregistré qu’avec des canaux connectés, et c’est donc aussi ainsi qu’on en retire un. Les publications créées avec le groupe auparavant gardent leurs canaux.
 - `peal sets delete` supprime définitivement un groupe ; ses canaux, et les publications créées avec lui, restent.
+
+## Files d’attente [#queues]
+
+```sh
+peal queues list
+peal queues create "Weekdays" --slot mon@09:30 --slot wed@09:30 --slot fri@17:00 --zone Europe/Paris --channel <channel-id>
+peal queues update "Weekdays" --slot tue@12:00 --default
+peal queues show "Weekdays"
+peal queues preview "Weekdays" --count 5
+peal queues delete "Weekdays"
+peal post "Un conseil intemporel" --queue
+peal post "Un conseil intemporel" --queue=Weekdays --channel <channel-id> --dry-run
+peal posts queue <post-id> --queue Weekdays
+peal posts list --queue Weekdays
+```
+
+- Une [file d’attente](/fr/scheduling#queues) est un emploi du temps hebdomadaire de créneaux dans un fuseau horaire, pour certains canaux et au plus un groupe de canaux (`--set`). `--slot` prend un jour (`mon` ou `monday`…, en anglais) et une heure sur 24 heures, comme `mon@09:30` ; répétez-le, 100 au plus. `--zone` est le fuseau IANA de la file, `TZ` ou celui de votre ordinateur sans lui. Un espace de travail garde 20 files, et une file se nomme par son identifiant ou son nom, quelle que soit sa casse.
+- `peal queues update` garde ce que vous laissez de côté, sauf les canaux qui ne sont plus connectés ; `--slot` remplace la semaine, `--no-set` retire le groupe de canaux, `--default` en fait la file par défaut. Les publications placées par la file gardent leur heure. `peal queues delete` les laisse programmées.
+- `peal queues preview` liste les prochains créneaux, libres ou pris, et où irait une publication ajoutée maintenant : rien n’est retenu.
+- `peal post --queue` place une publication sur le prochain créneau libre de la file par défaut, et `--queue=<nom-ou-identifiant>` sur celui d’une autre : donnez la valeur avec `=`, car un `--queue` seul prend la file par défaut. C’est l’un de `--at`, `--now` et `--queue`, et sans `--channel` ni `--set` la publication va sur les canaux de la file. Avec `--dry-run`, la commande affiche le créneau qu’elle prendrait.
+- `peal posts queue` place un brouillon, ou une publication programmée, sur le prochain créneau libre d’une file (`--queue`, ou celle par défaut). `peal posts list --queue` liste les publications placées par une file.
 
 ## Options par défaut [#default-options]
 

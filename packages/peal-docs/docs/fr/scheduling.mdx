@@ -108,6 +108,20 @@ L’heure est celle de l’horloge dans ce fuseau, changements d’heure compris
 
 Une heure passée depuis moins d’une minute compte comme maintenant. Une heure plus ancienne est refusée : choisissez une heure à venir.
 
+## Files d’attente [#queues]
+
+Une file d’attente est un emploi du temps hebdomadaire de créneaux dans un fuseau horaire, par exemple chaque jour de semaine à 09:30 et à 17:00 en Europe/Paris, pour certains canaux et au plus un [groupe de canaux](/fr/organise#sets). Au lieu de choisir une heure, ajoutez une publication à une file : elle prend le prochain créneau libre de la file. **Réglages**, **Files d’attente** liste les files de l’espace de travail avec leurs prochains créneaux, et permet aux propriétaires, administrateurs et éditeurs d’en ajouter, d’en modifier ou d’en supprimer. Un espace de travail garde jusqu’à 20 files, chacune d’au plus 100 créneaux.
+
+- Un créneau est un jour et une heure sur l’horloge de la file, changements d’heure compris, comme une heure que vous choisissez : une heure que l’horloge saute passe au moment du saut, et une heure qui revient deux fois est la première des deux.
+- Un créneau est pris tant qu’une publication placée par la file est programmée, en attente d’approbation ou en cours de publication exactement à son heure. Rien d’autre n’est gardé des créneaux : repasser en brouillon, annuler ou déplacer à la main une telle publication libère son créneau, et une publication de la file déplacée à l’heure d’un créneau le prend.
+- La première file d’un espace de travail est sa file **par défaut**, celle où va une publication ajoutée sans file précise. En marquer une autre par défaut l’y déplace ; supprimer la file par défaut n’en laisse aucune jusqu’à ce qu’une autre soit marquée.
+- Changer les créneaux d’une file ne déplace aucune publication : celles déjà placées gardent leur heure.
+- Supprimer une file laisse ses publications programmées à leur heure.
+
+Dans l’éditeur, sous **Quand**, choisissez **Ajouter à la file**, choisissez la file (celle par défaut au départ), et lisez où la publication irait : **Prochain créneau libre**. Choisissez ensuite **Programmer** : le créneau est décidé quand Peal reçoit la publication, si bien que deux publications ajoutées au même moment ne prennent jamais le même. Une publication qui ne nomme aucun canal va sur les canaux et le groupe de canaux de la file ; un canal déconnecté depuis est laissé de côté, et c’est dit. La publication est ensuite une publication programmée comme une autre : vérifiée auprès de ses canaux, en attente d’approbation là où l’espace de travail en demande une, visible sur le calendrier avec la marque de sa file, et elle peut être déplacée, repassée en brouillon ou annulée. Une publication déjà programmée passe de même au prochain créneau libre de la file.
+
+Les publications du mois permises par l’abonnement se comptent dans le mois du créneau trouvé. Quand ce mois n’a plus de place, la publication est refusée, comme pour une heure que vous choisissez : Peal ne passe jamais de lui-même à un mois suivant. Une file sans créneau, ou dont tous les créneaux des 366 prochains jours sont pris, refuse aussi la publication.
+
 ## Brouillons [#drafts]
 
 Sur la carte d’un espace de travail, **Brouillons** liste les publications qui n’ont pas encore d’heure, les plus récentes d’abord, 20 à la fois : chacune montre le début de son texte, ses canaux et ses médias, et s’ouvre dans l’éditeur.

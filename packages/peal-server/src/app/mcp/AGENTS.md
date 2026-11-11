@@ -88,6 +88,13 @@
   The CLI's are `peal signatures`, `peal sets`, `peal channels defaults`,
   and `--set`, `--signature`, `--default-signatures` on `peal post` and
   `peal drafts save`.
+- Queues are in the `saved` area (`list_queues`, `preview_queue`,
+  `create_queue`, `update_queue`, which reads first and keeps what the call
+  leaves out, `delete_queue`). `create_post`, `create_posts` and
+  `validate_post` take `when: queue` naming a queue by id or name
+  (`queueReferenced`), the default when left out; `queue_post` (in
+  `publishingTools`, open world) puts a draft or a scheduled post on a
+  queue's next free slot.
 - On `/api/mcp`, a partner key names the workspace it acts in with each
   request, by id, in the `Peal-Workspace` header (`workspaceNamed` in
   `authenticate.ts`; 400 without it), and is told 404 for any workspace

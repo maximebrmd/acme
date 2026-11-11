@@ -108,6 +108,20 @@ The time is the wall-clock time in that zone, daylight saving included:
 
 A time up to a minute ago counts as now. An earlier one is refused: pick a time to come.
 
+## Queues [#queues]
+
+A queue is a weekly timetable of slots in a time zone, such as every weekday at 09:30 and 17:00 in Europe/Paris, for some channels and at most one [channel set](/organise#sets). Instead of choosing a time, add a post to a queue: it takes the queue's next free slot. **Settings**, **Queues** lists the workspace's queues with their next slots, and lets owners, admins and editors add one, change it or delete it. A workspace keeps up to 20 queues, each with up to 100 slots.
+
+- A slot is a day and a time of day on the queue's clock, daylight saving included, as a time you choose: a time the clocks skip moves to the moment they jump, and a time that happens twice is the first one.
+- A slot is taken while a post the queue placed is scheduled, waiting for an approval or publishing at exactly its time. Nothing else is kept of slots: unscheduling, cancelling or moving such a post by hand frees its slot, and a post of the queue moved onto a slot's time takes it.
+- The first queue of a workspace is its **default**, which a post added to no queue in particular goes to. Marking another as the default moves it; deleting the default leaves none until another is marked.
+- Changing a queue's slots moves no post: posts already placed keep their times.
+- Deleting a queue leaves its posts scheduled at their times.
+
+In the composer, under **When**, choose **Add to queue**, pick the queue (the default to start with), and read where the post would go: **Next free slot**. Then choose **Schedule**: the slot is decided when Peal receives the post, so two posts added at the same moment never take the same one. A post that names no channel goes to the queue's channels and channel set; one of them disconnected since is left out, and said. From then on the post is an ordinary scheduled post: it is checked against its channels, waits for an approval where the workspace asks for one, shows on the calendar with a queue mark, and can be moved, unscheduled or cancelled. A queued post scheduled already moves to the queue's next free slot the same way.
+
+The plan's posts a month count in the month of the slot found. When that month has no room, the post is refused, as for a time you chose: Peal never skips to a later month by itself. A queue with no slot, or with every slot of the next 366 days taken, refuses the post too.
+
 ## Drafts [#drafts]
 
 From a workspace's card, **Drafts** lists the posts without a time yet, newest first, 20 at a time: each shows the start of its text, its channels and its media, and opens in the composer.
