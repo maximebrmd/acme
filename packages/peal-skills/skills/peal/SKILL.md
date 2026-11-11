@@ -347,25 +347,9 @@ only when the user wants it sent again:
 peal posts repost <post-id> <target-id> --json
 ```
 
-Counts, once a post is live:
-
-```sh
-peal analytics post <post-id> --json
-peal analytics summary --from 2026-11-01 --to 2026-11-30 --json
-peal analytics dashboard --days 30 --json
-peal analytics channel <channel-id> --days 30 --json
-peal analytics export posts --output posts.csv --days 30
-```
-
-A thread's counts are its first part's. A number a platform does not give
-is `null`, never zero.
-
-What the workspace used of its plan, by UTC day (posts that went out,
-channels, channel-days; counts only, never prices; needs billing:read):
-
-```sh
-peal usage --from 2026-11-01 --to 2026-11-30 --json
-```
+Counts once a post is live (`peal analytics`), and what the workspace used
+of its plan by UTC day (`peal usage`, needs billing:read):
+[references/reports.md](references/reports.md).
 
 ## Comments
 
