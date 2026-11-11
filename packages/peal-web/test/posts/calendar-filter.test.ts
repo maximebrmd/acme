@@ -9,7 +9,12 @@ import {
   withChoice,
 } from "#posts/calendar-filter.ts";
 
-const post = (tagIds: readonly string[], channelIds: readonly string[]) => ({
+const post = (
+  tagIds: readonly string[],
+  channelIds: readonly string[],
+  queueId: string | null = null
+) => ({
+  queueId,
   tagIds,
   targets: channelIds.map((channelId) => ({ channelId })),
 });
@@ -17,6 +22,7 @@ const post = (tagIds: readonly string[], channelIds: readonly string[]) => ({
 const launch = post(["campaign"], ["mastodon", "bluesky"]);
 const news = post(["news", "weekly"], ["mastodon"]);
 const untagged = post([], ["linkedin"]);
+const queued = post([], ["mastodon"], "evergreen");
 
 describe(matchesFilter, () => {
   it("shows every post while nothing is chosen", () => {
@@ -26,7 +32,11 @@ describe(matchesFilter, () => {
   });
 
   it("shows a post that has one of the chosen tags", () => {
-    const filter = { channelIds: [], tagIds: ["campaign", "weekly"] };
+    const filter = {
+      channelIds: [],
+      queueIds: [],
+      tagIds: ["campaign", "weekly"],
+    };
 
     expect(matchesFilter(filter, launch)).toBeTruthy();
     expect(matchesFilter(filter, news)).toBeTruthy();
@@ -34,7 +44,11 @@ describe(matchesFilter, () => {
   });
 
   it("shows a post that goes to one of the chosen channels", () => {
-    const filter = { channelIds: ["bluesky", "linkedin"], tagIds: [] };
+    const filter = {
+      channelIds: ["bluesky", "linkedin"],
+      queueIds: [],
+      tagIds: [],
+    };
 
     expect(matchesFilter(filter, launch)).toBeTruthy();
     expect(matchesFilter(filter, news)).toBeFalsy();
@@ -42,11 +56,28 @@ describe(matchesFilter, () => {
   });
 
   it("asks for both a chosen tag and a chosen channel when both are chosen", () => {
-    const filter = { channelIds: ["mastodon"], tagIds: ["campaign"] };
+    const filter = {
+      channelIds: ["mastodon"],
+      queueIds: [],
+      tagIds: ["campaign"],
+    };
 
     expect(matchesFilter(filter, launch)).toBeTruthy();
     expect(matchesFilter(filter, news)).toBeFalsy();
     expect(matchesFilter(filter, untagged)).toBeFalsy();
+  });
+});
+
+describe("filtering by queue", () => {
+  it("shows the posts a chosen queue placed", () => {
+    const filter = { channelIds: [], queueIds: ["evergreen"], tagIds: [] };
+
+    expect(matchesFilter(filter, queued)).toBeTruthy();
+    expect(matchesFilter(filter, news)).toBeFalsy();
+    expect(isFiltering(filter)).toBeTruthy();
+    expect(
+      knownFilter(filter, { channelIds: [], queueIds: [], tagIds: [] })
+    ).toStrictEqual(noFilter);
   });
 });
 
@@ -55,7 +86,7 @@ describe(filtered, () => {
     const items = [launch, news, untagged].map((item) => ({ post: item }));
 
     expect(
-      filtered({ channelIds: ["mastodon"], tagIds: [] }, items)
+      filtered({ channelIds: ["mastodon"], queueIds: [], tagIds: [] }, items)
     ).toStrictEqual({ hidden: 1, shown: [{ post: launch }, { post: news }] });
   });
 
@@ -72,8 +103,12 @@ describe(filtered, () => {
 describe(isFiltering, () => {
   it("is true once a tag or a channel is chosen", () => {
     expect(isFiltering(noFilter)).toBeFalsy();
-    expect(isFiltering({ channelIds: [], tagIds: ["news"] })).toBeTruthy();
-    expect(isFiltering({ channelIds: ["mastodon"], tagIds: [] })).toBeTruthy();
+    expect(
+      isFiltering({ channelIds: [], queueIds: [], tagIds: ["news"] })
+    ).toBeTruthy();
+    expect(
+      isFiltering({ channelIds: ["mastodon"], queueIds: [], tagIds: [] })
+    ).toBeTruthy();
   });
 });
 
@@ -90,9 +125,21 @@ describe(knownFilter, () => {
   it("drops a tag deleted, or a channel disconnected, since it was chosen", () => {
     expect(
       knownFilter(
-        { channelIds: ["mastodon", "gone"], tagIds: ["deleted", "news"] },
-        { channelIds: ["mastodon", "bluesky"], tagIds: ["news"] }
+        {
+          channelIds: ["mastodon", "gone"],
+          queueIds: [],
+          tagIds: ["deleted", "news"],
+        },
+        {
+          channelIds: ["mastodon", "bluesky"],
+          queueIds: [],
+          tagIds: ["news"],
+        }
       )
-    ).toStrictEqual({ channelIds: ["mastodon"], tagIds: ["news"] });
+    ).toStrictEqual({
+      channelIds: ["mastodon"],
+      queueIds: [],
+      tagIds: ["news"],
+    });
   });
 });

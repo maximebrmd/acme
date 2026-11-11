@@ -10,10 +10,11 @@ import {
   ChevronRightIcon,
   GripVerticalIcon,
   ImagesIcon,
+  ListOrderedIcon,
   PlusIcon,
 } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
-import type { Channel, Permission, Post, Tag } from "peal-contract";
+import type { Channel, Permission, Post, Queue, Tag } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
 import {
@@ -30,6 +31,7 @@ import { toast } from "sonner";
 import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import { CalendarFilters } from "#components/posts/calendar-filters.tsx";
 import { ChipTags } from "#components/posts/chip-tags.tsx";
+import { useQueueName } from "#components/posts/queue-choice.tsx";
 import { useTimeOptions } from "#i18n/hour-cycle.ts";
 import { Link } from "#i18n/navigation.ts";
 import {
@@ -56,6 +58,7 @@ import {
   weekOf,
 } from "#posts/zoned-time.ts";
 import type { CalendarDate, TimeOfDay } from "#posts/zoned-time.ts";
+import { workspaceQueues } from "#queues/atoms.ts";
 import { workspaceTags } from "#tags/atoms.ts";
 import { tagsOf } from "#tags/post-tags.ts";
 
@@ -126,6 +129,31 @@ const chipTone: Record<Post["status"], string> = {
   finished: "bg-muted text-muted-foreground",
   publishing: "bg-secondary text-secondary-foreground",
   scheduled: "bg-primary/10 text-foreground",
+};
+
+// A queued post's mark on the calendar, named by its queue.
+const ChipQueue = ({
+  queueId,
+  workspaceId,
+}: {
+  readonly queueId: string;
+  readonly workspaceId: string;
+}) => {
+  const t = useTranslations("Posts.Calendar");
+  const name = useQueueName(workspaceId, queueId);
+
+  if (Option.isNone(name)) {
+    return null;
+  }
+
+  const label = t("queueMark", { name: name.value });
+
+  return (
+    <span title={label} className="text-muted-foreground shrink-0">
+      <ListOrderedIcon aria-hidden className="size-3" />
+      <span className="sr-only">{label}</span>
+    </span>
+  );
 };
 
 interface PostChipProps {
@@ -213,6 +241,9 @@ const PostChip = ({
         {t("Calendar.post", { text: shown, time })}
       </Link>
       <ChipTags tags={filed} title={tagNames} />
+      {placed.post.queueId === null ? null : (
+        <ChipQueue queueId={placed.post.queueId} workspaceId={workspaceId} />
+      )}
       {media === 0 ? null : (
         <span
           title={tMedia("calendar", { count: media })}
@@ -589,8 +620,14 @@ const CalendarView = ({
     (): readonly Channel[] => []
   );
 
+  const queues = Option.getOrElse(
+    AsyncResult.value(useAtomValue(workspaceQueues(workspaceId))),
+    (): readonly Queue[] => []
+  );
+
   const filter = knownFilter(chosen, {
     channelIds: channels.map(({ id }) => id),
+    queueIds: queues.map(({ id }) => id),
     tagIds: tags.map(({ id }) => id),
   });
 
@@ -828,6 +865,7 @@ const CalendarView = ({
           channels={channels}
           filter={filter}
           hidden={hidden}
+          queues={queues}
           tags={tags}
           onChange={setChosen}
         />

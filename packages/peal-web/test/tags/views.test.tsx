@@ -290,8 +290,9 @@ describe(CalendarFilters, () => {
     const html = await render(
       "en",
       <CalendarFilters
+        queues={[]}
         channels={[channel]}
-        filter={{ channelIds: [], tagIds: [] }}
+        filter={{ channelIds: [], queueIds: [], tagIds: [] }}
         hidden={0}
         tags={[launch]}
         onChange={noop}
@@ -307,8 +308,9 @@ describe(CalendarFilters, () => {
     const html = await render(
       "en",
       <CalendarFilters
+        queues={[]}
         channels={[channel]}
-        filter={{ channelIds: ["c1"], tagIds: ["t1", "t2"] }}
+        filter={{ channelIds: ["c1"], queueIds: [], tagIds: ["t1", "t2"] }}
         hidden={3}
         tags={[launch, news]}
         onChange={noop}
@@ -330,8 +332,9 @@ describe(CalendarFilters, () => {
     const html = await render(
       "fr",
       <CalendarFilters
+        queues={[]}
         channels={[]}
-        filter={{ channelIds: [], tagIds: ["t1"] }}
+        filter={{ channelIds: [], queueIds: [], tagIds: ["t1"] }}
         hidden={1}
         tags={[launch]}
         onChange={noop}

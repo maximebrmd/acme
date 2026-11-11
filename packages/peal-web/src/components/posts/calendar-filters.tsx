@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Channel, Tag } from "peal-contract";
+import type { Channel, Queue, Tag } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
   DropdownMenu,
@@ -18,7 +18,7 @@ import { isFiltering, noFilter, withChoice } from "#posts/calendar-filter.ts";
 import type { CalendarFilter } from "#posts/calendar-filter.ts";
 
 /**
- * The calendar's filters: the workspace's tags and channels, several of
+ * The calendar's filters: the workspace's tags, channels and queues, several of
  * each to choose, how many posts the choice hides, and a way to clear it.
  * A kind with nothing to choose from is left out.
  */
@@ -27,6 +27,7 @@ export const CalendarFilters = ({
   filter,
   hidden,
   onChange,
+  queues,
   tags,
 }: {
   readonly channels: readonly Channel[];
@@ -34,12 +35,13 @@ export const CalendarFilters = ({
   /** How many of the posts on screen the filter hides. */
   readonly hidden: number;
   readonly onChange: (filter: CalendarFilter) => void;
+  readonly queues: readonly Queue[];
   readonly tags: readonly Tag[];
 }) => {
   const t = useTranslations("Posts.Calendar");
   const tPosts = useTranslations("Posts");
 
-  if (tags.length === 0 && channels.length === 0) {
+  if (tags.length === 0 && channels.length === 0 && queues.length === 0) {
     return null;
   }
 
@@ -105,6 +107,33 @@ export const CalendarFilters = ({
                       }),
                     })}
                   </span>
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      {queues.length === 0 ? null : (
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+            {t("filterQueues", { count: filter.queueIds.length })}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-60">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>{t("filterQueuesLabel")}</DropdownMenuLabel>
+              {queues.map((queue) => (
+                <DropdownMenuCheckboxItem
+                  key={queue.id}
+                  checked={filter.queueIds.includes(queue.id)}
+                  closeOnClick={false}
+                  onCheckedChange={(checked) => {
+                    onChange({
+                      ...filter,
+                      queueIds: withChoice(filter.queueIds, queue.id, checked),
+                    });
+                  }}
+                >
+                  <span className="truncate">{queue.name}</span>
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuGroup>
