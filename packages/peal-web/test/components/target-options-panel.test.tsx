@@ -1,12 +1,19 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Option } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
 import { PostContentInvalid } from "peal-contract";
-import type { Channel, ContentViolation, TikTokCreator } from "peal-contract";
+import type {
+  AccountStanding,
+  Channel,
+  ContentViolation,
+  TikTokCreator,
+} from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { ComposerErrors } from "#components/posts/composer-errors.tsx";
 import {
+  BlueskyOptionsFields,
   PinterestOptionsFields,
   takesOptions,
   TargetOptionsPanel,
@@ -391,6 +398,57 @@ describe(TargetOptionsPanel, () => {
     );
     expect(english).toContain('aria-invalid="true"');
     await expect(typed("fr")).resolves.toContain("4 indiqués : 3 au plus.");
+  });
+
+  it("offers Bluesky's gates only on a channel that holds their scopes", async () => {
+    const bluesky = channel(
+      "00000000-0000-7000-8000-000000000012",
+      "bluesky",
+      "peal.bsky"
+    );
+
+    const shown = async (locale: Locale, standing: AccountStanding) => {
+      const messages = await loadMessages(locale);
+
+      return renderToStaticMarkup(
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <BlueskyOptionsFields
+            channel={bluesky}
+            disabled={false}
+            standing={Option.some(standing)}
+            values={initialValues("bluesky")}
+            violations={[]}
+            onChange={() => {
+              // Rendered once, never changed.
+            }}
+          />
+        </NextIntlClientProvider>
+      );
+    };
+
+    const ungated: AccountStanding = {
+      _tag: "read",
+      blocked: null,
+      restrictions: [
+        { _tag: "optionNeedsReconnect", field: "replies" },
+        { _tag: "optionNeedsReconnect", field: "disableQuotes" },
+      ],
+    };
+
+    const english = await shown("en", ungated);
+
+    const reconnect =
+      "This account was connected before Peal asked to limit replies and quotes: reconnect it on the Channels page to choose them.";
+
+    expect(english).toContain(reconnect);
+    // Said once for the field of choices, once for the box.
+    expect(english.split(reconnect)).toHaveLength(3);
+    await expect(shown("fr", ungated)).resolves.toContain(
+      "reconnectez-le sur la page Canaux"
+    );
+    await expect(
+      shown("en", { _tag: "read", blocked: null, restrictions: [] })
+    ).resolves.not.toContain(reconnect);
   });
 
   it("shows only for platforms that take options", () => {

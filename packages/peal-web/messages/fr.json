@@ -1056,7 +1056,7 @@
         "labelPorn": "Contenu pour adultes",
         "labelGraphicMedia": "Images choquantes",
         "replies": "Qui peut répondre",
-        "repliesHint": "S’applique à tout le fil. Limiter les réponses, ou les citations, demande que le compte ait été connecté depuis que Peal le demande : reconnectez-le sur la page Canaux si la programmation refuse.",
+        "repliesHint": "S’applique à tout le fil.",
         "repliesInvalid": "Choisissez qui peut répondre, ou reconnectez le compte sur la page Canaux pour que Peal puisse le régler.",
         "repliesEveryone": "Tout le monde",
         "repliesNobody": "Personne",
@@ -1066,7 +1066,8 @@
         "replyMentioned": "Les comptes mentionnés dans la publication",
         "disableQuotes": "Empêcher les autres de citer cette publication",
         "disableQuotesHint": "Sur chaque partie du fil.",
-        "disableQuotesInvalid": "Reconnectez le compte sur la page Canaux pour que Peal puisse le régler."
+        "disableQuotesInvalid": "Reconnectez le compte sur la page Canaux pour que Peal puisse le régler.",
+        "gatesNeedReconnect": "Ce compte a été connecté avant que Peal demande à limiter les réponses et les citations : reconnectez-le sur la page Canaux pour les choisir."
       },
       "threads": {
         "replyControl": "Qui peut répondre",

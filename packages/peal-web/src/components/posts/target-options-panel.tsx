@@ -5,6 +5,7 @@ import { Cause, Match, Option, Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import type {
+  AccountStanding,
   Channel,
   ContentViolation,
   TikTokAccount,
@@ -27,10 +28,12 @@ import type { ChangeEvent, ReactNode } from "react";
 
 import { channelName } from "#channels/channel-name.ts";
 import {
+  channelCapabilities,
   pinterestBoards,
   pinterestBoardSections,
   tiktokCreator,
 } from "#posts/api.ts";
+import { blueskyLimits } from "#posts/bluesky-account.ts";
 import type { ComposerFailure } from "#posts/composer-failure.ts";
 import { choicesOf } from "#posts/lookup-choices.ts";
 import type { LookupChoices } from "#posts/lookup-choices.ts";
@@ -126,7 +129,8 @@ const Notes = ({
   readonly problem: string | undefined;
 }) => {
   const t = useTranslations("Posts.Options");
-  const closed = [...(limits.closedChoices?.values() ?? [])];
+  // Each reason once, however many choices it closes.
+  const closed = [...new Set(limits.closedChoices?.values())];
 
   return (
     <>
@@ -143,6 +147,9 @@ const Notes = ({
           {t(reason)}
         </p>
       ))}
+      {limits.note === undefined ? null : (
+        <p className="text-muted-foreground text-xs">{t(limits.note)}</p>
+      )}
       {problem === undefined ? null : (
         <p id={`${id}-error`} className="text-destructive-text text-xs">
           {problem}
@@ -883,6 +890,45 @@ const PinterestChannelOptions = ({
   );
 };
 
+/**
+ * A Bluesky channel's fields, its gates closed where `standing` says the
+ * channel must be reconnected to set them.
+ */
+export const BlueskyOptionsFields = ({
+  standing,
+  ...props
+}: ChannelOptionsProps & {
+  readonly standing: Option.Option<AccountStanding>;
+}) => (
+  <ChannelOptionsFields
+    {...props}
+    limits={blueskyLimits(standing, props.values)}
+  />
+);
+
+// A Bluesky channel's fields, with its account's standing read from the
+// channel's capabilities; until it is read, nothing is closed, and
+// scheduling checks it.
+const BlueskyChannelOptions = ({
+  workspaceId,
+  ...props
+}: ChannelOptionsProps & { readonly workspaceId: string }) => {
+  const result = useAtomValue(
+    channelCapabilities(workspaceId, props.channel.id)
+  );
+
+  return (
+    <BlueskyOptionsFields
+      {...props}
+      standing={
+        AsyncResult.isSuccess(result)
+          ? Option.some(result.value.account)
+          : Option.none()
+      }
+    />
+  );
+};
+
 const loadingLookup: LookupSource = { choices: { _tag: "loading" } };
 
 interface TargetOptionsPanelProps {
@@ -943,6 +989,16 @@ export const TargetOptionsPanel = ({
             />
           ) : (
             <PinterestChannelOptions
+              key={channel.id}
+              {...props}
+              workspaceId={workspaceId}
+            />
+          );
+        }
+
+        if (channel.platform === "bluesky" && workspaceId !== undefined) {
+          return (
+            <BlueskyChannelOptions
               key={channel.id}
               {...props}
               workspaceId={workspaceId}

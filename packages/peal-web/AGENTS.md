@@ -138,7 +138,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   sharing with followers, once a community is written) has
   `shownWith: { filled: true }`. The counter takes the channel's options
   (`fitOn`'s fourth argument), as a Mastodon content warning counts with
-  the text. On a Pinterest channel, `PinterestChannelOptions`
+  the text. On a Bluesky channel, `BlueskyChannelOptions` reads the
+  channel's capabilities (`channelCapabilities`) and closes each gate its
+  account must be reconnected to set (`optionNeedsReconnect`,
+  `#posts/bluesky-account.ts`), with the line saying so; a gate the post
+  holds stays, to be taken off. On a Pinterest channel, `PinterestChannelOptions`
   reads the account's boards, ten pages of 50 at most, and the chosen
   board's sections (`pinterestBoards` and `pinterestBoardSections` in
   `#posts/api.ts`, as `LookupChoices`): a field shows that its list is being
