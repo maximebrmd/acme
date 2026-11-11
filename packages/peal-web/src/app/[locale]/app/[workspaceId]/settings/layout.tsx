@@ -33,6 +33,8 @@ const WorkspaceSettingsLayout = async ({
     members: true,
     partner: may.has("partner:read"),
     queues: may.has("post:read") && may.has("channel:read"),
+    // What the workspace requires of its members, which every member reads.
+    security: true,
     signatures: may.has("post:read"),
     tags: may.has("post:read"),
     webhooks: may.has("webhook:read"),
@@ -43,6 +45,7 @@ const WorkspaceSettingsLayout = async ({
       "general",
       "members",
       "invitations",
+      "security",
       "tags",
       "signatures",
       "channelSets",
