@@ -1,6 +1,7 @@
 import type { DateTime } from "effect";
 import { Option, Result, Schema } from "effect";
 
+import type { Permission } from "#shared/domain/access.ts";
 import {
   ChannelIdSchema,
   PostIdSchema,
@@ -27,6 +28,14 @@ import { PostTargetIdSchema } from "./post-target-id.ts";
 import type { PostTargetId } from "./post-target-id.ts";
 import { livePartsOf } from "./post-target.ts";
 import type { PostTarget } from "./post-target.ts";
+
+/**
+ * What it takes to change a post that is live: the permission that
+ * publishes it (owners, admins, editors; keys and applications given it;
+ * an OAuth client with `workspace:publish`), and no other. An owner's
+ * decision: change it here alone.
+ */
+export const livePostChangePermission: Permission = "post:publish";
 
 /**
  * What a change does to a post live on a channel: `unpublish` deletes it
@@ -167,14 +176,15 @@ const withFields = (
 
 /**
  * The parts of a published target to delete, last first, each with the
- * platform's id for it, or why it cannot be removed now. `latest` is the
- * newest change asked of the target: a pending one stands in the way, and
- * one that failed left the parts it had not deleted, which are those to
- * delete now (the others are gone already).
+ * platform's id for it, or why it cannot be removed now. `platform` is its
+ * channel's, none when the channel cannot be used (disconnected, turned
+ * off, to reconnect). `latest` is the newest change asked of the target: a
+ * pending one stands in the way, and one that failed left the parts it had
+ * not deleted, which are those to delete now (the others are gone).
  */
 export const removable = (
   target: PostTarget,
-  platform: Platform,
+  platform: Option.Option<Platform>,
   latest: Option.Option<LivePostChange>
 ): Result.Result<readonly PartToRemove[], LivePostRefusal> => {
   const { status } = target;
@@ -187,12 +197,16 @@ export const removable = (
     return Result.fail("alreadyRemoved");
   }
 
-  if (Option.isSome(unpublishBlocker(platform))) {
-    return Result.fail("notSupported");
-  }
-
   if (Option.exists(latest, (change) => change.status === "pending")) {
     return Result.fail("changeInProgress");
+  }
+
+  if (Option.isNone(platform)) {
+    return Result.fail("channelUnavailable");
+  }
+
+  if (Option.isSome(unpublishBlocker(platform.value))) {
+    return Result.fail("notSupported");
   }
 
   const failed = latest.pipe(

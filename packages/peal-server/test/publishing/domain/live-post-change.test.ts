@@ -100,7 +100,9 @@ describe("the parts a removal takes", () => {
       livePart(2, Option.some("3")),
     ]);
 
-    expect(removable(target, "mastodon", Option.none())).toStrictEqual(
+    expect(
+      removable(target, Option.some("mastodon"), Option.none())
+    ).toStrictEqual(
       Result.succeed([
         { index: 2, platformPostId: id("3") },
         { index: 1, platformPostId: id("2") },
@@ -111,7 +113,7 @@ describe("the parts a removal takes", () => {
 
   it("reads a target published before parts were kept as one part", () => {
     expect(
-      removable(targetWith(published), "bluesky", Option.none())
+      removable(targetWith(published), Option.some("bluesky"), Option.none())
     ).toStrictEqual(Result.succeed([{ index: 0, platformPostId: id("1") }]));
   });
 
@@ -122,7 +124,7 @@ describe("the parts a removal takes", () => {
       { _tag: "cancelled", cancelledAt: publishedAt },
     ] satisfies PostTargetStatus[]) {
       expect(
-        removable(targetWith(status), "mastodon", Option.none())
+        removable(targetWith(status), Option.some("mastodon"), Option.none())
       ).toStrictEqual(Result.fail("notPublished"));
     }
   });
@@ -131,7 +133,7 @@ describe("the parts a removal takes", () => {
     expect(
       removable(
         targetWith({ ...published, removedAt: now }),
-        "mastodon",
+        Option.some("mastodon"),
         Option.none()
       )
     ).toStrictEqual(Result.fail("alreadyRemoved"));
@@ -144,7 +146,7 @@ describe("the parts a removal takes", () => {
         : Result.succeed([{ index: 0, platformPostId: id("1") }]);
 
       expect(
-        removable(targetWith(published), platform, Option.none())
+        removable(targetWith(published), Option.some(platform), Option.none())
       ).toStrictEqual(expected);
     }
   });
@@ -153,7 +155,7 @@ describe("the parts a removal takes", () => {
     expect(
       removable(
         targetWith({ ...published, platformPostId: Option.none() }),
-        "mastodon",
+        Option.some("mastodon"),
         Option.none()
       )
     ).toStrictEqual(Result.fail("noPlatformId"));
@@ -164,17 +166,36 @@ describe("the parts a removal takes", () => {
           livePart(0, Option.some("1")),
           livePart(1, Option.none()),
         ]),
-        "mastodon",
+        Option.some("mastodon"),
         Option.none()
       )
     ).toStrictEqual(Result.fail("noPlatformId"));
+  });
+
+  it("refuses a channel that cannot be used now", () => {
+    expect(
+      removable(targetWith(published), Option.none(), Option.none())
+    ).toStrictEqual(Result.fail("channelUnavailable"));
+
+    // Unless the target itself says otherwise.
+    expect(
+      removable(
+        targetWith({ ...published, removedAt: now }),
+        Option.none(),
+        Option.none()
+      )
+    ).toStrictEqual(Result.fail("alreadyRemoved"));
   });
 
   it("refuses while a change of the target is pending", () => {
     const pending = request([{ index: 0, platformPostId: id("1") }]);
 
     expect(
-      removable(targetWith(published), "mastodon", Option.some(pending))
+      removable(
+        targetWith(published),
+        Option.some("mastodon"),
+        Option.some(pending)
+      )
     ).toStrictEqual(Result.fail("changeInProgress"));
   });
 
@@ -201,9 +222,9 @@ describe("the parts a removal takes", () => {
       )
     );
 
-    expect(removable(target, "mastodon", Option.some(failed))).toStrictEqual(
-      Result.succeed([{ index: 0, platformPostId: id("1") }])
-    );
+    expect(
+      removable(target, Option.some("mastodon"), Option.some(failed))
+    ).toStrictEqual(Result.succeed([{ index: 0, platformPostId: id("1") }]));
   });
 });
 

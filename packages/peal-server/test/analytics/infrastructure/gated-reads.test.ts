@@ -7,6 +7,7 @@ import type {
   MetricsBatch,
   MetricsRequest,
 } from "#analytics/application/metrics-reader.ts";
+import { LivePostClients } from "#publishing/application/live-post-clients.ts";
 import {
   ChannelGateLive,
   GatedMetricsReader,
@@ -38,7 +39,8 @@ const gatedOver = (
           Layer.mergeAll(
             FakePlatformPublisher,
             readerAnswering(answer),
-            UnreadComments
+            UnreadComments,
+            LivePostClients.none
           )
         )
       )

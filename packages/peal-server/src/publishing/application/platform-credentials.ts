@@ -1,7 +1,8 @@
-import { Context } from "effect";
-import type { Effect, Option, Redacted } from "effect";
+import { Context, Effect, Layer } from "effect";
+import type { Option, Redacted } from "effect";
 
-import type { BadRequest } from "#shared/domain/bad-request.ts";
+import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
+import { BadRequest } from "#shared/domain/bad-request.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import type { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -58,4 +59,22 @@ export class PlatformCredentials extends Context.Service<
       use: (token: PublishingToken) => Effect.Effect<A, E | TokenRejected, R>
     ) => Effect.Effect<A, CredentialFailure | Exclude<E, TokenRejected>, R>;
   }
->()("peal-server/publishing/application/PlatformCredentials") {}
+>()("peal-server/publishing/application/PlatformCredentials") {
+  /**
+   * For tests that call no platform: every channel is disconnected, and
+   * nothing is called.
+   */
+  static readonly unusable = Layer.succeed(
+    PlatformCredentials,
+    PlatformCredentials.of({
+      account: () =>
+        Effect.fail(
+          new BadRequest({ code: ownRefusalCodes.channelDisconnected })
+        ),
+      withToken: () =>
+        Effect.fail(
+          new BadRequest({ code: ownRefusalCodes.channelDisconnected })
+        ),
+    })
+  );
+}

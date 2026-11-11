@@ -6,6 +6,7 @@ import { MetricsReader } from "#analytics/application/metrics-reader.ts";
 import { CommentSource } from "#engagement/application/ports/comment-source.ts";
 import { ReplySender } from "#engagement/application/ports/reply-sender.ts";
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
+import { LivePostClients } from "#publishing/application/live-post-clients.ts";
 import { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import {
   ChannelGate,
@@ -155,7 +156,9 @@ const serverOn = (platform: Platform) =>
     GatedReplySender
   ).pipe(
     Layer.provideMerge(
-      ChannelGateLive.pipe(Layer.provide(adaptersOf(platform)))
+      ChannelGateLive.pipe(
+        Layer.provide(Layer.merge(adaptersOf(platform), LivePostClients.none))
+      )
     ),
     Layer.provideMerge(clusterOver(MessageStorage.layerMemory))
   );
@@ -236,6 +239,7 @@ describe("the channel's gate, with every context that calls through it", () => {
       "ReadAccount",
       "ReadComments",
       "ReadMetrics",
+      "RemoveLivePost",
       "Resume",
       "ResumeReply",
       "SendReply",

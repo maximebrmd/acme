@@ -8,7 +8,12 @@ import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-chann
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
-import { publishingBehind, publishingWorkers } from "#publishing/container.ts";
+import {
+  publishingBehind,
+  publishingWorkers,
+  UnreadComments,
+} from "#publishing/container.ts";
+import { UnreadMetrics } from "#publishing/infrastructure/channel-gate.ts";
 import { FakePlatformPublisher } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import type { MediaAssetId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -17,6 +22,12 @@ import type { Platform } from "#shared/domain/platform.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import { freshChannel, syntheticCredentials } from "#test/channels/support.ts";
+import {
+  FakeHolds,
+  FakeLivePostClients,
+  RecordedLiveEvents,
+  RepositoryCredentials,
+} from "#test/publishing/fakes/fake-live-post-clients.ts";
 import {
   clusterOver,
   DatabaseTest,
@@ -56,14 +67,23 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
   // Who hears what happens to posts, and what a test reads it with.
   events: Layer.Layer<PostEvents | H, never, R4>
 ) =>
-  publishingWorkers(FakePlatformPublisher).pipe(
+  publishingWorkers(
+    FakePlatformPublisher,
+    UnreadMetrics,
+    UnreadComments,
+    FakeLivePostClients
+  ).pipe(
     Layer.provideMerge(
       publishingBehind(
         gate,
         Layer.mergeAll(ListedWorkspaceChannels, media, allowance),
-        events
+        events,
+        // Changes of live posts: the channels' rows say whether one can be
+        // used, and FakeRemovals deletes, holds and hears.
+        Layer.mergeAll(RepositoryCredentials, FakeHolds, RecordedLiveEvents)
       )
     ),
+    Layer.provideMerge(FakeLivePostClients),
     Layer.provideMerge(RecordingPublicationOutcomes),
     Layer.provideMerge(ListChannels.layer),
     Layer.provideMerge(DrizzleChannelRepository),
