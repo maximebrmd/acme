@@ -338,6 +338,7 @@ peal queues create "Weekdays" --slot mon@09:30 --slot wed@09:30 --slot fri@17:00
 peal queues update "Weekdays" --slot tue@12:00 --default
 peal queues show "Weekdays"
 peal queues preview "Weekdays" --count 5
+peal queues reshuffle "Weekdays"
 peal queues delete "Weekdays"
 peal post "An evergreen tip" --default-queue
 peal post "An evergreen tip" --queue Weekdays --channel <channel-id> --dry-run
@@ -348,6 +349,7 @@ peal posts list --queue Weekdays
 - A [queue](/scheduling#queues) is a weekly timetable of slots in a time zone, for some channels and at most one channel set (`--set`). `--slot` takes a day (`mon` or `monday`…) and a time of day on a 24-hour clock, such as `mon@09:30`; repeat it, 100 at most. `--zone` is the queue's IANA zone, `TZ` or your computer's without it. A workspace keeps 20 queues, and a queue is named by its id or its name, whatever its case.
 - `peal queues update` keeps what you leave out, but the channels that are no longer connected; `--slot` replaces the week and `--clear-slots` empties it, `--channel` replaces the channels and `--clear-channels` takes them all off, `--no-set` takes the channel set off, `--default` makes it the default queue. Posts the queue placed keep their times. `peal queues delete` leaves them scheduled.
 - `peal queues preview` lists the coming slots, free or taken, and where a post added now would go: nothing is held.
+- `peal queues reshuffle` moves the posts that wait in a queue onto its slots as they are now, in the order of their times, those moved by hand included ([how](/scheduling#reshuffle)), and says how many moved and how many stayed: "Moved 12 posts of Weekdays onto its slots; 3 already on theirs or not yours to move." When it stops, at a month the plan has no room in, with no slot left, or because the queue was saved meanwhile, it says so and how many posts it left: run it again. With `--json` it prints the API's answer.
 - `peal post --queue <name-or-id>` puts a post on that queue's next free slot (`--queue=<name-or-id>` too), and `peal post --default-queue` on the default queue's. Each is one of `--at`, `--now`, `--queue` and `--default-queue`, and without `--channel` or `--set` the post goes to the queue's channels. With `--dry-run` it prints the slot it would take.
 - `peal posts queue` puts a draft, or a scheduled post, on a queue's next free slot (`--queue`, or the default). `peal posts list --queue` lists the posts a queue placed.
 

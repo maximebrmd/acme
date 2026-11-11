@@ -461,17 +461,26 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/send" \
 
 Posts carry the queue that placed them (`queueId`, null once it is deleted), and `GET …/posts/search?queueId=…` lists them.
 
+Saving a queue's slots moves no post. `POST …/queues/{queueId}/reshuffle`, with no body, moves its waiting posts (scheduled or awaiting approval, after now) onto its slots as they are now, in the order of their times, those moved by hand included ([Move the waiting posts onto new slots](/scheduling#reshuffle)). Each move is a `reschedule`: approvals asked again, the plan counted in the new month, `post.scheduled` told; a post on its slot is not written. It needs post:schedule, or post:create where posts wait for an approval, and answers what it did:
+
+```json
+{ "moved": 12, "unchanged": 3, "remaining": 0, "stoppedBy": null }
+```
+
+`remaining` counts the posts not placed when it stopped, and `stoppedBy` says why: `planLimit` (a month without room), `full` (no slot left within 366 days) or `changed` (the queue was saved meanwhile). Call it again to go on; called twice, the second call moves nothing. A queue without a slot answers 409 `queue_has_no_room` (`noSlots`).
+
 ## From MCP and the command line [#tools]
 
-| Request                        | MCP tool                          | Command                              |
-| ------------------------------ | --------------------------------- | ------------------------------------ |
-| `POST …/posts/validate`        | `validate_post`                   | `peal post … --dry-run`              |
-| `POST …/posts/send?wait=…`     | `create_post`, with `waitSeconds` | `peal post … --now --wait <seconds>` |
-| `GET …/posts/{postId}/outcome` | `await_post`                      | `peal posts wait <post-id>`          |
-| `POST …/posts/bulk`            | `create_posts`                    |                                      |
-| `POST …/posts/import`          |                                   | `peal posts import <file.csv>`       |
-| `GET …/posts/search`           | `list_posts`                      | `peal posts list`                    |
-| `POST …/posts/{postId}/queue`  | `queue_post`                      | `peal posts queue <post-id>`         |
-| `GET …/queues/{queueId}/slots` | `preview_queue`                   | `peal queues preview <queue>`        |
+| Request                             | MCP tool                          | Command                              |
+| ----------------------------------- | --------------------------------- | ------------------------------------ |
+| `POST …/posts/validate`             | `validate_post`                   | `peal post … --dry-run`              |
+| `POST …/posts/send?wait=…`          | `create_post`, with `waitSeconds` | `peal post … --now --wait <seconds>` |
+| `GET …/posts/{postId}/outcome`      | `await_post`                      | `peal posts wait <post-id>`          |
+| `POST …/posts/bulk`                 | `create_posts`                    |                                      |
+| `POST …/posts/import`               |                                   | `peal posts import <file.csv>`       |
+| `GET …/posts/search`                | `list_posts`                      | `peal posts list`                    |
+| `POST …/posts/{postId}/queue`       | `queue_post`                      | `peal posts queue <post-id>`         |
+| `GET …/queues/{queueId}/slots`      | `preview_queue`                   | `peal queues preview <queue>`        |
+| `POST …/queues/{queueId}/reshuffle` | `reshuffle_queue`                 | `peal queues reshuffle <queue>`      |
 
 [Connect an MCP client](/mcp#tools) describes the tools, and [Command line](/cli#post) the commands.

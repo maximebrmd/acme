@@ -338,6 +338,7 @@ peal queues create "Weekdays" --slot mon@09:30 --slot wed@09:30 --slot fri@17:00
 peal queues update "Weekdays" --slot tue@12:00 --default
 peal queues show "Weekdays"
 peal queues preview "Weekdays" --count 5
+peal queues reshuffle "Weekdays"
 peal queues delete "Weekdays"
 peal post "Un conseil intemporel" --default-queue
 peal post "Un conseil intemporel" --queue Weekdays --channel <channel-id> --dry-run
@@ -348,6 +349,7 @@ peal posts list --queue Weekdays
 - Une [file d’attente](/fr/scheduling#queues) est un emploi du temps hebdomadaire de créneaux dans un fuseau horaire, pour certains canaux et au plus un groupe de canaux (`--set`). `--slot` prend un jour (`mon` ou `monday`…, en anglais) et une heure sur 24 heures, comme `mon@09:30` ; répétez-le, 100 au plus. `--zone` est le fuseau IANA de la file, `TZ` ou celui de votre ordinateur sans lui. Un espace de travail garde 20 files, et une file se nomme par son identifiant ou son nom, quelle que soit sa casse.
 - `peal queues update` garde ce que vous laissez de côté, sauf les canaux qui ne sont plus connectés ; `--slot` remplace la semaine et `--clear-slots` la vide, `--channel` remplace les canaux et `--clear-channels` les retire tous, `--no-set` retire le groupe de canaux, `--default` en fait la file par défaut. Les publications placées par la file gardent leur heure. `peal queues delete` les laisse programmées.
 - `peal queues preview` liste les prochains créneaux, libres ou pris, et où irait une publication ajoutée maintenant : rien n’est retenu.
+- `peal queues reshuffle` place les publications en attente dans une file sur ses créneaux tels qu’ils sont maintenant, dans l’ordre de leurs heures, celles déplacées à la main comprises ([comment](/fr/scheduling#reshuffle)), et dit combien ont été déplacées et combien sont restées (en anglais, comme toute la ligne de commande). Quand le déplacement s’arrête, à un mois où l’abonnement n’a plus de place, faute de créneau, ou parce que la file a été enregistrée entre-temps, la commande le dit avec le nombre de publications restantes : relancez-la. Avec `--json`, elle affiche la réponse de l’API.
 - `peal post --queue <nom-ou-identifiant>` place une publication sur le prochain créneau libre de cette file (`--queue=<nom-ou-identifiant>` aussi), et `peal post --default-queue` sur celui de la file par défaut. Chacune est l’une de `--at`, `--now`, `--queue` et `--default-queue`, et sans `--channel` ni `--set` la publication va sur les canaux de la file. Avec `--dry-run`, la commande affiche le créneau qu’elle prendrait.
 - `peal posts queue` place un brouillon, ou une publication programmée, sur le prochain créneau libre d’une file (`--queue`, ou celle par défaut). `peal posts list --queue` liste les publications placées par une file.
 
