@@ -72,6 +72,7 @@ import {
 import type { EndpointDraft } from "#webhooks/endpoint-draft.ts";
 import { webhookErrorOf } from "#webhooks/errors.ts";
 import type { WebhookError } from "#webhooks/errors.ts";
+import { failedToSendAgain } from "#webhooks/failed-again.ts";
 import { hostOf } from "#webhooks/host.ts";
 
 import {
@@ -242,22 +243,25 @@ const SendAllFailed = ({
   const redeliver = useAtomSet(redeliverWebhooks, { mode: "promiseExit" });
   const [isSending, startSending] = useTransition();
 
-  // The first call's worth, to name how many it sends.
-  const failed = Option.getOrUndefined(
+  // The endpoint's latest deliveries, whatever their status, to name how
+  // many it sends: the events whose last delivery failed, as the server
+  // picks them. Past one page, older ones may be sent too.
+  const latest = Option.getOrUndefined(
     AsyncResult.value(
       useAtomValue(
         searchPage(
           workspaceId,
           Option.some(endpoint.id),
           Option.none(),
-          failedOnly,
+          anyDelivery,
           maxWebhookBulkRedelivery
         )
       )
     )
   );
 
-  const count = failed?.items.length ?? 0;
+  const count = failedToSendAgain(latest?.items ?? []);
+  const more = latest !== undefined && latest.nextCursor !== null;
 
   const handleSend = () => {
     startSending(async () => {
@@ -297,7 +301,7 @@ const SendAllFailed = ({
           <Button
             variant="outline"
             size="sm"
-            disabled={isSending || count === 0}
+            disabled={isSending || (count === 0 && !more)}
             focusableWhenDisabled
           />
         }
@@ -312,7 +316,8 @@ const SendAllFailed = ({
           <AlertDialogDescription>
             {t("sendAllFailedDescription", {
               count,
-              more: failed?.nextCursor === null ? "false" : "true",
+              max: maxWebhookBulkRedelivery,
+              more: more ? "true" : "false",
               perHour: webhookBulkRedeliveriesPerHour,
             })}
           </AlertDialogDescription>

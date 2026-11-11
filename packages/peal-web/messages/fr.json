@@ -2061,7 +2061,7 @@
     "columnEndpoint": "Point de terminaison",
     "sendAllFailed": "Renvoyer toutes les livraisons échouées",
     "sendAllFailedTitle": "Renvoyer les livraisons échouées vers {host} ?",
-    "sendAllFailedDescription": "{count, plural, =0 {Aucune livraison vers ce point de terminaison n’a échoué pour de bon.} one {# livraison échouée est renvoyée, comme une nouvelle livraison du même événement.} other {{more, select, true {Les # livraisons échouées les plus anciennes sont renvoyées ; renvoyez ensuite le reste.} other {# livraisons échouées sont renvoyées, comme de nouvelles livraisons des mêmes événements.}}}} L’espace de travail renvoie {perHour, number} livraisons de cette façon par heure.",
+    "sendAllFailedDescription": "{more, select, true {Les livraisons échouées les plus anciennes sont renvoyées, {max, number} par appel, chacune comme une nouvelle livraison de son événement : renvoyez ensuite le reste.} other {{count, plural, =0 {Aucune livraison vers ce point de terminaison n’a échoué pour de bon.} one {# livraison échouée est renvoyée, comme une nouvelle livraison du même événement.} other {# livraisons échouées sont renvoyées, comme de nouvelles livraisons des mêmes événements.}}}} L’espace de travail renvoie {perHour, number} livraisons de cette façon par heure.",
     "sendingAllFailed": "Renvoi…",
     "sentAllAgain": "{sent, plural, =0 {Rien n’a été renvoyé.} one {# livraison renvoyée.} other {# livraisons renvoyées.}} {skipped, plural, =0 {} one {# ignorée : déjà renvoyée, ou son point de terminaison est désactivé.} other {# ignorées : déjà renvoyées, ou leur point de terminaison est désactivé.}} {remaining, plural, =0 {} other {Il en reste #.}}",
     "testEventLabel": "Type de l’événement de test",

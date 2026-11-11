@@ -2061,7 +2061,7 @@
     "columnEndpoint": "Endpoint",
     "sendAllFailed": "Send all failed again",
     "sendAllFailedTitle": "Send the failed deliveries to {host} again?",
-    "sendAllFailedDescription": "{count, plural, =0 {No delivery to this endpoint failed for good.} one {# failed delivery is sent again, as a new delivery of the same event.} other {{more, select, true {The oldest # failed deliveries are sent again, then call again for the rest.} other {# failed deliveries are sent again, as new deliveries of the same events.}}}} The workspace sends {perHour, number} deliveries again this way an hour.",
+    "sendAllFailedDescription": "{more, select, true {The oldest failed deliveries are sent again, {max, number} a call, each as a new delivery of its event: send again for the rest.} other {{count, plural, =0 {No delivery to this endpoint failed for good.} one {# failed delivery is sent again, as a new delivery of the same event.} other {# failed deliveries are sent again, as new deliveries of the same events.}}}} The workspace sends {perHour, number} deliveries again this way an hour.",
     "sendingAllFailed": "Sending again…",
     "sentAllAgain": "{sent, plural, =0 {Nothing was sent again.} one {# delivery sent again.} other {# deliveries sent again.}} {skipped, plural, =0 {} one {# skipped: already sent again, or its endpoint is off.} other {# skipped: already sent again, or their endpoint is off.}} {remaining, plural, =0 {} other {# more are left.}}",
     "testEventLabel": "Test event type",
