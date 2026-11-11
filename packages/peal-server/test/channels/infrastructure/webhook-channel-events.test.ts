@@ -1,16 +1,20 @@
 import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option } from "effect";
+import { SqlClient } from "effect/sql";
+import { TestClock } from "effect/testing";
 
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ChannelNotices } from "#channels/application/channel-notices.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { ChannelSettings } from "#channels/application/channel-settings.ts";
 import { DataDeletions } from "#channels/application/data-deletions.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import { markRefreshNeeded } from "#channels/domain/channel.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-deletions.ts";
+import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import {
   WebhookChannelEvents,
   webhookChannelNotices,
@@ -28,6 +32,7 @@ import {
   freshOwner,
   WebhooksTest,
 } from "#test/webhooks/support.ts";
+import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 
 // The notices themselves are the notifications context's: none here.
 const SilentNotices = Layer.succeed(
@@ -39,6 +44,7 @@ const SilentNotices = Layer.succeed(
 );
 
 const Test = Layer.mergeAll(
+  ChannelSettings.layer,
   DisconnectChannel.layer,
   DrizzleDataDeletions,
   webhookChannelNotices(SilentNotices)
@@ -46,6 +52,7 @@ const Test = Layer.mergeAll(
   Layer.provideMerge(
     Layer.mergeAll(
       WebhookChannelEvents,
+      SqlChannelLocks,
       TokenCipherTest,
       Layer.succeed(PlatformAuthorizers, authorizersOf())
     )
@@ -65,6 +72,9 @@ const connected = Effect.fn("connected")(function* connected(owner: Actor) {
       "channel.connected",
       "channel.disconnected",
       "channel.reconnect_needed",
+      "channel.disabled",
+      "channel.enabled",
+      "channel.expiring",
     ],
   });
 
@@ -79,6 +89,18 @@ const connected = Effect.fn("connected")(function* connected(owner: Actor) {
 
   return { channel, endpointId: endpoint.id };
 });
+
+// The delivery log's retention, for one workspace only: the purge itself,
+// which ends every workspace's, is tested in the webhooks context, at an
+// instant no other suite's rows reach.
+const forgetBefore = (workspaceId: string, before: DateTime.Utc) =>
+  Effect.gen(function* forgetting() {
+    const sql = yield* SqlClient.SqlClient;
+    const cutoff = DateTime.formatIso(before);
+
+    yield* sql`DELETE FROM webhooks.deliveries WHERE workspace_id = ${workspaceId} AND created_at < ${cutoff}::timestamptz`;
+    yield* sql`DELETE FROM webhooks.events e WHERE e.workspace_id = ${workspaceId} AND e.occurred_at < ${cutoff}::timestamptz AND NOT EXISTS (SELECT 1 FROM webhooks.deliveries d WHERE d.event_id = e.id)`;
+  });
 
 layer(Test)("channels, to webhook endpoints", (it) => {
   it.effect(
@@ -245,6 +267,89 @@ layer(Test)("channels, to webhook endpoints", (it) => {
             type: "channel.disconnected",
           },
         ]);
+      })
+  );
+
+  it.effect(
+    "say when a member turns a channel off and back on, and nothing of a switch that changes nothing",
+    () =>
+      Effect.gen(function* switched() {
+        const owner = yield* freshOwner;
+        const settings = yield* ChannelSettings;
+        const { channel, endpointId } = yield* connected(owner);
+
+        yield* settings.turnOff(owner, channel.id);
+        // Off already: nothing to tell.
+        yield* settings.turnOff(owner, channel.id);
+        yield* settings.turnOn(owner, channel.id);
+        yield* settings.turnOn(owner, channel.id);
+
+        const data = {
+          channelId: channel.id,
+          platform: channel.platform,
+          workspaceId: owner.workspaceId,
+        };
+
+        assert.deepStrictEqual(
+          (yield* eventsSentTo(owner, endpointId)).slice(1),
+          [
+            { data, type: "channel.disabled" },
+            { data, type: "channel.enabled" },
+          ]
+        );
+      })
+  );
+
+  it.effect(
+    "say once that a channel's sign-in expires, across every daily check before it does",
+    () =>
+      Effect.gen(function* expiring() {
+        const owner = yield* freshOwner;
+        const notices = yield* ChannelNotices;
+        const deliveries = yield* WebhookDeliveries;
+        const { channel, endpointId } = yield* connected(owner);
+        const start = yield* DateTime.now;
+        // A token of 60 days, as a LinkedIn profile's: told for each of
+        // the 61 daily checks until it ends.
+        const expiresAt = DateTime.add(start, { days: 60 });
+        const told = new Set<string>();
+
+        for (let day = 0; day <= 60; day += 1) {
+          yield* TestClock.setTime(
+            DateTime.toEpochMillis(DateTime.add(start, { days: day }))
+          );
+          yield* notices.reconnectSoon(channel, expiresAt);
+          // The log's retention runs between checks, keys going with it.
+          yield* forgetBefore(
+            owner.workspaceId,
+            DateTime.add(start, { days: day - 30 })
+          );
+
+          const { items } = yield* deliveries.page(owner, endpointId, {
+            after: Option.none(),
+            limit: 100,
+          });
+
+          for (const { eventType, id } of items) {
+            if (eventType === "channel.expiring") {
+              told.add(id);
+            }
+          }
+        }
+
+        assert.strictEqual(told.size, 1);
+
+        const sent = yield* eventsSentTo(owner, endpointId);
+
+        assert.deepStrictEqual(sent.at(-1), {
+          data: {
+            channelId: channel.id,
+            expiresAt,
+            platform: channel.platform,
+            workspaceId: owner.workspaceId,
+          },
+          type: "channel.expiring",
+        });
       })
   );
 });

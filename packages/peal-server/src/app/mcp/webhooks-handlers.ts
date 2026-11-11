@@ -3,6 +3,7 @@ import {
   CurrentMember,
   defaultWebhookDeliveryPageSize,
   maxWebhookEndpoints,
+  maxWebhookHeaders,
 } from "peal-contract";
 import type { WebhookUrlRefusal } from "peal-contract";
 
@@ -60,6 +61,16 @@ const tooManySends = ({
     `The workspace sent ${String(allowed)} of these an hour, the most it may, or this call would send more than are left: nothing was sent. Try again in ${String(retryAfterSeconds)} seconds.`
   );
 
+const noSecrets = () =>
+  refuse(
+    "This server cannot keep a signing secret: its operator has not set the keys that encrypt them (PEAL_TOKEN_KEYS)."
+  );
+
+const headersRefused = () =>
+  refuse(
+    `An endpoint takes ${String(maxWebhookHeaders)} headers at most, each named once whatever its case, with a name that is an HTTP token and not one Peal sets (host, content-type, content-length, user-agent, cookie, a connection's own, or any webhook- name), and a value of visible ASCII on one line; a header given without a value keeps the endpoint's, so it must be one the endpoint has.`
+  );
+
 const offEndpoint = () =>
   refuse(
     "The endpoint is turned off: turn it back on with update_webhook (enabled: true) first."
@@ -91,6 +102,7 @@ export const WebhookToolsLive = WebhookTools.toLayer(
               description: asked.description ?? "",
               enabled: asked.enabled ?? true,
               eventTypes: asked.eventTypes,
+              headers: asked.headers ?? [],
               scope: asked.scope ?? "workspace",
               url: asked.url,
               workspaceIds: asked.workspaceIds ?? [],
@@ -99,14 +111,12 @@ export const WebhookToolsLive = WebhookTools.toLayer(
               Effect.catchTags({
                 DatabaseError: Effect.die,
                 FilterRefused: filterRefused,
+                HeadersRefused: headersRefused,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: notAllowed("manage webhooks"),
                 PartnerScopeUnavailable: () =>
                   refuse("The workspace has no partner account."),
-                SecretsNotConfigured: () =>
-                  refuse(
-                    "This server cannot keep a signing secret: its operator has not set the keys that encrypt them (PEAL_TOKEN_KEYS)."
-                  ),
+                SecretsNotConfigured: noSecrets,
                 TooManyEndpoints: () =>
                   refuse(
                     `The workspace has ${String(maxWebhookEndpoints)} webhook endpoints, the most it may: delete one first.`
@@ -238,8 +248,10 @@ export const WebhookToolsLive = WebhookTools.toLayer(
               DatabaseError: Effect.die,
               EndpointNotFound: noEndpoint,
               FilterRefused: filterRefused,
+              HeadersRefused: headersRefused,
               InvalidWebhookUrl: urlRefused,
               MissingPermission: notAllowed("manage webhooks"),
+              SecretsNotConfigured: noSecrets,
               UrlNotDeliverable: urlRefused,
             })
           );

@@ -490,7 +490,16 @@ const info = withEntries(objectAt(document, "info"), [
   ["license", { identifier: "Apache-2.0", name: "Apache-2.0" }],
 ]);
 
-const sdkDocumentContent = withEntries(document, [
+// The events Peal sends to webhook endpoints stay out: the open-source
+// generators make no typed events of an OpenAPI `webhooks` section, and the
+// SDKs are clients of the API, not receivers (see AGENTS.md).
+const leftOut = new Set(["webhooks"]);
+
+const kept: JsonObject = Object.fromEntries(
+  Object.entries(document).filter(([key]) => !leftOut.has(key))
+);
+
+const sdkDocumentContent = withEntries(kept, [
   [
     "components",
     {

@@ -13,5 +13,6 @@ export namespace NotificationPreferences {
         postPublished: boolean;
         postReview: boolean;
         postUnconfirmed: boolean;
+        webhookFailing: boolean;
     }
 }

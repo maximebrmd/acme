@@ -1620,6 +1620,7 @@ export class PostScheduling extends Context.Service<
               ).pipe(Effect.orDie);
 
               yield* applied(yield* posts.update(finished, current.post));
+              yield* events.finished(finished, targets);
 
               return { post: finished, targets };
             }

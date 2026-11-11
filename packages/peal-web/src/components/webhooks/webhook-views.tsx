@@ -6,6 +6,9 @@ import {
   maxWebhookAttempts,
   maxWebhookDescriptionLength,
   maxWebhookFilterWorkspaces,
+  maxWebhookHeaderNameLength,
+  maxWebhookHeaders,
+  maxWebhookHeaderValueLength,
   maxWebhookUrlLength,
   SubscribableWebhookEventTypeSchema,
   WebhookDeliveryStatusSchema,
@@ -48,6 +51,9 @@ import {
   goneChannelIds,
   withChannel,
   withEveryType,
+  withHeader,
+  withNewHeader,
+  withoutHeader,
   withType,
 } from "#webhooks/endpoint-draft.ts";
 import type { EndpointDraft } from "#webhooks/endpoint-draft.ts";
@@ -227,6 +233,11 @@ export const EndpointItemView = ({
             {t("workspacesFilter", { count: endpoint.workspaceIds.length })}
           </span>
         )}
+        {endpoint.headerNames.length === 0 ? null : (
+          <span className="text-muted-foreground text-sm">
+            {t("headersShown", { names: endpoint.headerNames.join(", ") })}
+          </span>
+        )}
       </div>
       {actions === undefined ? null : (
         <div className="flex flex-wrap gap-2">{actions}</div>
@@ -327,11 +338,129 @@ const ChannelsFieldset = ({
   );
 };
 
+// The headers every delivery carries beside Peal's: a saved one by its
+// name, its value shown as set and replaced only when typed again; a new
+// one with its name and value. Values are typed like passwords.
+const HeadersFieldset = ({
+  disabled,
+  draft,
+  idPrefix,
+  invalid,
+  onChange,
+}: {
+  readonly disabled: boolean;
+  readonly draft: EndpointDraft;
+  readonly idPrefix: string;
+  readonly invalid: boolean;
+  readonly onChange: (draft: EndpointDraft) => void;
+}) => {
+  const t = useTranslations("Webhooks");
+  const hintId = `${idPrefix}-webhook-headers-hint`;
+
+  return (
+    <fieldset className="flex flex-col gap-3" aria-describedby={hintId}>
+      <legend className="mb-2 font-medium">{t("headersLegend")}</legend>
+      <p id={hintId} className="text-muted-foreground text-sm">
+        {t("headersHint", { max: maxWebhookHeaders })}
+      </p>
+      {draft.headers.map((row, index) => {
+        const nameId = `${idPrefix}-webhook-header-${String(index)}-name`;
+        const valueId = `${idPrefix}-webhook-header-${String(index)}-value`;
+
+        return (
+          <div
+            key={row.saved ? `saved-${row.name}` : `new-${String(index)}`}
+            className="flex max-w-xl flex-wrap items-end gap-2"
+          >
+            <div className="flex min-w-40 flex-1 flex-col gap-1">
+              <Label htmlFor={nameId}>{t("headerName")}</Label>
+              <Input
+                id={nameId}
+                name={nameId}
+                type="text"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={maxWebhookHeaderNameLength}
+                value={row.name}
+                readOnly={row.saved}
+                disabled={disabled}
+                aria-invalid={invalid ? true : undefined}
+                onChange={(event) => {
+                  onChange(
+                    withHeader(draft, index, { name: event.target.value })
+                  );
+                }}
+              />
+            </div>
+            <div className="flex min-w-40 flex-1 flex-col gap-1">
+              <Label htmlFor={valueId}>{t("headerValue")}</Label>
+              <Input
+                id={valueId}
+                name={valueId}
+                type="password"
+                autoComplete="new-password"
+                spellCheck={false}
+                maxLength={maxWebhookHeaderValueLength}
+                value={row.value}
+                placeholder={row.saved ? t("headerSet") : undefined}
+                disabled={disabled}
+                aria-describedby={row.saved ? `${valueId}-hint` : undefined}
+                onChange={(event) => {
+                  onChange(
+                    withHeader(draft, index, { value: event.target.value })
+                  );
+                }}
+              />
+              {row.saved ? (
+                <p
+                  id={`${valueId}-hint`}
+                  className="text-muted-foreground text-xs"
+                >
+                  {t("headerSetHint")}
+                </p>
+              ) : null}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
+              aria-label={
+                row.name.trim() === ""
+                  ? t("removeNewHeader")
+                  : t("removeHeader", { name: row.name })
+              }
+              onClick={() => {
+                onChange(withoutHeader(draft, index));
+              }}
+            >
+              {t("removeHeaderButton")}
+            </Button>
+          </div>
+        );
+      })}
+      <div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled || draft.headers.length >= maxWebhookHeaders}
+          onClick={() => {
+            onChange(withNewHeader(draft));
+          }}
+        >
+          {t("addHeader")}
+        </Button>
+      </div>
+    </fieldset>
+  );
+};
+
 /**
  * The fields of an endpoint: its address, what it is for, the events it is
  * sent, the channels it listens to, the workspaces a partner endpoint
- * listens to and, for a new one, whether it starts on, under why saving
- * them failed last.
+ * listens to, the headers it carries and, for a new one, whether it starts
+ * on, under why saving them failed last.
  */
 export const EndpointFieldsView = ({
   channels,
@@ -473,6 +602,13 @@ export const EndpointFieldsView = ({
           </p>
         </div>
       ) : null}
+      <HeadersFieldset
+        disabled={disabled}
+        draft={draft}
+        idPrefix={idPrefix}
+        invalid={error?.key === "headersRefused"}
+        onChange={onChange}
+      />
       {withEnabled ? (
         <div className="flex items-center gap-3">
           <Checkbox

@@ -13,6 +13,7 @@ const preferences = {
     postPublished: false,
     postReview: true,
     postUnconfirmed: true,
+    webhookFailing: true,
   },
   everyPost: false,
 };
@@ -77,6 +78,10 @@ describe(PreferencesFields, () => {
         ],
         [
           "People comment on published posts",
+          { checked: true, labelled: true },
+        ],
+        [
+          "Deliveries to a webhook endpoint fail for good, at most once a day for each endpoint",
           { checked: true, labelled: true },
         ],
         ["A post went out", { checked: false, labelled: true }],

@@ -460,6 +460,7 @@ if typing.TYPE_CHECKING:
         NoticeEvent_SubscriptionStarted,
         NoticeEvent_SubscriptionWithdrawn,
         NoticeEvent_TrialEnding,
+        NoticeEvent_WebhookDeliveriesFailing,
         NoticeEvent_WebhookEndpointDisabled,
     )
     from .notice_event_ad_boost_changed import NoticeEventAdBoostChanged
@@ -480,6 +481,7 @@ if typing.TYPE_CHECKING:
     from .notice_event_subscription_started import NoticeEventSubscriptionStarted
     from .notice_event_subscription_withdrawn import NoticeEventSubscriptionWithdrawn
     from .notice_event_trial_ending import NoticeEventTrialEnding
+    from .notice_event_webhook_deliveries_failing import NoticeEventWebhookDeliveriesFailing
     from .notice_event_webhook_endpoint_disabled import NoticeEventWebhookEndpointDisabled
     from .notice_page import NoticePage
     from .notification_preferences import NotificationPreferences
@@ -767,6 +769,9 @@ if typing.TYPE_CHECKING:
     from .webhook_event_type import WebhookEventType
     from .webhook_filter_refused_encoded import WebhookFilterRefusedEncoded
     from .webhook_filter_refused_encoded_field import WebhookFilterRefusedEncodedField
+    from .webhook_header import WebhookHeader
+    from .webhook_header_change import WebhookHeaderChange
+    from .webhook_headers_refused_encoded import WebhookHeadersRefusedEncoded
     from .webhook_redelivery_by_ids import WebhookRedeliveryByIds
     from .webhook_redelivery_of_failed import WebhookRedeliveryOfFailed
     from .webhook_redelivery_request import WebhookRedeliveryRequest
@@ -1232,6 +1237,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventSubscriptionStarted": ".notice_event_subscription_started",
     "NoticeEventSubscriptionWithdrawn": ".notice_event_subscription_withdrawn",
     "NoticeEventTrialEnding": ".notice_event_trial_ending",
+    "NoticeEventWebhookDeliveriesFailing": ".notice_event_webhook_deliveries_failing",
     "NoticeEventWebhookEndpointDisabled": ".notice_event_webhook_endpoint_disabled",
     "NoticeEvent_AdBoostChanged": ".notice_event",
     "NoticeEvent_AdConnectionReconnectRequired": ".notice_event",
@@ -1250,6 +1256,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEvent_SubscriptionStarted": ".notice_event",
     "NoticeEvent_SubscriptionWithdrawn": ".notice_event",
     "NoticeEvent_TrialEnding": ".notice_event",
+    "NoticeEvent_WebhookDeliveriesFailing": ".notice_event",
     "NoticeEvent_WebhookEndpointDisabled": ".notice_event",
     "NoticePage": ".notice_page",
     "NotificationPreferences": ".notification_preferences",
@@ -1536,6 +1543,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WebhookEventType": ".webhook_event_type",
     "WebhookFilterRefusedEncoded": ".webhook_filter_refused_encoded",
     "WebhookFilterRefusedEncodedField": ".webhook_filter_refused_encoded_field",
+    "WebhookHeader": ".webhook_header",
+    "WebhookHeaderChange": ".webhook_header_change",
+    "WebhookHeadersRefusedEncoded": ".webhook_headers_refused_encoded",
     "WebhookRedeliveryByIds": ".webhook_redelivery_by_ids",
     "WebhookRedeliveryOfFailed": ".webhook_redelivery_of_failed",
     "WebhookRedeliveryRequest": ".webhook_redelivery_request",
@@ -2025,6 +2035,7 @@ __all__ = [
     "NoticeEventSubscriptionStarted",
     "NoticeEventSubscriptionWithdrawn",
     "NoticeEventTrialEnding",
+    "NoticeEventWebhookDeliveriesFailing",
     "NoticeEventWebhookEndpointDisabled",
     "NoticeEvent_AdBoostChanged",
     "NoticeEvent_AdConnectionReconnectRequired",
@@ -2043,6 +2054,7 @@ __all__ = [
     "NoticeEvent_SubscriptionStarted",
     "NoticeEvent_SubscriptionWithdrawn",
     "NoticeEvent_TrialEnding",
+    "NoticeEvent_WebhookDeliveriesFailing",
     "NoticeEvent_WebhookEndpointDisabled",
     "NoticePage",
     "NotificationPreferences",
@@ -2329,6 +2341,9 @@ __all__ = [
     "WebhookEventType",
     "WebhookFilterRefusedEncoded",
     "WebhookFilterRefusedEncodedField",
+    "WebhookHeader",
+    "WebhookHeaderChange",
+    "WebhookHeadersRefusedEncoded",
     "WebhookRedeliveryByIds",
     "WebhookRedeliveryOfFailed",
     "WebhookRedeliveryRequest",

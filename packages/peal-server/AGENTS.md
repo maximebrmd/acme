@@ -119,7 +119,8 @@ and no socket, for tests.
   `/api/*` and those documents unchanged (`servedByApi`, and the matcher of
   `src/proxy.ts`: add a path to both), so Peal has one public origin;
   `/openapi.json` is reachable on the server only, and `/api/openapi.json` is
-  the same document for everyone.
+  the same document for everyone: the contract's `openApiDocument()`, the
+  events webhooks send included, both served by the discovery routes.
 - `ApiAnswersLive` (`src/app/answers.ts`), a global router middleware in
   `RoutesLive`, shapes every answer, a failure's included (it changes the
   response a cause would get and fails with the same cause, so logging,

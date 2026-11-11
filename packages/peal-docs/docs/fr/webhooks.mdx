@@ -36,6 +36,15 @@ Un point de terminaison, c’est une adresse, les événements qu’il veut rece
 
 Les filtres ne vérifient que la forme de leurs identifiants : un identifiant qui ne désigne rien ne correspond à rien, et un filtre reste tel que vous l’avez enregistré quand une chaîne est déconnectée ou qu’un espace de travail quitte le compte partenaire. Le formulaire du point de terminaison liste une telle chaîne à part, cochée, comme **Une chaîne qui n’est plus connectée** : décochez-la pour la retirer. Ils s’appliquent au moment où chaque événement se produit, avec le point de terminaison tel qu’il est alors ; [renvoyer une livraison](#log) l’envoie à son point de terminaison quoi que disent ses filtres aujourd’hui.
 
+### Des en-têtes à vous [#headers]
+
+Un point de terminaison peut porter jusqu’à 5 en-têtes de votre choix, envoyés avec chaque livraison à côté de ceux de Peal : un jeton que demande une passerelle devant votre serveur, par exemple, ou un en-tête pour router. Ils sont fixes : les mêmes à chaque livraison et à chaque tentative.
+
+- **Un nom** est un jeton HTTP (lettres, chiffres et ``!#$%&'*+.^_`|~-``), de 64 caractères au plus, une seule fois par point de terminaison quelle que soit sa casse. `Authorization` est permis. Peal refuse les noms qu’il pose ou qui décrivent la requête ou sa connexion : tout nom qui commence par `webhook-`, `Host`, `Content-Type`, `Content-Length`, `User-Agent`, `Cookie`, `Connection`, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Transfer-Encoding` et `Upgrade`. Aucun des vôtres ne remplace jamais un de ceux de Peal.
+- **Une valeur** est en ASCII visible sur une seule ligne, des espaces à l’intérieur mais à aucune extrémité, de 1 024 caractères au plus.
+- **Les valeurs ne se relisent pas.** Peal les garde chiffrées, comme le secret, et ne les montre plus jamais : le point de terminaison liste leurs noms (`headerNames`). Pour les changer, envoyez toute la liste du point de terminaison avec `headers` : un en-tête donné avec sa `value` la fixe, un en-tête donné par son seul `name` garde la valeur que le point de terminaison a sous ce nom (422 `WebhookHeadersRefused` s’il n’en a pas), et ceux qui manquent s’en vont. `[]` les retire tous, et omettre le champ les garde. Peal ne les écrit jamais dans ses journaux, ni dans le journal des livraisons.
+- **Elles ne sont pas signées.** La [signature](#verify) couvre l’identifiant, l’horodatage et le corps de l’événement, comme le dit la spécification : vérifiez-la quels que soient les en-têtes reçus.
+
 ## Le secret de signature [#secret]
 
 Peal génère un secret pour chaque point de terminaison : `whsec_` suivi de 32 octets aléatoires en base64. Il s’affiche une seule fois, à la création du point de terminaison, et Peal le garde chiffré : copiez-le à ce moment-là, dans les secrets de votre serveur.
@@ -85,6 +94,10 @@ Le point de terminaison est un tiers pour les personnes qui ont écrit la public
 
 Les types d’événements et leurs champs sont un contrat public. Peal ajoute des types d’événements, et des champs à un événement, sans changer `version` : ignorez les champs et les types que vous ne connaissez pas. Rien n’est renommé ni supprimé. Un changement que votre code ne pourrait pas lire viendrait comme une nouvelle version, envoyée à côté de celle-ci.
 
+### Dans le document OpenAPI [#openapi]
+
+Le document OpenAPI de l’API, à `/api/openapi.json`, décrit chaque événement dans sa section `webhooks` (OpenAPI 3.1) : une entrée par type, avec le schéma du corps et les trois en-têtes `webhook-`. La [référence de l’API](/reference) les montre. Les SDK n’ont pas d’événements typés : lisez un corps avec le JSON de votre langage, comme le montrent les exemples ci-dessous.
+
 ## Événements [#events]
 
 | Événement                                               | Quand                                                                                                      |
@@ -95,16 +108,22 @@ Les types d’événements et leurs champs sont un contrat public. Peal ajoute d
 | [`post.failed`](#post-failed)                           | Une publication n’est pas partie sur un canal                                                              |
 | [`post.unconfirmed`](#post-unconfirmed)                 | Peal ne peut pas savoir si une publication est en ligne sur un canal                                       |
 | [`post.cancelled`](#post-cancelled)                     | Une publication a été annulée                                                                              |
+| [`post.finished`](#post-finished)                       | Chaque canal d’une publication a son résultat                                                              |
 | [`post.approval_requested`](#post-approval-requested)   | Une publication attend une approbation                                                                     |
 | [`post.approved`](#post-approved)                       | Une publication qui attendait a été approuvée                                                              |
 | [`post.changes_requested`](#post-changes-requested)     | Des modifications ont été demandées sur une publication qui attendait                                      |
 | [`channel.connected`](#channel-connected)               | Un compte a été connecté, ou un canal de nouveau autorisé                                                  |
 | [`channel.disconnected`](#channel-disconnected)         | Un canal a été déconnecté                                                                                  |
 | [`channel.reconnect_needed`](#channel-reconnect-needed) | L’autorisation d’un canal ne fonctionne plus                                                               |
+| [`channel.disabled`](#channel-disabled)                 | Un membre a désactivé un canal                                                                             |
+| [`channel.enabled`](#channel-enabled)                   | Un membre a réactivé un canal                                                                              |
+| [`channel.expiring`](#channel-expiring)                 | L’autorisation d’un canal prend bientôt fin, et ne peut pas être renouvelée                                |
 | [`media.ready`](#media-ready)                           | Un fichier a été lu, et peut aller dans des publications                                                   |
 | [`media.failed`](#media-failed)                         | Un fichier a été refusé, ou n’a pas pu être lu                                                             |
 | [`comment.received`](#comment-received)                 | Quelqu’un a commenté une publication mise en ligne                                                         |
-| -----------------------------------------------         | ----------------------------------------------------------------------------------                         |
+| [`comment.replied`](#comment-replied)                   | Une réponse à un commentaire est partie depuis Peal                                                        |
+| [`boost.started`](#boost-started)                       | Une mise en avant a été créée et activée                                                                   |
+| [`boost.paused`](#boost-paused)                         | Un membre a mis une mise en avant en pause                                                                 |
 | [`boost.resumed`](#boost-resumed)                       | Un membre a relancé une mise en avant en pause                                                             |
 | [`boost.stopped`](#boost-stopped)                       | Un membre a arrêté une mise en avant pour de bon                                                           |
 | [`boost.ended`](#boost-ended)                           | La date de fin d’une mise en avant est passée                                                              |
@@ -354,6 +373,54 @@ La publication a été annulée. `targets` liste les canaux où elle ne partira 
 }
 ```
 
+### post.finished [#post-finished]
+
+Chaque canal de la publication a son résultat : elle y est en ligne, y a échoué, y est peut-être partie, ou y a été annulée. `post.published`, `post.failed` et `post.unconfirmed` disent chaque canal à mesure qu’il se termine ; celui-ci dit la publication entière une fois le dernier terminé, avec `outcome`, ce qu’ils donnent ensemble. Une publication renvoyée sur un canal se termine de nouveau quand ce tour se termine, et amène un autre `post.finished` avec son `round` ; un membre qui confirme un canal non confirmé en amène un de plus quand cela change `outcome`. Un point de terminaison qui écoute certains canaux le reçoit quand l’un des canaux de la publication en fait partie.
+
+| Champ         | Type    | Ce qu’il contient                                                                                                                                                                                                                                            |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `workspaceId` | chaîne  | L’espace de travail                                                                                                                                                                                                                                          |
+| `postId`      | chaîne  | La publication                                                                                                                                                                                                                                               |
+| `outcome`     | chaîne  | Ce que donnent ses canaux : `published` (chaque canal l’a en entier), `partiallyPublished` (certains l’ont), `unconfirmed` (au moins un l’a peut-être : vérifiez avant toute chose), `failed` (aucun ne l’a) ou `cancelled` (chaque canal a été annulé)      |
+| `finishedAt`  | chaîne  | Quand elle s’est terminée, sous forme d’instant en UTC                                                                                                                                                                                                       |
+| `round`       | entier  | Le dernier tour de la publication : 1, et un de plus chaque fois que l’un de ses canaux a été renvoyé                                                                                                                                                        |
+| `targets`     | tableau | Le résultat de chaque canal : `targetId`, `channelId`, `platform`, `status` (`published`, `failed`, `unconfirmed` ou `cancelled`), `failureReason` ([pourquoi](#post-failed) elle a échoué, ou null) et `permalink` (son adresse sur la plateforme, ou null) |
+
+```json title="post.finished"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e1a",
+  "type": "post.finished",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:04.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "outcome": "partiallyPublished",
+    "finishedAt": "2026-11-10T09:00:04.000Z",
+    "round": 1,
+    "targets": [
+      {
+        "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+        "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+        "platform": "mastodon",
+        "status": "published",
+        "failureReason": null,
+        "permalink": "https://mastodon.example/@peal_example/113456789012345678"
+      },
+      {
+        "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d16",
+        "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+        "platform": "bluesky",
+        "status": "failed",
+        "failureReason": "rateLimited",
+        "permalink": null
+      }
+    ]
+  }
+}
+```
+
 ### post.approval_requested [#post-approval-requested]
 
 Quelqu’un a demandé que la publication parte, dans un espace de travail qui demande des [approbations](/review) : elle attend. Elle garde son heure, et aucun `post.scheduled` n’est envoyé tant qu’elle n’est pas approuvée. Ce qu’une application y envoie ou y programme commence ainsi.
@@ -513,6 +580,83 @@ L’autorisation du canal ne fonctionne plus : rien n’y est publié tant que p
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
     "platform": "bluesky"
+  }
+}
+```
+
+### channel.disabled [#channel-disabled]
+
+Un membre a désactivé le canal : rien n’y est publié tant que personne ne le réactive. Une publication qui arrive à son heure sur ce canal y échoue (`channelDisabled`). Le canal garde son autorisation, ses publications et ses statistiques.
+
+| Champ         | Type   | Ce qu’il contient      |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | chaîne | L’espace de travail    |
+| `channelId`   | chaîne | Le canal               |
+| `platform`    | chaîne | La plateforme du canal |
+
+```json title="channel.disabled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0b",
+  "type": "channel.disabled",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+### channel.enabled [#channel-enabled]
+
+Un membre a réactivé le canal : il publie de nouveau. Quand son autorisation a cessé de fonctionner ou a expiré entre-temps, `channel.reconnect_needed` suit.
+
+| Champ         | Type   | Ce qu’il contient      |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | chaîne | L’espace de travail    |
+| `channelId`   | chaîne | Le canal               |
+| `platform`    | chaîne | La plateforme du canal |
+
+```json title="channel.enabled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0c",
+  "type": "channel.enabled",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+### channel.expiring [#channel-expiring]
+
+L’autorisation du canal ne peut pas être renouvelée, et prend fin à `expiresAt`, comme celle d’un profil LinkedIn après 60 jours : quelqu’un le [reconnecte](/channels#reconnect) avant, ou rien n’y est publié ensuite. Envoyé une fois pour chaque expiration, une semaine avant au plus ; programmez vos propres rappels à partir d’`expiresAt`.
+
+| Champ         | Type   | Ce qu’il contient                                             |
+| ------------- | ------ | ------------------------------------------------------------- |
+| `workspaceId` | chaîne | L’espace de travail                                           |
+| `channelId`   | chaîne | Le canal                                                      |
+| `platform`    | chaîne | La plateforme du canal                                        |
+| `expiresAt`   | chaîne | Quand son autorisation prend fin, sous forme d’instant en UTC |
+
+```json title="channel.expiring"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0d",
+  "type": "channel.expiring",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "linkedin",
+    "expiresAt": "2026-11-18T06:00:00.000Z"
   }
 }
 ```
@@ -961,7 +1105,7 @@ Une livraison en échec est retentée, 8 tentatives en tout, sur environ une jou
 | 7         | 8 heures après l’échec de la sixième     |
 | 8         | 8 heures après l’échec de la septième    |
 
-Après la huitième, la livraison a échoué pour de bon. Vous pouvez encore [la renvoyer](#log) à la main.
+Après la huitième, la livraison a échoué pour de bon. Vous pouvez encore [la renvoyer](#log) à la main. Tant que le point de terminaison reste actif, les membres qui gèrent les webhooks en sont prévenus, au plus une fois par jour pour chaque point de terminaison, par une [notification](/notifications#events), et un e-mail sauf s’ils l’ont désactivé.
 
 Peal désactive de lui-même un point de terminaison dans deux cas, et prévient alors les membres qui gèrent les webhooks, par une notification et un e-mail :
 
@@ -1182,7 +1326,7 @@ export const verify = (secret, headers, rawBody) => {
 | `GET /api/workspaces/{workspaceId}/webhooks`                                                 | Liste les points de terminaison, du plus ancien au plus récent                                                      |
 | `POST /api/workspaces/{workspaceId}/webhooks`                                                | Ajoute un point de terminaison, et répond son `secret` une seule fois                                               |
 | `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                    | En montre un                                                                                                        |
-| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Change son adresse, sa description, ses événements ou ses filtres, ou l’active ou le désactive                      |
+| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Change son adresse, sa description, ses événements, ses filtres ou ses en-têtes, ou l’active ou le désactive        |
 | `DELETE /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                 | Le supprime, avec son secret et son journal                                                                         |
 | `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/secret`                            | Renouvelle son secret, et répond le nouveau une seule fois                                                          |
 | `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Lui envoie un événement de test, ou un exemple de `eventType`                                                       |
@@ -1207,11 +1351,12 @@ curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
   -d '{
     "url": "https://hooks.example.com/peal",
     "description": "Système de commandes",
-    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"]
+    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"],
+    "headers": [{ "name": "Authorization", "value": "Bearer <le jeton de votre passerelle>" }]
   }'
 ```
 
-La réponse contient l’`endpoint` et son `secret`. Les réponses suivantes ne contiennent plus jamais le secret.
+La réponse contient l’`endpoint` et son `secret`. Les réponses suivantes ne contiennent plus jamais le secret. Ni la valeur d’un en-tête : le point de terminaison nomme ses [en-têtes](#headers) dans `headerNames`.
 
 Les erreurs suivent le format de l’API, chacune avec un `code` en snake case à côté de son nom, comme `webhook_url_refused` pour `WebhookUrlRefused` ([Erreurs](/api-conventions#errors)). Les requêtes d’une clé d’API comptent dans sa [limite de débit](/api-conventions#rate-limits).
 
@@ -1222,6 +1367,7 @@ Les erreurs suivent le format de l’API, chacune avec un `code` en snake case �
 | 409  | `TooManyWebhookEndpoints` | L’espace de travail a déjà 10 points de terminaison.                                              |
 | 409  | `WebhookEndpointDisabled` | Un test ou un renvoi a été demandé à un point de terminaison désactivé.                           |
 | 422  | `WebhookFilterRefused`    | `workspaceIds` sur un point de terminaison de portée `workspace` ; `field` le nomme.              |
+| 422  | `WebhookHeadersRefused`   | Un en-tête donné sans `value` que le point de terminaison n’a pas.                                |
 | 422  | `WebhookUrlRefused`       | Peal ne livre pas à cette adresse. `reason` dit pourquoi, ci-dessous.                             |
 | 429  | `TooManyWebhookSends`     | Les tests et renvois de l’heure sont épuisés : voir [le journal des livraisons](#log).            |
 | 503  | `WebhooksNotConfigured`   | L’instance ne peut pas garder de secret de signature : voir [Auto-hébergement](#self-hosting).    |

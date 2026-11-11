@@ -25,6 +25,7 @@ export const toEndpointView = (
     enabled: status._tag === "enabled",
     eventTypes: endpoint.eventTypes,
     failingSince: Option.getOrNull(endpoint.failingSince),
+    headerNames: endpoint.headerNames,
     id: endpoint.id,
     previousSecretExpiresAt: Option.getOrNull(endpoint.previousSecretExpiresAt),
     scope: endpoint.scope,

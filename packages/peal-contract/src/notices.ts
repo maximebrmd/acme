@@ -157,6 +157,13 @@ export const NoticeEventSchema = Schema.Union([
     host: Schema.String,
     reason: WebhookTurnOffReasonSchema,
   }),
+  // A delivery to a webhook endpoint that is still on failed for good, its
+  // attempts used up: send it again from the delivery log once the
+  // receiver works. Told once a day per endpoint.
+  Schema.TaggedStruct("WebhookDeliveriesFailing", {
+    endpointId: Schema.String,
+    host: Schema.String,
+  }),
   // What happened to a boost: it started, ended, failed (`reason`, one of
   // the boost failure reasons), used its whole budget, or Peal could not
   // learn whether it runs (`unconfirmed`: it may be spending). `budget` is

@@ -1484,6 +1484,7 @@
       "SubscriptionWithdrawn": "Your withdrawal from the {plan} subscription of {workspace} was received on {withdrawnAt, date, long} at {withdrawnAt, time, short}: it has ended, and {refunded} is refunded within 14 days.",
       "SubscriptionStarted": "{workspace} is subscribed to {plan} since {startedAt, date, long}, for {price} {interval, select, month {a month} other {a year}}, VAT included. As a consumer you may withdraw within 14 days.",
       "TrialStarted": "{workspace} is trying {plan} until {endsAt, date, long}: nothing is charged.",
+      "WebhookDeliveriesFailing": "A delivery to the webhook endpoint at {host} in {workspace} failed for good: the system behind it missed an event. The endpoint is still on. Fix the receiver, then send the failed deliveries again from the delivery log. After {days, number} days of failures, Peal turns the endpoint off.",
       "WebhookEndpointDisabled": "{reason, select, gone {The webhook endpoint at {host} in {workspace} was turned off: it answered 410 Gone, which asks for no more deliveries.} other {The webhook endpoint at {host} in {workspace} was turned off: every delivery had failed for {days, number} days. Fix the receiver, then turn it back on.}}",
       "TrialEndingOver": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan. It holds more than the free plan allows ({over}): from that day nothing is scheduled or published until it is back within it.",
       "AdBoostChanged": "{change, select, started {A boost started in {workspace}: it may spend up to its budget of {budget}, from the ad account’s payment method, until {endsAt, date, long}. Pause or stop it at any time on the post’s page.} ended {A boost in {workspace}, with a budget of {budget}, reached its end date ({endsAt, date, long}) and no longer runs. What it spent is on the post’s page.} failed {A boost in {workspace}, with a budget of {budget}, could not be made: {reason} Nothing ran, and nothing was spent.} budgetReached {A boost in {workspace} has spent its whole budget of {budget}. The ad network stops showing it; nothing more is spent on it.} unconfirmed {Peal told the ad network to run a boost in {workspace}, with a budget of {budget}, and could not learn whether it runs. It may be spending. Check it on the post’s page, and stop it there if it should not run.} other {A boost of {workspace} changed.}}",
@@ -1524,6 +1525,7 @@
       "postReview": "A post waits for my approval, or a post I follow is commented on, approved or sent back",
       "channelReconnect": "A channel must be reconnected, now or soon",
       "comments": "People comment on published posts",
+      "webhookFailing": "Deliveries to a webhook endpoint fail for good, at most once a day for each endpoint",
       "postPublished": "A post went out",
       "postsLegend": "Tell me about",
       "everyPost": "Every post of my workspaces, not only the ones I wrote",
@@ -2030,6 +2032,7 @@
         "failed": "A post fails on a channel",
         "unconfirmed": "A post may have gone out on a channel",
         "cancelled": "A post is cancelled",
+        "finished": "A post has its result on every channel",
         "approval_requested": "A post waits for an approval",
         "approved": "A post is approved",
         "changes_requested": "Changes are requested on a post"
@@ -2037,7 +2040,10 @@
       "channel": {
         "connected": "A channel is connected or reconnected",
         "disconnected": "A channel is disconnected",
-        "reconnect_needed": "A channel must be reconnected"
+        "reconnect_needed": "A channel must be reconnected",
+        "disabled": "A channel is turned off",
+        "enabled": "A channel is turned back on",
+        "expiring": "A channel’s sign-in ends soon"
       },
       "media": {
         "ready": "A file is ready for posts",
@@ -2132,6 +2138,17 @@
     "workspacesLabel": "Only these workspaces",
     "workspacesHint": "Ids of the partner’s workspaces, one a line, at most {max, number}. Leave it empty to hear every workspace; the home workspace is heard only if it is listed.",
     "channelsFilter": "Only events about {count, plural, one {# channel} other {# channels}}, and those about no channel",
+    "headersLegend": "Headers of your own",
+    "headersHint": "Sent with every delivery beside Peal’s own, as a gateway in front of your server may ask: {max, number} at most. Values are kept encrypted and never shown again; Peal’s signature does not cover them.",
+    "headerName": "Name",
+    "headerValue": "Value",
+    "headerSet": "set",
+    "headerSetHint": "Saved, never shown: type a new value to replace it.",
+    "addHeader": "Add a header",
+    "removeHeader": "Remove the header {name}",
+    "removeNewHeader": "Remove this header",
+    "removeHeaderButton": "Remove",
+    "headersShown": "Headers: {names}",
     "workspacesFilter": "Only {count, plural, one {# workspace} other {# workspaces}}",
     "statusFilter": "Status",
     "eventFilter": "Event",
@@ -2160,7 +2177,8 @@
       "tooMany": "The workspace already has {allowed, number} endpoints, the most it may. Delete one first.",
       "urlRefused": "{reason, select, malformed {This is not an address.} notHttps {The address must be HTTPS, on the default port.} credentials {The address must not carry a user name or a password.} tooLong {The address is too long.} notPublic {The address’s host is not public, so Peal does not send requests to it.} unknownHost {The address’s host does not exist.} other {Peal does not deliver to this address.}}",
       "unknown": "Something went wrong. Try again.",
-      "filterRefused": "Only a partner endpoint takes a list of workspaces, and each must be an id."
+      "filterRefused": "Only a partner endpoint takes a list of workspaces, and each must be an id.",
+      "headersRefused": "A saved header keeps its value only while its name stays: type its value again, or remove it."
     }
   },
   "AccountSettings": {

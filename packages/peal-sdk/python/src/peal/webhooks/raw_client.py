@@ -29,6 +29,8 @@ from ..types.webhook_endpoint import WebhookEndpoint
 from ..types.webhook_endpoint_scope import WebhookEndpointScope
 from ..types.webhook_endpoint_secret import WebhookEndpointSecret
 from ..types.webhook_event_type import WebhookEventType
+from ..types.webhook_header import WebhookHeader
+from ..types.webhook_header_change import WebhookHeaderChange
 from ..types.webhook_redelivery_request import WebhookRedeliveryRequest
 from pydantic import ValidationError
 
@@ -135,12 +137,13 @@ class RawWebhooksClient:
         channel_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
+        headers: typing.Optional[typing.Sequence[WebhookHeader]] = OMIT,
         scope: typing.Optional[WebhookEndpointScope] = OMIT,
         workspace_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[WebhookEndpointSecret]:
         """
-        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
+        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. `headers` (5 at most) go with every delivery beside Peal's own, which they never replace, for a gateway in front of the receiver that wants a token: a name is an HTTP token, once whatever its case, neither `host`, `content-type`, `content-length`, `user-agent`, `cookie`, a connection's own nor any `webhook-` name; a value is visible ASCII on one line, 1024 characters at most. Values are write-only: the endpoint shows their names (`headerNames`), never them. The signature does not cover them. Needs webhook:manage.
 
         Parameters
         ----------
@@ -155,6 +158,8 @@ class RawWebhooksClient:
         description : typing.Optional[str]
 
         enabled : typing.Optional[bool]
+
+        headers : typing.Optional[typing.Sequence[WebhookHeader]]
 
         scope : typing.Optional[WebhookEndpointScope]
 
@@ -179,6 +184,9 @@ class RawWebhooksClient:
                 "description": description,
                 "enabled": enabled,
                 "eventTypes": event_types,
+                "headers": convert_and_respect_annotation_metadata(
+                    object_=headers, annotation=typing.Sequence[WebhookHeader], direction="write"
+                ),
                 "scope": scope,
                 "url": url,
                 "workspaceIds": workspace_ids,
@@ -694,12 +702,13 @@ class RawWebhooksClient:
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
         event_types: typing.Optional[typing.Sequence[SubscribableWebhookEventType]] = OMIT,
+        headers: typing.Optional[typing.Sequence[WebhookHeaderChange]] = OMIT,
         url: typing.Optional[str] = OMIT,
         workspace_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[WebhookEndpoint]:
         """
-        Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+        Changes an endpoint's address, description, events, filters or headers, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). `headers` replaces every header it had, `[]` removing them all: a header given without `value` keeps the value it has under that name, as none is ever shown, and one it does not have needs a value. Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
 
         Parameters
         ----------
@@ -714,6 +723,8 @@ class RawWebhooksClient:
         enabled : typing.Optional[bool]
 
         event_types : typing.Optional[typing.Sequence[SubscribableWebhookEventType]]
+
+        headers : typing.Optional[typing.Sequence[WebhookHeaderChange]]
 
         url : typing.Optional[str]
 
@@ -738,6 +749,9 @@ class RawWebhooksClient:
                 "description": description,
                 "enabled": enabled,
                 "eventTypes": event_types,
+                "headers": convert_and_respect_annotation_metadata(
+                    object_=headers, annotation=typing.Sequence[WebhookHeaderChange], direction="write"
+                ),
                 "url": url,
                 "workspaceIds": workspace_ids,
             },
@@ -803,6 +817,17 @@ class RawWebhooksClient:
                 )
             if _response.status_code == 429:
                 raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 503:
+                raise ServiceUnavailableError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -1365,12 +1390,13 @@ class AsyncRawWebhooksClient:
         channel_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
+        headers: typing.Optional[typing.Sequence[WebhookHeader]] = OMIT,
         scope: typing.Optional[WebhookEndpointScope] = OMIT,
         workspace_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[WebhookEndpointSecret]:
         """
-        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
+        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. `headers` (5 at most) go with every delivery beside Peal's own, which they never replace, for a gateway in front of the receiver that wants a token: a name is an HTTP token, once whatever its case, neither `host`, `content-type`, `content-length`, `user-agent`, `cookie`, a connection's own nor any `webhook-` name; a value is visible ASCII on one line, 1024 characters at most. Values are write-only: the endpoint shows their names (`headerNames`), never them. The signature does not cover them. Needs webhook:manage.
 
         Parameters
         ----------
@@ -1385,6 +1411,8 @@ class AsyncRawWebhooksClient:
         description : typing.Optional[str]
 
         enabled : typing.Optional[bool]
+
+        headers : typing.Optional[typing.Sequence[WebhookHeader]]
 
         scope : typing.Optional[WebhookEndpointScope]
 
@@ -1409,6 +1437,9 @@ class AsyncRawWebhooksClient:
                 "description": description,
                 "enabled": enabled,
                 "eventTypes": event_types,
+                "headers": convert_and_respect_annotation_metadata(
+                    object_=headers, annotation=typing.Sequence[WebhookHeader], direction="write"
+                ),
                 "scope": scope,
                 "url": url,
                 "workspaceIds": workspace_ids,
@@ -1924,12 +1955,13 @@ class AsyncRawWebhooksClient:
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
         event_types: typing.Optional[typing.Sequence[SubscribableWebhookEventType]] = OMIT,
+        headers: typing.Optional[typing.Sequence[WebhookHeaderChange]] = OMIT,
         url: typing.Optional[str] = OMIT,
         workspace_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[WebhookEndpoint]:
         """
-        Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+        Changes an endpoint's address, description, events, filters or headers, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). `headers` replaces every header it had, `[]` removing them all: a header given without `value` keeps the value it has under that name, as none is ever shown, and one it does not have needs a value. Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
 
         Parameters
         ----------
@@ -1944,6 +1976,8 @@ class AsyncRawWebhooksClient:
         enabled : typing.Optional[bool]
 
         event_types : typing.Optional[typing.Sequence[SubscribableWebhookEventType]]
+
+        headers : typing.Optional[typing.Sequence[WebhookHeaderChange]]
 
         url : typing.Optional[str]
 
@@ -1968,6 +2002,9 @@ class AsyncRawWebhooksClient:
                 "description": description,
                 "enabled": enabled,
                 "eventTypes": event_types,
+                "headers": convert_and_respect_annotation_metadata(
+                    object_=headers, annotation=typing.Sequence[WebhookHeaderChange], direction="write"
+                ),
                 "url": url,
                 "workspaceIds": workspace_ids,
             },
@@ -2033,6 +2070,17 @@ class AsyncRawWebhooksClient:
                 )
             if _response.status_code == 429:
                 raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 503:
+                raise ServiceUnavailableError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,

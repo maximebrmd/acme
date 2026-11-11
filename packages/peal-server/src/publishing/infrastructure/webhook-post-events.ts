@@ -123,9 +123,10 @@ const makeTelling = Effect.gen(function* makeTelling() {
 /**
  * PostEvents through the webhooks context: `post.scheduled` for each
  * schedule or move (keyed by the post's schedule revision),
- * `post.unscheduled`, `post.cancelled` with the targets cancelled then, and
+ * `post.unscheduled`, `post.cancelled` with the targets cancelled then,
  * what a member found for an unconfirmed target, as the `post.published`
- * or `post.failed` it turned out to be.
+ * or `post.failed` it turned out to be, and `post.finished` with every
+ * target's result, once per round and outcome.
  */
 export const WebhookPostEvents = Layer.effect(
   PostEvents,
@@ -191,10 +192,73 @@ export const WebhookPostEvents = Layer.effect(
       );
     });
 
+    // Each target's result, once every one has its own: none while one
+    // is still pending or publishing.
+    const resultsOf = Effect.fn("PostEvents.resultsOf")(function* resultsOf(
+      targets: readonly PostTarget[]
+    ) {
+      const refs = yield* refsOf(targets);
+
+      return targets.flatMap((target, index) => {
+        const ref = refs[index];
+        const { status } = target;
+
+        if (
+          ref === undefined ||
+          status._tag === "pending" ||
+          status._tag === "publishing"
+        ) {
+          return [];
+        }
+
+        return [
+          {
+            ...ref,
+            failureReason: status._tag === "failed" ? status.reason : null,
+            permalink:
+              status._tag === "published"
+                ? Option.getOrNull(status.permalink)
+                : null,
+            status: status._tag,
+          },
+        ];
+      });
+    });
+
+    // Keyed by the post's latest round and its outcome: a repost that ends
+    // is told again, and so is a confirmation that changes the outcome, a
+    // second settling of the same round with the same outcome never.
+    const finished = Effect.fn("PostEvents.finished")(function* finished(
+      post: Post,
+      targets: readonly PostTarget[]
+    ) {
+      const { status } = post;
+      const results = yield* resultsOf(targets);
+
+      if (status._tag !== "finished" || results.length !== targets.length) {
+        return;
+      }
+
+      const round = Math.max(1, ...targets.map((target) => target.round));
+
+      yield* publish(`post:${post.id}:finished:${round}:${status.outcome}`, {
+        data: {
+          finishedAt: status.finishedAt,
+          outcome: status.outcome,
+          postId: post.id,
+          round,
+          targets: results,
+          workspaceId: post.workspaceId,
+        },
+        type: "post.finished",
+      });
+    });
+
     return PostEvents.of({
       cancelled: (post, targets) => neverStopping(cancelled(post, targets)),
       confirmed: (post, target) =>
         neverStopping(settled(post, target, "confirmed")),
+      finished: (post, targets) => neverStopping(finished(post, targets)),
       scheduled: (post, targets) => neverStopping(scheduled(post, targets)),
       unscheduled: (post) => neverStopping(unscheduled(post)),
     });

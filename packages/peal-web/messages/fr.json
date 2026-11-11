@@ -1484,6 +1484,7 @@
       "SubscriptionWithdrawn": "Votre rétractation de l’abonnement {plan} de {workspace} a été reçue le {withdrawnAt, date, long} à {withdrawnAt, time, short} : il a pris fin, et {refunded} vous est remboursé sous 14 jours.",
       "SubscriptionStarted": "{workspace} est abonné à {plan} depuis le {startedAt, date, long}, pour {price} TTC {interval, select, month {par mois} other {par an}}. En tant que consommateur, vous pouvez vous rétracter dans les 14 jours.",
       "TrialStarted": "{workspace} essaie {plan} jusqu’au {endsAt, date, long} : rien n’est facturé.",
+      "WebhookDeliveriesFailing": "Une livraison vers le point de terminaison de webhook de {host} dans {workspace} a échoué pour de bon : le système derrière lui a manqué un événement. Le point de terminaison est toujours actif. Corrigez le destinataire, puis renvoyez les livraisons échouées depuis le journal des livraisons. Après {days, number} jours d’échecs, Peal désactive le point de terminaison.",
       "WebhookEndpointDisabled": "{reason, select, gone {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : il a répondu 410 Gone, ce qui demande de ne plus rien lui livrer.} other {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : toutes les livraisons échouaient depuis {days, number} jours. Corrigez le destinataire, puis réactivez-le.}}",
       "TrialEndingOver": "L’essai {plan} de {workspace} prend fin le {endsAt, date, long}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement. Il dépasse ce que permet l’offre gratuite ({over}) : à partir de ce jour, rien n’est programmé ni publié tant qu’il n’y est pas revenu.",
       "AdBoostChanged": "{change, select, started {Une mise en avant a démarré dans {workspace} : elle peut dépenser jusqu’à son budget de {budget}, sur le moyen de paiement du compte publicitaire, jusqu’au {endsAt, date, long}. Mettez-la en pause ou arrêtez-la à tout moment depuis la page de la publication.} ended {Une mise en avant dans {workspace}, d’un budget de {budget}, a atteint sa date de fin ({endsAt, date, long}) et n’est plus diffusée. Ce qu’elle a dépensé figure sur la page de la publication.} failed {Une mise en avant dans {workspace}, d’un budget de {budget}, n’a pas pu être créée : {reason} Rien n’a été diffusé, et rien n’a été dépensé.} budgetReached {Une mise en avant dans {workspace} a dépensé tout son budget de {budget}. Le réseau publicitaire cesse de la diffuser ; plus rien n’est dépensé pour elle.} unconfirmed {Peal a demandé au réseau publicitaire de diffuser une mise en avant dans {workspace}, d’un budget de {budget}, et n’a pas pu savoir si elle est diffusée. Elle dépense peut-être. Vérifiez-la sur la page de la publication, et arrêtez-la si elle ne doit pas être diffusée.} other {Une mise en avant de {workspace} a changé.}}",
@@ -1524,6 +1525,7 @@
       "postReview": "Une publication attend mon approbation, ou une publication que je suis est commentée, approuvée ou renvoyée",
       "channelReconnect": "Un canal doit être reconnecté, maintenant ou bientôt",
       "comments": "Des personnes commentent des publications en ligne",
+      "webhookFailing": "Des livraisons vers un point de terminaison de webhook échouent pour de bon, au plus une fois par jour pour chacun",
       "postPublished": "Une publication est partie",
       "postsLegend": "Me prévenir pour",
       "everyPost": "Toutes les publications de mes espaces de travail, pas seulement les miennes",
@@ -2030,6 +2032,7 @@
         "failed": "Une publication échoue sur un canal",
         "unconfirmed": "Une publication est peut-être partie sur un canal",
         "cancelled": "Une publication est annulée",
+        "finished": "Une publication a son résultat sur chaque canal",
         "approval_requested": "Une publication attend une approbation",
         "approved": "Une publication est approuvée",
         "changes_requested": "Des modifications sont demandées sur une publication"
@@ -2037,7 +2040,10 @@
       "channel": {
         "connected": "Un canal est connecté ou reconnecté",
         "disconnected": "Un canal est déconnecté",
-        "reconnect_needed": "Un canal doit être reconnecté"
+        "reconnect_needed": "Un canal doit être reconnecté",
+        "disabled": "Un canal est désactivé",
+        "enabled": "Un canal est réactivé",
+        "expiring": "La connexion d’un canal expire bientôt"
       },
       "media": {
         "ready": "Un fichier est prêt pour les publications",
@@ -2132,6 +2138,17 @@
     "workspacesLabel": "Seulement ces espaces de travail",
     "workspacesHint": "Les identifiants des espaces de travail du partenaire, un par ligne, {max, number} au plus. Laissez vide pour entendre tous les espaces de travail ; l’espace de travail principal n’est entendu que s’il est listé.",
     "channelsFilter": "Seulement les événements {count, plural, one {d’# chaîne} other {de # chaînes}}, et ceux sans chaîne",
+    "headersLegend": "Des en-têtes à vous",
+    "headersHint": "Envoyés avec chaque livraison à côté de ceux de Peal, comme peut le demander une passerelle devant votre serveur : {max, number} au plus. Les valeurs sont gardées chiffrées et ne s’affichent plus jamais ; la signature de Peal ne les couvre pas.",
+    "headerName": "Nom",
+    "headerValue": "Valeur",
+    "headerSet": "défini",
+    "headerSetHint": "Enregistrée, jamais affichée : saisissez une nouvelle valeur pour la remplacer.",
+    "addHeader": "Ajouter un en-tête",
+    "removeHeader": "Retirer l’en-tête {name}",
+    "removeNewHeader": "Retirer cet en-tête",
+    "removeHeaderButton": "Retirer",
+    "headersShown": "En-têtes : {names}",
     "workspacesFilter": "Seulement {count, plural, one {# espace de travail} other {# espaces de travail}}",
     "statusFilter": "Statut",
     "eventFilter": "Événement",
@@ -2160,7 +2177,8 @@
       "tooMany": "L’espace de travail a déjà {allowed, number} points de terminaison, le maximum. Supprimez-en un d’abord.",
       "urlRefused": "{reason, select, malformed {Ce n’est pas une adresse.} notHttps {L’adresse doit être en HTTPS, sur le port par défaut.} credentials {L’adresse ne doit porter ni nom d’utilisateur ni mot de passe.} tooLong {L’adresse est trop longue.} notPublic {L’hôte de l’adresse n’est pas public, donc Peal ne lui envoie aucune requête.} unknownHost {L’hôte de l’adresse n’existe pas.} other {Peal ne livre pas à cette adresse.}}",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "filterRefused": "Seul un point de terminaison partenaire prend une liste d’espaces de travail, et chacun doit être un identifiant."
+      "filterRefused": "Seul un point de terminaison partenaire prend une liste d’espaces de travail, et chacun doit être un identifiant.",
+      "headersRefused": "Un en-tête enregistré garde sa valeur tant que son nom reste : saisissez de nouveau sa valeur, ou retirez-le."
     }
   },
   "AccountSettings": {

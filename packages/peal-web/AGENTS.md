@@ -347,5 +347,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   always sends `channelIds`, an empty list hearing every channel), a status
   and event filter on each log, a **Failed** tab across endpoints
   (`searchPage`), "Send all failed again" naming how many and the hour's
-  budget, and a test event type (a sample). Every string is in the
-  `Webhooks` namespace, en and fr.
+  budget, and a test event type (a sample). Headers are rows (`HeaderRow`):
+  a saved one shows its name and its value as "set", never the value, and
+  keeps it unless typed again; an edit sends `headers` only when a row
+  changed, the whole list, a saved row without a value by its name alone
+  (the server keeps its value). Values are typed in password fields. Every
+  string is in the `Webhooks` namespace, en and fr.

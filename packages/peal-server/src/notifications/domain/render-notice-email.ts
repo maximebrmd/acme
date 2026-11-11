@@ -277,6 +277,10 @@ const contentOf = (
         ["standing", standingIn(catalog, over, locale)],
       ],
     }),
+    WebhookDeliveriesFailing: ({ host }): Content => ({
+      messages: catalog.webhookDeliveriesFailing,
+      values: [["host", host]],
+    }),
     WebhookEndpointDisabled: ({ host, reason }): Content => ({
       messages: catalog.webhookEndpointDisabled,
       values: [

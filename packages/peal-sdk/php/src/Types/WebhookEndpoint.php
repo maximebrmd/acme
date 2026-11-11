@@ -57,6 +57,12 @@ class WebhookEndpoint extends JsonSerializableType
     public ?string $failingSince;
 
     /**
+     * @var array<string> $headerNames
+     */
+    #[JsonProperty('headerNames'), ArrayType(['string'])]
+    public array $headerNames;
+
+    /**
      * @var string $id
      */
     #[JsonProperty('id')]
@@ -99,6 +105,7 @@ class WebhookEndpoint extends JsonSerializableType
      *   description: string,
      *   enabled: bool,
      *   eventTypes: array<value-of<SubscribableWebhookEventType>>,
+     *   headerNames: array<string>,
      *   id: string,
      *   scope: value-of<WebhookEndpointScope>,
      *   updatedAt: string,
@@ -121,6 +128,7 @@ class WebhookEndpoint extends JsonSerializableType
         $this->enabled = $values['enabled'];
         $this->eventTypes = $values['eventTypes'];
         $this->failingSince = $values['failingSince'] ?? null;
+        $this->headerNames = $values['headerNames'];
         $this->id = $values['id'];
         $this->previousSecretExpiresAt = $values['previousSecretExpiresAt'] ?? null;
         $this->scope = $values['scope'];

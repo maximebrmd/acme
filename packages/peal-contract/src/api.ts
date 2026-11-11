@@ -1218,13 +1218,17 @@ export { WebhookEndpointNotFound } from "./webhook-endpoint-not-found.ts";
 
 export { WebhookFilterRefused } from "./webhook-filter-refused.ts";
 
+export { WebhookHeadersRefused } from "./webhook-headers-refused.ts";
+
 export {
   MediaFailureReasonSchema,
   WebhookReviewPartySchema,
   SubscribableWebhookEventTypeSchema,
   webhookEventVersion,
   WebhookEventTypeSchema,
+  WebhookFinishedTargetSchema,
   WebhookPayloadSchema,
+  WebhookSettledTargetStatusSchema,
   WebhookTargetSchema,
 } from "./webhook-events.ts";
 
@@ -1233,7 +1237,9 @@ export type {
   WebhookReviewParty,
   SubscribableWebhookEventType,
   WebhookEventType,
+  WebhookFinishedTarget,
   WebhookPayload,
+  WebhookSettledTargetStatus,
   WebhookTarget,
 } from "./webhook-events.ts";
 
@@ -1253,6 +1259,10 @@ export {
   maxWebhookEndpoints,
   maxWebhookFilterChannels,
   maxWebhookFilterWorkspaces,
+  maxWebhookHeaderNameLength,
+  maxWebhookHeaders,
+  maxWebhookHeaderValueLength,
+  refusedWebhookHeaderNames,
   webhookBulkRedeliveriesPerHour,
   webhookManualSendsPerHour,
   maxWebhookUrlLength,
@@ -1270,6 +1280,8 @@ export {
   WebhookEndpointScopeSchema,
   WebhookEndpointSecretSchema,
   webhookFailingDays,
+  WebhookHeaderChangeSchema,
+  WebhookHeaderSchema,
   WebhookRedeliveryRequestSchema,
   WebhookRedeliverySkipSchema,
   WebhooksApi,
@@ -1288,6 +1300,8 @@ export type {
   WebhookEndpoint,
   WebhookEndpointChange,
   WebhookEndpointScope,
+  WebhookHeader,
+  WebhookHeaderChange,
   WebhookEndpointSecret,
   WebhookRedeliveryRequest,
   WebhookRedeliverySkip,

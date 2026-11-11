@@ -29,6 +29,10 @@ public class ListTest : BaseMockServerTest
                   "post.scheduled"
                 ],
                 "failingSince": "failingSince",
+                "headerNames": [
+                  "headerNames",
+                  "headerNames"
+                ],
                 "id": "id",
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
                 "scope": "workspace",
@@ -54,6 +58,10 @@ public class ListTest : BaseMockServerTest
                   "post.scheduled"
                 ],
                 "failingSince": "failingSince",
+                "headerNames": [
+                  "headerNames",
+                  "headerNames"
+                ],
                 "id": "id",
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
                 "scope": "workspace",
@@ -105,6 +113,9 @@ public class ListTest : BaseMockServerTest
                   "post.scheduled"
                 ],
                 "failingSince": "failingSince",
+                "headerNames": [
+                  "headerNames"
+                ],
                 "id": "id",
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
                 "scope": "workspace",

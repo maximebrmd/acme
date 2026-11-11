@@ -6635,7 +6635,7 @@ client.lookups.run(
 </details>
 
 ## webhooks
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L38-L68">list</a>(...) -> typing.List[WebhookEndpoint]</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L40-L70">list</a>(...) -> typing.List[WebhookEndpoint]</code></summary>
 <dl>
 <dd>
 
@@ -6708,7 +6708,7 @@ client.webhooks.list(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L70-L136">create</a>(...) -> WebhookEndpointSecret</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L72-L142">create</a>(...) -> WebhookEndpointSecret</code></summary>
 <dl>
 <dd>
 
@@ -6720,7 +6720,7 @@ client.webhooks.list(
 <dl>
 <dd>
 
-Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.
+Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. `channelIds` (50 at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of `eventTypes` when they are not wanted. `workspaceIds` (200 at most), on a `partner` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. `headers` (5 at most) go with every delivery beside Peal's own, which they never replace, for a gateway in front of the receiver that wants a token: a name is an HTTP token, once whatever its case, neither `host`, `content-type`, `content-length`, `user-agent`, `cookie`, a connection's own nor any `webhook-` name; a value is visible ASCII on one line, 1024 characters at most. Values are write-only: the endpoint shows their names (`headerNames`), never them. The signature does not cover them. Needs webhook:manage.
 </dd>
 </dl>
 </dd>
@@ -6813,6 +6813,14 @@ client.webhooks.create(
 <dl>
 <dd>
 
+**headers:** `typing.Optional[typing.List[WebhookHeader]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **scope:** `typing.Optional[WebhookEndpointScope]` 
     
 </dd>
@@ -6841,7 +6849,7 @@ client.webhooks.create(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L138-L202">search_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L144-L208">search_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
 <dl>
 <dd>
 
@@ -6970,7 +6978,7 @@ client.webhooks.search_deliveries(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L204-L243">redeliver_many</a>(...) -> WebhookBulkRedelivery</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L210-L249">redeliver_many</a>(...) -> WebhookBulkRedelivery</code></summary>
 <dl>
 <dd>
 
@@ -7056,7 +7064,7 @@ client.webhooks.redeliver_many(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L245-L278">get</a>(...) -> WebhookEndpoint</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L251-L284">get</a>(...) -> WebhookEndpoint</code></summary>
 <dl>
 <dd>
 
@@ -7138,7 +7146,7 @@ client.webhooks.get(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L280-L312">delete</a>(...)</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L286-L318">delete</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -7220,7 +7228,7 @@ client.webhooks.delete(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L314-L379">update</a>(...) -> WebhookEndpoint</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L320-L389">update</a>(...) -> WebhookEndpoint</code></summary>
 <dl>
 <dd>
 
@@ -7232,7 +7240,7 @@ client.webhooks.delete(
 <dl>
 <dd>
 
-Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+Changes an endpoint's address, description, events, filters or headers, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). `headers` replaces every header it had, `[]` removing them all: a header given without `value` keeps the value it has under that name, as none is ever shown, and one it does not have needs a value. Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
 </dd>
 </dl>
 </dd>
@@ -7322,6 +7330,14 @@ client.webhooks.update(
 <dl>
 <dd>
 
+**headers:** `typing.Optional[typing.List[WebhookHeaderChange]]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **url:** `typing.Optional[str]` 
     
 </dd>
@@ -7350,7 +7366,7 @@ client.webhooks.update(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L381-L414">rotate_secret</a>(...) -> WebhookEndpointSecret</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L391-L424">rotate_secret</a>(...) -> WebhookEndpointSecret</code></summary>
 <dl>
 <dd>
 
@@ -7432,7 +7448,7 @@ client.webhooks.rotate_secret(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L416-L458">send_test</a>(...) -> WebhookDelivery</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L426-L468">send_test</a>(...) -> WebhookDelivery</code></summary>
 <dl>
 <dd>
 
@@ -7522,7 +7538,7 @@ client.webhooks.send_test(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L460-L517">list_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L470-L527">list_deliveries</a>(...) -> WebhookDeliveryPage</code></summary>
 <dl>
 <dd>
 
@@ -7636,7 +7652,7 @@ client.webhooks.list_deliveries(
 </dl>
 </details>
 
-<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L519-L560">redeliver</a>(...) -> WebhookDelivery</code></summary>
+<details><summary><code>client.webhooks.<a href="src/peal/webhooks/client.py#L529-L570">redeliver</a>(...) -> WebhookDelivery</code></summary>
 <dl>
 <dd>
 

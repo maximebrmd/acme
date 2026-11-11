@@ -24,6 +24,9 @@ public record WebhookEndpointChange
     [JsonPropertyName("eventTypes")]
     public IEnumerable<SubscribableWebhookEventType>? EventTypes { get; set; }
 
+    [JsonPropertyName("headers")]
+    public IEnumerable<WebhookHeaderChange>? Headers { get; set; }
+
     [JsonPropertyName("url")]
     public string? Url { get; set; }
 

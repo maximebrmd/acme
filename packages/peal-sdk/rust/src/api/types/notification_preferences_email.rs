@@ -19,6 +19,9 @@ pub struct NotificationPreferencesEmail {
     #[serde(rename = "postUnconfirmed")]
     #[serde(default)]
     pub post_unconfirmed: bool,
+    #[serde(rename = "webhookFailing")]
+    #[serde(default)]
+    pub webhook_failing: bool,
 }
 
 impl NotificationPreferencesEmail {
@@ -36,6 +39,7 @@ pub struct NotificationPreferencesEmailBuilder {
     post_published: Option<bool>,
     post_review: Option<bool>,
     post_unconfirmed: Option<bool>,
+    webhook_failing: Option<bool>,
 }
 
 impl NotificationPreferencesEmailBuilder {
@@ -69,6 +73,11 @@ impl NotificationPreferencesEmailBuilder {
         self
     }
 
+    pub fn webhook_failing(mut self, value: bool) -> Self {
+        self.webhook_failing = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`NotificationPreferencesEmail`].
     /// This method will fail if any of the following fields are not set:
     /// - [`channel_reconnect`](NotificationPreferencesEmailBuilder::channel_reconnect)
@@ -77,6 +86,7 @@ impl NotificationPreferencesEmailBuilder {
     /// - [`post_published`](NotificationPreferencesEmailBuilder::post_published)
     /// - [`post_review`](NotificationPreferencesEmailBuilder::post_review)
     /// - [`post_unconfirmed`](NotificationPreferencesEmailBuilder::post_unconfirmed)
+    /// - [`webhook_failing`](NotificationPreferencesEmailBuilder::webhook_failing)
     pub fn build(self) -> Result<NotificationPreferencesEmail, BuildError> {
         Ok(NotificationPreferencesEmail {
             channel_reconnect: self
@@ -97,6 +107,9 @@ impl NotificationPreferencesEmailBuilder {
             post_unconfirmed: self
                 .post_unconfirmed
                 .ok_or_else(|| BuildError::missing_field("post_unconfirmed"))?,
+            webhook_failing: self
+                .webhook_failing
+                .ok_or_else(|| BuildError::missing_field("webhook_failing"))?,
         })
     }
 }

@@ -11,6 +11,7 @@ import {
   WebhookEndpointDisabled,
   WebhookEndpointNotFound,
   WebhookFilterRefused,
+  WebhookHeadersRefused,
   WebhooksNotConfigured,
   WebhookUrlRefused,
 } from "peal-contract";
@@ -58,6 +59,14 @@ const filterRefused = ({
 }) => Effect.fail(new WebhookFilterRefused({ field }));
 
 const endpointNotFound = () => Effect.fail(new WebhookEndpointNotFound());
+
+// The contract's schema refuses a new endpoint's headers first, by the same
+// rules (test/webhooks/api/contract.test.ts): a refusal there is a bug.
+const headersRefused = () =>
+  Effect.die("The contract accepted headers the endpoint refuses");
+
+// A change's header without a value the endpoint does not have.
+const noHeaderToKeep = () => Effect.fail(new WebhookHeadersRefused());
 
 const endpointDisabled = () => Effect.fail(new WebhookEndpointDisabled());
 
@@ -109,6 +118,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
               description: payload.description ?? "",
               enabled: payload.enabled ?? true,
               eventTypes: payload.eventTypes,
+              headers: payload.headers ?? [],
               scope: payload.scope ?? "workspace",
               url: payload.url,
               workspaceIds: payload.workspaceIds ?? [],
@@ -118,6 +128,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
               Effect.catchTags({
                 DatabaseError: Effect.die,
                 FilterRefused: filterRefused,
+                HeadersRefused: headersRefused,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: forbidden,
                 PartnerScopeUnavailable: () =>
@@ -310,8 +321,10 @@ export const WebhooksHandlers = HttpApiBuilder.group(
                 DatabaseError: Effect.die,
                 EndpointNotFound: endpointNotFound,
                 FilterRefused: filterRefused,
+                HeadersRefused: noHeaderToKeep,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: forbidden,
+                SecretsNotConfigured: notConfigured,
                 UrlNotDeliverable: urlRefused,
               })
             );

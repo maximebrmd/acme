@@ -12,13 +12,20 @@ peal webhooks create --url https://hooks.example.com/peal --events post.publishe
 peal webhooks create --url https://hooks.example.com/peal --events post.published --channel <channel-id> --json
 peal webhooks update <endpoint-id> --channel <channel-id> --json
 peal webhooks update <endpoint-id> --clear-channels --json
+peal webhooks update <endpoint-id> --header "Authorization: Bearer $GATEWAY_TOKEN" --json
+peal webhooks update <endpoint-id> --clear-headers --json
 ```
 
 `create` prints the signing secret once: give it to the user as it is, and
-keep it nowhere else. `--channel` narrows an endpoint to the events about
+keep it nowhere else. `post.finished` tells once every channel of a post has
+its result, with each one's; `channel.expiring` that a channel's sign-in
+ends soon. `--channel` narrows an endpoint to the events about
 those channels; events about no channel (files, boosts) still reach it.
 `--workspace-id`, with `--partner`, narrows a partner endpoint to some of the
-partner's workspaces.
+partner's workspaces. `--header "Name: value"` (5 at most) adds a header to
+every delivery, for a gateway in front of the receiver; `update` replaces
+them all, `--clear-headers` removes them. Take a value from the user, never
+repeat it: it is write-only, and the endpoint shows `headerNames` only.
 
 ## Deliveries
 
@@ -39,7 +46,7 @@ These make Peal call the receivers: do them when the user asks.
 
 ```sh
 peal webhooks test <endpoint-id> --json
-peal webhooks test <endpoint-id> --event post.published --json
+peal webhooks test <endpoint-id> --event post.finished --json
 peal webhooks redeliver --endpoint <endpoint-id> <delivery-id> --json
 peal webhooks redeliver --failed --endpoint <endpoint-id> --json
 peal webhooks redeliver <delivery-id> <delivery-id> --json

@@ -20,6 +20,15 @@
   scripts/compat.ts --release --date … --title …` (in `packages/peal-sdk`)
   writes, when the SDKs are released: it records what changed and makes the
   current document the released one.
+- `openApiDocument()` (`peal-contract/openapi-document`) is the API's
+  OpenAPI 3.1 document with a `webhooks` section: one entry per event type
+  and `webhook.test`, each a `post` with its `operationId`
+  (`on<PascalType>`), the three `webhook-` headers, and its payload, a
+  component (`Webhook<PascalType>Payload`, registered through
+  `HttpApi.AdditionalSchemas` so `$ref`s match). `scripts/openapi.ts` writes
+  it for the docs and the server serves it at `/api/openapi.json` and
+  `/openapi.json`: the server's tests check they are equal and list every
+  event type. A new event type needs its summary there.
 - Every contract error spreads `errorEnvelope` first, and its `code` is its
   tag in snake case (`errorCodeOf`): a tag never changes once published.
   The server's guide says how answers are shaped

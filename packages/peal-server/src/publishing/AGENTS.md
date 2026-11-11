@@ -318,6 +318,13 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   transaction that settles it (`recordTargetRun`, and `claimPostRun` for
   missed targets). `NotifiedPublicationOutcomes` keys the notice by target and
   round, and a bug in telling is logged, never stops publishing.
+- Every place a post becomes `finished` tells `PostEvents.finished` with
+  its targets, in that transaction: `finishIfSettled` (the last target
+  settling, `completePostRun`), `claimPostRun`'s missed targets, a cancel
+  that leaves nothing to send, and `confirm` revising the outcome. The
+  webhook keys it by the highest target round and the outcome, so a
+  repost that ends, or a confirmation that changes the outcome, tells
+  `post.finished` again, and a second settling never does.
 - A post's text and media are checked against each platform with
   `#publishing/domain/text-length.ts`, `content-rules.ts` and
   `platform-rules.ts` when it is scheduled, never while it is a draft.

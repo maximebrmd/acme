@@ -1,7 +1,11 @@
 import { Schema } from "effect";
 
 import { PlatformSchema } from "./platform.ts";
-import { FailureReasonSchema, UnconfirmedReasonSchema } from "./posts.ts";
+import {
+  FailureReasonSchema,
+  PostOutcomeSchema,
+  UnconfirmedReasonSchema,
+} from "./posts.ts";
 
 // What Peal sends to webhook endpoints. The server's events
 // (src/webhooks/domain/webhook-event.ts) are the source; a test keeps the
@@ -16,12 +20,16 @@ export const SubscribableWebhookEventTypeSchema = Schema.Literals([
   "post.failed",
   "post.unconfirmed",
   "post.cancelled",
+  "post.finished",
   "post.approval_requested",
   "post.approved",
   "post.changes_requested",
   "channel.connected",
   "channel.disconnected",
   "channel.reconnect_needed",
+  "channel.disabled",
+  "channel.enabled",
+  "channel.expiring",
   "media.ready",
   "media.failed",
   "comment.received",
@@ -130,6 +138,31 @@ const channel = {
 };
 
 const media = { ...workspace, mediaId: Schema.String };
+
+/** Where a post ended on one channel, once it has its result there. */
+export const WebhookSettledTargetStatusSchema = Schema.Literals([
+  "published",
+  "failed",
+  "unconfirmed",
+  "cancelled",
+]).annotate({ identifier: "WebhookSettledTargetStatus" });
+
+export type WebhookSettledTargetStatus =
+  typeof WebhookSettledTargetStatusSchema.Type;
+
+/**
+ * A post's result on one of its channels: `permalink` its address there
+ * when it went live and the platform gave one, `failureReason` why it did
+ * not when it failed.
+ */
+export const WebhookFinishedTargetSchema = Schema.Struct({
+  ...WebhookTargetSchema.fields,
+  failureReason: Schema.NullOr(FailureReasonSchema),
+  permalink: Schema.NullOr(Schema.String),
+  status: WebhookSettledTargetStatusSchema,
+}).annotate({ identifier: "WebhookFinishedTarget" });
+
+export type WebhookFinishedTarget = typeof WebhookFinishedTargetSchema.Type;
 
 // A comment under a post that went live on a channel, by ids.
 const comment = {
@@ -260,6 +293,21 @@ export const WebhookPayloadSchema = Schema.Union([
     }),
     type: Schema.Literal("post.cancelled"),
   }),
+  // Every channel of the post has its result, in its latest `round` (1,
+  // and one more for each repost): `outcome` is what they add up to. Told
+  // again when a repost ends, and when a member's confirmation changes the
+  // outcome.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...post,
+      finishedAt: Schema.DateTimeUtc,
+      outcome: PostOutcomeSchema,
+      round: Schema.Int,
+      targets: Schema.Array(WebhookFinishedTargetSchema),
+    }),
+    type: Schema.Literal("post.finished"),
+  }),
   // Someone asked for the post to go out at `scheduledAt`, in a workspace
   // that asks for approvals: it waits, and no `post.scheduled` is sent
   // until it is approved.
@@ -304,6 +352,27 @@ export const WebhookPayloadSchema = Schema.Union([
     ...envelope,
     data: Schema.Struct(channel),
     type: Schema.Literal("channel.reconnect_needed"),
+  }),
+  // A member turned the channel off: nothing is posted there until it is
+  // turned back on.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct(channel),
+    type: Schema.Literal("channel.disabled"),
+  }),
+  // A member turned the channel back on.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct(channel),
+    type: Schema.Literal("channel.enabled"),
+  }),
+  // The channel's authorization cannot be renewed and ends at `expiresAt`:
+  // reconnect it before then, or nothing is posted there after. Told once
+  // per expiry.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({ ...channel, expiresAt: Schema.DateTimeUtc }),
+    type: Schema.Literal("channel.expiring"),
   }),
   // The file was probed, and can go in posts.
   Schema.Struct({

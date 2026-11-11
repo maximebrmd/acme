@@ -165,13 +165,15 @@ export interface MediaRecord {
 
 /**
  * A webhook endpoint of a workspace: where it is told what happens in it,
- * without the secret that signs what it is sent.
+ * without the secret that signs what it is sent, and the names of the
+ * headers it carries without their values.
  */
 export interface WebhookRecord {
   readonly createdAt: DateTime.Utc;
   readonly description: string;
   readonly enabled: boolean;
   readonly eventTypes: readonly string[];
+  readonly headerNames: readonly string[];
   readonly id: string;
   readonly url: string;
 }
@@ -557,6 +559,11 @@ export type NoticeEventRecord =
       readonly plan: string;
     }
   | {
+      readonly _tag: "WebhookDeliveriesFailing";
+      readonly endpointId: string;
+      readonly host: string;
+    }
+  | {
       readonly _tag: "WebhookEndpointDisabled";
       readonly endpointId: string;
       readonly host: string;
@@ -604,6 +611,7 @@ export interface PreferencesRecord {
     readonly postPublished: boolean;
     readonly postReview: boolean;
     readonly postUnconfirmed: boolean;
+    readonly webhookFailing: boolean;
   };
   readonly everyPost: boolean;
 }

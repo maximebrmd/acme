@@ -169,6 +169,24 @@ const others = (after: JsonObject) =>
     .map(({ kind, what, where }) => `${kind}: ${where} ${what}`);
 
 describe("changes between two documents of the API", () => {
+  it("reads none of a webhooks section, which the SDKs leave out", () => {
+    const events = {
+      webhooks: {
+        "post.published": {
+          post: { operationId: "onPostPublished", responses: {} },
+        },
+      },
+    };
+
+    const withEvents: JsonObject = Object.fromEntries([
+      ...Object.entries(released()),
+      ...Object.entries(events),
+    ]);
+
+    expect(apiChanges(released(), withEvents)).toEqual([]);
+    expect(apiChanges(withEvents, released())).toEqual([]);
+  });
+
   it("finds none between a document and itself", () => {
     expect(apiChanges(released(), released())).toEqual([]);
   });

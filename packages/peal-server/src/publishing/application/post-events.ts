@@ -34,6 +34,16 @@ export class PostEvents extends Context.Service<
       post: Post,
       target: PostTarget
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Every target of the post has its result, `targets` as they now
+     * stand: told each time the post finishes, when a target sent again
+     * ends its round, when a cancel leaves nothing to send, and when a
+     * member's confirmation revises the outcome.
+     */
+    readonly finished: (
+      post: Post,
+      targets: readonly PostTarget[]
+    ) => Effect.Effect<void, DatabaseError>;
   }
 >()("peal-server/publishing/application/PostEvents") {
   /** Nobody follows: for tests that need none. */
@@ -42,6 +52,7 @@ export class PostEvents extends Context.Service<
     PostEvents.of({
       cancelled: () => Effect.void,
       confirmed: () => Effect.void,
+      finished: () => Effect.void,
       scheduled: () => Effect.void,
       unscheduled: () => Effect.void,
     })

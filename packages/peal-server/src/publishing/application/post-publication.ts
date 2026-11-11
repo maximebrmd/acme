@@ -36,6 +36,7 @@ import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 import { ChannelHealth } from "./channel-health.ts";
 import { OperatorAlerts } from "./operator-alerts.ts";
 import { PlatformPublisher } from "./platform-publisher.ts";
+import { PostEvents } from "./post-events.ts";
 import { PostRepository } from "./post-repository.ts";
 import { PublicationJournal } from "./publication-journal.ts";
 import { PublicationOutcomes } from "./publication-outcomes.ts";
@@ -96,6 +97,7 @@ export const claimPostRun = Effect.fn("Publishing.claimPost")(
   function* claimPostRun(postId: PostId, revision: number) {
     const posts = yield* PostRepository;
     const outcomes = yield* PublicationOutcomes;
+    const events = yield* PostEvents;
     const { transaction } = yield* TransactionRunner;
 
     return yield* transaction(
@@ -154,6 +156,7 @@ export const claimPostRun = Effect.fn("Publishing.claimPost")(
           yield* Effect.forEach(missed, (target) => outcomes.settled(target), {
             discard: true,
           });
+          yield* events.finished(finished, missed);
 
           const claim: PostClaim = { _tag: "missed" };
 
@@ -181,6 +184,7 @@ export const claimPostRun = Effect.fn("Publishing.claimPost")(
 const finishIfSettled = Effect.fn("Publishing.finishIfSettled")(
   function* finishIfSettled(post: Post) {
     const posts = yield* PostRepository;
+    const events = yield* PostEvents;
 
     if (post.status._tag === "finished") {
       return Option.some<PostOutcome>(post.status.outcome);
@@ -197,6 +201,7 @@ const finishIfSettled = Effect.fn("Publishing.finishIfSettled")(
     ).pipe(Effect.orDie);
 
     yield* applied(yield* posts.update(finished, post));
+    yield* events.finished(finished, targets);
 
     return finished.status._tag === "finished"
       ? Option.some(finished.status.outcome)

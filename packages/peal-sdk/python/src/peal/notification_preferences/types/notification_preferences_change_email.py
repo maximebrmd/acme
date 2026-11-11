@@ -25,6 +25,9 @@ class NotificationPreferencesChangeEmail(UniversalBaseModel):
     post_unconfirmed: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="postUnconfirmed"), pydantic.Field(alias="postUnconfirmed")
     ] = None
+    webhook_failing: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="webhookFailing"), pydantic.Field(alias="webhookFailing")
+    ] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

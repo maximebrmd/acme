@@ -358,6 +358,13 @@ export const french: EmailCatalog = {
       "Si vous n’avez pas créé de compte Peal, ignorez cet e-mail. Le lien expire dans une heure.",
     subject: "Confirmez votre adresse e-mail pour Peal",
   },
+  webhookDeliveriesFailing: {
+    action: "Ouvrir le journal des livraisons",
+    body: "Une livraison vers le point de terminaison de webhook {host} dans {workspaceName} a échoué pour de bon : chaque tentative a échoué pendant environ une journée, et le système derrière lui a donc manqué un événement. Le point de terminaison est toujours actif. Réparez son destinataire, puis renvoyez les livraisons échouées depuis le journal des livraisons. Après 5 jours d’échecs, Peal désactive le point de terminaison.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez les webhooks de {workspaceName} sur Peal, au plus une fois par jour pour chaque point de terminaison. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Des livraisons de webhook échouent : {host}",
+  },
   webhookEndpointDisabled: {
     action: "Ouvrir les webhooks",
     body: "Peal a désactivé le point de terminaison de webhook {host} dans {workspaceName} : {reason} Plus rien ne lui est envoyé, et les événements qui surviennent entre-temps ne sont pas conservés pour lui. Une fois son destinataire rétabli, réactivez le point de terminaison dans les paramètres de l’espace de travail.",

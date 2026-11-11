@@ -159,9 +159,9 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   AdsApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
-const ApiLive = HttpApiBuilder.layer(Api, {
-  openapiPath: "/openapi.json",
-}).pipe(
+// `/openapi.json` is served with the discovery documents, the same as
+// `/api/openapi.json`: the API's document with the events webhooks send.
+const ApiLive = HttpApiBuilder.layer(Api).pipe(
   Layer.provide([
     SystemHandlers,
     ClientErrorsLive,

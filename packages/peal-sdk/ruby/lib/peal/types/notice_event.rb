@@ -41,6 +41,8 @@ module Peal
 
       member -> { Peal::Types::NoticeEventWebhookEndpointDisabled }, key: "WEBHOOK_ENDPOINT_DISABLED"
 
+      member -> { Peal::Types::NoticeEventWebhookDeliveriesFailing }, key: "WEBHOOK_DELIVERIES_FAILING"
+
       member -> { Peal::Types::NoticeEventAdBoostChanged }, key: "AD_BOOST_CHANGED"
 
       member -> { Peal::Types::NoticeEventAdConnectionReconnectRequired }, key: "AD_CONNECTION_RECONNECT_REQUIRED"

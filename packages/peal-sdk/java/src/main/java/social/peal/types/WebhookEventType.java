@@ -7,6 +7,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class WebhookEventType {
+    public static final WebhookEventType CHANNEL_ENABLED =
+            new WebhookEventType(Value.CHANNEL_ENABLED, "channel.enabled");
+
+    public static final WebhookEventType CHANNEL_DISABLED =
+            new WebhookEventType(Value.CHANNEL_DISABLED, "channel.disabled");
+
     public static final WebhookEventType MEDIA_FAILED = new WebhookEventType(Value.MEDIA_FAILED, "media.failed");
 
     public static final WebhookEventType POST_FAILED = new WebhookEventType(Value.POST_FAILED, "post.failed");
@@ -46,6 +52,8 @@ public final class WebhookEventType {
 
     public static final WebhookEventType POST_PUBLISHED = new WebhookEventType(Value.POST_PUBLISHED, "post.published");
 
+    public static final WebhookEventType POST_FINISHED = new WebhookEventType(Value.POST_FINISHED, "post.finished");
+
     public static final WebhookEventType BOOST_BUDGET_REACHED =
             new WebhookEventType(Value.BOOST_BUDGET_REACHED, "boost.budget_reached");
 
@@ -53,6 +61,9 @@ public final class WebhookEventType {
             new WebhookEventType(Value.COMMENT_REPLIED, "comment.replied");
 
     public static final WebhookEventType BOOST_ENDED = new WebhookEventType(Value.BOOST_ENDED, "boost.ended");
+
+    public static final WebhookEventType CHANNEL_EXPIRING =
+            new WebhookEventType(Value.CHANNEL_EXPIRING, "channel.expiring");
 
     public static final WebhookEventType CHANNEL_DISCONNECTED =
             new WebhookEventType(Value.CHANNEL_DISCONNECTED, "channel.disconnected");
@@ -100,6 +111,10 @@ public final class WebhookEventType {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
+            case CHANNEL_ENABLED:
+                return visitor.visitChannelEnabled();
+            case CHANNEL_DISABLED:
+                return visitor.visitChannelDisabled();
             case MEDIA_FAILED:
                 return visitor.visitMediaFailed();
             case POST_FAILED:
@@ -132,12 +147,16 @@ public final class WebhookEventType {
                 return visitor.visitBoostStarted();
             case POST_PUBLISHED:
                 return visitor.visitPostPublished();
+            case POST_FINISHED:
+                return visitor.visitPostFinished();
             case BOOST_BUDGET_REACHED:
                 return visitor.visitBoostBudgetReached();
             case COMMENT_REPLIED:
                 return visitor.visitCommentReplied();
             case BOOST_ENDED:
                 return visitor.visitBoostEnded();
+            case CHANNEL_EXPIRING:
+                return visitor.visitChannelExpiring();
             case CHANNEL_DISCONNECTED:
                 return visitor.visitChannelDisconnected();
             case CHANNEL_RECONNECT_NEEDED:
@@ -159,6 +178,10 @@ public final class WebhookEventType {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static WebhookEventType valueOf(String value) {
         switch (value) {
+            case "channel.enabled":
+                return CHANNEL_ENABLED;
+            case "channel.disabled":
+                return CHANNEL_DISABLED;
             case "media.failed":
                 return MEDIA_FAILED;
             case "post.failed":
@@ -191,12 +214,16 @@ public final class WebhookEventType {
                 return BOOST_STARTED;
             case "post.published":
                 return POST_PUBLISHED;
+            case "post.finished":
+                return POST_FINISHED;
             case "boost.budget_reached":
                 return BOOST_BUDGET_REACHED;
             case "comment.replied":
                 return COMMENT_REPLIED;
             case "boost.ended":
                 return BOOST_ENDED;
+            case "channel.expiring":
+                return CHANNEL_EXPIRING;
             case "channel.disconnected":
                 return CHANNEL_DISCONNECTED;
             case "channel.reconnect_needed":
@@ -227,6 +254,8 @@ public final class WebhookEventType {
 
         POST_CANCELLED,
 
+        POST_FINISHED,
+
         POST_APPROVAL_REQUESTED,
 
         POST_APPROVED,
@@ -238,6 +267,12 @@ public final class WebhookEventType {
         CHANNEL_DISCONNECTED,
 
         CHANNEL_RECONNECT_NEEDED,
+
+        CHANNEL_DISABLED,
+
+        CHANNEL_ENABLED,
+
+        CHANNEL_EXPIRING,
 
         MEDIA_READY,
 
@@ -281,6 +316,8 @@ public final class WebhookEventType {
 
         T visitPostCancelled();
 
+        T visitPostFinished();
+
         T visitPostApprovalRequested();
 
         T visitPostApproved();
@@ -292,6 +329,12 @@ public final class WebhookEventType {
         T visitChannelDisconnected();
 
         T visitChannelReconnectNeeded();
+
+        T visitChannelDisabled();
+
+        T visitChannelEnabled();
+
+        T visitChannelExpiring();
 
         T visitMediaReady();
 

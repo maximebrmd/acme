@@ -21,6 +21,8 @@ module Peal
 
       field :failing_since, -> { String }, optional: false, nullable: true, api_name: "failingSince"
 
+      field :header_names, -> { Internal::Types::Array[String] }, optional: false, nullable: false, api_name: "headerNames"
+
       field :id, -> { String }, optional: false, nullable: false
 
       field :previous_secret_expires_at, -> { String }, optional: false, nullable: true, api_name: "previousSecretExpiresAt"

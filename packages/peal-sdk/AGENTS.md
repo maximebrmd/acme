@@ -16,7 +16,12 @@
   operation's SDK group and method come from its operationId
   (`posts.schedule`), and no POST or PATCH is retried
   (`x-fern-retries`): the first may have created what a retry would create
-  again.
+  again. The contract's `webhooks` section (the events Peal sends) is left
+  out (`leftOut`, tested in `scripts/spec.test.ts`, and `api-changes.ts`
+  reads none of it): the open-source generators are documented to make no
+  typed events of it, their signature helper being a paid feature, and the
+  SDKs are the API's clients, not receivers. Receivers parse events with
+  the contract's `WebhookPayloadSchema` or by hand, as the docs show.
 - Never edit a generated file: change the contract, the scripts or the
   generator's options, then `bun run sdk:generate`. Fern replaces each
   language's folder with what it writes, so nothing stale stays, and keeps

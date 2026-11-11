@@ -20,6 +20,7 @@ import {
   WebhookEventTypeSchema,
 } from "./webhook-events.ts";
 import { WebhookFilterRefused } from "./webhook-filter-refused.ts";
+import { WebhookHeadersRefused } from "./webhook-headers-refused.ts";
 import { WebhookUrlRefused } from "./webhook-url-refused.ts";
 import { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
@@ -67,6 +68,35 @@ export const webhookBulkRedeliveriesPerHour = 1000;
 /** How many deliveries one call sends again at most. */
 export const maxWebhookBulkRedelivery = 100;
 
+/** How many headers of its own an endpoint's deliveries carry at most. */
+export const maxWebhookHeaders = 5;
+
+/** The longest a header's name may be. */
+export const maxWebhookHeaderNameLength = 64;
+
+/** The longest a header's value may be. */
+export const maxWebhookHeaderValueLength = 1024;
+
+/**
+ * The header names an endpoint may not set, compared without case, beside
+ * any that starts with `webhook-`: those Peal sets, and those of the
+ * message and its connection.
+ */
+export const refusedWebhookHeaderNames: readonly string[] = [
+  "connection",
+  "content-length",
+  "content-type",
+  "cookie",
+  "host",
+  "keep-alive",
+  "proxy-connection",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+  "user-agent",
+];
+
 /**
  * Why an endpoint is off: a member turned it off (`manual`), every attempt
  * failed for days (`failing`), or the receiver answered 410 Gone (`gone`).
@@ -110,6 +140,9 @@ export const WebhookEndpointSchema = Schema.Struct({
   eventTypes: Schema.Array(SubscribableWebhookEventTypeSchema),
   // Since when every attempt has failed; null once one succeeded.
   failingSince: Schema.NullOr(Schema.DateTimeUtc),
+  // The names of the headers its deliveries carry beside Peal's own.
+  // Their values are never shown: send them again to change them.
+  headerNames: Schema.Array(Schema.String),
   id: Schema.String,
   // Until when the secret before the last rotation still signs deliveries,
   // beside the current one; null when only the current one does.
@@ -146,6 +179,64 @@ const WorkspaceFilterSchema = Schema.Array(
   Schema.String.check(Schema.isUUID(), Schema.isLowercased())
 ).check(Schema.isMaxLength(maxWebhookFilterWorkspaces));
 
+// An HTTP token (RFC 9110, section 5.1), not one Peal sets.
+const HeaderNameSchema = Schema.String.check(
+  Schema.isBetweenLength(1, maxWebhookHeaderNameLength),
+  Schema.isPattern(/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/u),
+  Schema.makeFilter((name) => {
+    const lowered = name.toLowerCase();
+
+    return (
+      (!lowered.startsWith("webhook-") &&
+        !refusedWebhookHeaderNames.includes(lowered)) ||
+      "Peal sets this header, or none may set it"
+    );
+  })
+);
+
+// Visible ASCII, spaces inside it but at neither end, on one line.
+const HeaderValueSchema = Schema.String.check(
+  Schema.isBetweenLength(1, maxWebhookHeaderValueLength),
+  Schema.isPattern(/^[\u0021-\u007E](?:[\u0020-\u007E]*[\u0021-\u007E])?$/u)
+);
+
+/** A header every delivery to the endpoint carries, as a gateway may ask. */
+export const WebhookHeaderSchema = Schema.Struct({
+  name: HeaderNameSchema,
+  // Write-only: sealed, sent with each delivery, never shown again.
+  value: HeaderValueSchema,
+}).annotate({ identifier: "WebhookHeader" });
+
+export type WebhookHeader = typeof WebhookHeaderSchema.Type;
+
+// Each name once, whatever its case.
+const namedOnce = Schema.makeFilter(
+  (headers: readonly { readonly name: string }[]) =>
+    new Set(headers.map(({ name }) => name.toLowerCase())).size ===
+      headers.length || "Each header is named once, whatever its case"
+);
+
+const HeadersSchema = Schema.Array(WebhookHeaderSchema).check(
+  Schema.isMaxLength(maxWebhookHeaders),
+  namedOnce
+);
+
+/**
+ * A header in a change of an endpoint's list: without `value`, it keeps
+ * the value the endpoint has under that name, whatever its case.
+ */
+export const WebhookHeaderChangeSchema = Schema.Struct({
+  name: HeaderNameSchema,
+  value: Schema.optionalKey(HeaderValueSchema),
+}).annotate({ identifier: "WebhookHeaderChange" });
+
+export type WebhookHeaderChange = typeof WebhookHeaderChangeSchema.Type;
+
+const HeaderChangesSchema = Schema.Array(WebhookHeaderChangeSchema).check(
+  Schema.isMaxLength(maxWebhookHeaders),
+  namedOnce
+);
+
 export const NewWebhookEndpointSchema = Schema.Struct({
   // The channels it hears about, `maxWebhookFilterChannels` at most; every
   // channel when left out or empty.
@@ -155,6 +246,9 @@ export const NewWebhookEndpointSchema = Schema.Struct({
   // On unless false.
   enabled: Schema.optionalKey(Schema.Boolean),
   eventTypes: EventTypesSchema,
+  // Headers every delivery carries beside Peal's own, `maxWebhookHeaders`
+  // at most; none when left out. Values are write-only.
+  headers: Schema.optionalKey(HeadersSchema),
   // `workspace` unless given: `partner`, in a partner account's home
   // workspace, hears every workspace the partner owns too.
   scope: Schema.optionalKey(WebhookEndpointScopeSchema),
@@ -187,6 +281,10 @@ export const WebhookEndpointChangeSchema = Schema.Struct({
   description: Schema.optionalKey(DescriptionSchema),
   enabled: Schema.optionalKey(Schema.Boolean),
   eventTypes: Schema.optionalKey(EventTypesSchema),
+  // The whole list, in place of the headers it had: `[]` removes them,
+  // and leaving it out keeps them. A header without `value` keeps the one
+  // the endpoint has under that name.
+  headers: Schema.optionalKey(HeaderChangesSchema),
   url: Schema.optionalKey(UrlSchema),
   // Only for an endpoint of the `partner` scope (422
   // `WebhookFilterRefused` on any other).
@@ -402,7 +500,7 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
       success: WebhookEndpointSecretSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has ${maxWebhookEndpoints} endpoints at most, whatever its plan. With \`scope\` \`partner\`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (\`workspaceExternalId\`); any other workspace answers 404 \`PartnerNotFound\`. \`channelIds\` (${maxWebhookFilterChannels} at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of \`eventTypes\` when they are not wanted. \`workspaceIds\` (${maxWebhookFilterWorkspaces} at most), on a \`partner\` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. Needs webhook:manage.`,
+        description: `Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has ${maxWebhookEndpoints} endpoints at most, whatever its plan. With \`scope\` \`partner\`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (\`workspaceExternalId\`); any other workspace answers 404 \`PartnerNotFound\`. \`channelIds\` (${maxWebhookFilterChannels} at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of \`eventTypes\` when they are not wanted. \`workspaceIds\` (${maxWebhookFilterWorkspaces} at most), on a \`partner\` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. \`headers\` (${maxWebhookHeaders} at most) go with every delivery beside Peal's own, which they never replace, for a gateway in front of the receiver that wants a token: a name is an HTTP token, once whatever its case, neither \`host\`, \`content-type\`, \`content-length\`, \`user-agent\`, \`cookie\`, a connection's own nor any \`webhook-\` name; a value is visible ASCII on one line, ${maxWebhookHeaderValueLength} characters at most. Values are write-only: the endpoint shows their names (\`headerNames\`), never them. The signature does not cover them. Needs webhook:manage.`,
         summary: "Create a webhook endpoint",
       })
     ),
@@ -451,6 +549,8 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
         WebhookEndpointNotFound,
         WebhookUrlRefused,
         WebhookFilterRefused,
+        WebhooksNotConfigured,
+        WebhookHeadersRefused,
       ],
       params: endpoint,
       payload: WebhookEndpointChangeSchema,
@@ -458,7 +558,7 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Changes an endpoint's address, description, events or filters, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.",
+          "Changes an endpoint's address, description, events, filters or headers, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). `headers` replaces every header it had, `[]` removing them all: a header given without `value` keeps the value it has under that name, as none is ever shown, and one it does not have needs a value. Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.",
         summary: "Update a webhook endpoint",
       })
     ),

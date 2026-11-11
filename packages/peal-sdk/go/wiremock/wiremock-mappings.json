@@ -1935,7 +1935,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"comments\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true\n  },\n  \"everyPost\": true\n}",
+        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"comments\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true,\n    \"webhookFailing\": true\n  },\n  \"everyPost\": true\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1967,7 +1967,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"comments\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true\n  },\n  \"everyPost\": true\n}",
+        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"comments\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true,\n    \"webhookFailing\": true\n  },\n  \"everyPost\": true\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2740,7 +2740,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  }\n]",
+        "body": "[\n  {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"headerNames\": [\n      \"headerNames\"\n    ],\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2776,7 +2776,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"endpoint\": {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  },\n  \"secret\": \"secret\"\n}",
+        "body": "{\n  \"endpoint\": {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"headerNames\": [\n      \"headerNames\"\n    ],\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  },\n  \"secret\": \"secret\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2887,7 +2887,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\",\n  \"workspaceIds\": [\n    \"workspaceIds\"\n  ]\n}",
+        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"headerNames\": [\n    \"headerNames\"\n  ],\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\",\n  \"workspaceIds\": [\n    \"workspaceIds\"\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2965,7 +2965,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\",\n  \"workspaceIds\": [\n    \"workspaceIds\"\n  ]\n}",
+        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"headerNames\": [\n    \"headerNames\"\n  ],\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\",\n  \"workspaceIds\": [\n    \"workspaceIds\"\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -3004,7 +3004,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"endpoint\": {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  },\n  \"secret\": \"secret\"\n}",
+        "body": "{\n  \"endpoint\": {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"headerNames\": [\n      \"headerNames\"\n    ],\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  },\n  \"secret\": \"secret\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }

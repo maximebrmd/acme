@@ -351,6 +351,13 @@ export const english: EmailCatalog = {
       "If you did not create a Peal account, ignore this email. The link expires in an hour.",
     subject: "Confirm your email for Peal",
   },
+  webhookDeliveriesFailing: {
+    action: "Open the delivery log",
+    body: "A delivery to the webhook endpoint at {host} in {workspaceName} failed for good: every attempt failed over about a day, so the system behind it missed an event. The endpoint is still on. Fix its receiver, then send the failed deliveries again from the delivery log. After 5 days of failures, Peal turns the endpoint off.",
+    ignore:
+      "You receive this email because you manage the webhooks of {workspaceName} on Peal, at most once a day for each endpoint. Choose which notifications you receive by email in your notification preferences.",
+    subject: "Webhook deliveries are failing: {host}",
+  },
   webhookEndpointDisabled: {
     action: "Open webhooks",
     body: "Peal turned off the webhook endpoint at {host} in {workspaceName}: {reason} Nothing is sent to it any more, and the events that happen meanwhile are not kept for it. Once its receiver works again, turn the endpoint back on in the workspace’s settings.",

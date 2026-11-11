@@ -678,6 +678,7 @@ CREATE TABLE "notifications"."notification_preferences" (
 	"email_post_published" boolean NOT NULL,
 	"email_post_review" boolean DEFAULT true NOT NULL,
 	"email_post_unconfirmed" boolean NOT NULL,
+	"email_webhook_failing" boolean DEFAULT true NOT NULL,
 	"every_post" boolean DEFAULT false NOT NULL,
 	"updated_at" timestamp with time zone NOT NULL,
 	"user_id" uuid PRIMARY KEY
@@ -944,6 +945,7 @@ CREATE TABLE "webhooks"."endpoints" (
 	"disabled_reason" text,
 	"event_types" text[] NOT NULL,
 	"failing_since" timestamp with time zone,
+	"headers" jsonb DEFAULT '[]' NOT NULL,
 	"id" uuid PRIMARY KEY,
 	"previous_secret" text,
 	"previous_secret_expires_at" timestamp with time zone,

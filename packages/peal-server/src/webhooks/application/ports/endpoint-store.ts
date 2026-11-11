@@ -3,6 +3,7 @@ import type { DateTime, Effect, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { SealedHeader } from "#webhooks/domain/endpoint-headers.ts";
 import type { SealedSecret } from "#webhooks/domain/sealed-secret.ts";
 import type { WebhookEndpointId } from "#webhooks/domain/webhook-endpoint-id.ts";
 import type {
@@ -10,9 +11,13 @@ import type {
   WebhookEndpoint,
 } from "#webhooks/domain/webhook-endpoint.ts";
 
-/** The secrets that sign an endpoint's deliveries, as stored. */
+/**
+ * The secrets that sign an endpoint's deliveries, and the headers they
+ * carry, as stored.
+ */
 export interface StoredSecrets {
   readonly current: SealedSecret;
+  readonly headers: readonly SealedHeader[];
   /** The one before the last rotation, while the endpoint still keeps it. */
   readonly previous: Option.Option<SealedSecret>;
 }
@@ -50,18 +55,21 @@ export class EndpointStore extends Context.Service<
     ) => Effect.Effect<A, DatabaseError | E, R>;
     readonly insert: (
       endpoint: WebhookEndpoint,
-      secret: SealedSecret
+      secret: SealedSecret,
+      headers: readonly SealedHeader[]
     ) => Effect.Effect<void, DatabaseError>;
     /**
      * Saves what a member changed of the endpoint, `from` what they read:
      * its address, description and events, and whether it is on only when
      * they turned it on or off. Peal turning it off meanwhile, as when its
      * deliveries failed for good, is never undone by a change of something
-     * else read before. Says whether it was still there.
+     * else read before. Its headers are written only when `headers` gives
+     * them, in place of those it had. Says whether it was still there.
      */
     readonly update: (
       endpoint: WebhookEndpoint,
-      from: WebhookEndpoint
+      from: WebhookEndpoint,
+      headers: Option.Option<readonly SealedHeader[]>
     ) => Effect.Effect<boolean, DatabaseError>;
     /**
      * Makes `secret` the endpoint's, and keeps the one it had as the

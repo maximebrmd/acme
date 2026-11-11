@@ -20,6 +20,8 @@ public readonly record struct WebhookEventType : IStringEnum
 
     public static readonly WebhookEventType PostCancelled = new(Values.PostCancelled);
 
+    public static readonly WebhookEventType PostFinished = new(Values.PostFinished);
+
     public static readonly WebhookEventType PostApprovalRequested = new(
         Values.PostApprovalRequested
     );
@@ -35,6 +37,12 @@ public readonly record struct WebhookEventType : IStringEnum
     public static readonly WebhookEventType ChannelReconnectNeeded = new(
         Values.ChannelReconnectNeeded
     );
+
+    public static readonly WebhookEventType ChannelDisabled = new(Values.ChannelDisabled);
+
+    public static readonly WebhookEventType ChannelEnabled = new(Values.ChannelEnabled);
+
+    public static readonly WebhookEventType ChannelExpiring = new(Values.ChannelExpiring);
 
     public static readonly WebhookEventType MediaReady = new(Values.MediaReady);
 
@@ -170,6 +178,8 @@ public readonly record struct WebhookEventType : IStringEnum
 
         public const string PostCancelled = "post.cancelled";
 
+        public const string PostFinished = "post.finished";
+
         public const string PostApprovalRequested = "post.approval_requested";
 
         public const string PostApproved = "post.approved";
@@ -181,6 +191,12 @@ public readonly record struct WebhookEventType : IStringEnum
         public const string ChannelDisconnected = "channel.disconnected";
 
         public const string ChannelReconnectNeeded = "channel.reconnect_needed";
+
+        public const string ChannelDisabled = "channel.disabled";
+
+        public const string ChannelEnabled = "channel.enabled";
+
+        public const string ChannelExpiring = "channel.expiring";
 
         public const string MediaReady = "media.ready";
 

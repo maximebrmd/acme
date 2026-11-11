@@ -83,6 +83,34 @@
   },
   {
     "data": {
+      "finishedAt": "2026-11-12T08:00:05.000Z",
+      "outcome": "partiallyPublished",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
+      "round": 2,
+      "targets": [
+        {
+          "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+          "failureReason": null,
+          "permalink": "https://social.example/@peal_example/1",
+          "platform": "mastodon",
+          "status": "published",
+          "targetId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c04"
+        },
+        {
+          "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c05",
+          "failureReason": "mediaRejected",
+          "permalink": null,
+          "platform": null,
+          "status": "failed",
+          "targetId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c06"
+        }
+      ],
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "post.finished"
+  },
+  {
+    "data": {
       "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c02",
       "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f",
       "scheduledAt": "2026-11-12T08:00:00.000Z"
@@ -130,6 +158,31 @@
       "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
     },
     "type": "channel.reconnect_needed"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "platform": "mastodon",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "channel.disabled"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "platform": "mastodon",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "channel.enabled"
+  },
+  {
+    "data": {
+      "channelId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c03",
+      "expiresAt": "2026-12-01T09:00:00.000Z",
+      "platform": "linkedin",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "channel.expiring"
   },
   {
     "data": {

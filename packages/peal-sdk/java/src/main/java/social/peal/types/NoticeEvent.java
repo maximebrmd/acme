@@ -90,6 +90,10 @@ public final class NoticeEvent {
         return new NoticeEvent(new WebhookEndpointDisabledValue(value));
     }
 
+    public static NoticeEvent webhookDeliveriesFailing(NoticeEventWebhookDeliveriesFailing value) {
+        return new NoticeEvent(new WebhookDeliveriesFailingValue(value));
+    }
+
     public static NoticeEvent adBoostChanged(NoticeEventAdBoostChanged value) {
         return new NoticeEvent(new AdBoostChangedValue(value));
     }
@@ -160,6 +164,10 @@ public final class NoticeEvent {
 
     public boolean isWebhookEndpointDisabled() {
         return value instanceof WebhookEndpointDisabledValue;
+    }
+
+    public boolean isWebhookDeliveriesFailing() {
+        return value instanceof WebhookDeliveriesFailingValue;
     }
 
     public boolean isAdBoostChanged() {
@@ -286,6 +294,13 @@ public final class NoticeEvent {
         return Optional.empty();
     }
 
+    public Optional<NoticeEventWebhookDeliveriesFailing> getWebhookDeliveriesFailing() {
+        if (isWebhookDeliveriesFailing()) {
+            return Optional.of(((WebhookDeliveriesFailingValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<NoticeEventAdBoostChanged> getAdBoostChanged() {
         if (isAdBoostChanged()) {
             return Optional.of(((AdBoostChangedValue) value).value);
@@ -361,6 +376,8 @@ public final class NoticeEvent {
 
         T visitWebhookEndpointDisabled(NoticeEventWebhookEndpointDisabled webhookEndpointDisabled);
 
+        T visitWebhookDeliveriesFailing(NoticeEventWebhookDeliveriesFailing webhookDeliveriesFailing);
+
         T visitAdBoostChanged(NoticeEventAdBoostChanged adBoostChanged);
 
         T visitAdConnectionReconnectRequired(NoticeEventAdConnectionReconnectRequired adConnectionReconnectRequired);
@@ -386,6 +403,7 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(SubscriptionCancelledValue.class),
         @JsonSubTypes.Type(SubscriptionWithdrawnValue.class),
         @JsonSubTypes.Type(WebhookEndpointDisabledValue.class),
+        @JsonSubTypes.Type(WebhookDeliveriesFailingValue.class),
         @JsonSubTypes.Type(AdBoostChangedValue.class),
         @JsonSubTypes.Type(AdConnectionReconnectRequiredValue.class)
     })
@@ -1020,6 +1038,46 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(WebhookEndpointDisabledValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("WebhookDeliveriesFailing")
+    @JsonIgnoreProperties("_tag")
+    private static final class WebhookDeliveriesFailingValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventWebhookDeliveriesFailing value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private WebhookDeliveriesFailingValue() {}
+
+        private WebhookDeliveriesFailingValue(NoticeEventWebhookDeliveriesFailing value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitWebhookDeliveriesFailing(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof WebhookDeliveriesFailingValue && equalTo((WebhookDeliveriesFailingValue) other);
+        }
+
+        private boolean equalTo(WebhookDeliveriesFailingValue other) {
             return value.equals(other.value);
         }
 

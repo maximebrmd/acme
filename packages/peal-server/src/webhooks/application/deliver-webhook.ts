@@ -5,6 +5,7 @@ import {
   Layer,
   Metric,
   Option,
+  Redacted,
   Result,
 } from "effect";
 
@@ -65,7 +66,9 @@ export type AttemptResult = "retry" | "settled";
  *
  * An endpoint whose attempts fail for `turnOffAfterFailingFor`, or that
  * answers 410 Gone, is turned off, and the members who manage the
- * workspace's webhooks told, in the transaction that records the attempt.
+ * workspace's webhooks told, in the transaction that records the attempt;
+ * a delivery that fails for good while its endpoint stays on is told to
+ * them too, once a day per endpoint.
  * A delivery whose endpoint is off, or whose secret the server can no
  * longer read, fails without an attempt; one that is over, or gone with its
  * endpoint or its workspace, is left alone.
@@ -92,18 +95,39 @@ export class DeliverWebhook extends Context.Service<
       const notices = yield* EndpointNotices;
       const { transaction } = yield* TransactionRunner;
 
+      // A delivery that failed for good, its endpoint still on once the
+      // attempt was recorded: those who manage webhooks hear of it, once a
+      // day. One the failure turned off has its own notice.
+      const tellFailing = Effect.fn("DeliverWebhook.tellFailing")(
+        function* tellFailing(endpoint: WebhookEndpoint, at: DateTime.Utc) {
+          const now = yield* endpoints.get(endpoint.id);
+
+          if (Option.exists(now, ({ status }) => status._tag === "enabled")) {
+            yield* notices.failing(endpoint, at);
+          }
+        }
+      );
+
       const abandon = Effect.fn("DeliverWebhook.abandon")(function* abandon(
         delivery: WebhookDelivery,
-        reason: "endpointDisabled" | "notConfigured"
+        reason: "endpointDisabled" | "notConfigured",
+        endpoint: WebhookEndpoint
       ) {
-        const abandoned = abandonDelivery(
-          delivery,
-          reason,
-          yield* DateTime.now
-        );
+        const now = yield* DateTime.now;
+        const abandoned = abandonDelivery(delivery, reason, now);
 
         if (Result.isSuccess(abandoned)) {
-          yield* deliveries.save(abandoned.success);
+          yield* transaction(
+            deliveries
+              .save(abandoned.success)
+              .pipe(
+                Effect.andThen(
+                  reason === "notConfigured"
+                    ? tellFailing(endpoint, now)
+                    : Effect.void
+                )
+              )
+          );
         }
 
         const settled: AttemptResult = "settled";
@@ -188,12 +212,31 @@ export class DeliverWebhook extends Context.Service<
             "A webhook delivery could not be signed: the endpoint's secret no longer decrypts"
           );
 
-          return yield* abandon(delivery, "notConfigured");
+          return yield* abandon(delivery, "notConfigured", endpoint);
         }
 
+        const opened = yield* secrets
+          .openHeaders(endpoint.id, stored.headers)
+          .pipe(Effect.option);
+
+        if (Option.isNone(opened)) {
+          yield* Effect.logWarning(
+            "A webhook delivery could not be sent: one of the endpoint's headers no longer decrypts"
+          );
+
+          return yield* abandon(delivery, "notConfigured", endpoint);
+        }
+
+        // The endpoint's own headers go under Peal's, which none replaces.
         const response = yield* transport.send({
           body: message.body,
           headers: {
+            ...Object.fromEntries(
+              opened.value.map(({ name, value }) => [
+                name,
+                Redacted.value(value),
+              ])
+            ),
             ...signedHeaders(message, macs.value),
             "content-type": "application/json",
             "user-agent": "Peal-Webhooks",
@@ -224,7 +267,14 @@ export class DeliverWebhook extends Context.Service<
         yield* transaction(
           deliveries
             .save(next.success)
-            .pipe(Effect.andThen(recordOnEndpoint(endpoint, made)))
+            .pipe(
+              Effect.andThen(recordOnEndpoint(endpoint, made)),
+              Effect.andThen(
+                next.success.status._tag === "failed"
+                  ? tellFailing(endpoint, made.at)
+                  : Effect.void
+              )
+            )
         );
 
         const { status } = next.success;
@@ -268,7 +318,11 @@ export class DeliverWebhook extends Context.Service<
           }
 
           if (endpoint.value.status._tag === "disabled") {
-            return yield* abandon(delivery.value, "endpointDisabled");
+            return yield* abandon(
+              delivery.value,
+              "endpointDisabled",
+              endpoint.value
+            );
           }
 
           return yield* send(

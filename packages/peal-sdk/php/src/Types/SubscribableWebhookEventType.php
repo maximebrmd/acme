@@ -10,12 +10,16 @@ enum SubscribableWebhookEventType: string
     case PostFailed = "post.failed";
     case PostUnconfirmed = "post.unconfirmed";
     case PostCancelled = "post.cancelled";
+    case PostFinished = "post.finished";
     case PostApprovalRequested = "post.approval_requested";
     case PostApproved = "post.approved";
     case PostChangesRequested = "post.changes_requested";
     case ChannelConnected = "channel.connected";
     case ChannelDisconnected = "channel.disconnected";
     case ChannelReconnectNeeded = "channel.reconnect_needed";
+    case ChannelDisabled = "channel.disabled";
+    case ChannelEnabled = "channel.enabled";
+    case ChannelExpiring = "channel.expiring";
     case MediaReady = "media.ready";
     case MediaFailed = "media.failed";
     case CommentReceived = "comment.received";
