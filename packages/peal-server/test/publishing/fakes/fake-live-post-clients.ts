@@ -39,7 +39,7 @@ export type RemovalBehaviour =
 export interface RemovalCall {
   readonly at: DateTime.Utc;
   readonly kind: "edit" | "remove";
-  readonly request: RemovalRequest;
+  readonly request: EditRequest | RemovalRequest;
 }
 
 /**
@@ -118,7 +118,7 @@ export const FakeLivePostClients = Layer.effectContext(
     // The answer scripted for the call, or `fallback` once none is.
     const answer = <A>(
       kind: RemovalCall["kind"],
-      request: RemovalRequest,
+      request: EditRequest | RemovalRequest,
       fallback: A,
       answered: (outcome: RemovalOutcome) => A
     ): Effect.Effect<A, RemovalFailure> =>
