@@ -36,46 +36,44 @@ const createdAt = (id: WorkspaceId) =>
     : DateTime.makeUnsafe("2026-11-01T09:00:00Z");
 
 // What every workspace holds: its place among them, as channels.
-const stateOf = (id: WorkspaceId, extra: number): WorkspaceDayState => ({
+const stateOf = (id: WorkspaceId, added: number): WorkspaceDayState => ({
   assistantRequests: 3,
-  channels: ids.indexOf(id) + extra,
+  channels: ids.indexOf(id) + added,
   mediaStorage: 9_000_000_000,
   members: 2,
   workspaceId: id,
 });
 
-// The workspaces as the contexts would page through them, and the pages
-// asked for.
-class States {
-  static readonly asked = Ref.makeUnsafe<readonly UsageStatesRequest[]>([]);
+// The pages asked for, and what the contexts add to each channel count.
+const asked = Ref.makeUnsafe<readonly UsageStatesRequest[]>([]);
 
-  static readonly extra = Ref.makeUnsafe(0);
+const extra = Ref.makeUnsafe(0);
 
-  static readonly layer = Layer.succeed(
-    UsageStates,
-    UsageStates.of({
-      page: (request) =>
-        Effect.gen(function* page() {
-          yield* Ref.update(States.asked, (all) => [...all, request]);
-          const extra = yield* Ref.get(States.extra);
+// The workspaces as the contexts would page through them.
+const StatesTest = Layer.succeed(
+  UsageStates,
+  UsageStates.of({
+    page: (request) =>
+      Effect.gen(function* page() {
+        yield* Ref.update(asked, (all) => [...all, request]);
+        const added = yield* Ref.get(extra);
 
-          return ids
-            .filter(
-              (id) =>
-                Option.match(request.after, {
-                  onNone: () => true,
-                  onSome: (after) => id > after,
-                }) && DateTime.isLessThan(createdAt(id), request.createdBefore)
-            )
-            .slice(0, request.limit)
-            .map((id) => stateOf(id, extra));
-        }),
-    })
-  );
-}
+        return ids
+          .filter(
+            (id) =>
+              Option.match(request.after, {
+                onNone: () => true,
+                onSome: (after) => id > after,
+              }) && DateTime.isLessThan(createdAt(id), request.createdBefore)
+          )
+          .slice(0, request.limit)
+          .map((id) => stateOf(id, added));
+      }),
+  })
+);
 
 const SnapshotTest = SnapshotUsage.make(2).pipe(
-  Layer.provide(States.layer),
+  Layer.provide(StatesTest),
   Layer.provideMerge(DrizzleUsageLedgerLive),
   Layer.provideMerge(DatabaseTest)
 );
@@ -84,8 +82,8 @@ const recordedOn = (on: DateTime.Utc) =>
   Effect.gen(function* recorded() {
     const ledger = yield* UsageLedger;
 
-    return yield* Effect.forEach(ids, (id) =>
-      ledger.ofWorkspace(id, { from: on, to: on })
+    return yield* Effect.all(
+      ids.map((id) => ledger.ofWorkspace(id, { from: on, to: on }))
     );
   });
 
@@ -130,13 +128,11 @@ layer(SnapshotTest)("the daily usage snapshot", (it) => {
         assert.strictEqual(run.workspaces, 4);
         assert.isAtLeast(run.purged, 1);
         assert.deepStrictEqual(
-          (yield* Ref.get(States.asked)).map(
-            ({ after, createdBefore, limit }) => ({
-              after,
-              createdBefore,
-              limit,
-            })
-          ),
+          (yield* Ref.get(asked)).map(({ after, createdBefore, limit }) => ({
+            after,
+            createdBefore,
+            limit,
+          })),
           [
             {
               after: Option.none(),
@@ -195,7 +191,7 @@ layer(SnapshotTest)("the daily usage snapshot", (it) => {
         assert.deepStrictEqual(yield* recordedOn(yesterday), expected);
 
         // A run later the same day writes the states as they are then.
-        yield* Ref.set(States.extra, 10);
+        yield* Ref.set(extra, 10);
         yield* runAt(snapshot.run);
 
         const channels = (yield* recordedOn(yesterday)).map(
@@ -208,7 +204,7 @@ layer(SnapshotTest)("the daily usage snapshot", (it) => {
           ids.map((id, index) => (id === madeToday ? undefined : index + 10))
         );
 
-        yield* Effect.forEach(ids, (id) => ledger.eraseWorkspace(id));
+        yield* Effect.all(ids.map((id) => ledger.eraseWorkspace(id)));
       })
   );
 });
