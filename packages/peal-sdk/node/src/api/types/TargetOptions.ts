@@ -14,7 +14,9 @@ export type TargetOptions =
     | Peal.TargetOptions.Mastodon
     | Peal.TargetOptions.Bluesky
     | Peal.TargetOptions.Threads
-    | Peal.TargetOptions.X;
+    | Peal.TargetOptions.X
+    | Peal.TargetOptions.Instagram
+    | Peal.TargetOptions.Facebook;
 
 export namespace TargetOptions {
     export interface Youtube extends Peal.YouTubeOptions {
@@ -51,5 +53,13 @@ export namespace TargetOptions {
 
     export interface X extends Peal.XOptions {
         platform: "x";
+    }
+
+    export interface Instagram extends Peal.InstagramOptions {
+        platform: "instagram";
+    }
+
+    export interface Facebook extends Peal.FacebookOptions {
+        platform: "facebook";
     }
 }

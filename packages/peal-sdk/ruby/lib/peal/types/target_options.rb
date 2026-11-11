@@ -28,6 +28,10 @@ module Peal
       member -> { Peal::Types::ThreadsOptions }, key: "THREADS"
 
       member -> { Peal::Types::XOptions }, key: "X"
+
+      member -> { Peal::Types::InstagramOptions }, key: "INSTAGRAM"
+
+      member -> { Peal::Types::FacebookOptions }, key: "FACEBOOK"
     end
   end
 end

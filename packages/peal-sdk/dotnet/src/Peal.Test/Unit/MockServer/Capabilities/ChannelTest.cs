@@ -41,12 +41,17 @@ public class ChannelTest : BaseMockServerTest
                     ],
                     "input": [
                       {
+                        "contentTypes": [
+                          "contentTypes",
+                          "contentTypes"
+                        ],
                         "forbiddenCharacters": [
                           "forbiddenCharacters",
                           "forbiddenCharacters"
                         ],
                         "ifLeftOut": true,
                         "lookup": "youtubeVideoCategories",
+                        "maxByteSize": 1000000,
                         "maxLength": 1,
                         "maximum": 1,
                         "minimum": 1,
@@ -60,12 +65,17 @@ public class ChannelTest : BaseMockServerTest
                         ]
                       },
                       {
+                        "contentTypes": [
+                          "contentTypes",
+                          "contentTypes"
+                        ],
                         "forbiddenCharacters": [
                           "forbiddenCharacters",
                           "forbiddenCharacters"
                         ],
                         "ifLeftOut": true,
                         "lookup": "youtubeVideoCategories",
+                        "maxByteSize": 1000000,
                         "maxLength": 1,
                         "maximum": 1,
                         "minimum": 1,
@@ -90,12 +100,17 @@ public class ChannelTest : BaseMockServerTest
                     ],
                     "input": [
                       {
+                        "contentTypes": [
+                          "contentTypes",
+                          "contentTypes"
+                        ],
                         "forbiddenCharacters": [
                           "forbiddenCharacters",
                           "forbiddenCharacters"
                         ],
                         "ifLeftOut": true,
                         "lookup": "youtubeVideoCategories",
+                        "maxByteSize": 1000000,
                         "maxLength": 1,
                         "maximum": 1,
                         "minimum": 1,
@@ -109,12 +124,17 @@ public class ChannelTest : BaseMockServerTest
                         ]
                       },
                       {
+                        "contentTypes": [
+                          "contentTypes",
+                          "contentTypes"
+                        ],
                         "forbiddenCharacters": [
                           "forbiddenCharacters",
                           "forbiddenCharacters"
                         ],
                         "ifLeftOut": true,
                         "lookup": "youtubeVideoCategories",
+                        "maxByteSize": 1000000,
                         "maxLength": 1,
                         "maximum": 1,
                         "minimum": 1,
@@ -194,12 +214,17 @@ public class ChannelTest : BaseMockServerTest
                   ],
                   "fields": [
                     {
+                      "contentTypes": [
+                        "contentTypes",
+                        "contentTypes"
+                      ],
                       "forbiddenCharacters": [
                         "forbiddenCharacters",
                         "forbiddenCharacters"
                       ],
                       "ifLeftOut": true,
                       "lookup": "youtubeVideoCategories",
+                      "maxByteSize": 1000000,
                       "maxLength": 1,
                       "maximum": 1,
                       "minimum": 1,
@@ -213,12 +238,17 @@ public class ChannelTest : BaseMockServerTest
                       ]
                     },
                     {
+                      "contentTypes": [
+                        "contentTypes",
+                        "contentTypes"
+                      ],
                       "forbiddenCharacters": [
                         "forbiddenCharacters",
                         "forbiddenCharacters"
                       ],
                       "ifLeftOut": true,
                       "lookup": "youtubeVideoCategories",
+                      "maxByteSize": 1000000,
                       "maxLength": 1,
                       "maximum": 1,
                       "minimum": 1,
@@ -308,6 +338,9 @@ public class ChannelTest : BaseMockServerTest
                     ],
                     "input": [
                       {
+                        "contentTypes": [
+                          "contentTypes"
+                        ],
                         "forbiddenCharacters": [
                           "forbiddenCharacters"
                         ],
@@ -351,6 +384,9 @@ public class ChannelTest : BaseMockServerTest
                   ],
                   "fields": [
                     {
+                      "contentTypes": [
+                        "contentTypes"
+                      ],
                       "forbiddenCharacters": [
                         "forbiddenCharacters"
                       ],

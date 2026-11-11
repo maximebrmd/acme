@@ -12,6 +12,9 @@ from .lookup_name import LookupName
 
 
 class FieldDescription(UniversalBaseModel):
+    content_types: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="contentTypes"), pydantic.Field(alias="contentTypes")
+    ]
     forbidden_characters: typing_extensions.Annotated[
         typing.List[str], FieldMetadata(alias="forbiddenCharacters"), pydantic.Field(alias="forbiddenCharacters")
     ]
@@ -19,6 +22,9 @@ class FieldDescription(UniversalBaseModel):
         typing.Optional[FieldDefault], FieldMetadata(alias="ifLeftOut"), pydantic.Field(alias="ifLeftOut")
     ] = None
     lookup: typing.Optional[LookupName] = None
+    max_byte_size: typing_extensions.Annotated[
+        typing.Optional[int], FieldMetadata(alias="maxByteSize"), pydantic.Field(alias="maxByteSize")
+    ] = None
     max_length: typing_extensions.Annotated[
         typing.Optional[int], FieldMetadata(alias="maxLength"), pydantic.Field(alias="maxLength")
     ] = None

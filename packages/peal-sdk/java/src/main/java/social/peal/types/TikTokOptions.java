@@ -22,6 +22,8 @@ import social.peal.core.ObjectMappers;
 public final class TikTokOptions {
     private final Optional<Boolean> aiGenerated;
 
+    private final Optional<Boolean> autoAddMusic;
+
     private final Optional<Boolean> brandContent;
 
     private final Optional<Boolean> brandOrganic;
@@ -34,34 +36,53 @@ public final class TikTokOptions {
 
     private final Optional<Boolean> disableStitch;
 
+    private final Optional<Integer> photoCoverIndex;
+
+    private final Optional<String> photoTitle;
+
     private final Optional<TikTokPrivacyLevel> privacyLevel;
+
+    private final Optional<Integer> videoCoverTimestampMs;
 
     private final Map<String, Object> additionalProperties;
 
     private TikTokOptions(
             Optional<Boolean> aiGenerated,
+            Optional<Boolean> autoAddMusic,
             Optional<Boolean> brandContent,
             Optional<Boolean> brandOrganic,
             Optional<Boolean> commercialContent,
             Optional<Boolean> disableComment,
             Optional<Boolean> disableDuet,
             Optional<Boolean> disableStitch,
+            Optional<Integer> photoCoverIndex,
+            Optional<String> photoTitle,
             Optional<TikTokPrivacyLevel> privacyLevel,
+            Optional<Integer> videoCoverTimestampMs,
             Map<String, Object> additionalProperties) {
         this.aiGenerated = aiGenerated;
+        this.autoAddMusic = autoAddMusic;
         this.brandContent = brandContent;
         this.brandOrganic = brandOrganic;
         this.commercialContent = commercialContent;
         this.disableComment = disableComment;
         this.disableDuet = disableDuet;
         this.disableStitch = disableStitch;
+        this.photoCoverIndex = photoCoverIndex;
+        this.photoTitle = photoTitle;
         this.privacyLevel = privacyLevel;
+        this.videoCoverTimestampMs = videoCoverTimestampMs;
         this.additionalProperties = additionalProperties;
     }
 
     @JsonProperty("aiGenerated")
     public Optional<Boolean> getAiGenerated() {
         return aiGenerated;
+    }
+
+    @JsonProperty("autoAddMusic")
+    public Optional<Boolean> getAutoAddMusic() {
+        return autoAddMusic;
     }
 
     @JsonProperty("brandContent")
@@ -94,9 +115,24 @@ public final class TikTokOptions {
         return disableStitch;
     }
 
+    @JsonProperty("photoCoverIndex")
+    public Optional<Integer> getPhotoCoverIndex() {
+        return photoCoverIndex;
+    }
+
+    @JsonProperty("photoTitle")
+    public Optional<String> getPhotoTitle() {
+        return photoTitle;
+    }
+
     @JsonProperty("privacyLevel")
     public Optional<TikTokPrivacyLevel> getPrivacyLevel() {
         return privacyLevel;
+    }
+
+    @JsonProperty("videoCoverTimestampMs")
+    public Optional<Integer> getVideoCoverTimestampMs() {
+        return videoCoverTimestampMs;
     }
 
     @java.lang.Override
@@ -112,26 +148,34 @@ public final class TikTokOptions {
 
     private boolean equalTo(TikTokOptions other) {
         return aiGenerated.equals(other.aiGenerated)
+                && autoAddMusic.equals(other.autoAddMusic)
                 && brandContent.equals(other.brandContent)
                 && brandOrganic.equals(other.brandOrganic)
                 && commercialContent.equals(other.commercialContent)
                 && disableComment.equals(other.disableComment)
                 && disableDuet.equals(other.disableDuet)
                 && disableStitch.equals(other.disableStitch)
-                && privacyLevel.equals(other.privacyLevel);
+                && photoCoverIndex.equals(other.photoCoverIndex)
+                && photoTitle.equals(other.photoTitle)
+                && privacyLevel.equals(other.privacyLevel)
+                && videoCoverTimestampMs.equals(other.videoCoverTimestampMs);
     }
 
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
                 this.aiGenerated,
+                this.autoAddMusic,
                 this.brandContent,
                 this.brandOrganic,
                 this.commercialContent,
                 this.disableComment,
                 this.disableDuet,
                 this.disableStitch,
-                this.privacyLevel);
+                this.photoCoverIndex,
+                this.photoTitle,
+                this.privacyLevel,
+                this.videoCoverTimestampMs);
     }
 
     @java.lang.Override
@@ -147,6 +191,8 @@ public final class TikTokOptions {
     public static final class Builder {
         private Optional<Boolean> aiGenerated = Optional.empty();
 
+        private Optional<Boolean> autoAddMusic = Optional.empty();
+
         private Optional<Boolean> brandContent = Optional.empty();
 
         private Optional<Boolean> brandOrganic = Optional.empty();
@@ -159,7 +205,13 @@ public final class TikTokOptions {
 
         private Optional<Boolean> disableStitch = Optional.empty();
 
+        private Optional<Integer> photoCoverIndex = Optional.empty();
+
+        private Optional<String> photoTitle = Optional.empty();
+
         private Optional<TikTokPrivacyLevel> privacyLevel = Optional.empty();
+
+        private Optional<Integer> videoCoverTimestampMs = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -167,13 +219,17 @@ public final class TikTokOptions {
 
         public Builder from(TikTokOptions other) {
             aiGenerated(other.getAiGenerated());
+            autoAddMusic(other.getAutoAddMusic());
             brandContent(other.getBrandContent());
             brandOrganic(other.getBrandOrganic());
             commercialContent(other.getCommercialContent());
             disableComment(other.getDisableComment());
             disableDuet(other.getDisableDuet());
             disableStitch(other.getDisableStitch());
+            photoCoverIndex(other.getPhotoCoverIndex());
+            photoTitle(other.getPhotoTitle());
             privacyLevel(other.getPrivacyLevel());
+            videoCoverTimestampMs(other.getVideoCoverTimestampMs());
             return this;
         }
 
@@ -185,6 +241,17 @@ public final class TikTokOptions {
 
         public Builder aiGenerated(Boolean aiGenerated) {
             this.aiGenerated = Optional.ofNullable(aiGenerated);
+            return this;
+        }
+
+        @JsonSetter(value = "autoAddMusic", nulls = Nulls.SKIP)
+        public Builder autoAddMusic(Optional<Boolean> autoAddMusic) {
+            this.autoAddMusic = autoAddMusic;
+            return this;
+        }
+
+        public Builder autoAddMusic(Boolean autoAddMusic) {
+            this.autoAddMusic = Optional.ofNullable(autoAddMusic);
             return this;
         }
 
@@ -254,6 +321,28 @@ public final class TikTokOptions {
             return this;
         }
 
+        @JsonSetter(value = "photoCoverIndex", nulls = Nulls.SKIP)
+        public Builder photoCoverIndex(Optional<Integer> photoCoverIndex) {
+            this.photoCoverIndex = photoCoverIndex;
+            return this;
+        }
+
+        public Builder photoCoverIndex(Integer photoCoverIndex) {
+            this.photoCoverIndex = Optional.ofNullable(photoCoverIndex);
+            return this;
+        }
+
+        @JsonSetter(value = "photoTitle", nulls = Nulls.SKIP)
+        public Builder photoTitle(Optional<String> photoTitle) {
+            this.photoTitle = photoTitle;
+            return this;
+        }
+
+        public Builder photoTitle(String photoTitle) {
+            this.photoTitle = Optional.ofNullable(photoTitle);
+            return this;
+        }
+
         @JsonSetter(value = "privacyLevel", nulls = Nulls.SKIP)
         public Builder privacyLevel(Optional<TikTokPrivacyLevel> privacyLevel) {
             this.privacyLevel = privacyLevel;
@@ -265,29 +354,48 @@ public final class TikTokOptions {
             return this;
         }
 
+        @JsonSetter(value = "videoCoverTimestampMs", nulls = Nulls.SKIP)
+        public Builder videoCoverTimestampMs(Optional<Integer> videoCoverTimestampMs) {
+            this.videoCoverTimestampMs = videoCoverTimestampMs;
+            return this;
+        }
+
+        public Builder videoCoverTimestampMs(Integer videoCoverTimestampMs) {
+            this.videoCoverTimestampMs = Optional.ofNullable(videoCoverTimestampMs);
+            return this;
+        }
+
         public TikTokOptions build() {
             return new TikTokOptions(
                     aiGenerated,
+                    autoAddMusic,
                     brandContent,
                     brandOrganic,
                     commercialContent,
                     disableComment,
                     disableDuet,
                     disableStitch,
+                    photoCoverIndex,
+                    photoTitle,
                     privacyLevel,
+                    videoCoverTimestampMs,
                     additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("aiGenerated")
+                    || key.equalsIgnoreCase("autoAddMusic")
                     || key.equalsIgnoreCase("brandContent")
                     || key.equalsIgnoreCase("brandOrganic")
                     || key.equalsIgnoreCase("commercialContent")
                     || key.equalsIgnoreCase("disableComment")
                     || key.equalsIgnoreCase("disableDuet")
                     || key.equalsIgnoreCase("disableStitch")
-                    || key.equalsIgnoreCase("privacyLevel")) {
+                    || key.equalsIgnoreCase("photoCoverIndex")
+                    || key.equalsIgnoreCase("photoTitle")
+                    || key.equalsIgnoreCase("privacyLevel")
+                    || key.equalsIgnoreCase("videoCoverTimestampMs")) {
                 return;
             }
             this.additionalProperties.put(key, value);

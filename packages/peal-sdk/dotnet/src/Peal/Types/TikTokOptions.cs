@@ -5,7 +5,7 @@ using Peal.Core;
 namespace Peal;
 
 /// <summary>
-/// How a post goes out on a TikTok account. Scheduling needs `privacyLevel`.
+/// How a post goes out on a TikTok account. Scheduling needs `privacyLevel`; `videoCoverTimestampMs` is for a video, `photoTitle`, `autoAddMusic` and `photoCoverIndex` for photos.
 /// </summary>
 [Serializable]
 public record TikTokOptions : IJsonOnDeserialized
@@ -16,6 +16,9 @@ public record TikTokOptions : IJsonOnDeserialized
 
     [JsonPropertyName("aiGenerated")]
     public bool? AiGenerated { get; set; }
+
+    [JsonPropertyName("autoAddMusic")]
+    public bool? AutoAddMusic { get; set; }
 
     [JsonPropertyName("brandContent")]
     public bool? BrandContent { get; set; }
@@ -35,8 +38,17 @@ public record TikTokOptions : IJsonOnDeserialized
     [JsonPropertyName("disableStitch")]
     public bool? DisableStitch { get; set; }
 
+    [JsonPropertyName("photoCoverIndex")]
+    public int? PhotoCoverIndex { get; set; }
+
+    [JsonPropertyName("photoTitle")]
+    public string? PhotoTitle { get; set; }
+
     [JsonPropertyName("privacyLevel")]
     public TikTokPrivacyLevel? PrivacyLevel { get; set; }
+
+    [JsonPropertyName("videoCoverTimestampMs")]
+    public int? VideoCoverTimestampMs { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

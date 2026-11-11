@@ -5,7 +5,7 @@ using Peal.Core;
 namespace Peal;
 
 /// <summary>
-/// How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`.
+/// How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`; `thumbnailMediaId` names an image of the library, set once the video is uploaded.
 /// </summary>
 [Serializable]
 public record YouTubeOptions : IJsonOnDeserialized
@@ -20,6 +20,15 @@ public record YouTubeOptions : IJsonOnDeserialized
     [JsonPropertyName("containsSyntheticMedia")]
     public bool? ContainsSyntheticMedia { get; set; }
 
+    [JsonPropertyName("defaultLanguage")]
+    public string? DefaultLanguage { get; set; }
+
+    [JsonPropertyName("embeddable")]
+    public bool? Embeddable { get; set; }
+
+    [JsonPropertyName("license")]
+    public YouTubeLicense? License { get; set; }
+
     [JsonPropertyName("madeForKids")]
     public bool? MadeForKids { get; set; }
 
@@ -29,8 +38,17 @@ public record YouTubeOptions : IJsonOnDeserialized
     [JsonPropertyName("privacy")]
     public YouTubePrivacy? Privacy { get; set; }
 
+    [JsonPropertyName("publicStatsViewable")]
+    public bool? PublicStatsViewable { get; set; }
+
+    [JsonPropertyName("recordingDate")]
+    public string? RecordingDate { get; set; }
+
     [JsonPropertyName("tags")]
     public IEnumerable<string>? Tags { get; set; }
+
+    [JsonPropertyName("thumbnailMediaId")]
+    public string? ThumbnailMediaId { get; set; }
 
     [JsonPropertyName("title")]
     public string? Title { get; set; }

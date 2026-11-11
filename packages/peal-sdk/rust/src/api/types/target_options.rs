@@ -13,6 +13,13 @@ pub enum TargetOptions {
         #[serde(rename = "containsSyntheticMedia")]
         #[serde(skip_serializing_if = "Option::is_none")]
         contains_synthetic_media: Option<bool>,
+        #[serde(rename = "defaultLanguage")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        default_language: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        embeddable: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        license: Option<YouTubeLicense>,
         #[serde(rename = "madeForKids")]
         #[serde(skip_serializing_if = "Option::is_none")]
         made_for_kids: Option<bool>,
@@ -21,8 +28,17 @@ pub enum TargetOptions {
         notify_subscribers: Option<bool>,
         #[serde(skip_serializing_if = "Option::is_none")]
         privacy: Option<YouTubePrivacy>,
+        #[serde(rename = "publicStatsViewable")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        public_stats_viewable: Option<bool>,
+        #[serde(rename = "recordingDate")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        recording_date: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         tags: Option<Vec<String>>,
+        #[serde(rename = "thumbnailMediaId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        thumbnail_media_id: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         title: Option<String>,
     },
@@ -33,6 +49,9 @@ pub enum TargetOptions {
         #[serde(rename = "aiGenerated")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ai_generated: Option<bool>,
+        #[serde(rename = "autoAddMusic")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        auto_add_music: Option<bool>,
         #[serde(rename = "brandContent")]
         #[serde(skip_serializing_if = "Option::is_none")]
         brand_content: Option<bool>,
@@ -51,9 +70,18 @@ pub enum TargetOptions {
         #[serde(rename = "disableStitch")]
         #[serde(skip_serializing_if = "Option::is_none")]
         disable_stitch: Option<bool>,
+        #[serde(rename = "photoCoverIndex")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        photo_cover_index: Option<i64>,
+        #[serde(rename = "photoTitle")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        photo_title: Option<String>,
         #[serde(rename = "privacyLevel")]
         #[serde(skip_serializing_if = "Option::is_none")]
         privacy_level: Option<TikTokPrivacyLevel>,
+        #[serde(rename = "videoCoverTimestampMs")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        video_cover_timestamp_ms: Option<i64>,
     },
 
     #[serde(rename = "pinterest")]
@@ -206,6 +234,36 @@ pub enum TargetOptions {
         share_with_followers: Option<bool>,
     },
 
+    #[serde(rename = "instagram")]
+    #[non_exhaustive]
+    Instagram {
+        #[serde(rename = "audioName")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        audio_name: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        collaborators: Option<Vec<String>>,
+        #[serde(rename = "coverMediaId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cover_media_id: Option<String>,
+        #[serde(rename = "shareToFeed")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        share_to_feed: Option<bool>,
+        #[serde(rename = "thumbOffsetMs")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        thumb_offset_ms: Option<i64>,
+        #[serde(rename = "trialReel")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        trial_reel: Option<InstagramTrialReel>,
+    },
+
+    #[serde(rename = "facebook")]
+    #[non_exhaustive]
+    Facebook {
+        #[serde(rename = "videoTitle")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        video_title: Option<String>,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -218,10 +276,16 @@ impl TargetOptions {
         Self::Youtube {
             category_id: None,
             contains_synthetic_media: None,
+            default_language: None,
+            embeddable: None,
+            license: None,
             made_for_kids: None,
             notify_subscribers: None,
             privacy: None,
+            public_stats_viewable: None,
+            recording_date: None,
             tags: None,
+            thumbnail_media_id: None,
             title: None,
         }
     }
@@ -229,13 +293,17 @@ impl TargetOptions {
     pub fn tiktok() -> Self {
         Self::Tiktok {
             ai_generated: None,
+            auto_add_music: None,
             brand_content: None,
             brand_organic: None,
             commercial_content: None,
             disable_comment: None,
             disable_duet: None,
             disable_stitch: None,
+            photo_cover_index: None,
+            photo_title: None,
             privacy_level: None,
+            video_cover_timestamp_ms: None,
         }
     }
 
@@ -316,22 +384,49 @@ impl TargetOptions {
         }
     }
 
+    pub fn instagram() -> Self {
+        Self::Instagram {
+            audio_name: None,
+            collaborators: None,
+            cover_media_id: None,
+            share_to_feed: None,
+            thumb_offset_ms: None,
+            trial_reel: None,
+        }
+    }
+
+    pub fn facebook() -> Self {
+        Self::Facebook { video_title: None }
+    }
+
     pub fn youtube_with_category_id(
         category_id: String,
         contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
         made_for_kids: Option<bool>,
         notify_subscribers: Option<bool>,
         privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
         tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
         title: Option<String>,
     ) -> Self {
         Self::Youtube {
             category_id: Some(category_id),
             contains_synthetic_media,
+            default_language,
+            embeddable,
+            license,
             made_for_kids,
             notify_subscribers,
             privacy,
+            public_stats_viewable,
+            recording_date,
             tags,
+            thumbnail_media_id,
             title,
         }
     }
@@ -339,19 +434,127 @@ impl TargetOptions {
     pub fn youtube_with_contains_synthetic_media(
         category_id: Option<String>,
         contains_synthetic_media: bool,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
         made_for_kids: Option<bool>,
         notify_subscribers: Option<bool>,
         privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
         tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
         title: Option<String>,
     ) -> Self {
         Self::Youtube {
             category_id,
             contains_synthetic_media: Some(contains_synthetic_media),
+            default_language,
+            embeddable,
+            license,
             made_for_kids,
             notify_subscribers,
             privacy,
+            public_stats_viewable,
+            recording_date,
             tags,
+            thumbnail_media_id,
+            title,
+        }
+    }
+
+    pub fn youtube_with_default_language(
+        category_id: Option<String>,
+        contains_synthetic_media: Option<bool>,
+        default_language: String,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
+        made_for_kids: Option<bool>,
+        notify_subscribers: Option<bool>,
+        privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
+        tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Youtube {
+            category_id,
+            contains_synthetic_media,
+            default_language: Some(default_language),
+            embeddable,
+            license,
+            made_for_kids,
+            notify_subscribers,
+            privacy,
+            public_stats_viewable,
+            recording_date,
+            tags,
+            thumbnail_media_id,
+            title,
+        }
+    }
+
+    pub fn youtube_with_embeddable(
+        category_id: Option<String>,
+        contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: bool,
+        license: Option<YouTubeLicense>,
+        made_for_kids: Option<bool>,
+        notify_subscribers: Option<bool>,
+        privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
+        tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Youtube {
+            category_id,
+            contains_synthetic_media,
+            default_language,
+            embeddable: Some(embeddable),
+            license,
+            made_for_kids,
+            notify_subscribers,
+            privacy,
+            public_stats_viewable,
+            recording_date,
+            tags,
+            thumbnail_media_id,
+            title,
+        }
+    }
+
+    pub fn youtube_with_license(
+        category_id: Option<String>,
+        contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: YouTubeLicense,
+        made_for_kids: Option<bool>,
+        notify_subscribers: Option<bool>,
+        privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
+        tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Youtube {
+            category_id,
+            contains_synthetic_media,
+            default_language,
+            embeddable,
+            license: Some(license),
+            made_for_kids,
+            notify_subscribers,
+            privacy,
+            public_stats_viewable,
+            recording_date,
+            tags,
+            thumbnail_media_id,
             title,
         }
     }
@@ -359,19 +562,31 @@ impl TargetOptions {
     pub fn youtube_with_made_for_kids(
         category_id: Option<String>,
         contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
         made_for_kids: bool,
         notify_subscribers: Option<bool>,
         privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
         tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
         title: Option<String>,
     ) -> Self {
         Self::Youtube {
             category_id,
             contains_synthetic_media,
+            default_language,
+            embeddable,
+            license,
             made_for_kids: Some(made_for_kids),
             notify_subscribers,
             privacy,
+            public_stats_viewable,
+            recording_date,
             tags,
+            thumbnail_media_id,
             title,
         }
     }
@@ -379,19 +594,31 @@ impl TargetOptions {
     pub fn youtube_with_notify_subscribers(
         category_id: Option<String>,
         contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
         made_for_kids: Option<bool>,
         notify_subscribers: bool,
         privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
         tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
         title: Option<String>,
     ) -> Self {
         Self::Youtube {
             category_id,
             contains_synthetic_media,
+            default_language,
+            embeddable,
+            license,
             made_for_kids,
             notify_subscribers: Some(notify_subscribers),
             privacy,
+            public_stats_viewable,
+            recording_date,
             tags,
+            thumbnail_media_id,
             title,
         }
     }
@@ -399,19 +626,95 @@ impl TargetOptions {
     pub fn youtube_with_privacy(
         category_id: Option<String>,
         contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
         made_for_kids: Option<bool>,
         notify_subscribers: Option<bool>,
         privacy: YouTubePrivacy,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
         tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
         title: Option<String>,
     ) -> Self {
         Self::Youtube {
             category_id,
             contains_synthetic_media,
+            default_language,
+            embeddable,
+            license,
             made_for_kids,
             notify_subscribers,
             privacy: Some(privacy),
+            public_stats_viewable,
+            recording_date,
             tags,
+            thumbnail_media_id,
+            title,
+        }
+    }
+
+    pub fn youtube_with_public_stats_viewable(
+        category_id: Option<String>,
+        contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
+        made_for_kids: Option<bool>,
+        notify_subscribers: Option<bool>,
+        privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: bool,
+        recording_date: Option<String>,
+        tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Youtube {
+            category_id,
+            contains_synthetic_media,
+            default_language,
+            embeddable,
+            license,
+            made_for_kids,
+            notify_subscribers,
+            privacy,
+            public_stats_viewable: Some(public_stats_viewable),
+            recording_date,
+            tags,
+            thumbnail_media_id,
+            title,
+        }
+    }
+
+    pub fn youtube_with_recording_date(
+        category_id: Option<String>,
+        contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
+        made_for_kids: Option<bool>,
+        notify_subscribers: Option<bool>,
+        privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: String,
+        tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Youtube {
+            category_id,
+            contains_synthetic_media,
+            default_language,
+            embeddable,
+            license,
+            made_for_kids,
+            notify_subscribers,
+            privacy,
+            public_stats_viewable,
+            recording_date: Some(recording_date),
+            tags,
+            thumbnail_media_id,
             title,
         }
     }
@@ -419,19 +722,63 @@ impl TargetOptions {
     pub fn youtube_with_tags(
         category_id: Option<String>,
         contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
         made_for_kids: Option<bool>,
         notify_subscribers: Option<bool>,
         privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
         tags: Vec<String>,
+        thumbnail_media_id: Option<String>,
         title: Option<String>,
     ) -> Self {
         Self::Youtube {
             category_id,
             contains_synthetic_media,
+            default_language,
+            embeddable,
+            license,
             made_for_kids,
             notify_subscribers,
             privacy,
+            public_stats_viewable,
+            recording_date,
             tags: Some(tags),
+            thumbnail_media_id,
+            title,
+        }
+    }
+
+    pub fn youtube_with_thumbnail_media_id(
+        category_id: Option<String>,
+        contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
+        made_for_kids: Option<bool>,
+        notify_subscribers: Option<bool>,
+        privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
+        tags: Option<Vec<String>>,
+        thumbnail_media_id: String,
+        title: Option<String>,
+    ) -> Self {
+        Self::Youtube {
+            category_id,
+            contains_synthetic_media,
+            default_language,
+            embeddable,
+            license,
+            made_for_kids,
+            notify_subscribers,
+            privacy,
+            public_stats_viewable,
+            recording_date,
+            tags,
+            thumbnail_media_id: Some(thumbnail_media_id),
             title,
         }
     }
@@ -439,196 +786,392 @@ impl TargetOptions {
     pub fn youtube_with_title(
         category_id: Option<String>,
         contains_synthetic_media: Option<bool>,
+        default_language: Option<String>,
+        embeddable: Option<bool>,
+        license: Option<YouTubeLicense>,
         made_for_kids: Option<bool>,
         notify_subscribers: Option<bool>,
         privacy: Option<YouTubePrivacy>,
+        public_stats_viewable: Option<bool>,
+        recording_date: Option<String>,
         tags: Option<Vec<String>>,
+        thumbnail_media_id: Option<String>,
         title: String,
     ) -> Self {
         Self::Youtube {
             category_id,
             contains_synthetic_media,
+            default_language,
+            embeddable,
+            license,
             made_for_kids,
             notify_subscribers,
             privacy,
+            public_stats_viewable,
+            recording_date,
             tags,
+            thumbnail_media_id,
             title: Some(title),
         }
     }
 
     pub fn tiktok_with_ai_generated(
         ai_generated: bool,
+        auto_add_music: Option<bool>,
         brand_content: Option<bool>,
         brand_organic: Option<bool>,
         commercial_content: Option<bool>,
         disable_comment: Option<bool>,
         disable_duet: Option<bool>,
         disable_stitch: Option<bool>,
+        photo_cover_index: Option<i64>,
+        photo_title: Option<String>,
         privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: Option<i64>,
     ) -> Self {
         Self::Tiktok {
             ai_generated: Some(ai_generated),
+            auto_add_music,
             brand_content,
             brand_organic,
             commercial_content,
             disable_comment,
             disable_duet,
             disable_stitch,
+            photo_cover_index,
+            photo_title,
             privacy_level,
+            video_cover_timestamp_ms,
+        }
+    }
+
+    pub fn tiktok_with_auto_add_music(
+        ai_generated: Option<bool>,
+        auto_add_music: bool,
+        brand_content: Option<bool>,
+        brand_organic: Option<bool>,
+        commercial_content: Option<bool>,
+        disable_comment: Option<bool>,
+        disable_duet: Option<bool>,
+        disable_stitch: Option<bool>,
+        photo_cover_index: Option<i64>,
+        photo_title: Option<String>,
+        privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: Option<i64>,
+    ) -> Self {
+        Self::Tiktok {
+            ai_generated,
+            auto_add_music: Some(auto_add_music),
+            brand_content,
+            brand_organic,
+            commercial_content,
+            disable_comment,
+            disable_duet,
+            disable_stitch,
+            photo_cover_index,
+            photo_title,
+            privacy_level,
+            video_cover_timestamp_ms,
         }
     }
 
     pub fn tiktok_with_brand_content(
         ai_generated: Option<bool>,
+        auto_add_music: Option<bool>,
         brand_content: bool,
         brand_organic: Option<bool>,
         commercial_content: Option<bool>,
         disable_comment: Option<bool>,
         disable_duet: Option<bool>,
         disable_stitch: Option<bool>,
+        photo_cover_index: Option<i64>,
+        photo_title: Option<String>,
         privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: Option<i64>,
     ) -> Self {
         Self::Tiktok {
             ai_generated,
+            auto_add_music,
             brand_content: Some(brand_content),
             brand_organic,
             commercial_content,
             disable_comment,
             disable_duet,
             disable_stitch,
+            photo_cover_index,
+            photo_title,
             privacy_level,
+            video_cover_timestamp_ms,
         }
     }
 
     pub fn tiktok_with_brand_organic(
         ai_generated: Option<bool>,
+        auto_add_music: Option<bool>,
         brand_content: Option<bool>,
         brand_organic: bool,
         commercial_content: Option<bool>,
         disable_comment: Option<bool>,
         disable_duet: Option<bool>,
         disable_stitch: Option<bool>,
+        photo_cover_index: Option<i64>,
+        photo_title: Option<String>,
         privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: Option<i64>,
     ) -> Self {
         Self::Tiktok {
             ai_generated,
+            auto_add_music,
             brand_content,
             brand_organic: Some(brand_organic),
             commercial_content,
             disable_comment,
             disable_duet,
             disable_stitch,
+            photo_cover_index,
+            photo_title,
             privacy_level,
+            video_cover_timestamp_ms,
         }
     }
 
     pub fn tiktok_with_commercial_content(
         ai_generated: Option<bool>,
+        auto_add_music: Option<bool>,
         brand_content: Option<bool>,
         brand_organic: Option<bool>,
         commercial_content: bool,
         disable_comment: Option<bool>,
         disable_duet: Option<bool>,
         disable_stitch: Option<bool>,
+        photo_cover_index: Option<i64>,
+        photo_title: Option<String>,
         privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: Option<i64>,
     ) -> Self {
         Self::Tiktok {
             ai_generated,
+            auto_add_music,
             brand_content,
             brand_organic,
             commercial_content: Some(commercial_content),
             disable_comment,
             disable_duet,
             disable_stitch,
+            photo_cover_index,
+            photo_title,
             privacy_level,
+            video_cover_timestamp_ms,
         }
     }
 
     pub fn tiktok_with_disable_comment(
         ai_generated: Option<bool>,
+        auto_add_music: Option<bool>,
         brand_content: Option<bool>,
         brand_organic: Option<bool>,
         commercial_content: Option<bool>,
         disable_comment: bool,
         disable_duet: Option<bool>,
         disable_stitch: Option<bool>,
+        photo_cover_index: Option<i64>,
+        photo_title: Option<String>,
         privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: Option<i64>,
     ) -> Self {
         Self::Tiktok {
             ai_generated,
+            auto_add_music,
             brand_content,
             brand_organic,
             commercial_content,
             disable_comment: Some(disable_comment),
             disable_duet,
             disable_stitch,
+            photo_cover_index,
+            photo_title,
             privacy_level,
+            video_cover_timestamp_ms,
         }
     }
 
     pub fn tiktok_with_disable_duet(
         ai_generated: Option<bool>,
+        auto_add_music: Option<bool>,
         brand_content: Option<bool>,
         brand_organic: Option<bool>,
         commercial_content: Option<bool>,
         disable_comment: Option<bool>,
         disable_duet: bool,
         disable_stitch: Option<bool>,
+        photo_cover_index: Option<i64>,
+        photo_title: Option<String>,
         privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: Option<i64>,
     ) -> Self {
         Self::Tiktok {
             ai_generated,
+            auto_add_music,
             brand_content,
             brand_organic,
             commercial_content,
             disable_comment,
             disable_duet: Some(disable_duet),
             disable_stitch,
+            photo_cover_index,
+            photo_title,
             privacy_level,
+            video_cover_timestamp_ms,
         }
     }
 
     pub fn tiktok_with_disable_stitch(
         ai_generated: Option<bool>,
+        auto_add_music: Option<bool>,
         brand_content: Option<bool>,
         brand_organic: Option<bool>,
         commercial_content: Option<bool>,
         disable_comment: Option<bool>,
         disable_duet: Option<bool>,
         disable_stitch: bool,
+        photo_cover_index: Option<i64>,
+        photo_title: Option<String>,
         privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: Option<i64>,
     ) -> Self {
         Self::Tiktok {
             ai_generated,
+            auto_add_music,
             brand_content,
             brand_organic,
             commercial_content,
             disable_comment,
             disable_duet,
             disable_stitch: Some(disable_stitch),
+            photo_cover_index,
+            photo_title,
             privacy_level,
+            video_cover_timestamp_ms,
         }
     }
 
-    pub fn tiktok_with_privacy_level(
+    pub fn tiktok_with_photo_cover_index(
         ai_generated: Option<bool>,
+        auto_add_music: Option<bool>,
         brand_content: Option<bool>,
         brand_organic: Option<bool>,
         commercial_content: Option<bool>,
         disable_comment: Option<bool>,
         disable_duet: Option<bool>,
         disable_stitch: Option<bool>,
-        privacy_level: TikTokPrivacyLevel,
+        photo_cover_index: i64,
+        photo_title: Option<String>,
+        privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: Option<i64>,
     ) -> Self {
         Self::Tiktok {
             ai_generated,
+            auto_add_music,
             brand_content,
             brand_organic,
             commercial_content,
             disable_comment,
             disable_duet,
             disable_stitch,
+            photo_cover_index: Some(photo_cover_index),
+            photo_title,
+            privacy_level,
+            video_cover_timestamp_ms,
+        }
+    }
+
+    pub fn tiktok_with_photo_title(
+        ai_generated: Option<bool>,
+        auto_add_music: Option<bool>,
+        brand_content: Option<bool>,
+        brand_organic: Option<bool>,
+        commercial_content: Option<bool>,
+        disable_comment: Option<bool>,
+        disable_duet: Option<bool>,
+        disable_stitch: Option<bool>,
+        photo_cover_index: Option<i64>,
+        photo_title: String,
+        privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: Option<i64>,
+    ) -> Self {
+        Self::Tiktok {
+            ai_generated,
+            auto_add_music,
+            brand_content,
+            brand_organic,
+            commercial_content,
+            disable_comment,
+            disable_duet,
+            disable_stitch,
+            photo_cover_index,
+            photo_title: Some(photo_title),
+            privacy_level,
+            video_cover_timestamp_ms,
+        }
+    }
+
+    pub fn tiktok_with_privacy_level(
+        ai_generated: Option<bool>,
+        auto_add_music: Option<bool>,
+        brand_content: Option<bool>,
+        brand_organic: Option<bool>,
+        commercial_content: Option<bool>,
+        disable_comment: Option<bool>,
+        disable_duet: Option<bool>,
+        disable_stitch: Option<bool>,
+        photo_cover_index: Option<i64>,
+        photo_title: Option<String>,
+        privacy_level: TikTokPrivacyLevel,
+        video_cover_timestamp_ms: Option<i64>,
+    ) -> Self {
+        Self::Tiktok {
+            ai_generated,
+            auto_add_music,
+            brand_content,
+            brand_organic,
+            commercial_content,
+            disable_comment,
+            disable_duet,
+            disable_stitch,
+            photo_cover_index,
+            photo_title,
             privacy_level: Some(privacy_level),
+            video_cover_timestamp_ms,
+        }
+    }
+
+    pub fn tiktok_with_video_cover_timestamp_ms(
+        ai_generated: Option<bool>,
+        auto_add_music: Option<bool>,
+        brand_content: Option<bool>,
+        brand_organic: Option<bool>,
+        commercial_content: Option<bool>,
+        disable_comment: Option<bool>,
+        disable_duet: Option<bool>,
+        disable_stitch: Option<bool>,
+        photo_cover_index: Option<i64>,
+        photo_title: Option<String>,
+        privacy_level: Option<TikTokPrivacyLevel>,
+        video_cover_timestamp_ms: i64,
+    ) -> Self {
+        Self::Tiktok {
+            ai_generated,
+            auto_add_music,
+            brand_content,
+            brand_organic,
+            commercial_content,
+            disable_comment,
+            disable_duet,
+            disable_stitch,
+            photo_cover_index,
+            photo_title,
+            privacy_level,
+            video_cover_timestamp_ms: Some(video_cover_timestamp_ms),
         }
     }
 
@@ -1429,6 +1972,120 @@ impl TargetOptions {
             paid_partnership,
             reply_settings,
             share_with_followers: Some(share_with_followers),
+        }
+    }
+
+    pub fn instagram_with_audio_name(
+        audio_name: String,
+        collaborators: Option<Vec<String>>,
+        cover_media_id: Option<String>,
+        share_to_feed: Option<bool>,
+        thumb_offset_ms: Option<i64>,
+        trial_reel: Option<InstagramTrialReel>,
+    ) -> Self {
+        Self::Instagram {
+            audio_name: Some(audio_name),
+            collaborators,
+            cover_media_id,
+            share_to_feed,
+            thumb_offset_ms,
+            trial_reel,
+        }
+    }
+
+    pub fn instagram_with_collaborators(
+        audio_name: Option<String>,
+        collaborators: Vec<String>,
+        cover_media_id: Option<String>,
+        share_to_feed: Option<bool>,
+        thumb_offset_ms: Option<i64>,
+        trial_reel: Option<InstagramTrialReel>,
+    ) -> Self {
+        Self::Instagram {
+            audio_name,
+            collaborators: Some(collaborators),
+            cover_media_id,
+            share_to_feed,
+            thumb_offset_ms,
+            trial_reel,
+        }
+    }
+
+    pub fn instagram_with_cover_media_id(
+        audio_name: Option<String>,
+        collaborators: Option<Vec<String>>,
+        cover_media_id: String,
+        share_to_feed: Option<bool>,
+        thumb_offset_ms: Option<i64>,
+        trial_reel: Option<InstagramTrialReel>,
+    ) -> Self {
+        Self::Instagram {
+            audio_name,
+            collaborators,
+            cover_media_id: Some(cover_media_id),
+            share_to_feed,
+            thumb_offset_ms,
+            trial_reel,
+        }
+    }
+
+    pub fn instagram_with_share_to_feed(
+        audio_name: Option<String>,
+        collaborators: Option<Vec<String>>,
+        cover_media_id: Option<String>,
+        share_to_feed: bool,
+        thumb_offset_ms: Option<i64>,
+        trial_reel: Option<InstagramTrialReel>,
+    ) -> Self {
+        Self::Instagram {
+            audio_name,
+            collaborators,
+            cover_media_id,
+            share_to_feed: Some(share_to_feed),
+            thumb_offset_ms,
+            trial_reel,
+        }
+    }
+
+    pub fn instagram_with_thumb_offset_ms(
+        audio_name: Option<String>,
+        collaborators: Option<Vec<String>>,
+        cover_media_id: Option<String>,
+        share_to_feed: Option<bool>,
+        thumb_offset_ms: i64,
+        trial_reel: Option<InstagramTrialReel>,
+    ) -> Self {
+        Self::Instagram {
+            audio_name,
+            collaborators,
+            cover_media_id,
+            share_to_feed,
+            thumb_offset_ms: Some(thumb_offset_ms),
+            trial_reel,
+        }
+    }
+
+    pub fn instagram_with_trial_reel(
+        audio_name: Option<String>,
+        collaborators: Option<Vec<String>>,
+        cover_media_id: Option<String>,
+        share_to_feed: Option<bool>,
+        thumb_offset_ms: Option<i64>,
+        trial_reel: InstagramTrialReel,
+    ) -> Self {
+        Self::Instagram {
+            audio_name,
+            collaborators,
+            cover_media_id,
+            share_to_feed,
+            thumb_offset_ms,
+            trial_reel: Some(trial_reel),
+        }
+    }
+
+    pub fn facebook_with_video_title(video_title: String) -> Self {
+        Self::Facebook {
+            video_title: Some(video_title),
         }
     }
 

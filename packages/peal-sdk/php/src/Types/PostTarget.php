@@ -68,6 +68,12 @@ class PostTarget extends JsonSerializableType
     public string $status;
 
     /**
+     * @var ?bool $thumbnailNotSet
+     */
+    #[JsonProperty('thumbnailNotSet')]
+    public ?bool $thumbnailNotSet;
+
+    /**
      * @var ?value-of<UnconfirmedReason> $unconfirmedReason
      */
     #[JsonProperty('unconfirmedReason')]
@@ -85,6 +91,7 @@ class PostTarget extends JsonSerializableType
      *   options?: ?TargetOptions,
      *   permalink?: ?string,
      *   publishedAt?: ?string,
+     *   thumbnailNotSet?: ?bool,
      *   unconfirmedReason?: ?value-of<UnconfirmedReason>,
      * } $values
      */
@@ -101,6 +108,7 @@ class PostTarget extends JsonSerializableType
         $this->publishedAt = $values['publishedAt'] ?? null;
         $this->round = $values['round'];
         $this->status = $values['status'];
+        $this->thumbnailNotSet = $values['thumbnailNotSet'] ?? null;
         $this->unconfirmedReason = $values['unconfirmedReason'] ?? null;
     }
 

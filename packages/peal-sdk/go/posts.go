@@ -11903,7 +11903,8 @@ var (
 	postTargetFieldPublishedAt       = big.NewInt(1 << 7)
 	postTargetFieldRound             = big.NewInt(1 << 8)
 	postTargetFieldStatus            = big.NewInt(1 << 9)
-	postTargetFieldUnconfirmedReason = big.NewInt(1 << 10)
+	postTargetFieldThumbnailNotSet   = big.NewInt(1 << 10)
+	postTargetFieldUnconfirmedReason = big.NewInt(1 << 11)
 )
 
 // postTargetNullableFields maps the wire names of PostTarget's nullable fields (required or optional) to their field bits.
@@ -11926,6 +11927,7 @@ type PostTarget struct {
 	PublishedAt       *string            `json:"publishedAt,omitempty" url:"publishedAt,omitempty"`
 	Round             int                `json:"round" url:"round"`
 	Status            PostTargetStatus   `json:"status" url:"status"`
+	ThumbnailNotSet   *bool              `json:"thumbnailNotSet,omitempty" url:"thumbnailNotSet,omitempty"`
 	UnconfirmedReason *UnconfirmedReason `json:"unconfirmedReason,omitempty" url:"unconfirmedReason,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -12003,6 +12005,13 @@ func (p *PostTarget) GetStatus() PostTargetStatus {
 		return ""
 	}
 	return p.Status
+}
+
+func (p *PostTarget) GetThumbnailNotSet() *bool {
+	if p == nil {
+		return nil
+	}
+	return p.ThumbnailNotSet
 }
 
 func (p *PostTarget) GetUnconfirmedReason() *UnconfirmedReason {
@@ -12096,6 +12105,13 @@ func (p *PostTarget) SetRound(round int) {
 func (p *PostTarget) SetStatus(status PostTargetStatus) {
 	p.Status = status
 	p.require(postTargetFieldStatus)
+}
+
+// SetThumbnailNotSet sets the ThumbnailNotSet field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTarget) SetThumbnailNotSet(thumbnailNotSet *bool) {
+	p.ThumbnailNotSet = thumbnailNotSet
+	p.require(postTargetFieldThumbnailNotSet)
 }
 
 // SetUnconfirmedReason sets the UnconfirmedReason field and marks it as non-optional;

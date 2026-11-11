@@ -6493,6 +6493,93 @@ func (e ExternalIDTakenEncodedTag) Ptr() *ExternalIDTakenEncodedTag {
 	return &e
 }
 
+var (
+	facebookOptionsFieldVideoTitle = big.NewInt(1 << 0)
+)
+
+// How a post goes out on a Facebook Page. Scheduling needs none of them; `videoTitle` is for a post of a video.
+type FacebookOptions struct {
+	VideoTitle *string `json:"videoTitle,omitempty" url:"videoTitle,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FacebookOptions) GetVideoTitle() *string {
+	if f == nil {
+		return nil
+	}
+	return f.VideoTitle
+}
+
+func (f *FacebookOptions) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FacebookOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetVideoTitle sets the VideoTitle field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FacebookOptions) SetVideoTitle(videoTitle *string) {
+	f.VideoTitle = videoTitle
+	f.require(facebookOptionsFieldVideoTitle)
+}
+
+func (f *FacebookOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler FacebookOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FacebookOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FacebookOptions) MarshalJSON() ([]byte, error) {
+	type embed FacebookOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FacebookOptions) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
 type FailureReason string
 
 const (
@@ -6641,33 +6728,38 @@ func (f *FieldDefault) Accept(visitor FieldDefaultVisitor) error {
 }
 
 var (
-	fieldDescriptionFieldForbiddenCharacters = big.NewInt(1 << 0)
-	fieldDescriptionFieldIfLeftOut           = big.NewInt(1 << 1)
-	fieldDescriptionFieldLookup              = big.NewInt(1 << 2)
-	fieldDescriptionFieldMaxLength           = big.NewInt(1 << 3)
-	fieldDescriptionFieldMaximum             = big.NewInt(1 << 4)
-	fieldDescriptionFieldMinimum             = big.NewInt(1 << 5)
-	fieldDescriptionFieldName                = big.NewInt(1 << 6)
-	fieldDescriptionFieldPattern             = big.NewInt(1 << 7)
-	fieldDescriptionFieldRequired            = big.NewInt(1 << 8)
-	fieldDescriptionFieldType                = big.NewInt(1 << 9)
-	fieldDescriptionFieldValues              = big.NewInt(1 << 10)
+	fieldDescriptionFieldContentTypes        = big.NewInt(1 << 0)
+	fieldDescriptionFieldForbiddenCharacters = big.NewInt(1 << 1)
+	fieldDescriptionFieldIfLeftOut           = big.NewInt(1 << 2)
+	fieldDescriptionFieldLookup              = big.NewInt(1 << 3)
+	fieldDescriptionFieldMaxByteSize         = big.NewInt(1 << 4)
+	fieldDescriptionFieldMaxLength           = big.NewInt(1 << 5)
+	fieldDescriptionFieldMaximum             = big.NewInt(1 << 6)
+	fieldDescriptionFieldMinimum             = big.NewInt(1 << 7)
+	fieldDescriptionFieldName                = big.NewInt(1 << 8)
+	fieldDescriptionFieldPattern             = big.NewInt(1 << 9)
+	fieldDescriptionFieldRequired            = big.NewInt(1 << 10)
+	fieldDescriptionFieldType                = big.NewInt(1 << 11)
+	fieldDescriptionFieldValues              = big.NewInt(1 << 12)
 )
 
 // fieldDescriptionNullableFields maps the wire names of FieldDescription's nullable fields (required or optional) to their field bits.
 var fieldDescriptionNullableFields = map[string]*big.Int{
-	"ifLeftOut": fieldDescriptionFieldIfLeftOut,
-	"lookup":    fieldDescriptionFieldLookup,
-	"maxLength": fieldDescriptionFieldMaxLength,
-	"maximum":   fieldDescriptionFieldMaximum,
-	"minimum":   fieldDescriptionFieldMinimum,
-	"pattern":   fieldDescriptionFieldPattern,
+	"ifLeftOut":   fieldDescriptionFieldIfLeftOut,
+	"lookup":      fieldDescriptionFieldLookup,
+	"maxByteSize": fieldDescriptionFieldMaxByteSize,
+	"maxLength":   fieldDescriptionFieldMaxLength,
+	"maximum":     fieldDescriptionFieldMaximum,
+	"minimum":     fieldDescriptionFieldMinimum,
+	"pattern":     fieldDescriptionFieldPattern,
 }
 
 type FieldDescription struct {
+	ContentTypes        []string      `json:"contentTypes" url:"contentTypes"`
 	ForbiddenCharacters []string      `json:"forbiddenCharacters" url:"forbiddenCharacters"`
 	IfLeftOut           *FieldDefault `json:"ifLeftOut,omitempty" url:"ifLeftOut,omitempty"`
 	Lookup              *LookupName   `json:"lookup,omitempty" url:"lookup,omitempty"`
+	MaxByteSize         *int64        `json:"maxByteSize,omitempty" url:"maxByteSize,omitempty"`
 	MaxLength           *int          `json:"maxLength,omitempty" url:"maxLength,omitempty"`
 	Maximum             *int          `json:"maximum,omitempty" url:"maximum,omitempty"`
 	Minimum             *int          `json:"minimum,omitempty" url:"minimum,omitempty"`
@@ -6682,6 +6774,13 @@ type FieldDescription struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FieldDescription) GetContentTypes() []string {
+	if f == nil {
+		return nil
+	}
+	return f.ContentTypes
 }
 
 func (f *FieldDescription) GetForbiddenCharacters() []string {
@@ -6703,6 +6802,13 @@ func (f *FieldDescription) GetLookup() *LookupName {
 		return nil
 	}
 	return f.Lookup
+}
+
+func (f *FieldDescription) GetMaxByteSize() *int64 {
+	if f == nil {
+		return nil
+	}
+	return f.MaxByteSize
 }
 
 func (f *FieldDescription) GetMaxLength() *int {
@@ -6777,6 +6883,13 @@ func (f *FieldDescription) require(field *big.Int) {
 	f.explicitFields = next
 }
 
+// SetContentTypes sets the ContentTypes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetContentTypes(contentTypes []string) {
+	f.ContentTypes = contentTypes
+	f.require(fieldDescriptionFieldContentTypes)
+}
+
 // SetForbiddenCharacters sets the ForbiddenCharacters field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (f *FieldDescription) SetForbiddenCharacters(forbiddenCharacters []string) {
@@ -6796,6 +6909,13 @@ func (f *FieldDescription) SetIfLeftOut(ifLeftOut *FieldDefault) {
 func (f *FieldDescription) SetLookup(lookup *LookupName) {
 	f.Lookup = lookup
 	f.require(fieldDescriptionFieldLookup)
+}
+
+// SetMaxByteSize sets the MaxByteSize field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetMaxByteSize(maxByteSize *int64) {
+	f.MaxByteSize = maxByteSize
+	f.require(fieldDescriptionFieldMaxByteSize)
 }
 
 // SetMaxLength sets the MaxLength field and marks it as non-optional;
@@ -6909,6 +7029,7 @@ const (
 	FieldTypeBoolean     FieldType = "boolean"
 	FieldTypeChoice      FieldType = "choice"
 	FieldTypeInteger     FieldType = "integer"
+	FieldTypeMedia       FieldType = "media"
 	FieldTypeMentionList FieldType = "mentionList"
 	FieldTypeText        FieldType = "text"
 	FieldTypeTextList    FieldType = "textList"
@@ -6922,6 +7043,8 @@ func NewFieldTypeFromString(s string) (FieldType, error) {
 		return FieldTypeChoice, nil
 	case "integer":
 		return FieldTypeInteger, nil
+	case "media":
+		return FieldTypeMedia, nil
 	case "mentionList":
 		return FieldTypeMentionList, nil
 	case "text":
@@ -8442,6 +8565,195 @@ func (i *InboxThreadNotFoundEncoded) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	instagramOptionsFieldAudioName     = big.NewInt(1 << 0)
+	instagramOptionsFieldCollaborators = big.NewInt(1 << 1)
+	instagramOptionsFieldCoverMediaID  = big.NewInt(1 << 2)
+	instagramOptionsFieldShareToFeed   = big.NewInt(1 << 3)
+	instagramOptionsFieldThumbOffsetMs = big.NewInt(1 << 4)
+	instagramOptionsFieldTrialReel     = big.NewInt(1 << 5)
+)
+
+// How a post goes out on an Instagram account. Scheduling needs none of them; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.
+type InstagramOptions struct {
+	AudioName     *string             `json:"audioName,omitempty" url:"audioName,omitempty"`
+	Collaborators []string            `json:"collaborators,omitempty" url:"collaborators,omitempty"`
+	CoverMediaID  *string             `json:"coverMediaId,omitempty" url:"coverMediaId,omitempty"`
+	ShareToFeed   *bool               `json:"shareToFeed,omitempty" url:"shareToFeed,omitempty"`
+	ThumbOffsetMs *int                `json:"thumbOffsetMs,omitempty" url:"thumbOffsetMs,omitempty"`
+	TrialReel     *InstagramTrialReel `json:"trialReel,omitempty" url:"trialReel,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *InstagramOptions) GetAudioName() *string {
+	if i == nil {
+		return nil
+	}
+	return i.AudioName
+}
+
+func (i *InstagramOptions) GetCollaborators() []string {
+	if i == nil {
+		return nil
+	}
+	return i.Collaborators
+}
+
+func (i *InstagramOptions) GetCoverMediaID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.CoverMediaID
+}
+
+func (i *InstagramOptions) GetShareToFeed() *bool {
+	if i == nil {
+		return nil
+	}
+	return i.ShareToFeed
+}
+
+func (i *InstagramOptions) GetThumbOffsetMs() *int {
+	if i == nil {
+		return nil
+	}
+	return i.ThumbOffsetMs
+}
+
+func (i *InstagramOptions) GetTrialReel() *InstagramTrialReel {
+	if i == nil {
+		return nil
+	}
+	return i.TrialReel
+}
+
+func (i *InstagramOptions) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *InstagramOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetAudioName sets the AudioName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InstagramOptions) SetAudioName(audioName *string) {
+	i.AudioName = audioName
+	i.require(instagramOptionsFieldAudioName)
+}
+
+// SetCollaborators sets the Collaborators field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InstagramOptions) SetCollaborators(collaborators []string) {
+	i.Collaborators = collaborators
+	i.require(instagramOptionsFieldCollaborators)
+}
+
+// SetCoverMediaID sets the CoverMediaID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InstagramOptions) SetCoverMediaID(coverMediaID *string) {
+	i.CoverMediaID = coverMediaID
+	i.require(instagramOptionsFieldCoverMediaID)
+}
+
+// SetShareToFeed sets the ShareToFeed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InstagramOptions) SetShareToFeed(shareToFeed *bool) {
+	i.ShareToFeed = shareToFeed
+	i.require(instagramOptionsFieldShareToFeed)
+}
+
+// SetThumbOffsetMs sets the ThumbOffsetMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InstagramOptions) SetThumbOffsetMs(thumbOffsetMs *int) {
+	i.ThumbOffsetMs = thumbOffsetMs
+	i.require(instagramOptionsFieldThumbOffsetMs)
+}
+
+// SetTrialReel sets the TrialReel field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InstagramOptions) SetTrialReel(trialReel *InstagramTrialReel) {
+	i.TrialReel = trialReel
+	i.require(instagramOptionsFieldTrialReel)
+}
+
+func (i *InstagramOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler InstagramOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = InstagramOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *InstagramOptions) MarshalJSON() ([]byte, error) {
+	type embed InstagramOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *InstagramOptions) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+type InstagramTrialReel string
+
+const (
+	InstagramTrialReelManual      InstagramTrialReel = "manual"
+	InstagramTrialReelPerformance InstagramTrialReel = "performance"
+)
+
+func NewInstagramTrialReelFromString(s string) (InstagramTrialReel, error) {
+	switch s {
+	case "manual":
+		return InstagramTrialReelManual, nil
+	case "performance":
+		return InstagramTrialReelPerformance, nil
+	}
+	var t InstagramTrialReel
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i InstagramTrialReel) Ptr() *InstagramTrialReel {
+	return &i
 }
 
 var (
@@ -15493,6 +15805,8 @@ type TargetOptions struct {
 	Bluesky        *BlueskyOptions
 	Threads        *ThreadsOptions
 	X              *XOptions
+	Instagram      *InstagramOptions
+	Facebook       *FacebookOptions
 
 	rawJSON json.RawMessage
 }
@@ -15567,6 +15881,20 @@ func (t *TargetOptions) GetX() *XOptions {
 	return t.X
 }
 
+func (t *TargetOptions) GetInstagram() *InstagramOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Instagram
+}
+
+func (t *TargetOptions) GetFacebook() *FacebookOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Facebook
+}
+
 func (t *TargetOptions) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Platform string `json:"platform"`
@@ -15633,6 +15961,18 @@ func (t *TargetOptions) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		t.X = value
+	case "instagram":
+		value := new(InstagramOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Instagram = value
+	case "facebook":
+		value := new(FacebookOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Facebook = value
 	}
 	t.rawJSON = json.RawMessage(data)
 	return nil
@@ -15669,6 +16009,12 @@ func (t TargetOptions) MarshalJSON() ([]byte, error) {
 	if t.X != nil {
 		return internal.MarshalJSONWithExtraProperty(t.X, "platform", "x")
 	}
+	if t.Instagram != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Instagram, "platform", "instagram")
+	}
+	if t.Facebook != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Facebook, "platform", "facebook")
+	}
 	if len(t.rawJSON) > 0 {
 		return t.rawJSON, nil
 	}
@@ -15685,6 +16031,8 @@ type TargetOptionsVisitor interface {
 	VisitBluesky(*BlueskyOptions) error
 	VisitThreads(*ThreadsOptions) error
 	VisitX(*XOptions) error
+	VisitInstagram(*InstagramOptions) error
+	VisitFacebook(*FacebookOptions) error
 }
 
 func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
@@ -15714,6 +16062,12 @@ func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
 	}
 	if t.X != nil {
 		return visitor.VisitX(t.X)
+	}
+	if t.Instagram != nil {
+		return visitor.VisitInstagram(t.Instagram)
+	}
+	if t.Facebook != nil {
+		return visitor.VisitFacebook(t.Facebook)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", t)
 }
@@ -15749,6 +16103,12 @@ func (t *TargetOptions) validate() error {
 	}
 	if t.X != nil {
 		fields = append(fields, "x")
+	}
+	if t.Instagram != nil {
+		fields = append(fields, "instagram")
+	}
+	if t.Facebook != nil {
+		fields = append(fields, "facebook")
 	}
 	if len(fields) == 0 {
 		if t.Platform != "" {
@@ -16732,26 +17092,34 @@ func (t *TikTokCreator) String() string {
 }
 
 var (
-	tikTokOptionsFieldAiGenerated       = big.NewInt(1 << 0)
-	tikTokOptionsFieldBrandContent      = big.NewInt(1 << 1)
-	tikTokOptionsFieldBrandOrganic      = big.NewInt(1 << 2)
-	tikTokOptionsFieldCommercialContent = big.NewInt(1 << 3)
-	tikTokOptionsFieldDisableComment    = big.NewInt(1 << 4)
-	tikTokOptionsFieldDisableDuet       = big.NewInt(1 << 5)
-	tikTokOptionsFieldDisableStitch     = big.NewInt(1 << 6)
-	tikTokOptionsFieldPrivacyLevel      = big.NewInt(1 << 7)
+	tikTokOptionsFieldAiGenerated           = big.NewInt(1 << 0)
+	tikTokOptionsFieldAutoAddMusic          = big.NewInt(1 << 1)
+	tikTokOptionsFieldBrandContent          = big.NewInt(1 << 2)
+	tikTokOptionsFieldBrandOrganic          = big.NewInt(1 << 3)
+	tikTokOptionsFieldCommercialContent     = big.NewInt(1 << 4)
+	tikTokOptionsFieldDisableComment        = big.NewInt(1 << 5)
+	tikTokOptionsFieldDisableDuet           = big.NewInt(1 << 6)
+	tikTokOptionsFieldDisableStitch         = big.NewInt(1 << 7)
+	tikTokOptionsFieldPhotoCoverIndex       = big.NewInt(1 << 8)
+	tikTokOptionsFieldPhotoTitle            = big.NewInt(1 << 9)
+	tikTokOptionsFieldPrivacyLevel          = big.NewInt(1 << 10)
+	tikTokOptionsFieldVideoCoverTimestampMs = big.NewInt(1 << 11)
 )
 
-// How a post goes out on a TikTok account. Scheduling needs `privacyLevel`.
+// How a post goes out on a TikTok account. Scheduling needs `privacyLevel`; `videoCoverTimestampMs` is for a video, `photoTitle`, `autoAddMusic` and `photoCoverIndex` for photos.
 type TikTokOptions struct {
-	AiGenerated       *bool               `json:"aiGenerated,omitempty" url:"aiGenerated,omitempty"`
-	BrandContent      *bool               `json:"brandContent,omitempty" url:"brandContent,omitempty"`
-	BrandOrganic      *bool               `json:"brandOrganic,omitempty" url:"brandOrganic,omitempty"`
-	CommercialContent *bool               `json:"commercialContent,omitempty" url:"commercialContent,omitempty"`
-	DisableComment    *bool               `json:"disableComment,omitempty" url:"disableComment,omitempty"`
-	DisableDuet       *bool               `json:"disableDuet,omitempty" url:"disableDuet,omitempty"`
-	DisableStitch     *bool               `json:"disableStitch,omitempty" url:"disableStitch,omitempty"`
-	PrivacyLevel      *TikTokPrivacyLevel `json:"privacyLevel,omitempty" url:"privacyLevel,omitempty"`
+	AiGenerated           *bool               `json:"aiGenerated,omitempty" url:"aiGenerated,omitempty"`
+	AutoAddMusic          *bool               `json:"autoAddMusic,omitempty" url:"autoAddMusic,omitempty"`
+	BrandContent          *bool               `json:"brandContent,omitempty" url:"brandContent,omitempty"`
+	BrandOrganic          *bool               `json:"brandOrganic,omitempty" url:"brandOrganic,omitempty"`
+	CommercialContent     *bool               `json:"commercialContent,omitempty" url:"commercialContent,omitempty"`
+	DisableComment        *bool               `json:"disableComment,omitempty" url:"disableComment,omitempty"`
+	DisableDuet           *bool               `json:"disableDuet,omitempty" url:"disableDuet,omitempty"`
+	DisableStitch         *bool               `json:"disableStitch,omitempty" url:"disableStitch,omitempty"`
+	PhotoCoverIndex       *int                `json:"photoCoverIndex,omitempty" url:"photoCoverIndex,omitempty"`
+	PhotoTitle            *string             `json:"photoTitle,omitempty" url:"photoTitle,omitempty"`
+	PrivacyLevel          *TikTokPrivacyLevel `json:"privacyLevel,omitempty" url:"privacyLevel,omitempty"`
+	VideoCoverTimestampMs *int                `json:"videoCoverTimestampMs,omitempty" url:"videoCoverTimestampMs,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -16765,6 +17133,13 @@ func (t *TikTokOptions) GetAiGenerated() *bool {
 		return nil
 	}
 	return t.AiGenerated
+}
+
+func (t *TikTokOptions) GetAutoAddMusic() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.AutoAddMusic
 }
 
 func (t *TikTokOptions) GetBrandContent() *bool {
@@ -16809,11 +17184,32 @@ func (t *TikTokOptions) GetDisableStitch() *bool {
 	return t.DisableStitch
 }
 
+func (t *TikTokOptions) GetPhotoCoverIndex() *int {
+	if t == nil {
+		return nil
+	}
+	return t.PhotoCoverIndex
+}
+
+func (t *TikTokOptions) GetPhotoTitle() *string {
+	if t == nil {
+		return nil
+	}
+	return t.PhotoTitle
+}
+
 func (t *TikTokOptions) GetPrivacyLevel() *TikTokPrivacyLevel {
 	if t == nil {
 		return nil
 	}
 	return t.PrivacyLevel
+}
+
+func (t *TikTokOptions) GetVideoCoverTimestampMs() *int {
+	if t == nil {
+		return nil
+	}
+	return t.VideoCoverTimestampMs
 }
 
 func (t *TikTokOptions) GetExtraProperties() map[string]interface{} {
@@ -16837,6 +17233,13 @@ func (t *TikTokOptions) require(field *big.Int) {
 func (t *TikTokOptions) SetAiGenerated(aiGenerated *bool) {
 	t.AiGenerated = aiGenerated
 	t.require(tikTokOptionsFieldAiGenerated)
+}
+
+// SetAutoAddMusic sets the AutoAddMusic field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetAutoAddMusic(autoAddMusic *bool) {
+	t.AutoAddMusic = autoAddMusic
+	t.require(tikTokOptionsFieldAutoAddMusic)
 }
 
 // SetBrandContent sets the BrandContent field and marks it as non-optional;
@@ -16881,11 +17284,32 @@ func (t *TikTokOptions) SetDisableStitch(disableStitch *bool) {
 	t.require(tikTokOptionsFieldDisableStitch)
 }
 
+// SetPhotoCoverIndex sets the PhotoCoverIndex field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetPhotoCoverIndex(photoCoverIndex *int) {
+	t.PhotoCoverIndex = photoCoverIndex
+	t.require(tikTokOptionsFieldPhotoCoverIndex)
+}
+
+// SetPhotoTitle sets the PhotoTitle field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetPhotoTitle(photoTitle *string) {
+	t.PhotoTitle = photoTitle
+	t.require(tikTokOptionsFieldPhotoTitle)
+}
+
 // SetPrivacyLevel sets the PrivacyLevel field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (t *TikTokOptions) SetPrivacyLevel(privacyLevel *TikTokPrivacyLevel) {
 	t.PrivacyLevel = privacyLevel
 	t.require(tikTokOptionsFieldPrivacyLevel)
+}
+
+// SetVideoCoverTimestampMs sets the VideoCoverTimestampMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetVideoCoverTimestampMs(videoCoverTimestampMs *int) {
+	t.VideoCoverTimestampMs = videoCoverTimestampMs
+	t.require(tikTokOptionsFieldVideoCoverTimestampMs)
 }
 
 func (t *TikTokOptions) UnmarshalJSON(data []byte) error {
@@ -20778,24 +21202,58 @@ func (x XReplySettings) Ptr() *XReplySettings {
 	return &x
 }
 
+type YouTubeLicense string
+
+const (
+	YouTubeLicenseYoutube        YouTubeLicense = "youtube"
+	YouTubeLicenseCreativeCommon YouTubeLicense = "creativeCommon"
+)
+
+func NewYouTubeLicenseFromString(s string) (YouTubeLicense, error) {
+	switch s {
+	case "youtube":
+		return YouTubeLicenseYoutube, nil
+	case "creativeCommon":
+		return YouTubeLicenseCreativeCommon, nil
+	}
+	var t YouTubeLicense
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (y YouTubeLicense) Ptr() *YouTubeLicense {
+	return &y
+}
+
 var (
 	youTubeOptionsFieldCategoryID             = big.NewInt(1 << 0)
 	youTubeOptionsFieldContainsSyntheticMedia = big.NewInt(1 << 1)
-	youTubeOptionsFieldMadeForKids            = big.NewInt(1 << 2)
-	youTubeOptionsFieldNotifySubscribers      = big.NewInt(1 << 3)
-	youTubeOptionsFieldPrivacy                = big.NewInt(1 << 4)
-	youTubeOptionsFieldTags                   = big.NewInt(1 << 5)
-	youTubeOptionsFieldTitle                  = big.NewInt(1 << 6)
+	youTubeOptionsFieldDefaultLanguage        = big.NewInt(1 << 2)
+	youTubeOptionsFieldEmbeddable             = big.NewInt(1 << 3)
+	youTubeOptionsFieldLicense                = big.NewInt(1 << 4)
+	youTubeOptionsFieldMadeForKids            = big.NewInt(1 << 5)
+	youTubeOptionsFieldNotifySubscribers      = big.NewInt(1 << 6)
+	youTubeOptionsFieldPrivacy                = big.NewInt(1 << 7)
+	youTubeOptionsFieldPublicStatsViewable    = big.NewInt(1 << 8)
+	youTubeOptionsFieldRecordingDate          = big.NewInt(1 << 9)
+	youTubeOptionsFieldTags                   = big.NewInt(1 << 10)
+	youTubeOptionsFieldThumbnailMediaID       = big.NewInt(1 << 11)
+	youTubeOptionsFieldTitle                  = big.NewInt(1 << 12)
 )
 
-// How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`.
+// How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`; `thumbnailMediaId` names an image of the library, set once the video is uploaded.
 type YouTubeOptions struct {
 	CategoryID             *string         `json:"categoryId,omitempty" url:"categoryId,omitempty"`
 	ContainsSyntheticMedia *bool           `json:"containsSyntheticMedia,omitempty" url:"containsSyntheticMedia,omitempty"`
+	DefaultLanguage        *string         `json:"defaultLanguage,omitempty" url:"defaultLanguage,omitempty"`
+	Embeddable             *bool           `json:"embeddable,omitempty" url:"embeddable,omitempty"`
+	License                *YouTubeLicense `json:"license,omitempty" url:"license,omitempty"`
 	MadeForKids            *bool           `json:"madeForKids,omitempty" url:"madeForKids,omitempty"`
 	NotifySubscribers      *bool           `json:"notifySubscribers,omitempty" url:"notifySubscribers,omitempty"`
 	Privacy                *YouTubePrivacy `json:"privacy,omitempty" url:"privacy,omitempty"`
+	PublicStatsViewable    *bool           `json:"publicStatsViewable,omitempty" url:"publicStatsViewable,omitempty"`
+	RecordingDate          *string         `json:"recordingDate,omitempty" url:"recordingDate,omitempty"`
 	Tags                   []string        `json:"tags,omitempty" url:"tags,omitempty"`
+	ThumbnailMediaID       *string         `json:"thumbnailMediaId,omitempty" url:"thumbnailMediaId,omitempty"`
 	Title                  *string         `json:"title,omitempty" url:"title,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -20819,6 +21277,27 @@ func (y *YouTubeOptions) GetContainsSyntheticMedia() *bool {
 	return y.ContainsSyntheticMedia
 }
 
+func (y *YouTubeOptions) GetDefaultLanguage() *string {
+	if y == nil {
+		return nil
+	}
+	return y.DefaultLanguage
+}
+
+func (y *YouTubeOptions) GetEmbeddable() *bool {
+	if y == nil {
+		return nil
+	}
+	return y.Embeddable
+}
+
+func (y *YouTubeOptions) GetLicense() *YouTubeLicense {
+	if y == nil {
+		return nil
+	}
+	return y.License
+}
+
 func (y *YouTubeOptions) GetMadeForKids() *bool {
 	if y == nil {
 		return nil
@@ -20840,11 +21319,32 @@ func (y *YouTubeOptions) GetPrivacy() *YouTubePrivacy {
 	return y.Privacy
 }
 
+func (y *YouTubeOptions) GetPublicStatsViewable() *bool {
+	if y == nil {
+		return nil
+	}
+	return y.PublicStatsViewable
+}
+
+func (y *YouTubeOptions) GetRecordingDate() *string {
+	if y == nil {
+		return nil
+	}
+	return y.RecordingDate
+}
+
 func (y *YouTubeOptions) GetTags() []string {
 	if y == nil {
 		return nil
 	}
 	return y.Tags
+}
+
+func (y *YouTubeOptions) GetThumbnailMediaID() *string {
+	if y == nil {
+		return nil
+	}
+	return y.ThumbnailMediaID
 }
 
 func (y *YouTubeOptions) GetTitle() *string {
@@ -20884,6 +21384,27 @@ func (y *YouTubeOptions) SetContainsSyntheticMedia(containsSyntheticMedia *bool)
 	y.require(youTubeOptionsFieldContainsSyntheticMedia)
 }
 
+// SetDefaultLanguage sets the DefaultLanguage field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetDefaultLanguage(defaultLanguage *string) {
+	y.DefaultLanguage = defaultLanguage
+	y.require(youTubeOptionsFieldDefaultLanguage)
+}
+
+// SetEmbeddable sets the Embeddable field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetEmbeddable(embeddable *bool) {
+	y.Embeddable = embeddable
+	y.require(youTubeOptionsFieldEmbeddable)
+}
+
+// SetLicense sets the License field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetLicense(license *YouTubeLicense) {
+	y.License = license
+	y.require(youTubeOptionsFieldLicense)
+}
+
 // SetMadeForKids sets the MadeForKids field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (y *YouTubeOptions) SetMadeForKids(madeForKids *bool) {
@@ -20905,11 +21426,32 @@ func (y *YouTubeOptions) SetPrivacy(privacy *YouTubePrivacy) {
 	y.require(youTubeOptionsFieldPrivacy)
 }
 
+// SetPublicStatsViewable sets the PublicStatsViewable field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetPublicStatsViewable(publicStatsViewable *bool) {
+	y.PublicStatsViewable = publicStatsViewable
+	y.require(youTubeOptionsFieldPublicStatsViewable)
+}
+
+// SetRecordingDate sets the RecordingDate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetRecordingDate(recordingDate *string) {
+	y.RecordingDate = recordingDate
+	y.require(youTubeOptionsFieldRecordingDate)
+}
+
 // SetTags sets the Tags field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (y *YouTubeOptions) SetTags(tags []string) {
 	y.Tags = tags
 	y.require(youTubeOptionsFieldTags)
+}
+
+// SetThumbnailMediaID sets the ThumbnailMediaID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetThumbnailMediaID(thumbnailMediaID *string) {
+	y.ThumbnailMediaID = thumbnailMediaID
+	y.require(youTubeOptionsFieldThumbnailMediaID)
 }
 
 // SetTitle sets the Title field and marks it as non-optional;

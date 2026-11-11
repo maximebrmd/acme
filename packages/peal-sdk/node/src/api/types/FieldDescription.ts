@@ -3,9 +3,11 @@
 import * as Peal from "../index.js";
 
 export interface FieldDescription {
+    contentTypes: string[];
     forbiddenCharacters: string[];
     ifLeftOut: Peal.FieldDefault | null;
     lookup: Peal.LookupName | null;
+    maxByteSize: number | null;
     maxLength: number | null;
     maximum: number | null;
     minimum: number | null;

@@ -13,5 +13,6 @@ export interface PostTarget {
     publishedAt: string | null;
     round: number;
     status: Peal.PostTargetStatus;
+    thumbnailNotSet?: boolean | undefined;
     unconfirmedReason: Peal.UnconfirmedReason | null;
 }

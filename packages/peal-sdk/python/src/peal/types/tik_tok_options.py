@@ -11,11 +11,14 @@ from .tik_tok_privacy_level import TikTokPrivacyLevel
 
 class TikTokOptions(UniversalBaseModel):
     """
-    How a post goes out on a TikTok account. Scheduling needs `privacyLevel`.
+    How a post goes out on a TikTok account. Scheduling needs `privacyLevel`; `videoCoverTimestampMs` is for a video, `photoTitle`, `autoAddMusic` and `photoCoverIndex` for photos.
     """
 
     ai_generated: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="aiGenerated"), pydantic.Field(alias="aiGenerated")
+    ] = None
+    auto_add_music: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="autoAddMusic"), pydantic.Field(alias="autoAddMusic")
     ] = None
     brand_content: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="brandContent"), pydantic.Field(alias="brandContent")
@@ -35,8 +38,19 @@ class TikTokOptions(UniversalBaseModel):
     disable_stitch: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="disableStitch"), pydantic.Field(alias="disableStitch")
     ] = None
+    photo_cover_index: typing_extensions.Annotated[
+        typing.Optional[int], FieldMetadata(alias="photoCoverIndex"), pydantic.Field(alias="photoCoverIndex")
+    ] = None
+    photo_title: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="photoTitle"), pydantic.Field(alias="photoTitle")
+    ] = None
     privacy_level: typing_extensions.Annotated[
         typing.Optional[TikTokPrivacyLevel], FieldMetadata(alias="privacyLevel"), pydantic.Field(alias="privacyLevel")
+    ] = None
+    video_cover_timestamp_ms: typing_extensions.Annotated[
+        typing.Optional[int],
+        FieldMetadata(alias="videoCoverTimestampMs"),
+        pydantic.Field(alias="videoCoverTimestampMs"),
     ] = None
 
     if IS_PYDANTIC_V2:

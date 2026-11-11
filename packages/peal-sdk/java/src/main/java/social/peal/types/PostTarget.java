@@ -44,6 +44,8 @@ public final class PostTarget {
 
     private final PostTargetStatus status;
 
+    private final Optional<Boolean> thumbnailNotSet;
+
     private final Optional<UnconfirmedReason> unconfirmedReason;
 
     private final Map<String, Object> additionalProperties;
@@ -59,6 +61,7 @@ public final class PostTarget {
             Optional<String> publishedAt,
             int round,
             PostTargetStatus status,
+            Optional<Boolean> thumbnailNotSet,
             Optional<UnconfirmedReason> unconfirmedReason,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
@@ -71,6 +74,7 @@ public final class PostTarget {
         this.publishedAt = publishedAt;
         this.round = round;
         this.status = status;
+        this.thumbnailNotSet = thumbnailNotSet;
         this.unconfirmedReason = unconfirmedReason;
         this.additionalProperties = additionalProperties;
     }
@@ -137,6 +141,11 @@ public final class PostTarget {
         return status;
     }
 
+    @JsonProperty("thumbnailNotSet")
+    public Optional<Boolean> getThumbnailNotSet() {
+        return thumbnailNotSet;
+    }
+
     @JsonIgnore
     public Optional<UnconfirmedReason> getUnconfirmedReason() {
         if (unconfirmedReason == null) {
@@ -197,6 +206,7 @@ public final class PostTarget {
                 && publishedAt.equals(other.publishedAt)
                 && round == other.round
                 && status.equals(other.status)
+                && thumbnailNotSet.equals(other.thumbnailNotSet)
                 && unconfirmedReason.equals(other.unconfirmedReason);
     }
 
@@ -213,6 +223,7 @@ public final class PostTarget {
                 this.publishedAt,
                 this.round,
                 this.status,
+                this.thumbnailNotSet,
                 this.unconfirmedReason);
     }
 
@@ -282,6 +293,10 @@ public final class PostTarget {
 
         _FinalStage publishedAt(Nullable<String> publishedAt);
 
+        _FinalStage thumbnailNotSet(Optional<Boolean> thumbnailNotSet);
+
+        _FinalStage thumbnailNotSet(Boolean thumbnailNotSet);
+
         _FinalStage unconfirmedReason(Optional<UnconfirmedReason> unconfirmedReason);
 
         _FinalStage unconfirmedReason(UnconfirmedReason unconfirmedReason);
@@ -303,6 +318,8 @@ public final class PostTarget {
         private PostTargetStatus status;
 
         private Optional<UnconfirmedReason> unconfirmedReason = Optional.empty();
+
+        private Optional<Boolean> thumbnailNotSet = Optional.empty();
 
         private Optional<String> publishedAt = Optional.empty();
 
@@ -330,6 +347,7 @@ public final class PostTarget {
             publishedAt(other.getPublishedAt());
             round(other.getRound());
             status(other.getStatus());
+            thumbnailNotSet(other.getThumbnailNotSet());
             unconfirmedReason(other.getUnconfirmedReason());
             return this;
         }
@@ -391,6 +409,19 @@ public final class PostTarget {
         @JsonSetter(value = "unconfirmedReason", nulls = Nulls.SKIP)
         public _FinalStage unconfirmedReason(Optional<UnconfirmedReason> unconfirmedReason) {
             this.unconfirmedReason = unconfirmedReason;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage thumbnailNotSet(Boolean thumbnailNotSet) {
+            this.thumbnailNotSet = Optional.ofNullable(thumbnailNotSet);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "thumbnailNotSet", nulls = Nulls.SKIP)
+        public _FinalStage thumbnailNotSet(Optional<Boolean> thumbnailNotSet) {
+            this.thumbnailNotSet = thumbnailNotSet;
             return this;
         }
 
@@ -520,6 +551,7 @@ public final class PostTarget {
                     publishedAt,
                     round,
                     status,
+                    thumbnailNotSet,
                     unconfirmedReason,
                     additionalProperties);
         }
@@ -536,6 +568,7 @@ public final class PostTarget {
                     || key.equalsIgnoreCase("publishedAt")
                     || key.equalsIgnoreCase("round")
                     || key.equalsIgnoreCase("status")
+                    || key.equalsIgnoreCase("thumbnailNotSet")
                     || key.equalsIgnoreCase("unconfirmedReason")) {
                 return;
             }

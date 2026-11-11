@@ -291,6 +291,7 @@ if typing.TYPE_CHECKING:
     from .excess import Excess
     from .external_id_taken_encoded import ExternalIdTakenEncoded
     from .external_id_taken_encoded_tag import ExternalIdTakenEncodedTag
+    from .facebook_options import FacebookOptions
     from .failure_reason import FailureReason
     from .field_default import FieldDefault
     from .field_description import FieldDescription
@@ -354,6 +355,8 @@ if typing.TYPE_CHECKING:
     from .inbox_thread_not_found_encoded import InboxThreadNotFoundEncoded
     from .inbox_thread_page import InboxThreadPage
     from .instagram_connection import InstagramConnection
+    from .instagram_options import InstagramOptions
+    from .instagram_trial_reel import InstagramTrialReel
     from .invalid_date_range_encoded import InvalidDateRangeEncoded
     from .invalid_date_range_encoded_tag import InvalidDateRangeEncodedTag
     from .invalid_time_range_encoded import InvalidTimeRangeEncoded
@@ -673,7 +676,9 @@ if typing.TYPE_CHECKING:
     from .target_options import (
         TargetOptions,
         TargetOptions_Bluesky,
+        TargetOptions_Facebook,
         TargetOptions_GoogleBusiness,
+        TargetOptions_Instagram,
         TargetOptions_Linkedin,
         TargetOptions_Mastodon,
         TargetOptions_Pinterest,
@@ -783,6 +788,7 @@ if typing.TYPE_CHECKING:
     from .workspace_usage_report import WorkspaceUsageReport
     from .x_options import XOptions
     from .x_reply_settings import XReplySettings
+    from .you_tube_license import YouTubeLicense
     from .you_tube_options import YouTubeOptions
     from .you_tube_playlist import YouTubePlaylist
     from .you_tube_privacy import YouTubePrivacy
@@ -1070,6 +1076,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Excess": ".excess",
     "ExternalIdTakenEncoded": ".external_id_taken_encoded",
     "ExternalIdTakenEncodedTag": ".external_id_taken_encoded_tag",
+    "FacebookOptions": ".facebook_options",
     "FailureReason": ".failure_reason",
     "FieldDefault": ".field_default",
     "FieldDescription": ".field_description",
@@ -1129,6 +1136,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "InboxThreadNotFoundEncoded": ".inbox_thread_not_found_encoded",
     "InboxThreadPage": ".inbox_thread_page",
     "InstagramConnection": ".instagram_connection",
+    "InstagramOptions": ".instagram_options",
+    "InstagramTrialReel": ".instagram_trial_reel",
     "InvalidDateRangeEncoded": ".invalid_date_range_encoded",
     "InvalidDateRangeEncodedTag": ".invalid_date_range_encoded_tag",
     "InvalidTimeRangeEncoded": ".invalid_time_range_encoded",
@@ -1440,7 +1449,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TargetMetrics": ".target_metrics",
     "TargetOptions": ".target_options",
     "TargetOptions_Bluesky": ".target_options",
+    "TargetOptions_Facebook": ".target_options",
     "TargetOptions_GoogleBusiness": ".target_options",
+    "TargetOptions_Instagram": ".target_options",
     "TargetOptions_Linkedin": ".target_options",
     "TargetOptions_Mastodon": ".target_options",
     "TargetOptions_Pinterest": ".target_options",
@@ -1549,6 +1560,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WorkspaceUsageReport": ".workspace_usage_report",
     "XOptions": ".x_options",
     "XReplySettings": ".x_reply_settings",
+    "YouTubeLicense": ".you_tube_license",
     "YouTubeOptions": ".you_tube_options",
     "YouTubePlaylist": ".you_tube_playlist",
     "YouTubePrivacy": ".you_tube_privacy",
@@ -1860,6 +1872,7 @@ __all__ = [
     "Excess",
     "ExternalIdTakenEncoded",
     "ExternalIdTakenEncodedTag",
+    "FacebookOptions",
     "FailureReason",
     "FieldDefault",
     "FieldDescription",
@@ -1919,6 +1932,8 @@ __all__ = [
     "InboxThreadNotFoundEncoded",
     "InboxThreadPage",
     "InstagramConnection",
+    "InstagramOptions",
+    "InstagramTrialReel",
     "InvalidDateRangeEncoded",
     "InvalidDateRangeEncodedTag",
     "InvalidTimeRangeEncoded",
@@ -2230,7 +2245,9 @@ __all__ = [
     "TargetMetrics",
     "TargetOptions",
     "TargetOptions_Bluesky",
+    "TargetOptions_Facebook",
     "TargetOptions_GoogleBusiness",
+    "TargetOptions_Instagram",
     "TargetOptions_Linkedin",
     "TargetOptions_Mastodon",
     "TargetOptions_Pinterest",
@@ -2339,6 +2356,7 @@ __all__ = [
     "WorkspaceUsageReport",
     "XOptions",
     "XReplySettings",
+    "YouTubeLicense",
     "YouTubeOptions",
     "YouTubePlaylist",
     "YouTubePrivacy",

@@ -25,6 +25,8 @@ module Peal
 
       field :status, -> { Peal::Types::PostTargetStatus }, optional: false, nullable: false
 
+      field :thumbnail_not_set, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "thumbnailNotSet"
+
       field :unconfirmed_reason, -> { Peal::Types::UnconfirmedReason }, optional: false, nullable: true, api_name: "unconfirmedReason"
     end
   end

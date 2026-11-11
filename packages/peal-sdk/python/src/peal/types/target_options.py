@@ -12,6 +12,7 @@ from .bluesky_content_label import BlueskyContentLabel
 from .bluesky_replies import BlueskyReplies
 from .google_business_call_to_action import GoogleBusinessCallToAction
 from .google_business_post_type import GoogleBusinessPostType
+from .instagram_trial_reel import InstagramTrialReel
 from .linked_in_mention import LinkedInMention
 from .linked_in_visibility import LinkedInVisibility
 from .mastodon_quote_policy import MastodonQuotePolicy
@@ -19,6 +20,7 @@ from .mastodon_visibility import MastodonVisibility
 from .threads_reply_control import ThreadsReplyControl
 from .tik_tok_privacy_level import TikTokPrivacyLevel
 from .x_reply_settings import XReplySettings
+from .you_tube_license import YouTubeLicense
 from .you_tube_privacy import YouTubePrivacy
 
 
@@ -36,6 +38,11 @@ class TargetOptions_Youtube(UniversalBaseModel):
         FieldMetadata(alias="containsSyntheticMedia"),
         pydantic.Field(alias="containsSyntheticMedia"),
     ] = None
+    default_language: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="defaultLanguage"), pydantic.Field(alias="defaultLanguage")
+    ] = None
+    embeddable: typing.Optional[bool] = None
+    license: typing.Optional[YouTubeLicense] = None
     made_for_kids: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="madeForKids"), pydantic.Field(alias="madeForKids")
     ] = None
@@ -43,7 +50,16 @@ class TargetOptions_Youtube(UniversalBaseModel):
         typing.Optional[bool], FieldMetadata(alias="notifySubscribers"), pydantic.Field(alias="notifySubscribers")
     ] = None
     privacy: typing.Optional[YouTubePrivacy] = None
+    public_stats_viewable: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="publicStatsViewable"), pydantic.Field(alias="publicStatsViewable")
+    ] = None
+    recording_date: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="recordingDate"), pydantic.Field(alias="recordingDate")
+    ] = None
     tags: typing.Optional[typing.List[str]] = None
+    thumbnail_media_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="thumbnailMediaId"), pydantic.Field(alias="thumbnailMediaId")
+    ] = None
     title: typing.Optional[str] = None
 
     if IS_PYDANTIC_V2:
@@ -65,6 +81,9 @@ class TargetOptions_Tiktok(UniversalBaseModel):
     ai_generated: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="aiGenerated"), pydantic.Field(alias="aiGenerated")
     ] = None
+    auto_add_music: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="autoAddMusic"), pydantic.Field(alias="autoAddMusic")
+    ] = None
     brand_content: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="brandContent"), pydantic.Field(alias="brandContent")
     ] = None
@@ -83,8 +102,19 @@ class TargetOptions_Tiktok(UniversalBaseModel):
     disable_stitch: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="disableStitch"), pydantic.Field(alias="disableStitch")
     ] = None
+    photo_cover_index: typing_extensions.Annotated[
+        typing.Optional[int], FieldMetadata(alias="photoCoverIndex"), pydantic.Field(alias="photoCoverIndex")
+    ] = None
+    photo_title: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="photoTitle"), pydantic.Field(alias="photoTitle")
+    ] = None
     privacy_level: typing_extensions.Annotated[
         typing.Optional[TikTokPrivacyLevel], FieldMetadata(alias="privacyLevel"), pydantic.Field(alias="privacyLevel")
+    ] = None
+    video_cover_timestamp_ms: typing_extensions.Annotated[
+        typing.Optional[int],
+        FieldMetadata(alias="videoCoverTimestampMs"),
+        pydantic.Field(alias="videoCoverTimestampMs"),
     ] = None
 
     if IS_PYDANTIC_V2:
@@ -322,6 +352,59 @@ class TargetOptions_X(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class TargetOptions_Instagram(UniversalBaseModel):
+    """
+    What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
+    """
+
+    platform: typing.Literal["instagram"] = "instagram"
+    audio_name: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="audioName"), pydantic.Field(alias="audioName")
+    ] = None
+    collaborators: typing.Optional[typing.List[str]] = None
+    cover_media_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="coverMediaId"), pydantic.Field(alias="coverMediaId")
+    ] = None
+    share_to_feed: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="shareToFeed"), pydantic.Field(alias="shareToFeed")
+    ] = None
+    thumb_offset_ms: typing_extensions.Annotated[
+        typing.Optional[int], FieldMetadata(alias="thumbOffsetMs"), pydantic.Field(alias="thumbOffsetMs")
+    ] = None
+    trial_reel: typing_extensions.Annotated[
+        typing.Optional[InstagramTrialReel], FieldMetadata(alias="trialReel"), pydantic.Field(alias="trialReel")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class TargetOptions_Facebook(UniversalBaseModel):
+    """
+    What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
+    """
+
+    platform: typing.Literal["facebook"] = "facebook"
+    video_title: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="videoTitle"), pydantic.Field(alias="videoTitle")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 TargetOptions = typing_extensions.Annotated[
     typing.Union[
         TargetOptions_Youtube,
@@ -333,6 +416,8 @@ TargetOptions = typing_extensions.Annotated[
         TargetOptions_Bluesky,
         TargetOptions_Threads,
         TargetOptions_X,
+        TargetOptions_Instagram,
+        TargetOptions_Facebook,
     ],
     pydantic.Field(discriminator="platform"),
 ]
