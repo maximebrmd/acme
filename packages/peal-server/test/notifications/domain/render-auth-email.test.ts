@@ -389,3 +389,75 @@ describe("the email catalogues", () => {
     ).toStrictEqual([]);
   });
 });
+
+// What two-step verification's email says, in `locale`.
+const twoStep = (
+  locale: "en" | "fr",
+  kind: Extract<AuthEmail, { _tag: "TwoStepChanged" }>["kind"],
+  recoveryCodesLeft: number | null = null
+) =>
+  renderAuthEmail({
+    _tag: "TwoStepChanged",
+    kind,
+    locale,
+    recoveryCodesLeft,
+    to: "ada@example.test",
+    url: "https://app.example.test/app/account",
+  });
+
+describe("two-step verification's emails", () => {
+  it.each(["en", "fr"] as const)(
+    "tell each change apart, with what to do if it was not them, in %s",
+    (locale) => {
+      const kinds = [
+        "turnedOn",
+        "turnedOff",
+        "recoveryCodesRenewed",
+        "recoveryCodeUsed",
+        "resetByStaff",
+      ] as const;
+
+      const subjects = kinds.map((kind) => twoStep(locale, kind, 3).subject);
+
+      expect(new Set(subjects).size).toBe(kinds.length);
+
+      for (const kind of kinds) {
+        const { text } = twoStep(locale, kind, 3);
+
+        expect(text).toContain("https://app.example.test/app/account");
+        expect(text).toContain(
+          locale === "en"
+            ? "change your password"
+            : "changez votre mot de passe"
+        );
+      }
+    }
+  );
+
+  it("says how many recovery codes are left after one was used", () => {
+    expect(twoStep("en", "recoveryCodeUsed", 9).text).toContain(
+      "You have 9 recovery codes left."
+    );
+    expect(twoStep("en", "recoveryCodeUsed", 1).text).toContain(
+      "You have 1 recovery code left."
+    );
+    expect(twoStep("en", "recoveryCodeUsed", 0).text).toContain(
+      "You have no recovery code left"
+    );
+    expect(twoStep("fr", "recoveryCodeUsed", 9).text).toContain(
+      "Il vous reste 9 codes de secours."
+    );
+    expect(twoStep("fr", "recoveryCodeUsed", 1).text).toContain(
+      "Il vous reste 1 code de secours."
+    );
+  });
+
+  it("says the words two-step verification is known by", () => {
+    expect(twoStep("en", "turnedOn").subject).toContain(
+      "Two-step verification"
+    );
+    expect(twoStep("fr", "turnedOn").subject).toContain(
+      "validation en deux étapes"
+    );
+  });
+});

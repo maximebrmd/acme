@@ -245,6 +245,7 @@ export const authWithoutDatabase = () =>
         lockedOut: async () => await Promise.resolve(false),
         requiredBy: async () => await Promise.resolve([]),
       },
+      twoStepChanged: ignore,
       verifyEmail: ignore,
       workspaceChange: nothing,
     },

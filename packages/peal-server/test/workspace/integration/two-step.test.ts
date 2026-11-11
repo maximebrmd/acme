@@ -21,6 +21,7 @@ import {
 import {
   apiKeyOf,
   bodyOf,
+  emailTo,
   inProcessHttpClient,
   MigratedSqlLive,
   origin,
@@ -420,6 +421,64 @@ layer(TwoStepLive, { excludeTestServices: true, timeout: "180 seconds" })(
         });
 
         assert.strictEqual(byKey.status, 403);
+      })
+    );
+
+    it.effect("emails the account each change, in its language", () =>
+      Effect.gen(function* emails() {
+        const app = yield* TestApp;
+        const person = yield* signedUp("emails", "fr");
+        const { backupCodes, cookies } = yield* enrolled(person);
+
+        yield* emailTo(
+          person.email,
+          /^La validation en deux étapes est activée/u
+        );
+
+        yield* signedOut(person);
+
+        const browser = withCookies("", yield* passwordStep(person.email));
+
+        const used = yield* secondStep(browser, {
+          code: backupCodes[0] ?? "",
+          route: "verify-backup-code",
+        });
+
+        const session = withCookies(browser, used);
+
+        const told = yield* emailTo(
+          person.email,
+          /^Un code de secours a servi/u
+        );
+
+        assert.include(told.Text, "Il vous reste 9 codes de secours.");
+
+        yield* app.request("/api/auth/two-factor/generate-backup-codes", {
+          body: { password },
+          headers: { cookie: session },
+        });
+
+        yield* emailTo(person.email, /^Nouveaux codes de secours/u);
+
+        const off = yield* app.request("/api/auth/two-factor/disable", {
+          body: { password },
+          headers: { cookie: session },
+        });
+
+        assert.strictEqual(off.status, 200);
+
+        yield* emailTo(
+          person.email,
+          /^La validation en deux étapes est désactivée/u
+        );
+
+        // A refused change tells nothing: the old session was replaced.
+        const refused = yield* app.request("/api/auth/two-factor/disable", {
+          body: { password },
+          headers: { cookie: cookies },
+        });
+
+        assert.strictEqual(refused.status, 401);
       })
     );
 

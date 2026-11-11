@@ -178,8 +178,10 @@ export const WorkspaceLive = Layer.mergeAll(
   // and Better Auth's hooks check a membership with.
   Layer.provideMerge(MemberDirectoryLive),
   // What each workspace requires of its members, which Better Auth's
-  // hooks and the workspace's settings read.
+  // hooks and the workspace's settings read, and the account's emails,
+  // which its hooks send when two-step verification changes.
   Layer.provideMerge(SecurityPoliciesLive),
+  Layer.provideMerge(EmailedAccountMail),
   Layer.provideMerge(ImpersonationGuardLive),
   Layer.provideMerge(LegalConnectionJournal),
   Layer.provideMerge(CountedRequestLimits),

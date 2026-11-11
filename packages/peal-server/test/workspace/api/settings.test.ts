@@ -438,6 +438,8 @@ const PortsLive = Layer.mergeAll(
           ).pipe(provide),
         exported: ({ email, locale, via }) =>
           record(`mail:exported:${email}:${locale}:${via}`).pipe(provide),
+        twoStepChanged: ({ email, kind }) =>
+          record(`mail:twoStep:${email}:${kind}`).pipe(provide),
         workspaceDeleted: ({
           email,
           locale,

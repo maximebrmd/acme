@@ -319,3 +319,131 @@ export const guardTwoStepChanges = async (
     });
   }
 };
+
+/** What changed in an account's two-step verification, by its person. */
+export interface TwoStepChangeTold {
+  readonly kind:
+    | "recoveryCodesRenewed"
+    | "recoveryCodeUsed"
+    | "turnedOff"
+    | "turnedOn";
+  readonly userId: string;
+}
+
+/** Tells the account a change: returns at once, never fails. */
+export type TwoStepTeller = (change: TwoStepChangeTold) => void;
+
+// The routes the account is told about, for a person in their session.
+const sessionRoutes: ReadonlySet<string> = new Set([
+  "/two-factor/disable",
+  "/two-factor/generate-backup-codes",
+  "/two-factor/verify-totp",
+]);
+
+// Who sent a request to one of those routes, and whether their account had
+// two-step verification on then: the route replaces the session, so the
+// after hook could not tell.
+const senders = new WeakMap<
+  Request,
+  { readonly userId: string; readonly wasOn: boolean }
+>();
+
+// The user's flag, as the plugin adds it to the user.
+const isOn = Schema.is(
+  Schema.Struct({ twoFactorEnabled: Schema.Literal(true) })
+);
+
+const isFlagOn = async (
+  ctx: GenericEndpointContext,
+  userId: string
+): Promise<boolean> =>
+  isOn(await ctx.context.internalAdapter.findUserById(userId));
+
+/**
+ * Part of Better Auth's before hook: notes who asks to change two-step
+ * verification, for `tellTwoStepChange`.
+ */
+export const noteTwoStepSender = async (
+  ctx: GenericEndpointContext
+): Promise<void> => {
+  const { request } = ctx;
+
+  if (request === undefined || !sessionRoutes.has(ctx.path)) {
+    return;
+  }
+
+  const found = decodeSession(
+    await getSessionFromCtx(ctx, { disableRefresh: true })
+  );
+
+  if (Option.isNone(found)) {
+    return;
+  }
+
+  const { id } = found.value.user;
+
+  senders.set(request, { userId: id, wasOn: await isFlagOn(ctx, id) });
+};
+
+const isRefusal = Schema.is(
+  Schema.Struct({ returned: Schema.instanceOf(APIError) })
+);
+
+// What the verification routes answer: the user signed in.
+const decodeSignedIn = Schema.decodeUnknownOption(
+  Schema.Struct({
+    returned: Schema.Struct({ user: Schema.Struct({ id: Schema.String }) }),
+  })
+);
+
+/**
+ * Part of Better Auth's after hook: tells the account what changed in its
+ * two-step verification once a route did it, so a change someone else made
+ * is noticed. Turned on when a first code is accepted, turned off, new
+ * recovery codes, and a recovery code used to sign in. Read from the
+ * request and the answer: `newSession` is null while a second step is
+ * pending.
+ */
+export const tellTwoStepChange = async (
+  ctx: GenericEndpointContext,
+  tell: TwoStepTeller
+): Promise<void> => {
+  const { request } = ctx;
+
+  if (
+    request === undefined ||
+    !ctx.path.startsWith("/two-factor/") ||
+    isRefusal(ctx.context)
+  ) {
+    return;
+  }
+
+  if (ctx.path === "/two-factor/verify-backup-code") {
+    const signedIn = decodeSignedIn(ctx.context);
+
+    if (Option.isSome(signedIn)) {
+      tell({
+        kind: "recoveryCodeUsed",
+        userId: signedIn.value.returned.user.id,
+      });
+    }
+
+    return;
+  }
+
+  const sender = senders.get(request);
+
+  if (sender === undefined) {
+    return;
+  }
+
+  const { userId, wasOn } = sender;
+
+  if (ctx.path === "/two-factor/disable") {
+    tell({ kind: "turnedOff", userId });
+  } else if (ctx.path === "/two-factor/generate-backup-codes") {
+    tell({ kind: "recoveryCodesRenewed", userId });
+  } else if (!wasOn && (await isFlagOn(ctx, userId))) {
+    tell({ kind: "turnedOn", userId });
+  }
+};

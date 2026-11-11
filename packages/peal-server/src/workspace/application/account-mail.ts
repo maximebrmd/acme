@@ -4,6 +4,18 @@ import type { Effect } from "effect";
 import type { LegalRemainsRecord } from "#shared/application/personal-data.ts";
 import type { Locale } from "#shared/domain/locale.ts";
 
+/**
+ * What changed in an account's two-step verification: turned on or off by
+ * its person, new recovery codes made, one used to sign in, or reset by
+ * staff.
+ */
+export type TwoStepChange =
+  | "recoveryCodesRenewed"
+  | "recoveryCodeUsed"
+  | "resetByStaff"
+  | "turnedOff"
+  | "turnedOn";
+
 /** Where a copy of the account's data was downloaded. */
 export type ExportChannel = "commandLine" | "web";
 
@@ -30,6 +42,17 @@ export class AccountMail extends Context.Service<
       readonly email: string;
       readonly locale: Locale;
       readonly via: ExportChannel;
+    }) => Effect.Effect<void>;
+    /**
+     * Tells the account's address what changed in its two-step
+     * verification, so a change someone else made is noticed: with how
+     * many recovery codes are left once one was used.
+     */
+    readonly twoStepChanged: (to: {
+      readonly email: string;
+      readonly kind: TwoStepChange;
+      readonly locale: Locale;
+      readonly recoveryCodesLeft: number | null;
     }) => Effect.Effect<void>;
     /**
      * Confirms, to the owner who deleted it, that a workspace is deleted,

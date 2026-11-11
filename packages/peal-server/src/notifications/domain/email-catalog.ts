@@ -1,5 +1,6 @@
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
+import type { TwoStepChange } from "./auth-email.ts";
 import type { PostFailureReason } from "./notice-event.ts";
 
 /**
@@ -236,6 +237,17 @@ export interface EmailCatalog {
     readonly gone: string;
   };
   readonly verifyEmail: EmailMessages;
+  /**
+   * What changed in the account's two-step verification, by kind;
+   * `recoveryCodeUsed`'s body ends with `{left}`, one of
+   * `recoveryCodesLeft` (`{count}`).
+   */
+  readonly twoStepChanged: Readonly<Record<TwoStepChange, EmailMessages>>;
+  readonly recoveryCodesLeft: {
+    readonly none: string;
+    readonly one: string;
+    readonly other: string;
+  };
   /** The workspace `{workspaceName}` was deleted by its owner. */
   readonly workspaceDeleted: EmailMessages;
 }

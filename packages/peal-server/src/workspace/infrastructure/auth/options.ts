@@ -47,8 +47,13 @@ import {
   workspaceClaim,
 } from "./oauth.ts";
 import type { AuthConfiguration } from "./settings.ts";
-import { guardTwoStepChanges, refuseLockedOutMembers } from "./two-step.ts";
-import type { TwoStepPolicy } from "./two-step.ts";
+import {
+  guardTwoStepChanges,
+  noteTwoStepSender,
+  refuseLockedOutMembers,
+  tellTwoStepChange,
+} from "./two-step.ts";
+import type { TwoStepPolicy, TwoStepTeller } from "./two-step.ts";
 import { recordWorkspaceChange } from "./workspace-changes.ts";
 import type { WorkspaceChangeRecorder } from "./workspace-changes.ts";
 
@@ -88,6 +93,8 @@ export interface AuthHooks extends BillingHooks {
    * two-step verification off: what the user's workspaces require.
    */
   readonly twoStep: TwoStepPolicy;
+  /** Emails the account what changed in its two-step verification. */
+  readonly twoStepChanged: TwoStepTeller;
   readonly verifyEmail: (link: AuthLink) => void;
   /**
    * Awaited once a route that changes a workspace has answered a browser:
@@ -312,6 +319,7 @@ const beforeEveryRoute = (hooks: AuthHooks) =>
     refusePersonalSubscriptions(ctx);
     await refuseLockedOutMembers(ctx, hooks.twoStep);
     await guardTwoStepChanges(ctx, hooks.twoStep);
+    await noteTwoStepSender(ctx);
   });
 
 /**
@@ -434,6 +442,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     hooks: {
       after: createAuthMiddleware(async (ctx) => {
         await recordWorkspaceChange(ctx, hooks.workspaceChange);
+        await tellTwoStepChange(ctx, hooks.twoStepChanged);
       }),
       before: beforeEveryRoute(hooks),
     },

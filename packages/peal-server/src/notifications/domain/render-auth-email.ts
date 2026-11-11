@@ -30,6 +30,21 @@ const withBilling = (
 
 type LegalHold = Extract<AuthEmail, { _tag: "AccountDeleted" }>["legalHold"];
 
+// How many recovery codes are left, in the catalog's words.
+const recoveryCodesLeftIn = (catalog: EmailCatalog, count: number): string => {
+  const { none, one, other } = catalog.recoveryCodesLeft;
+
+  if (count === 0) {
+    return none;
+  }
+
+  return fill(
+    count === 1 ? one : other,
+    new Map([["count", String(count)]]),
+    keep
+  );
+};
+
 // A number of years, in the catalog's words.
 const yearsIn = (catalog: EmailCatalog, count: number): string =>
   fill(
@@ -183,6 +198,12 @@ const contentOf = (email: AuthEmail, catalog: EmailCatalog): Content =>
     ResetPassword: (): Content => ({
       messages: catalog.resetPassword,
       values: new Map(),
+    }),
+    TwoStepChanged: ({ kind, recoveryCodesLeft }): Content => ({
+      messages: catalog.twoStepChanged[kind],
+      values: new Map([
+        ["left", recoveryCodesLeftIn(catalog, recoveryCodesLeft ?? 0)],
+      ]),
     }),
     VerifyEmail: (): Content => ({
       messages: catalog.verifyEmail,
