@@ -22,7 +22,7 @@ const contentsOf = (
 ): readonly TargetContent[] =>
   targets.map((target) => ({
     channelId: target.channelId,
-    content: contentOn(post.content, target.channelId),
+    content: contentOn(post.content, target.channelId, target.options),
     targetId: target.id,
   }));
 

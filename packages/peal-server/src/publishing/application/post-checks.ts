@@ -104,11 +104,13 @@ export interface PostCheck {
   readonly dropped: readonly DroppedChannels[];
   /**
    * What was checked, once the sets and signatures it names are filled
-   * in: the channels it would go to and what it would say.
+   * in: the channels it would go to, what it would say and the options
+   * it would have on each.
    */
   readonly filled: {
     readonly channelIds: readonly ChannelId[];
     readonly content: PostContent;
+    readonly options: readonly ChannelOptions[];
   };
   /** The limit of the plan it would pass, when it has a time. */
   readonly planLimit: Option.Option<PlanLimitReached>;
@@ -422,7 +424,11 @@ export class PostChecks extends Context.Service<
                   ...duplicateRange(instant),
                   contents: channels.map(({ channelId }) => ({
                     channelId,
-                    content: contentOn(content, channelId),
+                    content: contentOn(
+                      content,
+                      channelId,
+                      optionsOn(options, channelId)
+                    ),
                   })),
                   except: Option.none(),
                   workspaceId: actor.workspaceId,
@@ -449,7 +455,7 @@ export class PostChecks extends Context.Service<
           ),
           dropped,
           duplicates,
-          filled: { channelIds: requested, content },
+          filled: { channelIds: requested, content, options },
           planLimit,
           queueSlot: queue.pipe(
             Option.map(({ queue: chosen, slot }) => ({
