@@ -637,6 +637,50 @@ describe("peal webhooks", () => {
         named,
         "Skipped 0190f3a0-0000-7000-8000-00000000f999: not a delivery of this workspace."
       );
+
+      // Nothing sent again ends as a refusal, each skip said with why.
+      const nothing = yield* session.refusedAfter([
+        "webhooks",
+        "redeliver",
+        "0190f3a0-0000-7000-8000-00000000f999",
+        ...inStudio,
+      ]);
+
+      assert.include(
+        nothing.logs,
+        "Skipped 0190f3a0-0000-7000-8000-00000000f999: not a delivery of this workspace."
+      );
+      assert.include(nothing.errors, "Nothing was sent again");
+
+      // The endpoint first, as an older command line took it, is told.
+      assert.include(
+        (yield* session.refusedAfter([
+          "webhooks",
+          "redeliver",
+          hookId,
+          ...inStudio,
+        ])).logs,
+        `Skipped ${hookId}: an endpoint's id, not a delivery's: name the endpoint with --endpoint ${hookId}.`
+      );
+
+      // What goes with --failed alone is refused without it.
+      for (const flag of [
+        ["--since", "2026-11-01T00:00:00Z"],
+        ["--until", "2026-11-01T00:00:00Z"],
+        ["--event", "post.published"],
+      ]) {
+        assert.include(
+          yield* session.refused([
+            "webhooks",
+            "redeliver",
+            exhaustedDeliveryId,
+            ...flag,
+            ...inStudio,
+          ]),
+          "--since, --until and --event go with --failed"
+        );
+      }
+
       assert.include(
         yield* session.refused([
           "webhooks",
@@ -660,6 +704,9 @@ describe("peal webhooks", () => {
       assert.deepStrictEqual(yield* changes(session.studio), [
         `webhook:redeliver-many:${exhaustedDeliveryId}`,
         `webhook:redeliver-many:${exhaustedDeliveryId}`,
+        // The two calls that sent nothing.
+        "webhook:redeliver-many:",
+        "webhook:redeliver-many:",
         `webhook:test:${hookId}:post.published`,
       ]);
     }).pipe(Effect.scoped, Effect.provide(filesLayer))

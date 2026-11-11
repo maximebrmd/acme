@@ -793,7 +793,10 @@ const skipReasons: Readonly<
 };
 
 const printRedelivered = Effect.fn("webhooks.printRedelivered")(
-  function* printRedelivered(result: WebhookBulkRedelivery) {
+  function* printRedelivered(
+    result: WebhookBulkRedelivery,
+    endpointIds: ReadonlySet<string>
+  ) {
     yield* Console.log(
       `Sending ${String(result.redelivered.length)} ${result.redelivered.length === 1 ? "delivery" : "deliveries"} again, as new deliveries of the same events.`
     );
@@ -805,13 +808,61 @@ const printRedelivered = Effect.fn("webhooks.printRedelivered")(
     }
 
     for (const { deliveryId, reason } of result.skipped) {
-      yield* Console.log(`  Skipped ${deliveryId}: ${skipReasons[reason]}.`);
+      yield* Console.log(
+        reason === "notFound" && endpointIds.has(deliveryId)
+          ? `  Skipped ${deliveryId}: an endpoint's id, not a delivery's: name the endpoint with --endpoint ${deliveryId}.`
+          : `  Skipped ${deliveryId}: ${skipReasons[reason]}.`
+      );
     }
 
     if (result.remaining > 0) {
       yield* Console.log(
         `${String(result.remaining)} more failed deliveries are left: run the same command again.`
       );
+    }
+  }
+);
+
+// What a redeliver's flags ask for holds together, before any request.
+const checkRedelivery = Effect.fn("webhooks.checkRedelivery")(
+  function* checkRedelivery(input: {
+    readonly deliveryIds: readonly string[];
+    readonly endpoint: Option.Option<string>;
+    readonly event: Option.Option<string>;
+    readonly failed: boolean;
+    readonly since: Option.Option<string>;
+    readonly until: Option.Option<string>;
+  }) {
+    if (input.failed && input.deliveryIds.length > 0) {
+      yield* new Refused({
+        reason: "Give --failed with --endpoint, or delivery ids, not both.",
+      });
+    }
+
+    if (input.failed && Option.isNone(input.endpoint)) {
+      yield* new Refused({
+        reason:
+          "--failed sends one endpoint's failed deliveries again: give --endpoint too.",
+      });
+    }
+
+    if (
+      !input.failed &&
+      (Option.isSome(input.since) ||
+        Option.isSome(input.until) ||
+        Option.isSome(input.event))
+    ) {
+      yield* new Refused({
+        reason:
+          "--since, --until and --event go with --failed, which picks an endpoint's failed deliveries: deliveries named by id are sent again whatever their time or type.",
+      });
+    }
+
+    if (!input.failed && input.deliveryIds.length === 0) {
+      yield* new Refused({
+        reason:
+          "Give the deliveries to send again, or --failed --endpoint <id>.",
+      });
     }
   }
 );
@@ -848,25 +899,7 @@ const redeliver = Command.make(
     workspace: workspaceFlag,
   },
   Effect.fn("webhooks.redeliver")(function* redeliver(input) {
-    if (input.failed && input.deliveryIds.length > 0) {
-      yield* new Refused({
-        reason: "Give --failed with --endpoint, or delivery ids, not both.",
-      });
-    }
-
-    if (input.failed && Option.isNone(input.endpoint)) {
-      yield* new Refused({
-        reason:
-          "--failed sends one endpoint's failed deliveries again: give --endpoint too.",
-      });
-    }
-
-    if (!input.failed && input.deliveryIds.length === 0) {
-      yield* new Refused({
-        reason:
-          "Give the deliveries to send again, or --failed --endpoint <id>.",
-      });
-    }
+    yield* checkRedelivery(input);
 
     const since = yield* givenInstant(input.since, "--since");
     const until = yield* givenInstant(input.until, "--until");
@@ -934,11 +967,31 @@ const redeliver = Command.make(
 
     if (input.json) {
       yield* printJson(WebhookBulkRedeliverySchema, result);
+    } else {
+      // An id skipped as no delivery may be an endpoint's, as the command
+      // once took the endpoint first.
+      const endpointIds = result.skipped.some(
+        ({ reason }) => reason === "notFound"
+      )
+        ? new Set(
+            (yield* client.webhooks
+              .list({ params: { workspaceId: workspace.id } })
+              .pipe(Effect.mapError(explain(url)))).map(({ id }) => id)
+          )
+        : new Set<string>();
 
-      return;
+      yield* printRedelivered(result, endpointIds);
     }
 
-    yield* printRedelivered(result);
+    if (result.redelivered.length === 0) {
+      yield* new Refused({
+        code: "nothing_redelivered",
+        reason:
+          result.skipped.length === 0
+            ? "Nothing was sent again: no delivery matched."
+            : "Nothing was sent again: every delivery was skipped, as said above.",
+      });
+    }
   })
 ).pipe(
   Command.withDescription(

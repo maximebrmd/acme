@@ -542,7 +542,7 @@ peal webhooks delete <endpoint-id>
 - `--channel` (repeated, or ids separated by commas) narrows an endpoint to those channels, and `--clear-channels` hears every channel again; `--workspace-id`, with `--partner` on `create`, narrows a partner endpoint to those workspaces, and `--clear-workspaces` clears it. `update` replaces a list it is given.
 - `test` sends a `webhook.test` event, or with `--event` a sample of that type, marked `sample: true`.
 - `deliveries` shows how each delivery ended, newest first: one endpoint's, or without it every endpoint's, with `--status`, `--event`, `--since` and `--until` (instants with their offset).
-- `redeliver` sends deliveries again: one with `--endpoint` and its id, as the single sends count; several by id; or `--failed --endpoint <endpoint-id>` for an endpoint's failed ones, oldest first, 100 a call, with `--since`, `--until` and `--event`. It prints what it skipped and how many are left: run it again for those.
+- `redeliver` sends deliveries again: one with `--endpoint` and its id, as the single sends count; several by id; or `--failed --endpoint <endpoint-id>` for an endpoint's failed ones, oldest first, 100 a call, with `--since`, `--until` and `--event`, which go with `--failed` only. It prints what it skipped and why, and how many are left: run it again for those. When it sends nothing again it ends as a refusal (`nothing_redelivered`, exit code 1). Its arguments are delivery ids: an older command line took the endpoint first (`redeliver <endpoint-id> <delivery-id>`), which now names the endpoint with `--endpoint`; an endpoint's id given as a delivery is skipped, and said so.
 
 ## Activity log [#activity]
 

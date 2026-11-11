@@ -165,5 +165,8 @@
   filters, ids as given; `deliveries` without an endpoint, or with
   `--since`/`--until`, reads `searchDeliveries`; `redeliver` sends one
   delivery with `--endpoint` (`redeliver`, the single sends' budget), several
-  by id or `--failed --endpoint` (`redeliverMany`); `test --event` sends a
+  by id or `--failed --endpoint` (`redeliverMany`), which refuses
+  `--since`, `--until` and `--event` without `--failed`, names an
+  endpoint's id given as a delivery, and ends as a refusal
+  (`nothing_redelivered`) when nothing was sent again; `test --event` sends a
   sample.

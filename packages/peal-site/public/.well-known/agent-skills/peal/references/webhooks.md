@@ -49,6 +49,7 @@ peal webhooks redeliver <delivery-id> <delivery-id> --json
 user a receiver must never act on one. `redeliver --failed` sends an
 endpoint's failed deliveries again, oldest first, 100 a call; it skips what
 was sent again already, so running it again sends nothing twice, and
-`remaining` says how many are left. A workspace sends 30 test events and
+`remaining` says how many are left. A call that sends nothing again
+ends as `nothing_redelivered` (exit code 1), its `skipped` saying why. A workspace sends 30 test events and
 single resends an hour, and 1,000 deliveries again by the many: past either,
 `too_many_webhook_sends` (429) says how long to wait in `retryAfterSeconds`.
