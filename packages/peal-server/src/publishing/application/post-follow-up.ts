@@ -185,6 +185,11 @@ export class PostFollowUp extends Context.Service<
             yield* outcomes.resolved(target);
             yield* events.confirmed(revised, next);
 
+            // A finished post told again, if the outcome changed.
+            if (revised.status._tag === "finished") {
+              yield* events.finished(revised, targets);
+            }
+
             return { post: revised, targets };
           })
         );

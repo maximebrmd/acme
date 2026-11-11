@@ -34,7 +34,9 @@
   post's channels, and the approval gate the submitted subject's,
   `channelsSubmitted`). A new type does not compile until it says which. Publishing
   tells through `PostEvents` (schedule, unschedule, cancel, confirm, in
-  `PostScheduling`'s and `PostFollowUp`'s transactions) and
+  `PostScheduling`'s and `PostFollowUp`'s transactions, and finish,
+  wherever a post becomes `finished`: `post.finished`, once per round and
+  outcome) and
   `webhookOutcomes` around `PublicationOutcomes`; channels through
   `ChannelEvents` (connect, reconnect, disconnect, in
   `ChannelRepository.addingTo`'s transaction) and `webhookChannelNotices`

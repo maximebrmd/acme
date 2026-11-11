@@ -1,5 +1,14 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Context, Effect, Layer, Option, Ref, Schema } from "effect";
+import {
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Option,
+  Ref,
+  Result,
+  Schema,
+} from "effect";
 import type { Scope } from "effect";
 import { MessageStorage } from "effect/cluster";
 
@@ -7,10 +16,15 @@ import { ListChannels } from "#channels/application/list-channels.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { AccountRules } from "#publishing/application/account-rules.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
+import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostOrigins } from "#publishing/application/post-origins.ts";
+import { claimPostRun } from "#publishing/application/post-publication.ts";
+import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
 import { publishingWith, publishingWorkers } from "#publishing/container.ts";
+import { repostTarget } from "#publishing/domain/post-target.ts";
+import { reopenPost } from "#publishing/domain/post.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import {
   FakePlatform,
@@ -22,7 +36,8 @@ import {
   WebhookPostEvents,
 } from "#publishing/infrastructure/webhook-post-events.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import { BadRequest } from "#shared/domain/bad-request.ts";
+import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
@@ -60,6 +75,7 @@ import {
   isSuspended,
   scheduleIn,
   setTime,
+  storedPost,
   targetsOf,
 } from "./harness.ts";
 
@@ -475,6 +491,335 @@ describe("a post's webhook events", () => {
             assert.strictEqual(payload.workspaceExternalId, "cus_batch");
             assert.strictEqual(payload.data.workspaceId, customer.workspaceId);
           }
+        })
+      ),
+    timeout
+  );
+});
+
+// The post.finished events an endpoint was sent, as round, outcome and
+// each channel's status.
+const finishedSentTo = Effect.fn("test.finishedSentTo")(
+  function* finishedSentTo(owner: Actor, endpointId: string) {
+    const sent = yield* eventsSentTo(owner, endpointId);
+
+    return sent.flatMap((event) =>
+      event.type === "post.finished"
+        ? [
+            {
+              outcome: event.data.outcome,
+              round: event.data.round,
+              statuses: event.data.targets.map(({ status }) => status),
+            },
+          ]
+        : []
+    );
+  }
+);
+
+// A post on the channels at 08:00, finished once its job ran.
+const finishedAt8 = Effect.fn("test.finishedAt8")(function* finishedAt8(
+  actor: Actor,
+  channelIds: readonly [ChannelId, ...ChannelId[]]
+) {
+  const { post } = yield* schedule(actor, channelIds);
+
+  yield* eventually("the job sleeps", isSuspended(post.id));
+  yield* setTime("2026-06-15T08:00:00Z");
+  yield* eventually("the post at 8 finishes", isFinished(post.id));
+
+  return post.id;
+});
+
+const targetOn = (postId: PostId, channelId: ChannelId) =>
+  targetsOf(postId).pipe(
+    Effect.map((targets) =>
+      Option.getOrThrow(
+        Option.fromUndefinedOr(
+          targets.find((target) => target.channelId === channelId)
+        )
+      )
+    )
+  );
+
+const refuseOnce = (channelId: ChannelId) =>
+  FakePlatform.use((platform) =>
+    platform.script(channelId, [
+      { _tag: "fail", failure: new BadRequest({ code: "duplicate" }) },
+    ])
+  );
+
+describe("a post's post.finished event", () => {
+  it.effect(
+    "says once every channel has its result, with each one's, never what the post says",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* finishes() {
+          const owner = yield* freshOwner;
+          const live = yield* connect(owner.workspaceId, "mastodon");
+          const refused = yield* connect(owner.workspaceId, "bluesky");
+          const quiet = yield* connect(owner.workspaceId, "x");
+
+          const all = yield* freshEndpoint(owner, {
+            eventTypes: ["post.finished"],
+          });
+
+          // Heard by any of its channels.
+          const ofRefused = yield* freshEndpoint(owner, {
+            channelIds: [refused],
+            eventTypes: ["post.finished"],
+          });
+
+          const ofOther = yield* freshEndpoint(owner, {
+            channelIds: [quiet],
+            eventTypes: ["post.finished"],
+          });
+
+          yield* FakePlatform.use((platform) =>
+            platform.script(refused, [
+              {
+                _tag: "fail",
+                failure: new MediaRejected({ code: "too-large" }),
+              },
+            ])
+          );
+
+          const postId = yield* finishedAt8(owner, [live, refused]);
+          const { post } = yield* storedPost(postId);
+          const targets = yield* targetsOf(postId);
+          const sent = yield* eventsSentTo(owner, all.endpoint.id);
+
+          assert(post.status._tag === "finished");
+
+          const expected: WebhookEvent = {
+            data: {
+              finishedAt: post.status.finishedAt,
+              outcome: "partiallyPublished",
+              postId,
+              round: 1,
+              targets: targets.map((target) => ({
+                channelId: target.channelId,
+                failureReason:
+                  target.status._tag === "failed" ? target.status.reason : null,
+                permalink:
+                  target.status._tag === "published"
+                    ? Option.getOrNull(target.status.permalink)
+                    : null,
+                platform: target.channelId === live ? "mastodon" : "bluesky",
+                status: target.channelId === live ? "published" : "failed",
+                targetId: target.id,
+              })),
+              workspaceId: owner.workspaceId,
+            },
+            type: "post.finished",
+          };
+
+          assert.deepStrictEqual(sent, [expected]);
+          assert.deepStrictEqual(
+            yield* finishedSentTo(owner, ofRefused.endpoint.id),
+            [
+              {
+                outcome: "partiallyPublished",
+                round: 1,
+                statuses: ["published", "failed"],
+              },
+            ]
+          );
+          assert.deepStrictEqual(
+            yield* eventsSentTo(owner, ofOther.endpoint.id),
+            []
+          );
+          assert.notInclude(JSON.stringify(sent), syntheticContent.text);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "says it again when a repost ends, once a round",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* reposted() {
+          const owner = yield* freshOwner;
+          const fine = yield* connect(owner.workspaceId, "mastodon");
+          const refused = yield* connect(owner.workspaceId, "bluesky");
+
+          const { endpoint } = yield* freshEndpoint(owner, {
+            eventTypes: ["post.finished"],
+          });
+
+          yield* refuseOnce(refused);
+
+          const postId = yield* finishedAt8(owner, [fine, refused]);
+          const failed = yield* targetOn(postId, refused);
+
+          yield* PostFollowUp.use((followUp) =>
+            followUp.repost(owner, postId, failed.id)
+          );
+          yield* eventually("the repost finishes", isFinished(postId));
+
+          assert.deepStrictEqual(yield* finishedSentTo(owner, endpoint.id), [
+            {
+              outcome: "partiallyPublished",
+              round: 1,
+              statuses: ["published", "failed"],
+            },
+            {
+              outcome: "published",
+              round: 2,
+              statuses: ["published", "published"],
+            },
+          ]);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "says it again when a member's confirmation changes the outcome, and only then",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* confirmed() {
+          const owner = yield* freshOwner;
+          const followUp = yield* PostFollowUp;
+          const lost = yield* connect(owner.workspaceId, "mastodon");
+          const missing = yield* connect(owner.workspaceId, "bluesky");
+
+          const { endpoint } = yield* freshEndpoint(owner, {
+            eventTypes: ["post.finished"],
+          });
+
+          yield* Effect.forEach([lost, missing], (channelId) =>
+            FakePlatform.use((platform) =>
+              platform.script(channelId, [{ _tag: "loseResponse" }])
+            )
+          );
+
+          const postId = yield* finishedAt8(owner, [lost, missing]);
+          const found = yield* targetOn(postId, lost);
+          const notFound = yield* targetOn(postId, missing);
+
+          // Still unconfirmed on the other channel: the outcome stays.
+          yield* followUp.confirm(owner, postId, found.id, {
+            _tag: "published",
+            permalink: Option.none(),
+          });
+          yield* followUp.confirm(owner, postId, notFound.id, {
+            _tag: "notPublished",
+          });
+
+          assert.deepStrictEqual(yield* finishedSentTo(owner, endpoint.id), [
+            {
+              outcome: "unconfirmed",
+              round: 1,
+              statuses: ["unconfirmed", "unconfirmed"],
+            },
+            {
+              outcome: "partiallyPublished",
+              round: 1,
+              statuses: ["published", "failed"],
+            },
+          ]);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "says it of a post cancelled with nothing left to send",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* cancelled() {
+          const owner = yield* freshOwner;
+          const posts = yield* PostRepository;
+          const fine = yield* connect(owner.workspaceId, "mastodon");
+          const refused = yield* connect(owner.workspaceId, "bluesky");
+
+          const { endpoint } = yield* freshEndpoint(owner, {
+            eventTypes: ["post.finished"],
+          });
+
+          yield* refuseOnce(refused);
+
+          const postId = yield* finishedAt8(owner, [fine, refused]);
+          const failed = yield* targetOn(postId, refused);
+          const { post: finished } = yield* storedPost(postId);
+
+          // As a repost leaves them, before its job claims the target.
+          assert(
+            yield* posts.updateTarget(
+              Result.getOrThrow(repostTarget(failed)),
+              failed
+            )
+          );
+          assert(
+            yield* posts.update(
+              Result.getOrThrow(
+                reopenPost(
+                  finished,
+                  DateTime.makeUnsafe("2026-06-15T09:00:00Z")
+                )
+              ),
+              finished
+            )
+          );
+
+          yield* PostScheduling.use((scheduling) =>
+            scheduling.cancel(owner, postId)
+          );
+
+          const sent = yield* eventsSentTo(owner, endpoint.id);
+
+          assert.deepStrictEqual(
+            sent.map((event) =>
+              event.type === "post.finished"
+                ? [event.data.postId, event.data.round, event.data.outcome]
+                : []
+            ),
+            [
+              [postId, 1, "partiallyPublished"],
+              [postId, 2, "partiallyPublished"],
+            ]
+          );
+        })
+      ),
+    timeout
+  );
+});
+
+describe("a missed post's post.finished event", () => {
+  it.effect(
+    "says every channel missed it when the job wakes too late",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* missed() {
+          const owner = yield* freshOwner;
+          const channel = yield* connect(owner.workspaceId, "mastodon");
+
+          const { endpoint } = yield* freshEndpoint(owner, {
+            eventTypes: ["post.finished"],
+          });
+
+          const { post } = yield* schedule(owner, [channel]);
+
+          yield* eventually("the job sleeps", isSuspended(post.id));
+          // More than the hour a post may be late, as when the server was
+          // down: the job's claim marks every target missed.
+          yield* setTime("2026-06-15T09:30:00Z");
+
+          assert.deepStrictEqual(
+            yield* claimPostRun(post.id, post.scheduleRevision),
+            { _tag: "missed" }
+          );
+
+          assert.deepStrictEqual(yield* finishedSentTo(owner, endpoint.id), [
+            { outcome: "failed", round: 1, statuses: ["failed"] },
+          ]);
         })
       ),
     timeout
