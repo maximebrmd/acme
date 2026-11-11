@@ -3,7 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface UsageDay {
-    assistantRequests: number;
+    assistantRequests: number | null;
     byPlatform: Peal.PlatformPosts[];
     channels: number | null;
     day: Peal.CalendarDay;

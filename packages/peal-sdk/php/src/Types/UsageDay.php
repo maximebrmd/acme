@@ -9,10 +9,10 @@ use Peal\Core\Types\ArrayType;
 class UsageDay extends JsonSerializableType
 {
     /**
-     * @var int $assistantRequests
+     * @var ?int $assistantRequests
      */
     #[JsonProperty('assistantRequests')]
-    public int $assistantRequests;
+    public ?int $assistantRequests;
 
     /**
      * @var array<PlatformPosts> $byPlatform
@@ -52,10 +52,10 @@ class UsageDay extends JsonSerializableType
 
     /**
      * @param array{
-     *   assistantRequests: int,
      *   byPlatform: array<PlatformPosts>,
      *   day: string,
      *   publishedPosts: int,
+     *   assistantRequests?: ?int,
      *   channels?: ?int,
      *   mediaStorage?: ?int,
      *   members?: ?int,
@@ -64,7 +64,7 @@ class UsageDay extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
-        $this->assistantRequests = $values['assistantRequests'];
+        $this->assistantRequests = $values['assistantRequests'] ?? null;
         $this->byPlatform = $values['byPlatform'];
         $this->channels = $values['channels'] ?? null;
         $this->day = $values['day'];

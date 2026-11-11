@@ -302,13 +302,14 @@ var (
 
 // usageDayNullableFields maps the wire names of UsageDay's nullable fields (required or optional) to their field bits.
 var usageDayNullableFields = map[string]*big.Int{
-	"channels":     usageDayFieldChannels,
-	"mediaStorage": usageDayFieldMediaStorage,
-	"members":      usageDayFieldMembers,
+	"assistantRequests": usageDayFieldAssistantRequests,
+	"channels":          usageDayFieldChannels,
+	"mediaStorage":      usageDayFieldMediaStorage,
+	"members":           usageDayFieldMembers,
 }
 
 type UsageDay struct {
-	AssistantRequests int              `json:"assistantRequests" url:"assistantRequests"`
+	AssistantRequests *int             `json:"assistantRequests,omitempty" url:"assistantRequests,omitempty"`
 	ByPlatform        []*PlatformPosts `json:"byPlatform" url:"byPlatform"`
 	Channels          *int             `json:"channels,omitempty" url:"channels,omitempty"`
 	Day               CalendarDay      `json:"day" url:"day"`
@@ -323,9 +324,9 @@ type UsageDay struct {
 	rawJSON         json.RawMessage
 }
 
-func (u *UsageDay) GetAssistantRequests() int {
+func (u *UsageDay) GetAssistantRequests() *int {
 	if u == nil {
-		return 0
+		return nil
 	}
 	return u.AssistantRequests
 }
@@ -390,7 +391,7 @@ func (u *UsageDay) require(field *big.Int) {
 
 // SetAssistantRequests sets the AssistantRequests field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UsageDay) SetAssistantRequests(assistantRequests int) {
+func (u *UsageDay) SetAssistantRequests(assistantRequests *int) {
 	u.AssistantRequests = assistantRequests
 	u.require(usageDayFieldAssistantRequests)
 }

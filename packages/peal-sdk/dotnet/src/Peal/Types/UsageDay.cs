@@ -12,7 +12,7 @@ public record UsageDay : IJsonOnDeserialized
         new Dictionary<string, JsonElement>();
 
     [JsonPropertyName("assistantRequests")]
-    public required int AssistantRequests { get; set; }
+    public int? AssistantRequests { get; set; }
 
     [JsonPropertyName("byPlatform")]
     public IEnumerable<PlatformPosts> ByPlatform { get; set; } = new List<PlatformPosts>();

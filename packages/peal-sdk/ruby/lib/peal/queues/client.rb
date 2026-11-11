@@ -164,8 +164,9 @@ module Peal
       # most) and one channel set (`channelSetId`), which a post added to it goes to when it names none. Its name is one
       # no other queue of the workspace has, whatever its case. `isDefault` makes it the workspace's default queue, the
       # one a post added to no queue in particular takes, instead of the one that was. Posts the queue placed keep their
-      # times: a slot that changed frees nothing and moves nothing. Saving the default with `isDefault` false leaves the
-      # workspace without one. Needs post:update and channel:read.
+      # times: a slot that changed frees nothing and moves nothing. Saving the default with `isDefault` false, or
+      # without `isDefault`, leaves the workspace without one, and a post then sent to the default queue is refused
+      # (QueueNotFound): send `isDefault` true to keep it the default. Needs post:update and channel:read.
       #
       # @param request_options [Hash]
       # @param params [Peal::Types::QueueDetails]

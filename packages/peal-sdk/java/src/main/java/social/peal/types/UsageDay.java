@@ -26,7 +26,7 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = UsageDay.Builder.class)
 public final class UsageDay {
-    private final int assistantRequests;
+    private final Optional<Integer> assistantRequests;
 
     private final List<PlatformPosts> byPlatform;
 
@@ -43,7 +43,7 @@ public final class UsageDay {
     private final Map<String, Object> additionalProperties;
 
     private UsageDay(
-            int assistantRequests,
+            Optional<Integer> assistantRequests,
             List<PlatformPosts> byPlatform,
             Optional<Integer> channels,
             String day,
@@ -61,8 +61,11 @@ public final class UsageDay {
         this.additionalProperties = additionalProperties;
     }
 
-    @JsonProperty("assistantRequests")
-    public int getAssistantRequests() {
+    @JsonIgnore
+    public Optional<Integer> getAssistantRequests() {
+        if (assistantRequests == null) {
+            return Optional.empty();
+        }
         return assistantRequests;
     }
 
@@ -106,6 +109,12 @@ public final class UsageDay {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("assistantRequests")
+    private Optional<Integer> _getAssistantRequests() {
+        return assistantRequests;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("channels")
     private Optional<Integer> _getChannels() {
         return channels;
@@ -135,7 +144,7 @@ public final class UsageDay {
     }
 
     private boolean equalTo(UsageDay other) {
-        return assistantRequests == other.assistantRequests
+        return assistantRequests.equals(other.assistantRequests)
                 && byPlatform.equals(other.byPlatform)
                 && channels.equals(other.channels)
                 && day.equals(other.day)
@@ -161,18 +170,14 @@ public final class UsageDay {
         return ObjectMappers.stringify(this);
     }
 
-    public static AssistantRequestsStage builder() {
+    public static DayStage builder() {
         return new Builder();
-    }
-
-    public interface AssistantRequestsStage {
-        DayStage assistantRequests(int assistantRequests);
-
-        Builder from(UsageDay other);
     }
 
     public interface DayStage {
         PublishedPostsStage day(@NotNull String day);
+
+        Builder from(UsageDay other);
     }
 
     public interface PublishedPostsStage {
@@ -185,6 +190,12 @@ public final class UsageDay {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage assistantRequests(Optional<Integer> assistantRequests);
+
+        _FinalStage assistantRequests(Integer assistantRequests);
+
+        _FinalStage assistantRequests(Nullable<Integer> assistantRequests);
 
         _FinalStage byPlatform(List<PlatformPosts> byPlatform);
 
@@ -212,9 +223,7 @@ public final class UsageDay {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements AssistantRequestsStage, DayStage, PublishedPostsStage, _FinalStage {
-        private int assistantRequests;
-
+    public static final class Builder implements DayStage, PublishedPostsStage, _FinalStage {
         private String day;
 
         private int publishedPosts;
@@ -226,6 +235,8 @@ public final class UsageDay {
         private Optional<Integer> channels = Optional.empty();
 
         private List<PlatformPosts> byPlatform = new ArrayList<>();
+
+        private Optional<Integer> assistantRequests = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -240,13 +251,6 @@ public final class UsageDay {
             mediaStorage(other.getMediaStorage());
             members(other.getMembers());
             publishedPosts(other.getPublishedPosts());
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter("assistantRequests")
-        public DayStage assistantRequests(int assistantRequests) {
-            this.assistantRequests = assistantRequests;
             return this;
         }
 
@@ -360,6 +364,31 @@ public final class UsageDay {
             if (byPlatform != null) {
                 this.byPlatform.addAll(byPlatform);
             }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage assistantRequests(Nullable<Integer> assistantRequests) {
+            if (assistantRequests.isNull()) {
+                this.assistantRequests = null;
+            } else if (assistantRequests.isEmpty()) {
+                this.assistantRequests = Optional.empty();
+            } else {
+                this.assistantRequests = Optional.of(assistantRequests.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage assistantRequests(Integer assistantRequests) {
+            this.assistantRequests = Optional.ofNullable(assistantRequests);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "assistantRequests", nulls = Nulls.SKIP)
+        public _FinalStage assistantRequests(Optional<Integer> assistantRequests) {
+            this.assistantRequests = assistantRequests;
             return this;
         }
 

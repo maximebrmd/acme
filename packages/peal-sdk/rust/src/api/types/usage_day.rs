@@ -3,8 +3,8 @@ pub use crate::prelude::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct UsageDay {
     #[serde(rename = "assistantRequests")]
-    #[serde(default)]
-    pub assistant_requests: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub assistant_requests: Option<i64>,
     #[serde(rename = "byPlatform")]
     #[serde(default)]
     pub by_platform: Vec<PlatformPosts>,
@@ -78,15 +78,12 @@ impl UsageDayBuilder {
 
     /// Consumes the builder and constructs a [`UsageDay`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`assistant_requests`](UsageDayBuilder::assistant_requests)
     /// - [`by_platform`](UsageDayBuilder::by_platform)
     /// - [`day`](UsageDayBuilder::day)
     /// - [`published_posts`](UsageDayBuilder::published_posts)
     pub fn build(self) -> Result<UsageDay, BuildError> {
         Ok(UsageDay {
-            assistant_requests: self
-                .assistant_requests
-                .ok_or_else(|| BuildError::missing_field("assistant_requests"))?,
+            assistant_requests: self.assistant_requests,
             by_platform: self
                 .by_platform
                 .ok_or_else(|| BuildError::missing_field("by_platform"))?,

@@ -5,7 +5,7 @@ require_relative "../../peal"
 module Peal
   module Types
     class UsageDay < Internal::Types::Model
-      field :assistant_requests, -> { Integer }, optional: false, nullable: false, api_name: "assistantRequests"
+      field :assistant_requests, -> { Integer }, optional: false, nullable: true, api_name: "assistantRequests"
 
       field :by_platform, -> { Internal::Types::Array[Peal::Types::PlatformPosts] }, optional: false, nullable: false, api_name: "byPlatform"
 

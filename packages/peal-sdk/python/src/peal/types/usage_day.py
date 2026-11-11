@@ -12,8 +12,8 @@ from .platform_posts import PlatformPosts
 
 class UsageDay(UniversalBaseModel):
     assistant_requests: typing_extensions.Annotated[
-        int, FieldMetadata(alias="assistantRequests"), pydantic.Field(alias="assistantRequests")
-    ]
+        typing.Optional[int], FieldMetadata(alias="assistantRequests"), pydantic.Field(alias="assistantRequests")
+    ] = None
     by_platform: typing_extensions.Annotated[
         typing.List[PlatformPosts], FieldMetadata(alias="byPlatform"), pydantic.Field(alias="byPlatform")
     ]

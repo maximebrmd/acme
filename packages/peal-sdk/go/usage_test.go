@@ -525,7 +525,7 @@ func TestSettersMarkExplicitPlatformPosts(t *testing.T) {
 func TestSettersUsageDay(t *testing.T) {
 	t.Run("SetAssistantRequests", func(t *testing.T) {
 		obj := &UsageDay{}
-		var fernTestValueAssistantRequests int
+		var fernTestValueAssistantRequests *int
 		obj.SetAssistantRequests(fernTestValueAssistantRequests)
 		assert.Equal(t, fernTestValueAssistantRequests, obj.AssistantRequests)
 		assert.NotNil(t, obj.explicitFields)
@@ -586,11 +586,21 @@ func TestGettersUsageDay(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &UsageDay{}
-		var expected int
+		var expected *int
 		obj.AssistantRequests = expected
 
 		// Act & Assert
 		assert.Equal(t, expected, obj.GetAssistantRequests(), "getter should return the property value")
+	})
+
+	t.Run("GetAssistantRequests_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UsageDay{}
+		obj.AssistantRequests = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAssistantRequests(), "getter should return nil when property is nil")
 	})
 
 	t.Run("GetAssistantRequests_NilReceiver", func(t *testing.T) {
@@ -790,7 +800,7 @@ func TestSettersMarkExplicitUsageDay(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &UsageDay{}
-		var fernTestValueAssistantRequests int
+		var fernTestValueAssistantRequests *int
 
 		// Act
 		obj.SetAssistantRequests(fernTestValueAssistantRequests)
@@ -2294,6 +2304,7 @@ func TestJSONMarshalingWorkspaceUsageReport(t *testing.T) {
 
 func TestRequiredNullableRoundTripUsageDay(t *testing.T) {
 	requiredNullableKeys := []string{
+		"assistantRequests",
 		"channels",
 		"mediaStorage",
 		"members",
@@ -2309,7 +2320,7 @@ func TestRequiredNullableRoundTripUsageDay(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj UsageDay
-		require.NoError(t, json.Unmarshal([]byte(`{"channels":null,"mediaStorage":null,"members":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"assistantRequests":null,"channels":null,"mediaStorage":null,"members":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]
