@@ -960,6 +960,42 @@ describe("peal billing, members and invitations", () => {
   );
 
   it.effect(
+    "shows the plan's limits against what is used now, the period's totals and each day that has anything",
+    () =>
+      Effect.gen(function* usage() {
+        const session = yield* signedIn();
+
+        const shown = yield* session.printed([
+          "usage",
+          "--from",
+          "2026-11-01",
+          "--to",
+          "2026-11-03",
+          ...inStudio,
+        ]);
+
+        assert.include(
+          shown,
+          "Usage of Studio from 2026-11-01 to 2026-11-03, by UTC day:"
+        );
+        assert.include(shown, "Plan: free.");
+        assert.match(shown, /Channels\s+2 of 3/u);
+        assert.match(shown, /Media stored\s+125\.0 MB of 500\.0 MB/u);
+        assert.match(shown, /Posts published\s+3: bluesky 1, x 2/u);
+        assert.match(shown, /Channel-days\s+4, over 2 days counted/u);
+        assert.match(shown, /Posts on x in 2026-11\s+2, 1 with a link/u);
+        assert.match(shown, /2026-11-01\s+3\s+2\s+2\s+125\.0 MB\s+1/u);
+        assert.match(shown, /2026-11-02\s+0\s+2\s+2\s+125\.0 MB\s+0/u);
+        // A day without a snapshot or anything done is left out.
+        assert.notInclude(shown, "2026-11-03  ");
+        assert.include(
+          yield* session.refused(["usage", "--workspace", "shop"]),
+          "your role in this workspace does not allow it"
+        );
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
     "says what a workspace holds beyond its plan, and the way out",
     () =>
       Effect.gen(function* over() {

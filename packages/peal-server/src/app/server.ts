@@ -40,6 +40,7 @@ import {
   BillingActionsApiLive,
   BillingLive,
   BillingOverviewLive,
+  UsageApiLive,
   ContractRequestsDeskApiLive,
   ContractRequestsLive as ContractRequestsUseCasesLive,
 } from "#billing/container.ts";
@@ -137,6 +138,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   AssistantApiLive,
   BillingApiLive,
   BillingActionsApiLive,
+  UsageApiLive,
   AnalyticsApiLive,
   TikTokApiLive,
   CapabilitiesApiLive,

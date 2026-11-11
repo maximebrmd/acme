@@ -215,6 +215,7 @@ const coverage = {
   "tags.list": by("tags list"),
   "tags.update": by("tags update"),
   "tiktok.creator": by("channels tiktok"),
+  "usage.get": by("usage"),
   "webhooks.create": by("webhooks create"),
   "webhooks.delete": by("webhooks delete"),
   "webhooks.get": by("webhooks show"),

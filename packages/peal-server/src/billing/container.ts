@@ -18,6 +18,7 @@ import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SettleContractRequest } from "#billing/application/settle-contract-request.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
+import { UsageReports } from "#billing/application/usage-reports.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
@@ -118,8 +119,10 @@ const UsageAtCheckoutBound = Layer.effectDiscard(
  * when it is over it, through the channels and workspace contexts;
  * ordering, cancelling and withdrawing, which call Stripe and
  * tell members through the notifications context; the daily
- * reminders; and the daily snapshot of every workspace's usage, which
- * those contexts count too. The composition root provides those contexts, Ids and the
+ * reminders; and every workspace's usage, day by day, which those
+ * contexts count too: its daily snapshot and its report, which says whose
+ * plan a partner's workspace is on (the workspace context's
+ * PartnerOwnership). The composition root provides those contexts, Ids and the
  * TransactionRunner, with BillingLive.
  */
 export const BillingOverviewLive = Layer.mergeAll(
@@ -133,12 +136,14 @@ export const BillingOverviewLive = Layer.mergeAll(
   Withdraw.layer,
   SendBillingReminders.layer,
   SnapshotUsage.layer,
+  UsageReports.layer,
   UsageAtCheckoutBound
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
       RecordsLive,
       ContextUsageStatesLive,
+      PartnerPlanHoldersLive,
       DrizzleWithdrawalsLive,
       StripeContractsLive,
       NotifiedBillingNoticesLive,
@@ -211,6 +216,8 @@ export const BillingCronsLive = Layer.mergeAll(
 export { BillingHandlers as BillingApiLive } from "#billing/api/billing.ts";
 
 export { BillingActionsHandlers as BillingActionsApiLive } from "#billing/api/billing-actions.ts";
+
+export { UsageHandlers as UsageApiLive } from "#billing/api/usage.ts";
 
 // The check of Stripe's prices a server that bills makes when it starts.
 export { StripePricesCheckedLive } from "#billing/infrastructure/stripe-prices-checked.ts";

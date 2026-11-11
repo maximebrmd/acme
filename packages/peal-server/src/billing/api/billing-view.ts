@@ -12,7 +12,8 @@ import { currency, displayVatRate } from "#billing/domain/prices.ts";
 
 // What clients see of billing, which the API and the MCP tools answer.
 
-const allowancesView = (allowances: Allowances): PlanAllowances => ({
+/** What clients see of what a plan allows. */
+export const allowancesView = (allowances: Allowances): PlanAllowances => ({
   assistantRequests: Option.getOrNull(allowances.assistantRequests),
   channels: Option.getOrNull(allowances.channels),
   mediaStorage: Option.getOrNull(allowances.mediaStorage),

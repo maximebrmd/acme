@@ -40,6 +40,7 @@ import { StaffApi } from "./staff.ts";
 import { SystemApi } from "./system.ts";
 import { TagsApi } from "./tags.ts";
 import { TikTokApi } from "./tiktok.ts";
+import { UsageApi } from "./usage.ts";
 import { WebhooksApi } from "./webhooks.ts";
 import { WorkspacesApi } from "./workspaces.ts";
 
@@ -412,6 +413,30 @@ export type {
   Withdrawal,
   WithdrawalPreview,
 } from "./billing.ts";
+
+export {
+  defaultUsageRangeDays,
+  maxUsageRangeDays,
+  MeteredPostsSchema,
+  PlatformPostsSchema,
+  UsageApi,
+  UsageDaySchema,
+  UsagePeriodSchema,
+  usageRetentionDays,
+  UsageSharingSchema,
+  UsageTotalsSchema,
+  WorkspaceUsageReportSchema,
+} from "./usage.ts";
+
+export type {
+  MeteredPosts,
+  PlatformPosts,
+  UsageDay,
+  UsagePeriod,
+  UsageSharing,
+  UsageTotals,
+  WorkspaceUsageReport,
+} from "./usage.ts";
 
 export {
   billingCurrency,
@@ -1609,6 +1634,7 @@ export class Api extends HttpApi.make("peal")
   .add(ConnectedAppsApi)
   .add(BillingApi)
   .add(BillingActionsApi)
+  .add(UsageApi)
   .add(CaptchaApi)
   .add(AnalyticsApi)
   .add(TikTokApi)
