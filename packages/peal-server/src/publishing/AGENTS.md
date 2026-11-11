@@ -386,6 +386,35 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   there (`optionInvalid`, `gateViolationsOn`) and `AccountStandings`
   describes them (`optionNeedsReconnect`), both from `ChannelGrants`; a
   403 on a gated write is `optionRefused`, never a refused token.
+- Instagram and Facebook take options too (`instagram-options.ts`,
+  `facebook-options.ts`), and YouTube and TikTok more. An option may name
+  a file of the library (`thumbnailMediaId`, `coverMediaId`): its notes
+  give `contentTypes` and `maxByteSize`, which make it a `media` field in
+  the capabilities. Such a file is not media the post shows: `shownMedia`
+  stays what platforms get, and `referencedMedia` (`named-media.ts`) is
+  every file the post depends on, which `mediaFor`, `PostChecks`,
+  duplication and `PostRepository.showing` (so `MediaInPosts`) read; an
+  account's own rules read the shown files only. `checkSavedOptions`
+  refuses a named file in a channel set or a channel's defaults, and
+  `keepingMedia` drops one gone from a copy or a released draft.
+  `mediaOptionViolationsOn` checks the named file's type and size and
+  every rule tied to the media (a reel's fields on one video, TikTok's
+  video and photo fields, a frame within the video, Facebook's title on a
+  video), given all the files.
+- YouTube sets a thumbnail after the video is up and processed
+  (`withThumbnail`, after `processed` and on a `found` lookup): it spends
+  a unit of `PlatformQuota` bucket `thumbnails:youtube` by Pacific day
+  (`YOUTUBE_DAILY_THUMBNAILS`), streams the image to thumbnails.set, and
+  journals `upload_sessions.thumbnail_set`, so a resumed run neither
+  sends nor pays again. Nothing about it fails the post: a refusal, the
+  budget spent or the file gone is `Published.thumbnailNotSet`, kept in
+  `post_targets.thumbnail_not_set` beside `keptPrivate`. New YouTube
+  fields, TikTok's cover frame and photo fields, Instagram's reel fields,
+  collaborators (on the post's own container, never a carousel item) and
+  Facebook's video title are sent only when chosen; Instagram's alt text
+  goes on images and a carousel's images. Meta names no parameter in a
+  code: a container refused while it names collaborators keeps Meta's
+  code, never `optionRefused`.
 - A field the web composer shows only for some values of another (an
   event's dates) says so with `shownWith` in `#posts/target-options.ts`:
   `isShown` hides it and `optionsOf` leaves its value out, as the domain's
