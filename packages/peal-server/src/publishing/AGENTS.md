@@ -472,7 +472,13 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   a unit of `PlatformQuota` bucket `thumbnails:youtube` by Pacific day
   (`YOUTUBE_DAILY_THUMBNAILS`), streams the image to thumbnails.set, and
   journals `upload_sessions.thumbnail_set`, so a resumed run neither
-  sends nor pays again. Nothing about it fails the post: a refusal, the
+  sends nor pays again once that is written. A run cut between the call
+  and the journal spends a second unit and calls again (setting a
+  thumbnail twice changes nothing), and a send lost on the network keeps
+  its unit: accepted,
+  as it only makes the ledger count more than YouTube did and never
+  passes the budget; journal "call begun" before the call, as the upload
+  does, if that ever matters. Nothing about it fails the post: a refusal, the
   budget spent or the file gone is `Published.thumbnailNotSet`, kept in
   `post_targets.thumbnail_not_set` beside `keptPrivate`. New YouTube
   fields, TikTok's cover frame and photo fields, Instagram's reel fields,
