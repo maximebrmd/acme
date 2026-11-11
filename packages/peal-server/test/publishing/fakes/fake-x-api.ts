@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 
 import { xLinksIn } from "#publishing/domain/x-links.ts";
 
@@ -8,6 +8,7 @@ import {
   headerOf,
   json,
   jsonBodyOf,
+  textOf,
   platformServer,
   scripted,
 } from "./platform-server.ts";
@@ -32,6 +33,8 @@ export interface FakeXPost {
   /** The post it replies to, when it was sent as a reply. */
   readonly inReplyTo: string | null;
   readonly mediaIds: readonly string[];
+  /** The options it was posted with, under X's names. */
+  readonly options: Readonly<Record<string, boolean | string>>;
   readonly text: string;
 }
 
@@ -68,16 +71,30 @@ const metadataOf = jsonBodyOf(
   })
 );
 
-const postOf = jsonBodyOf(
-  Schema.Struct({
-    media: Schema.optionalKey(
-      Schema.Struct({ media_ids: Schema.Array(Schema.String) })
-    ),
-    reply: Schema.optionalKey(
-      Schema.Struct({ in_reply_to_tweet_id: Schema.String })
-    ),
-    text: Schema.optionalKey(Schema.String),
-  })
+// The body of POST /2/tweets, of which Peal sends these fields. X's schema
+// takes no other property (`additionalProperties: false`).
+const PostBodySchema = Schema.Struct({
+  community_id: Schema.optionalKey(
+    Schema.String.check(Schema.isPattern(/^[0-9]{1,19}$/u))
+  ),
+  made_with_ai: Schema.optionalKey(Schema.Boolean),
+  media: Schema.optionalKey(
+    Schema.Struct({ media_ids: Schema.Array(Schema.String) })
+  ),
+  paid_partnership: Schema.optionalKey(Schema.Boolean),
+  reply: Schema.optionalKey(
+    Schema.Struct({ in_reply_to_tweet_id: Schema.String })
+  ),
+  reply_settings: Schema.optionalKey(
+    Schema.Literals(["following", "mentionedUsers", "subscribers", "verified"])
+  ),
+  share_with_followers: Schema.optionalKey(Schema.Boolean),
+  text: Schema.optionalKey(Schema.String),
+});
+
+const readPost = Schema.decodeUnknownOption(
+  Schema.fromJsonString(PostBodySchema),
+  { onExcessProperty: "error" }
 );
 
 const problem = (status: number, type: string, detail: string) =>
@@ -315,7 +332,26 @@ export const fakeXApi = Effect.fnUntraced(function* fakeXApi(
   };
 
   const publish = (request: PlatformRequest, script: XScript | undefined) => {
-    const body = postOf(request);
+    const read = readPost(textOf(request));
+
+    if (Option.isNone(read)) {
+      return problem(400, "invalid-request", "Your request is invalid.");
+    }
+
+    const body = read.value;
+
+    const chosen = Object.fromEntries(
+      Object.entries({
+        community_id: body.community_id,
+        made_with_ai: body.made_with_ai,
+        paid_partnership: body.paid_partnership,
+        reply_settings: body.reply_settings,
+        share_with_followers: body.share_with_followers,
+      }).filter(
+        (field): field is [string, boolean | string] => field[1] !== undefined
+      )
+    );
+
     const text = body.text ?? "";
     const mediaIds = body.media?.media_ids ?? [];
 
@@ -346,6 +382,7 @@ export const fakeXApi = Effect.fnUntraced(function* fakeXApi(
       id: `19900000000000${String(posts.length + 1).padStart(5, "0")}`,
       inReplyTo,
       mediaIds,
+      options: chosen,
       text,
     };
 

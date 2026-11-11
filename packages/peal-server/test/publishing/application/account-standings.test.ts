@@ -2,6 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect, Layer, Option, Ref } from "effect";
 
 import { AccountStandings } from "#publishing/application/account-standings.ts";
+import { ChannelGrants } from "#publishing/application/channel-grants.ts";
 import { pacedLookups } from "#publishing/application/paced-lookups.ts";
 import { PlatformLookups } from "#publishing/application/platform-lookups.ts";
 import { PlatformQuota } from "#publishing/application/platform-quota.ts";
@@ -20,6 +21,7 @@ const standings = Effect.gen(function* standings() {
   const read = yield* AccountStandings.pipe(
     Effect.provide(
       AccountStandings.layer.pipe(
+        Layer.provide(ChannelGrants.none),
         Layer.provide(
           pacedLookups(
             Layer.succeed(

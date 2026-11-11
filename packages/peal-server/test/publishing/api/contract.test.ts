@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Duration, Exit, Schema } from "effect";
+import { Duration, Exit, Option, Schema } from "effect";
 import {
   ContentViolationSchema,
   duplicateWindowHours as contractDuplicateWindowHours,
@@ -18,7 +18,9 @@ import type { ContentViolation as ContractViolation } from "peal-contract";
 import * as ContractText from "peal-contract/post-text";
 
 import { maxOutcomeWait } from "#publishing/application/post-outcomes.ts";
+import { maxBlueskyLanguages } from "#publishing/domain/bluesky-options.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import { countedText } from "#publishing/domain/counted-text.ts";
 import { duplicateWindow } from "#publishing/domain/duplicate-window.ts";
 import {
   googleBusinessLocalTimePattern,
@@ -33,6 +35,7 @@ import {
   maxLinkedInLinkUrlLength,
   maxLinkedInMentions,
 } from "#publishing/domain/linkedin-options.ts";
+import { maxMastodonContentWarningLength } from "#publishing/domain/mastodon-options.ts";
 import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";
 import {
   maxPinterestLinkLength,
@@ -59,6 +62,10 @@ import {
   measureText,
   TextUnitSchema,
 } from "#publishing/domain/text-length.ts";
+import {
+  maxThreadsLinkLength,
+  maxThreadsTopicTagLength,
+} from "#publishing/domain/threads-options.ts";
 import {
   maxYouTubeTagsLength,
   maxYouTubeTitleLength,
@@ -502,6 +509,66 @@ const options: readonly unknown[] = [
   { coverSecond: "12", platform: "pinterest" },
   { platform: "pinterest", title: "a\u0000b" },
   { platform: "mastodon" },
+  {
+    contentWarning: "Spoilers for the synthetic finale",
+    language: "fr",
+    platform: "mastodon",
+    quotePolicy: "followers",
+    sensitive: true,
+    visibility: "unlisted",
+  },
+  // Refused later, or never: a private mention is not offered.
+  { platform: "mastodon", quotePolicy: "public", visibility: "private" },
+  { contentWarning: "a".repeat(501), language: "French", platform: "mastodon" },
+  { platform: "mastodon", visibility: "direct" },
+  { platform: "mastodon", quotePolicy: "everyone" },
+  { contentWarning: "a\u0000b", platform: "mastodon" },
+  { platform: "bluesky" },
+  {
+    contentLabel: "graphic-media",
+    languages: ["en", "pt-BR", "zh-Hant"],
+    platform: "bluesky",
+  },
+  {
+    disableQuotes: true,
+    platform: "bluesky",
+    replies: "limited",
+    replyFollowers: true,
+    replyFollowing: false,
+    replyMentioned: true,
+  },
+  { platform: "bluesky", replies: "limited" },
+  { platform: "bluesky", replies: "followers" },
+  { languages: ["not a tag"], platform: "bluesky" },
+  { languages: ["en", "fr", "de", "es"], platform: "bluesky" },
+  { contentLabel: "gore", platform: "bluesky" },
+  { languages: "en", platform: "bluesky" },
+  { platform: "threads" },
+  {
+    linkAttachment: "https://example.test/launch",
+    platform: "threads",
+    replyControl: "accounts_you_follow",
+    topicTag: "Synthetic launches",
+  },
+  {
+    linkAttachment: "http://example.test",
+    platform: "threads",
+    topicTag: "a&b",
+  },
+  { platform: "threads", replyControl: "nobody" },
+  { platform: "threads", topicTag: "a\u0000b" },
+  { platform: "x" },
+  {
+    communityId: "1700000000000000001",
+    madeWithAi: true,
+    paidPartnership: true,
+    platform: "x",
+    replySettings: "verified",
+    shareWithFollowers: true,
+  },
+  { communityId: "a community", platform: "x", shareWithFollowers: true },
+  { platform: "x", replySettings: "everyone" },
+  { madeWithAi: "yes", platform: "x" },
   { platform: "youtube", title: "A title", unknownOption: true },
 ];
 
@@ -568,6 +635,34 @@ describe("the contract's target options", () => {
     expect(contractOptions.LinkedInVisibilitySchema.literals).toStrictEqual(
       LinkedInVisibilitySchema.literals
     );
+  });
+
+  it("hold the limits of Mastodon, Bluesky and Threads", () => {
+    expect([
+      contractOptions.maxMastodonContentWarningLength,
+      contractOptions.maxBlueskyLanguages,
+      contractOptions.maxThreadsTopicTagLength,
+      contractOptions.maxThreadsLinkLength,
+    ]).toStrictEqual([
+      maxMastodonContentWarningLength,
+      maxBlueskyLanguages,
+      maxThreadsTopicTagLength,
+      maxThreadsLinkLength,
+    ]);
+  });
+
+  it("count a Mastodon content warning with the text, as the server does", () => {
+    for (const input of options) {
+      const server = Schema.decodeUnknownOption(TargetOptionsSchema)(input);
+      const contract = Schema.decodeUnknownOption(ContractOptionsSchema)(input);
+
+      expect(
+        contractOptions.countedText(
+          "Some text",
+          Option.getOrUndefined(contract)
+        )
+      ).toBe(countedText("Some text", server));
+    }
   });
 
   it.each(options)("decode %j as the server does", (input) => {

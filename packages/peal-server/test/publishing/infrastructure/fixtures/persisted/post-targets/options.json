@@ -42,5 +42,36 @@
     "startsAt": "2026-12-01T00:00",
     "terms": "One per synthetic customer.",
     "title": "Ten percent off"
+  },
+  { "platform": "mastodon" },
+  {
+    "contentWarning": "Spoilers for the synthetic finale",
+    "language": "fr",
+    "platform": "mastodon",
+    "quotePolicy": "followers",
+    "sensitive": true,
+    "visibility": "unlisted"
+  },
+  { "platform": "bluesky" },
+  {
+    "contentLabel": "graphic-media",
+    "languages": ["en", "pt-BR"],
+    "platform": "bluesky"
+  },
+  { "platform": "threads" },
+  {
+    "linkAttachment": "https://example.test/launch",
+    "platform": "threads",
+    "replyControl": "mentioned_only",
+    "topicTag": "Synthetic launches"
+  },
+  { "platform": "x" },
+  {
+    "communityId": "1700000000000000001",
+    "madeWithAi": true,
+    "paidPartnership": false,
+    "platform": "x",
+    "replySettings": "following",
+    "shareWithFollowers": true
   }
 ]

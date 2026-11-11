@@ -55,6 +55,15 @@ public record AccountRestriction
     }
 
     /// <summary>
+    /// Create an instance of AccountRestriction with <see cref="AccountRestriction.OptionNeedsReconnect"/>.
+    /// </summary>
+    public AccountRestriction(AccountRestriction.OptionNeedsReconnect value)
+    {
+        Type = "optionNeedsReconnect";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -84,6 +93,11 @@ public record AccountRestriction
     /// Returns true if <see cref="Type"/> is "mediaTypesRefused"
     /// </summary>
     public bool IsMediaTypesRefused => Type == "mediaTypesRefused";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "optionNeedsReconnect"
+    /// </summary>
+    public bool IsOptionNeedsReconnect => Type == "optionNeedsReconnect";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.AccountRestrictionOptionValues"/> if <see cref="Type"/> is 'optionValues', otherwise throws an exception.
@@ -123,11 +137,23 @@ public record AccountRestriction
                 "AccountRestriction.Type is not 'mediaTypesRefused'"
             );
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.AccountRestrictionOptionNeedsReconnect"/> if <see cref="Type"/> is 'optionNeedsReconnect', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'optionNeedsReconnect'.</exception>
+    public Peal.AccountRestrictionOptionNeedsReconnect AsOptionNeedsReconnect() =>
+        IsOptionNeedsReconnect
+            ? (Peal.AccountRestrictionOptionNeedsReconnect)Value!
+            : throw new global::System.Exception(
+                "AccountRestriction.Type is not 'optionNeedsReconnect'"
+            );
+
     public T Match<T>(
         Func<Peal.AccountRestrictionOptionValues, T> onOptionValues,
         Func<Peal.AccountRestrictionOptionFixed, T> onOptionFixed,
         Func<Peal.AccountRestrictionVideoDuration, T> onVideoDuration,
         Func<Peal.AccountRestrictionMediaTypesRefused, T> onMediaTypesRefused,
+        Func<Peal.AccountRestrictionOptionNeedsReconnect, T> onOptionNeedsReconnect,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -137,6 +163,7 @@ public record AccountRestriction
             "optionFixed" => onOptionFixed(AsOptionFixed()),
             "videoDuration" => onVideoDuration(AsVideoDuration()),
             "mediaTypesRefused" => onMediaTypesRefused(AsMediaTypesRefused()),
+            "optionNeedsReconnect" => onOptionNeedsReconnect(AsOptionNeedsReconnect()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -146,6 +173,7 @@ public record AccountRestriction
         Action<Peal.AccountRestrictionOptionFixed> onOptionFixed,
         Action<Peal.AccountRestrictionVideoDuration> onVideoDuration,
         Action<Peal.AccountRestrictionMediaTypesRefused> onMediaTypesRefused,
+        Action<Peal.AccountRestrictionOptionNeedsReconnect> onOptionNeedsReconnect,
         Action<string, object?> onUnknown_
     )
     {
@@ -162,6 +190,9 @@ public record AccountRestriction
                 break;
             case "mediaTypesRefused":
                 onMediaTypesRefused(AsMediaTypesRefused());
+                break;
+            case "optionNeedsReconnect":
+                onOptionNeedsReconnect(AsOptionNeedsReconnect());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -225,6 +256,20 @@ public record AccountRestriction
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.AccountRestrictionOptionNeedsReconnect"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsOptionNeedsReconnect(out Peal.AccountRestrictionOptionNeedsReconnect? value)
+    {
+        if (Type == "optionNeedsReconnect")
+        {
+            value = (Peal.AccountRestrictionOptionNeedsReconnect)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator AccountRestriction(AccountRestriction.OptionValues value) =>
@@ -238,6 +283,10 @@ public record AccountRestriction
 
     public static implicit operator AccountRestriction(
         AccountRestriction.MediaTypesRefused value
+    ) => new(value);
+
+    public static implicit operator AccountRestriction(
+        AccountRestriction.OptionNeedsReconnect value
     ) => new(value);
 
     [Serializable]
@@ -309,6 +358,13 @@ public record AccountRestriction
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.AccountRestrictionMediaTypesRefused"
                         ),
+                "optionNeedsReconnect" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.AccountRestrictionOptionNeedsReconnect?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.AccountRestrictionOptionNeedsReconnect"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new AccountRestriction(discriminator, value);
@@ -327,6 +383,7 @@ public record AccountRestriction
                     "optionFixed" => JsonSerializer.SerializeToNode(value.Value, options),
                     "videoDuration" => JsonSerializer.SerializeToNode(value.Value, options),
                     "mediaTypesRefused" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "optionNeedsReconnect" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -432,6 +489,26 @@ public record AccountRestriction
 
         public static implicit operator AccountRestriction.MediaTypesRefused(
             Peal.AccountRestrictionMediaTypesRefused value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for optionNeedsReconnect
+    /// </summary>
+    [Serializable]
+    public struct OptionNeedsReconnect
+    {
+        public OptionNeedsReconnect(Peal.AccountRestrictionOptionNeedsReconnect value)
+        {
+            Value = value;
+        }
+
+        internal Peal.AccountRestrictionOptionNeedsReconnect Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator AccountRestriction.OptionNeedsReconnect(
+            Peal.AccountRestrictionOptionNeedsReconnect value
         ) => new(value);
     }
 }

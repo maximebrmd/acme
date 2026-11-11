@@ -95,6 +95,56 @@ On a TikTok channel, the composer reads the account's settings on TikTok, as Tik
 
 On a Pinterest channel, the composer reads the account's boards on Pinterest, up to 500 of them, and, once you chose one, its sections. A board deleted since, or past those read, stays chosen and shows as not in the list; when Pinterest does not answer, **Try again** reads the list again. Peal creates no board: make one on Pinterest first. A Pin has one alt text, the first file's, and a carousel's images share the Pin's title, description and link.
 
+### Mastodon, Bluesky, Threads and X [#feed-options]
+
+None of these options is required. Each is sent only when you choose it, and in a [thread](#threads) it goes either with every part or with the first part alone, as the last column says. Through the API, each option is named as in the second column.
+
+On **Mastodon**:
+
+| Option                          | API name         | Values                                                                     | Left out              | Parts      |
+| ------------------------------- | ---------------- | -------------------------------------------------------------------------- | --------------------- | ---------- |
+| **Who can see this post**       | `visibility`     | `public`, `unlisted` (quiet public), `private` (followers only)            | The account's default | Every part |
+| **Content warning**             | `contentWarning` | One line, 500 characters at most                                           | None                  | Every part |
+| **Mark the media as sensitive** | `sensitive`      | Yes or no                                                                  | The account's default | Every part |
+| **Language**                    | `language`       | A code of two or three lower-case letters, such as `fr`                    | The account's default | Every part |
+| **Who can quote this post**     | `quotePolicy`    | `public`, `followers`, `nobody`; only with `visibility` public or unlisted | The account's default | Every part |
+
+Mastodon counts a content warning in the post's character limit, with the text: on a Mastodon channel the 500 characters are the warning and the text together, on every part, and the composer counts them so. A content warning also marks the post sensitive, whatever **Mark the media as sensitive** says. Private mentions are not offered: Peal publishes posts. Servers older than Mastodon 4.5 ignore the quote policy, and nobody may quote a followers-only post, whatever it says.
+
+On **Bluesky**:
+
+| Option                                                                          | API name                                             | Values                                                                                                             | Left out   | Parts                             |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------------------- |
+| **Languages**                                                                   | `languages`                                          | Up to three language tags, such as `en` or `pt-BR`                                                                 | None named | Every part                        |
+| **Content label**                                                               | `contentLabel`                                       | `sexual`, `nudity`, `porn`, `graphic-media`                                                                        | No label   | Every part with images or a video |
+| **Who can reply**                                                               | `replies`                                            | `everyone`, `nobody`, or `limited` to those of `replyFollowers`, `replyFollowing` and `replyMentioned` that are on | Everyone   | The thread                        |
+| **Your followers**, **Accounts you follow**, **Accounts mentioned in the post** | `replyFollowers`, `replyFollowing`, `replyMentioned` | Yes or no, each; with `replies` limited, one at least                                                              | No         | The thread                        |
+| **Keep others from quoting this post**                                          | `disableQuotes`                                      | Yes or no                                                                                                          | No         | Every part                        |
+
+A label describes the images or video: a part without media is sent without it. Who can reply and quoting are written with the post, in one request, so a post never goes out without them. They need the account to have been connected since Peal asks for them: on a channel connected before, scheduling refuses them, and its [capabilities](/api-overview#capabilities) say so (`optionNeedsReconnect`). Reconnect the account on the **Channels** page to use them; nothing else changes. In the composer, such a channel offers neither and says so. When Peal could not read the channel's scopes and the account's server then refuses the gates, the post is not sent: the channel reads **Failed**, with the code `optionRefused`, and Peal does not send it again. Reconnect the account, or leave the gates out, and post it again.
+
+On **Threads**:
+
+| Option            | API name         | Values                                                                                           | Left out                                                |
+| ----------------- | ---------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| **Who can reply** | `replyControl`   | `everyone`, `accounts_you_follow`, `followers_only`, `mentioned_only`, `parent_post_author_only` | Everyone                                                |
+| **Topic**         | `topicTag`       | One topic on one line, 50 characters at most, without `.` or `&`                                 | None                                                    |
+| **Link preview**  | `linkAttachment` | An address starting with `https://`, on a post without images or video                           | Threads previews the first link of a post of text alone |
+
+Threads takes a post alone, so each option is the post's. A link preview on a post with media is refused when you schedule it.
+
+On **X**:
+
+| Option                        | API name             | Values                                                   | Left out                | Parts                             |
+| ----------------------------- | -------------------- | -------------------------------------------------------- | ----------------------- | --------------------------------- |
+| **Who can reply**             | `replySettings`      | `following`, `mentionedUsers`, `subscribers`, `verified` | Everyone                | The first part                    |
+| **Community**                 | `communityId`        | The community's number, digits only                      | The account's followers | The first part                    |
+| **Also share with followers** | `shareWithFollowers` | Yes or no; only with a community                         | No                      | The first part                    |
+| **Paid partnership**          | `paidPartnership`    | Yes or no                                                | No                      | Every part                        |
+| **Made with AI**              | `madeWithAi`         | Yes or no                                                | No                      | Every part with images or a video |
+
+X does not document which accounts may use each of these. When X refuses a post that carries them, and its answer names one of them (the field, or the community), the channel reads **Failed**, with the code `optionRefused`: Peal does not send it again, and X's message is not kept, so it does not say which option X refused. Change the options and post it again. When X refuses such a post for anything else, such as a restricted account, the code is X's own problem type, as for a post without options (`client-forbidden`, or `http403` when X names none), and changing the options will not help.
+
 Through the API, a draft takes its options in `options`, one entry per channel, each tagged by its `platform`; each of the post's targets answers with its own. Updating a draft replaces its options: those left out are removed. A channel added only when the post is scheduled has none yet, so on YouTube, TikTok or Pinterest, give it its options in the draft first.
 
 ## Schedule it [#schedule]

@@ -1,6 +1,6 @@
-import { Context, Effect, Layer } from "effect";
-import type { Option } from "effect";
+import { Context, Effect, Layer, Option } from "effect";
 
+import { gateViolationsOn } from "#publishing/domain/bluesky-gates.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import type { MediaFile } from "#publishing/domain/media-file.ts";
@@ -8,6 +8,7 @@ import { followUpsOn } from "#publishing/domain/platform-rules.ts";
 import type { TargetOptions } from "#publishing/domain/target-options.ts";
 import { creatorViolationsOn } from "#publishing/domain/tiktok-creator.ts";
 
+import { ChannelGrants } from "./channel-grants.ts";
 import { CurrentThreadedPlatforms } from "./threaded-platforms.ts";
 import { TikTokCreators } from "./tiktok-creators.ts";
 
@@ -38,8 +39,10 @@ const photoViolations = (target: AccountTarget): readonly ContentViolation[] =>
  * What a channel's own account refuses, beyond its platform's rules, read
  * from the platform when a post is scheduled: a TikTok creator's audiences,
  * interactions and longest video (`creatorViolationsOn`), and photos on a
- * server TikTok takes none from. When the platform cannot tell now, the
- * post is scheduled anyway: its adapter checks again when it goes out.
+ * server TikTok takes none from; and from what the account granted, a
+ * Bluesky gate on a channel connected before Peal asked for its scope
+ * (`gateViolationsOn`). When the platform cannot tell now, the post is
+ * scheduled anyway: its adapter checks again when it goes out.
  */
 export class AccountRules extends Context.Service<
   AccountRules,
@@ -55,12 +58,16 @@ export class AccountRules extends Context.Service<
     AccountRules.of({ violationsOn: () => Effect.succeed([]) })
   );
 
-  /** TikTok creators' settings, read through TikTokCreators. */
+  /**
+   * TikTok creators' settings, read through TikTokCreators, and the scopes
+   * channels granted, through ChannelGrants.
+   */
   static readonly layer = Layer.effect(
     AccountRules,
     Effect.gen(function* AccountRulesLive() {
       const creators = yield* TikTokCreators;
       const threaded = yield* CurrentThreadedPlatforms;
+      const grants = yield* ChannelGrants;
 
       // Parts on a platform whose rules take them, where the operator
       // turned them off (`X_THREADS`): the post is refused as one with
@@ -109,11 +116,32 @@ export class AccountRules extends Context.Service<
         ];
       });
 
+      // A gate the channel's scopes do not cover; unknown scopes let the
+      // post through, and the PDS refuses it.
+      const bluesky = (target: AccountTarget) =>
+        grants.scopesOf(target.channel.channelId).pipe(
+          Effect.map((scopes) => [
+            ...partsOff(target),
+            ...scopes.pipe(
+              Option.match({
+                onNone: () => [],
+                onSome: (granted) =>
+                  gateViolationsOn(target.channel, target.options, granted),
+              })
+            ),
+          ])
+        );
+
       return AccountRules.of({
-        violationsOn: (target) =>
-          target.channel.platform === "tiktok"
-            ? tiktok(target)
-            : Effect.succeed(partsOff(target)),
+        violationsOn: (target) => {
+          if (target.channel.platform === "tiktok") {
+            return tiktok(target);
+          }
+
+          return target.channel.platform === "bluesky"
+            ? bluesky(target)
+            : Effect.succeed(partsOff(target));
+        },
       });
     })
   );

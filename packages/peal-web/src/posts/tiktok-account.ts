@@ -19,6 +19,8 @@ export interface FieldLimits {
   /** Shown unticked and greyed out, with why. */
   readonly locked?: OptionsText;
   readonly hidden?: true;
+  /** A line under the field, about what the account allows. */
+  readonly note?: OptionsText;
 }
 
 /** How TikTok's fields show on one channel, and what goes under them. */

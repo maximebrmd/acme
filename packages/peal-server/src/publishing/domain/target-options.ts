@@ -3,6 +3,7 @@ import { Option, Schema } from "effect";
 import { platforms } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
+import { BlueskyOptions } from "./bluesky-options.ts";
 import { describeFields } from "./field-description.ts";
 import type {
   FieldDescription,
@@ -11,10 +12,13 @@ import type {
 import { GoogleBusinessOptions } from "./google-business-options.ts";
 import { LinkedInOptions } from "./linkedin-options.ts";
 import type { LookupName } from "./lookup.ts";
+import { MastodonOptions } from "./mastodon-options.ts";
 import type { OptionConstraint } from "./option-constraint.ts";
 import type { OptionProblem } from "./option-problem.ts";
 import { PinterestOptions } from "./pinterest-options.ts";
+import { ThreadsOptions } from "./threads-options.ts";
 import { TikTokOptions } from "./tiktok-options.ts";
+import { XOptions } from "./x-options.ts";
 import { YouTubeOptions } from "./youtube-options.ts";
 
 /**
@@ -35,6 +39,10 @@ export const TargetOptionsSchema = Schema.Union([
   LinkedInOptions,
   PinterestOptions,
   GoogleBusinessOptions,
+  MastodonOptions,
+  BlueskyOptions,
+  ThreadsOptions,
+  XOptions,
 ]);
 
 export type TargetOptions = typeof TargetOptionsSchema.Type;

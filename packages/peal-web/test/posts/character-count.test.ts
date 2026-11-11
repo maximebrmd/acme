@@ -104,6 +104,24 @@ describe(fitOn, () => {
     ]);
   });
 
+  it("counts a Mastodon content warning with the text, as Mastodon does", () => {
+    const warned = {
+      contentWarning: "a".repeat(100),
+      platform: "mastodon",
+    } as const;
+
+    expect(fits(fitOn("mastodon", "b".repeat(400), 0, warned))).toBeTruthy();
+    expect(
+      fitOn("mastodon", "b".repeat(401), 0, warned).tightest
+    ).toStrictEqual({
+      length: 501,
+      maximum: 500,
+      remaining: -1,
+      unit: "codePoints",
+    });
+    expect(fits(fitOn("mastodon", "b".repeat(401), 0))).toBeTruthy();
+  });
+
   it("counts TikTok's caption in UTF-16 code units, and asks for media", () => {
     const fit = fitOn("tiktok", "👍".repeat(1100), 0);
 

@@ -76,6 +76,13 @@
   calls to Pinterest's Sandbox, all an app with Trial access may write to:
   its tokens work nowhere else, and it takes no video and gives no
   analytics.
+- Bluesky's sign-in asks for granular scopes (`blueskyScope`, which the
+  client metadata documents serve): posts, blobs, two rpc scopes, and the
+  two gates' `repo:` scopes (`blueskyGateScopes`,
+  `#shared/domain/bluesky-scopes.ts`). A scope added there reaches only
+  accounts connected after: never force a reconnect; publishing reads each
+  channel's stored scopes (`ChannelGrants`, backed by
+  `ChannelAccess.account`) and refuses, and describes, what one lacks.
 - `platformRegistrations` (`infrastructure/platforms/platform-addresses.ts`)
   lists every address a platform is given or reads (redirect URIs, Meta's
   data deletion and deauthorize callbacks, Bluesky's documents), from the

@@ -28,6 +28,16 @@ export const tiktokCreator = (workspaceId: string, channelId: string) =>
     reactivityKeys: ["channels"],
   });
 
+/**
+ * What a post on one channel may hold, its account's restrictions
+ * included: the composer reads which Bluesky gates a channel can set.
+ */
+export const channelCapabilities = (workspaceId: string, channelId: string) =>
+  PealApi.query("capabilities", "channel", {
+    params: { channelId, workspaceId },
+    reactivityKeys: ["channels"],
+  });
+
 // A lookup's page holds 50 items at most; the composer reads ten pages.
 const lookupPageSize = 50;
 

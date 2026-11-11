@@ -37,6 +37,11 @@ interface ComposerActionsProps {
   readonly onAction: (action: ComposerAction) => void;
   /** Whether every channel's platform takes the post as it is. */
   readonly publishable: boolean;
+  /**
+   * Whether the API takes what the post holds now, which a draft needs
+   * too: false while an option filled in is one it would refuse.
+   */
+  readonly savable?: boolean;
   /** Whether what this member schedules waits for an approval. */
   readonly willWait: boolean;
 }
@@ -95,6 +100,7 @@ export const ComposerActions = ({
   extra,
   onAction,
   publishable,
+  savable = true,
   willWait,
 }: ComposerActionsProps) => {
   const t = useTranslations("Posts.Composer");
@@ -105,7 +111,7 @@ export const ComposerActions = ({
       {canSave ? (
         <Button
           variant="outline"
-          disabled={running}
+          disabled={running || !savable}
           focusableWhenDisabled
           onClick={() => {
             onAction("save");

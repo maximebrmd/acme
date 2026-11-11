@@ -119,13 +119,30 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   among what a lookup answers for the account, shown `under` another once
   that one is chosen; `initial`, `inverted` and `within` for TikTok's
   boxes), turns them into the contract's `TargetOptions` with
-  Schema, and shows each `option*` violation under its field. On a TikTok
+  Schema, and shows each `option*` violation under its field. `optionsOf`
+  checks each field filled in against the contract alone and answers what
+  is wrong (`OptionProblem`: too many tags or mentions for its `maximum`,
+  a value the API would refuse), never "no options": the field shows it
+  as typed, and the composer neither saves nor schedules until it is
+  fixed, so no choice is dropped unseen. `channelOptionsOf` sends a
+  channel's options only when the member chose one at least (a value its
+  field does not start with): elsewhere a new draft takes the channel's
+  defaults, as through the API, and the composer then shows the options
+  the saved draft holds, so its next save keeps them. On a TikTok
   channel, `TikTokChannelOptions` reads `GET …/channels/:id/tiktok-creator`
   and limits the fields by the creator (`#posts/tiktok-account.ts`): their
   nickname, their audiences, interactions they turned off (and set off),
   no Duet or Stitch on photo posts, "Only me" closed to branded content,
   the disclosure's label, and TikTok's consent line, as its content sharing
-  guidelines require. On a Pinterest channel, `PinterestChannelOptions`
+  guidelines require. A field shown once another holds anything (X's
+  sharing with followers, once a community is written) has
+  `shownWith: { filled: true }`. The counter takes the channel's options
+  (`fitOn`'s fourth argument), as a Mastodon content warning counts with
+  the text. On a Bluesky channel, `BlueskyChannelOptions` reads the
+  channel's capabilities (`channelCapabilities`) and closes each gate its
+  account must be reconnected to set (`optionNeedsReconnect`,
+  `#posts/bluesky-account.ts`), with the line saying so; a gate the post
+  holds stays, to be taken off. On a Pinterest channel, `PinterestChannelOptions`
   reads the account's boards, ten pages of 50 at most, and the chosen
   board's sections (`pinterestBoards` and `pinterestBoardSections` in
   `#posts/api.ts`, as `LookupChoices`): a field shows that its list is being

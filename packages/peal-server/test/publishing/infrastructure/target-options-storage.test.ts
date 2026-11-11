@@ -74,6 +74,14 @@ layer(StorageTest)("a target's stored options", (it) => {
           "googleBusiness",
           "googleBusiness",
           "googleBusiness",
+          "mastodon",
+          "mastodon",
+          "bluesky",
+          "bluesky",
+          "threads",
+          "threads",
+          "x",
+          "x",
         ]
       );
     })

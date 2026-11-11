@@ -7,6 +7,7 @@ import type { Platform } from "#shared/domain/platform.ts";
 import { optionsOn } from "./channel-options.ts";
 import type { ChannelOptions } from "./channel-options.ts";
 import type { ContentViolation } from "./content-violation.ts";
+import { countedText } from "./counted-text.ts";
 import { LinkedInOptions, pageProblems } from "./linkedin-options.ts";
 import type { Dimensions, MediaFile } from "./media-file.ts";
 import type { OptionProblem } from "./option-problem.ts";
@@ -28,6 +29,7 @@ import {
   countMentions,
   measureText,
 } from "./text-length.ts";
+import { ThreadsOptions } from "./threads-options.ts";
 
 /** A channel a post goes to, and the platform whose rules it follows. */
 export interface ChannelOnPlatform {
@@ -40,6 +42,36 @@ export interface ChannelOnPlatform {
   readonly connection?: ChannelConnection;
   readonly platform: Platform;
 }
+
+const isThreads = Schema.is(ThreadsOptions);
+
+/**
+ * What the channel's platform refuses in its options given the post's
+ * media, which an options class cannot see (`problems` reads the options
+ * alone): Threads' link attachment, "only available for text-only posts".
+ */
+export const mediaOptionViolationsOn = (
+  content: PostContent,
+  channel: ChannelOnPlatform,
+  options: Option.Option<TargetOptions>
+): readonly ContentViolation[] =>
+  options.pipe(
+    Option.filter(isThreads),
+    Option.filter(
+      ({ linkAttachment }) =>
+        linkAttachment !== undefined && content.media.length > 0
+    ),
+    Option.match({
+      onNone: () => [],
+      onSome: () => [
+        {
+          _tag: "optionInvalid" as const,
+          ...channel,
+          field: "linkAttachment",
+        },
+      ],
+    })
+  );
 
 // A channel as violations name it: its id and its platform.
 const named = ({
@@ -196,10 +228,14 @@ const atMost = (
     ? [{ _tag: tag, ...channel, count, maximum }]
     : [];
 
-/** What the channel's platform would refuse in the post. */
+/**
+ * What the channel's platform would refuse in the post, with the options
+ * it has there, which some platforms count with the text (`countedText`).
+ */
 export const violationsOn = (
   content: PostContent,
-  channel: ChannelOnPlatform
+  channel: ChannelOnPlatform,
+  options: Option.Option<TargetOptions> = Option.none()
 ): readonly ContentViolation[] => {
   const rules = platformRules[channel.platform];
   const text = textOn(content, channel.channelId);
@@ -209,9 +245,11 @@ export const violationsOn = (
     return [{ _tag: "empty", ...channel }];
   }
 
+  const counted = countedText(text, options);
+
   const tooLong = rules.textLimits.flatMap(
     ({ maximum, unit }): readonly ContentViolation[] => {
-      const length = measureText(text, unit);
+      const length = measureText(counted, unit);
 
       return length > maximum
         ? [{ _tag: "textTooLong", ...channel, length, maximum, unit }]
@@ -500,7 +538,8 @@ const inPart = (
 export const partViolationsOn = (
   content: PostContent,
   channel: ChannelOnPlatform,
-  files: readonly MediaFile[]
+  files: readonly MediaFile[],
+  options: Option.Option<TargetOptions> = Option.none()
 ): readonly ContentViolation[] => {
   if (content.followUps.length === 0) {
     return [];
@@ -524,7 +563,7 @@ export const partViolationsOn = (
 
     return inPart(
       [
-        ...violationsOn(alone, channel),
+        ...violationsOn(alone, channel, options),
         ...mediaViolationsOn(alone, channel, filesOf(alone, files)),
       ],
       position + 1
@@ -556,10 +595,11 @@ export const checkPublishable = (
       const chosen = optionsOn(options, channel.channelId);
 
       return [
-        ...violationsOn(content, channel),
+        ...violationsOn(content, channel, chosen),
         ...mediaViolationsOn(content, channel, filesOf(content, files)),
-        ...partViolationsOn(content, channel, files),
+        ...partViolationsOn(content, channel, files, chosen),
         ...optionViolationsOn(channel, chosen),
+        ...mediaOptionViolationsOn(content, channel, chosen),
         ...connectionViolationsOn(connected, chosen),
       ];
     }),

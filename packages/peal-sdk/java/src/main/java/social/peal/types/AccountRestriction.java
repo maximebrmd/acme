@@ -42,6 +42,10 @@ public final class AccountRestriction {
         return new AccountRestriction(new MediaTypesRefusedValue(value));
     }
 
+    public static AccountRestriction optionNeedsReconnect(AccountRestrictionOptionNeedsReconnect value) {
+        return new AccountRestriction(new OptionNeedsReconnectValue(value));
+    }
+
     public boolean isOptionValues() {
         return value instanceof OptionValuesValue;
     }
@@ -56,6 +60,10 @@ public final class AccountRestriction {
 
     public boolean isMediaTypesRefused() {
         return value instanceof MediaTypesRefusedValue;
+    }
+
+    public boolean isOptionNeedsReconnect() {
+        return value instanceof OptionNeedsReconnectValue;
     }
 
     public boolean _isUnknown() {
@@ -86,6 +94,13 @@ public final class AccountRestriction {
     public Optional<AccountRestrictionMediaTypesRefused> getMediaTypesRefused() {
         if (isMediaTypesRefused()) {
             return Optional.of(((MediaTypesRefusedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<AccountRestrictionOptionNeedsReconnect> getOptionNeedsReconnect() {
+        if (isOptionNeedsReconnect()) {
+            return Optional.of(((OptionNeedsReconnectValue) value).value);
         }
         return Optional.empty();
     }
@@ -127,6 +142,8 @@ public final class AccountRestriction {
 
         T visitMediaTypesRefused(AccountRestrictionMediaTypesRefused mediaTypesRefused);
 
+        T visitOptionNeedsReconnect(AccountRestrictionOptionNeedsReconnect optionNeedsReconnect);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -135,7 +152,8 @@ public final class AccountRestriction {
         @JsonSubTypes.Type(OptionValuesValue.class),
         @JsonSubTypes.Type(OptionFixedValue.class),
         @JsonSubTypes.Type(VideoDurationValue.class),
-        @JsonSubTypes.Type(MediaTypesRefusedValue.class)
+        @JsonSubTypes.Type(MediaTypesRefusedValue.class),
+        @JsonSubTypes.Type(OptionNeedsReconnectValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -288,6 +306,46 @@ public final class AccountRestriction {
         }
 
         private boolean equalTo(MediaTypesRefusedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "AccountRestriction{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("optionNeedsReconnect")
+    @JsonIgnoreProperties("_tag")
+    private static final class OptionNeedsReconnectValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private AccountRestrictionOptionNeedsReconnect value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private OptionNeedsReconnectValue() {}
+
+        private OptionNeedsReconnectValue(AccountRestrictionOptionNeedsReconnect value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitOptionNeedsReconnect(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof OptionNeedsReconnectValue && equalTo((OptionNeedsReconnectValue) other);
+        }
+
+        private boolean equalTo(OptionNeedsReconnectValue other) {
             return value.equals(other.value);
         }
 

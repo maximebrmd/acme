@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 
 import {
   dropped,
@@ -8,6 +8,7 @@ import {
   jsonBodyOf,
   platformServer,
   scripted,
+  textOf,
 } from "./platform-server.ts";
 import type { PlatformAnswer, PlatformRequest } from "./platform-server.ts";
 
@@ -54,11 +55,26 @@ export interface FakeMastodonOptions {
   readonly videoPolls?: number;
 }
 
+// What the instance takes of a status: Mastodon's parameters for the
+// options, with the values it knows.
 const StatusBodySchema = Schema.Struct({
   in_reply_to_id: Schema.optionalKey(Schema.String),
+  language: Schema.optionalKey(Schema.String),
   media_ids: Schema.Array(Schema.String),
+  quote_approval_policy: Schema.optionalKey(
+    Schema.Literals(["public", "followers", "nobody"])
+  ),
+  sensitive: Schema.optionalKey(Schema.Boolean),
+  spoiler_text: Schema.optionalKey(Schema.String),
   status: Schema.String,
+  visibility: Schema.optionalKey(
+    Schema.Literals(["public", "unlisted", "private", "direct"])
+  ),
 });
+
+const readStatusBody = Schema.decodeUnknownOption(
+  Schema.fromJsonString(StatusBodySchema)
+);
 
 const statusBodyOf = jsonBodyOf(StatusBodySchema);
 
@@ -202,6 +218,10 @@ export const fakeMastodonInstance = Effect.fnUntraced(
       }
 
       if (route === "POST /api/v1/statuses") {
+        if (Option.isNone(readStatusBody(textOf(request)))) {
+          return json({ error: "Validation failed" }, 422);
+        }
+
         const status = publish(request);
 
         return script?._tag === "publishThenDrop"

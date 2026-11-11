@@ -2,6 +2,7 @@ import { assert, describe, expect, it } from "@effect/vitest";
 import { Duration, Effect, Layer, Option } from "effect";
 
 import { AccountRules } from "#publishing/application/account-rules.ts";
+import { ChannelGrants } from "#publishing/application/channel-grants.ts";
 import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
 import { TikTokCreators } from "#publishing/application/tiktok-creators.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
@@ -107,6 +108,7 @@ const rulesWith = (
   takesPhotos = true
 ) =>
   AccountRules.layer.pipe(
+    Layer.provide(ChannelGrants.none),
     Layer.provide(
       Layer.succeed(
         TikTokCreators,

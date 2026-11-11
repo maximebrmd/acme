@@ -3163,6 +3163,242 @@ func (b *BillingUnavailableEncoded) String() string {
 	return fmt.Sprintf("%#v", b)
 }
 
+type BlueskyContentLabel string
+
+const (
+	BlueskyContentLabelSexual       BlueskyContentLabel = "sexual"
+	BlueskyContentLabelNudity       BlueskyContentLabel = "nudity"
+	BlueskyContentLabelPorn         BlueskyContentLabel = "porn"
+	BlueskyContentLabelGraphicMedia BlueskyContentLabel = "graphic-media"
+)
+
+func NewBlueskyContentLabelFromString(s string) (BlueskyContentLabel, error) {
+	switch s {
+	case "sexual":
+		return BlueskyContentLabelSexual, nil
+	case "nudity":
+		return BlueskyContentLabelNudity, nil
+	case "porn":
+		return BlueskyContentLabelPorn, nil
+	case "graphic-media":
+		return BlueskyContentLabelGraphicMedia, nil
+	}
+	var t BlueskyContentLabel
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (b BlueskyContentLabel) Ptr() *BlueskyContentLabel {
+	return &b
+}
+
+var (
+	blueskyOptionsFieldContentLabel   = big.NewInt(1 << 0)
+	blueskyOptionsFieldDisableQuotes  = big.NewInt(1 << 1)
+	blueskyOptionsFieldLanguages      = big.NewInt(1 << 2)
+	blueskyOptionsFieldReplies        = big.NewInt(1 << 3)
+	blueskyOptionsFieldReplyFollowers = big.NewInt(1 << 4)
+	blueskyOptionsFieldReplyFollowing = big.NewInt(1 << 5)
+	blueskyOptionsFieldReplyMentioned = big.NewInt(1 << 6)
+)
+
+// How a post goes out on a Bluesky account. Scheduling needs none of them; `replies` limited needs one of `replyFollowers`, `replyFollowing` and `replyMentioned`, and the two gates (`replies`, `disableQuotes`) a channel connected since Peal asks for their scopes.
+type BlueskyOptions struct {
+	ContentLabel   *BlueskyContentLabel `json:"contentLabel,omitempty" url:"contentLabel,omitempty"`
+	DisableQuotes  *bool                `json:"disableQuotes,omitempty" url:"disableQuotes,omitempty"`
+	Languages      []string             `json:"languages,omitempty" url:"languages,omitempty"`
+	Replies        *BlueskyReplies      `json:"replies,omitempty" url:"replies,omitempty"`
+	ReplyFollowers *bool                `json:"replyFollowers,omitempty" url:"replyFollowers,omitempty"`
+	ReplyFollowing *bool                `json:"replyFollowing,omitempty" url:"replyFollowing,omitempty"`
+	ReplyMentioned *bool                `json:"replyMentioned,omitempty" url:"replyMentioned,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BlueskyOptions) GetContentLabel() *BlueskyContentLabel {
+	if b == nil {
+		return nil
+	}
+	return b.ContentLabel
+}
+
+func (b *BlueskyOptions) GetDisableQuotes() *bool {
+	if b == nil {
+		return nil
+	}
+	return b.DisableQuotes
+}
+
+func (b *BlueskyOptions) GetLanguages() []string {
+	if b == nil {
+		return nil
+	}
+	return b.Languages
+}
+
+func (b *BlueskyOptions) GetReplies() *BlueskyReplies {
+	if b == nil {
+		return nil
+	}
+	return b.Replies
+}
+
+func (b *BlueskyOptions) GetReplyFollowers() *bool {
+	if b == nil {
+		return nil
+	}
+	return b.ReplyFollowers
+}
+
+func (b *BlueskyOptions) GetReplyFollowing() *bool {
+	if b == nil {
+		return nil
+	}
+	return b.ReplyFollowing
+}
+
+func (b *BlueskyOptions) GetReplyMentioned() *bool {
+	if b == nil {
+		return nil
+	}
+	return b.ReplyMentioned
+}
+
+func (b *BlueskyOptions) GetExtraProperties() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
+	return b.extraProperties
+}
+
+func (b *BlueskyOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if b.explicitFields != nil {
+		next.Set(b.explicitFields)
+	}
+	next.Or(next, field)
+	b.explicitFields = next
+}
+
+// SetContentLabel sets the ContentLabel field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BlueskyOptions) SetContentLabel(contentLabel *BlueskyContentLabel) {
+	b.ContentLabel = contentLabel
+	b.require(blueskyOptionsFieldContentLabel)
+}
+
+// SetDisableQuotes sets the DisableQuotes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BlueskyOptions) SetDisableQuotes(disableQuotes *bool) {
+	b.DisableQuotes = disableQuotes
+	b.require(blueskyOptionsFieldDisableQuotes)
+}
+
+// SetLanguages sets the Languages field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BlueskyOptions) SetLanguages(languages []string) {
+	b.Languages = languages
+	b.require(blueskyOptionsFieldLanguages)
+}
+
+// SetReplies sets the Replies field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BlueskyOptions) SetReplies(replies *BlueskyReplies) {
+	b.Replies = replies
+	b.require(blueskyOptionsFieldReplies)
+}
+
+// SetReplyFollowers sets the ReplyFollowers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BlueskyOptions) SetReplyFollowers(replyFollowers *bool) {
+	b.ReplyFollowers = replyFollowers
+	b.require(blueskyOptionsFieldReplyFollowers)
+}
+
+// SetReplyFollowing sets the ReplyFollowing field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BlueskyOptions) SetReplyFollowing(replyFollowing *bool) {
+	b.ReplyFollowing = replyFollowing
+	b.require(blueskyOptionsFieldReplyFollowing)
+}
+
+// SetReplyMentioned sets the ReplyMentioned field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BlueskyOptions) SetReplyMentioned(replyMentioned *bool) {
+	b.ReplyMentioned = replyMentioned
+	b.require(blueskyOptionsFieldReplyMentioned)
+}
+
+func (b *BlueskyOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler BlueskyOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BlueskyOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BlueskyOptions) MarshalJSON() ([]byte, error) {
+	type embed BlueskyOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*b),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (b *BlueskyOptions) String() string {
+	if b == nil {
+		return "<nil>"
+	}
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
+type BlueskyReplies string
+
+const (
+	BlueskyRepliesEveryone BlueskyReplies = "everyone"
+	BlueskyRepliesNobody   BlueskyReplies = "nobody"
+	BlueskyRepliesLimited  BlueskyReplies = "limited"
+)
+
+func NewBlueskyRepliesFromString(s string) (BlueskyReplies, error) {
+	switch s {
+	case "everyone":
+		return BlueskyRepliesEveryone, nil
+	case "nobody":
+		return BlueskyRepliesNobody, nil
+	case "limited":
+		return BlueskyRepliesLimited, nil
+	}
+	var t BlueskyReplies
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (b BlueskyReplies) Ptr() *BlueskyReplies {
+	return &b
+}
+
 var (
 	boostInvalidEncodedFieldCode       = big.NewInt(1 << 0)
 	boostInvalidEncodedFieldMessage    = big.NewInt(1 << 1)
@@ -9397,6 +9633,207 @@ func (l *LookupNotFoundEncoded) String() string {
 	return fmt.Sprintf("%#v", l)
 }
 
+var (
+	mastodonOptionsFieldContentWarning = big.NewInt(1 << 0)
+	mastodonOptionsFieldLanguage       = big.NewInt(1 << 1)
+	mastodonOptionsFieldQuotePolicy    = big.NewInt(1 << 2)
+	mastodonOptionsFieldSensitive      = big.NewInt(1 << 3)
+	mastodonOptionsFieldVisibility     = big.NewInt(1 << 4)
+)
+
+// How a post goes out on a Mastodon account, on every part of a thread. Scheduling needs none of them; a content warning counts in the text's limit.
+type MastodonOptions struct {
+	ContentWarning *string              `json:"contentWarning,omitempty" url:"contentWarning,omitempty"`
+	Language       *string              `json:"language,omitempty" url:"language,omitempty"`
+	QuotePolicy    *MastodonQuotePolicy `json:"quotePolicy,omitempty" url:"quotePolicy,omitempty"`
+	Sensitive      *bool                `json:"sensitive,omitempty" url:"sensitive,omitempty"`
+	Visibility     *MastodonVisibility  `json:"visibility,omitempty" url:"visibility,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MastodonOptions) GetContentWarning() *string {
+	if m == nil {
+		return nil
+	}
+	return m.ContentWarning
+}
+
+func (m *MastodonOptions) GetLanguage() *string {
+	if m == nil {
+		return nil
+	}
+	return m.Language
+}
+
+func (m *MastodonOptions) GetQuotePolicy() *MastodonQuotePolicy {
+	if m == nil {
+		return nil
+	}
+	return m.QuotePolicy
+}
+
+func (m *MastodonOptions) GetSensitive() *bool {
+	if m == nil {
+		return nil
+	}
+	return m.Sensitive
+}
+
+func (m *MastodonOptions) GetVisibility() *MastodonVisibility {
+	if m == nil {
+		return nil
+	}
+	return m.Visibility
+}
+
+func (m *MastodonOptions) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MastodonOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetContentWarning sets the ContentWarning field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MastodonOptions) SetContentWarning(contentWarning *string) {
+	m.ContentWarning = contentWarning
+	m.require(mastodonOptionsFieldContentWarning)
+}
+
+// SetLanguage sets the Language field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MastodonOptions) SetLanguage(language *string) {
+	m.Language = language
+	m.require(mastodonOptionsFieldLanguage)
+}
+
+// SetQuotePolicy sets the QuotePolicy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MastodonOptions) SetQuotePolicy(quotePolicy *MastodonQuotePolicy) {
+	m.QuotePolicy = quotePolicy
+	m.require(mastodonOptionsFieldQuotePolicy)
+}
+
+// SetSensitive sets the Sensitive field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MastodonOptions) SetSensitive(sensitive *bool) {
+	m.Sensitive = sensitive
+	m.require(mastodonOptionsFieldSensitive)
+}
+
+// SetVisibility sets the Visibility field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MastodonOptions) SetVisibility(visibility *MastodonVisibility) {
+	m.Visibility = visibility
+	m.require(mastodonOptionsFieldVisibility)
+}
+
+func (m *MastodonOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler MastodonOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MastodonOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MastodonOptions) MarshalJSON() ([]byte, error) {
+	type embed MastodonOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MastodonOptions) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+type MastodonQuotePolicy string
+
+const (
+	MastodonQuotePolicyPublic    MastodonQuotePolicy = "public"
+	MastodonQuotePolicyFollowers MastodonQuotePolicy = "followers"
+	MastodonQuotePolicyNobody    MastodonQuotePolicy = "nobody"
+)
+
+func NewMastodonQuotePolicyFromString(s string) (MastodonQuotePolicy, error) {
+	switch s {
+	case "public":
+		return MastodonQuotePolicyPublic, nil
+	case "followers":
+		return MastodonQuotePolicyFollowers, nil
+	case "nobody":
+		return MastodonQuotePolicyNobody, nil
+	}
+	var t MastodonQuotePolicy
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (m MastodonQuotePolicy) Ptr() *MastodonQuotePolicy {
+	return &m
+}
+
+type MastodonVisibility string
+
+const (
+	MastodonVisibilityPublic   MastodonVisibility = "public"
+	MastodonVisibilityUnlisted MastodonVisibility = "unlisted"
+	MastodonVisibilityPrivate  MastodonVisibility = "private"
+)
+
+func NewMastodonVisibilityFromString(s string) (MastodonVisibility, error) {
+	switch s {
+	case "public":
+		return MastodonVisibilityPublic, nil
+	case "unlisted":
+		return MastodonVisibilityUnlisted, nil
+	case "private":
+		return MastodonVisibilityPrivate, nil
+	}
+	var t MastodonVisibility
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (m MastodonVisibility) Ptr() *MastodonVisibility {
+	return &m
+}
+
 type MediaContentType string
 
 const (
@@ -15052,6 +15489,10 @@ type TargetOptions struct {
 	Pinterest      *PinterestOptions
 	GoogleBusiness *GoogleBusinessOptions
 	Linkedin       *LinkedInOptions
+	Mastodon       *MastodonOptions
+	Bluesky        *BlueskyOptions
+	Threads        *ThreadsOptions
+	X              *XOptions
 
 	rawJSON json.RawMessage
 }
@@ -15098,6 +15539,34 @@ func (t *TargetOptions) GetLinkedin() *LinkedInOptions {
 	return t.Linkedin
 }
 
+func (t *TargetOptions) GetMastodon() *MastodonOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Mastodon
+}
+
+func (t *TargetOptions) GetBluesky() *BlueskyOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Bluesky
+}
+
+func (t *TargetOptions) GetThreads() *ThreadsOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Threads
+}
+
+func (t *TargetOptions) GetX() *XOptions {
+	if t == nil {
+		return nil
+	}
+	return t.X
+}
+
 func (t *TargetOptions) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Platform string `json:"platform"`
@@ -15140,6 +15609,30 @@ func (t *TargetOptions) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		t.Linkedin = value
+	case "mastodon":
+		value := new(MastodonOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Mastodon = value
+	case "bluesky":
+		value := new(BlueskyOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Bluesky = value
+	case "threads":
+		value := new(ThreadsOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Threads = value
+	case "x":
+		value := new(XOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.X = value
 	}
 	t.rawJSON = json.RawMessage(data)
 	return nil
@@ -15164,6 +15657,18 @@ func (t TargetOptions) MarshalJSON() ([]byte, error) {
 	if t.Linkedin != nil {
 		return internal.MarshalJSONWithExtraProperty(t.Linkedin, "platform", "linkedin")
 	}
+	if t.Mastodon != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Mastodon, "platform", "mastodon")
+	}
+	if t.Bluesky != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Bluesky, "platform", "bluesky")
+	}
+	if t.Threads != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Threads, "platform", "threads")
+	}
+	if t.X != nil {
+		return internal.MarshalJSONWithExtraProperty(t.X, "platform", "x")
+	}
 	if len(t.rawJSON) > 0 {
 		return t.rawJSON, nil
 	}
@@ -15176,6 +15681,10 @@ type TargetOptionsVisitor interface {
 	VisitPinterest(*PinterestOptions) error
 	VisitGoogleBusiness(*GoogleBusinessOptions) error
 	VisitLinkedin(*LinkedInOptions) error
+	VisitMastodon(*MastodonOptions) error
+	VisitBluesky(*BlueskyOptions) error
+	VisitThreads(*ThreadsOptions) error
+	VisitX(*XOptions) error
 }
 
 func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
@@ -15193,6 +15702,18 @@ func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
 	}
 	if t.Linkedin != nil {
 		return visitor.VisitLinkedin(t.Linkedin)
+	}
+	if t.Mastodon != nil {
+		return visitor.VisitMastodon(t.Mastodon)
+	}
+	if t.Bluesky != nil {
+		return visitor.VisitBluesky(t.Bluesky)
+	}
+	if t.Threads != nil {
+		return visitor.VisitThreads(t.Threads)
+	}
+	if t.X != nil {
+		return visitor.VisitX(t.X)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", t)
 }
@@ -15216,6 +15737,18 @@ func (t *TargetOptions) validate() error {
 	}
 	if t.Linkedin != nil {
 		fields = append(fields, "linkedin")
+	}
+	if t.Mastodon != nil {
+		fields = append(fields, "mastodon")
+	}
+	if t.Bluesky != nil {
+		fields = append(fields, "bluesky")
+	}
+	if t.Threads != nil {
+		fields = append(fields, "threads")
+	}
+	if t.X != nil {
+		fields = append(fields, "x")
 	}
 	if len(fields) == 0 {
 		if t.Platform != "" {
@@ -15409,6 +15942,156 @@ func NewTextUnitFromString(s string) (TextUnit, error) {
 }
 
 func (t TextUnit) Ptr() *TextUnit {
+	return &t
+}
+
+var (
+	threadsOptionsFieldLinkAttachment = big.NewInt(1 << 0)
+	threadsOptionsFieldReplyControl   = big.NewInt(1 << 1)
+	threadsOptionsFieldTopicTag       = big.NewInt(1 << 2)
+)
+
+// How a post goes out on a Threads account. Scheduling needs none of them; `linkAttachment` is for a post without media.
+type ThreadsOptions struct {
+	LinkAttachment *string              `json:"linkAttachment,omitempty" url:"linkAttachment,omitempty"`
+	ReplyControl   *ThreadsReplyControl `json:"replyControl,omitempty" url:"replyControl,omitempty"`
+	TopicTag       *string              `json:"topicTag,omitempty" url:"topicTag,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *ThreadsOptions) GetLinkAttachment() *string {
+	if t == nil {
+		return nil
+	}
+	return t.LinkAttachment
+}
+
+func (t *ThreadsOptions) GetReplyControl() *ThreadsReplyControl {
+	if t == nil {
+		return nil
+	}
+	return t.ReplyControl
+}
+
+func (t *ThreadsOptions) GetTopicTag() *string {
+	if t == nil {
+		return nil
+	}
+	return t.TopicTag
+}
+
+func (t *ThreadsOptions) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *ThreadsOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetLinkAttachment sets the LinkAttachment field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *ThreadsOptions) SetLinkAttachment(linkAttachment *string) {
+	t.LinkAttachment = linkAttachment
+	t.require(threadsOptionsFieldLinkAttachment)
+}
+
+// SetReplyControl sets the ReplyControl field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *ThreadsOptions) SetReplyControl(replyControl *ThreadsReplyControl) {
+	t.ReplyControl = replyControl
+	t.require(threadsOptionsFieldReplyControl)
+}
+
+// SetTopicTag sets the TopicTag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *ThreadsOptions) SetTopicTag(topicTag *string) {
+	t.TopicTag = topicTag
+	t.require(threadsOptionsFieldTopicTag)
+}
+
+func (t *ThreadsOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler ThreadsOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = ThreadsOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *ThreadsOptions) MarshalJSON() ([]byte, error) {
+	type embed ThreadsOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *ThreadsOptions) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type ThreadsReplyControl string
+
+const (
+	ThreadsReplyControlEveryone             ThreadsReplyControl = "everyone"
+	ThreadsReplyControlAccountsYouFollow    ThreadsReplyControl = "accounts_you_follow"
+	ThreadsReplyControlMentionedOnly        ThreadsReplyControl = "mentioned_only"
+	ThreadsReplyControlParentPostAuthorOnly ThreadsReplyControl = "parent_post_author_only"
+	ThreadsReplyControlFollowersOnly        ThreadsReplyControl = "followers_only"
+)
+
+func NewThreadsReplyControlFromString(s string) (ThreadsReplyControl, error) {
+	switch s {
+	case "everyone":
+		return ThreadsReplyControlEveryone, nil
+	case "accounts_you_follow":
+		return ThreadsReplyControlAccountsYouFollow, nil
+	case "mentioned_only":
+		return ThreadsReplyControlMentionedOnly, nil
+	case "parent_post_author_only":
+		return ThreadsReplyControlParentPostAuthorOnly, nil
+	case "followers_only":
+		return ThreadsReplyControlFollowersOnly, nil
+	}
+	var t ThreadsReplyControl
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (t ThreadsReplyControl) Ptr() *ThreadsReplyControl {
 	return &t
 }
 
@@ -19914,6 +20597,185 @@ func NewWorkspaceNotFoundEncodedTagFromString(s string) (WorkspaceNotFoundEncode
 
 func (w WorkspaceNotFoundEncodedTag) Ptr() *WorkspaceNotFoundEncodedTag {
 	return &w
+}
+
+var (
+	xOptionsFieldCommunityID        = big.NewInt(1 << 0)
+	xOptionsFieldMadeWithAi         = big.NewInt(1 << 1)
+	xOptionsFieldPaidPartnership    = big.NewInt(1 << 2)
+	xOptionsFieldReplySettings      = big.NewInt(1 << 3)
+	xOptionsFieldShareWithFollowers = big.NewInt(1 << 4)
+)
+
+// How a post goes out on an X account. Scheduling needs none of them; `shareWithFollowers` needs `communityId`.
+type XOptions struct {
+	CommunityID        *string         `json:"communityId,omitempty" url:"communityId,omitempty"`
+	MadeWithAi         *bool           `json:"madeWithAi,omitempty" url:"madeWithAi,omitempty"`
+	PaidPartnership    *bool           `json:"paidPartnership,omitempty" url:"paidPartnership,omitempty"`
+	ReplySettings      *XReplySettings `json:"replySettings,omitempty" url:"replySettings,omitempty"`
+	ShareWithFollowers *bool           `json:"shareWithFollowers,omitempty" url:"shareWithFollowers,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (x *XOptions) GetCommunityID() *string {
+	if x == nil {
+		return nil
+	}
+	return x.CommunityID
+}
+
+func (x *XOptions) GetMadeWithAi() *bool {
+	if x == nil {
+		return nil
+	}
+	return x.MadeWithAi
+}
+
+func (x *XOptions) GetPaidPartnership() *bool {
+	if x == nil {
+		return nil
+	}
+	return x.PaidPartnership
+}
+
+func (x *XOptions) GetReplySettings() *XReplySettings {
+	if x == nil {
+		return nil
+	}
+	return x.ReplySettings
+}
+
+func (x *XOptions) GetShareWithFollowers() *bool {
+	if x == nil {
+		return nil
+	}
+	return x.ShareWithFollowers
+}
+
+func (x *XOptions) GetExtraProperties() map[string]interface{} {
+	if x == nil {
+		return nil
+	}
+	return x.extraProperties
+}
+
+func (x *XOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if x.explicitFields != nil {
+		next.Set(x.explicitFields)
+	}
+	next.Or(next, field)
+	x.explicitFields = next
+}
+
+// SetCommunityID sets the CommunityID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (x *XOptions) SetCommunityID(communityID *string) {
+	x.CommunityID = communityID
+	x.require(xOptionsFieldCommunityID)
+}
+
+// SetMadeWithAi sets the MadeWithAi field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (x *XOptions) SetMadeWithAi(madeWithAi *bool) {
+	x.MadeWithAi = madeWithAi
+	x.require(xOptionsFieldMadeWithAi)
+}
+
+// SetPaidPartnership sets the PaidPartnership field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (x *XOptions) SetPaidPartnership(paidPartnership *bool) {
+	x.PaidPartnership = paidPartnership
+	x.require(xOptionsFieldPaidPartnership)
+}
+
+// SetReplySettings sets the ReplySettings field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (x *XOptions) SetReplySettings(replySettings *XReplySettings) {
+	x.ReplySettings = replySettings
+	x.require(xOptionsFieldReplySettings)
+}
+
+// SetShareWithFollowers sets the ShareWithFollowers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (x *XOptions) SetShareWithFollowers(shareWithFollowers *bool) {
+	x.ShareWithFollowers = shareWithFollowers
+	x.require(xOptionsFieldShareWithFollowers)
+}
+
+func (x *XOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler XOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*x = XOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *x)
+	if err != nil {
+		return err
+	}
+	x.extraProperties = extraProperties
+	x.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (x *XOptions) MarshalJSON() ([]byte, error) {
+	type embed XOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*x),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, x.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (x *XOptions) String() string {
+	if x == nil {
+		return "<nil>"
+	}
+	if len(x.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(x.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(x); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", x)
+}
+
+type XReplySettings string
+
+const (
+	XReplySettingsFollowing      XReplySettings = "following"
+	XReplySettingsMentionedUsers XReplySettings = "mentionedUsers"
+	XReplySettingsSubscribers    XReplySettings = "subscribers"
+	XReplySettingsVerified       XReplySettings = "verified"
+)
+
+func NewXReplySettingsFromString(s string) (XReplySettings, error) {
+	switch s {
+	case "following":
+		return XReplySettingsFollowing, nil
+	case "mentionedUsers":
+		return XReplySettingsMentionedUsers, nil
+	case "subscribers":
+		return XReplySettingsSubscribers, nil
+	case "verified":
+		return XReplySettingsVerified, nil
+	}
+	var t XReplySettings
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (x XReplySettings) Ptr() *XReplySettings {
+	return &x
 }
 
 var (

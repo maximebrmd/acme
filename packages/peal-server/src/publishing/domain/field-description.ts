@@ -33,12 +33,12 @@ export interface FieldNotes<Lookup extends string = string> {
   readonly maxLength?: number;
   /**
    * The largest whole number; for a `mentionList`, the most accounts it
-   * names.
+   * names; for a `textList`, the most texts it holds.
    */
   readonly maximum?: number;
   /** The smallest whole number. */
   readonly minimum?: number;
-  /** A regular expression the whole text matches. */
+  /** A regular expression the whole text matches; each text of a list. */
   readonly pattern?: string;
 }
 

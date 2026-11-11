@@ -1,9 +1,10 @@
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect, Layer, Option } from "effect";
 
 import type {
   AccountStanding,
   AccountUnreadReason,
 } from "#publishing/domain/account-restriction.ts";
+import { gateRestrictions } from "#publishing/domain/bluesky-gates.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import {
@@ -11,6 +12,7 @@ import {
   photosRefused,
 } from "#publishing/domain/tiktok-creator.ts";
 
+import { ChannelGrants } from "./channel-grants.ts";
 import { PlatformLookups } from "./platform-lookups.ts";
 
 const unread = (reason: AccountUnreadReason): AccountStanding => ({
@@ -45,12 +47,14 @@ export class AccountStandings extends Context.Service<
    * TikTok creators' settings, read as the `tiktokCreator` lookup, through
    * the lookups as the server paces them (`pacedLookups`): describing a
    * channel again within a minute asks TikTok nothing, and past its pace
-   * the standing is `unread`, never another request.
+   * the standing is `unread`, never another request. A Bluesky channel's
+   * gates, from the scopes it granted (ChannelGrants).
    */
   static readonly layer = Layer.effect(
     AccountStandings,
     Effect.gen(function* AccountStandingsLive() {
       const lookups = yield* PlatformLookups;
+      const grants = yield* ChannelGrants;
 
       const tiktok = (channel: ChannelOnPlatform) =>
         lookups.run(channel.channelId, { _tag: "tiktokCreator" }).pipe(
@@ -94,11 +98,34 @@ export class AccountStandings extends Context.Service<
           })
         );
 
+      // The gates a Bluesky channel's scopes do not cover: read from what
+      // the channels context stored, asking Bluesky nothing.
+      const bluesky = (channel: ChannelOnPlatform) =>
+        grants.scopesOf(channel.channelId).pipe(
+          Effect.map(
+            Option.match({
+              onNone: () => unrestricted,
+              onSome: (scopes): AccountStanding => {
+                const restrictions = gateRestrictions(scopes);
+
+                return restrictions.length === 0
+                  ? unrestricted
+                  : { _tag: "read", blocked: undefined, restrictions };
+              },
+            })
+          )
+        );
+
       return AccountStandings.of({
-        read: (channel) =>
-          channel.platform === "tiktok"
-            ? tiktok(channel)
-            : Effect.succeed(unrestricted),
+        read: (channel) => {
+          if (channel.platform === "tiktok") {
+            return tiktok(channel);
+          }
+
+          return channel.platform === "bluesky"
+            ? bluesky(channel)
+            : Effect.succeed(unrestricted);
+        },
       });
     })
   );

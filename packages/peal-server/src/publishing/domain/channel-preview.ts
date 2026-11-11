@@ -1,11 +1,13 @@
-import { Duration } from "effect";
+import { Duration, Option } from "effect";
 
 import type { ChannelOnPlatform } from "./content-rules.ts";
 import type { ContentViolation } from "./content-violation.ts";
+import { countedText } from "./counted-text.ts";
 import { mediaLimitOf } from "./platform-capabilities.ts";
 import { platformRules } from "./platform-rules.ts";
 import { partsOn } from "./post-content.ts";
 import type { PartOnChannel, PostContent } from "./post-content.ts";
+import type { TargetOptions } from "./target-options.ts";
 import {
   countHashtags,
   countLinks,
@@ -56,14 +58,16 @@ export interface ChannelPreview extends PartCounts {
 }
 
 /**
- * The post on the channel, with the `violations` found for it there. Its
- * counts are those `violationsOn` checks, part by part, so a preview never
- * disagrees with a refusal.
+ * The post on the channel, with the `violations` found for it there and
+ * the `options` it has there. Its counts are those `violationsOn` checks,
+ * part by part, the text counted as the platform counts it with its
+ * options (`countedText`), so a preview never disagrees with a refusal.
  */
 export const previewOn = (
   content: PostContent,
   channel: ChannelOnPlatform,
-  violations: readonly ContentViolation[]
+  violations: readonly ContentViolation[],
+  options: Option.Option<TargetOptions> = Option.none()
 ): ChannelPreview => {
   const rules = platformRules[channel.platform];
 
@@ -76,7 +80,7 @@ export const previewOn = (
     mentions: { count: countMentions(text), maximum: rules.maxMentions },
     text,
     textCounts: rules.textLimits.map(({ maximum, unit }) => ({
-      length: measureText(text, unit),
+      length: measureText(countedText(text, options), unit),
       maximum,
       unit,
     })),

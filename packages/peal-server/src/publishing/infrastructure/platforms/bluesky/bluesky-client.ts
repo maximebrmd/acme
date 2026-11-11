@@ -17,14 +17,24 @@ import type {
   Readiness,
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
+import {
+  BlueskyOptions,
+  gatesQuotes,
+  gatesReplies,
+} from "#publishing/domain/bluesky-options.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { platformRefusalCodes } from "#publishing/domain/own-refusals.ts";
+import { optionRefusedCode } from "#publishing/infrastructure/platforms/option-refusal.ts";
 import {
   codeOf,
   commitUnanswered,
   unanswered,
 } from "#publishing/infrastructure/platforms/platform-exchange.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
+import {
+  postgateCollection,
+  threadgateCollection,
+} from "#shared/domain/bluesky-scopes.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
@@ -177,6 +187,13 @@ const VideoEmbedSchema = Schema.Struct({
   video: BlobRefSchema,
 });
 
+// The author's own labels on what a post shows
+// (`com.atproto.label.defs#selfLabels`).
+const SelfLabelsSchema = Schema.Struct({
+  $type: Schema.Literal("com.atproto.label.defs#selfLabels"),
+  values: Schema.Array(Schema.Struct({ val: Schema.String })),
+});
+
 const PostRecordSchema = Schema.Struct({
   $type: Schema.Literal(postCollection),
   createdAt: Schema.String,
@@ -184,6 +201,8 @@ const PostRecordSchema = Schema.Struct({
     Schema.Union([ImagesEmbedSchema, VideoEmbedSchema])
   ),
   facets: Schema.OptionFromOptionalKey(Schema.Array(FacetSchema)),
+  labels: Schema.OptionFromOptionalKey(SelfLabelsSchema),
+  langs: Schema.OptionFromOptionalKey(Schema.Array(Schema.String)),
   reply: Schema.OptionFromOptionalKey(ReplySchema),
   text: Schema.String,
 });
@@ -316,6 +335,114 @@ const embedOf = (media: BlueskyMedia): Embed => {
         $type: "app.bsky.embed.images" as const,
         images: media.images,
       });
+};
+
+const isBluesky = Schema.is(BlueskyOptions);
+
+/**
+ * What the post's options put in each part's record: its languages, and
+ * its label on a part with media, as a label describes what is shown.
+ */
+const optionFieldsOf = (post: OutgoingPost, hasMedia: boolean) => {
+  const chosen = post.options.pipe(Option.filter(isBluesky));
+
+  return {
+    labels: chosen.pipe(
+      Option.flatMap(({ contentLabel }) =>
+        Option.fromUndefinedOr(contentLabel)
+      ),
+      Option.filter(() => hasMedia),
+      Option.map((label) => ({
+        $type: "com.atproto.label.defs#selfLabels" as const,
+        values: [{ val: label }],
+      }))
+    ),
+    langs: chosen.pipe(
+      Option.flatMap(({ languages }) => Option.fromUndefinedOr(languages)),
+      Option.filter((languages) => languages.length > 0)
+    ),
+  };
+};
+
+// Who may reply, by the threadgate's rules, in the lexicon's order.
+const replyRules = [
+  ["replyMentioned", "app.bsky.feed.threadgate#mentionRule"],
+  ["replyFollowers", "app.bsky.feed.threadgate#followerRule"],
+  ["replyFollowing", "app.bsky.feed.threadgate#followingRule"],
+] as const;
+
+/**
+ * The gate records the options ask for on this part, each under the post's
+ * own record key, as the lexicons require: who may reply on the thread's
+ * first part only (a threadgate names the thread's root), quoting on every
+ * part (a postgate is each post's).
+ */
+interface ThreadgateRecord {
+  readonly $type: typeof threadgateCollection;
+  readonly allow: readonly { readonly $type: string }[];
+  readonly createdAt: string;
+  readonly post: string;
+}
+
+interface PostgateRecord {
+  readonly $type: typeof postgateCollection;
+  readonly createdAt: string;
+  readonly embeddingRules: readonly { readonly $type: string }[];
+  readonly post: string;
+}
+
+type PostRecord = typeof PostRecordSchema.Encoded;
+
+/** A record applyWrites creates, in its collection. */
+interface RecordWrite {
+  readonly collection: string;
+  readonly value: PostgateRecord | PostRecord | ThreadgateRecord;
+}
+
+const gatesOf = (post: OutgoingPost, uri: string): readonly RecordWrite[] => {
+  const chosen = post.options.pipe(Option.filter(isBluesky));
+
+  if (Option.isNone(chosen)) {
+    return [];
+  }
+
+  const options = chosen.value;
+  const createdAt = DateTime.formatIso(post.startedAt);
+
+  return [
+    ...(Option.isNone(post.replyTo) && gatesReplies(options)
+      ? [
+          {
+            collection: threadgateCollection,
+            value: {
+              $type: threadgateCollection,
+              // "If value is an empty array, no one can reply."
+              allow:
+                options.replies === "limited"
+                  ? replyRules.flatMap(([field, rule]) =>
+                      options[field] === true ? [{ $type: rule }] : []
+                    )
+                  : [],
+              createdAt,
+              post: uri,
+            },
+          } satisfies RecordWrite,
+        ]
+      : []),
+    ...(gatesQuotes(options)
+      ? [
+          {
+            collection: postgateCollection,
+            value: {
+              $type: postgateCollection,
+              createdAt,
+              embeddingRules: [{ $type: "app.bsky.feed.postgate#disableRule" }],
+              post: uri,
+            },
+          } satisfies RecordWrite,
+        ]
+      : []),
+  ];
 };
 
 /** A post's public address on the Bluesky app. */
@@ -565,12 +692,14 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
       reply: Option.Option<Reply>
     ) => {
       const facets = facetsOf(post.text);
+      const embed = embedOf(prepared);
 
       return encodeRecord({
         $type: postCollection,
         createdAt: DateTime.formatIso(post.startedAt),
-        embed: embedOf(prepared),
+        embed,
         facets: facets.length === 0 ? Option.none() : Option.some(facets),
+        ...optionFieldsOf(post, Option.isSome(embed)),
         reply,
         text: post.text,
       });
@@ -639,6 +768,118 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
           }),
       });
 
+    // The post and its gates in one applyWrites: all or nothing, so the
+    // post read back by its key has its gates. A 403 is the account not
+    // granting a gate's scope, which no renewed token gives.
+    const commitGated = (
+      session: BlueskySession,
+      record: PostRecord,
+      recordKey: string,
+      gates: readonly RecordWrite[]
+    ) =>
+      dpop
+        .send(
+          session,
+          HttpClientRequest.post(
+            new URL("/xrpc/com.atproto.repo.applyWrites", session.pds)
+          ).pipe(
+            HttpClientRequest.bodyJsonUnsafe({
+              repo: session.did,
+              writes: [
+                { collection: postCollection, value: record },
+                ...gates,
+              ].map(({ collection, value }) => ({
+                $type: "com.atproto.repo.applyWrites#create",
+                collection,
+                rkey: recordKey,
+                value,
+              })),
+            })
+          )
+        )
+        .pipe(
+          Effect.flatMap(
+            (
+              response
+            ): Effect.Effect<
+              Published,
+              | HttpClientError.HttpClientError
+              | OutcomeUnknown
+              | PublishFailure
+              | TokenRejected
+            > => {
+              if (response.status === 200) {
+                return Effect.succeed({
+                  _tag: "published",
+                  permalink: permalinkOf(session.did, recordKey),
+                  platformPostId: PlatformPostIdSchema.make(
+                    `at://${session.did}/${postCollection}/${recordKey}`
+                  ),
+                });
+              }
+
+              return response.status === 403
+                ? Effect.fail(new BadRequest({ code: optionRefusedCode }))
+                : recordRefusal(response);
+            }
+          ),
+          Effect.catchTags({
+            HttpClientError: commitUnanswered,
+            OutboundRequestRefused: commitUnanswered,
+          })
+        );
+
+    // A post without gates: one createRecord, as before gates.
+    const createPost = (
+      session: BlueskySession,
+      record: PostRecord,
+      recordKey: string
+    ) =>
+      dpop
+        .send(
+          session,
+          HttpClientRequest.post(
+            new URL("/xrpc/com.atproto.repo.createRecord", session.pds)
+          ).pipe(
+            HttpClientRequest.bodyJsonUnsafe({
+              collection: postCollection,
+              record,
+              repo: session.did,
+              rkey: recordKey,
+            })
+          )
+        )
+        .pipe(
+          Effect.flatMap(
+            (
+              response
+            ): Effect.Effect<
+              Published,
+              | HttpClientError.HttpClientError
+              | OutcomeUnknown
+              | PublishFailure
+              | Schema.SchemaError
+              | TokenRejected
+            > =>
+              response.status === 200
+                ? HttpClientResponse.schemaBodyJson(CreatedSchema)(
+                    response
+                  ).pipe(
+                    Effect.map(({ uri }): Published => ({
+                      _tag: "published",
+                      permalink: permalinkOf(session.did, recordKey),
+                      platformPostId: PlatformPostIdSchema.make(uri),
+                    }))
+                  )
+                : recordRefusal(response)
+          ),
+          Effect.catchTags({
+            HttpClientError: commitUnanswered,
+            OutboundRequestRefused: commitUnanswered,
+            SchemaError: commitUnanswered,
+          })
+        );
+
     const commit = Effect.fn("BlueskyClient.commit")(function* commit(
       post: OutgoingPost,
       prepared: BlueskyMedia
@@ -646,52 +887,18 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
       const recordKey = recordKeyOf(post.startedAt, post.idempotencyKey);
       const reply = yield* replyOf(post);
 
-      return yield* withSession(post, (session) =>
-        dpop
-          .send(
-            session,
-            HttpClientRequest.post(
-              new URL("/xrpc/com.atproto.repo.createRecord", session.pds)
-            ).pipe(
-              HttpClientRequest.bodyJsonUnsafe({
-                collection: postCollection,
-                record: recordOf(post, prepared, reply),
-                repo: session.did,
-                rkey: recordKey,
-              })
-            )
-          )
-          .pipe(
-            Effect.flatMap(
-              (
-                response
-              ): Effect.Effect<
-                Published,
-                | HttpClientError.HttpClientError
-                | OutcomeUnknown
-                | PublishFailure
-                | Schema.SchemaError
-                | TokenRejected
-              > =>
-                response.status === 200
-                  ? HttpClientResponse.schemaBodyJson(CreatedSchema)(
-                      response
-                    ).pipe(
-                      Effect.map(({ uri }): Published => ({
-                        _tag: "published",
-                        permalink: permalinkOf(session.did, recordKey),
-                        platformPostId: PlatformPostIdSchema.make(uri),
-                      }))
-                    )
-                  : recordRefusal(response)
-            ),
-            Effect.catchTags({
-              HttpClientError: commitUnanswered,
-              OutboundRequestRefused: commitUnanswered,
-              SchemaError: commitUnanswered,
-            })
-          )
-      );
+      return yield* withSession(post, (session) => {
+        const record = recordOf(post, prepared, reply);
+
+        const gates = gatesOf(
+          post,
+          `at://${session.did}/${postCollection}/${recordKey}`
+        );
+
+        return gates.length > 0
+          ? commitGated(session, record, recordKey, gates)
+          : createPost(session, record, recordKey);
+      });
     });
 
     // Reads the attempt's record back from the PDS, by its key. A record

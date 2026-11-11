@@ -8,6 +8,7 @@ import {
   Result,
 } from "effect";
 
+import { optionsOn } from "#publishing/domain/channel-options.ts";
 import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { channelOf, previewOn } from "#publishing/domain/channel-preview.ts";
 import type { ChannelPreview } from "#publishing/domain/channel-preview.ts";
@@ -441,7 +442,8 @@ export class PostChecks extends Context.Service<
               channel,
               violations.filter(
                 (violation) => channelOf(violation) === channel.channelId
-              )
+              ),
+              optionsOn(options, channel.channelId)
             )
           ),
           dropped,

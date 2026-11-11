@@ -95,6 +95,56 @@ Sur un canal TikTok, l’éditeur lit les réglages du compte sur TikTok, comme 
 
 Sur un canal Pinterest, le compositeur lit les tableaux du compte sur Pinterest, jusqu’à 500, puis, une fois l’un d’eux choisi, ses sections. Un tableau supprimé depuis, ou au-delà de ceux qui ont été lus, reste choisi et apparaît comme absent de la liste ; quand Pinterest ne répond pas, **Réessayer** relit la liste. Peal ne crée aucun tableau : créez-le d’abord sur Pinterest. Une épingle a un seul texte alternatif, celui du premier fichier, et les images d’un carrousel partagent le titre, la description et le lien de l’épingle.
 
+### Mastodon, Bluesky, Threads et X [#feed-options]
+
+Aucune de ces options n’est obligatoire. Chacune n’est envoyée que si vous la choisissez, et dans un [fil](#threads) elle part avec chaque partie ou avec la première seule, comme le dit la dernière colonne. Par l’API, chaque option porte le nom de la deuxième colonne.
+
+Sur **Mastodon** :
+
+| Option                                 | Nom dans l’API   | Valeurs                                                                          | Si omise             | Parties       |
+| -------------------------------------- | ---------------- | -------------------------------------------------------------------------------- | -------------------- | ------------- |
+| **Qui peut voir cette publication**    | `visibility`     | `public`, `unlisted` (public discret), `private` (abonnés seulement)             | Le réglage du compte | Chaque partie |
+| **Avertissement de contenu**           | `contentWarning` | Une ligne, 500 caractères au plus                                                | Aucun                | Chaque partie |
+| **Marquer les médias comme sensibles** | `sensitive`      | Oui ou non                                                                       | Le réglage du compte | Chaque partie |
+| **Langue**                             | `language`       | Un code de deux ou trois lettres minuscules, comme `fr`                          | Le réglage du compte | Chaque partie |
+| **Qui peut citer cette publication**   | `quotePolicy`    | `public`, `followers`, `nobody` ; seulement avec `visibility` public ou unlisted | Le réglage du compte | Chaque partie |
+
+Mastodon compte un avertissement de contenu dans la limite de caractères de la publication, avec le texte : sur un canal Mastodon, les 500 caractères sont l’avertissement et le texte ensemble, sur chaque partie, et l’éditeur les compte ainsi. Un avertissement de contenu marque aussi la publication comme sensible, quoi que dise **Marquer les médias comme sensibles**. Les mentions privées ne sont pas proposées : Peal publie des publications. Les serveurs antérieurs à Mastodon 4.5 ignorent la règle de citation, et personne ne peut citer une publication réservée aux abonnés, quoi qu’elle dise.
+
+Sur **Bluesky** :
+
+| Option                                                                                           | Nom dans l’API                                       | Valeurs                                                                                                              | Si omise      | Parties                                    |
+| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------ |
+| **Langues**                                                                                      | `languages`                                          | Jusqu’à trois étiquettes de langue, comme `fr` ou `pt-BR`                                                            | Aucune        | Chaque partie                              |
+| **Étiquette de contenu**                                                                         | `contentLabel`                                       | `sexual`, `nudity`, `porn`, `graphic-media`                                                                          | Aucune        | Chaque partie avec des images ou une vidéo |
+| **Qui peut répondre**                                                                            | `replies`                                            | `everyone`, `nobody`, ou `limited` à ceux de `replyFollowers`, `replyFollowing` et `replyMentioned` qui sont activés | Tout le monde | Le fil                                     |
+| **Vos abonnés**, **Les comptes que vous suivez**, **Les comptes mentionnés dans la publication** | `replyFollowers`, `replyFollowing`, `replyMentioned` | Oui ou non, chacun ; avec `replies` limité, l’un au moins                                                            | Non           | Le fil                                     |
+| **Empêcher les autres de citer cette publication**                                               | `disableQuotes`                                      | Oui ou non                                                                                                           | Non           | Chaque partie                              |
+
+Une étiquette décrit les images ou la vidéo : une partie sans média part sans elle. Qui peut répondre et les citations s’écrivent avec la publication, en une seule requête, donc une publication ne part jamais sans eux. Ils demandent que le compte ait été connecté depuis que Peal les demande : sur un canal connecté avant, la programmation les refuse, et ses [capacités](/api-overview#capabilities) le disent (`optionNeedsReconnect`). Reconnectez le compte sur la page **Canaux** pour les utiliser ; rien d’autre ne change. Dans l’éditeur, un tel canal ne propose ni l’un ni l’autre, et le dit. Quand Peal n’a pas pu lire les autorisations du canal et que le serveur du compte refuse alors ces réglages, la publication n’est pas envoyée : le canal indique **Échec**, avec le code `optionRefused`, et Peal ne la renvoie pas. Reconnectez le compte, ou retirez ces réglages, et republiez-la.
+
+Sur **Threads** :
+
+| Option                | Nom dans l’API   | Valeurs                                                                                          | Si omise                                                                   |
+| --------------------- | ---------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| **Qui peut répondre** | `replyControl`   | `everyone`, `accounts_you_follow`, `followers_only`, `mentioned_only`, `parent_post_author_only` | Tout le monde                                                              |
+| **Sujet**             | `topicTag`       | Un sujet sur une ligne, 50 caractères au plus, sans `.` ni `&`                                   | Aucun                                                                      |
+| **Aperçu de lien**    | `linkAttachment` | Une adresse commençant par `https://`, sur une publication sans image ni vidéo                   | Threads prévisualise le premier lien d’une publication faite de texte seul |
+
+Threads prend une publication seule : chaque option est celle de la publication. Un aperçu de lien sur une publication avec des médias est refusé au moment de la programmer.
+
+Sur **X** :
+
+| Option                              | Nom dans l’API       | Valeurs                                                  | Si omise              | Parties                                    |
+| ----------------------------------- | -------------------- | -------------------------------------------------------- | --------------------- | ------------------------------------------ |
+| **Qui peut répondre**               | `replySettings`      | `following`, `mentionedUsers`, `subscribers`, `verified` | Tout le monde         | La première partie                         |
+| **Communauté**                      | `communityId`        | Le numéro de la communauté, des chiffres seulement       | Les abonnés du compte | La première partie                         |
+| **Partager aussi avec les abonnés** | `shareWithFollowers` | Oui ou non ; seulement avec une communauté               | Non                   | La première partie                         |
+| **Partenariat rémunéré**            | `paidPartnership`    | Oui ou non                                               | Non                   | Chaque partie                              |
+| **Fait avec l’IA**                  | `madeWithAi`         | Oui ou non                                               | Non                   | Chaque partie avec des images ou une vidéo |
+
+X ne documente pas quels comptes peuvent utiliser chacune d’elles. Quand X refuse une publication qui en porte, et que sa réponse en nomme une (le champ, ou la communauté), le canal indique **Échec**, avec le code `optionRefused` : Peal ne la renvoie pas, et le message de X n’est pas gardé, donc il ne dit pas quelle option X a refusée. Changez les options et republiez-la. Quand X refuse une telle publication pour autre chose, comme un compte restreint, le code est le type de problème de X lui-même, comme pour une publication sans options (`client-forbidden`, ou `http403` quand X n’en nomme aucun), et changer les options n’y fera rien.
+
 Par l’API, un brouillon prend ses options dans `options`, une entrée par canal, chacune marquée de sa `platform` ; chacune des cibles de la publication répond avec les siennes. Mettre à jour un brouillon remplace ses options : celles qui manquent sont retirées. Un canal ajouté seulement au moment de programmer n’en a pas encore : sur YouTube, TikTok ou Pinterest, donnez-lui d’abord ses options dans le brouillon.
 
 ## La programmer [#schedule]

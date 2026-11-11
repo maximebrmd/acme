@@ -9,6 +9,7 @@ import {
   Schema,
 } from "effect";
 
+import { BlueskyOptions } from "#publishing/domain/bluesky-options.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -584,5 +585,271 @@ describe("publishing on Bluesky", () => {
       assert.notStrictEqual(recordKeyOf(startedAt, "a3f2"), key);
       assert.match(key, /^[234567a-j][234567a-z]{12}$/u);
     })
+  );
+});
+
+const labelled = new BlueskyOptions({
+  contentLabel: "graphic-media",
+  languages: ["en", "pt-BR"],
+});
+
+describe("a Bluesky post's options", () => {
+  it.live("send the record as before when none is chosen", () =>
+    Effect.gen(function* plain() {
+      const { client, network } = yield* onBluesky();
+
+      const post = yield* outgoing({
+        accountId: blueskyDid,
+        options: Option.some(new BlueskyOptions({})),
+        text: "Plain words",
+      });
+
+      yield* client.publish(post);
+
+      assert.deepStrictEqual(network.records()[0]?.value, {
+        $type: "app.bsky.feed.post",
+        createdAt: DateTime.formatIso(post.startedAt),
+        text: "Plain words",
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "name the languages on every part, and label only a part with media",
+    () =>
+      Effect.gen(function* everyPart() {
+        const image = testFile("image", 3000);
+        const { client, network } = yield* onBluesky({ files: [image] });
+        const options = Option.some(labelled);
+
+        const first = yield* client.publish(
+          yield* outgoing({
+            accountId: blueskyDid,
+            media: [attached(image, "")],
+            options,
+            text: "A first part",
+          })
+        );
+
+        assert(first._tag === "published");
+
+        yield* client.publish(
+          yield* outgoing({
+            accountId: blueskyDid,
+            idempotencyKey: "0b5e4f2a9c7d4e1f8a3b6c5d2e1f0a9b",
+            options,
+            part: 1,
+            replyTo: Option.some({
+              parent: first.platformPostId,
+              root: first.platformPostId,
+            }),
+            text: "A second part, without media",
+          })
+        );
+
+        const [opening, reply] = network.records();
+
+        assert.deepStrictEqual(opening?.value["langs"], ["en", "pt-BR"]);
+        assert.deepStrictEqual(opening?.value["labels"], {
+          $type: "com.atproto.label.defs#selfLabels",
+          values: [{ val: "graphic-media" }],
+        });
+        assert.deepStrictEqual(reply?.value["langs"], ["en", "pt-BR"]);
+        assert.isUndefined(reply?.value["labels"]);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("are read back as the same post after a lost answer", () =>
+    Effect.gen(function* lost() {
+      const image = testFile("image", 3000);
+      const { client, network } = yield* onBluesky({ files: [image] });
+
+      network.script(createRoute, [{ _tag: "createThenDrop" }]);
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: blueskyDid,
+          media: [attached(image, "")],
+          options: Option.some(labelled),
+        })
+      );
+
+      assert.strictEqual(result._tag, "published");
+      assert.lengthOf(network.records(), 1);
+      assert.deepStrictEqual(network.records()[0]?.value["langs"], [
+        "en",
+        "pt-BR",
+      ]);
+    }).pipe(Effect.scoped)
+  );
+});
+
+const applyWritesPath = "/xrpc/com.atproto.repo.applyWrites";
+
+const applyCalls = (network: PlatformServer) =>
+  network
+    .requests()
+    .filter(
+      (request) => request.method === "POST" && request.path === applyWritesPath
+    );
+
+const gated = new BlueskyOptions({
+  disableQuotes: true,
+  replies: "limited",
+  replyFollowing: true,
+  replyMentioned: true,
+});
+
+describe("a Bluesky post's gates", () => {
+  it.live("are written with the post, in one call, under its record key", () =>
+    Effect.gen(function* together() {
+      const { client, network } = yield* onBluesky();
+
+      const post = yield* outgoing({
+        accountId: blueskyDid,
+        options: Option.some(gated),
+        text: "Gated words",
+      });
+
+      const result = yield* client.publish(post);
+      const rkey = recordKeyOf(post.startedAt, post.idempotencyKey);
+      const uri = `at://${blueskyDid}/app.bsky.feed.post/${rkey}`;
+      const createdAt = DateTime.formatIso(post.startedAt);
+
+      assert.deepStrictEqual(result, {
+        _tag: "published",
+        permalink: `https://bsky.app/profile/${blueskyDid}/post/${rkey}`,
+        platformPostId: PlatformPostIdSchema.make(uri),
+      });
+      assert.lengthOf(creates(network), 0);
+      assert.isNotEmpty(applyCalls(network));
+      assert.deepStrictEqual(
+        network
+          .records()
+          .map(({ collection, rkey: key, value }) => [
+            collection,
+            key,
+            collection === "app.bsky.feed.post" ? value["text"] : value,
+          ]),
+        [
+          ["app.bsky.feed.post", rkey, "Gated words"],
+          [
+            "app.bsky.feed.threadgate",
+            rkey,
+            {
+              $type: "app.bsky.feed.threadgate",
+              allow: [
+                { $type: "app.bsky.feed.threadgate#mentionRule" },
+                { $type: "app.bsky.feed.threadgate#followingRule" },
+              ],
+              createdAt,
+              post: uri,
+            },
+          ],
+          [
+            "app.bsky.feed.postgate",
+            rkey,
+            {
+              $type: "app.bsky.feed.postgate",
+              createdAt,
+              embeddingRules: [{ $type: "app.bsky.feed.postgate#disableRule" }],
+              post: uri,
+            },
+          ],
+        ]
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "gate a later part's quotes, and leave replies to the thread's first",
+    () =>
+      Effect.gen(function* laterPart() {
+        const { client, network } = yield* onBluesky();
+
+        const options = Option.some(
+          new BlueskyOptions({ disableQuotes: true, replies: "nobody" })
+        );
+
+        const first = yield* client.publish(
+          yield* outgoing({ accountId: blueskyDid, options, text: "A first" })
+        );
+
+        assert(first._tag === "published");
+
+        yield* client.publish(
+          yield* outgoing({
+            accountId: blueskyDid,
+            idempotencyKey: "0b5e4f2a9c7d4e1f8a3b6c5d2e1f0a9b",
+            options,
+            part: 1,
+            replyTo: Option.some({
+              parent: first.platformPostId,
+              root: first.platformPostId,
+            }),
+            text: "A second",
+          })
+        );
+
+        assert.deepStrictEqual(
+          network.records().map(({ collection }) => collection),
+          [
+            "app.bsky.feed.post",
+            "app.bsky.feed.threadgate",
+            "app.bsky.feed.postgate",
+            "app.bsky.feed.post",
+            "app.bsky.feed.postgate",
+          ]
+        );
+        assert.deepStrictEqual(
+          network
+            .records()
+            .find(({ collection }) => collection === "app.bsky.feed.threadgate")
+            ?.value["allow"],
+          []
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "leave no post when the PDS refuses them, and say the options were refused",
+    () =>
+      Effect.gen(function* refused() {
+        const { client, network } = yield* onBluesky({
+          network: { grantedCollections: ["app.bsky.feed.post"] },
+        });
+
+        const failure = yield* client
+          .publish(
+            yield* outgoing({
+              accountId: blueskyDid,
+              options: Option.some(gated),
+            })
+          )
+          .pipe(Effect.flip);
+
+        assert.deepStrictEqual(
+          failure,
+          new BadRequest({ code: "optionRefused" })
+        );
+        assert.lengthOf(network.records(), 0);
+        assert.lengthOf(creates(network), 0);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("are found with the post when the call's answer was lost", () =>
+    Effect.gen(function* lostAnswer() {
+      const { client, network } = yield* onBluesky();
+
+      network.script(`POST ${applyWritesPath}`, [{ _tag: "createThenDrop" }]);
+
+      const result = yield* client.publish(
+        yield* outgoing({ accountId: blueskyDid, options: Option.some(gated) })
+      );
+
+      assert.strictEqual(result._tag, "published");
+      assert.lengthOf(network.records(), 3);
+      assert.lengthOf(creates(network), 0);
+    }).pipe(Effect.scoped)
   );
 });

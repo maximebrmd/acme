@@ -6,7 +6,8 @@ export type AccountRestriction =
     | Peal.AccountRestriction.OptionValues
     | Peal.AccountRestriction.OptionFixed
     | Peal.AccountRestriction.VideoDuration
-    | Peal.AccountRestriction.MediaTypesRefused;
+    | Peal.AccountRestriction.MediaTypesRefused
+    | Peal.AccountRestriction.OptionNeedsReconnect;
 
 export namespace AccountRestriction {
     export interface OptionValues extends Peal.AccountRestrictionOptionValues {
@@ -23,5 +24,9 @@ export namespace AccountRestriction {
 
     export interface MediaTypesRefused extends Peal.AccountRestrictionMediaTypesRefused {
         _tag: "mediaTypesRefused";
+    }
+
+    export interface OptionNeedsReconnect extends Peal.AccountRestrictionOptionNeedsReconnect {
+        _tag: "optionNeedsReconnect";
     }
 }

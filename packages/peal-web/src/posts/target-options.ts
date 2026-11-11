@@ -1,14 +1,20 @@
-import { Match, Option, Schema } from "effect";
+import { Match, Option, Result, Schema } from "effect";
 import type { useTranslations } from "next-intl";
 import {
   LinkedInMentionSchema,
+  maxBlueskyLanguages,
   maxGoogleBusinessTitleLength,
   maxLinkedInDocumentTitleLength,
   maxLinkedInLinkDescriptionLength,
   maxLinkedInLinkTitleLength,
   maxLinkedInLinkUrlLength,
+  maxLinkedInMentions,
   maxPinterestLinkLength,
+  maxMastodonContentWarningLength,
   maxPinterestTitleLength,
+  maxThreadsLinkLength,
+  maxThreadsTopicTagLength,
+  maxYouTubeTagsLength,
   maxYouTubeTitleLength,
   TargetOptionsSchema,
 } from "peal-contract";
@@ -41,13 +47,17 @@ interface Described {
   /**
    * The field shows, and its value is sent, only while the field named
    * `name` holds one of `values`, or nothing yet when `unset`: an event's
-   * dates show once the post is an event.
+   * dates show once the post is an event. With `filled`, while that field
+   * holds anything: sharing a community post shows once a community is
+   * written.
    */
-  readonly shownWith?: {
-    readonly name: string;
-    readonly unset?: true;
-    readonly values: readonly string[];
-  };
+  readonly shownWith?:
+    | {
+        readonly name: string;
+        readonly unset?: true;
+        readonly values: readonly string[];
+      }
+    | { readonly filled: true; readonly name: string };
 }
 
 /** One line of text; `maxLength` characters (code points) at most. */
@@ -57,9 +67,10 @@ export interface TextField extends Described {
   readonly required?: true;
 }
 
-/** Tags, typed separated by commas. */
+/** Tags, typed separated by commas: `maximum` of them at most. */
 export interface TagsField extends Described {
   readonly kind: "tags";
+  readonly maximum: number;
 }
 
 /**
@@ -132,6 +143,8 @@ export interface NumberField extends Described {
  */
 export interface MentionsField extends Described {
   readonly kind: "mentions";
+  /** The most pages one post names. */
+  readonly maximum: number;
 }
 
 export type OptionField =
@@ -150,11 +163,79 @@ const scheduled = { name: "postType", values: ["event", "offer"] } as const;
 
 const offered = { name: "postType", values: ["offer"] } as const;
 
+// A Bluesky thread whose replies are limited to some.
+const repliesLimited = { name: "replies", values: ["limited"] } as const;
+
 /**
  * The fields of each platform that takes options, in the order the composer
  * shows them. A platform's options added to the contract need an entry here.
  */
 export const optionFields = {
+  bluesky: [
+    {
+      hint: "bluesky.languagesHint",
+      invalid: "bluesky.languagesInvalid",
+      kind: "tags",
+      label: "bluesky.languages",
+      maximum: maxBlueskyLanguages,
+      name: "languages",
+    },
+    {
+      choices: [
+        { label: "bluesky.labelSexual", value: "sexual" },
+        { label: "bluesky.labelNudity", value: "nudity" },
+        { label: "bluesky.labelPorn", value: "porn" },
+        { label: "bluesky.labelGraphicMedia", value: "graphic-media" },
+      ],
+      hint: "bluesky.contentLabelHint",
+      kind: "choice",
+      label: "bluesky.contentLabel",
+      name: "contentLabel",
+      none: "bluesky.labelNone",
+    },
+    {
+      // Everyone, left out, is the first choice (`none`).
+      choices: [
+        { label: "bluesky.repliesNobody", value: "nobody" },
+        { label: "bluesky.repliesLimited", value: "limited" },
+      ],
+      hint: "bluesky.repliesHint",
+      invalid: "bluesky.repliesInvalid",
+      kind: "choice",
+      label: "bluesky.replies",
+      name: "replies",
+      none: "bluesky.repliesEveryone",
+    },
+    {
+      initial: false,
+      kind: "toggle",
+      label: "bluesky.replyFollowers",
+      name: "replyFollowers",
+      shownWith: repliesLimited,
+    },
+    {
+      initial: false,
+      kind: "toggle",
+      label: "bluesky.replyFollowing",
+      name: "replyFollowing",
+      shownWith: repliesLimited,
+    },
+    {
+      initial: false,
+      kind: "toggle",
+      label: "bluesky.replyMentioned",
+      name: "replyMentioned",
+      shownWith: repliesLimited,
+    },
+    {
+      hint: "bluesky.disableQuotesHint",
+      initial: false,
+      invalid: "bluesky.disableQuotesInvalid",
+      kind: "toggle",
+      label: "bluesky.disableQuotes",
+      name: "disableQuotes",
+    },
+  ],
   googleBusiness: [
     {
       choices: [
@@ -272,6 +353,7 @@ export const optionFields = {
       invalid: "linkedin.mentionsInvalid",
       kind: "mentions",
       label: "linkedin.mentions",
+      maximum: maxLinkedInMentions,
       name: "mentions",
     },
     {
@@ -302,6 +384,62 @@ export const optionFields = {
       label: "linkedin.documentTitle",
       maxLength: maxLinkedInDocumentTitleLength,
       name: "documentTitle",
+    },
+  ],
+  mastodon: [
+    {
+      choices: [
+        { label: "mastodon.visibilityPublic", value: "public" },
+        { label: "mastodon.visibilityUnlisted", value: "unlisted" },
+        { label: "mastodon.visibilityPrivate", value: "private" },
+      ],
+      hint: "mastodon.visibilityHint",
+      kind: "choice",
+      label: "mastodon.visibility",
+      name: "visibility",
+      none: "mastodon.accountDefault",
+    },
+    {
+      hint: "mastodon.contentWarningHint",
+      invalid: "mastodon.contentWarningInvalid",
+      kind: "text",
+      label: "mastodon.contentWarning",
+      maxLength: maxMastodonContentWarningLength,
+      name: "contentWarning",
+    },
+    {
+      hint: "mastodon.sensitiveHint",
+      kind: "yesNo",
+      label: "mastodon.sensitive",
+      name: "sensitive",
+      no: "mastodon.sensitiveNo",
+      yes: "mastodon.sensitiveYes",
+    },
+    {
+      hint: "mastodon.languageHint",
+      invalid: "mastodon.languageInvalid",
+      kind: "text",
+      label: "mastodon.language",
+      name: "language",
+    },
+    {
+      choices: [
+        { label: "mastodon.quotePublic", value: "public" },
+        { label: "mastodon.quoteFollowers", value: "followers" },
+        { label: "mastodon.quoteNobody", value: "nobody" },
+      ],
+      hint: "mastodon.quotePolicyHint",
+      invalid: "mastodon.quotePolicyInvalid",
+      kind: "choice",
+      label: "mastodon.quotePolicy",
+      name: "quotePolicy",
+      none: "mastodon.accountDefault",
+      // Mastodon lets nobody quote a followers-only post.
+      shownWith: {
+        name: "visibility",
+        unset: true,
+        values: ["public", "unlisted"],
+      },
     },
   ],
   pinterest: [
@@ -338,6 +476,7 @@ export const optionFields = {
     },
     {
       hint: "pinterest.coverSecondHint",
+      invalid: "pinterest.coverSecondInvalid",
       kind: "number",
       label: "pinterest.coverSecond",
       minimum: 0,
@@ -349,6 +488,40 @@ export const optionFields = {
       kind: "text",
       label: "pinterest.dominantColor",
       name: "dominantColor",
+    },
+  ],
+  threads: [
+    {
+      // Everyone, left out, is the first choice (`none`).
+      choices: [
+        { label: "threads.replyFollowing", value: "accounts_you_follow" },
+        { label: "threads.replyFollowers", value: "followers_only" },
+        { label: "threads.replyMentioned", value: "mentioned_only" },
+        {
+          label: "threads.replyAuthorOnly",
+          value: "parent_post_author_only",
+        },
+      ],
+      kind: "choice",
+      label: "threads.replyControl",
+      name: "replyControl",
+      none: "threads.replyEveryone",
+    },
+    {
+      hint: "threads.topicTagHint",
+      invalid: "threads.topicTagInvalid",
+      kind: "text",
+      label: "threads.topicTag",
+      maxLength: maxThreadsTopicTagLength,
+      name: "topicTag",
+    },
+    {
+      hint: "threads.linkAttachmentHint",
+      invalid: "threads.linkAttachmentInvalid",
+      kind: "text",
+      label: "threads.linkAttachment",
+      maxLength: maxThreadsLinkLength,
+      name: "linkAttachment",
     },
   ],
   tiktok: [
@@ -418,6 +591,49 @@ export const optionFields = {
       name: "aiGenerated",
     },
   ],
+  x: [
+    {
+      choices: [
+        { label: "x.replyFollowing", value: "following" },
+        { label: "x.replyMentioned", value: "mentionedUsers" },
+        { label: "x.replySubscribers", value: "subscribers" },
+        { label: "x.replyVerified", value: "verified" },
+      ],
+      hint: "x.replySettingsHint",
+      kind: "choice",
+      label: "x.replySettings",
+      name: "replySettings",
+      none: "x.replyEveryone",
+    },
+    {
+      hint: "x.communityIdHint",
+      invalid: "x.communityIdInvalid",
+      kind: "text",
+      label: "x.communityId",
+      name: "communityId",
+    },
+    {
+      initial: false,
+      kind: "toggle",
+      label: "x.shareWithFollowers",
+      name: "shareWithFollowers",
+      shownWith: { filled: true, name: "communityId" },
+    },
+    {
+      hint: "x.paidPartnershipHint",
+      initial: false,
+      kind: "toggle",
+      label: "x.paidPartnership",
+      name: "paidPartnership",
+    },
+    {
+      hint: "x.madeWithAiHint",
+      initial: false,
+      kind: "toggle",
+      label: "x.madeWithAi",
+      name: "madeWithAi",
+    },
+  ],
   youtube: [
     {
       hint: "youtube.titleHint",
@@ -453,6 +669,8 @@ export const optionFields = {
       invalid: "youtube.tagsInvalid",
       kind: "tags",
       label: "youtube.tags",
+      // The contract takes as many tags as YouTube takes characters.
+      maximum: maxYouTubeTagsLength,
       name: "tags",
     },
     {
@@ -618,8 +836,13 @@ export const isShown = (
   }
 
   const held = values[shownWith.name];
+  const empty = held === undefined || held === "";
 
-  return held === undefined || held === ""
+  if ("filled" in shownWith) {
+    return !empty;
+  }
+
+  return empty
     ? shownWith.unset === true
     : shownWith.values.some((value) => value === held);
 };
@@ -719,79 +942,210 @@ const tagsOf = (typed: string): readonly string[] =>
     .map((tag) => tag.trim())
     .filter((tag) => tag !== "");
 
-// A field's value as the API takes it, none when it is not filled in.
+/**
+ * What is wrong with an option as the member filled it in, before any
+ * request: more entries than the platform takes (`tooMany`), or a value
+ * the API would refuse (`invalid`). The composer shows it under the field
+ * and sends nothing until it is fixed.
+ */
+export type OptionProblem =
+  | {
+      readonly _tag: "tooMany";
+      readonly count: number;
+      readonly field: string;
+      readonly maximum: number;
+    }
+  | { readonly _tag: "invalid"; readonly field: string };
+
+type OptionValue =
+  | boolean
+  | number
+  | string
+  | readonly LinkedInMention[]
+  | readonly string[];
+
+// A field's value as the API takes it: none when it is not filled in, a
+// problem when what is typed is no value of the field's kind.
 const optionOf = (
   field: OptionField,
   value: boolean | string | undefined
-): Option.Option<
-  boolean | number | string | readonly LinkedInMention[] | readonly string[]
-> => {
+): Result.Result<Option.Option<OptionValue>, OptionProblem> => {
   if (value === undefined || value === "") {
-    return Option.none();
+    return Result.succeed(Option.none());
   }
+
+  const typed = decodeText(value).pipe(Option.getOrElse(() => ""));
+  const invalid: OptionProblem = { _tag: "invalid", field: field.name };
 
   // Digits only: anything else is not a number the API would take.
   if (field.kind === "number") {
-    return decodeText(value).pipe(
-      Option.map((typed) => typed.trim()),
-      Option.filter((typed) => wholeNumber.test(typed)),
-      Option.map(Number),
-      Option.filter((number) => Number.isSafeInteger(number))
+    const number = Number(typed.trim());
+
+    return wholeNumber.test(typed.trim()) && Number.isSafeInteger(number)
+      ? Result.succeed(Option.some(number))
+      : Result.fail(invalid);
+  }
+
+  if (field.kind === "mentions" || field.kind === "tags") {
+    const entries =
+      field.kind === "mentions" ? mentionsOf(typed) : tagsOf(typed);
+
+    if (entries.length > field.maximum) {
+      return Result.fail({
+        _tag: "tooMany",
+        count: entries.length,
+        field: field.name,
+        maximum: field.maximum,
+      });
+    }
+
+    return Result.succeed(
+      entries.length === 0 ? Option.none() : Option.some(entries)
     );
   }
 
-  if (field.kind === "mentions") {
-    return decodeText(value).pipe(
-      Option.map(mentionsOf),
-      Option.filter((mentions) => mentions.length > 0)
-    );
-  }
-
-  if (field.kind === "tags") {
-    return decodeText(value).pipe(
-      Option.map(tagsOf),
-      Option.filter((tags) => tags.length > 0)
-    );
-  }
-
-  return Option.some(value);
+  return Result.succeed(Option.some(value));
 };
 
 const decodeOptions = Schema.decodeUnknownOption(TargetOptionsSchema);
 
+// The fields the values fill in, as the API takes them, or what is wrong
+// with each that the contract would refuse: every field is checked alone,
+// so one wrong field never hides the others.
+const filledOf = (
+  platform: Platform,
+  values: OptionValues
+): Result.Result<
+  readonly (readonly [string, OptionValue])[],
+  readonly OptionProblem[]
+> => {
+  const filled: (readonly [string, OptionValue])[] = [];
+  const problems: OptionProblem[] = [];
+
+  for (const field of fieldsOf(platform)) {
+    if (isShown(platform, field, values)) {
+      const option = optionOf(field, values[field.name]);
+
+      if (Result.isFailure(option)) {
+        problems.push(option.failure);
+      } else if (Option.isSome(option.success)) {
+        const given = option.success.value;
+
+        if (Option.isSome(decodeOptions({ [field.name]: given, platform }))) {
+          filled.push([field.name, given]);
+        } else {
+          problems.push({ _tag: "invalid", field: field.name });
+        }
+      }
+    }
+  }
+
+  return problems.length === 0 ? Result.succeed(filled) : Result.fail(problems);
+};
+
 /**
  * The options the values give on a channel of the platform, as the API
- * takes them; none on a platform that takes no options.
+ * takes them, none on a platform that takes no options; or, when the
+ * contract would refuse some field as filled in, what is wrong with each.
+ * Never none for options that were filled in.
  */
 export const optionsOf = (
   platform: Platform,
   values: OptionValues
-): Option.Option<TargetOptions> =>
-  decodeOptions({
-    ...Object.fromEntries(
-      fieldsOf(platform)
-        .filter((field) => isShown(platform, field, values))
-        .flatMap((field) =>
-          Option.match(optionOf(field, values[field.name]), {
-            onNone: () => [],
-            onSome: (option) => [[field.name, option]],
-          })
-        )
-    ),
-    platform,
-  });
+): Result.Result<Option.Option<TargetOptions>, readonly OptionProblem[]> =>
+  filledOf(platform, values).pipe(
+    Result.flatMap((filled) => {
+      const options = decodeOptions({
+        ...Object.fromEntries(filled),
+        platform,
+      });
 
-/** The options of the post on each of these channels that takes some. */
+      if (Option.isSome(options) || fieldsOf(platform).length === 0) {
+        return Result.succeed(options);
+      }
+
+      // Each field passed alone: the problem is between them.
+      return Result.fail(
+        filled.map(([field]): OptionProblem => ({ _tag: "invalid", field }))
+      );
+    })
+  );
+
+/** What is wrong with the values on a channel of the platform, by field. */
+export const problemsByField = (
+  platform: Platform,
+  values: OptionValues
+): ReadonlyMap<string, OptionProblem> =>
+  new Map(
+    Result.match(optionsOf(platform, values), {
+      onFailure: (problems) =>
+        problems.map((problem) => [problem.field, problem] as const),
+      onSuccess: () => [],
+    })
+  );
+
+/** A problem with one of the options filled in on a channel. */
+export type ChannelOptionProblem = OptionProblem & {
+  readonly channelId: string;
+};
+
+/** What the composer has of the options of its channels. */
+export interface ChannelOptionsState {
+  /**
+   * The options to send, on each channel where the member chose one at
+   * least.
+   */
+  readonly options: readonly ChannelOptions[];
+  /** What is wrong with what was filled in: nothing is sent until fixed. */
+  readonly problems: readonly ChannelOptionProblem[];
+}
+
+// What leaving the options out gives on a new target, as the fields show
+// it: every box as its field says.
+const leftOutOf = (platform: Platform): string =>
+  JSON.stringify(
+    optionsOf(platform, initialValues(platform)).pipe(
+      Result.getOrElse(() => Option.none<TargetOptions>()),
+      Option.getOrUndefined
+    )
+  );
+
+// Whether the options choose anything leaving them out does not give.
+const chooses = (
+  platform: Platform,
+  options: Option.Option<TargetOptions>
+): options is Option.Some<TargetOptions> =>
+  Option.isSome(options) &&
+  JSON.stringify(options.value) !== leftOutOf(platform);
+
+/**
+ * The options of the post on each of these channels whose platform takes
+ * some and where the member chose one at least, and what is wrong with
+ * those filled in. A channel where nothing was chosen gets no entry, so a
+ * new post takes the channel's default options, as it does through the
+ * API.
+ */
 export const channelOptionsOf = (
   channels: readonly { readonly id: string; readonly platform: Platform }[],
   values: ValuesByChannel
-): readonly ChannelOptions[] =>
-  channels.flatMap(({ id, platform }) =>
-    Option.match(optionsOf(platform, values[id] ?? initialValues(platform)), {
-      onNone: () => [],
-      onSome: (options) => [{ channelId: id, options }],
-    })
-  );
+): ChannelOptionsState => {
+  const options: ChannelOptions[] = [];
+  const problems: ChannelOptionProblem[] = [];
+
+  for (const { id, platform } of channels) {
+    const given = optionsOf(platform, values[id] ?? initialValues(platform));
+
+    if (Result.isFailure(given)) {
+      problems.push(
+        ...given.failure.map((problem) => ({ ...problem, channelId: id }))
+      );
+    } else if (chooses(platform, given.success)) {
+      options.push({ channelId: id, options: given.success.value });
+    }
+  }
+
+  return { options, problems };
+};
 
 /** A violation about one option of a channel. */
 export type OptionViolation = Extract<

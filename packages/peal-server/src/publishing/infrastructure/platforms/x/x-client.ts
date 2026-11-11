@@ -27,6 +27,8 @@ import type {
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { XOptions } from "#publishing/domain/x-options.ts";
+import type { XReplySettings } from "#publishing/domain/x-options.ts";
 import { inParts } from "#publishing/infrastructure/platforms/byte-parts.ts";
 import {
   codeOf,
@@ -198,10 +200,67 @@ interface XMedia {
 
 /** What POST /2/tweets takes of a post. */
 interface NewPost {
+  community_id?: string;
+  made_with_ai?: true;
   media?: { readonly media_ids: readonly string[] };
+  paid_partnership?: true;
   reply?: { readonly in_reply_to_tweet_id: string };
+  reply_settings?: XReplySettings;
+  share_with_followers?: true;
   text?: string;
 }
+
+const isX = Schema.is(XOptions);
+
+/**
+ * Adds what the post's options say to its body, each field only when it
+ * says more than X's default, as X's schema takes no field it does not
+ * know and a post without options goes as it did before them. Who may
+ * reply and the community are the thread's first post's; a reply is in
+ * its parent's conversation. The paid partnership labels every part, and
+ * AI-generated media each part that has media. Whether it added any.
+ */
+const withOptions = (
+  body: NewPost,
+  post: OutgoingPost,
+  hasMedia: boolean
+): boolean => {
+  const chosen = post.options.pipe(Option.filter(isX));
+
+  if (Option.isNone(chosen)) {
+    return false;
+  }
+
+  const options = chosen.value;
+  const first = Option.isNone(post.replyTo);
+
+  if (first && options.replySettings !== undefined) {
+    body.reply_settings = options.replySettings;
+  }
+
+  if (first && options.communityId !== undefined) {
+    body.community_id = options.communityId;
+
+    if (options.shareWithFollowers === true) {
+      body.share_with_followers = true;
+    }
+  }
+
+  if (options.paidPartnership === true) {
+    body.paid_partnership = true;
+  }
+
+  if (hasMedia && options.madeWithAi === true) {
+    body.made_with_ai = true;
+  }
+
+  return (
+    body.reply_settings !== undefined ||
+    body.community_id !== undefined ||
+    body.paid_partnership !== undefined ||
+    body.made_with_ai !== undefined
+  );
+};
 
 const isSuccess = (response: HttpClientResponse.HttpClientResponse) =>
   response.status >= 200 && response.status < 300;
@@ -544,6 +603,8 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
       body.reply = { in_reply_to_tweet_id: post.replyTo.value.parent };
     }
 
+    const optioned = withOptions(body, post, prepared.mediaIds.length > 0);
+
     return yield* credentials.withToken(post.channelId, ({ accessToken }) =>
       api
         .execute(
@@ -566,7 +627,8 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
                   ).pipe(Effect.map(({ data }) => publishedAs(data.id)))
                 : postRefusal(
                     response,
-                    Option.isSome(post.replyTo) ? "reply" : "post"
+                    Option.isSome(post.replyTo) ? "reply" : "post",
+                    optioned
                   )
           ),
           Effect.catchTags({

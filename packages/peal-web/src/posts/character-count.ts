@@ -1,4 +1,5 @@
-import type { Platform } from "peal-contract";
+import { countedText } from "peal-contract";
+import type { Platform, TargetOptions } from "peal-contract";
 import {
   countHashtags,
   countLinks,
@@ -58,16 +59,22 @@ const tooMany = (
     ? [{ _tag: tag, count, maximum }]
     : [];
 
-/** How `text`, shown with `media` images or videos, fits `platform`. */
+/**
+ * How `text`, shown with `media` images or videos, fits `platform`, with
+ * the `options` it has on the channel, which some platforms count with the
+ * text (a Mastodon content warning: `countedText`).
+ */
 export const fitOn = (
   platform: Platform,
   text: string,
-  media: number
+  media: number,
+  options?: TargetOptions
 ): ChannelFit => {
   const rules = platformRules[platform];
+  const counted = countedText(text, options);
 
   const counts = rules.textLimits.map(({ maximum, unit }): TextCount => {
-    const length = measureText(text, unit);
+    const length = measureText(counted, unit);
 
     return { length, maximum, remaining: maximum - length, unit };
   });

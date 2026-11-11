@@ -199,6 +199,8 @@ const restrictionLine = (restriction: AccountRestriction): string =>
     mediaTypesRefused: ({ contentTypes }) =>
       `  Refused on this channel: ${contentTypes.join(", ")}.`,
     optionFixed: ({ field, value }) => `  ${field} must be ${String(value)}.`,
+    optionNeedsReconnect: ({ field }) =>
+      `  ${field} needs the account reconnected in the web app.`,
     optionValues: ({ field, values }) =>
       `  ${field} takes only ${values.join(", ")}.`,
     videoDuration: ({ maximumMs }) =>

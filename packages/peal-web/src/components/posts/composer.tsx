@@ -328,7 +328,19 @@ export const Composer = ({
   );
 
   const content = contentOf(text, overrides, channelIds, media, parts);
-  const options = channelOptionsOf(selected, optionValues);
+
+  // The options to send, and what is wrong with those filled in: while
+  // anything is, the post is neither saved nor scheduled.
+  const { options, problems: optionProblems } = channelOptionsOf(
+    selected,
+    optionValues
+  );
+
+  const optionsTaken = optionProblems.length === 0;
+
+  const optionsOfChannel = (channelId: string) =>
+    options.find((chosen) => chosen.channelId === channelId)?.options;
+
   const attached = useAttachedMedia(workspaceId, media);
 
   const valuesOn = (channel: Channel): OptionValues =>
@@ -341,7 +353,12 @@ export const Composer = ({
 
     return {
       channel,
-      fit: fitOn(channel.platform, own?.text ?? text, media.length),
+      fit: fitOn(
+        channel.platform,
+        own?.text ?? text,
+        media.length,
+        optionsOfChannel(channel.id)
+      ),
       media: mediaFitOn(channel.platform, attached),
     };
   });
@@ -353,7 +370,14 @@ export const Composer = ({
     ({ id, platform }) =>
       partsTaken(platform, parts.length)._tag === "taken" &&
       parts.every((part) =>
-        fits(fitOn(platform, partTextOn(part, id), part.media.length))
+        fits(
+          fitOn(
+            platform,
+            partTextOn(part, id),
+            part.media.length,
+            optionsOfChannel(id)
+          )
+        )
       )
   );
 
@@ -402,6 +426,17 @@ export const Composer = ({
     if (postId === undefined) {
       const signed = signing.textsOf(saved);
 
+      // A new draft takes the defaults of the channels it was sent no
+      // options for: the fields show them, and the next save keeps them.
+      setOptionValues((current) => ({
+        ...current,
+        ...valuesOfPost(saved, (channelId) =>
+          Option.fromUndefinedOr(
+            channels.find(({ id }) => id === channelId)?.platform
+          )
+        ),
+      }));
+
       // Saved with the default signatures: the texts are now the server's.
       if (signed !== undefined) {
         setText(signed.text);
@@ -424,6 +459,10 @@ export const Composer = ({
   };
 
   const saveDraft = async () => {
+    if (!optionsTaken) {
+      return;
+    }
+
     const saved = await requests.save(postId, {
       channelIds,
       content,
@@ -444,6 +483,10 @@ export const Composer = ({
     if (placement._tag === "time" && Option.isNone(at)) {
       requests.fail({ _tag: "InvalidTime" });
 
+      return;
+    }
+
+    if (!optionsTaken) {
       return;
     }
 
@@ -666,6 +709,7 @@ export const Composer = ({
               disabled={locked}
               editable={canWrite}
               options={options}
+              optionsTaken={optionsTaken}
               permissions={permissions}
               workspaceId={workspaceId}
               onApply={(applied) => {
@@ -783,6 +827,7 @@ export const Composer = ({
           <FollowUpParts
             disabled={locked}
             editable={canWrite}
+            options={options}
             parts={parts}
             permissions={permissions}
             selected={selected}
@@ -836,6 +881,7 @@ export const Composer = ({
         <ComposerActions
           busy={busy}
           canSave={canWrite}
+          savable={optionsTaken}
           canSchedule={canWrite && canSchedule}
           canReschedule={canReschedule}
           canUnschedule={canUnschedule}
@@ -845,7 +891,9 @@ export const Composer = ({
           publishable={
             channelFits.every(
               ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)
-            ) && partsFit
+            ) &&
+            partsFit &&
+            optionsTaken
           }
           onAction={perform}
           extra={

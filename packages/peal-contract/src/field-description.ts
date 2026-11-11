@@ -41,11 +41,12 @@ export const FieldDescriptionSchema = Schema.Struct({
   // together, as the platform counts them.
   maxLength: Schema.NullOr(Schema.Int),
   // The largest whole number; for a `mentionList`, the most accounts it
-  // names.
+  // names; for a `textList`, the most texts it holds.
   maximum: Schema.NullOr(Schema.Int),
   minimum: Schema.NullOr(Schema.Int),
   name: Schema.String,
-  // A regular expression the whole text matches.
+  // A regular expression the whole text matches; for a `textList`, each
+  // of its texts.
   pattern: Schema.NullOr(Schema.String),
   // An option: needed to schedule the post, though a draft may lack it. A
   // lookup's input: needed to run the lookup.

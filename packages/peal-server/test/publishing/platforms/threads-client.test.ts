@@ -1,6 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Context, Duration, Effect, Layer } from "effect";
+import { Context, Duration, Effect, Layer, Option } from "effect";
 
+import { ThreadsOptions } from "#publishing/domain/threads-options.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import {
@@ -390,6 +391,97 @@ describe("publishing on Threads", () => {
         reason: "interrupted",
       });
       assert.lengthOf(graph.posts(), 1);
+    }).pipe(Effect.scoped)
+  );
+});
+
+describe("a Threads post's options", () => {
+  it.live("go on the container of a post of text alone", () =>
+    Effect.gen(function* textAlone() {
+      const { client, graph } = yield* onThreads();
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: threadsUserId,
+          options: Option.some(
+            new ThreadsOptions({
+              linkAttachment: "https://example.test/launch",
+              replyControl: "accounts_you_follow",
+              topicTag: "Synthetic launches",
+            })
+          ),
+          text: "Plain words",
+        })
+      );
+
+      assert.strictEqual(result._tag, "published");
+      assert.deepStrictEqual(graph.containers()[0]?.params, {
+        link_attachment: "https://example.test/launch",
+        media_type: "TEXT",
+        reply_control: "accounts_you_follow",
+        text: "Plain words",
+        topic_tag: "Synthetic launches",
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("go on a carousel's own container, never on its items", () =>
+    Effect.gen(function* carousel() {
+      const first = testFile("image", 1024, "image/png");
+      const second = testFile("image", 2048, "image/jpeg");
+      const { client, graph } = yield* onThreads({ files: [first, second] });
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: threadsUserId,
+          media: [attached(first), attached(second)],
+          options: Option.some(
+            new ThreadsOptions({
+              replyControl: "mentioned_only",
+              topicTag: "Synthetic launches",
+            })
+          ),
+          text: "Two things",
+        })
+      );
+
+      const [image, other, album] = graph.containers();
+
+      assert.strictEqual(result._tag, "published");
+      assert.isUndefined(image?.params["reply_control"]);
+      assert.isUndefined(other?.params["topic_tag"]);
+      assert.deepStrictEqual(album?.params, {
+        children: `${image?.id ?? ""},${other?.id ?? ""}`,
+        media_type: "CAROUSEL",
+        reply_control: "mentioned_only",
+        text: "Two things",
+        topic_tag: "Synthetic launches",
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("go on the container of a single image", () =>
+    Effect.gen(function* single() {
+      const photo = testFile("image", 2048, "image/jpeg");
+      const { client, graph } = yield* onThreads({ files: [photo] });
+
+      yield* client.publish(
+        yield* outgoing({
+          accountId: threadsUserId,
+          media: [attached(photo, "")],
+          options: Option.some(
+            new ThreadsOptions({ replyControl: "followers_only" })
+          ),
+          text: "With a picture",
+        })
+      );
+
+      assert.deepStrictEqual(graph.containers()[0]?.params, {
+        image_url: `https://media.test/${photo.media.mediaId}`,
+        media_type: "IMAGE",
+        reply_control: "followers_only",
+        text: "With a picture",
+      });
     }).pipe(Effect.scoped)
   );
 });

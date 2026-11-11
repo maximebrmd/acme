@@ -197,7 +197,8 @@ export type PlatformCapabilities = typeof PlatformCapabilitiesSchema.Type;
  * that takes only some of its values (`optionValues`), a yes-or-no option
  * that must have one value (`optionFixed`), the longest video
  * (`videoDuration`), file types refused on the channel
- * (`mediaTypesRefused`).
+ * (`mediaTypesRefused`), an option refused until the channel is connected
+ * again, to grant what it needs (`optionNeedsReconnect`).
  */
 export const AccountRestrictionSchema = Schema.Union([
   Schema.TaggedStruct("optionValues", {
@@ -212,6 +213,7 @@ export const AccountRestrictionSchema = Schema.Union([
   Schema.TaggedStruct("mediaTypesRefused", {
     contentTypes: Schema.Array(MediaContentTypeSchema),
   }),
+  Schema.TaggedStruct("optionNeedsReconnect", { field: Schema.String }),
 ]).annotate({ identifier: "AccountRestriction" });
 
 export type AccountRestriction = typeof AccountRestrictionSchema.Type;

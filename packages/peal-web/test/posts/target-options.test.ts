@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Option } from "effect";
+import { Option, Result } from "effect";
 import { optionsPlatforms, TargetOptionsSchema } from "peal-contract";
 import type { ContentViolation, Platform } from "peal-contract";
 
@@ -34,9 +34,30 @@ describe("the options fields", () => {
       }
     }
 
-    expect(fieldsOf("mastodon")).toStrictEqual([]);
+    expect(fieldsOf("facebook")).toStrictEqual([]);
     expect(Option.isSome(fieldOf("youtube", "title"))).toBeTruthy();
     expect(Option.isNone(fieldOf("youtube", "privacyLevel"))).toBeTruthy();
+  });
+
+  it("list each choice once, the one that chooses nothing included", () => {
+    const repeated = optionsPlatforms.flatMap((platform) =>
+      fieldsOf(platform).flatMap((field) => {
+        if (field.kind !== "choice") {
+          return [];
+        }
+
+        const labels = [
+          ...(field.none === undefined ? [] : [field.none]),
+          ...field.choices.map(({ label }) => label),
+        ];
+
+        return labels.length === new Set(labels).size
+          ? []
+          : [`${platform}.${field.name}`];
+      })
+    );
+
+    expect(repeated).toStrictEqual([]);
   });
 
   it("have a field for every option the contract takes, and no other", () => {
@@ -108,10 +129,50 @@ describe("the options fields", () => {
         title: "Synthetic open day",
       },
     ],
+    [
+      "mastodon",
+      {
+        contentWarning: "Spoilers for the synthetic finale",
+        language: "fr",
+        quotePolicy: "followers",
+        sensitive: true,
+        visibility: "unlisted",
+      },
+    ],
+    [
+      "bluesky",
+      {
+        contentLabel: "graphic-media",
+        disableQuotes: true,
+        languages: "en, pt-BR",
+        replies: "limited",
+        replyFollowers: true,
+        replyFollowing: false,
+        replyMentioned: true,
+      },
+    ],
+    [
+      "threads",
+      {
+        linkAttachment: "https://example.test/launch",
+        replyControl: "mentioned_only",
+        topicTag: "Synthetic launches",
+      },
+    ],
+    [
+      "x",
+      {
+        communityId: "1700000000000000001",
+        madeWithAi: true,
+        paidPartnership: true,
+        replySettings: "following",
+        shareWithFollowers: true,
+      },
+    ],
   ] as const)(
     "turn %s's fields, each kind filled in, into options the contract takes, and back",
     (platform, values) => {
-      const options = optionsOf(platform, values);
+      const options = Result.getOrThrow(optionsOf(platform, values));
 
       expect(options.pipe(Option.map((given) => given.platform))).toStrictEqual(
         Option.some(platform)
@@ -130,10 +191,14 @@ describe("the options fields", () => {
 
   it("cover every platform that takes options in the test above", () => {
     expect([...optionsPlatforms].toSorted()).toStrictEqual([
+      "bluesky",
       "googleBusiness",
       "linkedin",
+      "mastodon",
       "pinterest",
+      "threads",
       "tiktok",
+      "x",
       "youtube",
     ]);
   });
@@ -165,19 +230,23 @@ describe(optionsOf, () => {
         title: "",
       })
     ).toStrictEqual(
-      Option.some({
-        madeForKids: false,
-        platform: "youtube",
-        tags: ["launch", "launch day"],
-      })
+      Result.succeed(
+        Option.some({
+          madeForKids: false,
+          platform: "youtube",
+          tags: ["launch", "launch day"],
+        })
+      )
     );
     expect(optionsOf("youtube", { tags: " , " })).toStrictEqual(
-      Option.some({ platform: "youtube" })
+      Result.succeed(Option.some({ platform: "youtube" }))
     );
   });
 
   it("gives nothing on a platform that takes no options", () => {
-    expect(optionsOf("mastodon", { title: "Hi" })).toStrictEqual(Option.none());
+    expect(optionsOf("instagram", { title: "Hi" })).toStrictEqual(
+      Result.succeed(Option.none())
+    );
   });
 
   it("fills the fields back from the options it gave", () => {
@@ -190,12 +259,52 @@ describe(optionsOf, () => {
     };
 
     expect(
-      optionsOf("youtube", values).pipe(
+      Result.getOrThrow(optionsOf("youtube", values)).pipe(
         Option.map((options) => valuesOf("youtube", options))
       )
     ).toStrictEqual(Option.some(values));
     // A target without options starts as a new one.
     expect(valuesOf("tiktok", null)).toStrictEqual(initialValues("tiktok"));
+  });
+});
+
+// The names of the fields of the platform these values show.
+const shownOn =
+  (platform: Platform) =>
+  (values: Readonly<Record<string, boolean | string>>) =>
+    fieldsOf(platform)
+      .filter((field) => isShown(platform, field, values))
+      .map(({ name }) => name);
+
+describe("an X post's options", () => {
+  it("offer to share with followers once a community is written, and send it only then", () => {
+    const shown = shownOn("x");
+
+    expect(shown(initialValues("x"))).not.toContain("shareWithFollowers");
+    expect(shown({ communityId: "1700000000000000001" })).toContain(
+      "shareWithFollowers"
+    );
+    expect(
+      optionsOf("x", { ...initialValues("x"), shareWithFollowers: true })
+    ).toStrictEqual(
+      Result.succeed(
+        Option.some({
+          madeWithAi: false,
+          paidPartnership: false,
+          platform: "x",
+        })
+      )
+    );
+  });
+});
+
+describe("a Mastodon post's options", () => {
+  it("offer a quote policy only on a post others may see", () => {
+    const shown = shownOn("mastodon");
+
+    expect(shown({})).toContain("quotePolicy");
+    expect(shown({ visibility: "unlisted" })).toContain("quotePolicy");
+    expect(shown({ visibility: "private" })).not.toContain("quotePolicy");
   });
 });
 
@@ -250,7 +359,7 @@ describe("a Google Business Profile post's options", () => {
     };
 
     expect(
-      Option.getOrThrow(optionsOf("googleBusiness", filled))
+      Option.getOrThrow(Result.getOrThrow(optionsOf("googleBusiness", filled)))
     ).toStrictEqual({
       callToAction: "order",
       callToActionUrl: "https://example.com/order",
@@ -258,7 +367,9 @@ describe("a Google Business Profile post's options", () => {
     });
     expect(
       Option.getOrThrow(
-        optionsOf("googleBusiness", { ...filled, postType: "offer" })
+        Result.getOrThrow(
+          optionsOf("googleBusiness", { ...filled, postType: "offer" })
+        )
       )
     ).toStrictEqual({
       couponCode: "SYNTHETIC-10",
@@ -301,20 +412,16 @@ describe("Pinterest's fields", () => {
         title: "Tomato salad",
       })
     ).toStrictEqual(
-      Option.some({
-        boardId: "549755885001",
-        boardSectionId: "5000000000001",
-        coverSecond: 12,
-        link: "https://peal.example/recipes",
-        platform: "pinterest",
-        title: "Tomato salad",
-      })
-    );
-    // Anything but digits is no second the API would take.
-    expect(
-      optionsOf("pinterest", { boardId: "549755885001", coverSecond: "1.5" })
-    ).toStrictEqual(
-      Option.some({ boardId: "549755885001", platform: "pinterest" })
+      Result.succeed(
+        Option.some({
+          boardId: "549755885001",
+          boardSectionId: "5000000000001",
+          coverSecond: 12,
+          link: "https://peal.example/recipes",
+          platform: "pinterest",
+          title: "Tomato salad",
+        })
+      )
     );
   });
 
@@ -353,7 +460,7 @@ describe(valuesOfPost, () => {
   it("fills in the targets of platforms that take options", () => {
     const platforms = new Map<string, Platform>([
       ["c1", "youtube"],
-      ["c2", "mastodon"],
+      ["c2", "facebook"],
     ]);
 
     const values = valuesOfPost(
@@ -421,23 +528,102 @@ describe(channelOptionsOf, () => {
       channelOptionsOf(
         [
           { id: "c1", platform: "tiktok" },
-          { id: "c2", platform: "bluesky" },
+          { id: "c2", platform: "facebook" },
         ],
-        {}
+        { c1: { ...initialValues("tiktok"), privacyLevel: "SELF_ONLY" } }
       )
+    ).toStrictEqual({
+      options: [
+        {
+          channelId: "c1",
+          options: {
+            aiGenerated: false,
+            brandContent: false,
+            brandOrganic: false,
+            commercialContent: false,
+            disableComment: true,
+            disableDuet: true,
+            disableStitch: true,
+            platform: "tiktok",
+            privacyLevel: "SELF_ONLY",
+          },
+        },
+      ],
+      problems: [],
+    });
+  });
+
+  it("sends no options where the member chose none, so the channel's defaults apply", () => {
+    const channels = [
+      { id: "c1", platform: "mastodon" },
+      { id: "c2", platform: "bluesky" },
+      { id: "c3", platform: "x" },
+      { id: "c4", platform: "tiktok" },
+      { id: "c5", platform: "youtube" },
+    ] as const;
+
+    expect(channelOptionsOf(channels, {})).toStrictEqual({
+      options: [],
+      problems: [],
+    });
+    // A box ticked then unticked, a text typed then erased: nothing chosen.
+    expect(
+      channelOptionsOf(channels, {
+        c1: { contentWarning: "" },
+        c3: { ...initialValues("x"), paidPartnership: false },
+      })
+    ).toStrictEqual({ options: [], problems: [] });
+    expect(
+      channelOptionsOf(channels, { c1: { visibility: "private" } }).options
     ).toStrictEqual([
       {
         channelId: "c1",
-        options: {
-          aiGenerated: false,
-          brandContent: false,
-          brandOrganic: false,
-          commercialContent: false,
-          disableComment: true,
-          disableDuet: true,
-          disableStitch: true,
-          platform: "tiktok",
-        },
+        options: { platform: "mastodon", visibility: "private" },
+      },
+    ]);
+  });
+
+  it("keeps the defaults a new draft took on its next save", () => {
+    const platforms = new Map<string, Platform>([["c1", "mastodon"]]);
+
+    // The draft the server made, which took the channel's defaults.
+    const values = valuesOfPost(
+      {
+        authorId: null,
+        content: { media: [], overrides: [], text: "A synthetic toot" },
+        createdVia: null,
+        id: "00000000-0000-7000-8000-000000000009",
+        outcome: null,
+        queueId: null,
+        schedule: null,
+        scheduledBy: null,
+        scheduledVia: null,
+        status: "draft",
+        tagIds: [],
+        targets: [
+          {
+            channelId: "c1",
+            failureReason: null,
+            id: "target-c1",
+            options: { platform: "mastodon", visibility: "private" },
+            parts: { count: 1, live: [] },
+            permalink: null,
+            publishedAt: null,
+            round: 1,
+            status: "pending",
+            unconfirmedReason: null,
+          },
+        ],
+      },
+      (id) => Option.fromUndefinedOr(platforms.get(id))
+    );
+
+    expect(
+      channelOptionsOf([{ id: "c1", platform: "mastodon" }], values).options
+    ).toStrictEqual([
+      {
+        channelId: "c1",
+        options: { platform: "mastodon", visibility: "private" },
       },
     ]);
   });
@@ -480,11 +666,13 @@ describe("LinkedIn's mentions", () => {
       "Example Bakery <urn:li:organization:9000000001>; Example (UK) <urn:li:organization:9000000002>"
     );
     expect(optionsOf("linkedin", values)).toStrictEqual(
-      Option.some({
-        disableReshare: false,
-        mentions: [bakery, bikes],
-        platform: "linkedin",
-      })
+      Result.succeed(
+        Option.some({
+          disableReshare: false,
+          mentions: [bakery, bikes],
+          platform: "linkedin",
+        })
+      )
     );
   });
 
@@ -492,10 +680,92 @@ describe("LinkedIn's mentions", () => {
     expect(
       optionsOf("linkedin", { mentions: "Example Bakery;  " })
     ).toStrictEqual(
-      Option.some({
-        mentions: [{ name: "Example Bakery", urn: "" }],
-        platform: "linkedin",
-      })
+      Result.succeed(
+        Option.some({
+          mentions: [{ name: "Example Bakery", urn: "" }],
+          platform: "linkedin",
+        })
+      )
     );
+  });
+});
+
+describe("options the contract would refuse as filled in", () => {
+  const bluesky = "00000000-0000-7000-8000-00000000000b";
+
+  const gated = {
+    contentLabel: "porn",
+    disableQuotes: true,
+    languages: "en, fr, de, es",
+    replies: "nobody",
+  };
+
+  it("name the field at fault, and never answer that there are no options", () => {
+    expect(optionsOf("bluesky", gated)).toStrictEqual(
+      Result.fail([
+        { _tag: "tooMany", count: 4, field: "languages", maximum: 3 },
+      ])
+    );
+    expect(
+      optionsOf("bluesky", { ...gated, languages: "en, fr, de" })
+    ).toStrictEqual(
+      Result.succeed(
+        Option.some({
+          contentLabel: "porn",
+          disableQuotes: true,
+          languages: ["en", "fr", "de"],
+          platform: "bluesky",
+          replies: "nobody",
+        })
+      )
+    );
+  });
+
+  it("keep the channel's choices out of no request: the composer gets the problem", () => {
+    expect(
+      channelOptionsOf([{ id: bluesky, platform: "bluesky" }], {
+        [bluesky]: gated,
+      })
+    ).toStrictEqual({
+      options: [],
+      problems: [
+        {
+          _tag: "tooMany",
+          channelId: bluesky,
+          count: 4,
+          field: "languages",
+          maximum: 3,
+        },
+      ],
+    });
+  });
+
+  it("find the same on the other platforms' fields", () => {
+    const pages = Array.from(
+      { length: 31 },
+      (_, index) =>
+        `Page ${String(index)} <urn:li:organization:${String(index)}>`
+    ).join("; ");
+
+    expect(optionsOf("linkedin", { mentions: pages })).toStrictEqual(
+      Result.fail([
+        { _tag: "tooMany", count: 31, field: "mentions", maximum: 30 },
+      ])
+    );
+    expect(
+      optionsOf("linkedin", {
+        mentions: `Example Bakery <urn:li:organization:${"9".repeat(80)}>`,
+        visibility: "public",
+      })
+    ).toStrictEqual(Result.fail([{ _tag: "invalid", field: "mentions" }]));
+    expect(
+      optionsOf("pinterest", { boardId: "549755885001", coverSecond: "1.5" })
+    ).toStrictEqual(Result.fail([{ _tag: "invalid", field: "coverSecond" }]));
+    expect(
+      optionsOf("x", {
+        communityId: `17${String.fromCodePoint(0)}01`,
+        replySettings: "following",
+      })
+    ).toStrictEqual(Result.fail([{ _tag: "invalid", field: "communityId" }]));
   });
 });

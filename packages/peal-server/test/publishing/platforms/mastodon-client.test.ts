@@ -1,6 +1,15 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Context, DateTime, Duration, Effect, Layer, Option } from "effect";
+import {
+  Context,
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Option,
+  Schema,
+} from "effect";
 
+import { MastodonOptions } from "#publishing/domain/mastodon-options.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -17,6 +26,8 @@ import {
   formPartsOf,
   headerOf,
   json,
+  jsonBodyOf,
+  textOf,
 } from "#test/publishing/fakes/platform-server.ts";
 import type { PlatformServer } from "#test/publishing/fakes/platform-server.ts";
 
@@ -537,6 +548,100 @@ describe("publishing on Mastodon", () => {
         .pipe(Effect.flip);
 
       assert.deepStrictEqual(failure, new RateLimited({}));
+    }).pipe(Effect.scoped)
+  );
+});
+
+const bodiesOf = (instance: PlatformServer) =>
+  statusCalls(instance).map((call) => textOf(call));
+
+const chosen = new MastodonOptions({
+  contentWarning: "Spoilers for the synthetic finale",
+  language: "fr",
+  quotePolicy: "followers",
+  sensitive: true,
+  visibility: "unlisted",
+});
+
+describe("a Mastodon post's options", () => {
+  it.live("send nothing more than the post when none is chosen", () =>
+    Effect.gen(function* plain() {
+      const { accountId, client, instance } = yield* onInstance();
+
+      yield* client.publish(
+        yield* outgoing({
+          accountId,
+          options: Option.some(new MastodonOptions({})),
+          text: "Plain words",
+        })
+      );
+
+      assert.deepStrictEqual(bodiesOf(instance), [
+        JSON.stringify({ media_ids: [], status: "Plain words" }),
+      ]);
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("reach the status under Mastodon's names, on every part", () =>
+    Effect.gen(function* everyPart() {
+      const { accountId, client, instance } = yield* onInstance();
+      const options = Option.some(chosen);
+
+      const first = yield* client.publish(
+        yield* outgoing({ accountId, options, text: "A first part" })
+      );
+
+      assert(first._tag === "published");
+
+      yield* client.publish(
+        yield* outgoing({
+          accountId,
+          idempotencyKey: "0b5e4f2a9c7d4e1f8a3b6c5d2e1f0a9b",
+          options,
+          part: 1,
+          replyTo: Option.some({
+            parent: first.platformPostId,
+            root: first.platformPostId,
+          }),
+          text: "A second part",
+        })
+      );
+
+      const sent = {
+        language: "fr",
+        quote_approval_policy: "followers",
+        sensitive: true,
+        spoiler_text: "Spoilers for the synthetic finale",
+        visibility: "unlisted",
+      };
+
+      assert.deepStrictEqual(
+        statusCalls(instance).map((call) => jsonBodyOf(Schema.Json)(call)),
+        [
+          { media_ids: [], status: "A first part", ...sent },
+          {
+            in_reply_to_id: first.platformPostId,
+            media_ids: [],
+            status: "A second part",
+            ...sent,
+          },
+        ]
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("are sent again the same by a resumed attempt", () =>
+    Effect.gen(function* resumedSame() {
+      const { accountId, client, instance } = yield* onInstance();
+      const post = yield* outgoing({ accountId, options: Option.some(chosen) });
+
+      yield* client.publish(post);
+      yield* client.resume(post);
+
+      const [sent, resent] = bodiesOf(instance);
+
+      assert.lengthOf(instance.statuses(), 1);
+      assert.strictEqual(resent, sent);
     }).pipe(Effect.scoped)
   );
 });

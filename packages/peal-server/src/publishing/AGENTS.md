@@ -357,6 +357,35 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   from `OutgoingPost.options`, with
   `post.options.pipe(Option.filter(Schema.is(YouTubeOptions)))`; keep stored
   options decoding (`fixtures/persisted/post-targets/options.json`).
+- Mastodon, Bluesky, Threads and X take options too (`mastodon-options.ts`,
+  `bluesky-options.ts`, `threads-options.ts`, `x-options.ts`). A thread is
+  one target: each adapter sends **thread-wide** options with every part
+  (Mastodon's all; Bluesky's languages, and its label on a part with media;
+  X's paid partnership, and its AI label on a part with media) and **root**
+  options with part 0 only (X's reply settings, community and sharing), and
+  sends a field only when it says more than the platform's default, so a
+  post without options goes byte for byte as before. A rule between an
+  option and the post's media (Threads' link attachment, text-only) lives
+  in `mediaOptionViolationsOn` (`content-rules.ts`, run by
+  `checkPublishable`, so checks and scheduling share it), never in
+  `problems()`, which sees options alone. A Mastodon content warning counts
+  in the text's limit (`countedText`, `counted-text.ts`; the contract's
+  `countedText` is the clients' copy): `violationsOn`, `previewOn` and the
+  composer's counter measure it. X documents no tier for its options: a
+  400 or 403 on a post that carried any is `BadRequest` `optionRefused`
+  (`platforms/option-refusal.ts`), never retried, X's words never kept,
+  only when X's answer points at an option (`blamesOptions` in
+  `x-refusal.ts`: the parameter, field or resource it names, or its words
+  naming the field); any other refusal keeps X's problem type as its code.
+- Bluesky's gates (`replies`, `disableQuotes`) are records of their own,
+  a threadgate under the thread's first post's key and a postgate under
+  each post's, written with the post in one `com.atproto.repo.applyWrites`
+  (all or nothing, so `lookUp` by the record key still tells the truth); a
+  post without gates keeps `createRecord`. They need scopes channels
+  connected before Peal asked for them lack: `AccountRules` refuses them
+  there (`optionInvalid`, `gateViolationsOn`) and `AccountStandings`
+  describes them (`optionNeedsReconnect`), both from `ChannelGrants`; a
+  403 on a gated write is `optionRefused`, never a refused token.
 - A field the web composer shows only for some values of another (an
   event's dates) says so with `shownWith` in `#posts/target-options.ts`:
   `isShown` hides it and `optionsOf` leaves its value out, as the domain's

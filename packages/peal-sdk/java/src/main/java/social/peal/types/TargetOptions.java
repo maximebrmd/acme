@@ -46,6 +46,22 @@ public final class TargetOptions {
         return new TargetOptions(new LinkedinValue(value));
     }
 
+    public static TargetOptions mastodon(MastodonOptions value) {
+        return new TargetOptions(new MastodonValue(value));
+    }
+
+    public static TargetOptions bluesky(BlueskyOptions value) {
+        return new TargetOptions(new BlueskyValue(value));
+    }
+
+    public static TargetOptions threads(ThreadsOptions value) {
+        return new TargetOptions(new ThreadsValue(value));
+    }
+
+    public static TargetOptions x(XOptions value) {
+        return new TargetOptions(new XValue(value));
+    }
+
     public boolean isYoutube() {
         return value instanceof YoutubeValue;
     }
@@ -64,6 +80,22 @@ public final class TargetOptions {
 
     public boolean isLinkedin() {
         return value instanceof LinkedinValue;
+    }
+
+    public boolean isMastodon() {
+        return value instanceof MastodonValue;
+    }
+
+    public boolean isBluesky() {
+        return value instanceof BlueskyValue;
+    }
+
+    public boolean isThreads() {
+        return value instanceof ThreadsValue;
+    }
+
+    public boolean isX() {
+        return value instanceof XValue;
     }
 
     public boolean _isUnknown() {
@@ -101,6 +133,34 @@ public final class TargetOptions {
     public Optional<LinkedInOptions> getLinkedin() {
         if (isLinkedin()) {
             return Optional.of(((LinkedinValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<MastodonOptions> getMastodon() {
+        if (isMastodon()) {
+            return Optional.of(((MastodonValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<BlueskyOptions> getBluesky() {
+        if (isBluesky()) {
+            return Optional.of(((BlueskyValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ThreadsOptions> getThreads() {
+        if (isThreads()) {
+            return Optional.of(((ThreadsValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<XOptions> getX() {
+        if (isX()) {
+            return Optional.of(((XValue) value).value);
         }
         return Optional.empty();
     }
@@ -144,6 +204,14 @@ public final class TargetOptions {
 
         T visitLinkedin(LinkedInOptions linkedin);
 
+        T visitMastodon(MastodonOptions mastodon);
+
+        T visitBluesky(BlueskyOptions bluesky);
+
+        T visitThreads(ThreadsOptions threads);
+
+        T visitX(XOptions x);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -153,7 +221,11 @@ public final class TargetOptions {
         @JsonSubTypes.Type(TiktokValue.class),
         @JsonSubTypes.Type(PinterestValue.class),
         @JsonSubTypes.Type(GoogleBusinessValue.class),
-        @JsonSubTypes.Type(LinkedinValue.class)
+        @JsonSubTypes.Type(LinkedinValue.class),
+        @JsonSubTypes.Type(MastodonValue.class),
+        @JsonSubTypes.Type(BlueskyValue.class),
+        @JsonSubTypes.Type(ThreadsValue.class),
+        @JsonSubTypes.Type(XValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -346,6 +418,166 @@ public final class TargetOptions {
         }
 
         private boolean equalTo(LinkedinValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("mastodon")
+    @JsonIgnoreProperties("platform")
+    private static final class MastodonValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private MastodonOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private MastodonValue() {}
+
+        private MastodonValue(MastodonOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitMastodon(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof MastodonValue && equalTo((MastodonValue) other);
+        }
+
+        private boolean equalTo(MastodonValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("bluesky")
+    @JsonIgnoreProperties("platform")
+    private static final class BlueskyValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private BlueskyOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private BlueskyValue() {}
+
+        private BlueskyValue(BlueskyOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitBluesky(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof BlueskyValue && equalTo((BlueskyValue) other);
+        }
+
+        private boolean equalTo(BlueskyValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("threads")
+    @JsonIgnoreProperties("platform")
+    private static final class ThreadsValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private ThreadsOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private ThreadsValue() {}
+
+        private ThreadsValue(ThreadsOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitThreads(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof ThreadsValue && equalTo((ThreadsValue) other);
+        }
+
+        private boolean equalTo(ThreadsValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("x")
+    @JsonIgnoreProperties("platform")
+    private static final class XValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private XOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private XValue() {}
+
+        private XValue(XOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitX(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof XValue && equalTo((XValue) other);
+        }
+
+        private boolean equalTo(XValue other) {
             return value.equals(other.value);
         }
 

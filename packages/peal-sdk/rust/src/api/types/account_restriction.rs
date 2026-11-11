@@ -38,6 +38,13 @@ pub enum AccountRestriction {
         content_types: Vec<MediaContentType>,
     },
 
+    #[serde(rename = "optionNeedsReconnect")]
+    #[non_exhaustive]
+    OptionNeedsReconnect {
+        #[serde(default)]
+        field: String,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -60,6 +67,10 @@ impl AccountRestriction {
 
     pub fn media_types_refused(content_types: Vec<MediaContentType>) -> Self {
         Self::MediaTypesRefused { content_types }
+    }
+
+    pub fn option_needs_reconnect(field: String) -> Self {
+        Self::OptionNeedsReconnect { field }
     }
 
     pub fn unknown(value: serde_json::Value) -> Self {
