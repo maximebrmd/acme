@@ -26,6 +26,8 @@ import {
   PostStatusSchema,
   PostValidationSchema,
   PublicationAttemptSchema,
+  queueHorizonDays,
+  QueuePostSchema,
   TargetConfirmationSchema,
   TikTokAccountSchema,
 } from "peal-contract";
@@ -250,14 +252,23 @@ const timeZone = Schema.String.annotate({
     "The IANA time zone the time was chosen in, such as Europe/Paris, which calendars show the post in. Offsets such as +01:00 are refused.",
 });
 
-// When a new post goes out, as the API's `when`, its instant as text.
+const queueReference = Schema.String.annotate({
+  description:
+    "The queue, by its id or its name whatever its case, as list_queues answers them; left out, the workspace's default queue.",
+});
+
+// When a new post goes out, as the API's `when`, its instant as text, and
+// a queue named by its id or its name.
 const when = Schema.Union([
   Schema.TaggedStruct("now", { timeZone: Schema.optionalKey(timeZone) }),
   Schema.TaggedStruct("at", { at, timeZone }),
+  Schema.TaggedStruct("queue", { queue: Schema.optionalKey(queueReference) }),
 ]).annotate({
-  description:
-    "`now` publishes within seconds; `at` schedules for an instant. Either keeps the IANA time zone it was chosen in (UTC when `now` gives none).",
+  description: `\`now\` publishes within seconds; \`at\` schedules for an instant; \`queue\` puts the post on the next free slot of a queue (\`queue\`, or the workspace's default), decided when the call is received, in the queue's time zone: without \`channelIds\` or \`channelSets\` it goes to the queue's channels. \`now\` and \`at\` keep the IANA time zone the time was chosen in (UTC when \`now\` gives none). A queue with no free slot within ${String(queueHorizonDays)} days is refused, and so is a slot in a month the plan has no room in.`,
 });
+
+/** When a post goes out, as a tool's arguments say it. */
+export type ToolTiming = typeof when.Type;
 
 // What every tool that puts a post out says of it.
 const reachesThePublic =
@@ -290,7 +301,7 @@ const waitsForOutcome = `It answers while the post publishes, unless \`waitSecon
 
 export const ListPosts = Tool.make("list_posts", {
   dependencies: [CurrentMember],
-  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application), \`authorId\` and \`tagId\` (the posts filed under that tag). \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
+  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application), \`authorId\`, \`tagId\` (the posts filed under that tag) and \`queueId\` (the posts that queue placed). \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     authorId: Schema.optionalKey(Schema.String),
@@ -305,6 +316,12 @@ export const ListPosts = Tool.make("list_posts", {
     ),
     outcome: Schema.optionalKey(PostOutcomeSchema),
     platform: Schema.optionalKey(PlatformSchema),
+    queueId: Schema.optionalKey(
+      Schema.String.annotate({
+        description:
+          "Only the posts this queue placed, as list_queues answers its id.",
+      })
+    ),
     sort: Schema.optionalKey(PostSortSchema),
     status: Schema.optionalKey(PostStatusSchema),
     tagId: Schema.optionalKey(
@@ -381,6 +398,27 @@ export const ReschedulePost = Tool.make("reschedule_post", {
     changing({ destructive: true, idempotent: true, openWorld: true })
   )
   .annotate(Tool.Title, "Reschedule a post");
+
+export const QueuePost = Tool.make("queue_post", {
+  dependencies: [CurrentMember],
+  description: `Puts a post on the next free slot of a queue (\`queue\`, by its id or its name, or the workspace's default), decided when the call is received: a draft is scheduled there, on \`channelIds\` when given, on the channels it has otherwise, or on the queue's when it has none; a scheduled post, or one awaiting approval, is moved there and keeps its channels. A post already on its queue's slot stays where it is. A queue with no free slot within ${String(queueHorizonDays)} days is refused, and so is a slot in a month the plan has no room in. ${reachesThePublic} ${refusedWhole} ${mayWait} ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelIds: Schema.optionalKey(
+      QueuePostSchema.fields.channelIds.schema.annotate({
+        description:
+          "For a draft: the channels it goes to, as list_channels answers their ids.",
+      })
+    ),
+    postId,
+    queue: Schema.optionalKey(queueReference),
+  }),
+  success: PostSchema,
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: true })
+  )
+  .annotate(Tool.Title, "Add a post to a queue");
 
 export const CancelPost = Tool.make("cancel_post", {
   dependencies: [CurrentMember],
@@ -494,6 +532,7 @@ export const PostTools = Toolkit.make(
   SchedulePost,
   PublishPost,
   ReschedulePost,
+  QueuePost,
   CreatePost,
   CreatePosts,
   ValidatePost,
