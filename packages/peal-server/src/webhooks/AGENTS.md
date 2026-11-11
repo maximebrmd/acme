@@ -95,7 +95,7 @@
   `manualSendsPerHour`, 30) and `bulk` (`bulkRedeliveriesPerHour`, 1,000),
   `TooManyWebhookSends` 429 with `retryAfterSeconds` and `Retry-After`. A
   count that cannot be kept refuses the send. The retention cron drops
-  the counts a day old.
+  the counts a day old; erasing a workspace deletes its counts.
 - The log across endpoints (`WebhookDeliveries.search`) scopes by
   `deliveries.workspace_id`, the endpoint's workspace, so a home workspace
   lists its partner endpoints' deliveries of tenants' events; each delivery
