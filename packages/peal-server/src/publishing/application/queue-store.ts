@@ -50,6 +50,11 @@ export class QueueStore extends Context.Service<
       workspaceId: WorkspaceId,
       queueId: QueueId
     ) => Effect.Effect<void, DatabaseError>;
+    /** Makes the queue the default no longer, and changes nothing else. */
+    readonly undefault: (
+      workspaceId: WorkspaceId,
+      queueId: QueueId
+    ) => Effect.Effect<void, DatabaseError>;
     /** Takes the channel set off the workspace's queues that name it. */
     readonly forgetChannelSet: (
       workspaceId: WorkspaceId,

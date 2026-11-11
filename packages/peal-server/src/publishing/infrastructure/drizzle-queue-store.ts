@@ -185,6 +185,14 @@ export const DrizzleQueueStore = Layer.effect(
             }),
             Effect.withSpan("QueueStore.takenFrom")
           ),
+      undefault: (workspaceId, queueId) =>
+        db
+          .update(queues)
+          .set({ isDefault: false })
+          .where(
+            and(eq(queues.workspaceId, workspaceId), eq(queues.id, queueId))
+          )
+          .pipe(Effect.mapError(failed), Effect.asVoid),
       update: (queue) =>
         db
           .update(queues)

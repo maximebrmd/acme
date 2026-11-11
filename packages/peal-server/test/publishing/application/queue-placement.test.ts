@@ -1,9 +1,10 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option } from "effect";
+import { DateTime, Deferred, Effect, Fiber, Layer, Option, Ref } from "effect";
 import type { Scope } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { AttachableMedia } from "#publishing/application/attachable-media.ts";
+import { ChannelSets } from "#publishing/application/channel-sets.ts";
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
 import { PostChecks } from "#publishing/application/post-checks.ts";
@@ -11,6 +12,7 @@ import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
+import { QueueStore } from "#publishing/application/queue-store.ts";
 import { Queues } from "#publishing/application/queues.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
@@ -755,6 +757,105 @@ describe("adding a post to a queue deleted meanwhile", () => {
 
           assert.strictEqual(refused._tag, "QueueNotFound");
           assert.strictEqual(yield* postsIn(workspaceId), 0);
+        })
+      ),
+    timeout
+  );
+});
+
+describe("making another queue the default while a channel set goes", () => {
+  it.effect(
+    "leaves the former default without the set, as its deletion left it",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* race() {
+          const store = yield* QueueStore;
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const editor = actorIn(workspaceId);
+
+          const { set } = yield* ChannelSets.use((sets) =>
+            sets.create(editor, {
+              channelIds: [channel],
+              name: "Doomed",
+              options: [],
+            })
+          );
+
+          // The first queue is the default, and names the set.
+          const former = yield* Queues.use((queues) =>
+            queues.create(editor, {
+              channelIds: [],
+              channelSetId: Option.some(set.id),
+              isDefault: false,
+              name: "Former",
+              slots: twiceADay,
+              timeZone: paris,
+            })
+          ).pipe(Effect.map(({ queue }) => queue));
+
+          const next = yield* queueIn(workspaceId, { name: "Next" });
+
+          // The save reads the queues, then waits while the set is deleted.
+          const listed = yield* Deferred.make<true>();
+          const resume = yield* Deferred.make<true>();
+          const paused = yield* Ref.make(false);
+
+          const waiting = QueueStore.of({
+            ...store,
+            list: (id) =>
+              store
+                .list(id)
+                .pipe(
+                  Effect.tap(() =>
+                    Ref.getAndSet(paused, true).pipe(
+                      Effect.flatMap((already) =>
+                        already
+                          ? Effect.void
+                          : Deferred.succeed(listed, true).pipe(
+                              Effect.andThen(Deferred.await(resume))
+                            )
+                      )
+                    )
+                  )
+                ),
+          });
+
+          const saving = yield* Queues.use((queues) =>
+            queues.update(editor, next.id, {
+              channelIds: [],
+              channelSetId: Option.none(),
+              isDefault: true,
+              name: "Next",
+              slots: twiceADay,
+              timeZone: paris,
+            })
+          ).pipe(
+            Effect.provide(
+              Layer.fresh(Queues.layer).pipe(
+                Layer.provide(Layer.succeed(QueueStore, waiting))
+              )
+            ),
+            Effect.forkChild
+          );
+
+          yield* Deferred.await(listed);
+          yield* ChannelSets.use((sets) => sets.remove(editor, set.id));
+          yield* Deferred.succeed(resume, true);
+          yield* Fiber.join(saving);
+
+          const after = yield* store.byId(workspaceId, former.id);
+
+          assert.deepStrictEqual(
+            after.pipe(
+              Option.map(({ channelSetId, isDefault }) => ({
+                channelSetId,
+                isDefault,
+              }))
+            ),
+            Option.some({ channelSetId: Option.none(), isDefault: false })
+          );
         })
       ),
     timeout

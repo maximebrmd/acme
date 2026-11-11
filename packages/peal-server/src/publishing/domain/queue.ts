@@ -139,20 +139,6 @@ export const editQueue = (queue: Queue, details: QueueDetails): Queue =>
     workspaceId: queue.workspaceId,
   });
 
-/** The queue as it is once it is the default no longer. */
-export const notDefault = (queue: Queue): Queue =>
-  new Queue({
-    channelIds: queue.channelIds,
-    channelSetId: queue.channelSetId,
-    createdAt: queue.createdAt,
-    id: queue.id,
-    isDefault: false,
-    name: queue.name,
-    slots: queue.slots,
-    timeZone: queue.timeZone,
-    workspaceId: queue.workspaceId,
-  });
-
 /**
  * What two names are compared by: a workspace has one queue per name,
  * whatever its case, and a request names a queue that way.

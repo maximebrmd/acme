@@ -8,7 +8,6 @@ import {
   horizonOf,
   maxQueuePreview,
   maxQueuesPerWorkspace,
-  notDefault,
   previewOf,
   queueKeyOf,
 } from "#publishing/domain/queue.ts";
@@ -168,12 +167,14 @@ export class Queues extends Context.Service<
       });
 
       // A workspace has one default: the others are defaults no longer,
-      // written before the new one so the database's index holds.
+      // written before the new one so the database's index holds. Only that
+      // column is written: the rest of a row read earlier may have changed
+      // since, as a channel set's deletion takes the set off its queues.
       const soleDefault = (kept: readonly Queue[], chosen: Queue) =>
         chosen.isDefault
           ? Effect.forEach(
               kept.filter(({ id, isDefault }) => isDefault && id !== chosen.id),
-              (queue) => store.update(notDefault(queue)),
+              (queue) => store.undefault(queue.workspaceId, queue.id),
               { discard: true }
             )
           : Effect.void;
