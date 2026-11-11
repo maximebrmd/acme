@@ -526,8 +526,10 @@ peal webhooks list
 peal webhooks create --url https://hooks.example.com/peal --events post.published,post.failed --channel <channel-id>
 peal webhooks update <endpoint-id> --events all --disable
 peal webhooks update <endpoint-id> --clear-channels
+peal webhooks update <endpoint-id> --header "Authorization: Bearer $GATEWAY_TOKEN"
+peal webhooks update <endpoint-id> --clear-headers
 peal webhooks rotate-secret <endpoint-id>
-peal webhooks test <endpoint-id> --event post.published
+peal webhooks test <endpoint-id> --event post.finished
 peal webhooks deliveries <endpoint-id>
 peal webhooks deliveries --status failed --since 2026-11-10T00:00:00Z
 peal webhooks redeliver --endpoint <endpoint-id> <delivery-id>
@@ -540,6 +542,7 @@ peal webhooks delete <endpoint-id>
 - `--events` takes event types separated by commas, or `all`. `create` also takes `--description` and `--disabled`; `update` sends only what you give it, with `--enable` or `--disable` to turn the endpoint on or off.
 - `create` and `rotate-secret` print the signing secret, once: save it then. After a rotation the old secret still signs for 24 hours, beside the new one.
 - `--channel` (repeated, or ids separated by commas) narrows an endpoint to those channels, and `--clear-channels` hears every channel again; `--workspace-id`, with `--partner` on `create`, narrows a partner endpoint to those workspaces, and `--clear-workspaces` clears it. `update` replaces a list it is given.
+- `--header "Name: value"` (repeated, 5 at most) adds a [header of your own](/webhooks#headers) to every delivery, and `--clear-headers` on `update` removes them; `update` replaces every header with those it is given. Values are never printed nor answered again: `show` lists the headers' names. Your shell keeps what you type in its history, so give a value from a variable, as above.
 - `test` sends a `webhook.test` event, or with `--event` a sample of that type, marked `sample: true`.
 - `deliveries` shows how each delivery ended, newest first: one endpoint's, or without it every endpoint's, with `--status`, `--event`, `--since` and `--until` (instants with their offset).
 - `redeliver` sends deliveries again: one with `--endpoint` and its id, as the single sends count; several by id; or `--failed --endpoint <endpoint-id>` for an endpoint's failed ones, oldest first, 100 a call, with `--since`, `--until` and `--event`, which go with `--failed` only. It prints what it skipped and why, and how many are left: run it again for those. When it sends nothing again it ends as a refusal (`nothing_redelivered`, exit code 1). Its arguments are delivery ids: an older command line took the endpoint first (`redeliver <endpoint-id> <delivery-id>`), which now names the endpoint with `--endpoint`; an endpoint's id given as a delivery is skipped, and said so.

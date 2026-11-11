@@ -514,6 +514,67 @@ describe("peal webhooks", () => {
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect(
+    "sends headers of the endpoint's own, prints their names only, and clears them",
+    () =>
+      Effect.gen(function* headers() {
+        const session = yield* signedIn();
+        const value = "Bearer synthetic-cli-header-value";
+
+        const created = yield* session.printed(
+          create(
+            "--url",
+            "https://hooks.example.com/gateway",
+            "--events",
+            "post.finished",
+            "--header",
+            `Authorization: ${value}`,
+            "--header",
+            "X-Route:synthetic-route"
+          )
+        );
+
+        assert.notInclude(created, value);
+
+        const shown = yield* session.printed([
+          "webhooks",
+          "show",
+          newHookId,
+          ...inStudio,
+        ]);
+
+        assert.match(shown, /Headers\s+Authorization, X-Route/u);
+        assert.notInclude(shown, value);
+
+        const cleared = yield* session.printed([
+          "webhooks",
+          "update",
+          newHookId,
+          "--clear-headers",
+          ...inStudio,
+        ]);
+
+        assert.match(cleared, /Headers\s+none/u);
+
+        for (const [given, reason] of [
+          [["--header", "no colon"], "Name: value"],
+          [["--header", "Content-Type: text/plain"], "--header"],
+          [["--header", "A: x", "--clear-headers"], "not both"],
+        ] as const) {
+          assert.include(
+            yield* session.refused([
+              "webhooks",
+              "update",
+              newHookId,
+              ...given,
+              ...inStudio,
+            ]),
+            reason
+          );
+        }
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("narrows an endpoint to channels, and clears it", () =>
     Effect.gen(function* filters() {
       const session = yield* signedIn();
