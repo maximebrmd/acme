@@ -1,6 +1,17 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Context, DateTime, Effect, Exit, Layer, Option, Ref } from "effect";
+import {
+  Context,
+  DateTime,
+  Duration,
+  Effect,
+  Exit,
+  Fiber,
+  Layer,
+  Option,
+  Ref,
+} from "effect";
 import type { Scope } from "effect";
+import { TestClock } from "effect/testing";
 
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
@@ -9,6 +20,7 @@ import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
 import { Queues } from "#publishing/application/queues.ts";
 import type { Post } from "#publishing/domain/post.ts";
+import { reshuffleBatchSize } from "#publishing/domain/queue-reshuffle.ts";
 import type { Queue, QueueSlot } from "#publishing/domain/queue.ts";
 import { newId } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -430,6 +442,70 @@ describe("reshuffling a queue", () => {
             .pipe(Effect.flip);
 
           assert.strictEqual(viewer._tag, "MissingPermission");
+        })
+      ),
+    timeout
+  );
+});
+
+describe("reshuffling a queue of more posts than a batch", () => {
+  it.effect(
+    "stops, rather than share an instant, when a post joins the queue between batches",
+    () =>
+      onServer(
+        start,
+        OpenServer,
+        Effect.gen(function* between() {
+          const scheduling = yield* PostScheduling;
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const queue = yield* queueIn(workspaceId, daily([9, 0], [9, 30]));
+          const editor = actorIn(workspaceId);
+
+          const send = (text: string) =>
+            scheduling
+              .send(editor, queued(channel, text, queue))
+              .pipe(Effect.map(({ post }) => post.id));
+
+          // One post more than a batch moves.
+          const posts = yield* Effect.forEach(
+            Array.from(
+              { length: reshuffleBatchSize + 1 },
+              (_, index) => `Post ${String(index)}.`
+            ),
+            send
+          );
+
+          yield* retimed(queue, daily([10, 0], [10, 30]));
+
+          const heardBefore = (yield* Heard.use((heard) => heard.scheduled))
+            .length;
+
+          const reshuffling = yield* scheduling
+            .reshuffle(editor, queue.id)
+            .pipe(Effect.forkChild);
+
+          // The first batch is moving: a post joins the queue meanwhile,
+          // and takes the first slot free once that batch is done, the one
+          // the plan gave the last post.
+          for (let round = 0; round < 1000; round += 1) {
+            const told = yield* Heard.use((heard) => heard.scheduled);
+
+            if (told.length > heardBefore) {
+              break;
+            }
+
+            yield* TestClock.withLive(Effect.sleep(Duration.millis(5)));
+          }
+
+          const intruder = yield* send("A post that joins meanwhile.");
+          const result = yield* Fiber.join(reshuffling);
+          const times = yield* timesOf([...posts, intruder]);
+
+          // No two of the queue's posts share an instant.
+          assert.strictEqual(new Set(times).size, times.length);
+          assert.deepStrictEqual(result.stoppedBy, Option.some("changed"));
+          assert.strictEqual(result.moved, reshuffleBatchSize);
         })
       ),
     timeout

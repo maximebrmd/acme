@@ -190,7 +190,8 @@ export interface SentPost extends PostWithTargets {
 /**
  * Why a reshuffle stopped before every waiting post was on its slot: a
  * month without room in the plan, no slot left within the horizon, or the
- * queue's timetable changed (or the queue went) while it ran.
+ * queue's timetable changed, the queue went, or a post added to it holds
+ * a slot it had not reached, while it ran.
  */
 export type ReshuffleStop = "changed" | "full" | "planLimit";
 
@@ -1253,14 +1254,16 @@ export class PostScheduling extends Context.Service<
       }
 
       // One batch of a reshuffle, in one transaction: the queue's lock,
-      // the queue read again (a changed timetable stops it), the rows of
-      // the posts to move in id order, then each move in the order of
-      // times. A post moved, sent back or cancelled since the plan is left
-      // as it is.
+      // the queue read again (a changed timetable stops it, and so does a
+      // slot of the batch that a post the plan never saw holds now, as one
+      // added to the queue between batches), the rows of the posts to move
+      // in id order, then each move in the order of times. A post moved,
+      // sent back or cancelled since the plan is left as it is.
       const reshuffleBatch = Effect.fn("PostScheduling.reshuffleBatch")(
         function* reshuffleBatch(
           actor: Actor,
           planned: Queue,
+          seen: ReadonlySet<PostId>,
           batch: readonly ReshuffleMove[],
           received: DateTime.Utc
         ) {
@@ -1268,7 +1271,22 @@ export class PostScheduling extends Context.Service<
 
           const queue = yield* queues.byId(planned.workspaceId, planned.id);
 
-          if (Option.isNone(queue) || !sameTimetable(queue.value, planned)) {
+          const slots = new Set(
+            batch.flatMap(({ from, to }) =>
+              DateTime.Equivalence(from, to) ? [] : [DateTime.toEpochMillis(to)]
+            )
+          );
+
+          const taken = (yield* queues.queuedFrom(planned.id, received)).some(
+            ({ at, id }) =>
+              !seen.has(id) && slots.has(DateTime.toEpochMillis(at))
+          );
+
+          if (
+            Option.isNone(queue) ||
+            !sameTimetable(queue.value, planned) ||
+            taken
+          ) {
             const changed: BatchOutcome = {
               left: batch.length,
               moved: 0,
@@ -1389,7 +1407,7 @@ export class PostScheduling extends Context.Service<
 
           // The plan, from the queue and its posts as they stand under its
           // lock: where the waiting posts are plays no part but their order.
-          const { plan, queue } = yield* transaction(
+          const { plan, queue, seen } = yield* transaction(
             Effect.gen(function* planning() {
               yield* queues.lock(queueId);
 
@@ -1398,11 +1416,8 @@ export class PostScheduling extends Context.Service<
                 Option.some(queueId)
               ).pipe(withPorts);
 
-              const planned = reshufflePlan(
-                current,
-                received,
-                yield* queues.queuedFrom(current.id, received)
-              );
+              const waiting = yield* queues.queuedFrom(current.id, received);
+              const planned = reshufflePlan(current, received, waiting);
 
               if (Result.isFailure(planned)) {
                 return yield* new QueueHasNoRoom({
@@ -1411,7 +1426,11 @@ export class PostScheduling extends Context.Service<
                 });
               }
 
-              return { plan: planned.success, queue: current };
+              return {
+                plan: planned.success,
+                queue: current,
+                seen: new Set(waiting.map(({ id }) => id)),
+              };
             })
           );
 
@@ -1423,7 +1442,7 @@ export class PostScheduling extends Context.Service<
 
           for (const [place, batch] of batches.entries()) {
             const outcome = yield* transaction(
-              reshuffleBatch(actor, queue, batch, received)
+              reshuffleBatch(actor, queue, seen, batch, received)
             );
 
             movedCount += outcome.moved;

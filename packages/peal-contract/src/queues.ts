@@ -166,8 +166,9 @@ export type QueuePreview = typeof QueuePreviewSchema.Type;
 /**
  * Why a reshuffle stopped before every waiting post was on its slot:
  * `planLimit`, a month the plan has no room in; `full`, no slot left
- * within the horizon; `changed`, the queue's timetable was saved, or the
- * queue deleted, while it ran.
+ * within the horizon; `changed`, the queue's timetable was saved, the
+ * queue deleted, or a post added to it on a slot it had not reached yet,
+ * while it ran.
  */
 export const ReshuffleStopSchema = Schema.Literals([
   "planLimit",

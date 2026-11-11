@@ -510,7 +510,7 @@ describe("peal post --queue and peal posts queue", () => {
         unchanged: 0,
       })[1]
     ).toBe(
-      "Stopped as the queue was saved meanwhile: 1 post not moved. Run it again."
+      "Stopped as the queue changed meanwhile (saved, or a post added to it): 1 post not moved. Run it again."
     );
   });
 });

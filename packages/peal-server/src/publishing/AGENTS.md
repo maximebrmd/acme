@@ -757,7 +757,9 @@ publishing's schema, naming nobody: each goes with its workspace
   often it is made and two posts on one instant end apart. Planned once
   under `QueueStore.lock` (`queuedFrom`), then batches of
   `reshuffleBatchSize`, one transaction each: the queue's lock, the queue
-  read again (a changed timetable, `sameTimetable`, stops it `changed`),
+  read again (a changed timetable, `sameTimetable`, stops it `changed`, and
+  so does a slot of the batch held by a post the plan did not see, one
+  added between batches),
   the posts' rows in id order, then each move through `moved`, in a
   savepoint of its own so a `PlanLimitReached` (it stops `planLimit`)
   keeps the moves before it. A post on its slot is not written; one moved,

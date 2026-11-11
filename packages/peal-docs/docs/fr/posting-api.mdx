@@ -467,7 +467,7 @@ Enregistrer les créneaux d’une file ne déplace aucune publication. `POST …
 { "moved": 12, "unchanged": 3, "remaining": 0, "stoppedBy": null }
 ```
 
-`remaining` compte les publications pas encore placées quand le déplacement s’est arrêté, et `stoppedBy` dit pourquoi : `planLimit` (un mois sans place), `full` (plus de créneau dans les 366 jours) ou `changed` (la file a été enregistrée entre-temps). Rappelez-le pour continuer ; appelé deux fois, le second appel ne déplace rien. Une file sans créneau répond 409 `queue_has_no_room` (`noSlots`).
+`remaining` compte les publications pas encore placées quand le déplacement s’est arrêté, et `stoppedBy` dit pourquoi : `planLimit` (un mois sans place), `full` (plus de créneau dans les 366 jours) ou `changed` (la file a été enregistrée, ou une publication y a été ajoutée sur un créneau pas encore atteint, entre-temps). Rappelez-le pour continuer ; appelé deux fois, le second appel ne déplace rien. Une file sans créneau répond 409 `queue_has_no_room` (`noSlots`).
 
 ## Dépublier une publication [#unpublish]
 

@@ -467,7 +467,7 @@ Saving a queue's slots moves no post. `POST …/queues/{queueId}/reshuffle`, wit
 { "moved": 12, "unchanged": 3, "remaining": 0, "stoppedBy": null }
 ```
 
-`remaining` counts the posts not placed when it stopped, and `stoppedBy` says why: `planLimit` (a month without room), `full` (no slot left within 366 days) or `changed` (the queue was saved meanwhile). Call it again to go on; called twice, the second call moves nothing. A queue without a slot answers 409 `queue_has_no_room` (`noSlots`).
+`remaining` counts the posts not placed when it stopped, and `stoppedBy` says why: `planLimit` (a month without room), `full` (no slot left within 366 days) or `changed` (the queue was saved, or a post added to it on a slot not yet reached, meanwhile). Call it again to go on; called twice, the second call moves nothing. A queue without a slot answers 409 `queue_has_no_room` (`noSlots`).
 
 ## Unpublish a post [#unpublish]
 

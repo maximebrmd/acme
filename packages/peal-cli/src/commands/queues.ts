@@ -524,7 +524,7 @@ export const reshuffleLines = (
   const left = plural(remaining, "post", "posts");
 
   const stopped: Readonly<Record<ReshuffleStop, string>> = {
-    changed: `Stopped as the queue was saved meanwhile: ${left} not moved. Run it again.`,
+    changed: `Stopped as the queue changed meanwhile (saved, or a post added to it): ${left} not moved. Run it again.`,
     full: `${left} found no slot within ${String(queueHorizonDays)} days: add slots with peal queues update --slot, then run it again.`,
     planLimit: `Stopped at a month the plan has no room in: ${left} not moved. peal billing shows the plan.`,
   };
