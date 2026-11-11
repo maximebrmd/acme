@@ -938,6 +938,20 @@ export {
   YouTubeOptionsSchema,
   YouTubePrivacySchema,
   youTubeTagsLength,
+  BlueskyContentLabelSchema,
+  BlueskyOptionsSchema,
+  countedText,
+  MastodonOptionsSchema,
+  MastodonQuotePolicySchema,
+  MastodonVisibilitySchema,
+  maxBlueskyLanguages,
+  maxMastodonContentWarningLength,
+  maxThreadsLinkLength,
+  maxThreadsTopicTagLength,
+  ThreadsOptionsSchema,
+  ThreadsReplyControlSchema,
+  XOptionsSchema,
+  XReplySettingsSchema,
 } from "./target-options.ts";
 
 export type {
@@ -955,6 +969,15 @@ export type {
   TikTokPrivacyLevel,
   YouTubeOptions,
   YouTubePrivacy,
+  BlueskyContentLabel,
+  BlueskyOptions,
+  MastodonOptions,
+  MastodonQuotePolicy,
+  MastodonVisibility,
+  ThreadsOptions,
+  ThreadsReplyControl,
+  XOptions,
+  XReplySettings,
 } from "./target-options.ts";
 
 export { PostTargetStatusSchema } from "./post-target-status.ts";

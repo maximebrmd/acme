@@ -321,6 +321,10 @@ export const Composer = ({
 
   const content = contentOf(text, overrides, channelIds, media, parts);
   const options = channelOptionsOf(selected, optionValues);
+
+  const optionsOfChannel = (channelId: string) =>
+    options.find((chosen) => chosen.channelId === channelId)?.options;
+
   const attached = useAttachedMedia(workspaceId, media);
 
   const valuesOn = (channel: Channel): OptionValues =>
@@ -333,7 +337,12 @@ export const Composer = ({
 
     return {
       channel,
-      fit: fitOn(channel.platform, own?.text ?? text, media.length),
+      fit: fitOn(
+        channel.platform,
+        own?.text ?? text,
+        media.length,
+        optionsOfChannel(channel.id)
+      ),
       media: mediaFitOn(channel.platform, attached),
     };
   });
@@ -345,7 +354,14 @@ export const Composer = ({
     ({ id, platform }) =>
       partsTaken(platform, parts.length)._tag === "taken" &&
       parts.every((part) =>
-        fits(fitOn(platform, partTextOn(part, id), part.media.length))
+        fits(
+          fitOn(
+            platform,
+            partTextOn(part, id),
+            part.media.length,
+            optionsOfChannel(id)
+          )
+        )
       )
   );
 
@@ -699,6 +715,7 @@ export const Composer = ({
           <FollowUpParts
             disabled={locked}
             editable={canWrite}
+            options={options}
             parts={parts}
             permissions={permissions}
             selected={selected}

@@ -2,7 +2,12 @@
 
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { Channel, MediaAttachment, Permission } from "peal-contract";
+import type {
+  Channel,
+  ChannelOptions,
+  MediaAttachment,
+  Permission,
+} from "peal-contract";
 import { maxFollowUps } from "peal-contract/post-text";
 import { Button } from "peal-ui/components/button";
 import { Label } from "peal-ui/components/label";
@@ -44,6 +49,8 @@ interface PartEditorProps {
   /** The post can still be written. */
   readonly editable: boolean;
   readonly onParts: SetParts;
+  /** The options the post has on its channels, some counted with a text. */
+  readonly options: readonly ChannelOptions[];
   readonly part: PartDraft;
   readonly permissions: readonly Permission[];
   /** Its place among the post's parts, the post itself being the first. */
@@ -59,6 +66,7 @@ const PartEditor = ({
   disabled,
   editable,
   onParts,
+  options,
   part,
   permissions,
   position,
@@ -105,7 +113,8 @@ const PartEditor = ({
     fit: fitOn(
       channel.platform,
       partTextOn(part, channel.id),
-      part.media.length
+      part.media.length,
+      options.find(({ channelId }) => channelId === channel.id)?.options
     ),
     media: mediaFitOn(channel.platform, attached),
   }));
@@ -277,6 +286,8 @@ interface FollowUpPartsProps {
   /** The post can still be written: a draft the member may change. */
   readonly editable: boolean;
   readonly onChange: SetParts;
+  /** The options the post has on its channels. */
+  readonly options: readonly ChannelOptions[];
   readonly parts: readonly PartDraft[];
   readonly permissions: readonly Permission[];
   /** The channels the post goes to. */
@@ -295,6 +306,7 @@ export const FollowUpParts = ({
   disabled,
   editable,
   onChange,
+  options,
   parts,
   permissions,
   selected,
@@ -326,6 +338,7 @@ export const FollowUpParts = ({
               count={parts.length}
               disabled={disabled}
               editable={editable}
+              options={options}
               part={part}
               permissions={permissions}
               position={index + 2}

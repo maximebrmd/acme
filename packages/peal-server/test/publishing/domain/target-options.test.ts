@@ -67,16 +67,20 @@ const on = (target: ChannelOnPlatform, options: TargetOptions) =>
   new ChannelOptions({ channelId: target.channelId, options });
 
 describe("the platforms that take options", () => {
-  it("are LinkedIn, TikTok, YouTube, Pinterest and Google Business Profile", () => {
+  it("are every platform but Instagram and Facebook", () => {
     expect(optionsPlatforms).toStrictEqual([
+      "x",
       "linkedin",
+      "bluesky",
+      "mastodon",
+      "threads",
       "tiktok",
       "youtube",
       "pinterest",
       "googleBusiness",
     ]);
-    expect(takesOptions("mastodon")).toBeFalsy();
-    expect(noOptionsOn("x")).toStrictEqual(Option.none());
+    expect(takesOptions("facebook")).toBeFalsy();
+    expect(noOptionsOn("instagram")).toStrictEqual(Option.none());
   });
 
   it("start with nothing chosen", () => {
@@ -94,7 +98,7 @@ describe("the platforms that take options", () => {
         privacyLevel: "SELF_ONLY",
       })
     ).toStrictEqual(finishedTikTok);
-    expect(decode({ platform: "mastodon" })._tag).toBe("Failure");
+    expect(decode({ platform: "facebook" })._tag).toBe("Failure");
     expect(decode({ platform: "tiktok", privacyLevel: "EVERYONE" })._tag).toBe(
       "Failure"
     );

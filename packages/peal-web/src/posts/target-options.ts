@@ -8,7 +8,10 @@ import {
   maxLinkedInLinkTitleLength,
   maxLinkedInLinkUrlLength,
   maxPinterestLinkLength,
+  maxMastodonContentWarningLength,
   maxPinterestTitleLength,
+  maxThreadsLinkLength,
+  maxThreadsTopicTagLength,
   maxYouTubeTitleLength,
   TargetOptionsSchema,
 } from "peal-contract";
@@ -41,13 +44,17 @@ interface Described {
   /**
    * The field shows, and its value is sent, only while the field named
    * `name` holds one of `values`, or nothing yet when `unset`: an event's
-   * dates show once the post is an event.
+   * dates show once the post is an event. With `filled`, while that field
+   * holds anything: sharing a community post shows once a community is
+   * written.
    */
-  readonly shownWith?: {
-    readonly name: string;
-    readonly unset?: true;
-    readonly values: readonly string[];
-  };
+  readonly shownWith?:
+    | {
+        readonly name: string;
+        readonly unset?: true;
+        readonly values: readonly string[];
+      }
+    | { readonly filled: true; readonly name: string };
 }
 
 /** One line of text; `maxLength` characters (code points) at most. */
@@ -155,6 +162,28 @@ const offered = { name: "postType", values: ["offer"] } as const;
  * shows them. A platform's options added to the contract need an entry here.
  */
 export const optionFields = {
+  bluesky: [
+    {
+      hint: "bluesky.languagesHint",
+      invalid: "bluesky.languagesInvalid",
+      kind: "tags",
+      label: "bluesky.languages",
+      name: "languages",
+    },
+    {
+      choices: [
+        { label: "bluesky.labelSexual", value: "sexual" },
+        { label: "bluesky.labelNudity", value: "nudity" },
+        { label: "bluesky.labelPorn", value: "porn" },
+        { label: "bluesky.labelGraphicMedia", value: "graphic-media" },
+      ],
+      hint: "bluesky.contentLabelHint",
+      kind: "choice",
+      label: "bluesky.contentLabel",
+      name: "contentLabel",
+      none: "bluesky.labelNone",
+    },
+  ],
   googleBusiness: [
     {
       choices: [
@@ -304,6 +333,61 @@ export const optionFields = {
       name: "documentTitle",
     },
   ],
+  mastodon: [
+    {
+      choices: [
+        { label: "mastodon.visibilityPublic", value: "public" },
+        { label: "mastodon.visibilityUnlisted", value: "unlisted" },
+        { label: "mastodon.visibilityPrivate", value: "private" },
+      ],
+      hint: "mastodon.visibilityHint",
+      kind: "choice",
+      label: "mastodon.visibility",
+      name: "visibility",
+      none: "mastodon.accountDefault",
+    },
+    {
+      hint: "mastodon.contentWarningHint",
+      invalid: "mastodon.contentWarningInvalid",
+      kind: "text",
+      label: "mastodon.contentWarning",
+      maxLength: maxMastodonContentWarningLength,
+      name: "contentWarning",
+    },
+    {
+      kind: "yesNo",
+      label: "mastodon.sensitive",
+      name: "sensitive",
+      no: "mastodon.sensitiveNo",
+      yes: "mastodon.sensitiveYes",
+    },
+    {
+      hint: "mastodon.languageHint",
+      invalid: "mastodon.languageInvalid",
+      kind: "text",
+      label: "mastodon.language",
+      name: "language",
+    },
+    {
+      choices: [
+        { label: "mastodon.quotePublic", value: "public" },
+        { label: "mastodon.quoteFollowers", value: "followers" },
+        { label: "mastodon.quoteNobody", value: "nobody" },
+      ],
+      hint: "mastodon.quotePolicyHint",
+      invalid: "mastodon.quotePolicyInvalid",
+      kind: "choice",
+      label: "mastodon.quotePolicy",
+      name: "quotePolicy",
+      none: "mastodon.accountDefault",
+      // Mastodon lets nobody quote a followers-only post.
+      shownWith: {
+        name: "visibility",
+        unset: true,
+        values: ["public", "unlisted"],
+      },
+    },
+  ],
   pinterest: [
     {
       empty: "pinterest.boardEmpty",
@@ -349,6 +433,40 @@ export const optionFields = {
       kind: "text",
       label: "pinterest.dominantColor",
       name: "dominantColor",
+    },
+  ],
+  threads: [
+    {
+      choices: [
+        { label: "threads.replyEveryone", value: "everyone" },
+        { label: "threads.replyFollowing", value: "accounts_you_follow" },
+        { label: "threads.replyFollowers", value: "followers_only" },
+        { label: "threads.replyMentioned", value: "mentioned_only" },
+        {
+          label: "threads.replyAuthorOnly",
+          value: "parent_post_author_only",
+        },
+      ],
+      kind: "choice",
+      label: "threads.replyControl",
+      name: "replyControl",
+      none: "threads.replyEveryone",
+    },
+    {
+      hint: "threads.topicTagHint",
+      invalid: "threads.topicTagInvalid",
+      kind: "text",
+      label: "threads.topicTag",
+      maxLength: maxThreadsTopicTagLength,
+      name: "topicTag",
+    },
+    {
+      hint: "threads.linkAttachmentHint",
+      invalid: "threads.linkAttachmentInvalid",
+      kind: "text",
+      label: "threads.linkAttachment",
+      maxLength: maxThreadsLinkLength,
+      name: "linkAttachment",
     },
   ],
   tiktok: [
@@ -416,6 +534,49 @@ export const optionFields = {
       kind: "toggle",
       label: "tiktok.aiGenerated",
       name: "aiGenerated",
+    },
+  ],
+  x: [
+    {
+      choices: [
+        { label: "x.replyFollowing", value: "following" },
+        { label: "x.replyMentioned", value: "mentionedUsers" },
+        { label: "x.replySubscribers", value: "subscribers" },
+        { label: "x.replyVerified", value: "verified" },
+      ],
+      hint: "x.replySettingsHint",
+      kind: "choice",
+      label: "x.replySettings",
+      name: "replySettings",
+      none: "x.replyEveryone",
+    },
+    {
+      hint: "x.communityIdHint",
+      invalid: "x.communityIdInvalid",
+      kind: "text",
+      label: "x.communityId",
+      name: "communityId",
+    },
+    {
+      initial: false,
+      kind: "toggle",
+      label: "x.shareWithFollowers",
+      name: "shareWithFollowers",
+      shownWith: { filled: true, name: "communityId" },
+    },
+    {
+      hint: "x.paidPartnershipHint",
+      initial: false,
+      kind: "toggle",
+      label: "x.paidPartnership",
+      name: "paidPartnership",
+    },
+    {
+      hint: "x.madeWithAiHint",
+      initial: false,
+      kind: "toggle",
+      label: "x.madeWithAi",
+      name: "madeWithAi",
     },
   ],
   youtube: [
@@ -618,8 +779,13 @@ export const isShown = (
   }
 
   const held = values[shownWith.name];
+  const empty = held === undefined || held === "";
 
-  return held === undefined || held === ""
+  if ("filled" in shownWith) {
+    return !empty;
+  }
+
+  return empty
     ? shownWith.unset === true
     : shownWith.values.some((value) => value === held);
 };

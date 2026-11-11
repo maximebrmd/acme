@@ -299,11 +299,11 @@ describe("a platform's capabilities", () => {
   });
 
   it("hold no options nor lookups where a platform has none", () => {
-    const bluesky = capabilitiesOf("bluesky", false);
+    const facebook = capabilitiesOf("facebook", false);
 
-    expect(bluesky.options).toStrictEqual([]);
-    expect(bluesky.lookups).toStrictEqual([]);
-    expect(bluesky.countsPosts).toBeFalsy();
+    expect(facebook.options).toStrictEqual([]);
+    expect(facebook.lookups).toStrictEqual([]);
+    expect(facebook.countsPosts).toBeFalsy();
   });
 
   it("hold Peal's own limits where they are the stricter", () => {

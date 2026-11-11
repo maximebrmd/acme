@@ -304,6 +304,186 @@ export const LinkedInOptionsSchema = Schema.Struct({
 export type LinkedInOptions = typeof LinkedInOptionsSchema.Type;
 
 /**
+ * The longest content warning Peal takes on a Mastodon post, in characters
+ * (code points): Peal's ceiling. Mastodon counts the warning in the
+ * post's character limit with the text (`countedText`).
+ */
+export const maxMastodonContentWarningLength = 500;
+
+/**
+ * Who sees a Mastodon post: the account's own default when left out. A
+ * private mention (`direct`) is not offered.
+ */
+export const MastodonVisibilitySchema = Schema.Literals([
+  "public",
+  "unlisted",
+  "private",
+]).annotate({ identifier: "MastodonVisibility" });
+
+export type MastodonVisibility = typeof MastodonVisibilitySchema.Type;
+
+/** Who may quote a Mastodon post: the account's own default when left out. */
+export const MastodonQuotePolicySchema = Schema.Literals([
+  "public",
+  "followers",
+  "nobody",
+]).annotate({ identifier: "MastodonQuotePolicy" });
+
+export type MastodonQuotePolicy = typeof MastodonQuotePolicySchema.Type;
+
+/**
+ * A post on a Mastodon account: its status is the post's text there. Each
+ * option applies to every part of a thread.
+ */
+export const MastodonOptionsSchema = Schema.Struct({
+  // Shown before the text, which is folded behind it: one line of at most
+  // `maxMastodonContentWarningLength` characters, counted in the text's
+  // limit.
+  contentWarning: Schema.optionalKey(OptionTextSchema),
+  // An ISO 639-1 code, two or three lower-case letters, as "fr".
+  language: Schema.optionalKey(OptionTextSchema),
+  platform: Schema.Literal("mastodon"),
+  // Taken only with `visibility` public or unlisted: Mastodon lets nobody
+  // quote a followers-only post. Servers before Mastodon 4.5 ignore it.
+  quotePolicy: Schema.optionalKey(MastodonQuotePolicySchema),
+  // Marks the post and its media as sensitive. False when left out.
+  sensitive: Schema.optionalKey(Schema.Boolean),
+  visibility: Schema.optionalKey(MastodonVisibilitySchema),
+}).annotate({
+  description:
+    "How a post goes out on a Mastodon account, on every part of a thread. Scheduling needs none of them; a content warning counts in the text's limit.",
+  identifier: "MastodonOptions",
+});
+
+export type MastodonOptions = typeof MastodonOptionsSchema.Type;
+
+/** The most languages a Bluesky post names. */
+export const maxBlueskyLanguages = 3;
+
+/**
+ * A label the author puts on what a Bluesky post shows. A part without
+ * media is sent without it.
+ */
+export const BlueskyContentLabelSchema = Schema.Literals([
+  "sexual",
+  "nudity",
+  "porn",
+  "graphic-media",
+]).annotate({ identifier: "BlueskyContentLabel" });
+
+export type BlueskyContentLabel = typeof BlueskyContentLabelSchema.Type;
+
+/**
+ * A post on a Bluesky account: its record's text is the post's text there.
+ * Each option applies to every part of a thread.
+ */
+export const BlueskyOptionsSchema = Schema.Struct({
+  // Labels the media of each part that has any.
+  contentLabel: Schema.optionalKey(BlueskyContentLabelSchema),
+  // The languages of the text: at most `maxBlueskyLanguages` BCP 47 tags,
+  // as "en" or "pt-BR".
+  languages: Schema.optionalKey(
+    Schema.Array(OptionTextSchema).check(
+      Schema.isMaxLength(maxBlueskyLanguages)
+    )
+  ),
+  platform: Schema.Literal("bluesky"),
+}).annotate({
+  description:
+    "How a post goes out on a Bluesky account, on every part of a thread. Scheduling needs none of them.",
+  identifier: "BlueskyOptions",
+});
+
+export type BlueskyOptions = typeof BlueskyOptionsSchema.Type;
+
+/** The longest topic a Threads post takes, in characters (code points). */
+export const maxThreadsTopicTagLength = 50;
+
+/**
+ * The longest link a Threads post's attachment takes, in characters (code
+ * points): Peal's ceiling.
+ */
+export const maxThreadsLinkLength = 2048;
+
+/** Who may reply to a Threads post: everyone when left out. */
+export const ThreadsReplyControlSchema = Schema.Literals([
+  "everyone",
+  "accounts_you_follow",
+  "mentioned_only",
+  "parent_post_author_only",
+  "followers_only",
+]).annotate({ identifier: "ThreadsReplyControl" });
+
+export type ThreadsReplyControl = typeof ThreadsReplyControlSchema.Type;
+
+/** A post on a Threads account: its text is the post's text there. */
+export const ThreadsOptionsSchema = Schema.Struct({
+  // The https address Threads previews under a post of text alone: refused
+  // on a post with media.
+  linkAttachment: Schema.optionalKey(OptionTextSchema),
+  platform: Schema.Literal("threads"),
+  replyControl: Schema.optionalKey(ThreadsReplyControlSchema),
+  // The post's one topic: at most `maxThreadsTopicTagLength` characters,
+  // without "." or "&".
+  topicTag: Schema.optionalKey(OptionTextSchema),
+}).annotate({
+  description:
+    "How a post goes out on a Threads account. Scheduling needs none of them; `linkAttachment` is for a post without media.",
+  identifier: "ThreadsOptions",
+});
+
+export type ThreadsOptions = typeof ThreadsOptionsSchema.Type;
+
+/** Who may reply to an X post, besides its author: everyone when left out. */
+export const XReplySettingsSchema = Schema.Literals([
+  "following",
+  "mentionedUsers",
+  "subscribers",
+  "verified",
+]).annotate({ identifier: "XReplySettings" });
+
+export type XReplySettings = typeof XReplySettingsSchema.Type;
+
+/**
+ * A post on an X account: its text is the post's text there. Who may
+ * reply, the community and sharing it go with a thread's first post; the
+ * disclosures label every part, the AI one each part with media.
+ */
+export const XOptionsSchema = Schema.Struct({
+  // The community the post goes to: digits, as X gives its id.
+  communityId: Schema.optionalKey(OptionTextSchema),
+  // Discloses AI-generated media. False when left out.
+  madeWithAi: Schema.optionalKey(Schema.Boolean),
+  // Labels the post as a paid promotion. False when left out.
+  paidPartnership: Schema.optionalKey(Schema.Boolean),
+  platform: Schema.Literal("x"),
+  replySettings: Schema.optionalKey(XReplySettingsSchema),
+  // Shows a community post on the followers' timelines too: needs
+  // `communityId`. False when left out.
+  shareWithFollowers: Schema.optionalKey(Schema.Boolean),
+}).annotate({
+  description:
+    "How a post goes out on an X account. Scheduling needs none of them; `shareWithFollowers` needs `communityId`.",
+  identifier: "XOptions",
+});
+
+export type XOptions = typeof XOptionsSchema.Type;
+
+/**
+ * The text a platform's character limit counts on a channel, with the
+ * options the post has there: the text itself, but on Mastodon, which
+ * counts a content warning with it, the warning then the text, on every
+ * part. The server's `countedText` is the source.
+ */
+export const countedText = (
+  text: string,
+  options: TargetOptions | undefined
+): string =>
+  options?.platform === "mastodon" && options.contentWarning !== undefined
+    ? `${options.contentWarning}${text}`
+    : text;
+
+/**
  * What a post says on a channel that only its platform knows, tagged by
  * `platform`. Platforms without a member here take no options.
  */
@@ -313,6 +493,10 @@ export const TargetOptionsSchema = Schema.Union([
   PinterestOptionsSchema,
   GoogleBusinessOptionsSchema,
   LinkedInOptionsSchema,
+  MastodonOptionsSchema,
+  BlueskyOptionsSchema,
+  ThreadsOptionsSchema,
+  XOptionsSchema,
 ]).annotate({
   description:
     "What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.",

@@ -34,7 +34,7 @@ describe("the options fields", () => {
       }
     }
 
-    expect(fieldsOf("mastodon")).toStrictEqual([]);
+    expect(fieldsOf("facebook")).toStrictEqual([]);
     expect(Option.isSome(fieldOf("youtube", "title"))).toBeTruthy();
     expect(Option.isNone(fieldOf("youtube", "privacyLevel"))).toBeTruthy();
   });
@@ -108,6 +108,35 @@ describe("the options fields", () => {
         title: "Synthetic open day",
       },
     ],
+    [
+      "mastodon",
+      {
+        contentWarning: "Spoilers for the synthetic finale",
+        language: "fr",
+        quotePolicy: "followers",
+        sensitive: true,
+        visibility: "unlisted",
+      },
+    ],
+    ["bluesky", { contentLabel: "graphic-media", languages: "en, pt-BR" }],
+    [
+      "threads",
+      {
+        linkAttachment: "https://example.test/launch",
+        replyControl: "mentioned_only",
+        topicTag: "Synthetic launches",
+      },
+    ],
+    [
+      "x",
+      {
+        communityId: "1700000000000000001",
+        madeWithAi: true,
+        paidPartnership: true,
+        replySettings: "following",
+        shareWithFollowers: true,
+      },
+    ],
   ] as const)(
     "turn %s's fields, each kind filled in, into options the contract takes, and back",
     (platform, values) => {
@@ -130,10 +159,14 @@ describe("the options fields", () => {
 
   it("cover every platform that takes options in the test above", () => {
     expect([...optionsPlatforms].toSorted()).toStrictEqual([
+      "bluesky",
       "googleBusiness",
       "linkedin",
+      "mastodon",
       "pinterest",
+      "threads",
       "tiktok",
+      "x",
       "youtube",
     ]);
   });
@@ -177,7 +210,9 @@ describe(optionsOf, () => {
   });
 
   it("gives nothing on a platform that takes no options", () => {
-    expect(optionsOf("mastodon", { title: "Hi" })).toStrictEqual(Option.none());
+    expect(optionsOf("instagram", { title: "Hi" })).toStrictEqual(
+      Option.none()
+    );
   });
 
   it("fills the fields back from the options it gave", () => {
@@ -196,6 +231,44 @@ describe(optionsOf, () => {
     ).toStrictEqual(Option.some(values));
     // A target without options starts as a new one.
     expect(valuesOf("tiktok", null)).toStrictEqual(initialValues("tiktok"));
+  });
+});
+
+// The names of the fields of the platform these values show.
+const shownOn =
+  (platform: Platform) =>
+  (values: Readonly<Record<string, boolean | string>>) =>
+    fieldsOf(platform)
+      .filter((field) => isShown(platform, field, values))
+      .map(({ name }) => name);
+
+describe("an X post's options", () => {
+  it("offer to share with followers once a community is written, and send it only then", () => {
+    const shown = shownOn("x");
+
+    expect(shown(initialValues("x"))).not.toContain("shareWithFollowers");
+    expect(shown({ communityId: "1700000000000000001" })).toContain(
+      "shareWithFollowers"
+    );
+    expect(
+      optionsOf("x", { ...initialValues("x"), shareWithFollowers: true })
+    ).toStrictEqual(
+      Option.some({
+        madeWithAi: false,
+        paidPartnership: false,
+        platform: "x",
+      })
+    );
+  });
+});
+
+describe("a Mastodon post's options", () => {
+  it("offer a quote policy only on a post others may see", () => {
+    const shown = shownOn("mastodon");
+
+    expect(shown({})).toContain("quotePolicy");
+    expect(shown({ visibility: "unlisted" })).toContain("quotePolicy");
+    expect(shown({ visibility: "private" })).not.toContain("quotePolicy");
   });
 });
 
@@ -353,7 +426,7 @@ describe(valuesOfPost, () => {
   it("fills in the targets of platforms that take options", () => {
     const platforms = new Map<string, Platform>([
       ["c1", "youtube"],
-      ["c2", "mastodon"],
+      ["c2", "facebook"],
     ]);
 
     const values = valuesOfPost(
@@ -420,7 +493,7 @@ describe(channelOptionsOf, () => {
       channelOptionsOf(
         [
           { id: "c1", platform: "tiktok" },
-          { id: "c2", platform: "bluesky" },
+          { id: "c2", platform: "facebook" },
         ],
         {}
       )

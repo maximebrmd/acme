@@ -48,10 +48,10 @@ const tiktok = channel(
   "@peal_clips"
 );
 
-const mastodon = channel(
+const facebookPage = channel(
   "00000000-0000-7000-8000-000000000003",
-  "mastodon",
-  "@peal@social.example"
+  "facebook",
+  "Synthetic Bakery"
 );
 
 const location = channel(
@@ -117,7 +117,7 @@ const render = async (
   return renderToStaticMarkup(
     <NextIntlClientProvider locale={locale} messages={messages}>
       <TargetOptionsPanel
-        channels={[youtube, mastodon, tiktok]}
+        channels={[youtube, facebookPage, tiktok]}
         disabled={false}
         valuesOf={(shown) => values[shown.id] ?? initialValues(shown.platform)}
         violations={violations}
@@ -137,7 +137,7 @@ describe(TargetOptionsPanel, () => {
     expect(html).toContain("Title (required)");
     expect(html).toContain("Made for kids (required)");
     expect(html).toContain("Who can view this post (required)");
-    expect(html).not.toContain("@peal@social.example");
+    expect(html).not.toContain("Synthetic Bakery");
   });
 
   it("starts TikTok's interactions off, and its disclosure untold", async () => {
@@ -298,9 +298,64 @@ describe(TargetOptionsPanel, () => {
     }
   });
 
+  it("shows the options of Mastodon, Bluesky, Threads and X, in both languages", async () => {
+    const feeds = [
+      channel("00000000-0000-7000-8000-000000000011", "mastodon", "@peal"),
+      channel("00000000-0000-7000-8000-000000000012", "bluesky", "peal.bsky"),
+      channel("00000000-0000-7000-8000-000000000013", "threads", "@peal"),
+      channel("00000000-0000-7000-8000-000000000014", "x", "@peal_social"),
+    ];
+
+    const shown = async (locale: Locale) => {
+      const messages = await loadMessages(locale);
+
+      return renderToStaticMarkup(
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <TargetOptionsPanel
+            channels={feeds}
+            disabled={false}
+            valuesOf={(one) => initialValues(one.platform)}
+            violations={[]}
+            onChange={() => {
+              // Rendered once, never changed.
+            }}
+          />
+        </NextIntlClientProvider>
+      );
+    };
+
+    const english = await shown("en");
+
+    for (const label of [
+      "Content warning",
+      "counts it in the post’s character limit",
+      "Content label",
+      "a part without media is sent without it",
+      "Link preview",
+      "Who can reply",
+      "Paid partnership",
+    ]) {
+      expect(english).toContain(label);
+    }
+
+    // Shown once a community is written.
+    expect(english).not.toContain("Also share with followers");
+
+    const french = await shown("fr");
+
+    for (const label of [
+      "Avertissement de contenu",
+      "Étiquette de contenu",
+      "Aperçu de lien",
+      "Partenariat rémunéré",
+    ]) {
+      expect(french).toContain(label);
+    }
+  });
+
   it("shows only for platforms that take options", () => {
-    expect(takesOptions([mastodon])).toBeFalsy();
-    expect(takesOptions([mastodon, youtube])).toBeTruthy();
+    expect(takesOptions([facebookPage])).toBeFalsy();
+    expect(takesOptions([facebookPage, youtube])).toBeTruthy();
   });
 });
 
@@ -615,16 +670,16 @@ describe("the composer's errors about options", () => {
     const html = renderToStaticMarkup(
       <NextIntlClientProvider locale="en" messages={messages}>
         <ComposerErrors
-          channels={[youtube, tiktok, mastodon]}
+          channels={[youtube, tiktok, facebookPage]}
           failure={
             new PostContentInvalid({
               violations: [
                 ...violations,
                 {
                   _tag: "optionsForOtherPlatform",
-                  channelId: mastodon.id,
+                  channelId: facebookPage.id,
                   optionsPlatform: "tiktok",
-                  platform: "mastodon",
+                  platform: "facebook",
                 },
               ],
             })
@@ -643,7 +698,7 @@ describe("the composer's errors about options", () => {
       "@peal_clips on TikTok: Branded content cannot be visible to you only"
     );
     expect(html).toContain(
-      "@peal@social.example on Mastodon: these options are for TikTok."
+      "Synthetic Bakery on Facebook: these options are for TikTok."
     );
   });
 });

@@ -206,7 +206,21 @@ describe("the platforms' capabilities endpoint", () => {
         perPost: false,
         postCounts: [],
       });
-      assert.deepStrictEqual(bluesky?.options, { constraints: [], fields: [] });
+      assert.deepStrictEqual(
+        bluesky?.options.fields.map(({ maximum, name, type }) => [
+          name,
+          type,
+          maximum,
+        ]),
+        [
+          ["contentLabel", "choice", null],
+          ["languages", "textList", 3],
+        ]
+      );
+      assert.deepStrictEqual(
+        all.find(({ platform }) => platform === "facebook")?.options,
+        { constraints: [], fields: [] }
+      );
 
       // Where a post may have parts after its first, and what they become.
       assert.deepStrictEqual(
