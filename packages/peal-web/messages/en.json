@@ -2030,6 +2030,7 @@
         "failed": "A post fails on a channel",
         "unconfirmed": "A post may have gone out on a channel",
         "cancelled": "A post is cancelled",
+        "finished": "A post has its result on every channel",
         "approval_requested": "A post waits for an approval",
         "approved": "A post is approved",
         "changes_requested": "Changes are requested on a post"
@@ -2037,7 +2038,10 @@
       "channel": {
         "connected": "A channel is connected or reconnected",
         "disconnected": "A channel is disconnected",
-        "reconnect_needed": "A channel must be reconnected"
+        "reconnect_needed": "A channel must be reconnected",
+        "disabled": "A channel is turned off",
+        "enabled": "A channel is turned back on",
+        "expiring": "A channel’s sign-in ends soon"
       },
       "media": {
         "ready": "A file is ready for posts",

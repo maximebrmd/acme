@@ -1220,7 +1220,9 @@ export {
   SubscribableWebhookEventTypeSchema,
   webhookEventVersion,
   WebhookEventTypeSchema,
+  WebhookFinishedTargetSchema,
   WebhookPayloadSchema,
+  WebhookSettledTargetStatusSchema,
   WebhookTargetSchema,
 } from "./webhook-events.ts";
 
@@ -1229,7 +1231,9 @@ export type {
   WebhookReviewParty,
   SubscribableWebhookEventType,
   WebhookEventType,
+  WebhookFinishedTarget,
   WebhookPayload,
+  WebhookSettledTargetStatus,
   WebhookTarget,
 } from "./webhook-events.ts";
 

@@ -11,11 +11,13 @@ import {
   maxWebhookFilterWorkspaces,
   webhookBulkRedeliveriesPerHour,
   WebhookRedeliverySkipSchema,
+  WebhookSettledTargetStatusSchema,
   maxWebhookDescriptionLength,
   maxWebhookEndpoints,
   webhookManualSendsPerHour,
   maxWebhookUrlLength,
   MediaFailureReasonSchema,
+  PostOutcomeSchema,
   SubscribableWebhookEventTypeSchema,
   UnconfirmedReasonSchema,
   WebhookAttemptErrorSchema,
@@ -33,7 +35,11 @@ import {
   ProbeStateSchema,
   RejectionReasonSchema,
 } from "#media/domain/media-status.ts";
-import { FailureReasonSchema as DomainFailureReasonSchema } from "#publishing/domain/post-target-status.ts";
+import { PostOutcomeSchema as DomainPostOutcomeSchema } from "#publishing/domain/post-status.ts";
+import {
+  FailureReasonSchema as DomainFailureReasonSchema,
+  PostTargetStatusNameSchema,
+} from "#publishing/domain/post-target-status.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { UnconfirmedReasonSchema as DomainUnconfirmedReasonSchema } from "#shared/domain/publish-result.ts";
 import type { SkipReason } from "#webhooks/application/webhook-deliveries.ts";
@@ -64,6 +70,8 @@ import {
 } from "#webhooks/domain/webhook-event-type.ts";
 import {
   eventVersion,
+  FinishedOutcomeSchema,
+  SettledTargetStatusSchema,
   WebhookEventSchema,
 } from "#webhooks/domain/webhook-event.ts";
 import { maxWebhookUrlLength as domainMaxUrlLength } from "#webhooks/domain/webhook-url.ts";
@@ -127,6 +135,24 @@ describe("the contract", () => {
         ...RejectionReasonSchema.literals,
         ...ProbeStateSchema.literals.filter((state) => state !== "pending"),
       ].toSorted()
+    );
+  });
+
+  it("names how post.finished says a post ended as publishing does", () => {
+    // Once every target settled: never pending nor publishing.
+    expect(FinishedOutcomeSchema.literals).toStrictEqual(
+      DomainPostOutcomeSchema.literals
+    );
+    expect(PostOutcomeSchema.literals).toStrictEqual(
+      DomainPostOutcomeSchema.literals
+    );
+    expect(SettledTargetStatusSchema.literals).toStrictEqual(
+      PostTargetStatusNameSchema.literals.filter(
+        (status) => status !== "pending" && status !== "publishing"
+      )
+    );
+    expect(WebhookSettledTargetStatusSchema.literals).toStrictEqual(
+      SettledTargetStatusSchema.literals
     );
   });
 

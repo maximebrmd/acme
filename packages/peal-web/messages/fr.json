@@ -2030,6 +2030,7 @@
         "failed": "Une publication échoue sur un canal",
         "unconfirmed": "Une publication est peut-être partie sur un canal",
         "cancelled": "Une publication est annulée",
+        "finished": "Une publication a son résultat sur chaque canal",
         "approval_requested": "Une publication attend une approbation",
         "approved": "Une publication est approuvée",
         "changes_requested": "Des modifications sont demandées sur une publication"
@@ -2037,7 +2038,10 @@
       "channel": {
         "connected": "Un canal est connecté ou reconnecté",
         "disconnected": "Un canal est déconnecté",
-        "reconnect_needed": "Un canal doit être reconnecté"
+        "reconnect_needed": "Un canal doit être reconnecté",
+        "disabled": "Un canal est désactivé",
+        "enabled": "Un canal est réactivé",
+        "expiring": "La connexion d’un canal expire bientôt"
       },
       "media": {
         "ready": "Un fichier est prêt pour les publications",

@@ -34,14 +34,15 @@ const replyId = Uuid7Schema.make(synthetic(9));
 
 const at = DateTime.makeUnsafe("2026-01-01T09:00:00Z");
 
-const targets = [
-  { channelId, platform: "mastodon" as const, targetId },
-  {
-    channelId: otherChannelId,
-    platform: "bluesky" as const,
-    targetId: otherTargetId,
-  },
-];
+const target = { channelId, platform: "mastodon" as const, targetId };
+
+const otherTarget = {
+  channelId: otherChannelId,
+  platform: "bluesky" as const,
+  targetId: otherTargetId,
+};
+
+const targets = [target, otherTarget];
 
 const onChannel = (workspaceId: WorkspaceId) => ({
   channelId,
@@ -121,9 +122,26 @@ const samples: Samples = {
     data: { channelId, platform: "mastodon", reconnected: false, workspaceId },
     type: "channel.connected",
   }),
+  "channel.disabled": (workspaceId) => ({
+    data: { channelId, platform: "mastodon", workspaceId },
+    type: "channel.disabled",
+  }),
   "channel.disconnected": (workspaceId) => ({
     data: { channelId, platform: "mastodon", workspaceId },
     type: "channel.disconnected",
+  }),
+  "channel.enabled": (workspaceId) => ({
+    data: { channelId, platform: "mastodon", workspaceId },
+    type: "channel.enabled",
+  }),
+  "channel.expiring": (workspaceId) => ({
+    data: {
+      channelId,
+      expiresAt: DateTime.add(at, { days: 7 }),
+      platform: "linkedin",
+      workspaceId,
+    },
+    type: "channel.expiring",
   }),
   "channel.reconnect_needed": (workspaceId) => ({
     data: { channelId, platform: "mastodon", workspaceId },
@@ -169,6 +187,30 @@ const samples: Samples = {
   "post.failed": (workspaceId) => ({
     data: { ...onChannel(workspaceId), failedAt: at, reason: "rateLimited" },
     type: "post.failed",
+  }),
+  "post.finished": (workspaceId) => ({
+    data: {
+      finishedAt: at,
+      outcome: "partiallyPublished",
+      postId,
+      round: 1,
+      targets: [
+        {
+          ...target,
+          failureReason: null,
+          permalink: "https://social.example/@peal_example/1",
+          status: "published",
+        },
+        {
+          ...otherTarget,
+          failureReason: "rateLimited",
+          permalink: null,
+          status: "failed",
+        },
+      ],
+      workspaceId,
+    },
+    type: "post.finished",
   }),
   "post.published": (workspaceId) => ({
     data: {
