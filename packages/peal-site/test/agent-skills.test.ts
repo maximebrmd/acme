@@ -18,7 +18,7 @@ import {
   skillsIndex,
 } from "../src/agent-skills.ts";
 
-const repository = path.join(import.meta.dirname, "../../..");
+const skillsFolder = path.join(import.meta.dirname, "../../peal-skills/skills");
 
 const served = path.join(
   import.meta.dirname,
@@ -26,7 +26,7 @@ const served = path.join(
 );
 
 const source = (name: string) =>
-  readFileSync(path.join(repository, "skills", name, "SKILL.md"));
+  readFileSync(path.join(skillsFolder, name, "SKILL.md"));
 
 const servedDocument = (name: string) =>
   readFileSync(path.join(served, name, "SKILL.md"));
@@ -54,7 +54,7 @@ describe("the agent skills the site serves", () => {
       for (const file of linked) {
         expect(
           readFileSync(path.join(served, name, file)).equals(
-            readFileSync(path.join(repository, "skills", name, file))
+            readFileSync(path.join(skillsFolder, name, file))
           )
         ).toBe(true);
       }
