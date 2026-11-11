@@ -668,3 +668,121 @@ describe("posts added to a queue", () => {
     timeout
   );
 });
+
+describe("reshuffling a queue", () => {
+  it.effect(
+    "moves its waiting posts onto its slots as they now are, for members who schedule",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* reshuffled() {
+          const { editor, mastodon, params, viewer } = yield* studio;
+
+          const queue = yield* editor.queues.create({
+            params,
+            payload: {
+              channelIds: [mastodon],
+              name: "Weekdays",
+              slots: weekdays,
+              timeZone: "Europe/Paris",
+            },
+          });
+
+          const send = (text: string) =>
+            editor.posts.send({
+              headers: {},
+              params,
+              payload: {
+                channelIds: [],
+                content: { media: [], overrides: [], text },
+                when: { _tag: "queue", queueId: queue.id },
+              },
+              query: {},
+            });
+
+          // Monday and Tuesday at 09:30 in Paris.
+          const first = yield* send("The first post.");
+          const second = yield* send("The second post.");
+
+          // Tuesdays only, from now on.
+          yield* editor.queues.update({
+            params: { ...params, queueId: queue.id },
+            payload: {
+              channelIds: [mastodon],
+              name: "Weekdays",
+              slots: [{ day: "tuesday", time: "09:30" }],
+              timeZone: "Europe/Paris",
+            },
+          });
+
+          const byViewer = yield* viewer.queues
+            .reshuffle({ params: { ...params, queueId: queue.id } })
+            .pipe(Effect.flip);
+
+          assert.instanceOf(byViewer, Forbidden);
+
+          const result = yield* editor.queues.reshuffle({
+            params: { ...params, queueId: queue.id },
+          });
+
+          assert.deepStrictEqual(result, {
+            moved: 2,
+            remaining: 0,
+            stoppedBy: null,
+            unchanged: 0,
+          });
+
+          const timesNow = yield* Effect.all(
+            [first, second].map(({ id }) =>
+              editor.posts
+                .get({ params: { ...params, postId: id } })
+                .pipe(
+                  Effect.map(({ schedule }) =>
+                    schedule === null ? null : DateTime.formatIso(schedule.at)
+                  )
+                )
+            )
+          );
+
+          assert.deepStrictEqual(timesNow, [
+            "2026-06-16T07:30:00.000Z",
+            "2026-06-23T07:30:00.000Z",
+          ]);
+
+          const again = yield* editor.queues.reshuffle({
+            params: { ...params, queueId: queue.id },
+          });
+
+          assert.strictEqual(again.moved, 0);
+          assert.strictEqual(again.unchanged, 2);
+
+          const unknown = yield* editor.queues
+            .reshuffle({
+              params: {
+                ...params,
+                queueId: "0190f3a0-0000-7000-8000-00000000c0de",
+              },
+            })
+            .pipe(Effect.flip);
+
+          assert.instanceOf(unknown, QueueNotFound);
+
+          const empty = yield* editor.queues.create({
+            params,
+            payload: { name: "Empty", slots: [], timeZone: "Europe/Paris" },
+          });
+
+          const noSlots = yield* editor.queues
+            .reshuffle({ params: { ...params, queueId: empty.id } })
+            .pipe(Effect.flip);
+
+          assert.instanceOf(noSlots, QueueHasNoRoom);
+          assert.strictEqual(
+            noSlots instanceof QueueHasNoRoom ? noSlots.reason : undefined,
+            "noSlots"
+          );
+        })
+      ),
+    timeout
+  );
+});

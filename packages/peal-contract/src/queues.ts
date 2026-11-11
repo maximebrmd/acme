@@ -10,7 +10,7 @@ import { Authentication } from "./authentication.ts";
 import { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import { Forbidden } from "./forbidden.ts";
 import { InvalidTimeZone } from "./invalid-time-zone.ts";
-import { QueueNoRoomSchema } from "./queue-has-no-room.ts";
+import { QueueHasNoRoom, QueueNoRoomSchema } from "./queue-has-no-room.ts";
 import { QueueNameTaken } from "./queue-name-taken.ts";
 import { QueueNotFound } from "./queue-not-found.ts";
 import { TooManyQueues } from "./too-many-queues.ts";
@@ -163,6 +163,35 @@ export const QueuePreviewSchema = Schema.Struct({
 
 export type QueuePreview = typeof QueuePreviewSchema.Type;
 
+/**
+ * Why a reshuffle stopped before every waiting post was on its slot:
+ * `planLimit`, a month the plan has no room in; `full`, no slot left
+ * within the horizon; `changed`, the queue's timetable was saved, or the
+ * queue deleted, while it ran.
+ */
+export const ReshuffleStopSchema = Schema.Literals([
+  "planLimit",
+  "full",
+  "changed",
+]).annotate({ identifier: "ReshuffleStop" });
+
+export type ReshuffleStop = typeof ReshuffleStopSchema.Type;
+
+/**
+ * What a reshuffle did: posts moved onto their slots, posts left where
+ * they were (already on their slots, or not the caller's to move), and
+ * posts not placed when it stopped, with why (`stoppedBy`, null when it
+ * went through).
+ */
+export const QueueReshuffleSchema = Schema.Struct({
+  moved: Schema.Int,
+  remaining: Schema.Int,
+  stoppedBy: Schema.NullOr(ReshuffleStopSchema),
+  unchanged: Schema.Int,
+}).annotate({ identifier: "QueueReshuffle" });
+
+export type QueueReshuffle = typeof QueueReshuffleSchema.Type;
+
 const workspace = { workspaceId: Schema.String };
 
 const queue = { ...workspace, queueId: Schema.String };
@@ -259,6 +288,16 @@ export class QueuesApi extends HttpApiGroup.make("queues")
       OpenApi.annotations({
         description: `Lists the queue's next \`count\` slots after now (${defaultQueuePreview} unless given, ${maxQueuePreview} at most), each with the post that holds it, or null, and \`nextFree\`, the slot a post added now would take, which may come after them; null with \`noRoom\` when there is none: the queue has no slot (\`noSlots\`), or every slot of the next ${queueHorizonDays} days is taken (\`full\`). A slot is taken while a post the queue placed is scheduled, awaiting approval or publishing at exactly that instant. The preview holds nothing: the slot is decided when the post is added. Needs post:read.`,
         summary: "Preview a queue's slots",
+      })
+    ),
+    HttpApiEndpoint.post("reshuffle", "/:queueId/reshuffle", {
+      error: [Forbidden, QueueNotFound, QueueHasNoRoom],
+      params: queue,
+      success: QueueReshuffleSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and \`post.scheduled\` told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, or scheduled ones when the caller may only ask for posts to go out), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (\`stoppedBy\` \`planLimit\`), when no slot is left within ${queueHorizonDays} days (\`full\`), or when the queue was saved meanwhile (\`changed\`); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (\`noSlots\`) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.`,
+        summary: "Reshuffle a queue",
       })
     )
   )

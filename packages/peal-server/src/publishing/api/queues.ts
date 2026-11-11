@@ -5,6 +5,7 @@ import {
   ChannelSetNotFound,
   CurrentMember,
   InvalidTimeZone,
+  QueueHasNoRoom,
   QueueNameTaken,
   QueueNotFound,
   TooManyQueues,
@@ -15,6 +16,8 @@ import type {
   QueueSlot as SlotInput,
 } from "peal-contract";
 
+import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import type { QueueReshuffle } from "#publishing/application/post-scheduling.ts";
 import { Queues } from "#publishing/application/queues.ts";
 import { ChannelSetIdSchema } from "#publishing/domain/channel-set-id.ts";
 import { QueueIdSchema } from "#publishing/domain/queue-id.ts";
@@ -96,12 +99,26 @@ export const queueDetailsFrom = ({
     return details;
   });
 
+// What a reshuffle did, as the contract writes it.
+const reshuffleView = ({
+  moved,
+  remaining,
+  stoppedBy,
+  unchanged,
+}: QueueReshuffle) => ({
+  moved,
+  remaining,
+  stoppedBy: Option.getOrNull(stoppedBy),
+  unchanged,
+});
+
 // A failure of the server's own (the database, a bug) is a defect: 500.
 export const QueuesHandlers = HttpApiBuilder.group(
   Api,
   "queues",
   Effect.fn(function* queuesHandlers(handlers) {
     const queues = yield* Queues;
+    const scheduling = yield* PostScheduling;
 
     return handlers.handleAll({
       create: ({ payload }) =>
@@ -158,6 +175,24 @@ export const QueuesHandlers = HttpApiBuilder.group(
             Effect.catchTags({
               DatabaseError: Effect.die,
               MissingPermission: forbidden,
+            })
+          );
+        }),
+      reshuffle: ({ params }) =>
+        Effect.gen(function* reshuffle() {
+          const actor = actorOf(yield* CurrentMember);
+          const queueId = yield* queueIdFrom(params.queueId);
+
+          return yield* scheduling.reshuffle(actor, queueId).pipe(
+            Effect.map(reshuffleView),
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+              QueueHasNoRoom: ({ reason }) =>
+                Effect.fail(
+                  new QueueHasNoRoom({ queueId: params.queueId, reason })
+                ),
+              QueueNotFound: notFound,
             })
           );
         }),
