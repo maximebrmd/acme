@@ -21,6 +21,7 @@ import {
   channelSets,
   queues,
   idempotencyKeys,
+  livePostChanges,
   postTargets,
   posts,
   publicationCalls,
@@ -93,6 +94,8 @@ type PostRow = typeof posts.$inferSelect;
 
 type TargetRow = typeof postTargets.$inferSelect;
 
+type ChangeRow = typeof livePostChanges.$inferSelect;
+
 // How the post was created, or scheduled, as an export holds it.
 const originRecord = (row: PostRow, column: "createdVia" | "scheduledVia") =>
   decodeOrigin(row[column]).pipe(
@@ -119,7 +122,8 @@ const utcOrNull = (date: Date | null) =>
 // A post as an export holds it, with its targets among `targetRows`.
 const recordOf = Effect.fnUntraced(function* recordOf(
   row: PostRow,
-  targetRows: readonly TargetRow[]
+  targetRows: readonly TargetRow[],
+  changeRows: readonly ChangeRow[]
 ) {
   const media = yield* decodeMedia(row.media).pipe(Effect.orDie);
 
@@ -146,6 +150,7 @@ const recordOf = Effect.fnUntraced(function* recordOf(
                     ? 1
                     : live.length,
                 permalink: target.permalink,
+                removedAt: utcOrNull(target.removedAt),
                 status: target.status,
               }))
             ),
@@ -163,6 +168,17 @@ const recordOf = Effect.fnUntraced(function* recordOf(
       textOverrides: part.overrides,
     })),
     id: row.id,
+    liveChanges: changeRows
+      .filter((change) => change.postId === row.id)
+      .map((change) => ({
+        alreadyGone: change.alreadyGone,
+        failureCode: change.failureCode,
+        finishedAt: utcOrNull(change.finishedAt),
+        kind: change.kind,
+        requestedAt: DateTime.fromDateUnsafe(change.requestedAt),
+        status: change.status,
+        targetId: change.targetId,
+      })),
     media: exportedMedia(media),
     scheduledAt: utcOrNull(row.scheduledAt),
     scheduledVia: yield* originRecord(row, "scheduledVia"),
@@ -223,6 +239,22 @@ export const DrizzleWorkspacePostStore = Layer.effect(
             .orderBy(asc(postTargets.id))
             .pipe(Effect.mapError(failed));
 
+    // The changes asked of these posts once live, oldest first.
+    const changesOf = (postRows: readonly PostRow[]) =>
+      postRows.length === 0
+        ? Effect.succeed<readonly ChangeRow[]>([])
+        : db
+            .select()
+            .from(livePostChanges)
+            .where(
+              inArray(
+                livePostChanges.postId,
+                postRows.map(({ id }) => id)
+              )
+            )
+            .orderBy(asc(livePostChanges.id))
+            .pipe(Effect.mapError(failed));
+
     const exportAll = Effect.fn("WorkspacePostStore.exportAll")(
       function* exportAll(workspaceId: string) {
         const postRows = yield* db
@@ -233,9 +265,10 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .pipe(Effect.mapError(failed));
 
         const targetRows = yield* targetsOf(postRows);
+        const changeRows = yield* changesOf(postRows);
 
         return yield* Effect.all(
-          postRows.map((row) => recordOf(row, targetRows))
+          postRows.map((row) => recordOf(row, targetRows, changeRows))
         );
       }
     );
@@ -264,10 +297,11 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .pipe(Effect.mapError(failed));
 
         const targetRows = yield* targetsOf(postRows);
+        const changeRows = yield* changesOf(postRows);
 
         return yield* Effect.all(
           postRows.map((row) =>
-            recordOf(row, targetRows).pipe(
+            recordOf(row, targetRows, changeRows).pipe(
               Effect.map((record): AuthoredPostRecord => ({
                 ...record,
                 workspaceId: row.workspaceId,
@@ -291,6 +325,13 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .update(posts)
           .set({ scheduledBy: null })
           .where(eq(posts.scheduledBy, userId))
+          .pipe(Effect.mapError(failed));
+
+        // Nor that they asked to change one once live.
+        yield* db
+          .update(livePostChanges)
+          .set({ requestedBy: null })
+          .where(eq(livePostChanges.requestedBy, userId))
           .pipe(Effect.mapError(failed));
       }
     );

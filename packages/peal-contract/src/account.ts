@@ -130,6 +130,19 @@ const ExportedPostSchema = Schema.Struct({
     })
   ),
   id: Schema.String,
+  // The changes asked of it once it was live (`unpublish`: deleting it from
+  // a channel's platform), oldest first, without who asked.
+  liveChanges: Schema.Array(
+    Schema.Struct({
+      alreadyGone: Schema.Boolean,
+      failureCode: nullable(Schema.String),
+      finishedAt: nullable(instant),
+      kind: Schema.String,
+      requestedAt: instant,
+      status: Schema.String,
+      targetId: Schema.String,
+    })
+  ),
   media: Schema.Array(ExportedAttachmentSchema),
   scheduledAt: nullable(instant),
   // How it was last scheduled; null on a draft, or when it was not kept.
@@ -148,6 +161,8 @@ const ExportedPostSchema = Schema.Struct({
       // How many of the post's parts are live there.
       partsLive: Schema.Int,
       permalink: nullable(Schema.String),
+      // When Peal deleted it from that channel's platform, if it did.
+      removedAt: nullable(instant),
       status: Schema.String,
     })
   ),

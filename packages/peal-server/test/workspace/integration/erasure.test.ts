@@ -167,6 +167,9 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.channel_sets WHERE workspace_id = ${id}`,
   "publishing.idempotency_keys": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.idempotency_keys WHERE workspace_id = ${id}`,
+  // The changes asked of its live posts go with them.
+  "publishing.live_post_changes": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.live_post_changes WHERE workspace_id = ${id}`,
   "publishing.post_targets": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.post_targets t JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.posts": (sql, id) =>
@@ -296,6 +299,9 @@ const userRows = {
   // them.
   "publishing.posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id} OR scheduled_by = ${id}`,
+  // The changes they asked of live posts stay, without them.
+  "publishing.live_post_changes": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.live_post_changes WHERE requested_by = ${id}`,
   // What they wrote and decided in reviews stays with its workspace,
   // without them, as do the links and the policy they made.
   "review.approval_requests": (sql, id) =>
@@ -460,6 +466,10 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO publishing.publication_attempts (target_id, round, attempt, decision, detail, outcome, started_at, finished_at)
     VALUES (${targetId}, 1, 1, 'settle', '{}'::jsonb, 'published', now(), now())`;
+
+  // A change they asked of it once live, which ended.
+  yield* sql`INSERT INTO publishing.live_post_changes (id, workspace_id, post_id, target_id, channel_id, kind, status, parts_left, requested_by, requested_via, requested_at, finished_at)
+    VALUES (${uuid7()}, ${workspaceId}, ${postId}, ${targetId}, ${uuid7()}, 'unpublish', 'done', '[]'::jsonb, ${person.id}, '{"_tag":"web"}'::jsonb, now(), now())`;
 
   const callKey = randomUUID();
 

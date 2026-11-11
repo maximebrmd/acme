@@ -7,8 +7,10 @@ import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
+import { DrizzleLivePostChangeStore } from "#publishing/infrastructure/drizzle-live-post-change-store.ts";
 import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
+import { WorkflowLivePostJobs } from "#publishing/infrastructure/workflow-live-post-jobs.ts";
 import { PublishTargetV2 } from "#publishing/infrastructure/workflows/publish-parts.ts";
 import { newId } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -40,7 +42,13 @@ const timeout = 60_000;
 
 // PostRecords on the server's scheduler and transactions.
 const PostRecordsTest = PostRecords.layer.pipe(
-  Layer.provide(DrizzleWorkspacePostStore)
+  Layer.provide(
+    Layer.mergeAll(
+      DrizzleWorkspacePostStore,
+      DrizzleLivePostChangeStore,
+      WorkflowLivePostJobs
+    )
+  )
 );
 
 // A scheduler whose stops are lost, so the job wakes for a post erased

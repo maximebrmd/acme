@@ -7,6 +7,7 @@ import { LivePostChangeStore } from "#publishing/application/live-post-change-st
 import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
 import { LivePostJobs } from "#publishing/application/live-post-jobs.ts";
 import { LivePostNotChangeable } from "#publishing/application/live-post-not-changeable.ts";
+import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
 import { LivePostChangeIdSchema } from "#publishing/domain/live-post-change-id.ts";
@@ -695,6 +696,81 @@ describe("asking to unpublish", () => {
         for (const made of answer.changes) {
           yield* eventually("the change is done", hasStatus(made.id, "done"));
         }
+      })
+    )
+  );
+});
+
+describe("erasing a workspace with a change of a live post", () => {
+  it.effect("stops a change that waits, and deletes it", () =>
+    onPostsServerAt(
+      start,
+      Effect.gen(function* waiting() {
+        const changes = yield* LivePostChanges;
+        const removals = yield* FakeRemovals;
+        const records = yield* PostRecords;
+        const { actor, channelId, postId, target } =
+          yield* published("mastodon");
+
+        yield* removals.script(channelId, [
+          {
+            _tag: "fail",
+            failure: new RateLimited({ retryAfter: Duration.hours(1) }),
+          },
+        ]);
+
+        const change = yield* changes.unpublishTarget(actor, postId, target.id);
+
+        yield* eventually(
+          "the platform was called",
+          deletedOn(channelId).pipe(Effect.map((calls) => calls.length === 1))
+        );
+        yield* eventually("the job waits", isWaiting(change.id));
+
+        yield* records.eraseWorkspace(actor.workspaceId);
+
+        assert.deepStrictEqual(
+          yield* LivePostChangeStore.use((store) => store.find(change.id)),
+          Option.none()
+        );
+
+        // Its wait ends: nothing more is deleted.
+        yield* TestClock.adjust(Duration.hours(2));
+        yield* TestClock.withLive(Effect.sleep(Duration.millis(200)));
+
+        assert.strictEqual((yield* deletedOn(channelId)).length, 1);
+      })
+    )
+  );
+
+  it.effect("is refused while a call deletes a post", () =>
+    onPostsServerAt(
+      start,
+      Effect.gen(function* inFlight() {
+        const changes = yield* LivePostChanges;
+        const removals = yield* FakeRemovals;
+        const records = yield* PostRecords;
+        const { actor, channelId, postId, target } =
+          yield* published("mastodon");
+
+        yield* removals.script(channelId, [{ _tag: "hang" }]);
+
+        const change = yield* changes.unpublishTarget(actor, postId, target.id);
+
+        yield* eventually(
+          "the call was made",
+          deletedOn(channelId).pipe(Effect.map((calls) => calls.length === 1))
+        );
+
+        const refused = yield* records
+          .eraseWorkspace(actor.workspaceId)
+          .pipe(Effect.flip);
+
+        assert.strictEqual(refused._tag, "PostsPublishing");
+
+        yield* removals.release(channelId);
+        yield* eventually("the change is done", hasStatus(change.id, "done"));
+        yield* records.eraseWorkspace(actor.workspaceId);
       })
     )
   );
