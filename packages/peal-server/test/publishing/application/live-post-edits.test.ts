@@ -585,9 +585,14 @@ describe("asking to edit", () => {
       start,
       Effect.gen(function* together() {
         const changes = yield* LivePostChanges;
+        const removals = yield* FakeRemovals;
 
         const { actor, channelId, postId, target } =
           yield* published("mastodon");
+
+        // The edit stays pending until every request was answered: one
+        // that ended meanwhile would let a later request make another.
+        yield* removals.script(channelId, [{ _tag: "hang" }]);
 
         const exits = yield* Effect.all(
           Array.from({ length: 20 }, () =>
@@ -608,6 +613,8 @@ describe("asking to edit", () => {
         );
 
         const made = exits.find(Exit.isSuccess);
+
+        yield* removals.release(channelId);
 
         if (made !== undefined) {
           yield* eventually(
