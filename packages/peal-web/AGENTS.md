@@ -125,7 +125,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   nickname, their audiences, interactions they turned off (and set off),
   no Duet or Stitch on photo posts, "Only me" closed to branded content,
   the disclosure's label, and TikTok's consent line, as its content sharing
-  guidelines require. On a Pinterest channel, `PinterestChannelOptions`
+  guidelines require. A field shown once another holds anything (X's
+  sharing with followers, once a community is written) has
+  `shownWith: { filled: true }`. The counter takes the channel's options
+  (`fitOn`'s fourth argument), as a Mastodon content warning counts with
+  the text. On a Pinterest channel, `PinterestChannelOptions`
   reads the account's boards, ten pages of 50 at most, and the chosen
   board's sections (`pinterestBoards` and `pinterestBoardSections` in
   `#posts/api.ts`, as `LookupChoices`): a field shows that its list is being

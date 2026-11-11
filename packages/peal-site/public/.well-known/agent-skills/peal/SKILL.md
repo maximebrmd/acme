@@ -166,6 +166,11 @@ What any channel takes is read, never guessed: the limits on its text and
 media, the options its platform asks for, and the lookups that answer their
 values (a board, a playlist, a category).
 
+Set an option only when the user chose it: who may reply, a content warning,
+a community, a language or a disclosure label. Left out, each platform does
+what its description says (`ifLeftOut`), most often the account's own
+default.
+
 ```sh
 peal channels capabilities <channel-id> --json
 peal channels lookup <channel-id> <lookup> --json
