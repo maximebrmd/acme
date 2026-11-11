@@ -6,6 +6,7 @@ import { DateTime, Effect, Layer, Option } from "effect";
 
 import { NoticeInbox } from "#notifications/application/notice-inbox.ts";
 import { NotificationSettings } from "#notifications/application/notification-settings.ts";
+import { newId } from "#shared/application/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import { freshWorkspace } from "#test/channels/support.ts";
 import {
@@ -55,7 +56,8 @@ layer(Test, { timeout: 60_000 })("an endpoint's notices", (it) => {
         );
 
         const endpoint = createEndpoint(
-          WebhookEndpointIdSchema.make("00000000-0000-7000-8000-0000000f0a11"),
+          // Its own each run: a notice's key is kept for good.
+          yield* newId(WebhookEndpointIdSchema),
           workspaceId,
           {
             description: "",

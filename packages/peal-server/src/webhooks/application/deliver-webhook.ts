@@ -5,6 +5,7 @@ import {
   Layer,
   Metric,
   Option,
+  Redacted,
   Result,
 } from "effect";
 
@@ -214,9 +215,28 @@ export class DeliverWebhook extends Context.Service<
           return yield* abandon(delivery, "notConfigured", endpoint);
         }
 
+        const opened = yield* secrets
+          .openHeaders(endpoint.id, stored.headers)
+          .pipe(Effect.option);
+
+        if (Option.isNone(opened)) {
+          yield* Effect.logWarning(
+            "A webhook delivery could not be sent: one of the endpoint's headers no longer decrypts"
+          );
+
+          return yield* abandon(delivery, "notConfigured", endpoint);
+        }
+
+        // The endpoint's own headers go under Peal's, which none replaces.
         const response = yield* transport.send({
           body: message.body,
           headers: {
+            ...Object.fromEntries(
+              opened.value.map(({ name, value }) => [
+                name,
+                Redacted.value(value),
+              ])
+            ),
             ...signedHeaders(message, macs.value),
             "content-type": "application/json",
             "user-agent": "Peal-Webhooks",

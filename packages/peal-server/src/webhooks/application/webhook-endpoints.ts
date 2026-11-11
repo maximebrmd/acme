@@ -10,6 +10,8 @@ import { authorize } from "#shared/domain/authorize.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { maxEndpointsPerWorkspace } from "#webhooks/domain/delivery-policy.ts";
+import { EndpointHeadersSchema } from "#webhooks/domain/endpoint-headers.ts";
+import type { EndpointHeaders } from "#webhooks/domain/endpoint-headers.ts";
 import type { InvalidWebhookUrl } from "#webhooks/domain/invalid-webhook-url.ts";
 import { RecordedEvent } from "#webhooks/domain/recorded-event.ts";
 import { sampleOf } from "#webhooks/domain/sample-events.ts";
@@ -37,6 +39,7 @@ import { dispatch } from "./dispatch.ts";
 import { EndpointDisabled } from "./endpoint-disabled.ts";
 import { EndpointNotFound } from "./endpoint-not-found.ts";
 import { FilterRefused } from "./filter-refused.ts";
+import { HeadersRefused } from "./headers-refused.ts";
 import { PartnerScopeUnavailable } from "./partner-scope-unavailable.ts";
 import type { DeliveryJobs } from "./ports/delivery-jobs.ts";
 import { DeliveryStore } from "./ports/delivery-store.ts";
@@ -57,9 +60,18 @@ import type { UrlNotDeliverable } from "./url-not-deliverable.ts";
  */
 export interface NewEndpoint extends Omit<
   EndpointSettings,
-  "channelIds" | "url" | "workspaceIds"
+  "channelIds" | "headerNames" | "url" | "workspaceIds"
 > {
   readonly channelIds?: readonly string[];
+  /**
+   * The headers its deliveries carry beside Peal's, values in the clear:
+   * none when left out. On a change, the whole list replaces the one it
+   * had, and leaving it out keeps it.
+   */
+  readonly headers?: readonly {
+    readonly name: string;
+    readonly value: string;
+  }[];
   /** What it hears: its workspace's events, unless `partner` says more. */
   readonly scope?: EndpointScope;
   readonly url: string;
@@ -94,6 +106,14 @@ interface EndpointFilters {
 const decodeChannels = Schema.decodeUnknownEffect(ChannelFilterSchema);
 
 const decodeWorkspaces = Schema.decodeUnknownEffect(WorkspaceFilterSchema);
+
+const decodeHeaders = Schema.decodeUnknownEffect(EndpointHeadersSchema);
+
+// The headers asked for, once they are headers an endpoint may carry.
+const headersFrom = (
+  asked: NonNullable<NewEndpoint["headers"]>
+): Effect.Effect<EndpointHeaders, HeadersRefused> =>
+  decodeHeaders(asked).pipe(Effect.mapError(() => new HeadersRefused()));
 
 // The filters as an endpoint of the scope keeps them, once each is a list
 // of ids it may take: a list of workspaces only on one that hears more
@@ -185,6 +205,7 @@ export class WebhookEndpoints extends Context.Service<
       EndpointWithSecret,
       | DatabaseError
       | FilterRefused
+      | HeadersRefused
       | MissingPermission
       | PartnerScopeUnavailable
       | SecretsNotConfigured
@@ -200,7 +221,9 @@ export class WebhookEndpoints extends Context.Service<
       | DatabaseError
       | EndpointNotFound
       | FilterRefused
+      | HeadersRefused
       | MissingPermission
+      | SecretsNotConfigured
       | UrlRefused
     >;
     /** Deletes the endpoint, its secrets and its delivery log. */
@@ -293,12 +316,14 @@ export class WebhookEndpoints extends Context.Service<
 
         const {
           channelIds,
+          headers: askedHeaders = [],
           scope = "workspace",
           workspaceIds,
           ...settings
         } = asked;
 
         const filters = yield* filtersFor(scope, { channelIds, workspaceIds });
+        const headers = yield* headersFrom(askedHeaders);
 
         if (
           scope === "partner" &&
@@ -314,12 +339,18 @@ export class WebhookEndpoints extends Context.Service<
         const endpoint = createEndpoint(
           yield* newId(WebhookEndpointIdSchema),
           actor.workspaceId,
-          { ...settings, ...filters, url },
+          {
+            ...settings,
+            ...filters,
+            headerNames: headers.map(({ name }) => name),
+            url,
+          },
           yield* DateTime.now,
           scope
         );
 
         const issued = yield* secrets.issue(endpoint.id);
+        const sealed = yield* secrets.sealHeaders(endpoint.id, headers);
 
         yield* store.addingTo(
           actor.workspaceId,
@@ -330,7 +361,7 @@ export class WebhookEndpoints extends Context.Service<
               ? Effect.fail(
                   new TooManyEndpoints({ allowed: maxEndpointsPerWorkspace })
                 )
-              : store.insert(endpoint, issued.sealed);
+              : store.insert(endpoint, issued.sealed, sealed);
           })
         );
 
@@ -342,7 +373,13 @@ export class WebhookEndpoints extends Context.Service<
       const update = Effect.fn("WebhookEndpoints.update")(function* update(
         actor: Actor,
         endpointId: string,
-        { channelIds, url, workspaceIds, ...change }: EndpointChange
+        {
+          channelIds,
+          headers: askedHeaders,
+          url,
+          workspaceIds,
+          ...change
+        }: EndpointChange
       ) {
         yield* managing(actor);
 
@@ -353,15 +390,30 @@ export class WebhookEndpoints extends Context.Service<
           workspaceIds,
         });
 
+        // Given, the headers replace those it had; left out, they stay.
+        const headers =
+          askedHeaders === undefined
+            ? Option.none<EndpointHeaders>()
+            : Option.some(yield* headersFrom(askedHeaders));
+
+        const sealed = Option.isSome(headers)
+          ? Option.some(yield* secrets.sealHeaders(current.id, headers.value))
+          : Option.none();
+
+        const named = Option.match(headers, {
+          onNone: () => ({}),
+          onSome: (given) => ({ headerNames: given.map(({ name }) => name) }),
+        });
+
         const changed = changeEndpoint(
           current,
           url === undefined
-            ? { ...change, ...filters }
-            : { ...change, ...filters, url: yield* deliverable(url) },
+            ? { ...change, ...filters, ...named }
+            : { ...change, ...filters, ...named, url: yield* deliverable(url) },
           yield* DateTime.now
         );
 
-        if (!(yield* store.update(changed, current))) {
+        if (!(yield* store.update(changed, current, sealed))) {
           return yield* new EndpointNotFound({ endpointId });
         }
 

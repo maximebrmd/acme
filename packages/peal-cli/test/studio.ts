@@ -876,6 +876,7 @@ export const webhooks: readonly WebhookEndpoint[] = [
     enabled: true,
     eventTypes: ["post.published", "post.failed"],
     failingSince: at("2026-11-09T11:00:00Z"),
+    headerNames: [],
     id: hookId,
     previousSecretExpiresAt: null,
     scope: "workspace",
@@ -892,6 +893,7 @@ export const webhooks: readonly WebhookEndpoint[] = [
     enabled: false,
     eventTypes: ["media.ready"],
     failingSince: at("2026-11-01T10:00:00Z"),
+    headerNames: [],
     id: failingHookId,
     previousSecretExpiresAt: null,
     scope: "workspace",
@@ -4603,6 +4605,8 @@ export const studioGroupsLive = (studio: Studio) =>
               enabled,
               eventTypes: payload.eventTypes,
               failingSince: null,
+              // Names only: the values are never answered.
+              headerNames: (payload.headers ?? []).map(({ name }) => name),
               id: `0190f3a0-0000-7000-8000-00000000b${String(current.webhooks.length + 1).padStart(3, "0")}`,
               previousSecretExpiresAt: null,
               scope: payload.scope ?? "workspace",
@@ -4864,9 +4868,16 @@ export const studioGroupsLive = (studio: Studio) =>
               `webhook:update:${found.id}:${Object.keys(payload).toSorted().join(",")}`
             );
 
+            const { headers, ...changed } = payload;
+
+            const headerNames =
+              headers === undefined
+                ? found.headerNames
+                : headers.map(({ name }) => name);
+
             return yield* saveEndpoint(studio, {
               ...found,
-              ...payload,
+              ...changed,
               disabledAt: enabled ? null : (found.disabledAt ?? now),
               disabledReason: enabled
                 ? null
@@ -4874,6 +4885,7 @@ export const studioGroupsLive = (studio: Studio) =>
               enabled,
               failingSince:
                 enabled && !found.enabled ? null : found.failingSince,
+              headerNames,
               updatedAt: now,
             });
           }),

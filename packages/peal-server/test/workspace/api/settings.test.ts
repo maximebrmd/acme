@@ -321,6 +321,7 @@ const PortsLive = Layer.mergeAll(
                 description: "Synthetic receiver",
                 enabled: true,
                 eventTypes: ["post.published"],
+                headerNames: [],
                 id: "00000000-0000-7000-8000-000000000061",
                 url: "https://hooks.example.com/peal",
               },

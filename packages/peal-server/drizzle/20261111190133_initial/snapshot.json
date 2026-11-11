@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "6ec86351-d374-4179-8607-7a49dfe08469",
+  "id": "e55fe35b-f800-42c1-a847-9eba4ea008e6",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -15280,6 +15280,19 @@
       "notNull": false,
       "dimensions": 0,
       "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "headers",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
       "generated": null,
       "identity": null,
       "entityType": "columns"

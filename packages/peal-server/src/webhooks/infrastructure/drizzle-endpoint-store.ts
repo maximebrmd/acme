@@ -7,6 +7,8 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { EndpointStore } from "#webhooks/application/ports/endpoint-store.ts";
 import type { StoredSecrets } from "#webhooks/application/ports/endpoint-store.ts";
+import { SealedHeaderSchema } from "#webhooks/domain/endpoint-headers.ts";
+import type { SealedHeader } from "#webhooks/domain/endpoint-headers.ts";
 import { SealedSecretSchema } from "#webhooks/domain/sealed-secret.ts";
 import type { WebhookEndpointId } from "#webhooks/domain/webhook-endpoint-id.ts";
 import { WebhookEndpoint } from "#webhooks/domain/webhook-endpoint.ts";
@@ -19,6 +21,14 @@ type Row = typeof endpoints.$inferSelect;
 // have written (a bug, or a hand edit) fails loudly instead of being trusted.
 const decodeEndpoint = Schema.decodeUnknownEffect(WebhookEndpoint);
 
+const decodeHeaders = Schema.decodeUnknownEffect(
+  Schema.Array(SealedHeaderSchema)
+);
+
+// The headers as stored, which the store alone wrote.
+const headersOf = (stored: Row["headers"]) =>
+  decodeHeaders(stored).pipe(Effect.orDie);
+
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
 const date = (instant: DateTime.Utc) => DateTime.toDateUtc(instant);
@@ -29,28 +39,36 @@ const utc = (stored: Date | null) =>
   );
 
 const toEndpoint = (row: Row) =>
-  decodeEndpoint({
-    channelIds: row.channelIds,
-    createdAt: DateTime.fromDateUnsafe(row.createdAt),
-    description: row.description,
-    eventTypes: row.eventTypes,
-    failingSince: utc(row.failingSince),
-    id: row.id,
-    previousSecretExpiresAt: utc(row.previousSecretExpiresAt),
-    scope: row.scope,
-    status:
-      row.status === "disabled"
-        ? {
-            _tag: row.status,
-            at: Option.getOrUndefined(utc(row.disabledAt)),
-            reason: row.disabledReason,
-          }
-        : { _tag: row.status },
-    updatedAt: DateTime.fromDateUnsafe(row.updatedAt),
-    url: row.url,
-    workspaceId: row.workspaceId,
-    workspaceIds: row.workspaceIds,
-  }).pipe(Effect.orDie);
+  headersOf(row.headers).pipe(
+    Effect.flatMap((headers) =>
+      decodeEndpoint({
+        channelIds: row.channelIds,
+        createdAt: DateTime.fromDateUnsafe(row.createdAt),
+        description: row.description,
+        eventTypes: row.eventTypes,
+        failingSince: utc(row.failingSince),
+        headerNames: headers.map(({ name }) => name),
+        id: row.id,
+        previousSecretExpiresAt: utc(row.previousSecretExpiresAt),
+        scope: row.scope,
+        status:
+          row.status === "disabled"
+            ? {
+                _tag: row.status,
+                at: Option.getOrUndefined(utc(row.disabledAt)),
+                reason: row.disabledReason,
+              }
+            : { _tag: row.status },
+        updatedAt: DateTime.fromDateUnsafe(row.updatedAt),
+        url: row.url,
+        workspaceId: row.workspaceId,
+        workspaceIds: row.workspaceIds,
+      }).pipe(Effect.orDie)
+    )
+  );
+
+const storedHeaders = (headers: readonly SealedHeader[]) =>
+  headers.map(({ name, sealed }) => ({ name, sealed }));
 
 // What a member, or the endpoint's own failures, change of it.
 const settingsOf = (endpoint: WebhookEndpoint) => {
@@ -159,12 +177,13 @@ export const DrizzleEndpointStore = Layer.effect(
           .from(endpoints)
           .where(eq(endpoints.id, endpointId))
           .pipe(Effect.mapError(failed), Effect.flatMap(some)),
-      insert: (endpoint, secret) =>
+      insert: (endpoint, secret, headers) =>
         db
           .insert(endpoints)
           .values({
             ...settingsOf(endpoint),
             createdAt: date(endpoint.createdAt),
+            headers: storedHeaders(headers),
             id: endpoint.id,
             scope: endpoint.scope,
             secret,
@@ -226,31 +245,43 @@ export const DrizzleEndpointStore = Layer.effect(
         db
           .select({
             current: endpoints.secret,
+            headers: endpoints.headers,
             previous: endpoints.previousSecret,
           })
           .from(endpoints)
           .where(eq(endpoints.id, endpointId))
           .pipe(
             Effect.mapError(failed),
-            Effect.map(([row]) =>
-              Option.fromUndefinedOr(row).pipe(
-                Option.map(({ current, previous }): StoredSecrets => ({
-                  current: SealedSecretSchema.make(current),
-                  previous: Option.fromNullOr(previous).pipe(
-                    Option.map((sealed) => SealedSecretSchema.make(sealed))
-                  ),
-                }))
-              )
+            Effect.flatMap(([row]) =>
+              row === undefined
+                ? Effect.succeed(Option.none<StoredSecrets>())
+                : headersOf(row.headers).pipe(
+                    Effect.map((headers) =>
+                      Option.some<StoredSecrets>({
+                        current: SealedSecretSchema.make(row.current),
+                        headers,
+                        previous: Option.fromNullOr(row.previous).pipe(
+                          Option.map((sealed) =>
+                            SealedSecretSchema.make(sealed)
+                          )
+                        ),
+                      })
+                    )
+                  )
             )
           ),
-      update: (endpoint, from) =>
+      update: (endpoint, from, headers) =>
         db
           .update(endpoints)
-          .set(
-            endpoint.status._tag === from.status._tag
+          .set({
+            ...(endpoint.status._tag === from.status._tag
               ? writtenOf(endpoint)
-              : settingsOf(endpoint)
-          )
+              : settingsOf(endpoint)),
+            ...Option.match(headers, {
+              onNone: () => ({}),
+              onSome: (given) => ({ headers: storedHeaders(given) }),
+            }),
+          })
           .where(byId(endpoint.workspaceId, endpoint.id))
           .returning({ id: endpoints.id })
           .pipe(

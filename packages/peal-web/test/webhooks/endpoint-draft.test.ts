@@ -27,6 +27,7 @@ const endpoint: WebhookEndpoint = {
   enabled: true,
   eventTypes: ["post.published", "post.failed"],
   failingSince: null,
+  headerNames: [],
   id: "00000000-0000-7000-8000-000000000001",
   previousSecretExpiresAt: null,
   scope: "workspace",

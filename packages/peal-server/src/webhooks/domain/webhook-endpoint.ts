@@ -9,6 +9,7 @@ import {
   secretOverlap,
   turnOffAfterFailingFor,
 } from "./delivery-policy.ts";
+import { HeaderNamesSchema } from "./endpoint-headers.ts";
 import { WebhookEndpointIdSchema } from "./webhook-endpoint-id.ts";
 import type { WebhookEndpointId } from "./webhook-endpoint-id.ts";
 import { SubscribableEventTypeSchema } from "./webhook-event-type.ts";
@@ -102,6 +103,11 @@ export class WebhookEndpoint extends Schema.Class<WebhookEndpoint>(
   eventTypes: EventTypesSchema,
   // When its attempts started failing, none since one succeeded.
   failingSince: Schema.Option(Schema.DateTimeUtc),
+  // The names of the headers its deliveries carry beside Peal's; their
+  // values are sealed apart, as the secret is.
+  headerNames: HeaderNamesSchema.pipe(
+    Schema.withConstructorDefault(Effect.succeed([]))
+  ),
   id: WebhookEndpointIdSchema,
   previousSecretExpiresAt: Schema.Option(Schema.DateTimeUtc),
   scope: EndpointScopeSchema.pipe(
@@ -127,6 +133,8 @@ export interface EndpointSettings {
     SubscribableEventType,
     ...SubscribableEventType[],
   ];
+  /** The names of the headers its deliveries carry; none when left out. */
+  readonly headerNames?: readonly string[];
   readonly url: WebhookUrl;
   /**
    * The workspaces a partner endpoint hears; empty or left out for every
@@ -149,6 +157,7 @@ const withFields = (
     description: endpoint.description,
     eventTypes: endpoint.eventTypes,
     failingSince: endpoint.failingSince,
+    headerNames: endpoint.headerNames,
     id: endpoint.id,
     previousSecretExpiresAt: endpoint.previousSecretExpiresAt,
     scope: endpoint.scope,
@@ -215,6 +224,7 @@ export const createEndpoint = (
     description: settings.description,
     eventTypes: distinct(settings.eventTypes),
     failingSince: Option.none(),
+    headerNames: settings.headerNames ?? [],
     id,
     previousSecretExpiresAt: Option.none(),
     scope,
@@ -250,6 +260,7 @@ export const changeEndpoint = (
         ? endpoint.eventTypes
         : distinct(change.eventTypes),
     failingSince: turnedOn ? Option.none() : endpoint.failingSince,
+    headerNames: change.headerNames ?? endpoint.headerNames,
     status: statusOf(enabled, Option.some(endpoint.status), now),
     updatedAt: now,
     url: change.url ?? endpoint.url,

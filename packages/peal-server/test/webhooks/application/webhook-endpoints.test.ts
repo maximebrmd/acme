@@ -296,7 +296,7 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
         // ...and saved after its deliveries failed for good.
         yield* store.markFailing(endpoint.id, now);
         assert.isTrue(yield* store.disable(endpoint.id, "failing", now));
-        assert.isTrue(yield* store.update(described, endpoint));
+        assert.isTrue(yield* store.update(described, endpoint, Option.none()));
 
         const kept = Option.getOrThrow(yield* store.get(endpoint.id));
 
@@ -307,7 +307,7 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
         // Turned on by a member, it is on, and its failures forgotten.
         const turnedOn = changeEndpoint(kept, { enabled: true }, now);
 
-        assert.isTrue(yield* store.update(turnedOn, kept));
+        assert.isTrue(yield* store.update(turnedOn, kept, Option.none()));
 
         const on = Option.getOrThrow(yield* store.get(endpoint.id));
 
@@ -587,6 +587,95 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
         []
       );
       assert.lengthOf(yield* endpoints.list(owner), 1);
+    })
+  );
+
+  it.effect(
+    "keep their headers sealed and show their names only, the whole list replaced by a change",
+    () =>
+      Effect.gen(function* headers() {
+        const owner = yield* freshOwner;
+        const endpoints = yield* WebhookEndpoints;
+        const store = yield* EndpointStore;
+        const value = "Bearer synthetic-header-value";
+
+        const { endpoint } = yield* freshEndpoint(owner, {
+          headers: [{ name: "Authorization", value }],
+        });
+
+        assert.deepStrictEqual(endpoint.headerNames, ["Authorization"]);
+        assert.deepStrictEqual(
+          (yield* endpoints.get(owner, endpoint.id)).headerNames,
+          ["Authorization"]
+        );
+
+        const [sealed] = Option.getOrThrow(
+          yield* store.secrets(endpoint.id)
+        ).headers;
+
+        assert(sealed !== undefined);
+        assert.strictEqual(sealed.name, "Authorization");
+        assert.notInclude(sealed.sealed, "synthetic-header-value");
+
+        // Left out, they stay; given, they replace; empty, they go.
+        const described = yield* endpoints.update(owner, endpoint.id, {
+          description: "Renamed",
+        });
+
+        assert.deepStrictEqual(described.headerNames, ["Authorization"]);
+
+        const replaced = yield* endpoints.update(owner, endpoint.id, {
+          headers: [
+            { name: "X-Gateway-Key", value: "synthetic-key" },
+            { name: "X-Route", value: "synthetic-route" },
+          ],
+        });
+
+        assert.deepStrictEqual(replaced.headerNames, [
+          "X-Gateway-Key",
+          "X-Route",
+        ]);
+        assert.lengthOf(
+          Option.getOrThrow(yield* store.secrets(endpoint.id)).headers,
+          2
+        );
+
+        const cleared = yield* endpoints.update(owner, endpoint.id, {
+          headers: [],
+        });
+
+        assert.deepStrictEqual(cleared.headerNames, []);
+      })
+  );
+
+  it.effect("refuse headers an endpoint cannot carry, saving nothing", () =>
+    Effect.gen(function* refused() {
+      const owner = yield* freshOwner;
+      const endpoints = yield* WebhookEndpoints;
+      const before = (yield* endpoints.list(owner)).length;
+
+      for (const headers of [
+        [{ name: "webhook-id", value: "synthetic" }],
+        [{ name: "Content-Type", value: "text/plain" }],
+        [{ name: "X-Value", value: "line\nbreak" }],
+        [
+          { name: "Authorization", value: "synthetic-one" },
+          { name: "authorization", value: "synthetic-two" },
+        ],
+        ["A", "B", "C", "D", "E", "F"].map((name) => ({
+          name,
+          value: "synthetic",
+        })),
+      ]) {
+        assert.strictEqual(
+          yield* tagOf(
+            endpoints.create(owner, receiver("hooks.example.com", { headers }))
+          ),
+          "HeadersRefused"
+        );
+      }
+
+      assert.lengthOf(yield* endpoints.list(owner), before);
     })
   );
 });

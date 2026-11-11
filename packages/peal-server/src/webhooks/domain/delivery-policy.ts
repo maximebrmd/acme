@@ -63,6 +63,12 @@ export const maxFilterChannels = 50;
 export const maxFilterWorkspaces = 200;
 
 /**
+ * How many headers of its own an endpoint's deliveries carry at most: one
+ * for a gateway's token, and a few to route on. An owner's decision.
+ */
+export const maxEndpointHeaders = 5;
+
+/**
  * How many deliveries a workspace's members may send again in an hour by
  * the many, apart from the test events and single sends of
  * `manualSendsPerHour`: enough to replay a day of failures after an

@@ -60,6 +60,21 @@
   new one for 24 hours. Never log one, nor an endpoint's URL, whose path
   or query may hold the receiver's secret: logs, notices and the staff
   console name an endpoint by id and host.
+- An endpoint's own headers (`domain/endpoint-headers.ts`,
+  `maxEndpointHeaders` 5, an owner's decision): names are HTTP tokens,
+  once whatever their case, never `webhook-*` nor `refusedHeaderNames`, so
+  none can replace one of Peal's (the transport merges them under Peal's
+  anyway); values visible ASCII on one line. Values are sealed through
+  `EndpointSecrets.sealHeaders`, bound to
+  `webhook:<endpoint>:header:<lowercased name>`, in
+  `webhooks.endpoints.headers` (`[{ name, sealed }]`), opened only to send
+  (`openHeaders`; one that no longer decrypts abandons the delivery as
+  `notConfigured`, as a secret does), and never returned, logged or
+  exported: the view, the export and the staff console name them only
+  (`headerNames`). A change's `headers` replaces the whole list, left out
+  it keeps it. The contract's copy of the rules is kept equal by
+  `test/webhooks/api/contract.test.ts`; `test/app/secrets-in-logs.test.ts`
+  searches the logs, traces and delivery log for the values.
 - `WebhookTransport` sends through `publicHttpClient` only (HTTPS on 443,
   public addresses checked before every request, no redirect followed, no
   trace context), with its spans off and 15 seconds for the whole exchange.

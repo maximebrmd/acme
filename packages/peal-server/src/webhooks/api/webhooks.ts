@@ -59,6 +59,11 @@ const filterRefused = ({
 
 const endpointNotFound = () => Effect.fail(new WebhookEndpointNotFound());
 
+// The contract's schema refuses these headers first, by the same rules
+// (test/webhooks/api/contract.test.ts): a refusal here is a bug.
+const headersRefused = () =>
+  Effect.die("The contract accepted headers the endpoint refuses");
+
 const endpointDisabled = () => Effect.fail(new WebhookEndpointDisabled());
 
 const tooManySends = ({
@@ -109,6 +114,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
               description: payload.description ?? "",
               enabled: payload.enabled ?? true,
               eventTypes: payload.eventTypes,
+              headers: payload.headers ?? [],
               scope: payload.scope ?? "workspace",
               url: payload.url,
               workspaceIds: payload.workspaceIds ?? [],
@@ -118,6 +124,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
               Effect.catchTags({
                 DatabaseError: Effect.die,
                 FilterRefused: filterRefused,
+                HeadersRefused: headersRefused,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: forbidden,
                 PartnerScopeUnavailable: () =>
@@ -310,8 +317,10 @@ export const WebhooksHandlers = HttpApiBuilder.group(
                 DatabaseError: Effect.die,
                 EndpointNotFound: endpointNotFound,
                 FilterRefused: filterRefused,
+                HeadersRefused: headersRefused,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: forbidden,
+                SecretsNotConfigured: notConfigured,
                 UrlNotDeliverable: urlRefused,
               })
             );

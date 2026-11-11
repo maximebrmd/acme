@@ -36,6 +36,15 @@ An endpoint is an address, the events it wants, a description, whether it is on,
 
 Filters are checked for the shape of their ids only: an id that names nothing matches nothing, and a filter stays as you saved it when a channel is disconnected or a workspace leaves the partner account. The endpoint's form lists such a channel apart, ticked, as **A channel no longer connected**: untick it to take it off. They apply when each event happens, with the endpoint as it is then; [sending a delivery again](#log) sends it to its endpoint whatever the filters say now.
 
+### Headers of your own [#headers]
+
+An endpoint may carry up to 5 headers of your choosing, sent with every delivery beside Peal's own: a token a gateway in front of your server asks for, say, or a header to route on. They are static: the same on every delivery and every attempt.
+
+- **A name** is an HTTP token (letters, digits and ``!#$%&'*+.^_`|~-``), 64 characters at most, once per endpoint whatever its case. `Authorization` is allowed. Peal refuses the names it sets or that describe the request or its connection: any name starting with `webhook-`, `Host`, `Content-Type`, `Content-Length`, `User-Agent`, `Cookie`, `Connection`, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Transfer-Encoding` and `Upgrade`. None of yours ever replaces one of Peal's.
+- **A value** is visible ASCII on one line, spaces inside it but at neither end, 1,024 characters at most.
+- **Values are write-only.** Peal stores them encrypted, as it does the secret, and never shows them again: the endpoint lists their names (`headerNames`). To change one, send the endpoint's whole list again with `headers`, each value included; `[]` removes them all, and leaving the field out keeps them. Peal never writes them in its logs, nor in the delivery log.
+- **They are not signed.** The [signature](#verify) covers the event's id, timestamp and body, as the specification says: verify it whatever headers you get.
+
 ## The signing secret [#secret]
 
 Peal generates a secret for each endpoint: `whsec_` followed by 32 random bytes in base64. It is shown once, when the endpoint is created, and Peal stores it encrypted: copy it then, into your server's secrets.
@@ -1313,7 +1322,7 @@ export const verify = (secret, headers, rawBody) => {
 | `GET /api/workspaces/{workspaceId}/webhooks`                                                 | Lists the endpoints, oldest first                                                                   |
 | `POST /api/workspaces/{workspaceId}/webhooks`                                                | Adds an endpoint, and answers its `secret` once                                                     |
 | `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                    | Shows one                                                                                           |
-| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Changes its address, description, events or filters, or turns it on or off                          |
+| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Changes its address, description, events, filters or headers, or turns it on or off                 |
 | `DELETE /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                 | Deletes it, with its secret and its log                                                             |
 | `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/secret`                            | Rotates its secret, and answers the new one once                                                    |
 | `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Sends it a test event, or a sample of `eventType`                                                   |
@@ -1338,11 +1347,12 @@ curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
   -d '{
     "url": "https://hooks.example.com/peal",
     "description": "Order system",
-    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"]
+    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"],
+    "headers": [{ "name": "Authorization", "value": "Bearer <your gateway token>" }]
   }'
 ```
 
-The answer holds the `endpoint` and its `secret`. Later answers never hold the secret again.
+The answer holds the `endpoint` and its `secret`. Later answers never hold the secret again. Nor do they hold a header's value: the endpoint names its [headers](#headers) in `headerNames`.
 
 Errors come in the API's format, each with a `code` in snake case beside its name, such as `webhook_url_refused` for `WebhookUrlRefused` ([Errors](/api-conventions#errors)). An API key's requests count towards its [rate limit](/api-conventions#rate-limits).
 

@@ -89,6 +89,39 @@ layer(WebhooksTest)("a delivery's attempts", (it) => {
     })
   );
 
+  it.effect(
+    "send the endpoint's own headers beside Peal's, which they never replace",
+    () =>
+      Effect.gen(function* ownHeaders() {
+        const owner = yield* freshOwner;
+        const transport = yield* FakeTransport;
+
+        const { endpoint, host } = yield* freshEndpoint(owner, {
+          headers: [
+            { name: "Authorization", value: "Bearer synthetic-gateway-token" },
+            { name: "X-Route", value: "synthetic-route" },
+          ],
+        });
+
+        const delivery = yield* pending(owner, endpoint.id);
+
+        yield* attempt(delivery.id, 1);
+
+        const [request] = yield* transport.sentTo(host);
+
+        assert(request !== undefined);
+        assert.strictEqual(
+          request.headers["Authorization"],
+          "Bearer synthetic-gateway-token"
+        );
+        assert.strictEqual(request.headers["X-Route"], "synthetic-route");
+        assert.strictEqual(request.headers["content-type"], "application/json");
+        assert.strictEqual(request.headers["user-agent"], "Peal-Webhooks");
+        assert.strictEqual(request.headers["webhook-id"], delivery.eventId);
+        assert.lengthOf(Object.keys(request.headers), 7);
+      })
+  );
+
   it.effect("try again on the schedule, with the same id and a new time", () =>
     Effect.gen(function* retries() {
       const owner = yield* freshOwner;

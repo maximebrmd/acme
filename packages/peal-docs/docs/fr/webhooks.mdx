@@ -36,6 +36,15 @@ Un point de terminaison, c’est une adresse, les événements qu’il veut rece
 
 Les filtres ne vérifient que la forme de leurs identifiants : un identifiant qui ne désigne rien ne correspond à rien, et un filtre reste tel que vous l’avez enregistré quand une chaîne est déconnectée ou qu’un espace de travail quitte le compte partenaire. Le formulaire du point de terminaison liste une telle chaîne à part, cochée, comme **Une chaîne qui n’est plus connectée** : décochez-la pour la retirer. Ils s’appliquent au moment où chaque événement se produit, avec le point de terminaison tel qu’il est alors ; [renvoyer une livraison](#log) l’envoie à son point de terminaison quoi que disent ses filtres aujourd’hui.
 
+### Des en-têtes à vous [#headers]
+
+Un point de terminaison peut porter jusqu’à 5 en-têtes de votre choix, envoyés avec chaque livraison à côté de ceux de Peal : un jeton que demande une passerelle devant votre serveur, par exemple, ou un en-tête pour router. Ils sont fixes : les mêmes à chaque livraison et à chaque tentative.
+
+- **Un nom** est un jeton HTTP (lettres, chiffres et ``!#$%&'*+.^_`|~-``), de 64 caractères au plus, une seule fois par point de terminaison quelle que soit sa casse. `Authorization` est permis. Peal refuse les noms qu’il pose ou qui décrivent la requête ou sa connexion : tout nom qui commence par `webhook-`, `Host`, `Content-Type`, `Content-Length`, `User-Agent`, `Cookie`, `Connection`, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Transfer-Encoding` et `Upgrade`. Aucun des vôtres ne remplace jamais un de ceux de Peal.
+- **Une valeur** est en ASCII visible sur une seule ligne, des espaces à l’intérieur mais à aucune extrémité, de 1 024 caractères au plus.
+- **Les valeurs ne se relisent pas.** Peal les garde chiffrées, comme le secret, et ne les montre plus jamais : le point de terminaison liste leurs noms (`headerNames`). Pour en changer une, renvoyez toute la liste du point de terminaison avec `headers`, chaque valeur comprise ; `[]` les retire toutes, et omettre le champ les garde. Peal ne les écrit jamais dans ses journaux, ni dans le journal des livraisons.
+- **Elles ne sont pas signées.** La [signature](#verify) couvre l’identifiant, l’horodatage et le corps de l’événement, comme le dit la spécification : vérifiez-la quels que soient les en-têtes reçus.
+
 ## Le secret de signature [#secret]
 
 Peal génère un secret pour chaque point de terminaison : `whsec_` suivi de 32 octets aléatoires en base64. Il s’affiche une seule fois, à la création du point de terminaison, et Peal le garde chiffré : copiez-le à ce moment-là, dans les secrets de votre serveur.
@@ -1313,7 +1322,7 @@ export const verify = (secret, headers, rawBody) => {
 | `GET /api/workspaces/{workspaceId}/webhooks`                                                 | Liste les points de terminaison, du plus ancien au plus récent                                                      |
 | `POST /api/workspaces/{workspaceId}/webhooks`                                                | Ajoute un point de terminaison, et répond son `secret` une seule fois                                               |
 | `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                    | En montre un                                                                                                        |
-| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Change son adresse, sa description, ses événements ou ses filtres, ou l’active ou le désactive                      |
+| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Change son adresse, sa description, ses événements, ses filtres ou ses en-têtes, ou l’active ou le désactive        |
 | `DELETE /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                 | Le supprime, avec son secret et son journal                                                                         |
 | `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/secret`                            | Renouvelle son secret, et répond le nouveau une seule fois                                                          |
 | `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Lui envoie un événement de test, ou un exemple de `eventType`                                                       |
@@ -1338,11 +1347,12 @@ curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
   -d '{
     "url": "https://hooks.example.com/peal",
     "description": "Système de commandes",
-    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"]
+    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"],
+    "headers": [{ "name": "Authorization", "value": "Bearer <le jeton de votre passerelle>" }]
   }'
 ```
 
-La réponse contient l’`endpoint` et son `secret`. Les réponses suivantes ne contiennent plus jamais le secret.
+La réponse contient l’`endpoint` et son `secret`. Les réponses suivantes ne contiennent plus jamais le secret. Ni la valeur d’un en-tête : le point de terminaison nomme ses [en-têtes](#headers) dans `headerNames`.
 
 Les erreurs suivent le format de l’API, chacune avec un `code` en snake case à côté de son nom, comme `webhook_url_refused` pour `WebhookUrlRefused` ([Erreurs](/api-conventions#errors)). Les requêtes d’une clé d’API comptent dans sa [limite de débit](/api-conventions#rate-limits).
 

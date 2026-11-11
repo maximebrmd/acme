@@ -945,6 +945,7 @@ CREATE TABLE "webhooks"."endpoints" (
 	"disabled_reason" text,
 	"event_types" text[] NOT NULL,
 	"failing_since" timestamp with time zone,
+	"headers" jsonb DEFAULT '[]' NOT NULL,
 	"id" uuid PRIMARY KEY,
 	"previous_secret" text,
 	"previous_secret_expires_at" timestamp with time zone,
