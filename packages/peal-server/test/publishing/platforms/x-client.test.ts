@@ -785,9 +785,95 @@ describe("an X post's options", () => {
   );
 
   it.live(
-    "end a post X refuses for its options as refused, once, with a stable code",
+    "end a post X refuses for one of its options as refused, once, with a stable code",
     () =>
       Effect.gen(function* refused() {
+        const { client, x } = yield* onX();
+
+        x.script("POST /2/tweets", [
+          // The problem names the parameter.
+          json(
+            {
+              detail: "One or more parameters to your request was invalid.",
+              parameter: "reply_settings",
+              status: 400,
+              title: "Invalid Request",
+              type: "https://api.x.com/2/problems/invalid-request",
+            },
+            400
+          ),
+          // The older list of errors, by parameter.
+          json(
+            {
+              errors: [
+                {
+                  message: "The value is not permitted.",
+                  parameters: { community_id: ["1700000000000000001"] },
+                },
+              ],
+              title: "Invalid Request",
+              type: "https://api.x.com/2/problems/invalid-request",
+            },
+            400
+          ),
+          // A community the account may not post to.
+          json(
+            {
+              detail: "You are not permitted to post to this community.",
+              resource_type: "community",
+              status: 403,
+              title: "Forbidden",
+              type: "https://api.x.com/2/problems/not-authorized-for-resource",
+            },
+            403
+          ),
+          // The words name the field.
+          json(
+            {
+              detail: "paid_partnership is not available for this account.",
+              status: 403,
+              title: "Forbidden",
+              type: "about:blank",
+            },
+            403
+          ),
+        ]);
+
+        const refusals = yield* Effect.forEach(
+          [
+            new XOptions({ replySettings: "subscribers" }),
+            new XOptions({ communityId: "1700000000000000001" }),
+            new XOptions({ communityId: "1700000000000000002" }),
+            new XOptions({ paidPartnership: true }),
+          ],
+          (options, index) =>
+            post({
+              idempotencyKey: `0b5e4f2a9c7d4e1f8a3b6c5d2e1f0a${String(index)}0`,
+              options: Option.some(options),
+              text: `Refused ${String(index)}`,
+            }).pipe(
+              Effect.flatMap((refusedPost) =>
+                client.publish(refusedPost).pipe(Effect.flip)
+              )
+            )
+        );
+
+        assert.deepStrictEqual(
+          refusals,
+          Array.from(
+            { length: 4 },
+            () => new BadRequest({ code: "optionRefused" })
+          )
+        );
+        assert.lengthOf(calls(x, "POST", "/2/tweets"), 4);
+        assert.lengthOf(x.posts(), 0);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "keep X's own problem when a post with options is refused for something else",
+    () =>
+      Effect.gen(function* elsewhere() {
         const { client, x } = yield* onX();
 
         x.script("POST /2/tweets", [
@@ -802,7 +888,17 @@ describe("an X post's options", () => {
           ),
           json(
             {
+              detail: "This account is temporarily locked.",
+              status: 403,
+              title: "Client Forbidden",
+              type: "https://api.x.com/2/problems/client-forbidden",
+            },
+            403
+          ),
+          json(
+            {
               detail: "One or more parameters to your request was invalid.",
+              parameter: "text",
               status: 400,
               title: "Invalid Request",
               type: "https://api.x.com/2/problems/invalid-request",
@@ -811,29 +907,28 @@ describe("an X post's options", () => {
           ),
         ]);
 
-        const refusals = yield* Effect.forEach(
-          [
-            new XOptions({ replySettings: "subscribers" }),
-            new XOptions({ communityId: "1700000000000000001" }),
-          ],
-          (options, index) =>
-            post({
-              idempotencyKey: `0b5e4f2a9c7d4e1f8a3b6c5d2e1f0a${String(index)}0`,
-              options: Option.some(options),
-              text: `Refused ${String(index)}`,
-            }).pipe(
-              Effect.flatMap((refusedPost) =>
-                client.publish(refusedPost).pipe(Effect.flip)
-              )
+        const refusals = yield* Effect.forEach([0, 1, 2], (index) =>
+          post({
+            idempotencyKey: `0b5e4f2a9c7d4e1f8a3b6c5d2e1f0b${String(index)}0`,
+            options: Option.some(
+              new XOptions({
+                paidPartnership: true,
+                replySettings: "following",
+              })
+            ),
+            text: `Refused ${String(index)}`,
+          }).pipe(
+            Effect.flatMap((refusedPost) =>
+              client.publish(refusedPost).pipe(Effect.flip)
             )
+          )
         );
 
         assert.deepStrictEqual(refusals, [
-          new BadRequest({ code: "optionRefused" }),
-          new BadRequest({ code: "optionRefused" }),
+          new BadRequest({ code: "http403" }),
+          new BadRequest({ code: "client-forbidden" }),
+          new BadRequest({ code: "invalid-request" }),
         ]);
-        assert.lengthOf(calls(x, "POST", "/2/tweets"), 2);
-        assert.lengthOf(x.posts(), 0);
       }).pipe(Effect.scoped)
   );
 

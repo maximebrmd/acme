@@ -142,7 +142,7 @@ On **X**:
 | **Paid partnership**          | `paidPartnership`    | Yes or no                                                | No                      | Every part                        |
 | **Made with AI**              | `madeWithAi`         | Yes or no                                                | No                      | Every part with images or a video |
 
-X does not document which accounts may use each of these. When X refuses a post that carries them, the channel reads **Failed**, with the code `optionRefused`: Peal does not send it again, and X's message is not kept, so it does not say which option X refused. Change the options and post it again.
+X does not document which accounts may use each of these. When X refuses a post that carries them, and its answer names one of them (the field, or the community), the channel reads **Failed**, with the code `optionRefused`: Peal does not send it again, and X's message is not kept, so it does not say which option X refused. Change the options and post it again. When X refuses such a post for anything else, such as a restricted account, the code is X's own problem type, as for a post without options (`client-forbidden`, or `http403` when X names none), and changing the options will not help.
 
 Through the API, a draft takes its options in `options`, one entry per channel, each tagged by its `platform`; each of the post's targets answers with its own. Updating a draft replaces its options: those left out are removed. A channel added only when the post is scheduled has none yet, so on YouTube, TikTok or Pinterest, give it its options in the draft first.
 

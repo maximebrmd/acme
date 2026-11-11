@@ -373,7 +373,10 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   `countedText` is the clients' copy): `violationsOn`, `previewOn` and the
   composer's counter measure it. X documents no tier for its options: a
   400 or 403 on a post that carried any is `BadRequest` `optionRefused`
-  (`platforms/option-refusal.ts`), never retried, X's words never kept.
+  (`platforms/option-refusal.ts`), never retried, X's words never kept,
+  only when X's answer points at an option (`blamesOptions` in
+  `x-refusal.ts`: the parameter, field or resource it names, or its words
+  naming the field); any other refusal keeps X's problem type as its code.
 - Bluesky's gates (`replies`, `disableQuotes`) are records of their own,
   a threadgate under the thread's first post's key and a postgate under
   each post's, written with the post in one `com.atproto.repo.applyWrites`

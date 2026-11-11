@@ -20,7 +20,10 @@ import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
  * X's error body: a problem (`type`, `title`, `detail`), or the older list of
  * `errors`. `type` names the problem under `https://api.x.com/2/problems/`;
  * `detail` and messages may quote the post, so they are only searched for
- * the few errors that change what Peal does, never kept.
+ * the few errors that change what Peal does, never kept. A problem may name
+ * the request's `parameter` or `field` at fault, or the `resource_type` it
+ * is about, and an error the `parameters` it found wrong (X's OpenAPI
+ * document, 2.174).
  */
 export const XProblemSchema = Schema.Struct({
   detail: Schema.optionalKey(Schema.String),
@@ -29,9 +32,15 @@ export const XProblemSchema = Schema.Struct({
       Schema.Struct({
         code: Schema.optionalKey(Schema.Number),
         message: Schema.optionalKey(Schema.String),
+        parameters: Schema.optionalKey(
+          Schema.Record(Schema.String, Schema.Unknown)
+        ),
       })
     )
   ),
+  field: Schema.optionalKey(Schema.String),
+  parameter: Schema.optionalKey(Schema.String),
+  resource_type: Schema.optionalKey(Schema.String),
   title: Schema.optionalKey(Schema.String),
   type: Schema.optionalKey(Schema.String),
 });
@@ -125,6 +134,34 @@ export const xRetryAfter = (
   );
 };
 
+// The fields of the post's body its options fill (`withOptions` in
+// x-client.ts), and the resource one of them names.
+const optionFields: ReadonlySet<string> = new Set([
+  "community_id",
+  "made_with_ai",
+  "paid_partnership",
+  "reply_settings",
+  "share_with_followers",
+]);
+
+const optionResources: ReadonlySet<string> = new Set(["community"]);
+
+/**
+ * Whether X's answer points at one of the post's options: the parameter or
+ * field it names, a parameter its errors list, the resource it is about
+ * (a community), or its words naming the field. X documents no other
+ * refusal of these fields.
+ */
+const blamesOptions = (problem: XProblem): boolean =>
+  [problem.parameter, problem.field].some(
+    (named) => named !== undefined && optionFields.has(named)
+  ) ||
+  (problem.errors ?? []).some(({ parameters }) =>
+    Object.keys(parameters ?? {}).some((named) => optionFields.has(named))
+  ) ||
+  optionResources.has(problem.resource_type ?? "") ||
+  [...optionFields].some((named) => says(problem, named));
+
 const rejected = (call: XCall, code: string): PublishFailure =>
   call === "media" ? new MediaRejected({ code }) : new BadRequest({ code });
 
@@ -191,8 +228,14 @@ const refusal = (
     return new MediaRejected({ code: "videoTooLong" });
   }
 
-  // A post with options X would not take from this account or this app.
-  if (optioned && call !== "media" && (status === 400 || status === 403)) {
+  // A post with options X would not take from this account or this app,
+  // as X's answer says. Any other refusal keeps X's own problem.
+  if (
+    optioned &&
+    call !== "media" &&
+    (status === 400 || status === 403) &&
+    blamesOptions(problem)
+  ) {
     return new BadRequest({ code: optionRefusedCode });
   }
 

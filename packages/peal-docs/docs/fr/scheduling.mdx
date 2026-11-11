@@ -142,7 +142,7 @@ Sur **X** :
 | **Partenariat rémunéré**            | `paidPartnership`    | Oui ou non                                               | Non                   | Chaque partie                              |
 | **Fait avec l’IA**                  | `madeWithAi`         | Oui ou non                                               | Non                   | Chaque partie avec des images ou une vidéo |
 
-X ne documente pas quels comptes peuvent utiliser chacune d’elles. Quand X refuse une publication qui en porte, le canal indique **Échec**, avec le code `optionRefused` : Peal ne la renvoie pas, et le message de X n’est pas gardé, donc il ne dit pas quelle option X a refusée. Changez les options et republiez-la.
+X ne documente pas quels comptes peuvent utiliser chacune d’elles. Quand X refuse une publication qui en porte, et que sa réponse en nomme une (le champ, ou la communauté), le canal indique **Échec**, avec le code `optionRefused` : Peal ne la renvoie pas, et le message de X n’est pas gardé, donc il ne dit pas quelle option X a refusée. Changez les options et republiez-la. Quand X refuse une telle publication pour autre chose, comme un compte restreint, le code est le type de problème de X lui-même, comme pour une publication sans options (`client-forbidden`, ou `http403` quand X n’en nomme aucun), et changer les options n’y fera rien.
 
 Par l’API, un brouillon prend ses options dans `options`, une entrée par canal, chacune marquée de sa `platform` ; chacune des cibles de la publication répond avec les siennes. Mettre à jour un brouillon remplace ses options : celles qui manquent sont retirées. Un canal ajouté seulement au moment de programmer n’en a pas encore : sur YouTube, TikTok ou Pinterest, donnez-lui d’abord ses options dans le brouillon.
 
