@@ -2,6 +2,7 @@ import {
   Array as Arr,
   Context,
   DateTime,
+  Duration,
   Effect,
   Layer,
   Option,
@@ -15,6 +16,7 @@ import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
 import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
+import type { PostOccurrence } from "#publishing/domain/post-occurrence.ts";
 import { cancelTarget, isSettled } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
@@ -23,6 +25,7 @@ import {
   cancelPost,
   createDraft,
   finishPost,
+  madeBy,
   moveToDraft,
   placedBy,
   scheduledThrough,
@@ -158,6 +161,38 @@ export interface SendPostRequest {
 }
 
 /**
+ * An occurrence of a recycling rule, as `Recycling` makes it: a new post,
+ * already copied from the rule's source with what the workspace still
+ * has, sent as it is, never filled in from the workspace's saved items.
+ */
+export interface OccurrenceRequest<E, E2> {
+  readonly channelIds: readonly ChannelId[];
+  readonly content: PostContent;
+  /** The rule that makes it, and its place among the rule's posts. */
+  readonly occurrence: PostOccurrence;
+  readonly options: readonly ChannelOptions[];
+  readonly tagIds: readonly TagId[];
+  /** The rule's zone, which a post at its due instant is shown in. */
+  readonly timeZone: TimeZoneId;
+  /** At the due instant, or on the queue's first free slot from it. */
+  readonly placement:
+    | { readonly _tag: "at" }
+    | { readonly _tag: "queue"; readonly queueId: QueueId };
+  readonly dueAt: DateTime.Utc;
+  /**
+   * Run first in the transaction that saves the post, where `send` claims
+   * an idempotency key: it locks the rule's row, and fails when the rule
+   * is no longer the one this occurrence was planned for.
+   */
+  readonly claimed: Effect.Effect<void, E>;
+  /**
+   * Run once the post is saved, in its transaction: it writes the rule
+   * on, so a send that rolls back leaves the rule as it was.
+   */
+  readonly made: (post: Post) => Effect.Effect<void, E2>;
+}
+
+/**
  * A post to put on a queue's next free slot: the queue named, or the
  * workspace's default; for a draft, the channels named, else its own,
  * else the queue's.
@@ -167,10 +202,12 @@ export interface EnqueueRequest {
   readonly queueId: Option.Option<QueueId>;
 }
 
-// A new post, whatever its time: what it says and where it goes.
+// A new post, whatever its time: what it says and where it goes, and the
+// rule it is an occurrence of, if one made it.
 interface NewPostRequest {
   readonly channelIds: readonly ChannelId[];
   readonly content: PostContent;
+  readonly occurrence?: PostOccurrence;
   readonly options?: readonly ChannelOptions[];
   readonly tagIds?: readonly TagId[];
 }
@@ -351,6 +388,31 @@ export class PostScheduling extends Context.Service<
       | QueueNotFound
       | ScheduleInPast
       | Unfiled
+    >;
+    /**
+     * Sends an occurrence of a recycling rule, as `send` sends a post, with
+     * what the request says and nothing more: no channel set, signature or
+     * default option is filled in, so it is what its source is. Through
+     * every check and lock `send` passes (its content checked against its
+     * channels, the gate, the month's room, the job), the rule's lock
+     * (`claimed`) where `send` claims its key, with the same content
+     * allowed to repeat, at the due instant or on the queue's first free
+     * slot at or after it.
+     */
+    readonly sendOccurrence: <E, E2>(
+      actor: Actor,
+      request: OccurrenceRequest<E, E2>
+    ) => Effect.Effect<
+      PostWithTargets,
+      | DatabaseError
+      | E
+      | E2
+      | MissingPermission
+      | QueueHasNoRoom
+      | QueueNotFound
+      | ScheduleInPast
+      | Unpublishable
+      | UnknownTags
     >;
     /**
      * Puts a post on the next free slot of a queue: a draft is scheduled
@@ -802,9 +864,15 @@ export class PostScheduling extends Context.Service<
       // after the claim, so a request answered from an earlier one takes
       // no slot of a queue.
       const scheduleNew = Effect.fn("PostScheduling.scheduleNew")(
-        function* scheduleNew<E, E2, E3>(
+        function* scheduleNew<E, E2, E3, E4>(
           actor: Actor,
-          { channelIds, content, options = [], tagIds = [] }: NewPostRequest,
+          {
+            channelIds,
+            content,
+            occurrence,
+            options = [],
+            tagIds = [],
+          }: NewPostRequest,
           placing: (received: DateTime.Utc) => Effect.Effect<Placed, E3>,
           claimed: (
             postId: PostId
@@ -814,7 +882,9 @@ export class PostScheduling extends Context.Service<
           kept: (
             post: Post,
             targets: readonly PostTarget[]
-          ) => Effect.Effect<void, DatabaseError | E2, ContentFingerprints>
+          ) => Effect.Effect<void, DatabaseError | E2, ContentFingerprints>,
+          // Run once the post is saved, in its transaction.
+          made: (post: Post) => Effect.Effect<void, E4>
         ) {
           // The checks can take minutes, when a platform is slow to say
           // what an account takes: the time asked for is judged as of now.
@@ -835,7 +905,7 @@ export class PostScheduling extends Context.Service<
 
           const via = yield* originOf(actor);
 
-          const draft = tagPost(
+          const created = tagPost(
             createDraft(
               postId,
               actor.workspaceId,
@@ -845,6 +915,9 @@ export class PostScheduling extends Context.Service<
             ),
             tags
           );
+
+          const draft =
+            occurrence === undefined ? created : madeBy(created, occurrence);
 
           const targets = yield* targetsOn(
             postId,
@@ -883,6 +956,7 @@ export class PostScheduling extends Context.Service<
               yield* roomInMonth(placed);
               yield* posts.insert(placed, targets);
               yield* kept(placed, targets).pipe(withPorts);
+              yield* made(placed);
               yield* startJob(placed);
               // Told once, with the post: a request that finds its key
               // used made none, and tells nothing.
@@ -910,7 +984,8 @@ export class PostScheduling extends Context.Service<
           request,
           () => Effect.succeed(byHand(request.schedule)),
           () => Effect.succeed(Option.none()),
-          remember
+          remember,
+          () => Effect.void
         );
 
         return yield* Option.match(made, {
@@ -1115,7 +1190,8 @@ export class PostScheduling extends Context.Service<
                   since
                 ),
             }),
-          (post, targets) => admit(post, targets, allowDuplicate)
+          (post, targets) => admit(post, targets, allowDuplicate),
+          () => Effect.void
         );
 
         // Sent together with this one, the other request made the post.
@@ -1131,6 +1207,62 @@ export class PostScheduling extends Context.Service<
 
         return sent;
       });
+
+      const sendOccurrence = Effect.fn("PostScheduling.sendOccurrence")(
+        function* sendOccurrence<E, E2>(
+          actor: Actor,
+          {
+            claimed,
+            dueAt,
+            made,
+            placement,
+            timeZone,
+            ...request
+          }: OccurrenceRequest<E, E2>
+        ) {
+          yield* mayAsk(actor);
+
+          // The queue, read once; its slots are read again under its lock.
+          const queue =
+            placement._tag === "queue"
+              ? Option.some(
+                  yield* queueNamed(
+                    actor.workspaceId,
+                    Option.some(placement.queueId)
+                  ).pipe(withPorts)
+                )
+              : Option.none<Queue>();
+
+          // A slot exactly at the due instant is taken: slots are those
+          // strictly after the instant given.
+          const placing = () =>
+            Option.match(queue, {
+              onNone: () =>
+                Effect.succeed(byHand(new Schedule({ at: dueAt, timeZone }))),
+              onSome: (chosen) =>
+                onQueue(
+                  chosen,
+                  DateTime.subtractDuration(dueAt, Duration.millis(1)),
+                  Option.none()
+                ),
+            });
+
+          const { made: sent } = yield* scheduleNew(
+            actor,
+            request,
+            placing,
+            () => claimed.pipe(Effect.as(Option.none<KeyUse>())),
+            // The same content may repeat: that is what a rule is for.
+            remember,
+            made
+          );
+
+          return yield* Option.match(sent, {
+            onNone: () => Effect.die("An occurrence sent anew was not made"),
+            onSome: Effect.succeed,
+          });
+        }
+      );
 
       const forgetExpiredKeys = DateTime.now.pipe(
         Effect.flatMap((now) =>
@@ -1727,6 +1859,7 @@ export class PostScheduling extends Context.Service<
         schedule,
         scheduleDraft,
         send,
+        sendOccurrence,
         unschedule,
       });
     })
