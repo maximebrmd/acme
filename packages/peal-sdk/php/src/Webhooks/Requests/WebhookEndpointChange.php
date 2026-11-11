@@ -6,6 +6,7 @@ use Peal\Core\Json\JsonSerializableType;
 use Peal\Core\Json\JsonProperty;
 use Peal\Core\Types\ArrayType;
 use Peal\Types\SubscribableWebhookEventType;
+use Peal\Types\WebhookHeaderChange;
 
 class WebhookEndpointChange extends JsonSerializableType
 {
@@ -34,6 +35,12 @@ class WebhookEndpointChange extends JsonSerializableType
     public ?array $eventTypes;
 
     /**
+     * @var ?array<WebhookHeaderChange> $headers
+     */
+    #[JsonProperty('headers'), ArrayType([WebhookHeaderChange::class])]
+    public ?array $headers;
+
+    /**
      * @var ?string $url
      */
     #[JsonProperty('url')]
@@ -51,6 +58,7 @@ class WebhookEndpointChange extends JsonSerializableType
      *   description?: ?string,
      *   enabled?: ?bool,
      *   eventTypes?: ?array<value-of<SubscribableWebhookEventType>>,
+     *   headers?: ?array<WebhookHeaderChange>,
      *   url?: ?string,
      *   workspaceIds?: ?array<string>,
      * } $values
@@ -62,6 +70,7 @@ class WebhookEndpointChange extends JsonSerializableType
         $this->description = $values['description'] ?? null;
         $this->enabled = $values['enabled'] ?? null;
         $this->eventTypes = $values['eventTypes'] ?? null;
+        $this->headers = $values['headers'] ?? null;
         $this->url = $values['url'] ?? null;
         $this->workspaceIds = $values['workspaceIds'] ?? null;
     }

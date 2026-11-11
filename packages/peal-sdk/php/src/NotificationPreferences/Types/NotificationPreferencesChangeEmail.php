@@ -44,6 +44,12 @@ class NotificationPreferencesChangeEmail extends JsonSerializableType
     public ?bool $postUnconfirmed;
 
     /**
+     * @var ?bool $webhookFailing
+     */
+    #[JsonProperty('webhookFailing')]
+    public ?bool $webhookFailing;
+
+    /**
      * @param array{
      *   channelReconnect?: ?bool,
      *   comments?: ?bool,
@@ -51,6 +57,7 @@ class NotificationPreferencesChangeEmail extends JsonSerializableType
      *   postPublished?: ?bool,
      *   postReview?: ?bool,
      *   postUnconfirmed?: ?bool,
+     *   webhookFailing?: ?bool,
      * } $values
      */
     public function __construct(
@@ -62,6 +69,7 @@ class NotificationPreferencesChangeEmail extends JsonSerializableType
         $this->postPublished = $values['postPublished'] ?? null;
         $this->postReview = $values['postReview'] ?? null;
         $this->postUnconfirmed = $values['postUnconfirmed'] ?? null;
+        $this->webhookFailing = $values['webhookFailing'] ?? null;
     }
 
     /**

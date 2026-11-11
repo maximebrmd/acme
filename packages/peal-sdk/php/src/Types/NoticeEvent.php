@@ -25,6 +25,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'SubscriptionCancelled'
      *   |'SubscriptionWithdrawn'
      *   |'WebhookEndpointDisabled'
+     *   |'WebhookDeliveriesFailing'
      *   |'AdBoostChanged'
      *   |'AdConnectionReconnectRequired'
      *   |'_unknown'
@@ -50,6 +51,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventSubscriptionCancelled
      *   |NoticeEventSubscriptionWithdrawn
      *   |NoticeEventWebhookEndpointDisabled
+     *   |NoticeEventWebhookDeliveriesFailing
      *   |NoticeEventAdBoostChanged
      *   |NoticeEventAdConnectionReconnectRequired
      *   |mixed
@@ -76,6 +78,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'SubscriptionCancelled'
      *   |'SubscriptionWithdrawn'
      *   |'WebhookEndpointDisabled'
+     *   |'WebhookDeliveriesFailing'
      *   |'AdBoostChanged'
      *   |'AdConnectionReconnectRequired'
      *   |'_unknown'
@@ -97,6 +100,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventSubscriptionCancelled
      *   |NoticeEventSubscriptionWithdrawn
      *   |NoticeEventWebhookEndpointDisabled
+     *   |NoticeEventWebhookDeliveriesFailing
      *   |NoticeEventAdBoostChanged
      *   |NoticeEventAdConnectionReconnectRequired
      *   |mixed
@@ -299,6 +303,18 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'WebhookEndpointDisabled',
             'value' => $webhookEndpointDisabled,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventWebhookDeliveriesFailing $webhookDeliveriesFailing
+     * @return NoticeEvent
+     */
+    public static function webhookDeliveriesFailing(NoticeEventWebhookDeliveriesFailing $webhookDeliveriesFailing): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'WebhookDeliveriesFailing',
+            'value' => $webhookDeliveriesFailing,
         ]);
     }
 
@@ -681,6 +697,28 @@ class NoticeEvent extends JsonSerializableType
     /**
      * @return bool
      */
+    public function isWebhookDeliveriesFailing(): bool
+    {
+        return $this->value instanceof NoticeEventWebhookDeliveriesFailing && $this->type === 'WebhookDeliveriesFailing';
+    }
+
+    /**
+     * @return NoticeEventWebhookDeliveriesFailing
+     */
+    public function asWebhookDeliveriesFailing(): NoticeEventWebhookDeliveriesFailing
+    {
+        if (!($this->value instanceof NoticeEventWebhookDeliveriesFailing && $this->type === 'WebhookDeliveriesFailing')) {
+            throw new Exception(
+                "Expected WebhookDeliveriesFailing; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
     public function isAdBoostChanged(): bool
     {
         return $this->value instanceof NoticeEventAdBoostChanged && $this->type === 'AdBoostChanged';
@@ -806,6 +844,10 @@ class NoticeEvent extends JsonSerializableType
                 $value = $this->asWebhookEndpointDisabled()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'WebhookDeliveriesFailing':
+                $value = $this->asWebhookDeliveriesFailing()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'AdBoostChanged':
                 $value = $this->asAdBoostChanged()->jsonSerialize();
                 $result = array_merge($value, $result);
@@ -897,6 +939,9 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'WebhookEndpointDisabled':
                 $args['value'] = NoticeEventWebhookEndpointDisabled::jsonDeserialize($data);
+                break;
+            case 'WebhookDeliveriesFailing':
+                $args['value'] = NoticeEventWebhookDeliveriesFailing::jsonDeserialize($data);
                 break;
             case 'AdBoostChanged':
                 $args['value'] = NoticeEventAdBoostChanged::jsonDeserialize($data);

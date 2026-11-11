@@ -19,7 +19,8 @@ public class GetTest : BaseMockServerTest
                 "postFailed": true,
                 "postPublished": true,
                 "postReview": true,
-                "postUnconfirmed": true
+                "postUnconfirmed": true,
+                "webhookFailing": true
               },
               "everyPost": true
             }
@@ -54,7 +55,8 @@ public class GetTest : BaseMockServerTest
                 "postFailed": true,
                 "postPublished": true,
                 "postReview": true,
-                "postUnconfirmed": true
+                "postUnconfirmed": true,
+                "webhookFailing": true
               },
               "everyPost": true
             }

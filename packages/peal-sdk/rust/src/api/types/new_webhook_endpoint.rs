@@ -13,6 +13,8 @@ pub struct NewWebhookEndpoint {
     #[serde(default)]
     pub event_types: Vec<SubscribableWebhookEventType>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub headers: Option<Vec<WebhookHeader>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub scope: Option<WebhookEndpointScope>,
     #[serde(default)]
     pub url: String,
@@ -34,6 +36,7 @@ pub struct NewWebhookEndpointBuilder {
     description: Option<String>,
     enabled: Option<bool>,
     event_types: Option<Vec<SubscribableWebhookEventType>>,
+    headers: Option<Vec<WebhookHeader>>,
     scope: Option<WebhookEndpointScope>,
     url: Option<String>,
     workspace_ids: Option<Vec<String>>,
@@ -57,6 +60,11 @@ impl NewWebhookEndpointBuilder {
 
     pub fn event_types(mut self, value: Vec<SubscribableWebhookEventType>) -> Self {
         self.event_types = Some(value);
+        self
+    }
+
+    pub fn headers(mut self, value: Vec<WebhookHeader>) -> Self {
+        self.headers = Some(value);
         self
     }
 
@@ -87,6 +95,7 @@ impl NewWebhookEndpointBuilder {
             event_types: self
                 .event_types
                 .ok_or_else(|| BuildError::missing_field("event_types"))?,
+            headers: self.headers,
             scope: self.scope,
             url: self.url.ok_or_else(|| BuildError::missing_field("url"))?,
             workspace_ids: self.workspace_ids,

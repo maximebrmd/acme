@@ -163,6 +163,15 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.WebhookDeliveriesFailing"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.WebhookDeliveriesFailing value)
+    {
+        Type = "WebhookDeliveriesFailing";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of NoticeEvent with <see cref="NoticeEvent.AdBoostChanged"/>.
     /// </summary>
     public NoticeEvent(NoticeEvent.AdBoostChanged value)
@@ -270,6 +279,11 @@ public record NoticeEvent
     /// Returns true if <see cref="Type"/> is "WebhookEndpointDisabled"
     /// </summary>
     public bool IsWebhookEndpointDisabled => Type == "WebhookEndpointDisabled";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "WebhookDeliveriesFailing"
+    /// </summary>
+    public bool IsWebhookDeliveriesFailing => Type == "WebhookDeliveriesFailing";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "AdBoostChanged"
@@ -430,6 +444,17 @@ public record NoticeEvent
             );
 
     /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventWebhookDeliveriesFailing"/> if <see cref="Type"/> is 'WebhookDeliveriesFailing', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'WebhookDeliveriesFailing'.</exception>
+    public Peal.NoticeEventWebhookDeliveriesFailing AsWebhookDeliveriesFailing() =>
+        IsWebhookDeliveriesFailing
+            ? (Peal.NoticeEventWebhookDeliveriesFailing)Value!
+            : throw new global::System.Exception(
+                "NoticeEvent.Type is not 'WebhookDeliveriesFailing'"
+            );
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventAdBoostChanged"/> if <see cref="Type"/> is 'AdBoostChanged', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'AdBoostChanged'.</exception>
@@ -466,6 +491,7 @@ public record NoticeEvent
         Func<Peal.NoticeEventSubscriptionCancelled, T> onSubscriptionCancelled,
         Func<Peal.NoticeEventSubscriptionWithdrawn, T> onSubscriptionWithdrawn,
         Func<Peal.NoticeEventWebhookEndpointDisabled, T> onWebhookEndpointDisabled,
+        Func<Peal.NoticeEventWebhookDeliveriesFailing, T> onWebhookDeliveriesFailing,
         Func<Peal.NoticeEventAdBoostChanged, T> onAdBoostChanged,
         Func<Peal.NoticeEventAdConnectionReconnectRequired, T> onAdConnectionReconnectRequired,
         Func<string, object?, T> onUnknown_
@@ -489,6 +515,7 @@ public record NoticeEvent
             "SubscriptionCancelled" => onSubscriptionCancelled(AsSubscriptionCancelled()),
             "SubscriptionWithdrawn" => onSubscriptionWithdrawn(AsSubscriptionWithdrawn()),
             "WebhookEndpointDisabled" => onWebhookEndpointDisabled(AsWebhookEndpointDisabled()),
+            "WebhookDeliveriesFailing" => onWebhookDeliveriesFailing(AsWebhookDeliveriesFailing()),
             "AdBoostChanged" => onAdBoostChanged(AsAdBoostChanged()),
             "AdConnectionReconnectRequired" => onAdConnectionReconnectRequired(
                 AsAdConnectionReconnectRequired()
@@ -514,6 +541,7 @@ public record NoticeEvent
         Action<Peal.NoticeEventSubscriptionCancelled> onSubscriptionCancelled,
         Action<Peal.NoticeEventSubscriptionWithdrawn> onSubscriptionWithdrawn,
         Action<Peal.NoticeEventWebhookEndpointDisabled> onWebhookEndpointDisabled,
+        Action<Peal.NoticeEventWebhookDeliveriesFailing> onWebhookDeliveriesFailing,
         Action<Peal.NoticeEventAdBoostChanged> onAdBoostChanged,
         Action<Peal.NoticeEventAdConnectionReconnectRequired> onAdConnectionReconnectRequired,
         Action<string, object?> onUnknown_
@@ -568,6 +596,9 @@ public record NoticeEvent
                 break;
             case "WebhookEndpointDisabled":
                 onWebhookEndpointDisabled(AsWebhookEndpointDisabled());
+                break;
+            case "WebhookDeliveriesFailing":
+                onWebhookDeliveriesFailing(AsWebhookDeliveriesFailing());
                 break;
             case "AdBoostChanged":
                 onAdBoostChanged(AsAdBoostChanged());
@@ -806,6 +837,20 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventWebhookDeliveriesFailing"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsWebhookDeliveriesFailing(out Peal.NoticeEventWebhookDeliveriesFailing? value)
+    {
+        if (Type == "WebhookDeliveriesFailing")
+        {
+            value = (Peal.NoticeEventWebhookDeliveriesFailing)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
     /// Attempts to cast the value to a <see cref="Peal.NoticeEventAdBoostChanged"/> and returns true if successful.
     /// </summary>
     public bool TryAsAdBoostChanged(out Peal.NoticeEventAdBoostChanged? value)
@@ -876,6 +921,9 @@ public record NoticeEvent
         new(value);
 
     public static implicit operator NoticeEvent(NoticeEvent.WebhookEndpointDisabled value) =>
+        new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.WebhookDeliveriesFailing value) =>
         new(value);
 
     public static implicit operator NoticeEvent(NoticeEvent.AdBoostChanged value) => new(value);
@@ -1018,6 +1066,13 @@ public record NoticeEvent
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.NoticeEventWebhookEndpointDisabled"
                         ),
+                "WebhookDeliveriesFailing" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventWebhookDeliveriesFailing?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventWebhookDeliveriesFailing"
+                        ),
                 "AdBoostChanged" =>
                     jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventAdBoostChanged?>(options)
                         ?? throw new JsonException(
@@ -1063,6 +1118,10 @@ public record NoticeEvent
                     "SubscriptionCancelled" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionWithdrawn" => JsonSerializer.SerializeToNode(value.Value, options),
                     "WebhookEndpointDisabled" => JsonSerializer.SerializeToNode(
+                        value.Value,
+                        options
+                    ),
+                    "WebhookDeliveriesFailing" => JsonSerializer.SerializeToNode(
                         value.Value,
                         options
                     ),
@@ -1415,6 +1474,26 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.WebhookEndpointDisabled(
             Peal.NoticeEventWebhookEndpointDisabled value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for WebhookDeliveriesFailing
+    /// </summary>
+    [Serializable]
+    public struct WebhookDeliveriesFailing
+    {
+        public WebhookDeliveriesFailing(Peal.NoticeEventWebhookDeliveriesFailing value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventWebhookDeliveriesFailing Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.WebhookDeliveriesFailing(
+            Peal.NoticeEventWebhookDeliveriesFailing value
         ) => new(value);
     }
 

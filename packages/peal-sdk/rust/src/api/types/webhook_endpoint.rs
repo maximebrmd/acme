@@ -24,6 +24,9 @@ pub struct WebhookEndpoint {
     #[serde(rename = "failingSince")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failing_since: Option<String>,
+    #[serde(rename = "headerNames")]
+    #[serde(default)]
+    pub header_names: Vec<String>,
     #[serde(default)]
     pub id: String,
     #[serde(rename = "previousSecretExpiresAt")]
@@ -57,6 +60,7 @@ pub struct WebhookEndpointBuilder {
     enabled: Option<bool>,
     event_types: Option<Vec<SubscribableWebhookEventType>>,
     failing_since: Option<String>,
+    header_names: Option<Vec<String>>,
     id: Option<String>,
     previous_secret_expires_at: Option<String>,
     scope: Option<WebhookEndpointScope>,
@@ -106,6 +110,11 @@ impl WebhookEndpointBuilder {
         self
     }
 
+    pub fn header_names(mut self, value: Vec<String>) -> Self {
+        self.header_names = Some(value);
+        self
+    }
+
     pub fn id(mut self, value: impl Into<String>) -> Self {
         self.id = Some(value.into());
         self
@@ -143,6 +152,7 @@ impl WebhookEndpointBuilder {
     /// - [`description`](WebhookEndpointBuilder::description)
     /// - [`enabled`](WebhookEndpointBuilder::enabled)
     /// - [`event_types`](WebhookEndpointBuilder::event_types)
+    /// - [`header_names`](WebhookEndpointBuilder::header_names)
     /// - [`id`](WebhookEndpointBuilder::id)
     /// - [`scope`](WebhookEndpointBuilder::scope)
     /// - [`updated_at`](WebhookEndpointBuilder::updated_at)
@@ -168,6 +178,9 @@ impl WebhookEndpointBuilder {
                 .event_types
                 .ok_or_else(|| BuildError::missing_field("event_types"))?,
             failing_since: self.failing_since,
+            header_names: self
+                .header_names
+                .ok_or_else(|| BuildError::missing_field("header_names"))?,
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             previous_secret_expires_at: self.previous_secret_expires_at,
             scope: self

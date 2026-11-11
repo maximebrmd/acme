@@ -29,6 +29,9 @@ public record NotificationPreferencesChangeEmail : IJsonOnDeserialized
     [JsonPropertyName("postUnconfirmed")]
     public bool? PostUnconfirmed { get; set; }
 
+    [JsonPropertyName("webhookFailing")]
+    public bool? WebhookFailing { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

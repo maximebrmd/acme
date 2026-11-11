@@ -32,6 +32,9 @@ class WebhookEndpoint(UniversalBaseModel):
     failing_since: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="failingSince"), pydantic.Field(alias="failingSince")
     ] = None
+    header_names: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="headerNames"), pydantic.Field(alias="headerNames")
+    ]
     id: str
     previous_secret_expires_at: typing_extensions.Annotated[
         typing.Optional[str],

@@ -32,6 +32,8 @@ public final class NotificationPreferencesChangeEmail {
 
     private final Optional<Boolean> postUnconfirmed;
 
+    private final Optional<Boolean> webhookFailing;
+
     private final Map<String, Object> additionalProperties;
 
     private NotificationPreferencesChangeEmail(
@@ -41,6 +43,7 @@ public final class NotificationPreferencesChangeEmail {
             Optional<Boolean> postPublished,
             Optional<Boolean> postReview,
             Optional<Boolean> postUnconfirmed,
+            Optional<Boolean> webhookFailing,
             Map<String, Object> additionalProperties) {
         this.channelReconnect = channelReconnect;
         this.comments = comments;
@@ -48,6 +51,7 @@ public final class NotificationPreferencesChangeEmail {
         this.postPublished = postPublished;
         this.postReview = postReview;
         this.postUnconfirmed = postUnconfirmed;
+        this.webhookFailing = webhookFailing;
         this.additionalProperties = additionalProperties;
     }
 
@@ -81,6 +85,11 @@ public final class NotificationPreferencesChangeEmail {
         return postUnconfirmed;
     }
 
+    @JsonProperty("webhookFailing")
+    public Optional<Boolean> getWebhookFailing() {
+        return webhookFailing;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -99,7 +108,8 @@ public final class NotificationPreferencesChangeEmail {
                 && postFailed.equals(other.postFailed)
                 && postPublished.equals(other.postPublished)
                 && postReview.equals(other.postReview)
-                && postUnconfirmed.equals(other.postUnconfirmed);
+                && postUnconfirmed.equals(other.postUnconfirmed)
+                && webhookFailing.equals(other.webhookFailing);
     }
 
     @java.lang.Override
@@ -110,7 +120,8 @@ public final class NotificationPreferencesChangeEmail {
                 this.postFailed,
                 this.postPublished,
                 this.postReview,
-                this.postUnconfirmed);
+                this.postUnconfirmed,
+                this.webhookFailing);
     }
 
     @java.lang.Override
@@ -136,6 +147,8 @@ public final class NotificationPreferencesChangeEmail {
 
         private Optional<Boolean> postUnconfirmed = Optional.empty();
 
+        private Optional<Boolean> webhookFailing = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -147,6 +160,7 @@ public final class NotificationPreferencesChangeEmail {
             postPublished(other.getPostPublished());
             postReview(other.getPostReview());
             postUnconfirmed(other.getPostUnconfirmed());
+            webhookFailing(other.getWebhookFailing());
             return this;
         }
 
@@ -216,6 +230,17 @@ public final class NotificationPreferencesChangeEmail {
             return this;
         }
 
+        @JsonSetter(value = "webhookFailing", nulls = Nulls.SKIP)
+        public Builder webhookFailing(Optional<Boolean> webhookFailing) {
+            this.webhookFailing = webhookFailing;
+            return this;
+        }
+
+        public Builder webhookFailing(Boolean webhookFailing) {
+            this.webhookFailing = Optional.ofNullable(webhookFailing);
+            return this;
+        }
+
         public NotificationPreferencesChangeEmail build() {
             return new NotificationPreferencesChangeEmail(
                     channelReconnect,
@@ -224,6 +249,7 @@ public final class NotificationPreferencesChangeEmail {
                     postPublished,
                     postReview,
                     postUnconfirmed,
+                    webhookFailing,
                     additionalProperties);
         }
 
@@ -234,7 +260,8 @@ public final class NotificationPreferencesChangeEmail {
                     || key.equalsIgnoreCase("postFailed")
                     || key.equalsIgnoreCase("postPublished")
                     || key.equalsIgnoreCase("postReview")
-                    || key.equalsIgnoreCase("postUnconfirmed")) {
+                    || key.equalsIgnoreCase("postUnconfirmed")
+                    || key.equalsIgnoreCase("webhookFailing")) {
                 return;
             }
             this.additionalProperties.put(key, value);

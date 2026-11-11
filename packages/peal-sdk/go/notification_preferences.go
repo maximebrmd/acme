@@ -118,6 +118,7 @@ var (
 	notificationPreferencesEmailFieldPostPublished    = big.NewInt(1 << 3)
 	notificationPreferencesEmailFieldPostReview       = big.NewInt(1 << 4)
 	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 5)
+	notificationPreferencesEmailFieldWebhookFailing   = big.NewInt(1 << 6)
 )
 
 type NotificationPreferencesEmail struct {
@@ -127,6 +128,7 @@ type NotificationPreferencesEmail struct {
 	PostPublished    bool `json:"postPublished" url:"postPublished"`
 	PostReview       bool `json:"postReview" url:"postReview"`
 	PostUnconfirmed  bool `json:"postUnconfirmed" url:"postUnconfirmed"`
+	WebhookFailing   bool `json:"webhookFailing" url:"webhookFailing"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -175,6 +177,13 @@ func (n *NotificationPreferencesEmail) GetPostUnconfirmed() bool {
 		return false
 	}
 	return n.PostUnconfirmed
+}
+
+func (n *NotificationPreferencesEmail) GetWebhookFailing() bool {
+	if n == nil {
+		return false
+	}
+	return n.WebhookFailing
 }
 
 func (n *NotificationPreferencesEmail) GetExtraProperties() map[string]interface{} {
@@ -235,6 +244,13 @@ func (n *NotificationPreferencesEmail) SetPostUnconfirmed(postUnconfirmed bool) 
 	n.require(notificationPreferencesEmailFieldPostUnconfirmed)
 }
 
+// SetWebhookFailing sets the WebhookFailing field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesEmail) SetWebhookFailing(webhookFailing bool) {
+	n.WebhookFailing = webhookFailing
+	n.require(notificationPreferencesEmailFieldWebhookFailing)
+}
+
 func (n *NotificationPreferencesEmail) UnmarshalJSON(data []byte) error {
 	type unmarshaler NotificationPreferencesEmail
 	var value unmarshaler
@@ -284,6 +300,7 @@ var (
 	notificationPreferencesChangeEmailFieldPostPublished    = big.NewInt(1 << 3)
 	notificationPreferencesChangeEmailFieldPostReview       = big.NewInt(1 << 4)
 	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 5)
+	notificationPreferencesChangeEmailFieldWebhookFailing   = big.NewInt(1 << 6)
 )
 
 type NotificationPreferencesChangeEmail struct {
@@ -293,6 +310,7 @@ type NotificationPreferencesChangeEmail struct {
 	PostPublished    *bool `json:"postPublished,omitempty" url:"postPublished,omitempty"`
 	PostReview       *bool `json:"postReview,omitempty" url:"postReview,omitempty"`
 	PostUnconfirmed  *bool `json:"postUnconfirmed,omitempty" url:"postUnconfirmed,omitempty"`
+	WebhookFailing   *bool `json:"webhookFailing,omitempty" url:"webhookFailing,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -341,6 +359,13 @@ func (n *NotificationPreferencesChangeEmail) GetPostUnconfirmed() *bool {
 		return nil
 	}
 	return n.PostUnconfirmed
+}
+
+func (n *NotificationPreferencesChangeEmail) GetWebhookFailing() *bool {
+	if n == nil {
+		return nil
+	}
+	return n.WebhookFailing
 }
 
 func (n *NotificationPreferencesChangeEmail) GetExtraProperties() map[string]interface{} {
@@ -399,6 +424,13 @@ func (n *NotificationPreferencesChangeEmail) SetPostReview(postReview *bool) {
 func (n *NotificationPreferencesChangeEmail) SetPostUnconfirmed(postUnconfirmed *bool) {
 	n.PostUnconfirmed = postUnconfirmed
 	n.require(notificationPreferencesChangeEmailFieldPostUnconfirmed)
+}
+
+// SetWebhookFailing sets the WebhookFailing field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesChangeEmail) SetWebhookFailing(webhookFailing *bool) {
+	n.WebhookFailing = webhookFailing
+	n.require(notificationPreferencesChangeEmailFieldWebhookFailing)
 }
 
 func (n *NotificationPreferencesChangeEmail) UnmarshalJSON(data []byte) error {
