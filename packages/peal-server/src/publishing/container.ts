@@ -206,7 +206,8 @@ export const publishingBehind = <G, E3, R3, E, R, H, R4>(
  * (CredentialNames). How each target ends
  * is told through the notifications context (Notify), naming channels as
  * the channels context has them (ChannelRepository), once billing counted
- * the posts that went out on platforms that bill per post (MeteredPosts),
+ * the posts that went out (RecordedUsage), and those on platforms that bill
+ * per post (MeteredPosts),
  * and the workspace's webhook endpoints hear what happens to its posts
  * (WebhookEvents). Which posts wait for an approval is the ApprovalGate's
  * say, which the composition root provides from the review context.

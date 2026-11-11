@@ -27,6 +27,7 @@ import { CronsLive } from "#app/crons.ts";
 import { PurgeContractRecords } from "#billing/application/purge-contract-records.ts";
 import { ReceiveContractRequest } from "#billing/application/receive-contract-request.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
+import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
@@ -114,6 +115,16 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     PurgeContractRecords,
     PurgeContractRecords.of({ run: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    SnapshotUsage,
+    SnapshotUsage.of({
+      run: Effect.succeed({
+        day: DateTime.makeUnsafe("2026-11-10T00:00:00Z"),
+        purged: 0,
+        workspaces: 0,
+      }),
+    })
   ),
   Layer.succeed(
     ReceiveContractRequest,

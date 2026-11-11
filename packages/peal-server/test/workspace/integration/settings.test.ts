@@ -785,6 +785,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           meteredPosts: [],
           plan: null,
           subscriptions: [],
+          usage: [],
         });
         assert.notInclude(text, "A synthetic draft of Studio.");
         assert.deepStrictEqual(

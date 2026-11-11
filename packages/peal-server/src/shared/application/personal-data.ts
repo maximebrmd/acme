@@ -397,6 +397,16 @@ export interface BillingRecord {
     readonly plan: string;
     readonly status: string;
   }[];
+  /**
+   * Its usage ledger: each meter's quantity by day (UTC, as YYYY-MM-DD) and
+   * dimension (the platform of `publishedPosts`, empty for the others).
+   */
+  readonly usage: readonly {
+    readonly day: string;
+    readonly dimension: string;
+    readonly meter: string;
+    readonly quantity: number;
+  }[];
 }
 
 /**

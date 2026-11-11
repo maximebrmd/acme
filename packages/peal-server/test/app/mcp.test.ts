@@ -276,6 +276,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "get_post_ad_performance",
           "get_post_review",
           "get_tiktok_creator",
+          "get_usage",
           "import_media",
           "invite_member",
           "list_activity",

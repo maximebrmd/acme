@@ -13,8 +13,8 @@
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
   `post`, `tags`, `signatures`, `sets`, `media`, `approvals`, `review`,
-  `analytics`, `inbox`, `billing`, `members`, `invitations`, `webhooks`
-  and `ads`, which act in the
+  `analytics`, `inbox`, `billing`, `usage`, `members`, `invitations`,
+  `webhooks` and `ads`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read
@@ -116,6 +116,10 @@
   printed through `printableConsole` like everything else, and a reply
   that is `unconfirmed` is never sent again, so `explain` sends the user
   to the platform, then to `peal inbox confirm`.
+- `peal usage` (`--from`, `--to`: UTC days) reads `usage.get`: the plan
+  line, the limits against what is used now (`usageLines`, shared with
+  `peal billing`), the period's totals, then a row per day that has
+  anything. `peal billing` stays as it is.
 - `peal ads` reads ad accounts, campaigns, ads, insights and boosts, and
   `peal ads boost` quotes, creates, shows, pauses, resumes and stops one.
   No command signs in to an ad network, connects an ad account or sets a

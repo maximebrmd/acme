@@ -25,6 +25,7 @@ import type {
   BillingError,
   BillingStep,
 } from "#components/billing/billing-view.tsx";
+import { UsageHistoryScreen } from "#components/billing/usage-history-screen.tsx";
 import { useHydrated } from "#components/media/use-hydrated.ts";
 import { InTimeZone } from "#components/notices/in-time-zone.tsx";
 import { getPathname } from "#i18n/navigation.ts";
@@ -189,33 +190,36 @@ const LoadedBilling = ({
 
   if (AsyncResult.isSuccess(billing)) {
     return (
-      <BillingView
-        billing={billing.value}
-        canManage={canManage}
-        checkedOut={checkedOut}
-        consented={consented}
-        error={error}
-        interval={billingInterval}
-        pending={pending}
-        step={step}
-        termsUrl={termsUrl}
-        tooSmall={tooSmall}
-        onBack={() => {
-          setStep(idle);
-        }}
-        onCancel={() => {
-          setError(null);
-          setStep({ _tag: "confirmCancel" });
-        }}
-        onConfirmCancel={confirmCancel}
-        onConfirmWithdrawal={confirmWithdrawalNow}
-        onConsent={setConsented}
-        onInterval={setBillingInterval}
-        onManage={manage}
-        onOrder={orderPlan}
-        onRefresh={refresh}
-        onWithdraw={openWithdrawal}
-      />
+      <div className="flex flex-col gap-8">
+        <BillingView
+          billing={billing.value}
+          canManage={canManage}
+          checkedOut={checkedOut}
+          consented={consented}
+          error={error}
+          interval={billingInterval}
+          pending={pending}
+          step={step}
+          termsUrl={termsUrl}
+          tooSmall={tooSmall}
+          onBack={() => {
+            setStep(idle);
+          }}
+          onCancel={() => {
+            setError(null);
+            setStep({ _tag: "confirmCancel" });
+          }}
+          onConfirmCancel={confirmCancel}
+          onConfirmWithdrawal={confirmWithdrawalNow}
+          onConsent={setConsented}
+          onInterval={setBillingInterval}
+          onManage={manage}
+          onOrder={orderPlan}
+          onRefresh={refresh}
+          onWithdraw={openWithdrawal}
+        />
+        <UsageHistoryScreen workspaceId={workspaceId} />
+      </div>
     );
   }
 
@@ -231,6 +235,7 @@ const LoadedBilling = ({
  * session, its dates in the reader's time zone. Ordering a plan records the
  * order, then opens Stripe's checkout; managing the subscription opens its
  * customer portal; cancelling and withdrawing ask for a confirmation here.
+ * Below, the workspace's usage by day, on a server that bills or not.
  */
 export const BillingScreen = (props: BillingScreenProps) => {
   const hydrated = useHydrated();

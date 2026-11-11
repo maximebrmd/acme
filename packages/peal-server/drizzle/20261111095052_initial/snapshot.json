@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "fdc96161-f856-4b08-89da-f53586d7cbf3",
+  "id": "83484f9c-34f3-4735-8a5c-34230b56cd66",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -692,6 +692,25 @@
         "n|rel|billing.trials",
         "n|type|billing.trials",
         "n|rel|billing.trials_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "usage_days"
+      ],
+      "writes": [
+        "s|tbl|billing.usage_days",
+        "n|tbl|billing.usage_days",
+        "e|tbl|billing.usage_days",
+        "n|rel|billing.usage_days",
+        "n|type|billing.usage_days",
+        "n|rel|billing.usage_days_pkey"
       ],
       "reads": [
         "n|sch|billing"
@@ -2959,6 +2978,26 @@
         "n|tbl|billing.trials",
         "n|sch|billing",
         "n|col|billing.trials.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "usage_days",
+        "usage_days_day"
+      ],
+      "writes": [
+        "s|idx|billing.usage_days_day",
+        "n|idx|billing.usage_days_day",
+        "e|idx|billing.usage_days_day",
+        "n|rel|billing.usage_days_day"
+      ],
+      "reads": [
+        "n|tbl|billing.usage_days",
+        "n|sch|billing",
+        "n|col|billing.usage_days.day"
       ]
     },
     {
@@ -6070,6 +6109,12 @@
     {
       "schema": "billing",
       "name": "trials",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "billing",
+      "name": "usage_days",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -10034,6 +10079,71 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "usage_days",
+      "name": "day",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "usage_days",
+      "name": "dimension",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "''",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "usage_days",
+      "name": "meter",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "usage_days",
+      "name": "quantity",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "usage_days",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -19623,6 +19733,27 @@
     },
     {
       "schema": "billing",
+      "table": "usage_days",
+      "name": "usage_days_day",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "day",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
       "table": "withdrawals",
       "name": "withdrawals_workspace",
       "nameExplicit": true,
@@ -22688,6 +22819,19 @@
       "entityType": "pks"
     },
     {
+      "schema": "billing",
+      "table": "usage_days",
+      "name": "usage_days_pkey",
+      "columns": [
+        "workspace_id",
+        "day",
+        "meter",
+        "dimension"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "channels",
       "table": "mastodon_apps",
       "name": "mastodon_apps_pkey",
@@ -23856,6 +24000,13 @@
       "table": "metered_posts",
       "name": "metered_posts_counts",
       "value": "\"posts_with_links\" >= 0 AND \"posts_with_links\" <= \"posts\"",
+      "entityType": "checks"
+    },
+    {
+      "schema": "billing",
+      "table": "usage_days",
+      "name": "usage_days_quantity",
+      "value": "\"quantity\" >= 0",
       "entityType": "checks"
     },
     {

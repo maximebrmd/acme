@@ -1,7 +1,14 @@
 import { Console, Effect, Schema } from "effect";
 import { Command } from "effect/cli";
 import { BillingSchema, StandingSchema } from "peal-contract";
-import type { Billing, Excess, PeriodUsage, Standing } from "peal-contract";
+import type {
+  Billing,
+  Excess,
+  PeriodUsage,
+  PlanAllowances,
+  Standing,
+  Usage,
+} from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
@@ -11,8 +18,8 @@ import { inWorkspace, workspaceFlag } from "#workspace.ts";
 const allowed = (allowance: number | null) =>
   allowance === null ? "no limit" : String(allowance);
 
-// Bytes in decimal units, as the pricing page writes storage.
-const bytes = (count: number): string =>
+/** Bytes in decimal units, as the pricing page writes storage. */
+export const bytes = (count: number): string =>
   count >= 1_000_000_000
     ? `${(count / 1_000_000_000).toFixed(1)} GB`
     : `${(count / 1_000_000).toFixed(1)} MB`;
@@ -23,10 +30,12 @@ const storage = (used: number, allowance: number | null) =>
 const periodic = (usage: PeriodUsage, allowance: number | null) =>
   `${String(usage.used)} of ${allowed(allowance)}, until ${instant(usage.resetsAt)}`;
 
-const usageLines = (billing: Billing): string[] => {
-  const { allowances, usage } = billing;
-
-  return columns([
+/** What each limit counts now, against what the plan allows. */
+export const usageLines = (
+  usage: Usage,
+  allowances: PlanAllowances
+): string[] =>
+  columns([
     [
       "  Channels",
       `${String(usage.channels)} of ${allowed(allowances.channels)}`,
@@ -42,7 +51,6 @@ const usageLines = (billing: Billing): string[] => {
     ],
     ["  Media stored", storage(usage.mediaStorage, allowances.mediaStorage)],
   ]);
-};
 
 const planLine = (billing: Billing): string => {
   if (!billing.enabled || billing.plan === null) {
@@ -139,7 +147,7 @@ export const billing = Command.make(
 
     yield* Console.log("Used:");
 
-    for (const line of usageLines(found)) {
+    for (const line of usageLines(found.usage, found.allowances)) {
       yield* Console.log(line);
     }
 

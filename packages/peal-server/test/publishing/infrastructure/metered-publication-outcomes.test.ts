@@ -1,8 +1,15 @@
 import { assert, layer } from "@effect/vitest";
 import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
 import type { PublishedPost } from "#billing/application/metered-posts.ts";
+import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
+import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
+import { RecordedUsage } from "#billing/application/recorded-usage.ts";
+import type { PostWentOut } from "#billing/application/recorded-usage.ts";
+import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
+import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-ledger.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { connectChannel } from "#channels/domain/channel.ts";
 import type { Platform } from "#channels/domain/platform.ts";
@@ -16,12 +23,14 @@ import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts"
 import { PostTarget } from "#publishing/domain/post-target.ts";
 import { createDraft } from "#publishing/domain/post.ts";
 import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import {
   ChannelIdSchema,
   PostIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
+import { DatabaseTest } from "#test/channels/support.ts";
 import { contentOf } from "#test/publishing/support.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -126,12 +135,14 @@ const published: PostTargetStatus = {
   publishedAt,
 };
 
-// What billing counted, and what the outcomes behind were told, in order.
+// What billing counted, metered and in its usage ledger, and what the
+// outcomes behind were told, in order.
 class Recorded extends Context.Service<
   Recorded,
   {
     readonly counted: Ref.Ref<readonly PublishedPost[]>;
     readonly told: Ref.Ref<readonly PostTargetStatus["_tag"][]>;
+    readonly wentOut: Ref.Ref<readonly PostWentOut[]>;
   }
 >()("test/publishing/Recorded") {
   static readonly layer = Layer.effect(
@@ -139,9 +150,29 @@ class Recorded extends Context.Service<
     Effect.all({
       counted: Ref.make<readonly PublishedPost[]>([]),
       told: Ref.make<readonly PostTargetStatus["_tag"][]>([]),
+      wentOut: Ref.make<readonly PostWentOut[]>([]),
     })
   );
 }
+
+const RepositoriesTest = Layer.mergeAll(
+  Layer.mock(ChannelRepository, {
+    get: (id) =>
+      Effect.succeed(
+        Option.fromUndefinedOr(channels.find((found) => found.id === id))
+      ),
+  }),
+  Layer.mock(PostRepository, {
+    find: (id) =>
+      Effect.succeed(
+        Option.fromUndefinedOr(
+          [post, thread].find((known) => known.id === id)
+        ).pipe(
+          Option.map((known) => ({ execution: Option.none(), post: known }))
+        )
+      ),
+  })
+);
 
 const OutcomesTest = meteredOutcomes(
   Layer.effect(
@@ -159,25 +190,7 @@ const OutcomesTest = meteredOutcomes(
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
-      Layer.mock(ChannelRepository, {
-        get: (id) =>
-          Effect.succeed(
-            Option.fromUndefinedOr(channels.find((found) => found.id === id))
-          ),
-      }),
-      Layer.mock(PostRepository, {
-        find: (id) =>
-          Effect.succeed(
-            Option.fromUndefinedOr(
-              [post, thread].find((known) => known.id === id)
-            ).pipe(
-              Option.map((known) => ({
-                execution: Option.none(),
-                post: known,
-              }))
-            )
-          ),
-      }),
+      RepositoriesTest,
       Layer.effect(
         MeteredPosts,
         Recorded.use(({ counted }) =>
@@ -186,6 +199,17 @@ const OutcomesTest = meteredOutcomes(
               ofWorkspace: () => Effect.succeed([]),
               published: (entry) =>
                 Ref.update(counted, (all) => [...all, entry]),
+            })
+          )
+        )
+      ),
+      Layer.effect(
+        RecordedUsage,
+        Recorded.use(({ wentOut }) =>
+          Effect.succeed(
+            RecordedUsage.of({
+              postWentOut: (entry) =>
+                Ref.update(wentOut, (all) => [...all, entry]),
             })
           )
         )
@@ -266,5 +290,137 @@ layer(OutcomesTest)("publication outcomes, metered", (it) => {
           ]
         );
       })
+  );
+
+  it.effect(
+    "count each post that went out once per channel in the usage ledger, never a failure",
+    () =>
+      Effect.gen(function* countsUsage() {
+        const outcomes = yield* PublicationOutcomes;
+        const { wentOut } = yield* Recorded;
+        const before = (yield* Ref.get(wentOut)).length;
+
+        yield* outcomes.settled(targetOn(onX, published));
+        yield* outcomes.settled(targetOn(onMastodon, published));
+        yield* outcomes.settled(
+          targetOn(onX, {
+            _tag: "failed",
+            code: Option.none(),
+            failedAt: publishedAt,
+            reason: "unavailable",
+          })
+        );
+        yield* outcomes.settled(
+          targetOn(onMastodon, {
+            _tag: "unconfirmed",
+            attemptedAt: publishedAt,
+            reason: "noResponse",
+          })
+        );
+
+        assert.deepStrictEqual((yield* Ref.get(wentOut)).slice(before), [
+          { platform: "x", publishedAt, workspaceId },
+          { platform: "mastodon", publishedAt, workspaceId },
+        ]);
+      })
+  );
+
+  it.effect(
+    "count a thread once, when its first part goes out, and a repost that sends it again",
+    () =>
+      Effect.gen(function* countsThreads() {
+        const outcomes = yield* PublicationOutcomes;
+        const { wentOut } = yield* Recorded;
+        const before = (yield* Ref.get(wentOut)).length;
+
+        const failed: PostTargetStatus = {
+          _tag: "failed",
+          code: Option.none(),
+          failedAt: publishedAt,
+          reason: "contentRejected",
+        };
+
+        // Round 1 sent two parts of three, round 2 the third: one post.
+        yield* outcomes.settled(
+          threadOn(1, failed, [liveIn(1, 0), liveIn(1, 1)])
+        );
+        yield* outcomes.settled(
+          threadOn(2, published, [liveIn(1, 0), liveIn(1, 1), liveIn(2, 2)])
+        );
+
+        // Round 3 sent nothing, round 4 the whole thread again: another
+        // post on the platform.
+        yield* outcomes.settled(threadOn(3, failed, []));
+        yield* outcomes.settled(
+          threadOn(4, published, [liveIn(4, 0), liveIn(4, 1), liveIn(4, 2)])
+        );
+
+        assert.deepStrictEqual((yield* Ref.get(wentOut)).slice(before), [
+          { platform: "x", publishedAt: liveIn(1, 0).publishedAt, workspaceId },
+          { platform: "x", publishedAt: liveIn(4, 0).publishedAt, workspaceId },
+        ]);
+      })
+  );
+});
+
+// The outcomes behind fail for the post once billing counted it, so the
+// settlement's transaction rolls back with both counts; the thread's
+// settle.
+const RollbackTest = meteredOutcomes(
+  Layer.succeed(
+    PublicationOutcomes,
+    PublicationOutcomes.of({
+      resolved: () => Effect.void,
+      settled: (target) =>
+        target.postId === postId
+          ? Effect.fail(new DatabaseError({ cause: "settling failed" }))
+          : Effect.void,
+    })
+  )
+).pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      RepositoriesTest,
+      MeteredPosts.layer.pipe(Layer.provide(DrizzleMeteredPostLedgerLive)),
+      RecordedUsage.layer.pipe(Layer.provide(DrizzleUsageLedgerLive))
+    )
+  ),
+  Layer.provideMerge(
+    Layer.mergeAll(DrizzleUsageLedgerLive, DrizzleMeteredPostLedgerLive)
+  ),
+  Layer.provideMerge(DatabaseTest)
+);
+
+layer(RollbackTest)("publication outcomes, counted in Postgres", (it) => {
+  it.effect("roll the counts back with the settlement", () =>
+    Effect.gen(function* rollsBack() {
+      const outcomes = yield* PublicationOutcomes;
+      const sql = yield* SqlClient.SqlClient;
+      const ledger = yield* UsageLedger;
+      const metered = yield* MeteredPostLedger;
+      const day = DateTime.startOf(publishedAt, "day");
+
+      yield* sql
+        .withTransaction(outcomes.settled(targetOn(onX, published)))
+        .pipe(Effect.flip);
+
+      assert.lengthOf(
+        yield* ledger.ofWorkspace(workspaceId, { from: day, to: day }),
+        0
+      );
+      assert.lengthOf(yield* metered.ofWorkspace(workspaceId), 0);
+
+      yield* sql.withTransaction(
+        outcomes.settled(threadOn(1, published, [liveIn(1, 0)]))
+      );
+
+      assert.deepStrictEqual(
+        yield* ledger.ofWorkspace(workspaceId, { from: day, to: day }),
+        [{ day, dimension: "x", meter: "publishedPosts", quantity: 1 }]
+      );
+
+      yield* ledger.eraseWorkspace(workspaceId);
+      yield* metered.eraseWorkspace(workspaceId);
+    })
   );
 });

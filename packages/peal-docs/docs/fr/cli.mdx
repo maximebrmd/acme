@@ -456,6 +456,15 @@ peal billing
 
 `peal billing --json` affiche les deux réponses de l’API en un seul document, sous `billing` et `standing`. Sans cette option, la commande affiche la formule et l’abonnement de l’espace de travail, et, pour chaque limite (canaux, membres, publications qui partent ce mois-ci, demandes à l’assistant aujourd’hui, médias stockés), ce qui est utilisé de ce que la formule permet, et si l’espace de travail peut encore commencer son essai. Il ne change rien : les propriétaires et administrateurs commandent, résilient ou se rétractent sur la page **Facturation** de l’espace de travail ([Abonnements et facturation](/billing)). Sur une instance qui ne facture pas, rien n’est limité.
 
+## Utilisation [#usage]
+
+```sh
+peal usage
+peal usage --from 2026-10-01 --to 2026-10-31
+```
+
+`peal usage` affiche l’abonnement de l’espace de travail, chaque limite face à ce qui est utilisé maintenant, puis, sur des jours UTC (les 30 derniers sauf si `--from` et `--to` disent autre chose, 92 au plus), les publications parties par plateforme, les jours-canal, les publications sur les plateformes qui facturent à la publication, et une ligne pour chaque jour qui a quelque chose : ses publications, les canaux, membres et médias à la fin de la journée (un tiret pour un jour sans relevé), et ses demandes à l’assistant. `--json` affiche la réponse de l’API telle qu’elle est venue. Il ne change rien, et rien n’y est facturé ([Utilisation](/billing#usage)).
+
 ## Membres et invitations [#members]
 
 ```sh

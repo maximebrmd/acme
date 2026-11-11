@@ -356,6 +356,13 @@ peal analytics export posts --output posts.csv --days 30
 A thread's counts are its first part's. A number a platform does not give
 is `null`, never zero.
 
+What the workspace used of its plan, by UTC day (posts that went out,
+channels, channel-days; counts only, never prices; needs billing:read):
+
+```sh
+peal usage --from 2026-11-01 --to 2026-11-30 --json
+```
+
 ## Comments
 
 Peal reads the comments under published posts on some platforms, and

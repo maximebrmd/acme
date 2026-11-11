@@ -1,4 +1,5 @@
 import { Atom } from "effect/reactivity";
+import type { CalendarDay } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 
@@ -24,3 +25,14 @@ export const previewWithdrawal = PealApi.mutation(
 );
 
 export const withdraw = PealApi.mutation("billingActions", "withdraw");
+
+/** The workspace's usage over the UTC days from `from` to `to`. */
+export const usageOf = (
+  workspaceId: string,
+  period: { readonly from: CalendarDay; readonly to: CalendarDay }
+) =>
+  PealApi.query("usage", "get", {
+    params: { workspaceId },
+    query: period,
+    reactivityKeys: [`billing:${workspaceId}`],
+  });

@@ -27,6 +27,7 @@ import { review } from "#commands/review.ts";
 import { sets } from "#commands/sets.ts";
 import { signatures } from "#commands/signatures.ts";
 import { tags } from "#commands/tags.ts";
+import { usage } from "#commands/usage.ts";
 import { webhooks } from "#commands/webhooks.ts";
 import { whoami } from "#commands/whoami.ts";
 import { CredentialStore } from "#credentials.ts";
@@ -60,6 +61,7 @@ export const cli = peal.pipe(
     analytics,
     ads,
     billing,
+    usage,
     inbox,
     members,
     invitations,

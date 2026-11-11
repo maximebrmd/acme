@@ -51,5 +51,7 @@ export * as tags from "./tags/index.js";
 export * from "./tags/client/requests/index.js";
 export * as tiktok from "./tiktok/index.js";
 export * from "./tiktok/client/requests/index.js";
+export * as usage from "./usage/index.js";
+export * from "./usage/client/requests/index.js";
 export * as webhooks from "./webhooks/index.js";
 export * from "./webhooks/client/requests/index.js";

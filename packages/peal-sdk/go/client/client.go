@@ -33,6 +33,7 @@ import (
 	system "github.com/peal-social/peal/packages/peal-sdk/go/system"
 	tags "github.com/peal-social/peal/packages/peal-sdk/go/tags"
 	tiktok "github.com/peal-social/peal/packages/peal-sdk/go/tiktok"
+	usage "github.com/peal-social/peal/packages/peal-sdk/go/usage"
 	webhooks "github.com/peal-social/peal/packages/peal-sdk/go/webhooks"
 )
 
@@ -49,6 +50,7 @@ type Client struct {
 	Members                 *members.Client
 	Invitations             *invitations.Client
 	Billing                 *billing.Client
+	Usage                   *usage.Client
 	Analytics               *analytics.Client
 	Tiktok                  *tiktok.Client
 	Capabilities            *capabilities.Client
@@ -86,6 +88,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Members:                 members.NewClient(options),
 		Invitations:             invitations.NewClient(options),
 		Billing:                 billing.NewClient(options),
+		Usage:                   usage.NewClient(options),
 		Analytics:               analytics.NewClient(options),
 		Tiktok:                  tiktok.NewClient(options),
 		Capabilities:            capabilities.NewClient(options),

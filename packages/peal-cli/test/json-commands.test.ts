@@ -105,6 +105,10 @@ describe("--json on what an agent reads", () => {
           .pipe(Effect.map(parsed));
 
       assert.hasAllKeys(yield* json("billing"), ["billing", "standing"]);
+      assert.deepInclude(
+        yield* json("usage", "--from", "2026-11-01", "--to", "2026-11-03"),
+        { period: { from: "2026-11-01", to: "2026-11-03" } }
+      );
       assert.isArray(yield* json("members", "list"));
       assert.isArray(yield* json("invitations", "list"));
       assert.isArray(yield* json("webhooks", "list"));

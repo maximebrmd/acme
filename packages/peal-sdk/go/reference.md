@@ -4596,6 +4596,83 @@ _, err := client.Billing.Standing(
 </dl>
 </details>
 
+## usage
+<details><summary><code>client.Usage.Get(WorkspaceID) -> *peal.WorkspaceUsageReport</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers what the workspace uses of its plan now, and day by day from `from` to `to` (UTC days, both included, at most 92; by default the 30 days that end today): each day's posts that went out, one per channel they went out on, by platform, and its requests to the writing assistant; the channels it connected, its members and the media it stored as each day ended, null for a day the server took no snapshot of; then the period's totals, with its channel-days and, for each calendar month it touches, its posts on platforms that bill the server per post. Usage is kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, `plan` and `allowances` are null. Needs billing:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```go
+request := &peal.GetUsageRequest{
+    WorkspaceID: "workspaceId",
+}
+_, err := client.Usage.Get(
+    context.TODO(),
+    request,
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceID:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `*peal.CalendarDay` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `*peal.CalendarDay` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## analytics
 <details><summary><code>client.Analytics.Summary(WorkspaceID) -> *peal.AnalyticsSummary</code></summary>
 <dl>

@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { Effect, Option } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { Locale } from "#shared/domain/locale.ts";
@@ -17,6 +17,21 @@ export interface RosterMember {
   readonly userId: UserId;
 }
 
+/** A page of workspaces, in the order of their ids. */
+export interface WorkspacePageRequest {
+  /** The last workspace of the page before; none for the first page. */
+  readonly after: Option.Option<WorkspaceId>;
+  /** Only the workspaces created before this instant. */
+  readonly createdBefore: DateTime.Utc;
+  readonly limit: number;
+}
+
+/** How many members a workspace has. */
+export interface WorkspaceSeatCount {
+  readonly members: number;
+  readonly workspaceId: WorkspaceId;
+}
+
 /** Reads a workspace's members. Changes go through Better Auth. */
 export class WorkspaceRoster extends Context.Service<
   WorkspaceRoster,
@@ -29,5 +44,12 @@ export class WorkspaceRoster extends Context.Service<
       }>,
       DirectoryUnavailable
     >;
+    /**
+     * A page of every workspace and how many members each has, in one
+     * query, for jobs that go through them all.
+     */
+    readonly seatsPage: (
+      request: WorkspacePageRequest
+    ) => Effect.Effect<readonly WorkspaceSeatCount[], DirectoryUnavailable>;
   }
 >()("peal-server/workspace/application/WorkspaceRoster") {}

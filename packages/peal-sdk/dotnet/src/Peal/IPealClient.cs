@@ -14,6 +14,7 @@ public partial interface IPealClient
     public IMembersClient Members { get; }
     public IInvitationsClient Invitations { get; }
     public IBillingClient Billing { get; }
+    public IUsageClient Usage { get; }
     public IAnalyticsClient Analytics { get; }
     public ITiktokClient Tiktok { get; }
     public ICapabilitiesClient Capabilities { get; }

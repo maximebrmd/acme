@@ -69,6 +69,7 @@ import type {
   ApprovalPolicy,
   ApprovalRequest,
   Billing,
+  WorkspaceUsageReport,
   Channel,
   ChannelOptions,
   ChannelPreview,
@@ -640,6 +641,63 @@ const billing: Billing = {
   vatRate: 20,
   withdrawableUntil: null,
 };
+
+// The workspace's usage over three days: two with posts, the last
+// without a snapshot.
+const usageReport = (period: {
+  readonly from: string;
+  readonly to: string;
+}): WorkspaceUsageReport => ({
+  allowances: billing.allowances,
+  current: billing.usage,
+  days: [
+    {
+      assistantRequests: 1,
+      byPlatform: [
+        { platform: "bluesky", posts: 1 },
+        { platform: "x", posts: 2 },
+      ],
+      channels: 2,
+      day: "2026-11-01",
+      mediaStorage: 125_000_000,
+      members: 2,
+      publishedPosts: 3,
+    },
+    {
+      assistantRequests: 0,
+      byPlatform: [],
+      channels: 2,
+      day: "2026-11-02",
+      mediaStorage: 125_000_000,
+      members: 2,
+      publishedPosts: 0,
+    },
+    {
+      assistantRequests: 0,
+      byPlatform: [],
+      channels: null,
+      day: "2026-11-03",
+      mediaStorage: null,
+      members: null,
+      publishedPosts: 0,
+    },
+  ],
+  period,
+  plan: billing.plan,
+  sharedWith: null,
+  totals: {
+    byPlatform: [
+      { platform: "bluesky", posts: 1 },
+      { platform: "x", posts: 2 },
+    ],
+    channelDays: 4,
+    daysCounted: 2,
+    meteredPosts: [
+      { month: "2026-11-01", platform: "x", posts: 2, postsWithLinks: 1 },
+    ],
+    publishedPosts: 3,
+  },
+});
 
 const cli: ConnectedApp = {
   authorizedAt: at("2026-10-01T08:00:00Z"),
@@ -3615,6 +3673,19 @@ export const studioGroupsLive = (studio: Studio) =>
         standing: () =>
           Ref.get(studio.state).pipe(
             Effect.map(({ overPlan }) => (overPlan ? over : within))
+          ),
+      })
+    ),
+    HttpApiBuilder.group(Api, "usage", (handlers) =>
+      handlers.handleAll({
+        get: ({ query }) =>
+          allowed("billing:read").pipe(
+            Effect.as(
+              usageReport({
+                from: query.from ?? "2026-11-01",
+                to: query.to ?? "2026-11-03",
+              })
+            )
           ),
       })
     ),

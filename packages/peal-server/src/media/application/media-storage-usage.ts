@@ -11,7 +11,16 @@ import { CurrentUploadPolicy } from "./upload-policy.ts";
  */
 export class MediaStorageUsage extends Context.Service<
   MediaStorageUsage,
-  { readonly stored: (workspaceId: WorkspaceId) => Effect.Effect<number> }
+  {
+    readonly stored: (workspaceId: WorkspaceId) => Effect.Effect<number>;
+    /**
+     * The bytes each of these workspaces stores, in one query; one that
+     * stores none is left out.
+     */
+    readonly storedIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>>;
+  }
 >()("peal-server/media/application/MediaStorageUsage") {
   static readonly layer = Layer.effect(
     MediaStorageUsage,
@@ -30,7 +39,19 @@ export class MediaStorageUsage extends Context.Service<
         );
       });
 
-      return MediaStorageUsage.of({ stored });
+      const storedIn = Effect.fn("MediaStorageUsage.storedIn")(
+        function* storedIn(workspaceIds: readonly WorkspaceId[]) {
+          const policy = yield* CurrentUploadPolicy;
+          const now = yield* DateTime.now;
+
+          return yield* assets.storedBytesIn(
+            workspaceIds,
+            DateTime.subtractDuration(now, policy.partUploadExpiry)
+          );
+        }
+      );
+
+      return MediaStorageUsage.of({ stored, storedIn });
     })
   );
 }

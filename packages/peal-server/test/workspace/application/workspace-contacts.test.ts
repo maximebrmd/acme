@@ -36,6 +36,7 @@ const contactsWith = (members: readonly RosterMember[]) =>
                 ? Option.some({ members, name: "Studio Nord" })
                 : Option.none()
             ),
+          seatsPage: () => Effect.succeed([]),
         })
       )
     )
