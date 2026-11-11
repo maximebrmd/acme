@@ -316,6 +316,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "repost_target",
           "request_changes",
           "reschedule_post",
+          "reshuffle_queue",
           "resume_boost",
           "revoke_connect_link",
           "revoke_invitation",

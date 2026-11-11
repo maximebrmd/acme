@@ -2,9 +2,11 @@ import { DateTime, Option, Result } from "effect";
 import type {
   Queue as QueueView,
   QueuePreview as PreviewView,
+  QueueReshuffle as QueueReshuffleView,
   QueueSlot as SlotView,
 } from "peal-contract";
 
+import type { QueueReshuffle } from "#publishing/application/post-scheduling.ts";
 import type { ListedQueue } from "#publishing/application/queues.ts";
 import type { QueuePreview, QueueSlot } from "#publishing/domain/queue.ts";
 
@@ -40,4 +42,17 @@ export const previewView = ({
     at: DateTime.toUtc(at),
     postId: Option.getOrNull(postId),
   })),
+});
+
+/** What a reshuffle did, as the contract writes it. */
+export const reshuffleView = ({
+  moved,
+  remaining,
+  stoppedBy,
+  unchanged,
+}: QueueReshuffle): QueueReshuffleView => ({
+  moved,
+  remaining,
+  stoppedBy: Option.getOrNull(stoppedBy),
+  unchanged,
 });

@@ -97,7 +97,9 @@
   `validate_post` take `when: queue` naming a queue by id or name
   (`queueReferenced`), the default when left out; `queue_post` (in
   `publishingTools`, open world) puts a draft or a scheduled post on a
-  queue's next free slot.
+  queue's next free slot. `reshuffle_queue` (in `publishingTools`, not
+  open world: it moves posts, not what they say) moves a queue's waiting
+  posts onto its slots; `update_queue` moves none.
 - On `/api/mcp`, a partner key names the workspace it acts in with each
   request, by id, in the `Peal-Workspace` header (`workspaceNamed` in
   `authenticate.ts`; 400 without it), and is told 404 for any workspace

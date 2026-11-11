@@ -9,6 +9,7 @@ import {
   maxSlotsPerQueue,
   QueueDetailsSchema,
   QueuePreviewSchema,
+  QueueReshuffleSchema,
   QueueSchema,
   queueHorizonDays,
   weekdays,
@@ -17,7 +18,9 @@ import type {
   Queue,
   QueueDetails,
   QueuePreview,
+  QueueReshuffle,
   QueueSlot,
+  ReshuffleStop,
   Weekday,
 } from "peal-contract";
 
@@ -504,12 +507,63 @@ const update = Command.make(
     }
 
     yield* Console.log(
-      `Queue ${changed.id} of ${workspace.name} is now ${changed.name} (${summary(changed)}). Posts it placed keep their times.`
+      `Queue ${changed.id} of ${workspace.name} is now ${changed.name} (${summary(changed)}). Posts it placed keep their times: peal queues reshuffle moves them onto its slots.`
     );
   })
 ).pipe(
   Command.withDescription(
     "Change a queue: its name, zone, slots, channels or channel set, or make it the default. What no flag names stays as it is, but the channels that are no longer connected, which a queue cannot keep. Posts the queue placed keep their times."
+  )
+);
+
+/** What a reshuffle did, and why it stopped, in a line or two. */
+export const reshuffleLines = (
+  queue: Queue,
+  { moved, remaining, stoppedBy, unchanged }: QueueReshuffle
+): readonly string[] => {
+  const left = plural(remaining, "post", "posts");
+
+  const stopped: Readonly<Record<ReshuffleStop, string>> = {
+    changed: `Stopped as the queue was saved meanwhile: ${left} not moved. Run it again.`,
+    full: `${left} found no slot within ${String(queueHorizonDays)} days: add slots with peal queues update --slot, then run it again.`,
+    planLimit: `Stopped at a month the plan has no room in: ${left} not moved. peal billing shows the plan.`,
+  };
+
+  return [
+    `Moved ${plural(moved, "post", "posts")} of ${queue.name} onto its slots; ${String(unchanged)} already on theirs or not yours to move.`,
+    ...(stoppedBy === null ? [] : [stopped[stoppedBy]]),
+  ];
+};
+
+const reshuffle = Command.make(
+  "reshuffle",
+  { json: jsonFlag, queue: queueArgument, workspace: workspaceFlag },
+  Effect.fn("queues.reshuffle")(function* reshuffle({
+    json,
+    queue: given,
+    workspace: choice,
+  }) {
+    const session = yield* inWorkspace(choice);
+    const { client, url, workspace } = session;
+    const queue = yield* findQueue(session, given);
+
+    const done = yield* client.queues
+      .reshuffle({ params: { queueId: queue.id, workspaceId: workspace.id } })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(QueueReshuffleSchema, done);
+
+      return;
+    }
+
+    for (const line of reshuffleLines(queue, done)) {
+      yield* Console.log(line);
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "Move the posts that wait in a queue onto its slots as they are now, after its slots changed: in the order of their times, the first onto the first slot, those moved by hand included. Each move is what peal posts reschedule does, the approval asked again where the workspace asks for one. It stops at a month the plan has no room in; run it again to go on. Run twice, the second moves nothing."
   )
 );
 
@@ -545,5 +599,13 @@ export const queues = Command.make("queues").pipe(
   Command.withDescription(
     "A workspace's queues: weekly timetables of slots in a time zone. peal post --queue and peal posts queue put a post on a queue's next free slot instead of a time; a slot is taken while a post of the queue is scheduled, held for an approval or publishing at its instant."
   ),
-  Command.withSubcommands([list, show, preview, create, update, remove])
+  Command.withSubcommands([
+    list,
+    show,
+    preview,
+    create,
+    update,
+    reshuffle,
+    remove,
+  ])
 );

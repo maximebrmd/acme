@@ -73,6 +73,7 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "repost_target",
   "request_changes",
   "reschedule_post",
+  "reshuffle_queue",
   "schedule_post",
   "unschedule_post",
   "withdraw_comment_reply",

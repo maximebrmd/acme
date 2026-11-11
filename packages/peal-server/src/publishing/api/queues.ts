@@ -17,7 +17,6 @@ import type {
 } from "peal-contract";
 
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
-import type { QueueReshuffle } from "#publishing/application/post-scheduling.ts";
 import { Queues } from "#publishing/application/queues.ts";
 import { ChannelSetIdSchema } from "#publishing/domain/channel-set-id.ts";
 import { QueueIdSchema } from "#publishing/domain/queue-id.ts";
@@ -28,7 +27,7 @@ import { forbidden } from "#shared/api/forbidden.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
 import { channelIdsFrom } from "./post-input.ts";
-import { previewView, queueView } from "./queue-view.ts";
+import { previewView, queueView, reshuffleView } from "./queue-view.ts";
 
 const decodeQueueId = Schema.decodeUnknownOption(QueueIdSchema);
 
@@ -98,19 +97,6 @@ export const queueDetailsFrom = ({
 
     return details;
   });
-
-// What a reshuffle did, as the contract writes it.
-const reshuffleView = ({
-  moved,
-  remaining,
-  stoppedBy,
-  unchanged,
-}: QueueReshuffle) => ({
-  moved,
-  remaining,
-  stoppedBy: Option.getOrNull(stoppedBy),
-  unchanged,
-});
 
 // A failure of the server's own (the database, a bug) is a defect: 500.
 export const QueuesHandlers = HttpApiBuilder.group(

@@ -49,6 +49,7 @@ import {
 import { toldRefusal } from "#publishing/api/post-refusal.ts";
 import { pageView, searchRequestFrom } from "#publishing/api/post-search.ts";
 import { attemptView, postView } from "#publishing/api/post-view.ts";
+import { reshuffleView } from "#publishing/api/queue-view.ts";
 import { tiktokAccountView } from "#publishing/api/tiktok-account-view.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
 import { PostChecks } from "#publishing/application/post-checks.ts";
@@ -711,6 +712,27 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(moved);
         }).pipe(Effect.catchTags({ ...malformedPost, ...badZone })),
+      reshuffle_queue: ({ queue }) =>
+        Effect.gen(function* reshuffleQueue() {
+          const member = yield* publisher;
+
+          const { queue: chosen } = yield* queueReferenced(
+            queues,
+            member,
+            queue
+          );
+
+          const done = yield* scheduling.reshuffle(member, chosen.id).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("schedule or publish posts"),
+              QueueHasNoRoom: queueHasNoRoom,
+              QueueNotFound: unknownQueue,
+            })
+          );
+
+          return reshuffleView(done);
+        }),
       schedule_post: ({ at, channelIds, postId, timeZone }) =>
         Effect.gen(function* schedule() {
           const id = yield* postIdFrom(postId);
