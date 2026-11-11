@@ -529,6 +529,7 @@ describe("peal posts duplicate", () => {
                   ...post.targets,
                   {
                     channelId: goneChannelId,
+                    editedAt: null,
                     failureReason: null,
                     id: "0190f3a0-0000-7000-8000-00000000e0ff",
                     options: null,

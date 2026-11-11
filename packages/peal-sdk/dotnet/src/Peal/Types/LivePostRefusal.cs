@@ -22,6 +22,8 @@ public readonly record struct LivePostRefusal : IStringEnum
 
     public static readonly LivePostRefusal BoostRunning = new(Values.BoostRunning);
 
+    public static readonly LivePostRefusal ApprovalRequired = new(Values.ApprovalRequired);
+
     public LivePostRefusal(string value)
     {
         Value = value;
@@ -131,5 +133,7 @@ public readonly record struct LivePostRefusal : IStringEnum
         public const string ChannelUnavailable = "channelUnavailable";
 
         public const string BoostRunning = "boostRunning";
+
+        public const string ApprovalRequired = "approvalRequired";
     }
 }

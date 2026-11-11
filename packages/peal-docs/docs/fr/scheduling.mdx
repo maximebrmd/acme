@@ -305,23 +305,31 @@ La suppression se fait en arrière-plan, avec les autres appels du canal, un à 
 
 Les statistiques s’arrêtent : les statistiques ne lisent plus la publication et gardent les chiffres déjà lus, et la boîte de réception ne lit plus ses commentaires et garde ceux qu’elle a pendant leurs 30 jours. Une publication montrée par une mise en avant qui n’est pas terminée ne peut pas être dépubliée : arrêtez d’abord la mise en avant, car la publicité continuerait de dépenser pour une publication disparue.
 
-Là où Peal supprime des publications :
+Là où Peal supprime des publications, et là où il [les modifie](#edit-live) :
 
-| Plateforme              | Dépublier | Pourquoi pas                                                                              |
-| ----------------------- | --------- | ----------------------------------------------------------------------------------------- |
-| Mastodon                | Oui       |                                                                                           |
-| Bluesky                 | Oui       |                                                                                           |
-| X                       | Oui       |                                                                                           |
-| Pinterest               | Oui       |                                                                                           |
-| Google Business Profile | Oui       |                                                                                           |
-| LinkedIn                | Non       | LinkedIn ne dit pas quelle permission une suppression demande                             |
-| Facebook Pages          | Non       | Meta indique que seules certaines applications peuvent supprimer les publications de Page |
-| Threads                 | Non       | Il faut une permission que Meta accorde après examen                                      |
-| Instagram               | Non       | Il faut une permission que Meta accorde après examen                                      |
-| YouTube                 | Non       | Il faut une permission plus large que celle que Peal demande                              |
-| TikTok                  | Non       | L’API de TikTok n’a aucun appel pour supprimer une publication                            |
+| Plateforme              | Dépublier | Modifier | Pourquoi pas                                                                                                        |
+| ----------------------- | --------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| Mastodon                | Oui       | Oui      |                                                                                                                     |
+| Google Business Profile | Oui       | Oui      |                                                                                                                     |
+| Bluesky                 | Oui       | Non      | Bluesky n’a aucun appel pour modifier une publication                                                               |
+| X                       | Oui       | Non      | X ne dit pas quelles publications peuvent être modifiées, ni avec quel accès                                        |
+| Pinterest               | Oui       | Non      | Modifier une épingle est en bêta, pas ouvert à toutes les applications                                              |
+| LinkedIn                | Non       | Non      | LinkedIn ne dit pas quelle permission une suppression ou une modification demande                                   |
+| Facebook Pages          | Non       | Non      | Meta indique que seules certaines applications peuvent supprimer, et pas quelle permission une modification demande |
+| Threads                 | Non       | Non      | Supprimer demande une permission que Meta accorde après examen ; Threads n’a aucun appel pour modifier              |
+| Instagram               | Non       | Non      | Supprimer demande une permission que Meta accorde après examen ; Instagram n’a aucun appel pour modifier            |
+| YouTube                 | Non       | Non      | Il faut une permission plus large que celle que Peal demande                                                        |
+| TikTok                  | Non       | Non      | L’API de TikTok n’a aucun appel pour supprimer ou modifier une publication                                          |
 
 Là où ce n’est pas possible, supprimez la publication sur la plateforme elle-même. Une publication confirmée à la main ne peut pas non plus être dépubliée depuis Peal : Peal n’a pas son identifiant. Un canal déconnecté, désactivé ou à reconnecter ne peut pas être dépublié tant qu’il n’est pas revenu.
+
+## Modifier une publication en ligne [#edit-live]
+
+Une publication partie peut voir son texte corrigé sur Mastodon et Google Business Profile : **Modifier**, à côté du canal sur la page de la publication, ouvre le texte de ce canal avec le compteur du canal, et **Enregistrer** le remplace sur la plateforme. Seul le texte change : jamais les médias, les options, l’audience ni l’heure. La modification est publique immédiatement, si bien que qui peut dépublier peut modifier (`post:publish`), mais pas un membre dont les publications demandent une [approbation](/review) : un approbateur fait la modification pour lui, car elle mettrait en ligne un texte que personne n’a relu.
+
+Le nouveau texte est vérifié comme le texte du canal l’est quand une publication est programmée : la longueur de la plateforme (un avertissement de contenu Mastodon compte), ses caractères, et le reste. Une fois que la plateforme l’a pris, c’est le texte propre de cette partie sur ce canal dans Peal (les autres canaux gardent le leur), le canal indique **Modifié le** avec la date, et les webhooks reçoivent `post.edited`. Peal ne garde aucun texte précédent ; Mastodon montre son propre historique des modifications. La modification se fait en arrière-plan, avec les autres appels du canal, et est relancée comme une suppression ; ensuite elle **a échoué**, avec la raison, et **Réessayer** redemande.
+
+Mastodon reçoit de nouveau la publication avec ses médias, son avertissement de contenu et sa sensibilité, car Mastodon efface ce qu’une modification omet ; une publication avec un sondage est refusée, car la modification supprimerait le sondage. Lire la publication d’abord demande la permission `read:statuses`, qui manque aux canaux connectés avant que Peal la demande : reconnectez le canal. Chaque partie d’un fil se modifie seule, par sa place depuis 0 (la publication elle-même).
 
 ## Depuis un agent, la ligne de commande ou l’API [#api]
 

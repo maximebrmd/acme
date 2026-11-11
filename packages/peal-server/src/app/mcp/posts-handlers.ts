@@ -69,6 +69,7 @@ import { PostSearch } from "#publishing/application/post-search.ts";
 import { Queues } from "#publishing/application/queues.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import { ChannelOptions } from "#publishing/domain/channel-options.ts";
+import { livePostChangePermission } from "#publishing/domain/live-post-change.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { queueKeyOf } from "#publishing/domain/queue.ts";
 import { actorOf } from "#shared/api/actor.ts";
@@ -556,6 +557,53 @@ export const PostToolsLive = PostTools.toLayer(
             );
 
           return postView(copy);
+        }).pipe(Effect.catchTags(malformedPost)),
+      edit_published_post: ({ channelId, part, postId, targetId, text }) =>
+        Effect.gen(function* editPublishedPost() {
+          // One channel of the post, named one way: never whichever of two
+          // names comes first.
+          if ((channelId === undefined) === (targetId === undefined)) {
+            return yield* refuse(
+              "Give channelId or targetId, exactly one: nothing was edited."
+            );
+          }
+
+          const member = yield* actor;
+
+          // Before the post is read: a connection that may not publish is
+          // told so, whatever it names.
+          yield* Effect.fromResult(
+            authorize(member, livePostChangePermission)
+          ).pipe(
+            Effect.catchTag(
+              "MissingPermission",
+              notAllowed("edit published posts")
+            )
+          );
+
+          const id = yield* postIdFrom(postId);
+
+          const target = yield* targetNamed(member, id, {
+            channelId,
+            targetId,
+          });
+
+          const change = yield* live
+            .editTarget(member, id, target, { part: part ?? 0, text })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                LivePostNotChangeable: ({ reason }) =>
+                  refuse(
+                    `The post was not edited on that channel: ${livePostRefusals[reason]}.`
+                  ),
+                MissingPermission: notAllowed("edit published posts"),
+                PostContentRejected: contentRejected,
+                PostNotFound: notFound,
+              })
+            );
+
+          return livePostChangeView(change);
         }).pipe(Effect.catchTags(malformedPost)),
       get_post: ({ postId }) =>
         Effect.gen(function* get() {

@@ -1,0 +1,17 @@
+[
+  {
+    "_tag": "edited"
+  },
+  {
+    "_tag": "retry",
+    "delay": 60000,
+    "rateLimited": false
+  },
+  {
+    "_tag": "failed",
+    "code": "postGone"
+  },
+  {
+    "_tag": "gone"
+  }
+]

@@ -114,6 +114,7 @@ public class DuplicateTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,
@@ -163,6 +164,7 @@ public class DuplicateTest : BaseMockServerTest
                 },
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,
@@ -318,6 +320,7 @@ public class DuplicateTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,

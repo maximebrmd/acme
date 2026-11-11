@@ -184,6 +184,31 @@ const samples: Samples = {
     data: { by: "member", postId, workspaceId },
     type: "post.changes_requested",
   }),
+  "post.edit_failed": (workspaceId) => ({
+    data: {
+      channelId,
+      code: "postGone",
+      failedAt: at,
+      part: 0,
+      platform: "mastodon",
+      postId,
+      targetId,
+      workspaceId,
+    },
+    type: "post.edit_failed",
+  }),
+  "post.edited": (workspaceId) => ({
+    data: {
+      channelId,
+      editedAt: at,
+      part: 0,
+      platform: "mastodon",
+      postId,
+      targetId,
+      workspaceId,
+    },
+    type: "post.edited",
+  }),
   "post.failed": (workspaceId) => ({
     data: { ...onChannel(workspaceId), failedAt: at, reason: "rateLimited" },
     type: "post.failed",

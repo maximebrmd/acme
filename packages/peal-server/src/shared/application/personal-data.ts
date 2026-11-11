@@ -81,6 +81,8 @@ export interface PostRecord {
   readonly tagIds: readonly string[];
   readonly targets: readonly {
     readonly channelId: string;
+    /** When Peal last replaced a part's text on that channel's platform. */
+    readonly editedAt: DateTime.Utc | null;
     readonly finishedAt: DateTime.Utc | null;
     /** The platform kept the video private although it was asked otherwise. */
     readonly keptPrivate: boolean;

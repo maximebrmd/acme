@@ -66,6 +66,7 @@ const targetView = (target: PostTarget, count: number): TargetView => {
 
   const view: TargetView = {
     channelId,
+    editedAt: status._tag === "published" ? (status.editedAt ?? null) : null,
     failureReason: status._tag === "failed" ? status.reason : null,
     id,
     options: options.pipe(Option.map(encodeOptions), Option.getOrNull),

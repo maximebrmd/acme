@@ -10,6 +10,7 @@ pub enum LivePostRefusal {
     ChangeInProgress,
     ChannelUnavailable,
     BoostRunning,
+    ApprovalRequired,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -25,6 +26,7 @@ impl Serialize for LivePostRefusal {
             Self::ChangeInProgress => serializer.serialize_str("changeInProgress"),
             Self::ChannelUnavailable => serializer.serialize_str("channelUnavailable"),
             Self::BoostRunning => serializer.serialize_str("boostRunning"),
+            Self::ApprovalRequired => serializer.serialize_str("approvalRequired"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -41,6 +43,7 @@ impl<'de> Deserialize<'de> for LivePostRefusal {
             "changeInProgress" => Ok(Self::ChangeInProgress),
             "channelUnavailable" => Ok(Self::ChannelUnavailable),
             "boostRunning" => Ok(Self::BoostRunning),
+            "approvalRequired" => Ok(Self::ApprovalRequired),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -56,6 +59,7 @@ impl fmt::Display for LivePostRefusal {
             Self::ChangeInProgress => write!(f, "changeInProgress"),
             Self::ChannelUnavailable => write!(f, "channelUnavailable"),
             Self::BoostRunning => write!(f, "boostRunning"),
+            Self::ApprovalRequired => write!(f, "approvalRequired"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

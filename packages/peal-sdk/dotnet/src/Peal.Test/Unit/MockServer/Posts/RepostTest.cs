@@ -114,6 +114,7 @@ public class RepostTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,
@@ -163,6 +164,7 @@ public class RepostTest : BaseMockServerTest
                 },
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,
@@ -323,6 +325,7 @@ public class RepostTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,

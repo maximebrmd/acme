@@ -500,6 +500,23 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/t
 - Les webhooks reçoivent `post.unpublished` ou `post.unpublish_failed` ([Webhooks](/webhooks#post-unpublished)).
 - `GET …/platforms/capabilities` dit d’avance où Peal supprime des publications : `livePost.unpublish`, et `livePost.unpublishBlockedBy` (`noApi`, `permission` ou `unverified`) là où il ne le fait pas.
 
+## Modifier une publication en ligne [#edit-live]
+
+`POST …/posts/{postId}/targets/{targetId}/edit` remplace le texte d’une partie d’une publication en ligne sur la plateforme d’un canal, pour tout le monde ([Modifier une publication en ligne](/scheduling#edit-live)), avec `{ "text": "…", "part": 0 }` : `part` compte depuis 0, la publication elle-même, ce qu’elle est quand elle est omise. Seul le texte change, jamais les médias, les options ni l’heure. Il faut post:publish, pour un client OAuth la portée `workspace:publish`, et c’est refusé à qui doit faire approuver ses publications ([approbations](/review)). Peal modifie sur Mastodon et Google Business Profile.
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/targets/$TARGET_ID/edit?wait=30" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Ouverture des portes à 19 h, pas 18 h."}'
+```
+
+- Le texte est vérifié comme le texte de ce canal l’est quand une publication est programmée, avertissement de contenu Mastodon compris : un texte que la plateforme refuserait répond 422 `post_content_invalid` avec chaque violation, et un texte vide aussi.
+- La demande est acceptée (202) avec le changement (`kind: "edit"`), et une tâche fait la modification, relancée comme une suppression ; `?wait=<secondes>` attend qu’elle se termine. Un changement `failed` a son `code` (`postGone` quand la plateforme n’a plus la publication, `pollNotEditable` pour une publication Mastodon avec un sondage, `permissionDenied` pour un canal Mastodon à reconnecter, ou celui de la plateforme), et peut être redemandé. Le changement ne garde jamais le texte.
+- Une fois fait, le texte est celui de cette partie sur ce canal (`content.overrides`, ou celui de la partie dans `content.followUps`), les autres canaux gardent le leur, et la cible a son `editedAt`. Peal ne garde aucun texte précédent.
+- Avant tout appel, 409 `live_post_not_changeable` dit pourquoi pas, comme pour une suppression, avec aussi `approvalRequired` ; une partie que la publication n’a pas en ligne là est `noPlatformId`.
+- Les webhooks reçoivent `post.edited` ou `post.edit_failed` ([Webhooks](/webhooks#post-edited)), avec la partie, jamais le texte. `livePost.edit` et `livePost.editBlockedBy` des capacités disent d’avance où Peal modifie.
+
 ## Depuis MCP et la ligne de commande [#tools]
 
 | Requête                             | Outil MCP                         | Commande                             |
@@ -512,6 +529,7 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/t
 | `GET …/posts/search`                | `list_posts`                      | `peal posts list`                    |
 | `POST …/posts/{postId}/queue`       | `queue_post`                      | `peal posts queue <post-id>`         |
 | `POST …/posts/{postId}/unpublish`   | `unpublish_post`                  | `peal posts unpublish <post-id>`     |
+| `POST …/targets/{targetId}/edit`    | `edit_published_post`             | `peal posts edit <post-id>`          |
 | `GET …/posts/{postId}/changes`      | `list_post_changes`               | `peal posts changes <post-id>`       |
 | `GET …/queues/{queueId}/slots`      | `preview_queue`                   | `peal queues preview <queue>`        |
 | `POST …/queues/{queueId}/reshuffle` | `reshuffle_queue`                 | `peal queues reshuffle <queue>`      |

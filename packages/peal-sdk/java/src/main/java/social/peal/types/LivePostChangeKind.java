@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public final class LivePostChangeKind {
     public static final LivePostChangeKind UNPUBLISH = new LivePostChangeKind(Value.UNPUBLISH, "unpublish");
 
+    public static final LivePostChangeKind EDIT = new LivePostChangeKind(Value.EDIT, "edit");
+
     private final Value value;
 
     private final String string;
@@ -43,6 +45,8 @@ public final class LivePostChangeKind {
         switch (value) {
             case UNPUBLISH:
                 return visitor.visitUnpublish();
+            case EDIT:
+                return visitor.visitEdit();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -54,6 +58,8 @@ public final class LivePostChangeKind {
         switch (value) {
             case "unpublish":
                 return UNPUBLISH;
+            case "edit":
+                return EDIT;
             default:
                 return new LivePostChangeKind(Value.UNKNOWN, value);
         }
@@ -62,11 +68,15 @@ public final class LivePostChangeKind {
     public enum Value {
         UNPUBLISH,
 
+        EDIT,
+
         UNKNOWN
     }
 
     public interface Visitor<T> {
         T visitUnpublish();
+
+        T visitEdit();
 
         T visitUnknown(String unknownType);
     }

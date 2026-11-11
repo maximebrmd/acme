@@ -20,6 +20,7 @@ import type {
   PostTarget,
 } from "peal-contract";
 
+import { edit } from "#commands/posts-edit.ts";
 import { importPosts } from "#commands/posts-import.ts";
 import { list } from "#commands/posts-list.ts";
 import { changes, unpublish } from "#commands/posts-unpublish.ts";
@@ -857,6 +858,7 @@ export const posts = Command.make("posts").pipe(
     repost,
     confirm,
     unpublish,
+    edit,
     changes,
     tag,
     duplicate,

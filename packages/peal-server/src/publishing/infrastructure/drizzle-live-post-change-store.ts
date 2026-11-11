@@ -59,6 +59,7 @@ const toChange = Effect.fnUntraced(function* toChange(row: ChangeRow) {
     requestedVia: Option.fromNullOr(requestedVia),
     status: row.status,
     targetId: row.targetId,
+    text: Option.fromNullOr(row.text),
     workspaceId: row.workspaceId,
   });
 }, Effect.orDie);
@@ -79,6 +80,8 @@ const changeColumns = (change: LivePostChange) => ({
   finishedAt: change.finishedAt.pipe(Option.map(date), Option.getOrNull),
   partsLeft: encodeParts(change.partsLeft),
   status: change.status,
+  // An edit's text while it is pending: a change that ends clears it.
+  text: Option.getOrNull(change.text),
 });
 
 const decodeOpen = Schema.decodeUnknownEffect(

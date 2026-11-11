@@ -401,6 +401,99 @@ func (d *DuplicatePostsRequest) SetPostID(postID string) {
 }
 
 var (
+	livePostEditFieldWorkspaceID = big.NewInt(1 << 0)
+	livePostEditFieldPostID      = big.NewInt(1 << 1)
+	livePostEditFieldTargetID    = big.NewInt(1 << 2)
+	livePostEditFieldWait        = big.NewInt(1 << 3)
+	livePostEditFieldPart        = big.NewInt(1 << 4)
+	livePostEditFieldText        = big.NewInt(1 << 5)
+)
+
+type LivePostEdit struct {
+	WorkspaceID string  `json:"-" url:"-"`
+	PostID      string  `json:"-" url:"-"`
+	TargetID    string  `json:"-" url:"-"`
+	Wait        *string `json:"-" url:"wait,omitempty"`
+	Part        *int    `json:"part,omitempty" url:"-"`
+	Text        string  `json:"text" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (l *LivePostEdit) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostEdit) SetWorkspaceID(workspaceID string) {
+	l.WorkspaceID = workspaceID
+	l.require(livePostEditFieldWorkspaceID)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostEdit) SetPostID(postID string) {
+	l.PostID = postID
+	l.require(livePostEditFieldPostID)
+}
+
+// SetTargetID sets the TargetID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostEdit) SetTargetID(targetID string) {
+	l.TargetID = targetID
+	l.require(livePostEditFieldTargetID)
+}
+
+// SetWait sets the Wait field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostEdit) SetWait(wait *string) {
+	l.Wait = wait
+	l.require(livePostEditFieldWait)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostEdit) SetPart(part *int) {
+	l.Part = part
+	l.require(livePostEditFieldPart)
+}
+
+// SetText sets the Text field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePostEdit) SetText(text string) {
+	l.Text = text
+	l.require(livePostEditFieldText)
+}
+
+func (l *LivePostEdit) UnmarshalJSON(data []byte) error {
+	type unmarshaler LivePostEdit
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*l = LivePostEdit(body)
+	return nil
+}
+
+func (l *LivePostEdit) MarshalJSON() ([]byte, error) {
+	type embed LivePostEdit
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
 	queuePostFieldWorkspaceID = big.NewInt(1 << 0)
 	queuePostFieldPostID      = big.NewInt(1 << 1)
 	queuePostFieldChannelIDs  = big.NewInt(1 << 2)
@@ -9455,12 +9548,15 @@ type LivePostChangeKind string
 
 const (
 	LivePostChangeKindUnpublish LivePostChangeKind = "unpublish"
+	LivePostChangeKindEdit      LivePostChangeKind = "edit"
 )
 
 func NewLivePostChangeKindFromString(s string) (LivePostChangeKind, error) {
 	switch s {
 	case "unpublish":
 		return LivePostChangeKindUnpublish, nil
+	case "edit":
+		return LivePostChangeKindEdit, nil
 	}
 	var t LivePostChangeKind
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -9591,6 +9687,7 @@ const (
 	LivePostRefusalChangeInProgress   LivePostRefusal = "changeInProgress"
 	LivePostRefusalChannelUnavailable LivePostRefusal = "channelUnavailable"
 	LivePostRefusalBoostRunning       LivePostRefusal = "boostRunning"
+	LivePostRefusalApprovalRequired   LivePostRefusal = "approvalRequired"
 )
 
 func NewLivePostRefusalFromString(s string) (LivePostRefusal, error) {
@@ -9609,6 +9706,8 @@ func NewLivePostRefusalFromString(s string) (LivePostRefusal, error) {
 		return LivePostRefusalChannelUnavailable, nil
 	case "boostRunning":
 		return LivePostRefusalBoostRunning, nil
+	case "approvalRequired":
+		return LivePostRefusalApprovalRequired, nil
 	}
 	var t LivePostRefusal
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -12451,22 +12550,24 @@ func (p PostStatus) Ptr() *PostStatus {
 
 var (
 	postTargetFieldChannelID         = big.NewInt(1 << 0)
-	postTargetFieldFailureReason     = big.NewInt(1 << 1)
-	postTargetFieldID                = big.NewInt(1 << 2)
-	postTargetFieldKeptPrivate       = big.NewInt(1 << 3)
-	postTargetFieldOptions           = big.NewInt(1 << 4)
-	postTargetFieldParts             = big.NewInt(1 << 5)
-	postTargetFieldPermalink         = big.NewInt(1 << 6)
-	postTargetFieldPublishedAt       = big.NewInt(1 << 7)
-	postTargetFieldRemovedAt         = big.NewInt(1 << 8)
-	postTargetFieldRound             = big.NewInt(1 << 9)
-	postTargetFieldStatus            = big.NewInt(1 << 10)
-	postTargetFieldThumbnailNotSet   = big.NewInt(1 << 11)
-	postTargetFieldUnconfirmedReason = big.NewInt(1 << 12)
+	postTargetFieldEditedAt          = big.NewInt(1 << 1)
+	postTargetFieldFailureReason     = big.NewInt(1 << 2)
+	postTargetFieldID                = big.NewInt(1 << 3)
+	postTargetFieldKeptPrivate       = big.NewInt(1 << 4)
+	postTargetFieldOptions           = big.NewInt(1 << 5)
+	postTargetFieldParts             = big.NewInt(1 << 6)
+	postTargetFieldPermalink         = big.NewInt(1 << 7)
+	postTargetFieldPublishedAt       = big.NewInt(1 << 8)
+	postTargetFieldRemovedAt         = big.NewInt(1 << 9)
+	postTargetFieldRound             = big.NewInt(1 << 10)
+	postTargetFieldStatus            = big.NewInt(1 << 11)
+	postTargetFieldThumbnailNotSet   = big.NewInt(1 << 12)
+	postTargetFieldUnconfirmedReason = big.NewInt(1 << 13)
 )
 
 // postTargetNullableFields maps the wire names of PostTarget's nullable fields (required or optional) to their field bits.
 var postTargetNullableFields = map[string]*big.Int{
+	"editedAt":          postTargetFieldEditedAt,
 	"failureReason":     postTargetFieldFailureReason,
 	"options":           postTargetFieldOptions,
 	"permalink":         postTargetFieldPermalink,
@@ -12477,6 +12578,7 @@ var postTargetNullableFields = map[string]*big.Int{
 
 type PostTarget struct {
 	ChannelID         string             `json:"channelId" url:"channelId"`
+	EditedAt          *string            `json:"editedAt,omitempty" url:"editedAt,omitempty"`
 	FailureReason     *FailureReason     `json:"failureReason,omitempty" url:"failureReason,omitempty"`
 	ID                string             `json:"id" url:"id"`
 	KeptPrivate       *bool              `json:"keptPrivate,omitempty" url:"keptPrivate,omitempty"`
@@ -12502,6 +12604,13 @@ func (p *PostTarget) GetChannelID() string {
 		return ""
 	}
 	return p.ChannelID
+}
+
+func (p *PostTarget) GetEditedAt() *string {
+	if p == nil {
+		return nil
+	}
+	return p.EditedAt
 }
 
 func (p *PostTarget) GetFailureReason() *FailureReason {
@@ -12609,6 +12718,13 @@ func (p *PostTarget) require(field *big.Int) {
 func (p *PostTarget) SetChannelID(channelID string) {
 	p.ChannelID = channelID
 	p.require(postTargetFieldChannelID)
+}
+
+// SetEditedAt sets the EditedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTarget) SetEditedAt(editedAt *string) {
+	p.EditedAt = editedAt
+	p.require(postTargetFieldEditedAt)
 }
 
 // SetFailureReason sets the FailureReason field and marks it as non-optional;

@@ -135,6 +135,9 @@ export const postTargets = publishing.table(
     cancelRequested: boolean("cancel_requested").notNull().default(false),
     channelId: uuid("channel_id").notNull(),
     contentDigest: text("content_digest"),
+    // When Peal last replaced the text of a part of it on the platform at
+    // a member's request (`live_post_changes`). Null until then.
+    editedAt: instant("edited_at"),
     failureCode: text("failure_code"),
     failureReason: text("failure_reason"),
     finishedAt: instant("finished_at"),
@@ -248,9 +251,12 @@ export const publicationCalls = publishing.table(
 
 /**
  * The changes members ask of posts that are live on a channel (deleting
- * them from the platform), each run by its own job (`ChangeLivePostV1`).
- * `parts_left` lists the parts still to delete, last first, by place and
- * platform id: never content. `call_started_at` is written and committed
+ * them from the platform, or replacing the text of one of their parts),
+ * each run by its own job (`ChangeLivePostV1`). `parts_left` lists the
+ * parts still to delete or edit, last first, by place and platform id:
+ * never content. `text` is an edit's new text, while the change is
+ * pending only: cleared when it ends, done or failed, and never in the
+ * job's history. `call_started_at` is written and committed
  * before each call to the platform, and `call_finished_at` once it
  * answered: a call begun and not ended is in flight, which an erasure
  * waits for. `requested_via` is the `PostOrigin` JSON the domain decodes
@@ -280,6 +286,7 @@ export const livePostChanges = publishing.table(
     targetId: uuid("target_id")
       .notNull()
       .references(() => postTargets.id, { onDelete: "cascade" }),
+    text: text("text"),
     workspaceId: uuid("workspace_id").notNull(),
   },
   (table) => [

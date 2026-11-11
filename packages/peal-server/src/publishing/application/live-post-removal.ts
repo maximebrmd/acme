@@ -4,6 +4,7 @@ import type { LivePostChangeId } from "#publishing/domain/live-post-change-id.ts
 import {
   failChange,
   finishChange,
+  partEdited,
   partRemoved,
 } from "#publishing/domain/live-post-change.ts";
 import type { LivePostChange } from "#publishing/domain/live-post-change.ts";
@@ -17,16 +18,17 @@ import type {
 } from "#publishing/domain/removal-decision.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 
+import { remember } from "./duplicate-guard.ts";
 import { LivePostChangeStore } from "./live-post-change-store.ts";
 import { LivePostClients } from "./live-post-clients.ts";
 import { LivePostEvents } from "./live-post-events.ts";
 import { OperatorAlerts } from "./operator-alerts.ts";
 import { PostRepository } from "./post-repository.ts";
 
-// The steps of removing a live post, one use case per step of its durable
-// job (`ChangeLivePostV1`): what parts it takes, each call, and how it
-// ended. Each reads the change again: one erased with its workspace, or
-// ended meanwhile, is left alone.
+// The steps of changing a live post, removing it or editing it, one use
+// case per step of its durable job (`ChangeLivePostV1`): what parts it
+// takes, each call, and how it ended. Each reads the change again: one
+// erased with its workspace, or ended meanwhile, is left alone.
 
 /**
  * The parts the job deletes, in order (the last part of a thread first),
@@ -73,7 +75,7 @@ export const claimRemovalRun = Effect.fn("LivePostRemoval.claim")(
   }
 );
 
-/** One call that deletes one part, as the job's attempt `n` at it. */
+/** One call that deletes, or edits, one part, as the job's attempt `n`. */
 export interface RemovalCall {
   readonly changeId: LivePostChangeId;
   /** How earlier calls for this part ended, the retried ones only. */
@@ -82,11 +84,13 @@ export interface RemovalCall {
 }
 
 /**
- * Deletes a part from the platform and decides what follows. It is not a
- * transaction: the call's start is committed before the platform is
- * called, so an erasure sees it in flight, and a run cut short calls
- * again (a post found gone is deleted). Once the platform answered, the
- * part leaves the change's parts in one transaction.
+ * Deletes a part from the platform, or edits it, and decides what
+ * follows. It is not a transaction: the call's start is committed before
+ * the platform is called, so an erasure sees it in flight, and a run cut
+ * short calls again (a post found gone is deleted; the same text sent
+ * again changes nothing). Once the platform answered, the part leaves the
+ * change's parts in one transaction. An edit's call carries the change's
+ * id, never its text, which the gate's side reads.
  */
 export const removalAttemptRun = Effect.fn("LivePostRemoval.attempt")(
   function* removalAttemptRun(call: RemovalCall) {
@@ -115,26 +119,38 @@ export const removalAttemptRun = Effect.fn("LivePostRemoval.attempt")(
       return gone;
     }
 
-    const attempt: RemovalAttempt = yield* clients
-      .remove({
-        channelId: found.value.channelId,
-        platformPostId: part.platformPostId,
-      })
-      .pipe(
-        // Found gone after a call of Peal's that never ended: that call
-        // may have deleted it, so nobody is said to have before.
-        Effect.map((outcome): RemovalAttempt => ({
-          _tag: "removed",
-          alreadyGone: outcome === "alreadyGone" && started === "begun",
-        })),
-        Effect.catch((error) => Effect.succeed(error))
-      );
+    const isEdit = found.value.kind === "edit";
+
+    const attempt: RemovalAttempt = yield* (
+      isEdit
+        ? clients
+            .edit({
+              changeId: call.changeId,
+              channelId: found.value.channelId,
+              platformPostId: part.platformPostId,
+            })
+            .pipe(Effect.map((): RemovalAttempt => ({ _tag: "edited" })))
+        : clients
+            .remove({
+              channelId: found.value.channelId,
+              platformPostId: part.platformPostId,
+            })
+            .pipe(
+              // Found gone after a call of Peal's that never ended: that
+              // call may have deleted it, so nobody is said to have before.
+              Effect.map((outcome): RemovalAttempt => ({
+                _tag: "removed",
+                alreadyGone: outcome === "alreadyGone" && started === "begun",
+              }))
+            )
+    ).pipe(Effect.catch((error) => Effect.succeed(error)));
 
     const finishedAt = yield* DateTime.now;
 
-    // The part leaves the change once the platform said it is gone, with
-    // the call's end, in one transaction; a refusal ends the call alone.
-    const recordRemoved = (alreadyGone: boolean) =>
+    // The part leaves the change once the platform said it is gone, or
+    // edited, with the call's end, in one transaction; a refusal ends the
+    // call alone.
+    const recordDone = (alreadyGone: boolean) =>
       transaction(
         Effect.gen(function* record() {
           const locked = yield* store.lock(call.changeId);
@@ -144,7 +160,9 @@ export const removalAttemptRun = Effect.fn("LivePostRemoval.attempt")(
           }
 
           const next = yield* Result.match(
-            partRemoved(locked.value, call.part, alreadyGone),
+            isEdit
+              ? partEdited(locked.value, call.part)
+              : partRemoved(locked.value, call.part, alreadyGone),
             { onFailure: Effect.die, onSuccess: Effect.succeed }
           );
 
@@ -153,9 +171,13 @@ export const removalAttemptRun = Effect.fn("LivePostRemoval.attempt")(
         })
       );
 
-    yield* attempt._tag === "removed"
-      ? recordRemoved(attempt.alreadyGone)
-      : store.endCall(call.changeId, finishedAt);
+    if (attempt._tag === "removed") {
+      yield* recordDone(attempt.alreadyGone);
+    } else if (attempt._tag === "edited") {
+      yield* recordDone(false);
+    } else {
+      yield* store.endCall(call.changeId, finishedAt);
+    }
 
     // The platform refuses the server's app until its operator pays.
     if (
@@ -173,13 +195,21 @@ export const removalAttemptRun = Effect.fn("LivePostRemoval.attempt")(
   }
 );
 
-/** How the job ended, for `settleChangeRun`. */
+/**
+ * How the job ended, for `settleChangeRun`: done with the parts it took
+ * (the claim's), or failed with a code.
+ */
 export type ChangeEnding =
-  | { readonly _tag: "done" }
+  | { readonly _tag: "done"; readonly parts: readonly number[] }
   | { readonly _tag: "failed"; readonly code: string };
 
-// The target as it stands once removed: still published, with `removedAt`.
-const removedFrom = (target: PostTarget, removedAt: DateTime.Utc) =>
+// The target with its published status's notes changed: still published.
+const publishedWith = (
+  target: PostTarget,
+  notes:
+    | { readonly editedAt: DateTime.Utc }
+    | { readonly removedAt: DateTime.Utc }
+) =>
   target.status._tag === "published"
     ? new PostTarget({
         channelId: target.channelId,
@@ -188,16 +218,19 @@ const removedFrom = (target: PostTarget, removedAt: DateTime.Utc) =>
         options: target.options,
         postId: target.postId,
         round: target.round,
-        status: { ...target.status, removedAt },
+        status: { ...target.status, ...notes },
       })
     : target;
 
 /**
  * Records how the change ended, in one transaction under the post's, the
- * target's and the change's locks, in that order: done, the target gets
- * its `removedAt`; failed, the parts left stay for a member who asks
- * again. Tells LivePostEvents either way. Run again, it answers what the
- * first run recorded.
+ * target's and the change's locks, in that order. A removal done gives
+ * the target its `removedAt`; an edit done makes its text the part's own
+ * on the channel (`amendText`), gives the target its `editedAt` and keeps
+ * the target's new content digest (`remember`); either way an edit's
+ * text leaves the change. Failed, the parts left stay for a member who
+ * asks again. Tells LivePostEvents either way. Run again, it answers what
+ * the first run recorded.
  */
 export const settleChangeRun = Effect.fn("LivePostRemoval.settle")(
   function* settleChangeRun(changeId: LivePostChangeId, ending: ChangeEnding) {
@@ -246,9 +279,45 @@ export const settleChangeRun = Effect.fn("LivePostRemoval.settle")(
 
         yield* applied(yield* store.update(next, change));
 
-        if (ending._tag === "done") {
+        // The part an edit asked for: the one it took, or the one left.
+        const editedPart =
+          ending._tag === "done"
+            ? (ending.parts[0] ?? 0)
+            : (change.partsLeft[0]?.index ?? 0);
+
+        if (change.kind === "edit" && ending._tag === "done") {
+          // A pending edit always holds its text: none is a bug.
+          const text = yield* Option.match(change.text, {
+            onNone: () => Effect.die("A pending edit without its text"),
+            onSome: Effect.succeed,
+          });
+
+          const amended = yield* posts.amendText(
+            change.postId,
+            editedPart,
+            change.channelId,
+            text
+          );
+
+          yield* posts.markEdited(change.targetId, now);
+
+          if (Option.isSome(amended)) {
+            yield* remember(amended.value, [target.value]);
+          }
+
+          yield* events.edited(
+            next,
+            publishedWith(target.value, { editedAt: now }),
+            editedPart
+          );
+        } else if (change.kind === "edit") {
+          yield* events.editFailed(next, target.value, editedPart);
+        } else if (ending._tag === "done") {
           yield* posts.markRemoved(change.targetId, now);
-          yield* events.unpublished(next, removedFrom(target.value, now));
+          yield* events.unpublished(
+            next,
+            publishedWith(target.value, { removedAt: now })
+          );
         } else {
           yield* events.unpublishFailed(next, target.value);
         }

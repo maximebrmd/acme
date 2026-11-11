@@ -15,6 +15,9 @@ from .unconfirmed_reason import UnconfirmedReason
 
 class PostTarget(UniversalBaseModel):
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    edited_at: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="editedAt"), pydantic.Field(alias="editedAt")
+    ] = None
     failure_reason: typing_extensions.Annotated[
         typing.Optional[FailureReason], FieldMetadata(alias="failureReason"), pydantic.Field(alias="failureReason")
     ] = None

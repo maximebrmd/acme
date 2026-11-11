@@ -146,6 +146,7 @@ public class CreateTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,
@@ -195,6 +196,7 @@ public class CreateTest : BaseMockServerTest
                 },
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,
@@ -402,6 +404,7 @@ public class CreateTest : BaseMockServerTest
               "targets": [
                 {
                   "channelId": "channelId",
+                  "editedAt": "editedAt",
                   "failureReason": "contentRejected",
                   "id": "id",
                   "keptPrivate": true,

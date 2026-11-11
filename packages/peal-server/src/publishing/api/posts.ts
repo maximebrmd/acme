@@ -364,6 +364,33 @@ export const PostsHandlers = HttpApiBuilder.group(
 
           return postView(copy);
         }),
+      editTarget: ({ params, payload, query }) =>
+        Effect.gen(function* editTarget() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+          const targetId = yield* targetIdFrom(params.targetId);
+
+          const change = yield* live
+            .editTarget(actor, postId, targetId, {
+              part: payload.part ?? 0,
+              text: payload.text,
+            })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                LivePostNotChangeable: notChangeable,
+                MissingPermission: forbidden,
+                PostContentRejected: contentInvalid,
+                PostNotFound: notFound,
+              })
+            );
+
+          const ended = yield* live
+            .awaitEnd(change, Duration.seconds(query.wait ?? 0))
+            .pipe(Effect.orDie);
+
+          return livePostChangeView(ended);
+        }),
       enqueue: ({ params, payload }) =>
         Effect.gen(function* enqueue() {
           const actor = actorOf(yield* CurrentMember);

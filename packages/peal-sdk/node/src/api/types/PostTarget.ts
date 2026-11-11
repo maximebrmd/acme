@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface PostTarget {
     channelId: string;
+    editedAt: string | null;
     failureReason: Peal.FailureReason | null;
     id: string;
     keptPrivate?: boolean | undefined;

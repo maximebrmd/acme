@@ -683,6 +683,7 @@ describe("peal posts", () => {
             ?.targets.find(({ id }) => id === unconfirmedTargetId),
           {
             channelId: "0190f3a0-0000-7000-8000-00000000c002",
+            editedAt: null,
             failureReason: null,
             id: unconfirmedTargetId,
             options: null,

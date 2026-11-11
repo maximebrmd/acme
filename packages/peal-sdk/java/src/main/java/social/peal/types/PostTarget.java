@@ -26,6 +26,8 @@ import social.peal.core.ObjectMappers;
 public final class PostTarget {
     private final String channelId;
 
+    private final Optional<String> editedAt;
+
     private final Optional<FailureReason> failureReason;
 
     private final String id;
@@ -54,6 +56,7 @@ public final class PostTarget {
 
     private PostTarget(
             String channelId,
+            Optional<String> editedAt,
             Optional<FailureReason> failureReason,
             String id,
             Optional<Boolean> keptPrivate,
@@ -68,6 +71,7 @@ public final class PostTarget {
             Optional<UnconfirmedReason> unconfirmedReason,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.editedAt = editedAt;
         this.failureReason = failureReason;
         this.id = id;
         this.keptPrivate = keptPrivate;
@@ -86,6 +90,14 @@ public final class PostTarget {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonIgnore
+    public Optional<String> getEditedAt() {
+        if (editedAt == null) {
+            return Optional.empty();
+        }
+        return editedAt;
     }
 
     @JsonIgnore
@@ -167,6 +179,12 @@ public final class PostTarget {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("editedAt")
+    private Optional<String> _getEditedAt() {
+        return editedAt;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("failureReason")
     private Optional<FailureReason> _getFailureReason() {
         return failureReason;
@@ -215,6 +233,7 @@ public final class PostTarget {
 
     private boolean equalTo(PostTarget other) {
         return channelId.equals(other.channelId)
+                && editedAt.equals(other.editedAt)
                 && failureReason.equals(other.failureReason)
                 && id.equals(other.id)
                 && keptPrivate.equals(other.keptPrivate)
@@ -233,6 +252,7 @@ public final class PostTarget {
     public int hashCode() {
         return Objects.hash(
                 this.channelId,
+                this.editedAt,
                 this.failureReason,
                 this.id,
                 this.keptPrivate,
@@ -284,6 +304,12 @@ public final class PostTarget {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage editedAt(Optional<String> editedAt);
+
+        _FinalStage editedAt(String editedAt);
+
+        _FinalStage editedAt(Nullable<String> editedAt);
 
         _FinalStage failureReason(Optional<FailureReason> failureReason);
 
@@ -359,6 +385,8 @@ public final class PostTarget {
 
         private Optional<FailureReason> failureReason = Optional.empty();
 
+        private Optional<String> editedAt = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -366,6 +394,7 @@ public final class PostTarget {
         @java.lang.Override
         public Builder from(PostTarget other) {
             channelId(other.getChannelId());
+            editedAt(other.getEditedAt());
             failureReason(other.getFailureReason());
             id(other.getId());
             keptPrivate(other.getKeptPrivate());
@@ -593,9 +622,35 @@ public final class PostTarget {
         }
 
         @java.lang.Override
+        public _FinalStage editedAt(Nullable<String> editedAt) {
+            if (editedAt.isNull()) {
+                this.editedAt = null;
+            } else if (editedAt.isEmpty()) {
+                this.editedAt = Optional.empty();
+            } else {
+                this.editedAt = Optional.of(editedAt.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage editedAt(String editedAt) {
+            this.editedAt = Optional.ofNullable(editedAt);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "editedAt", nulls = Nulls.SKIP)
+        public _FinalStage editedAt(Optional<String> editedAt) {
+            this.editedAt = editedAt;
+            return this;
+        }
+
+        @java.lang.Override
         public PostTarget build() {
             return new PostTarget(
                     channelId,
+                    editedAt,
                     failureReason,
                     id,
                     keptPrivate,
@@ -614,6 +669,7 @@ public final class PostTarget {
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
+                    || key.equalsIgnoreCase("editedAt")
                     || key.equalsIgnoreCase("failureReason")
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("keptPrivate")

@@ -784,6 +784,7 @@ export const PostDetail = ({
       <LivePostActions
         channel={channel}
         channelName={channelNamed(channel?.id)}
+        content={post.content}
         postId={post.id}
         target={target}
         workspaceId={workspaceId}

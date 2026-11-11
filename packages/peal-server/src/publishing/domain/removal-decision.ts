@@ -10,13 +10,14 @@ import { defaultPublicationPolicy } from "./publication-policy.ts";
 import type { PublicationPolicy } from "./publication-policy.ts";
 
 /**
- * How one call deleting a part of a live post ended: the part is off the
+ * How one call changing a part of a live post ended: the part is off the
  * platform (`removed`, or `alreadyGone` when the platform had no such
- * post), or the platform's refusal. Stored in the job's history: add
- * members, never rename or remove one.
+ * post), it shows an edit's text (`edited`), or the platform's refusal.
+ * Stored in the job's history: add members, never rename or remove one.
  */
 export const RemovalAttemptSchema = Schema.Union([
   Schema.TaggedStruct("removed", { alreadyGone: Schema.Boolean }),
+  Schema.TaggedStruct("edited", {}),
   PlatformUnavailable,
   RateLimited,
   TokenExpired,
@@ -26,8 +27,8 @@ export const RemovalAttemptSchema = Schema.Union([
 export type RemovalAttempt = typeof RemovalAttemptSchema.Type;
 
 /**
- * What follows a call: the part is off the platform (`removed`), try it
- * again after `delay` (`retry`, `rateLimited` when the platform asked to
+ * What follows a call: the part is off the platform (`removed`), or shows
+ * an edit's text (`edited`), try it again after `delay` (`retry`, `rateLimited` when the platform asked to
  * wait), give up with `code` (`failed`), or stop, as the change ended or
  * went with its workspace (`gone`). Stored in the job's history: add
  * members, never rename or remove one.
@@ -40,6 +41,7 @@ export const RemovalDecisionSchema = Schema.Union([
   }),
   Schema.TaggedStruct("failed", { code: Schema.String }),
   Schema.TaggedStruct("gone", {}),
+  Schema.TaggedStruct("edited", {}),
 ]);
 
 export type RemovalDecision = typeof RemovalDecisionSchema.Type;
@@ -74,8 +76,8 @@ const channelRefusals: ReadonlySet<string> = new Set([
 
 /**
  * Decides what follows a call. Deleting is safe to repeat (a post found
- * gone is deleted), so, unlike a publish, a call that failed is tried
- * again: after the delays the publishing policy waits for an outage
+ * gone is deleted), and so is editing (the same text again), so, unlike a
+ * publish, a call that failed is tried again: after the delays the publishing policy waits for an outage
  * (`unavailableBackoff`: five more tries), and, while the platform asks to
  * wait, as long as it says, within the policy's bounds, `maxAttempts`
  * times. A refusal that no retry changes ends the change with its code:
@@ -114,6 +116,7 @@ export const decideRemoval = (
           );
     },
     TokenExpired: () => failed(removalFailureCodes.channelUnavailable),
+    edited: (): RemovalDecision => ({ _tag: "edited" }),
     removed: ({ alreadyGone }): RemovalDecision => ({
       _tag: "removed",
       alreadyGone,

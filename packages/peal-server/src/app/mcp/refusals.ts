@@ -159,18 +159,23 @@ export const presetRefusals = {
   SignatureNotFound: unknownSignature,
 } as const;
 
-/** Why a post could not be removed from a channel, in the user's words. */
+/**
+ * Why a post could not be removed from a channel, or edited there, in the
+ * user's words.
+ */
 export const livePostRefusals: Readonly<Record<LivePostRefusal, string>> = {
   alreadyRemoved: "Peal removed it from the platform already",
+  approvalRequired:
+    "the user's posts need an approval, and an edit would put unreviewed text out at once: an approver makes the edit",
   boostRunning:
     "a boost that is not over shows it: stop the boost first (stop_boost), then remove the post",
   changeInProgress:
-    "it is being removed already: list_post_changes says how that goes",
+    "another change of it is pending: list_post_changes says how that goes",
   channelUnavailable:
     "its channel is disconnected, turned off or must be reconnected: nothing was asked of the platform",
   noPlatformId:
-    "Peal has no id for it on the platform, as for a post confirmed by hand: the user removes it there",
+    "Peal has no id for it, or for that part, on the platform, as for a post confirmed by hand: the user changes it there",
   notPublished: "it is not live on that channel",
   notSupported:
-    "the platform does not let Peal delete posts (get_channel_capabilities says why, in `livePost`): the user removes it there",
+    "the platform does not let Peal make that change (get_channel_capabilities says why, in `livePost`): the user makes it there",
 };

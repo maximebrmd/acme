@@ -112,6 +112,8 @@ Le document OpenAPI de l’API, à `/api/openapi.json`, décrit chaque événeme
 | [`post.finished`](#post-finished)                       | Chaque canal d’une publication a son résultat                                                              |
 | [`post.unpublished`](#post-unpublished)                 | Une publication a été supprimée de la plateforme d’un canal                                                |
 | [`post.unpublish_failed`](#post-unpublish-failed)       | Peal n’a pas pu supprimer une publication de la plateforme d’un canal                                      |
+| [`post.edited`](#post-edited)                           | Le texte d’une publication a été modifié sur la plateforme d’un canal                                      |
+| [`post.edit_failed`](#post-edit-failed)                 | Peal n’a pas pu modifier le texte d’une publication sur la plateforme d’un canal                           |
 | [`post.approval_requested`](#post-approval-requested)   | Une publication attend une approbation                                                                     |
 | [`post.approved`](#post-approved)                       | Une publication qui attendait a été approuvée                                                              |
 | [`post.changes_requested`](#post-changes-requested)     | Des modifications ont été demandées sur une publication qui attendait                                      |
@@ -486,6 +488,74 @@ Peal n’a pas pu supprimer la publication de la plateforme du canal, après les
     "platform": "mastodon",
     "code": "unavailable",
     "failedAt": "2026-11-10T11:22:00.000Z"
+  }
+}
+```
+
+### post.edited [#post-edited]
+
+Peal a remplacé le texte d’une partie de la publication sur la plateforme du canal, à la demande de quelqu’un ([Modifier une publication en ligne](/scheduling#edit-live)) : le texte de cette partie sur le canal est aussi le nouveau dans Peal, et la cible a son `editedAt`. Le texte lui-même n’est pas envoyé : lisez la publication.
+
+| Champ         | Type           | Ce qu’il contient                                          |
+| ------------- | -------------- | ---------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                        |
+| `postId`      | chaîne         | La publication                                             |
+| `targetId`    | chaîne         | La publication sur ce canal                                |
+| `channelId`   | chaîne         | Le canal                                                   |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté |
+| `part`        | entier         | La partie modifiée, depuis 0 (la publication elle-même)    |
+| `editedAt`    | chaîne         | Le moment où la plateforme a pris le texte, en instant UTC |
+
+```json title="post.edited"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e23",
+  "type": "post.edited",
+  "version": 1,
+  "timestamp": "2026-11-10T12:05:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "part": 0,
+    "editedAt": "2026-11-10T12:05:00.000Z"
+  }
+}
+```
+
+### post.edit_failed [#post-edit-failed]
+
+Peal n’a pas pu modifier la partie de la publication sur la plateforme du canal, après les essais qu’une modification fait : `code` dit pourquoi, comme le `code` du changement (`postGone` quand la plateforme n’a plus la publication, `pollNotEditable` pour une publication Mastodon avec un sondage, `permissionDenied`, `unavailable`, `rateLimited`, `channelUnavailable`, ou celui de la plateforme). La publication dit ce qu’elle disait, et le texte de Peal n’a pas changé : un membre peut redemander.
+
+| Champ         | Type           | Ce qu’il contient                                          |
+| ------------- | -------------- | ---------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                        |
+| `postId`      | chaîne         | La publication                                             |
+| `targetId`    | chaîne         | La publication sur ce canal                                |
+| `channelId`   | chaîne         | Le canal                                                   |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté |
+| `part`        | entier         | La partie que Peal devait modifier, depuis 0               |
+| `code`        | chaîne         | Pourquoi la modification s’est arrêtée                     |
+| `failedAt`    | chaîne         | Le moment où Peal a renoncé, en instant UTC                |
+
+```json title="post.edit_failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e24",
+  "type": "post.edit_failed",
+  "version": 1,
+  "timestamp": "2026-11-10T12:07:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "part": 0,
+    "code": "postGone",
+    "failedAt": "2026-11-10T12:07:00.000Z"
   }
 }
 ```

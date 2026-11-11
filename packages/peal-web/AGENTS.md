@@ -348,7 +348,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   confirmation that names the channel and says it cannot be undone;
   `TargetView` shows when a channel was removed and strikes its address
   through, and the calendar dims a post removed from every channel it went
-  out on (`isRemovedEverywhere`). Strings are in `Posts.Live`.
+  out on (`isRemovedEverywhere`). Strings are in `Posts.Live`. Beside it,
+  `LivePostEditView` offers **Edit** where the platform takes it
+  (`editStateOf`), on that part's text on the channel (`partTextOn`) with
+  the channel's counter (`fitOn` and the target's options), and says
+  when the channel was last edited; `liveStateOf` is `editing` while an
+  edit runs, so nothing else is offered then.
 - `PostPaid` (ads:read) shows a post's boosts and `PaidSectionView`'s two
   columns, organic and paid: never add them up. Pause and stop take
   ads:spend or ads:manage, resume ads:spend (`controlsOf`); stopping asks

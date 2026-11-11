@@ -31,6 +31,7 @@ const draft = (text: string, channels: number, media: number): Post => ({
   tagIds: [],
   targets: Array.from({ length: channels }, (_, index) => ({
     channelId: `00000000-0000-7000-8000-00000000c00${index}`,
+    editedAt: null,
     failureReason: null,
     id: `00000000-0000-7000-8000-00000000f00${index}`,
     options: null,

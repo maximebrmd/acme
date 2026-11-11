@@ -1,7 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Context, DateTime, Duration, Effect, Layer, Option } from "effect";
 
+import { LivePostChangeIdSchema } from "#publishing/domain/live-post-change-id.ts";
 import {
+  editBlocker,
   livePostSupport,
   unpublishBlocker,
 } from "#publishing/domain/live-post-support.ts";
@@ -9,6 +11,7 @@ import { PinterestOptions } from "#publishing/domain/pinterest-options.ts";
 import {
   livePostRegistryWith,
   notDeleting,
+  notEditing,
 } from "#publishing/infrastructure/platforms/live-post-clients-live.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
@@ -576,7 +579,7 @@ describe("deleting posts on Google Business Profile", () => {
   );
 });
 
-describe("the platforms that delete", () => {
+describe("the platforms that delete or edit", () => {
   it.live(
     "are those the support table says, and refuse the others unasked",
     () =>
@@ -600,6 +603,18 @@ describe("the platforms that delete", () => {
           ),
           new BadRequest({ code: "notSupported" })
         );
+        assert.deepStrictEqual(
+          yield* failureOf(
+            live.edit({
+              changeId: LivePostChangeIdSchema.make(
+                "00000000-0000-7000-8000-0000000000e1"
+              ),
+              channelId,
+              platformPostId: PlatformPostIdSchema.make("1"),
+            })
+          ),
+          new BadRequest({ code: "notSupported" })
+        );
 
         const deleting = yield* livePostRegistryWith({
           googleBusinessApi: new URL("http://127.0.0.1:9"),
@@ -609,7 +624,16 @@ describe("the platforms that delete", () => {
         }).pipe(Effect.provide(LiveRegistryTest));
 
         const withRemover = platforms.filter(
-          (platform) => deleting[platform] !== notDeleting
+          (platform) => deleting[platform].remove !== notDeleting
+        );
+
+        const withEditor = platforms.filter(
+          (platform) => deleting[platform].edit !== notEditing
+        );
+
+        assert.deepStrictEqual(
+          withEditor,
+          platforms.filter((platform) => Option.isNone(editBlocker(platform)))
         );
 
         assert.deepStrictEqual(

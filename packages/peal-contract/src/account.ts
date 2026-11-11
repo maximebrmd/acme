@@ -131,7 +131,8 @@ const ExportedPostSchema = Schema.Struct({
   ),
   id: Schema.String,
   // The changes asked of it once it was live (`unpublish`: deleting it from
-  // a channel's platform), oldest first, without who asked.
+  // a channel's platform; `edit`: replacing a part's text there), oldest
+  // first, without who asked or the text.
   liveChanges: Schema.Array(
     Schema.Struct({
       alreadyGone: Schema.Boolean,
@@ -153,6 +154,8 @@ const ExportedPostSchema = Schema.Struct({
   targets: Schema.Array(
     Schema.Struct({
       channelId: Schema.String,
+      // When Peal last replaced a part's text on that channel's platform.
+      editedAt: nullable(instant),
       finishedAt: nullable(instant),
       // The platform kept the video private although it was asked otherwise.
       keptPrivate: Schema.Boolean,

@@ -220,6 +220,9 @@ export const confirmTarget = PealApi.mutation("posts", "confirm");
 /** Deletes a published post from one channel's platform, for everyone. */
 export const unpublishTarget = PealApi.mutation("posts", "unpublishTarget");
 
+/** Replaces a part's text of a published post on one channel's platform. */
+export const editTarget = PealApi.mutation("posts", "editTarget");
+
 /** What was asked of a post once it was live, newest first. */
 export const postChanges = (workspaceId: string, postId: string) =>
   PealApi.query("posts", "changes", {

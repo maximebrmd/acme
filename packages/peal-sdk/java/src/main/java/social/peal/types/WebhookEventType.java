@@ -53,6 +53,11 @@ public final class WebhookEventType {
 
     public static final WebhookEventType BOOST_STARTED = new WebhookEventType(Value.BOOST_STARTED, "boost.started");
 
+    public static final WebhookEventType POST_EDITED = new WebhookEventType(Value.POST_EDITED, "post.edited");
+
+    public static final WebhookEventType POST_EDIT_FAILED =
+            new WebhookEventType(Value.POST_EDIT_FAILED, "post.edit_failed");
+
     public static final WebhookEventType POST_PUBLISHED = new WebhookEventType(Value.POST_PUBLISHED, "post.published");
 
     public static final WebhookEventType POST_FINISHED = new WebhookEventType(Value.POST_FINISHED, "post.finished");
@@ -153,6 +158,10 @@ public final class WebhookEventType {
                 return visitor.visitPostUnpublishFailed();
             case BOOST_STARTED:
                 return visitor.visitBoostStarted();
+            case POST_EDITED:
+                return visitor.visitPostEdited();
+            case POST_EDIT_FAILED:
+                return visitor.visitPostEditFailed();
             case POST_PUBLISHED:
                 return visitor.visitPostPublished();
             case POST_FINISHED:
@@ -224,6 +233,10 @@ public final class WebhookEventType {
                 return POST_UNPUBLISH_FAILED;
             case "boost.started":
                 return BOOST_STARTED;
+            case "post.edited":
+                return POST_EDITED;
+            case "post.edit_failed":
+                return POST_EDIT_FAILED;
             case "post.published":
                 return POST_PUBLISHED;
             case "post.finished":
@@ -273,6 +286,10 @@ public final class WebhookEventType {
         POST_UNPUBLISHED,
 
         POST_UNPUBLISH_FAILED,
+
+        POST_EDITED,
+
+        POST_EDIT_FAILED,
 
         POST_APPROVAL_REQUESTED,
 
@@ -339,6 +356,10 @@ public final class WebhookEventType {
         T visitPostUnpublished();
 
         T visitPostUnpublishFailed();
+
+        T visitPostEdited();
+
+        T visitPostEditFailed();
 
         T visitPostApprovalRequested();
 

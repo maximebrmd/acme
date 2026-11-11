@@ -3604,6 +3604,123 @@ async fn main() {
 </dl>
 </details>
 
+<details><summary><code>client.posts.<a href="/src/api/resources/posts/client.rs">edit_target</a>(workspace_id: String, post_id: String, target_id: String, request: LivePostEdit, wait: Option&lt;Option&lt;String&gt;&gt;) -> Result&lt;LivePostChange, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces the text of one part of the post (`part`, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' `livePost.edit` say where, and `editBlockedBy` why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is `failed` with its `code` (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, which the edit would remove, `permissionDenied` for a Mastodon channel to reconnect) and may be asked again. `wait` waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its `editedAt`, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (`approvalRequired`: an approver makes the edit). Webhooks hear `post.edited` or `post.edit_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .posts
+        .edit_target(
+            &"workspaceId".to_string(),
+            &"postId".to_string(),
+            &"targetId".to_string(),
+            &LivePostEdit {
+                text: "text".to_string(),
+                wait: None,
+                part: None,
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**target_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**part:** `Option<i64>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**text:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**wait:** `Option<String>` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.posts.<a href="/src/api/resources/posts/client.rs">unpublish</a>(workspace_id: String, post_id: String) -> Result&lt;PostUnpublish, ApiError&gt;</code></summary>
 <dl>
 <dd>
@@ -3691,7 +3808,7 @@ async fn main() {
 <dl>
 <dd>
 
-Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its `kind` and where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
 </dd>
 </dl>
 </dd>

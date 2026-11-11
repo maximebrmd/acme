@@ -1,12 +1,15 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Result } from "effect";
+import { Array as Arr, DateTime, Effect, Layer, Option, Result } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { LivePostChangeStore } from "#publishing/application/live-post-change-store.ts";
 import { LivePostChangeIdSchema } from "#publishing/domain/live-post-change-id.ts";
 import {
   failChange,
+  finishChange,
+  partEdited,
   partRemoved,
+  requestEdit,
   requestUnpublish,
 } from "#publishing/domain/live-post-change.ts";
 import { DrizzleLivePostChangeStore } from "#publishing/infrastructure/drizzle-live-post-change-store.ts";
@@ -172,6 +175,77 @@ layer(StoreTest)("the live post changes", (it) => {
         // Nothing is called for a change that ended.
         assert.strictEqual(yield* store.beginCall(change.id, now), "refused");
         assert.deepStrictEqual(yield* store.lockOpen(post.workspaceId), []);
+      }).pipe(Effect.ensuring(deletePost(post.postId)));
+    })
+  );
+
+  it.effect("keep an edit's text while it is pending, and no longer", () =>
+    Effect.gen(function* editText() {
+      const post = yield* publishedPost();
+
+      yield* Effect.gen(function* checks() {
+        const store = yield* LivePostChangeStore;
+        const sql = yield* SqlClient.SqlClient;
+        const target = Option.getOrThrow(Arr.head(post.targets));
+
+        const textOf = (id: string) =>
+          sql<{
+            readonly text: string | null;
+          }>`SELECT text FROM publishing.live_post_changes WHERE id = ${id}`.pipe(
+            Effect.map((rows) => rows[0]?.text)
+          );
+
+        const asked = (text: string) =>
+          Effect.gen(function* editAsked() {
+            return requestEdit({
+              channelId: target.channelId,
+              id: yield* newId(LivePostChangeIdSchema),
+              now,
+              part: {
+                index: 0,
+                platformPostId: PlatformPostIdSchema.make("1"),
+              },
+              postId: post.postId,
+              requestedBy: Option.none(),
+              requestedVia: Option.none(),
+              targetId: target.targetId,
+              text,
+              workspaceId: post.workspaceId,
+            });
+          });
+
+        const edit = yield* asked("A corrected synthetic post");
+
+        assert.isTrue(yield* store.insert(edit));
+        assert.deepStrictEqual(yield* store.find(edit.id), Option.some(edit));
+        assert.strictEqual(
+          yield* textOf(edit.id),
+          "A corrected synthetic post"
+        );
+
+        const edited = Result.getOrThrow(partEdited(edit, 0));
+        const done = Result.getOrThrow(finishChange(edited, now));
+
+        yield* store.update(edited, edit);
+        assert.strictEqual(
+          yield* textOf(edit.id),
+          "A corrected synthetic post"
+        );
+        yield* store.update(done, edited);
+        assert.isNull(yield* textOf(edit.id));
+        assert.strictEqual(
+          Option.getOrThrow(yield* store.find(edit.id)).kind,
+          "edit"
+        );
+
+        const again = yield* asked("Another synthetic text");
+
+        yield* store.insert(again);
+        yield* store.update(
+          Result.getOrThrow(failChange(again, "postGone", now)),
+          again
+        );
+        assert.isNull(yield* textOf(again.id));
       }).pipe(Effect.ensuring(deletePost(post.postId)));
     })
   );

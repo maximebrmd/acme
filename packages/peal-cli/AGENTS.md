@@ -74,6 +74,9 @@
   (`neverAsksInJson`). `peal posts changes` reads `posts.changes`, and
   `peal posts list --removed` `search?removed=true`. Refusal reasons have
   their words in `src/live-post-refusals.ts`, typed by the contract.
+  `peal posts edit` (`commands/posts-edit.ts`) replaces a part's text on
+  one channel (`--channel`, resolved as `unpublish` resolves it, `--text`,
+  `--part`, `--wait`), without asking: the edit is the user's own text.
 - `peal tags` (list, create, update, delete) keeps a workspace's tags, and
   `peal posts tag`, `peal posts list --tag`, `peal drafts save --tag` and
   `peal post --tag` file posts under them. Wherever a command takes a tag

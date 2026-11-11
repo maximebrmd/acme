@@ -348,6 +348,7 @@ export const quotaTargetId = "0190f3a0-0000-7000-8000-00000000e003";
 
 const pendingOn = (id: string, channelId: string): PostTarget => ({
   channelId,
+  editedAt: null,
   failureReason: null,
   id,
   options: null,
@@ -1411,6 +1412,68 @@ const unpublishedOn = (
   return target.removedAt === null
     ? Result.succeed({ ...target, removedAt: studioNow })
     : Result.fail("alreadyRemoved");
+};
+
+// The platforms whose posts the studio edits once live, as the server's.
+const editingPlatforms: ReadonlySet<string> = new Set([
+  "mastodon",
+  "googleBusiness",
+]);
+
+// Why the studio does not edit the part of the target, if it does not.
+const editRefusal = (
+  target: PostTarget,
+  platform: string | undefined,
+  part: number
+): LivePostRefusal | undefined => {
+  if (target.status !== "published") {
+    return "notPublished";
+  }
+
+  if (target.removedAt !== null) {
+    return "alreadyRemoved";
+  }
+
+  if (platform === undefined || !editingPlatforms.has(platform)) {
+    return "notSupported";
+  }
+
+  return part < target.parts.count ? undefined : "noPlatformId";
+};
+
+// The post with `text` as the channel's own on the part at `part`.
+const withTextOn = (
+  post: Post,
+  part: number,
+  channelId: string,
+  text: string
+): Post => {
+  const overridden = (
+    overrides: readonly { readonly channelId: string; readonly text: string }[]
+  ) => [
+    ...overrides.filter((override) => override.channelId !== channelId),
+    { channelId, text },
+  ];
+
+  return part === 0
+    ? {
+        ...post,
+        content: {
+          ...post.content,
+          overrides: overridden(post.content.overrides),
+        },
+      }
+    : {
+        ...post,
+        content: {
+          ...post.content,
+          followUps: (post.content.followUps ?? []).map((followUp, index) =>
+            index + 1 === part
+              ? { ...followUp, overrides: overridden(followUp.overrides) }
+              : followUp
+          ),
+        },
+      };
 };
 
 // Posts scheduled through the command line say so.
@@ -3077,6 +3140,50 @@ export const studioGroupsLive = (studio: Studio) =>
                 options: target.options,
               })),
             });
+          }),
+        editTarget: ({ params, payload }) =>
+          Effect.gen(function* editTarget() {
+            yield* unpublishing;
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const target = post.targets.find(
+              ({ id }) => id === params.targetId
+            );
+
+            if (target === undefined) {
+              return yield* new PostNotFound();
+            }
+
+            const { channels: known } = yield* Ref.get(studio.state);
+
+            const platform = known.find(
+              ({ id }) => id === target.channelId
+            )?.platform;
+
+            const part = payload.part ?? 0;
+
+            const refusal = editRefusal(target, platform, part);
+
+            if (refusal !== undefined) {
+              return yield* new LivePostNotChangeable({ reason: refusal });
+            }
+
+            yield* savePost(studio, {
+              ...withTextOn(post, part, target.channelId, payload.text),
+              targets: post.targets.map((found) =>
+                found.id === target.id
+                  ? { ...found, editedAt: studioNow }
+                  : found
+              ),
+            });
+            yield* record(studio, `edit:${target.id}:${String(part)}`);
+
+            return { ...doneChange(post.id, target), kind: "edit" as const };
           }),
         enqueue: ({ params, payload }) =>
           Effect.gen(function* enqueue() {

@@ -4,12 +4,15 @@ import path from "node:path";
 import { describe, expect, it } from "@effect/vitest";
 import { Option } from "effect";
 
-import { unpublishBlocker } from "#publishing/domain/live-post-support.ts";
+import {
+  editBlocker,
+  unpublishBlocker,
+} from "#publishing/domain/live-post-support.ts";
 import { platforms } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
-// The docs' table of where Peal deletes posts, in both languages, says
-// what live-post-support.ts says.
+// The docs' table of where Peal deletes posts and edits them, in both
+// languages, says what live-post-support.ts says.
 
 const docs = path.join(
   import.meta.dirname,
@@ -35,22 +38,24 @@ const names = new Map<string, Platform>([
   ["YouTube", "youtube"],
 ]);
 
+const yes = (answer: string) => answer === "Yes" || answer === "Oui";
+
 // The table under the page's #unpublish heading: each platform, and
-// whether Peal deletes posts there.
+// whether Peal deletes posts there, and edits them.
 const tableOf = async (page: string) => {
   const text = await readFile(path.join(docs, page), "utf-8");
   const section = text.slice(text.indexOf("[#unpublish]"));
-  const rows = new Map<Platform, boolean>();
+  const rows = new Map<Platform, { edit: boolean; unpublish: boolean }>();
 
   for (const line of section.split("\n")) {
-    const [, name = "", answer = ""] = line
+    const [, name = "", unpublish = "", edit = ""] = line
       .split("|")
       .map((cell) => cell.trim());
 
     const platform = names.get(name);
 
     if (platform !== undefined && !rows.has(platform)) {
-      rows.set(platform, answer === "Yes" || answer === "Oui");
+      rows.set(platform, { edit: yes(edit), unpublish: yes(unpublish) });
     }
   }
 
@@ -60,11 +65,14 @@ const tableOf = async (page: string) => {
 const expected = Object.fromEntries(
   platforms.map((platform) => [
     platform,
-    Option.isNone(unpublishBlocker(platform)),
+    {
+      edit: Option.isNone(editBlocker(platform)),
+      unpublish: Option.isNone(unpublishBlocker(platform)),
+    },
   ])
 );
 
-describe("the docs' table of where Peal deletes posts", () => {
+describe("the docs' table of where Peal deletes and edits posts", () => {
   it.each(["scheduling.mdx", "fr/scheduling.mdx"])(
     "is live-post-support's, in %s",
     async (page) => {

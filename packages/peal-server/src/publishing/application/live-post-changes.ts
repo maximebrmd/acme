@@ -11,16 +11,21 @@ import {
 
 import { LivePostChangeIdSchema } from "#publishing/domain/live-post-change-id.ts";
 import {
+  editable,
   livePostChangePermission,
   removable,
+  requestEdit,
   requestUnpublish,
 } from "#publishing/domain/live-post-change.ts";
 import type {
   LivePostChange,
   LivePostRefusal,
 } from "#publishing/domain/live-post-change.ts";
+import { editViolationsOn } from "#publishing/domain/live-post-edit.ts";
+import { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
+import { maxPostTextLength } from "#publishing/domain/post-text.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
@@ -30,7 +35,9 @@ import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { PostId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { storableText } from "#shared/domain/platform-text.ts";
 
+import { ApprovalGate } from "./approval-gate.ts";
 import { LivePostChangeStore } from "./live-post-change-store.ts";
 import { LivePostHolds } from "./live-post-holds.ts";
 import { LivePostJobs } from "./live-post-jobs.ts";
@@ -51,6 +58,15 @@ type Failure =
   | MissingPermission
   | PostNotFound;
 
+/**
+ * What an edit asks: `text` for the part at `part` (from 0, the post
+ * itself) on the target's channel.
+ */
+export interface TextEditRequest {
+  readonly part: number;
+  readonly text: string;
+}
+
 /** A target of the post that could not be unpublished, and why. */
 export interface TargetRefusal {
   readonly reason: LivePostRefusal;
@@ -65,11 +81,14 @@ export interface PostUnpublish {
 
 /**
  * Changes members, keys and applications ask of posts that are live:
- * deleting them from the platforms (`unpublish`). Each needs
- * `livePostChangePermission`, and is refused, before anything is called,
- * where the target is not live, Peal has no id for a part of it, the
- * platform cannot (`#publishing/domain/live-post-support.ts`), another
- * change is pending, the channel cannot be used, or a boost shows the post.
+ * deleting them from the platforms (`unpublish`), and replacing the text
+ * of one of their parts (`edit`). Each needs `livePostChangePermission`,
+ * and is refused, before anything is called, where the target is not
+ * live, Peal has no id for a part of it, the platform cannot
+ * (`#publishing/domain/live-post-support.ts`), another change is pending,
+ * the channel cannot be used, or, for a removal, a boost shows the post;
+ * an edit is refused too to a member whose posts the approval gate holds,
+ * and for a text the platform would refuse.
  * A change is saved with its job in one transaction, under the post's and
  * the target's locks; the job deletes the parts, the last first. A target
  * that is not the post's, and a post that is not the workspace's, are
@@ -84,6 +103,17 @@ export class LivePostChanges extends Context.Service<
       postId: PostId,
       targetId: PostTargetId
     ) => Effect.Effect<LivePostChange, Failure>;
+    /**
+     * Replaces the text of one part of the post on one channel's
+     * platform; once done, that part's text on the channel is the new
+     * one. The text is made storable first.
+     */
+    readonly editTarget: (
+      actor: Actor,
+      postId: PostId,
+      targetId: PostTargetId,
+      edit: TextEditRequest
+    ) => Effect.Effect<LivePostChange, Failure | PostContentRejected>;
     /**
      * Deletes the post from every channel where it can be, and answers,
      * target by target, the change made or why none could be.
@@ -122,6 +152,7 @@ export class LivePostChanges extends Context.Service<
       const store = yield* LivePostChangeStore;
       const holds = yield* LivePostHolds;
       const jobs = yield* LivePostJobs;
+      const gate = yield* ApprovalGate;
       const credentials = yield* PlatformCredentials;
       const origins = yield* PostOrigins;
       const { transaction } = yield* TransactionRunner;
@@ -230,6 +261,120 @@ export class LivePostChanges extends Context.Service<
         }
       );
 
+      // Why the locked target cannot be edited, or the change that will,
+      // saved and started; a text its platform would refuse fails as
+      // scheduling's does.
+      const editLocked = Effect.fn("LivePostChanges.editLocked")(
+        function* editLocked(
+          actor: Actor,
+          post: Post,
+          target: PostTarget,
+          edit: TextEditRequest
+        ) {
+          const latest = yield* store.latestOf(target.id);
+          const platform = yield* platformOf(target);
+
+          const part = editable(target, platform, edit.part, latest);
+
+          if (Result.isFailure(part) || Option.isNone(platform)) {
+            return Result.fail<LivePostRefusal>(
+              Result.isFailure(part) ? part.failure : "channelUnavailable"
+            );
+          }
+
+          const [first, ...others] = editViolationsOn({
+            channel: { channelId: target.channelId, platform: platform.value },
+            content: post.content,
+            options: target.options,
+            part: edit.part,
+            text: edit.text,
+          });
+
+          if (first !== undefined) {
+            return yield* new PostContentRejected({
+              violations: [first, ...others],
+            });
+          }
+
+          const change = requestEdit({
+            channelId: target.channelId,
+            id: yield* newId(LivePostChangeIdSchema).pipe(
+              Effect.provideContext(ports)
+            ),
+            now: yield* DateTime.now,
+            part: part.success,
+            postId: post.id,
+            requestedBy:
+              actor.subject._tag === "user"
+                ? Option.some(actor.subject.userId)
+                : Option.none(),
+            requestedVia: Option.some(yield* origins.of(actor)),
+            targetId: target.id,
+            text: edit.text,
+            workspaceId: post.workspaceId,
+          });
+
+          if (!(yield* store.insert(change))) {
+            return Result.fail<LivePostRefusal>("changeInProgress");
+          }
+
+          yield* jobs.start(change.id);
+
+          return Result.succeed(change);
+        }
+      );
+
+      const editTarget = Effect.fn("LivePostChanges.editTarget")(
+        function* editTarget(
+          actor: Actor,
+          postId: PostId,
+          targetId: PostTargetId,
+          asked: TextEditRequest
+        ) {
+          yield* Effect.fromResult(authorize(actor, livePostChangePermission));
+
+          // An edit puts its words out at once: whoever's posts wait for an
+          // approval asks an approver instead.
+          if (yield* gate.holds(actor)) {
+            return yield* new LivePostNotChangeable({
+              reason: "approvalRequired",
+              targetId,
+            });
+          }
+
+          // Text Peal is given to keep: made storable before it is
+          // checked, kept or sent.
+          const edit: TextEditRequest = {
+            part: asked.part,
+            text: storableText(asked.text, maxPostTextLength),
+          };
+
+          return yield* transaction(
+            Effect.gen(function* inTransaction() {
+              // The post, then its target, as every use case locks them.
+              const { post } = yield* lockInWorkspace(
+                actor.workspaceId,
+                postId
+              ).pipe(Effect.provideContext(ports));
+
+              const target = yield* posts.lockTarget(targetId);
+
+              if (Option.isNone(target) || target.value.postId !== postId) {
+                return yield* new PostNotFound({ postId });
+              }
+
+              const made = yield* editLocked(actor, post, target.value, edit);
+
+              return yield* Result.match(made, {
+                onFailure: (reason) =>
+                  Effect.fail(new LivePostNotChangeable({ reason, targetId })),
+                onSuccess: Effect.succeed,
+              });
+            })
+          );
+        }
+      );
+
       const unpublishPost = Effect.fn("LivePostChanges.unpublishPost")(
         function* unpublishPost(actor: Actor, postId: PostId) {
           yield* Effect.fromResult(authorize(actor, livePostChangePermission));
@@ -317,6 +462,7 @@ export class LivePostChanges extends Context.Service<
 
       return LivePostChanges.of({
         awaitEnd,
+        editTarget,
         list,
         unpublishPost,
         unpublishTarget,

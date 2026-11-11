@@ -23,10 +23,11 @@ import { retryingDatabase } from "./activity-retry.ts";
 /**
  * Carries out one change of a live post: deletes its parts from the
  * platform, one at a time, in the order the change lists them (the last
- * part of a thread first), each through the channel's gate, trying a
- * part again as long as the decision says (`decideRemoval`), then records
- * how it ended. The first part that cannot be deleted ends it: the parts
- * left stay on the change for a member who asks again.
+ * part of a thread first), or edits its one part, each through the
+ * channel's gate, trying a part again as long as the decision says
+ * (`decideRemoval`), then records how it ended. The first part that
+ * cannot be deleted or edited ends it: the parts left stay on the change
+ * for a member who asks again.
  *
  * The payload is the change's id alone: nothing a post says is ever in
  * its history. Persisted contract from its first release: the tag, the
@@ -119,6 +120,6 @@ export const ChangeLivePostV1Live = ChangeLivePostV1.toLayer(
       }
     }
 
-    return yield* settle(changeId, { _tag: "done" });
+    return yield* settle(changeId, { _tag: "done", parts: claim.indexes });
   })
 );

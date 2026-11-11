@@ -3816,7 +3816,123 @@ client.posts.unpublish_target(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1246-L1279">unpublish</a>(...) -> PostUnpublish</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1246-L1299">edit_target</a>(...) -> LivePostChange</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces the text of one part of the post (`part`, from 0, the post itself by default) on one channel's platform, for everyone: only the text changes, never the media, the options or the time. The change is public at once. Peal edits on Mastodon and Google Business Profile; the capabilities' `livePost.edit` say where, and `editBlockedBy` why not elsewhere. The text is checked as that channel's text is when a post is scheduled (PostContentInvalid, a Mastodon content warning counted), and must not be empty. The request is accepted (202) and a job makes the edit, one call at a time with the channel's other calls; a call that fails is tried again as a deletion is, after which the change is `failed` with its `code` (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, which the edit would remove, `permissionDenied` for a Mastodon channel to reconnect) and may be asked again. `wait` waits up to that many seconds (60 at most) for it to end. Once done, the text is that part's own text on that channel in Peal (the other channels keep theirs), the target has its `editedAt`, and Peal keeps no earlier text. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted, Peal has no id for that part, the platform does not let Peal edit it, another change of it is pending, the channel cannot be used, or your posts need an approval (`approvalRequired`: an approver makes the edit). Webhooks hear `post.edited` or `post.edit_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.posts.edit_target(
+    workspace_id="workspaceId",
+    post_id="postId",
+    target_id="targetId",
+    text="text",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**target_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**text:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**wait:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**part:** `typing.Optional[int]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1301-L1334">unpublish</a>(...) -> PostUnpublish</code></summary>
 <dl>
 <dd>
 
@@ -3898,7 +4014,7 @@ client.posts.unpublish(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1281-L1314">changes</a>(...) -> LivePostChanges</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1336-L1369">changes</a>(...) -> LivePostChanges</code></summary>
 <dl>
 <dd>
 
@@ -3910,7 +4026,7 @@ client.posts.unpublish(
 <dl>
 <dd>
 
-Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+Lists the changes asked of the post once it was live (deleting it from a channel's platform, or editing its text there), newest first, each with its `kind` and where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
 </dd>
 </dl>
 </dd>
@@ -3980,7 +4096,7 @@ client.posts.changes(
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1316-L1349">cancel</a>(...) -> Post</code></summary>
+<details><summary><code>client.posts.<a href="src/peal/posts/client.py#L1371-L1404">cancel</a>(...) -> Post</code></summary>
 <dl>
 <dd>
 
