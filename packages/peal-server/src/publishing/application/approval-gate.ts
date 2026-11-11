@@ -67,6 +67,17 @@ export class ApprovalGate extends Context.Service<
       actor: Actor,
       submission: Submission
     ) => Effect.Effect<Admission, DatabaseError>;
+    /**
+     * A held post moved to another time by someone who did not ask for it
+     * again, as a reshuffle of its queue moves it: it keeps waiting, under
+     * the request it had, which follows its new time. Nobody is asked
+     * again to decide, and the post is never admitted this way, whoever
+     * moves it.
+     */
+    readonly follow: (
+      actor: Actor,
+      submission: Submission
+    ) => Effect.Effect<void, DatabaseError>;
     /** Whether an approval stands for the post as it now is. */
     readonly approved: (
       submission: Pick<Submission, "postId" | "subject" | "workspaceId">
@@ -96,6 +107,7 @@ export class ApprovalGate extends Context.Service<
     ApprovalGate.of({
       admit: () => Effect.succeed("admitted"),
       approved: () => Effect.succeed(false),
+      follow: () => Effect.void,
       forgotten: () => Effect.void,
       holds: () => Effect.succeed(false),
       maySubmit: (actor) => Effect.succeed(can(actor, "post:schedule")),

@@ -753,8 +753,11 @@ publishing's schema, naming nobody: each goes with its workspace
   keeps the moves before it. A post on its slot is not written; one moved,
   sent back or cancelled since the plan is left alone; a scheduled post
   that someone who only asks cannot move is `unchanged`. Each move is a
-  hand move's, the gate included: someone whose posts need no approval
-  schedules a held post they move, as `reschedule` does.
+  hand move's but for the gate: a held post is moved `keepingHeld`
+  (`ApprovalGate.follow`: its request follows the new time, still the
+  requester's), so a reshuffle never releases one, whoever runs it; only a
+  hand move (`reschedule`, `admitting`) by someone whose posts need no
+  approval schedules a held post.
 - `PostDrafts.duplicate` copies a post, whatever its status, into a new
   draft of whoever asked, every part included: what the workspace no
   longer has (a channel, a media, a tag) is left out rather than refused.

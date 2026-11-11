@@ -43,6 +43,16 @@ export const ReviewApprovalGate = Layer.effect(
             intake.approved(workspaceId, postId, subjectHash)
           )
         ),
+      follow: (actor, { subject, ...submission }) =>
+        hashOf(subject).pipe(
+          Effect.flatMap((subjectHash) =>
+            intake.followed(actor, {
+              ...submission,
+              channelIds: channelsSubmitted({ subject }),
+              subjectHash,
+            })
+          )
+        ),
       forgotten: intake.forgotten,
       holds: intake.holds,
       maySubmit: intake.maySubmit,

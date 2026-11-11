@@ -84,6 +84,16 @@ export class ApprovalIntake extends Context.Service<
       actor: Actor,
       submission: PostSubmission
     ) => Effect.Effect<"admitted" | "held", DatabaseError>;
+    /**
+     * A held post was moved by someone who did not ask for it again (a
+     * reshuffle of its queue): the request that waits follows its time,
+     * for whoever asked, and nobody is asked again to decide. It never
+     * admits the post.
+     */
+    readonly followed: (
+      actor: Actor,
+      submission: PostSubmission
+    ) => Effect.Effect<void, DatabaseError>;
     readonly approved: (
       workspaceId: WorkspaceId,
       postId: PostId,
@@ -201,6 +211,48 @@ export class ApprovalIntake extends Context.Service<
         });
       });
 
+      const followed = Effect.fn("ApprovalIntake.followed")(function* followed(
+        actor: Actor,
+        submission: PostSubmission
+      ) {
+        yield* transaction(
+          Effect.gen(function* follow() {
+            const pending = yield* requests.lockPending(
+              submission.workspaceId,
+              submission.postId
+            );
+
+            // A held post always has its request; were it missing, the
+            // post would still wait, so one is made for it.
+            if (Option.isNone(pending)) {
+              yield* hold(actor, submission);
+
+              return;
+            }
+
+            const moved = changed(pending.value, {
+              scheduledAt: submission.scheduledAt,
+              timeZone: submission.timeZone,
+            });
+
+            yield* requests.update(moved);
+
+            // Those who decide were asked already (the key is the same);
+            // whoever follows the workspace from outside hears the new
+            // time.
+            yield* outcomes.approvalRequested({
+              authorId: submission.authorId,
+              channelIds: submission.channelIds,
+              key: requestKeyOf(moved),
+              postId: moved.postId,
+              requestedBy: moved.requestedBy,
+              scheduledAt: moved.scheduledAt,
+              workspaceId: moved.workspaceId,
+            });
+          })
+        );
+      });
+
       const consider = Effect.fn("ApprovalIntake.consider")(function* consider(
         actor: Actor,
         submission: PostSubmission
@@ -227,6 +279,7 @@ export class ApprovalIntake extends Context.Service<
       return ApprovalIntake.of({
         approved: requests.approved,
         consider,
+        followed,
         forgotten: archive.deletePost,
         holds: (actor) =>
           policyOf(actor.workspaceId).pipe(

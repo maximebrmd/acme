@@ -262,6 +262,12 @@ const withQueue = (post: Post, queueId: Option.Option<QueueId>) =>
     onSome: (id) => placedBy(post, id),
   });
 
+// What a move does with a post that waits for an approval: `admitting`
+// puts it through the gate as the mover's, as a hand move does (someone
+// whose posts need no approval schedules it); `keepingHeld` keeps it
+// waiting, its request following its new time, as a reshuffle does.
+type HeldMove = "admitting" | "keepingHeld";
+
 // Someone who only asks acts on drafts and on posts that wait: a scheduled
 // post is for those who may schedule to move or stop.
 const mayChange = (actor: Actor, { status }: Post) =>
@@ -520,6 +526,32 @@ export class PostScheduling extends Context.Service<
         }
       );
 
+      // A held post moved by someone who does not ask for it again (a
+      // reshuffle of its queue): it keeps waiting, and its request follows
+      // its new time. It is never admitted this way, whoever moves it.
+      const keptWaiting = Effect.fn("PostScheduling.keptWaiting")(
+        function* keptWaiting(
+          actor: Actor,
+          post: Post,
+          targets: readonly PostTarget[]
+        ) {
+          const { at, timeZone } = yield* scheduleOf(post);
+
+          yield* gate.follow(actor, {
+            authorId: post.authorId,
+            postId: post.id,
+            scheduledAt: at,
+            subject: approvalSubject(post.content, targets),
+            timeZone,
+            workspaceId: post.workspaceId,
+          });
+
+          return yield* Effect.fromResult(awaitApproval(post)).pipe(
+            Effect.orDie
+          );
+        }
+      );
+
       // The channels to send the content to, once their platforms take it
       // and the options it has on them.
       const publishableOn = Effect.fn("PostScheduling.publishableOn")(
@@ -628,30 +660,39 @@ export class PostScheduling extends Context.Service<
         PostOrigins.use((origins) => origins.of(actor)).pipe(withPorts);
 
       // Saves the post at its new time, with who moved it there, and swaps
-      // its job for one then. A queue that placed it is kept with it.
+      // its job for one then. A queue that placed it is kept with it. A
+      // held post moved `keepingHeld` keeps waiting, as whoever asked for
+      // it left it; any other goes through the gate as the mover's.
       const move = Effect.fn("PostScheduling.move")(function* move(
         actor: Actor,
         current: StoredPost,
         { queueId, schedule: at }: Placed,
         received: DateTime.Utc,
-        targets: readonly PostTarget[]
+        targets: readonly PostTarget[],
+        held: HeldMove
       ) {
         const now = yield* DateTime.now;
 
-        const moved = yield* throughGate(
-          actor,
-          withQueue(
-            scheduledThrough(
-              yield* Effect.fromResult(
-                schedulePost(current.post, asReceived(at, received, now), now)
-              ),
-              yield* originOf(actor),
-              authorOf(actor)
-            ),
-            queueId
-          ),
-          targets
+        const retimed = yield* Effect.fromResult(
+          schedulePost(current.post, asReceived(at, received, now), now)
         );
+
+        const moved =
+          held === "keepingHeld" &&
+          current.post.status._tag === "awaitingApproval"
+            ? yield* keptWaiting(actor, withQueue(retimed, queueId), targets)
+            : yield* throughGate(
+                actor,
+                withQueue(
+                  scheduledThrough(
+                    retimed,
+                    yield* originOf(actor),
+                    authorOf(actor)
+                  ),
+                  queueId
+                ),
+                targets
+              );
 
         // A scheduled post moved within its month takes no more room, even
         // in a month already past a smaller plan's allowance.
@@ -1141,7 +1182,14 @@ export class PostScheduling extends Context.Service<
 
           yield* posts.setTargets(postId, targets);
 
-          const post = yield* move(actor, current, placed, received, targets);
+          const post = yield* move(
+            actor,
+            current,
+            placed,
+            received,
+            targets,
+            "admitting"
+          );
 
           yield* announce(post, targets);
 
@@ -1157,7 +1205,8 @@ export class PostScheduling extends Context.Service<
         actor: Actor,
         current: StoredPost,
         placed: Placed,
-        received: DateTime.Utc
+        received: DateTime.Utc,
+        held: HeldMove = "admitting"
       ) {
         const postId = current.post.id;
 
@@ -1178,7 +1227,14 @@ export class PostScheduling extends Context.Service<
           );
         }
 
-        const post = yield* move(actor, current, placed, received, targets);
+        const post = yield* move(
+          actor,
+          current,
+          placed,
+          received,
+          targets,
+          held
+        );
 
         yield* announce(post, targets);
 
@@ -1278,7 +1334,7 @@ export class PostScheduling extends Context.Service<
             // Each move in a savepoint of its own: one refused leaves
             // those before it moved.
             const outcome = yield* transaction(
-              moved(actor, current, placed, received)
+              moved(actor, current, placed, received, "keepingHeld")
             ).pipe(
               Effect.as("moved" as const),
               // A scheduled post is not for someone who only asks to move,
