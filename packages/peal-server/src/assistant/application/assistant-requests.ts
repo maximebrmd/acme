@@ -2,6 +2,7 @@ import { Context, DateTime, Effect, Layer } from "effect";
 
 import { usageWindowAt } from "#assistant/domain/usage-window.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
 import { AssistantUsage } from "./ports/assistant-usage.ts";
 
@@ -20,6 +21,14 @@ export class AssistantRequests extends Context.Service<
   AssistantRequests,
   {
     readonly today: (workspaceId: WorkspaceId) => Effect.Effect<RequestsToday>;
+    /**
+     * How many requests each of these workspaces sent on a day (UTC), for
+     * billing's daily usage; one that sent none is left out.
+     */
+    readonly onDay: (
+      workspaceIds: readonly WorkspaceId[],
+      day: LocalDate
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>>;
   }
 >()("peal-server/assistant/application/AssistantRequests") {
   static readonly layer = Layer.effect(
@@ -37,7 +46,13 @@ export class AssistantRequests extends Context.Service<
         return requests;
       });
 
-      return AssistantRequests.of({ today });
+      return AssistantRequests.of({
+        onDay: (workspaceIds, day) =>
+          usage
+            .usedIn(workspaceIds, day)
+            .pipe(Effect.withSpan("AssistantRequests.onDay")),
+        today,
+      });
     })
   );
 }

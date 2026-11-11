@@ -128,6 +128,30 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
           yield* assets.storedBytes(workspaceId, since),
           6_000_000_000
         );
+
+        // Several workspaces at once, those that store nothing left out.
+        const other = yield* freshAsset;
+
+        yield* assets.insert(other);
+
+        assert.deepStrictEqual(
+          yield* assets.storedBytesIn(
+            [
+              workspaceId,
+              other.workspaceId,
+              WorkspaceIdSchema.make(yield* ids.next),
+            ],
+            since
+          ),
+          new Map([
+            [workspaceId, 6_000_000_000],
+            [other.workspaceId, other.byteSize],
+          ])
+        );
+        assert.deepStrictEqual(
+          yield* assets.storedBytesIn([workspaceId], later),
+          new Map()
+        );
       })
   );
 

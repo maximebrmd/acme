@@ -60,6 +60,14 @@ export class MediaAssets extends Context.Service<
       pendingSince: DateTime.Utc
     ) => Effect.Effect<number>;
     /**
+     * The bytes each of these workspaces stores, as `storedBytes` counts
+     * them, in one query; one that stores none is left out.
+     */
+    readonly storedBytesIn: (
+      workspaceIds: readonly WorkspaceId[],
+      pendingSince: DateTime.Utc
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>>;
+    /**
      * Saves the asset's description, whatever its status, and returns the
      * asset as stored.
      */

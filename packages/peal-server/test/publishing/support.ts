@@ -88,7 +88,10 @@ export const postAllowance = (
     Layer.provide(
       Layer.succeed(
         WorkspaceSeats,
-        WorkspaceSeats.of({ taken: () => Effect.succeed(1) })
+        WorkspaceSeats.of({
+          page: () => Effect.succeed([]),
+          taken: () => Effect.succeed(1),
+        })
       )
     )
   );
