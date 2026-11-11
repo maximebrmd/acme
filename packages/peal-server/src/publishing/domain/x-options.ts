@@ -58,6 +58,11 @@ export class XOptions extends Schema.Class<XOptions>(
   paidPartnership: Schema.optionalKey(Schema.Boolean),
   platform: Schema.tag("x"),
   replySettings: Schema.optionalKey(XReplySettingsSchema),
+  // The two sources disagree: the OpenAPI document says "Share an
+  // exclusive (super-follower) tweet with all followers."; the changelog of
+  // 28 July 2025 that a community post with it "is also broadcast to the
+  // authenticated user's followers' timelines". Peal follows the changelog
+  // and sends it only with a community; X's refusal ends the post.
   shareWithFollowers: Schema.optionalKey(Schema.Boolean),
 }) {
   /**
