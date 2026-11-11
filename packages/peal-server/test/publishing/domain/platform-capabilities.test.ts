@@ -169,6 +169,17 @@ describe("a platform's options, described", () => {
     });
   });
 
+  it("say nothing of what Mastodon does with sensitivity left out: the account's default", () => {
+    // Mastodon's PostStatusService: left out, `sensitive` is the account's
+    // setting, and a content warning marks the status sensitive anyway.
+    expect(fieldNamed("mastodon", "sensitive")).toStrictEqual({
+      name: "sensitive",
+      required: false,
+      type: "boolean",
+      values: [],
+    });
+  });
+
   it("give the limits the classes refuse past", () => {
     const title = fieldNamed("youtube", "title");
     const longest = "a".repeat(maxYouTubeTitleLength);

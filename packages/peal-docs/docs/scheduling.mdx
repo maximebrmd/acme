@@ -105,11 +105,11 @@ On **Mastodon**:
 | ------------------------------- | ---------------- | -------------------------------------------------------------------------- | --------------------- | ---------- |
 | **Who can see this post**       | `visibility`     | `public`, `unlisted` (quiet public), `private` (followers only)            | The account's default | Every part |
 | **Content warning**             | `contentWarning` | One line, 500 characters at most                                           | None                  | Every part |
-| **Mark the media as sensitive** | `sensitive`      | Yes or no                                                                  | No                    | Every part |
-| **Language**                    | `language`       | A code of two or three lower-case letters, such as `fr`                    | The server guesses    | Every part |
+| **Mark the media as sensitive** | `sensitive`      | Yes or no                                                                  | The account's default | Every part |
+| **Language**                    | `language`       | A code of two or three lower-case letters, such as `fr`                    | The account's default | Every part |
 | **Who can quote this post**     | `quotePolicy`    | `public`, `followers`, `nobody`; only with `visibility` public or unlisted | The account's default | Every part |
 
-Mastodon counts a content warning in the post's character limit, with the text: on a Mastodon channel the 500 characters are the warning and the text together, on every part, and the composer counts them so. Private mentions are not offered: Peal publishes posts. Servers older than Mastodon 4.5 ignore the quote policy, and nobody may quote a followers-only post, whatever it says.
+Mastodon counts a content warning in the post's character limit, with the text: on a Mastodon channel the 500 characters are the warning and the text together, on every part, and the composer counts them so. A content warning also marks the post sensitive, whatever **Mark the media as sensitive** says. Private mentions are not offered: Peal publishes posts. Servers older than Mastodon 4.5 ignore the quote policy, and nobody may quote a followers-only post, whatever it says.
 
 On **Bluesky**:
 

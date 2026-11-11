@@ -105,9 +105,11 @@ const mastodonProblems = (
 
 /**
  * How a post goes out on a Mastodon account, on every part of a thread.
- * Nothing is needed: left out, `visibility` and `quotePolicy` are the
- * account's own defaults, the post is not marked sensitive, carries no
- * content warning, and its language is the instance's guess.
+ * Nothing is needed: left out, `visibility`, `quotePolicy`, `sensitive`
+ * and `language` are the account's own defaults (Mastodon's
+ * `PostStatusService` reads the user's settings, then the server's
+ * language), and the post carries no content warning. A content warning
+ * marks the post sensitive whatever `sensitive` says.
  */
 export class MastodonOptions extends Schema.Class<MastodonOptions>(
   "peal-server/publishing/domain/MastodonOptions"
@@ -117,7 +119,8 @@ export class MastodonOptions extends Schema.Class<MastodonOptions>(
   language: Schema.optionalKey(PostTextSchema),
   platform: Schema.tag("mastodon"),
   quotePolicy: Schema.optionalKey(MastodonQuotePolicySchema),
-  // Marks the status and its media as sensitive.
+  // Marks the status and its media as sensitive: the account's default
+  // when left out, and always with a content warning.
   sensitive: Schema.optionalKey(Schema.Boolean),
   visibility: Schema.optionalKey(MastodonVisibilitySchema),
 }) {
@@ -134,7 +137,7 @@ export class MastodonOptions extends Schema.Class<MastodonOptions>(
     },
     language: { pattern: languageCode.source },
     quotePolicy: {},
-    sensitive: { ifLeftOut: false },
+    sensitive: {},
     visibility: {},
   };
 

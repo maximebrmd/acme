@@ -340,13 +340,15 @@ export const MastodonOptionsSchema = Schema.Struct({
   // `maxMastodonContentWarningLength` characters, counted in the text's
   // limit.
   contentWarning: Schema.optionalKey(OptionTextSchema),
-  // An ISO 639-1 code, two or three lower-case letters, as "fr".
+  // An ISO 639-1 code, two or three lower-case letters, as "fr". The
+  // account's default posting language when left out.
   language: Schema.optionalKey(OptionTextSchema),
   platform: Schema.Literal("mastodon"),
   // Taken only with `visibility` public or unlisted: Mastodon lets nobody
   // quote a followers-only post. Servers before Mastodon 4.5 ignore it.
   quotePolicy: Schema.optionalKey(MastodonQuotePolicySchema),
-  // Marks the post and its media as sensitive. False when left out.
+  // Marks the post and its media as sensitive. The account's default when
+  // left out; a content warning marks it sensitive whatever this says.
   sensitive: Schema.optionalKey(Schema.Boolean),
   visibility: Schema.optionalKey(MastodonVisibilitySchema),
 }).annotate({

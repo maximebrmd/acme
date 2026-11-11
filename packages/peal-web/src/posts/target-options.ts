@@ -408,6 +408,7 @@ export const optionFields = {
       name: "contentWarning",
     },
     {
+      hint: "mastodon.sensitiveHint",
       kind: "yesNo",
       label: "mastodon.sensitive",
       name: "sensitive",

@@ -105,11 +105,11 @@ Sur **Mastodon** :
 | -------------------------------------- | ---------------- | -------------------------------------------------------------------------------- | -------------------- | ------------- |
 | **Qui peut voir cette publication**    | `visibility`     | `public`, `unlisted` (public discret), `private` (abonnés seulement)             | Le réglage du compte | Chaque partie |
 | **Avertissement de contenu**           | `contentWarning` | Une ligne, 500 caractères au plus                                                | Aucun                | Chaque partie |
-| **Marquer les médias comme sensibles** | `sensitive`      | Oui ou non                                                                       | Non                  | Chaque partie |
-| **Langue**                             | `language`       | Un code de deux ou trois lettres minuscules, comme `fr`                          | Le serveur la devine | Chaque partie |
+| **Marquer les médias comme sensibles** | `sensitive`      | Oui ou non                                                                       | Le réglage du compte | Chaque partie |
+| **Langue**                             | `language`       | Un code de deux ou trois lettres minuscules, comme `fr`                          | Le réglage du compte | Chaque partie |
 | **Qui peut citer cette publication**   | `quotePolicy`    | `public`, `followers`, `nobody` ; seulement avec `visibility` public ou unlisted | Le réglage du compte | Chaque partie |
 
-Mastodon compte un avertissement de contenu dans la limite de caractères de la publication, avec le texte : sur un canal Mastodon, les 500 caractères sont l’avertissement et le texte ensemble, sur chaque partie, et l’éditeur les compte ainsi. Les mentions privées ne sont pas proposées : Peal publie des publications. Les serveurs antérieurs à Mastodon 4.5 ignorent la règle de citation, et personne ne peut citer une publication réservée aux abonnés, quoi qu’elle dise.
+Mastodon compte un avertissement de contenu dans la limite de caractères de la publication, avec le texte : sur un canal Mastodon, les 500 caractères sont l’avertissement et le texte ensemble, sur chaque partie, et l’éditeur les compte ainsi. Un avertissement de contenu marque aussi la publication comme sensible, quoi que dise **Marquer les médias comme sensibles**. Les mentions privées ne sont pas proposées : Peal publie des publications. Les serveurs antérieurs à Mastodon 4.5 ignorent la règle de citation, et personne ne peut citer une publication réservée aux abonnés, quoi qu’elle dise.
 
 Sur **Bluesky** :
 
