@@ -171,10 +171,10 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${id}`,
   "publishing.publication_attempts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.publication_attempts a JOIN publishing.post_targets t ON t.id = a.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
-  "publishing.queues": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM publishing.queues WHERE workspace_id = ${id}`,
   "publishing.publication_calls": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.publication_calls c JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
+  "publishing.queues": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.queues WHERE workspace_id = ${id}`,
   "publishing.signatures": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.signatures WHERE workspace_id = ${id}`,
   "publishing.tags": (sql, id) =>
