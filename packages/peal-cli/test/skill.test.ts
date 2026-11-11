@@ -8,12 +8,15 @@ import { errorCatalogue } from "peal-contract/errors";
 import { commandPaths, usageOf } from "./command-tree.ts";
 import { contractEndpoints, pathPattern } from "./contract-endpoints.ts";
 
-// The agent skill in skills/peal teaches the command line and the API: it
+// The agent skill in packages/peal-skills/skills/peal teaches the command line and the API: it
 // stays true only while every command, flag, path and code it names
 // exists. This reads it as an agent would, and checks each against the
 // command tree and the contract.
 
-const skillFolder = path.join(import.meta.dirname, "../../../skills/peal");
+const skillFolder = path.join(
+  import.meta.dirname,
+  "../../peal-skills/skills/peal"
+);
 
 const read = (file: string): string =>
   readFileSync(path.join(skillFolder, file), "utf-8");

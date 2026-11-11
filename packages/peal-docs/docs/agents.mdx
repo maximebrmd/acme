@@ -256,7 +256,7 @@ peal post "Our spring catalogue is out. Read it at https://example.com/spring" \
 
 ## The agent skill [#skill]
 
-The repository holds a skill for agents in the folder [`skills/peal/`](https://github.com/peal-social/peal/tree/main/skills/peal), in the [Agent Skills](https://agentskills.io) format: instructions an agent loads when a task calls for Peal. It teaches the command line and the HTTP API: setting up and checking with `peal doctor --json`, signing in or using a workspace API key, finding channel and media ids, drafting, scheduling and publishing, sending under an idempotency key, reading how a post went, and handling errors and rate limits. Its first two rules are this page's: a draft is safe and publishing is public, and a refusal is never to be worked around.
+The repository holds a skill for agents in the folder [`packages/peal-skills/skills/peal/`](https://github.com/peal-social/peal/tree/main/packages/peal-skills/skills/peal), in the [Agent Skills](https://agentskills.io) format: instructions an agent loads when a task calls for Peal. It teaches the command line and the HTTP API: setting up and checking with `peal doctor --json`, signing in or using a workspace API key, finding channel and media ids, drafting, scheduling and publishing, sending under an idempotency key, reading how a post went, and handling errors and rate limits. Its first two rules are this page's: a draft is safe and publishing is public, and a refusal is never to be worked around.
 
 - To install it, copy the folder to where your agent reads skills.
 - Peal's site publishes it for discovery, at `https://peal.social/.well-known/agent-skills/index.json`, which lists the skill with its address and its digest.

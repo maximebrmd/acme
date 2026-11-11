@@ -47,6 +47,8 @@ one per tool under `packages/peal-infra/`:
   from the contract's `openapi.json`.
 - `peal-site`: the static marketing site (Astro), with the legal pages that
   platforms ask for during app review.
+- `peal-skills`: the agent skills, in the Agent Skills format, one folder
+  each under `skills/`, Apache-2.0 with a `LICENSE` in each.
 - `peal-e2e`: end-to-end browser tests with the e2e runner (`e2e`,
   `@e2e-dev/web`). Each run starts the server and the web app's production
   build itself (`scripts/serve.ts`).
@@ -78,7 +80,8 @@ several:
   the API contract, and how it may change.
 - [`packages/peal-cli/AGENTS.md`](packages/peal-cli/AGENTS.md): the command
   line.
-- [`skills/AGENTS.md`](skills/AGENTS.md): the agent skill.
+- [`packages/peal-skills/AGENTS.md`](packages/peal-skills/AGENTS.md): the
+  agent skills.
 - [`packages/peal-sdk/AGENTS.md`](packages/peal-sdk/AGENTS.md): the SDKs.
 - [`packages/peal-e2e/AGENTS.md`](packages/peal-e2e/AGENTS.md): the end-to-end
   tests.
