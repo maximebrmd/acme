@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "61dc936c-05c5-42fa-8d79-c92773cfd2dd",
+  "id": "00f6f943-6b6e-4320-9829-e09e5e096e8d",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -13246,6 +13246,19 @@
     {
       "schema": "publishing",
       "table": "post_targets",
+      "name": "thumbnail_not_set",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
       "name": "unconfirmed_reason",
       "type": "text",
       "typeSchema": null,
@@ -14227,6 +14240,19 @@
       "notNull": false,
       "dimensions": 0,
       "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "upload_sessions",
+      "name": "thumbnail_set",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
       "generated": null,
       "identity": null,
       "entityType": "columns"

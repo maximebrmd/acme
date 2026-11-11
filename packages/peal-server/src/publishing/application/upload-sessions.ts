@@ -12,6 +12,11 @@ export interface UploadSession {
    * longer answers.
    */
   readonly finalPartSent: boolean;
+  /**
+   * Whether a run set the video's thumbnail (YouTube's thumbnails.set),
+   * which a resumed run then does not set, nor pay for, again.
+   */
+  readonly thumbnailSet: boolean;
   /** Where the bytes go, until the platform made the video. */
   readonly sessionUrl: Option.Option<string>;
   /** The video the upload made, once a run learned of it. */
@@ -44,6 +49,10 @@ export class UploadSessions extends Context.Service<
     ) => Effect.Effect<void, DatabaseError>;
     /** Records that the part holding the last byte is about to leave. */
     readonly finalPartSent: (
+      idempotencyKey: string
+    ) => Effect.Effect<void, DatabaseError>;
+    /** Records that the video's thumbnail is set. */
+    readonly thumbnailSet: (
       idempotencyKey: string
     ) => Effect.Effect<void, DatabaseError>;
     /** Records the video the upload made, and forgets where bytes went. */

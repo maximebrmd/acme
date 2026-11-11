@@ -125,7 +125,22 @@ const targetStatusOf = (row: TargetRow) => {
     startedAt: utc(row.startedAt),
   };
 
-  return row.keptPrivate ? { ...status, keptPrivate: true } : status;
+  // A published target's notes, each only when it holds: a status is
+  // decoded from this, and keeps no note it lacks.
+  let noted: typeof status & {
+    readonly keptPrivate?: true;
+    readonly thumbnailNotSet?: true;
+  } = status;
+
+  if (row.keptPrivate) {
+    noted = { ...noted, keptPrivate: true };
+  }
+
+  if (row.thumbnailNotSet) {
+    noted = { ...noted, thumbnailNotSet: true };
+  }
+
+  return noted;
 };
 
 // The parts that went live, as their column holds them: JSON.
@@ -245,6 +260,7 @@ const targetColumns = (status: PostTargetStatus) => {
     platformPostId: null,
     startedAt: null,
     status: status._tag,
+    thumbnailNotSet: false,
     unconfirmedReason: null,
   };
 
@@ -260,7 +276,13 @@ const targetColumns = (status: PostTargetStatus) => {
       finishedAt: date(failedAt),
     }),
     pending: () => cleared,
-    published: ({ keptPrivate, permalink, platformPostId, publishedAt }) => ({
+    published: ({
+      keptPrivate,
+      permalink,
+      platformPostId,
+      publishedAt,
+      thumbnailNotSet,
+    }) => ({
       ...cleared,
       finishedAt: date(publishedAt),
       keptPrivate: keptPrivate === true,
@@ -269,6 +291,7 @@ const targetColumns = (status: PostTargetStatus) => {
       listedAt: date(publishedAt),
       permalink: Option.getOrNull(permalink),
       platformPostId: Option.getOrNull(platformPostId),
+      thumbnailNotSet: thumbnailNotSet === true,
     }),
     publishing: ({ cancelRequested, startedAt }) => ({
       ...cleared,

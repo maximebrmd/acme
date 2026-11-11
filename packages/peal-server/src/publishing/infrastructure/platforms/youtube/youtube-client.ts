@@ -31,7 +31,11 @@ import type {
 import { UploadSessions } from "#publishing/application/upload-sessions.ts";
 import type { UploadSession } from "#publishing/application/upload-sessions.ts";
 import { dailyLimitCodes } from "#publishing/domain/own-refusals.ts";
-import { YouTubeOptions } from "#publishing/domain/youtube-options.ts";
+import {
+  maxYouTubeThumbnailByteSize,
+  YouTubeOptions,
+  youTubeThumbnailTypes,
+} from "#publishing/domain/youtube-options.ts";
 import {
   fromByte,
   inParts,
@@ -50,10 +54,12 @@ import { RateLimited } from "#shared/domain/rate-limited.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
+import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 
 import { quotaDayOf, untilQuotaReset } from "./quota-day.ts";
-import { refusalOf } from "./youtube-refusal.ts";
+import { reasonOf, refusalOf } from "./youtube-refusal.ts";
 import type { Refused } from "./youtube-refusal.ts";
+import { defaultDailyThumbnails } from "./youtube-settings.ts";
 
 /** The HTTP client the adapter sends through: the public one. */
 export type YouTubeHttp = HttpClient.HttpClient.With<
@@ -67,6 +73,8 @@ export interface YouTubeClientOptions {
   readonly apiUrl: URL;
   /** The bytes of each part but the last: a multiple of 256 KiB. */
   readonly chunkSize?: number;
+  /** The custom thumbnails the server sets a day (`thumbnailsBucket`). */
+  readonly dailyThumbnails?: number;
   /** The units of the Video Uploads quota bucket the server spends a day. */
   readonly dailyUploads: number;
   readonly timing?: StepTiming;
@@ -76,6 +84,13 @@ export interface YouTubeClientOptions {
 
 /** The quota bucket videos.insert is charged to, one unit a call. */
 export const uploadsBucket = "youtube.videoUploads";
+
+/**
+ * The server's own ledger of thumbnails.set, one unit a thumbnail, by
+ * Pacific day: each call costs about 50 units of the project's general
+ * quota, which Peal does not count otherwise.
+ */
+export const thumbnailsBucket = "thumbnails:youtube";
 
 const kibibytes256 = 256 * 1024;
 
@@ -227,6 +242,68 @@ const rejectionOf = (reason: string | undefined) =>
 const youtubeOptionsOf = (post: OutgoingPost) =>
   post.options.pipe(Option.filter(Schema.is(YouTubeOptions)));
 
+// The image types thumbnails.set takes, of those the library stores.
+const thumbnailTypes: ReadonlySet<string> = new Set(youTubeThumbnailTypes);
+
+// What videos.insert is given of the options: each field only when it was
+// chosen, so a video without them is sent as before. The parts named are
+// those the metadata holds.
+const metadataOf = (post: OutgoingPost, chosen: YouTubeOptions) => {
+  const snippet = new Map<string, unknown>([
+    ["description", post.text],
+    ["title", chosen.title ?? ""],
+  ]);
+
+  if (chosen.categoryId !== undefined) {
+    snippet.set("categoryId", chosen.categoryId);
+  }
+
+  if (chosen.defaultLanguage !== undefined) {
+    snippet.set("defaultLanguage", chosen.defaultLanguage);
+  }
+
+  if (chosen.tags !== undefined && chosen.tags.length > 0) {
+    snippet.set("tags", chosen.tags);
+  }
+
+  const status = new Map<string, unknown>([
+    ["containsSyntheticMedia", chosen.containsSyntheticMedia ?? false],
+    ["privacyStatus", chosen.privacy ?? "public"],
+    ["selfDeclaredMadeForKids", chosen.madeForKids ?? false],
+  ]);
+
+  if (chosen.embeddable !== undefined) {
+    status.set("embeddable", chosen.embeddable);
+  }
+
+  if (chosen.license !== undefined) {
+    status.set("license", chosen.license);
+  }
+
+  if (chosen.publicStatsViewable !== undefined) {
+    status.set("publicStatsViewable", chosen.publicStatsViewable);
+  }
+
+  const metadata = {
+    snippet: Object.fromEntries(snippet),
+    status: Object.fromEntries(status),
+  };
+
+  // The recording date is a datetime to YouTube (ISO 8601): the day's
+  // start, in UTC.
+  return chosen.recordingDate === undefined
+    ? { metadata, parts: "snippet,status" }
+    : {
+        metadata: {
+          ...metadata,
+          recordingDetails: {
+            recordingDate: `${chosen.recordingDate}T00:00:00.000Z`,
+          },
+        },
+        parts: "snippet,status,recordingDetails",
+      };
+};
+
 /**
  * Publishes a video on a YouTube channel with videos.insert: the post's
  * text is its description, and the target's YouTube options its title,
@@ -258,6 +335,7 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
     const sessions = yield* UploadSessions;
     const quota = yield* PlatformQuota;
     const { api, apiUrl, dailyUploads, uploads } = options;
+    const dailyThumbnails = options.dailyThumbnails ?? defaultDailyThumbnails;
     const timing = options.timing ?? defaultStepTiming;
     const chunkSize = options.chunkSize ?? defaultChunkSize;
 
@@ -579,27 +657,7 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
           });
         }
 
-        const snippet = new Map<string, unknown>([
-          ["description", post.text],
-          ["title", chosen.title ?? ""],
-        ]);
-
-        if (chosen.categoryId !== undefined) {
-          snippet.set("categoryId", chosen.categoryId);
-        }
-
-        if (chosen.tags !== undefined && chosen.tags.length > 0) {
-          snippet.set("tags", chosen.tags);
-        }
-
-        const metadata = {
-          snippet: Object.fromEntries(snippet),
-          status: {
-            containsSyntheticMedia: chosen.containsSyntheticMedia ?? false,
-            privacyStatus: chosen.privacy ?? "public",
-            selfDeclaredMadeForKids: chosen.madeForKids ?? false,
-          },
-        };
+        const { metadata, parts } = metadataOf(post, chosen);
 
         const location = yield* credentials.withToken(
           post.channelId,
@@ -614,7 +672,7 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
                       notifySubscribers: String(
                         chosen.notifySubscribers ?? true
                       ),
-                      part: "snippet,status",
+                      part: parts,
                       uploadType: "resumable",
                     }),
                     HttpClientRequest.setHeaders({
@@ -778,6 +836,169 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
       }
     });
 
+    // Sends the thumbnail to thumbnails.set, streamed from the media store:
+    // whether YouTube set it. A refused token is renewed once, by the
+    // credentials; any other refusal is YouTube's last word on it.
+    const sendThumbnail = (
+      post: OutgoingPost,
+      videoId: string,
+      thumbnail: PublishableMedia
+    ) =>
+      Effect.scoped(
+        media.held(post.workspaceId, thumbnail.mediaId).pipe(
+          Effect.flatMap((bytes) =>
+            credentials.withToken(post.channelId, ({ accessToken }) =>
+              uploads
+                .execute(
+                  authorized(
+                    HttpClientRequest.post(
+                      new URL("/upload/youtube/v3/thumbnails/set", apiUrl)
+                    ).pipe(
+                      HttpClientRequest.setUrlParams({
+                        uploadType: "media",
+                        videoId,
+                      }),
+                      streamedBody(bytes, {
+                        contentLength: thumbnail.byteSize,
+                        contentType: thumbnail.contentType,
+                      })
+                    ),
+                    accessToken
+                  )
+                )
+                .pipe(
+                  Effect.flatMap((response) => {
+                    if (response.status === 200) {
+                      return Effect.succeed(true);
+                    }
+
+                    if (response.status === 401) {
+                      return Effect.fail(new TokenRejected());
+                    }
+
+                    return reasonOf(response).pipe(
+                      Effect.tap((reason) =>
+                        reason.pipe(
+                          Option.filter(
+                            (named) => named === dailyLimitCodes.projectQuota
+                          ),
+                          Option.match({
+                            onNone: () => Effect.void,
+                            onSome: () =>
+                              DateTime.now.pipe(
+                                Effect.flatMap((now) =>
+                                  quota.exhaust({
+                                    allowance: dailyThumbnails,
+                                    bucket: thumbnailsBucket,
+                                    day: quotaDayOf(now),
+                                  })
+                                ),
+                                Effect.ignore
+                              ),
+                          })
+                        )
+                      ),
+                      Effect.tap((reason) =>
+                        Effect.logWarning(
+                          "YouTube did not set a video's thumbnail"
+                        ).pipe(
+                          Effect.annotateLogs({
+                            channelId: post.channelId,
+                            code: codeOf(reason, `http${response.status}`),
+                          })
+                        )
+                      ),
+                      Effect.as(false)
+                    );
+                  }),
+                  Effect.catchTags({
+                    HttpClientError: () => Effect.succeed(false),
+                    OutboundRequestRefused: () => Effect.succeed(false),
+                  })
+                )
+            )
+          )
+        )
+      );
+
+    // Sets the thumbnail the options name, once the video exists: spends a
+    // unit of the server's thumbnails ledger, then sends the image, and
+    // journals that it is set, so a resumed run neither sends nor pays for
+    // it again. Never fails the post: a channel YouTube does not allow
+    // custom thumbnails, an image it refuses, the day's thumbnails spent or
+    // the file gone leave the video published with `thumbnailNotSet`.
+    const withThumbnail = Effect.fn("YouTubeClient.withThumbnail")(
+      function* withThumbnail(post: OutgoingPost, published: Published) {
+        const named = youtubeOptionsOf(post).pipe(
+          Option.flatMapNullishOr(({ thumbnailMediaId }) => thumbnailMediaId)
+        );
+
+        if (Option.isNone(named)) {
+          return published;
+        }
+
+        const journal = yield* sessions
+          .find(post.idempotencyKey)
+          .pipe(Effect.orElseSucceed(() => Option.none<UploadSession>()));
+
+        if (Option.exists(journal, ({ thumbnailSet }) => thumbnailSet)) {
+          return published;
+        }
+
+        const set = yield* Effect.gen(function* settingThumbnail() {
+          const thumbnail = yield* media.describe(
+            post.workspaceId,
+            named.value
+          );
+
+          // Scheduling refused another file: one changed since is not sent.
+          if (
+            !thumbnailTypes.has(thumbnail.contentType) ||
+            thumbnail.byteSize > maxYouTubeThumbnailByteSize
+          ) {
+            return false;
+          }
+
+          const now = yield* DateTime.now;
+
+          const spent = yield* quota.spend({
+            allowance: dailyThumbnails,
+            bucket: thumbnailsBucket,
+            day: quotaDayOf(now),
+            units: 1,
+          });
+
+          if (!spent) {
+            yield* Effect.logWarning(
+              "The day's YouTube thumbnails are spent: a video is published without its own"
+            ).pipe(Effect.annotateLogs({ channelId: post.channelId }));
+
+            return false;
+          }
+
+          return yield* sendThumbnail(
+            post,
+            published.platformPostId,
+            thumbnail
+          );
+        }).pipe(Effect.orElseSucceed(() => false));
+
+        if (!set) {
+          return { ...published, thumbnailNotSet: true } satisfies Published;
+        }
+
+        yield* sessions
+          .thumbnailSet(post.idempotencyKey)
+          .pipe(
+            Effect.catch((error) =>
+              Effect.logWarning("A thumbnail set could not be journaled", error)
+            )
+          );
+
+        return published;
+      }
+    );
+
     const prepare = Effect.fn("YouTubeClient.prepare")(function* prepare(
       post: OutgoingPost
     ) {
@@ -841,7 +1062,10 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
       const knownVideo = journal.pipe(Option.flatMap(({ videoId }) => videoId));
 
       if (Option.isSome(knownVideo)) {
-        return yield* processed(post, prepared, { id: knownVideo.value });
+        return yield* withThumbnail(
+          post,
+          yield* processed(post, prepared, { id: knownVideo.value })
+        );
       }
 
       const journaledUrl = journal.pipe(
@@ -893,7 +1117,10 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
 
       yield* record(post, standing.video);
 
-      return yield* processed(post, prepared, standing.video);
+      return yield* withThumbnail(
+        post,
+        yield* processed(post, prepared, standing.video)
+      );
     });
 
     // Reads the attempt's upload back through its journal: no session is
@@ -928,7 +1155,10 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
       if (Option.isSome(session.videoId)) {
         const found: LookUp = {
           _tag: "found",
-          published: publishedAs({ id: session.videoId.value }, chosen),
+          published: yield* withThumbnail(
+            post,
+            publishedAs({ id: session.videoId.value }, chosen)
+          ),
         };
 
         return found;
@@ -951,7 +1181,10 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
 
         const found: LookUp = {
           _tag: "found",
-          published: publishedAs(standing.video, chosen),
+          published: yield* withThumbnail(
+            post,
+            publishedAs(standing.video, chosen)
+          ),
         };
 
         return found;

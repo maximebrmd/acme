@@ -118,7 +118,8 @@ export const posts = publishing.table(
  * sees a TikTok post), tagged by `platform`, and is null on platforms that
  * take none: rows from before options were kept have none. `kept_private`
  * is true on a published target the platform made private although asked
- * to show it to more people. `content_digest` is the SHA-256 of what the
+ * to show it to more people, `thumbnail_not_set` on one that went live
+ * without the thumbnail its options named. `content_digest` is the SHA-256 of what the
  * target sends to its channel (its text there and its media ids), written
  * when its post is scheduled, by which the same content sent to the same
  * channel again is found; null on a draft never scheduled, and on rows from
@@ -153,6 +154,7 @@ export const postTargets = publishing.table(
     round: integer("round").notNull().default(1),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
+    thumbnailNotSet: boolean("thumbnail_not_set").notNull().default(false),
     unconfirmedReason: text("unconfirmed_reason"),
   },
   (table) => [
@@ -247,7 +249,8 @@ export const publicationCalls = publishing.table(
  * again. `session_url` is where the bytes go, cleared once the platform
  * made the video, whose id `video_id` then keeps; `final_part_sent` is set
  * before the part holding the last byte leaves, after which the video may
- * exist. Rows go with their call.
+ * exist; `thumbnail_set` once the video's thumbnail is set, which a resumed
+ * run does not set again. Rows go with their call.
  */
 export const uploadSessions = publishing.table("upload_sessions", {
   byteSize: bigint("byte_size", { mode: "number" }).notNull(),
@@ -257,6 +260,7 @@ export const uploadSessions = publishing.table("upload_sessions", {
     .references(() => publicationCalls.idempotencyKey, { onDelete: "cascade" }),
   openedAt: instant("opened_at").notNull(),
   sessionUrl: text("session_url"),
+  thumbnailSet: boolean("thumbnail_set").notNull().default(false),
   videoId: text("video_id"),
 });
 

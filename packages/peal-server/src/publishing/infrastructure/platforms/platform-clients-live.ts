@@ -28,7 +28,10 @@ import { tiktokClient } from "./tiktok/tiktok-client.ts";
 import { tiktokMediaUrlConfig } from "./tiktok/tiktok-settings.ts";
 import { xClient } from "./x/x-client.ts";
 import { youtubeClient } from "./youtube/youtube-client.ts";
-import { youtubeDailyUploadsConfig } from "./youtube/youtube-settings.ts";
+import {
+  youtubeDailyThumbnailsConfig,
+  youtubeDailyUploadsConfig,
+} from "./youtube/youtube-settings.ts";
 
 /** Where the platforms are, and how long their steps wait. */
 export interface PlatformClientSettings {
@@ -61,6 +64,8 @@ export interface PlatformClientSettings {
   readonly xApi: URL;
   /** The YouTube Data API, uploads included. */
   readonly youtubeApi: URL;
+  /** The custom thumbnails the server sets on YouTube a day. */
+  readonly youtubeDailyThumbnails: number;
   /** The units of YouTube's Video Uploads bucket the server spends a day. */
   readonly youtubeDailyUploads: number;
 }
@@ -135,6 +140,7 @@ export const platformClientsWith = (settings: PlatformClientSettings) =>
         yield* youtubeClient({
           api,
           apiUrl: settings.youtubeApi,
+          dailyThumbnails: settings.youtubeDailyThumbnails,
           dailyUploads: settings.youtubeDailyUploads,
           uploads,
           ...timing,
@@ -174,6 +180,7 @@ export const PlatformClientsLive = Layer.unwrap(
     const meta = yield* metaAppConfig;
     const tiktokPullFrom = yield* tiktokMediaUrlConfig;
     const youtubeDailyUploads = yield* youtubeDailyUploadsConfig;
+    const youtubeDailyThumbnails = yield* youtubeDailyThumbnailsConfig;
     const pinterest = yield* pinterestHostsConfig;
 
     return platformClientsWith({
@@ -188,6 +195,7 @@ export const PlatformClientsLive = Layer.unwrap(
       videoService: new URL("https://video.bsky.app"),
       xApi: new URL("https://api.x.com"),
       youtubeApi: new URL("https://www.googleapis.com"),
+      youtubeDailyThumbnails,
       youtubeDailyUploads,
     });
   })
