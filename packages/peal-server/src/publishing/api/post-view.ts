@@ -22,16 +22,28 @@ import type { AttemptOutcome } from "#publishing/domain/publication-policy.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
 import { TargetOptionsSchema } from "#publishing/domain/target-options.ts";
 
-/** What a post's request is told of the channels its sets left out. */
+/**
+ * What a post's request is told of the channels its sets, or its queue,
+ * left out.
+ */
 export const droppedWarnings = (
   dropped: readonly DroppedChannels[]
 ): readonly PostWarning[] =>
-  dropped.map(({ channelIds, setId, setName }) => ({
-    _tag: "channelsDropped" as const,
-    channelIds: [...channelIds],
-    channelSetId: setId,
-    channelSetName: setName,
-  }));
+  dropped.map((left): PostWarning =>
+    left._tag === "set"
+      ? {
+          _tag: "channelsDropped",
+          channelIds: [...left.channelIds],
+          channelSetId: left.setId,
+          channelSetName: left.setName,
+        }
+      : {
+          _tag: "queueChannelsDropped",
+          channelIds: [...left.channelIds],
+          queueId: left.queueId,
+          queueName: left.queueName,
+        }
+  );
 
 // The domain's options, as plain values the contract describes.
 const encodeOptions = Schema.encodeSync(TargetOptionsSchema);

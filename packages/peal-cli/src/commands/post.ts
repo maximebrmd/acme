@@ -8,7 +8,12 @@ import {
   NewPostSchema,
   PostValidationSchema,
 } from "peal-contract";
-import type { MediaAttachment, NewPost, PostTiming } from "peal-contract";
+import type {
+  MediaAttachment,
+  NewPost,
+  PostTiming,
+  Queue,
+} from "peal-contract";
 import { maxMediaPerPost } from "peal-contract/post-text";
 
 import { outcomeLines } from "#commands/posts.ts";
@@ -32,10 +37,12 @@ import {
   thenFlag,
 } from "#post-flags.ts";
 import { channelsOf, namesFor, printPost, timeOf } from "#post-result.ts";
+import { instant } from "#print.ts";
 import { Refused } from "#refused.ts";
 import {
   defaultSignaturesFlag,
   presetsOf,
+  queueOf,
   setsFlag,
   signatureFlag,
   warningLines,
@@ -101,6 +108,7 @@ const checkModes = (input: {
   readonly at: Option.Option<string>;
   readonly dryRun: boolean;
   readonly media: readonly string[];
+  readonly queue: Option.Option<string>;
   readonly wait: Option.Option<number>;
 }) =>
   Effect.gen(function* checkingModes() {
@@ -121,9 +129,12 @@ const checkModes = (input: {
       );
     }
 
-    if (Option.isSome(input.wait) && Option.isSome(input.at)) {
+    if (
+      Option.isSome(input.wait) &&
+      (Option.isSome(input.at) || Option.isSome(input.queue))
+    ) {
       return yield* refuse(
-        "--wait goes with --now: a post scheduled with --at goes out later, and peal posts wait <post-id> waits for it then."
+        "--wait goes with --now: a post scheduled with --at or --queue goes out later, and peal posts wait <post-id> waits for it then."
       );
     }
 
@@ -161,6 +172,12 @@ const check = (
         );
       }
 
+      if (validation.queueSlot !== undefined) {
+        yield* Console.log(
+          `Added now, it would take the queue's slot at ${instant(validation.queueSlot)}.`
+        );
+      }
+
       for (const line of previewLines(validation, names)) {
         yield* Console.log(line);
       }
@@ -174,7 +191,12 @@ const check = (
       yield* refuse(
         [
           "Checked, and made nothing: Peal would refuse the post.",
-          ...problemsOf(validation, payload.when.timeZone ?? "UTC"),
+          ...problemsOf(
+            validation,
+            payload.when._tag === "queue"
+              ? "UTC"
+              : (payload.when.timeZone ?? "UTC")
+          ),
         ].join("\n")
       );
     }
@@ -190,24 +212,35 @@ const planned = (input: {
   readonly media: readonly string[];
   readonly now: boolean;
   readonly options: readonly string[];
+  readonly queue: Option.Option<string>;
   readonly sets: readonly string[];
   readonly timeZone: string;
 }) =>
   Effect.gen(function* planning() {
     // Everything the command line can tell by itself is checked before a
     // request leaves, so a refusal here sent and stored nothing.
-    if (Option.isSome(input.at) === input.now) {
+    const timings = [
+      Option.isSome(input.at),
+      input.now,
+      Option.isSome(input.queue),
+    ].filter(Boolean).length;
+
+    if (timings !== 1) {
       return yield* refuse(
-        input.now
-          ? "Give --at or --now, not both."
-          : "Say when it goes out: --at <instant> to schedule it, or --now to publish it now. Publishing is never the default."
+        timings > 1
+          ? "Give one of --at, --now and --queue."
+          : "Say when it goes out: --at <instant> to schedule it, --queue to put it on a queue's next free slot, or --now to publish it now. Publishing is never the default."
       );
     }
 
     const channelIds = channelIdsOf(input.channels);
 
-    // One channel at least, unless a channel set brings some.
-    if (channelIds.length === 0 && input.sets.length === 0) {
+    // One channel at least, unless a channel set or a queue brings some.
+    if (
+      channelIds.length === 0 &&
+      input.sets.length === 0 &&
+      Option.isNone(input.queue)
+    ) {
       return yield* refuse(
         "Name the channels it goes to with --channel, or a channel set with --set: peal channels list shows the channels' ids, and peal sets list the sets."
       );
@@ -236,9 +269,14 @@ const planned = (input: {
       );
     }
 
+    // A queue is named once the workspace is known: its id comes then.
     const when: PostTiming = yield* Option.match(input.at, {
       onNone: () =>
-        Effect.succeed<PostTiming>({ _tag: "now", timeZone: input.timeZone }),
+        Effect.succeed<PostTiming>(
+          Option.isSome(input.queue)
+            ? { _tag: "queue" }
+            : { _tag: "now", timeZone: input.timeZone }
+        ),
       onSome: (given) =>
         instantOf(given, input.timeZone).pipe(
           Effect.map((at): PostTiming => ({
@@ -317,6 +355,14 @@ export const post = Command.make(
       "A part that follows the post, text alone: a reply in a thread where the platform has threads (peal channels capabilities says where). Repeat it for several, in order. A platform that takes a post alone refuses the post."
     ),
     partsDelay: thenDelayFlag,
+    queue: Flag.String("queue").pipe(
+      Flag.withOptionalValue(""),
+      Flag.withMetavar("name-or-id"),
+      Flag.withDescription(
+        "Put it on the next free slot of a queue instead of a time: --queue alone takes the workspace's default queue, --queue=<name-or-id> another, as peal queues list shows them. Without --channel or --set it goes to the queue's channels. The slot is decided when the post is made."
+      ),
+      Flag.optional
+    ),
     sets: setsFlag(
       "A channel set the post goes to, by its id or its name, as peal sets list shows them; repeat it for several: its connected channels, beside any --channel, with the options the set keeps for them where --options gives none. A channel of the set that is no longer connected is left out, and said; when none is left and no --channel is given, nothing is posted."
     ),
@@ -342,13 +388,14 @@ export const post = Command.make(
   Effect.fn("post")(function* sendPost(input) {
     yield* checkModes(input);
 
-    const { channelIds, options, when } = yield* planned(input);
+    const { channelIds, options, when: asked } = yield* planned(input);
     const followUps = yield* followUpsOf(input.parts, input.partsDelay);
 
     const withMedia = (
       media: readonly MediaAttachment[],
       tagIds: readonly string[] = [],
-      presets: Presets = {}
+      presets: Presets = {},
+      when: PostTiming = asked
     ) => {
       const written: NewPost = {
         channelIds,
@@ -374,8 +421,19 @@ export const post = Command.make(
     const destination = { client, url, workspaceId: workspace.id };
     // A tag the workspace lacks is refused before any media is stored.
     const tagIds = yield* tagIdsOf(session, input.tags);
-    // So is a channel set or a signature it lacks.
+    // So is a channel set or a signature it lacks, or a queue.
     const presets = yield* presetsOf(session, input);
+
+    const queue = yield* Option.match(input.queue, {
+      onNone: () => Effect.succeed(Option.none<Queue>()),
+      onSome: (given) => queueOf(session, given).pipe(Effect.map(Option.some)),
+    });
+
+    const when: PostTiming = Option.match(queue, {
+      onNone: () => asked,
+      onSome: ({ id }) => ({ _tag: "queue", queueId: id }),
+    });
+
     const media: MediaAttachment[] = [];
 
     for (const [index, source] of input.media.entries()) {
@@ -391,7 +449,7 @@ export const post = Command.make(
     if (input.dryRun) {
       yield* check(
         session,
-        yield* withMedia(media, tagIds, presets),
+        yield* withMedia(media, tagIds, presets, when),
         input.json
       );
 
@@ -405,7 +463,7 @@ export const post = Command.make(
           onSome: (key) => ({ "idempotency-key": key }),
         }),
         params: { workspaceId: workspace.id },
-        payload: yield* withMedia(media, tagIds, presets),
+        payload: yield* withMedia(media, tagIds, presets, when),
         query: Option.match(input.wait, {
           onNone: () => ({}),
           onSome: (wait) => ({ wait }),
@@ -417,9 +475,14 @@ export const post = Command.make(
     const where = channelsOf(sent, names);
 
     yield* printPost(sent, input.json, () =>
-      when._tag === "now"
-        ? `Publishing now on ${where}: post ${sent.id}. It reaches these accounts' public, and cannot be taken back from here once it is out; peal posts show ${sent.id} tells how it went.`
-        : `Scheduled for ${timeOf(sent)} on ${where}: post ${sent.id}. It reaches these accounts' public then; until then, peal posts cancel ${sent.id} stops it.`
+      Option.match(queue, {
+        onNone: () =>
+          when._tag === "now"
+            ? `Publishing now on ${where}: post ${sent.id}. It reaches these accounts' public, and cannot be taken back from here once it is out; peal posts show ${sent.id} tells how it went.`
+            : `Scheduled for ${timeOf(sent)} on ${where}: post ${sent.id}. It reaches these accounts' public then; until then, peal posts cancel ${sent.id} stops it.`,
+        onSome: ({ name }) =>
+          `Added to queue ${name}, on its slot at ${timeOf(sent)}, on ${where}: post ${sent.id}. It reaches these accounts' public then; until then, peal posts cancel ${sent.id} stops it.`,
+      })
     );
 
     if (Option.isSome(input.wait) && !input.json) {
@@ -436,6 +499,6 @@ export const post = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Write a post and send it in one command, to the public of the accounts its channels connect: scheduled with --at, or published at once with --now. One of the two is required. --set names a channel set instead of listing its channels, and --signature or --default-signatures puts a signature under its text. Its media are uploaded or imported first, and its text, media and options must fit each platform's rules, or nothing is posted. --dry-run checks it and makes nothing; --wait, with --now, says how it went on each channel."
+    "Write a post and send it in one command, to the public of the accounts its channels connect: scheduled with --at, put on a queue's next free slot with --queue, or published at once with --now. One of the three is required. --set names a channel set instead of listing its channels, and --signature or --default-signatures puts a signature under its text. Its media are uploaded or imported first, and its text, media and options must fit each platform's rules, or nothing is posted. --dry-run checks it and makes nothing; --wait, with --now, says how it went on each channel."
   )
 );

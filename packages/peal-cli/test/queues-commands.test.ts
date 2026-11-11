@@ -3,7 +3,7 @@ import { Effect, Ref, Schema } from "effect";
 
 import { filesLayer, signedIn } from "./signed-in.ts";
 import { evergreenQueueId, weekdaysQueueId } from "./studio-queues.ts";
-import { launchSetId, mastodonId, tiktokId } from "./studio.ts";
+import { draftId, launchSetId, mastodonId, tiktokId } from "./studio.ts";
 import type { Studio } from "./studio.ts";
 
 // peal queues against the in-memory studio: what each command asks the
@@ -215,6 +215,135 @@ describe("peal queues", () => {
         `queue:delete:${evergreenQueueId}`,
         `queue:delete:${weekdaysQueueId}`,
       ]);
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
+describe("peal post --queue and peal posts queue", () => {
+  it.effect("sends a post onto the default queue's next free slot", () =>
+    Effect.gen(function* sends() {
+      const session = yield* signedIn();
+
+      const sent = yield* session.printed([
+        "post",
+        "An evergreen post.",
+        "--queue",
+        ...inStudio,
+      ]);
+
+      assert.match(
+        sent,
+        /^Added to queue Weekdays, on its slot at 2026-11-11T09:00:00Z \(UTC\), on .+: post \S+\./u
+      );
+
+      const { posts } = yield* Ref.get(session.studio.state);
+
+      const made = posts.find(
+        ({ content }) => content.text === "An evergreen post."
+      );
+
+      assert.strictEqual(made?.queueId, weekdaysQueueId);
+      assert.deepStrictEqual(
+        made?.targets.map(({ channelId }) => channelId),
+        [mastodonId]
+      );
+
+      // The next takes the slot after.
+      assert.include(
+        yield* session.printed([
+          "post",
+          "Another evergreen post.",
+          "--queue=weekdays",
+          "--channel",
+          tiktokId,
+          ...inStudio,
+        ]),
+        "on its slot at 2026-11-16T09:00:00Z (UTC)"
+      );
+
+      // Listed by the queue that placed them.
+      const listed = yield* session.printed([
+        "posts",
+        "list",
+        "--queue",
+        "Weekdays",
+        "--json",
+        ...inStudio,
+      ]);
+
+      assert.include(listed, weekdaysQueueId);
+
+      assert.include(
+        yield* session.refused([
+          "post",
+          "Nowhere to go.",
+          "--queue=Evergreen",
+          "--channel",
+          mastodonId,
+          ...inStudio,
+        ]),
+        "The queue has no slot: add some with peal queues update --slot"
+      );
+
+      assert.include(
+        yield* session.refused([
+          "post",
+          "Twice told.",
+          "--queue",
+          "--now",
+          ...inStudio,
+        ]),
+        "Give one of --at, --now and --queue."
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("checks a post at the slot it would take, making nothing", () =>
+    Effect.gen(function* checks() {
+      const session = yield* signedIn();
+
+      const checked = yield* session.printed([
+        "post",
+        "An evergreen post.",
+        "--queue",
+        "--dry-run",
+        ...inStudio,
+      ]);
+
+      assert.include(checked, "Checked, and made nothing");
+      assert.include(
+        checked,
+        "Added now, it would take the queue's slot at 2026-11-11T09:00:00Z."
+      );
+      assert.notInclude((yield* changes(session.studio)).join("\n"), "send:");
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("puts a draft on a queue's next free slot", () =>
+    Effect.gen(function* queues() {
+      const session = yield* signedIn();
+
+      const placed = yield* session.printed([
+        "posts",
+        "queue",
+        draftId,
+        ...inStudio,
+      ]);
+
+      assert.match(
+        placed,
+        new RegExp(
+          `^Put post ${draftId} on queue Weekdays, on its slot at 2026-11-11T09:00:00Z \\(UTC\\)`,
+          "u"
+        )
+      );
+
+      const { posts } = yield* Ref.get(session.studio.state);
+
+      assert.strictEqual(
+        posts.find(({ id }) => id === draftId)?.status,
+        "scheduled"
+      );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });

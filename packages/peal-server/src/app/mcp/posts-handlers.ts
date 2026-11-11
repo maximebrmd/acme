@@ -14,6 +14,8 @@ import {
   notAllowed,
   planRefusal,
   presetRefusals,
+  queueHasNoRoom,
+  unknownQueue,
   refuse,
   unknownSignature,
   unknownTags,
@@ -338,6 +340,8 @@ export const PostToolsLive = PostTools.toLayer(
                 refuse(
                   "The post this idempotencyKey made was deleted since: nothing was made. Use a new key to make it again."
                 ),
+              QueueHasNoRoom: queueHasNoRoom,
+              QueueNotFound: unknownQueue,
               UnknownTags: unknownTags,
             })
           );
@@ -352,6 +356,7 @@ export const PostToolsLive = PostTools.toLayer(
           Effect.catchTags({
             ...malformedContent,
             ...badZone,
+            QueueNotFound: unknownQueue,
             SignatureNotFound: unknownSignature,
             UnknownTags: unknownTags,
           })
@@ -703,11 +708,17 @@ export const PostToolsLive = PostTools.toLayer(
               ...presetRefusals,
               DatabaseError: Effect.die,
               MissingPermission: notAllowed("read posts"),
+              QueueNotFound: unknownQueue,
             })
           );
 
           return yield* toValidation(check, read);
-        }).pipe(Effect.catchTag("SignatureNotFound", unknownSignature)),
+        }).pipe(
+          Effect.catchTags({
+            QueueNotFound: unknownQueue,
+            SignatureNotFound: unknownSignature,
+          })
+        ),
     });
   })
 );

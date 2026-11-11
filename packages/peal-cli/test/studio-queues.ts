@@ -208,12 +208,13 @@ export const studioQueuesOf = (world: StudioWorld) => {
       : findQueue(studio, workspaceId, queueId);
 
   /** The first slot of the queue after now that no post of it holds. */
-  const nextFreeOf = (studio: Studio, queue: StudioQueue) =>
+  const nextFreeOf = (studio: Studio, queue: StudioQueue, except?: string) =>
     Ref.get(studio.state).pipe(
       Effect.map(({ posts }) => {
         const held = new Set(
           posts.flatMap((post) =>
             post.queueId === queue.id &&
+            post.id !== except &&
             post.schedule !== null &&
             ["scheduled", "awaitingApproval", "publishing"].includes(
               post.status

@@ -1,4 +1,12 @@
-import { Array as Arr, Context, DateTime, Effect, Layer, Option } from "effect";
+import {
+  Array as Arr,
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Option,
+  Result,
+} from "effect";
 
 import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { channelOf, previewOn } from "#publishing/domain/channel-preview.ts";
@@ -13,6 +21,8 @@ import { shownMedia } from "#publishing/domain/post-content.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { scheduleGrace } from "#publishing/domain/post.ts";
 import { postingMonthOf } from "#publishing/domain/posting-month.ts";
+import type { QueueId } from "#publishing/domain/queue-id.ts";
+import type { Queue, QueueNoRoom } from "#publishing/domain/queue.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { roomForOneMore, withinAllowance } from "#shared/domain/allowance.ts";
@@ -30,11 +40,15 @@ import { ApprovalGate } from "./approval-gate.ts";
 import { AttachableMedia } from "./attachable-media.ts";
 import type { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import { ContentFingerprints } from "./content-fingerprints.ts";
+import { freeSlotOf, queueNamed } from "./placement.ts";
+import type { Placement } from "./placement.ts";
 import { PostAllowance } from "./post-allowance.ts";
 import { nothingAsked, PostPresets } from "./post-presets.ts";
 import type { DroppedChannels, PresetAsk } from "./post-presets.ts";
 import { PostRepository } from "./post-repository.ts";
 import { violationsOf } from "./publishability.ts";
+import type { QueueNotFound } from "./queue-not-found.ts";
+import type { QueueStore } from "./queue-store.ts";
 import type { SignatureNotFound } from "./signature-not-found.ts";
 import { WorkspaceChannels } from "./workspace-channels.ts";
 
@@ -52,14 +66,23 @@ export interface CheckPostRequest {
    */
   readonly presets?: PresetAsk;
   /**
-   * When it would go out, if the request says: at an instant, or now. None
-   * is a draft, whose time and room in the plan are not checked.
+   * When it would go out, if the request says: now, at an instant, or on
+   * a queue's next free slot. None is a draft, whose time and room in the
+   * plan are not checked.
    */
-  readonly when: Option.Option<{ readonly at: Option.Option<DateTime.Utc> }>;
+  readonly when: Option.Option<Placement>;
+}
+
+/** The slot a post added to a queue now would take, or why there is none. */
+export interface QueueSlotCheck {
+  readonly queueId: QueueId;
+  readonly slot: Result.Result<DateTime.Utc, QueueNoRoom>;
 }
 
 /** What sending a post would come to. */
 export interface PostCheck {
+  /** The time it was checked at, when it has one. */
+  readonly at: Option.Option<DateTime.Utc>;
   /**
    * Whether the post, sent with a time, would wait for an approval before
    * it is scheduled (`ApprovalGate.holds`). Waiting refuses nothing: the
@@ -88,6 +111,8 @@ export interface PostCheck {
   };
   /** The limit of the plan it would pass, when it has a time. */
   readonly planLimit: Option.Option<PlanLimitReached>;
+  /** The slot it would take, when it is added to a queue. */
+  readonly queueSlot: Option.Option<QueueSlotCheck>;
   /** Whether its time can be kept, when it has one. */
   readonly schedule: Option.Option<"inPast" | "ok">;
   readonly unknownChannels: readonly ChannelId[];
@@ -104,7 +129,8 @@ export const isSendable = (check: PostCheck): boolean =>
   check.duplicates.length === 0 &&
   check.channels.every(({ violations }) => violations.length === 0) &&
   Option.isNone(check.planLimit) &&
-  !Option.contains(check.schedule, "inPast");
+  !Option.contains(check.schedule, "inPast") &&
+  !Option.exists(check.queueSlot, ({ slot }) => Result.isFailure(slot));
 
 type Ports =
   | AccountRules
@@ -114,6 +140,7 @@ type Ports =
   | PostAllowance
   | PostPresets
   | PostRepository
+  | QueueStore
   | WorkspaceChannels;
 
 /**
@@ -133,7 +160,11 @@ export class PostChecks extends Context.Service<
       request: CheckPostRequest
     ) => Effect.Effect<
       PostCheck,
-      ChannelSetNotFound | DatabaseError | MissingPermission | SignatureNotFound
+      | ChannelSetNotFound
+      | DatabaseError
+      | MissingPermission
+      | QueueNotFound
+      | SignatureNotFound
     >;
   }
 >()("peal-server/publishing/application/PostChecks") {
@@ -195,16 +226,107 @@ export class PostChecks extends Context.Service<
       ) {
         yield* Effect.fromResult(authorize(actor, "post:read"));
 
-        const { channelIds, content, dropped, options } =
-          yield* PostPresets.use((presets) =>
-            presets.fill(actor, {
-              ...(asked.presets ?? nothingAsked),
-              channelIds: asked.channelIds,
-              content: asked.content,
-              defaultOptions: true,
-              options: asked.options ?? [],
-            })
-          ).pipe(Effect.provideContext(ports));
+        const now = yield* DateTime.now;
+        const withPorts = Effect.provideContext(ports);
+
+        // The queue it would be added to, and the slot it would take now,
+        // read without a lock: advice, as the rest.
+        const queue = yield* Option.match(
+          when.pipe(
+            Option.flatMap((placement) =>
+              placement._tag === "queue"
+                ? Option.some(placement.queueId)
+                : Option.none()
+            )
+          ),
+          {
+            onNone: () =>
+              Effect.succeed(
+                Option.none<{
+                  readonly queue: Queue;
+                  readonly slot: Result.Result<DateTime.Utc, QueueNoRoom>;
+                }>()
+              ),
+            onSome: (queueId) =>
+              queueNamed(actor.workspaceId, queueId).pipe(
+                withPorts,
+                Effect.flatMap((found) =>
+                  freeSlotOf(found, now).pipe(
+                    withPorts,
+                    Effect.map((slot) => Option.some({ queue: found, slot }))
+                  )
+                )
+              ),
+          }
+        );
+
+        const presetsAsked = asked.presets ?? nothingAsked;
+
+        // Naming no channel and no set, it would go to the queue's.
+        const fromQueue = queue.pipe(
+          Option.filter(
+            () =>
+              asked.channelIds.length === 0 &&
+              presetsAsked.channelSets.length === 0
+          )
+        );
+
+        const filled = yield* PostPresets.use((presets) =>
+          presets.fill(actor, {
+            ...presetsAsked,
+            channelIds: Option.match(fromQueue, {
+              onNone: () => asked.channelIds,
+              onSome: ({ queue: chosen }) => chosen.channelIds,
+            }),
+            channelSets: Option.match(fromQueue, {
+              onNone: () => presetsAsked.channelSets,
+              onSome: ({ queue: chosen }) =>
+                Option.toArray(chosen.channelSetId),
+            }),
+            content: asked.content,
+            defaultOptions: true,
+            options: asked.options ?? [],
+          })
+        ).pipe(withPorts);
+
+        const { content, options } = filled;
+
+        // A queue's channel disconnected since is left out, and said.
+        const queueChannels = Option.match(fromQueue, {
+          onNone: () => new Set<ChannelId>(),
+          onSome: ({ queue: chosen }) => new Set<ChannelId>(chosen.channelIds),
+        });
+
+        const listed =
+          queueChannels.size === 0
+            ? []
+            : yield* workspaceChannels.lookUp(actor, [...queueChannels]);
+
+        const connected = new Set(listed.map(({ channelId }) => channelId));
+
+        const gone = [...queueChannels].filter((id) => !connected.has(id));
+
+        const channelIds = filled.channelIds.filter(
+          (channelId) => !gone.includes(channelId)
+        );
+
+        const dropped: readonly DroppedChannels[] = [
+          ...Option.match(fromQueue, {
+            onNone: () => [],
+            onSome: ({ queue: chosen }): DroppedChannels[] =>
+              Arr.isReadonlyArrayNonEmpty(gone)
+                ? [
+                    {
+                      _tag: "queue",
+                      channelIds: gone,
+                      queueId: chosen.id,
+                      queueName: chosen.name,
+                    },
+                  ]
+                : [],
+          }),
+          ...filled.dropped,
+        ];
 
         const requested = Arr.dedupe(channelIds);
 
@@ -253,10 +375,22 @@ export class PostChecks extends Context.Service<
               : !unknownChannels.includes(violation.channelId))
         );
 
-        const now = yield* DateTime.now;
-
+        // Its time: now, the instant asked, or the queue's free slot; a
+        // queue without one gives it none, and that is said instead.
         const at = when.pipe(
-          Option.map((timing) => Option.getOrElse(timing.at, () => now))
+          Option.flatMap((placement) => {
+            if (placement._tag === "at") {
+              return Option.some(placement.at);
+            }
+
+            if (placement._tag === "now") {
+              return Option.some(now);
+            }
+
+            return queue.pipe(
+              Option.flatMap(({ slot }) => Result.getSuccess(slot))
+            );
+          })
         );
 
         const schedule = at.pipe(
@@ -299,6 +433,7 @@ export class PostChecks extends Context.Service<
           : false;
 
         const checked: PostCheck = {
+          at,
           awaitsApproval,
           channels: channels.map((channel) =>
             previewOn(
@@ -313,6 +448,12 @@ export class PostChecks extends Context.Service<
           duplicates,
           filled: { channelIds: requested, content },
           planLimit,
+          queueSlot: queue.pipe(
+            Option.map(({ queue: chosen, slot }) => ({
+              queueId: chosen.id,
+              slot,
+            }))
+          ),
           schedule,
           unknownChannels,
           unknownMedia,

@@ -123,6 +123,32 @@ export const queueNamed = (
 export const findQueue = (session: InWorkspace, given: string) =>
   queuesOf(session).pipe(Effect.flatMap((queues) => queueNamed(queues, given)));
 
+/**
+ * The queue `--queue` names: by its id or its name, or, given bare, the
+ * workspace's default queue.
+ */
+export const queueOf = (session: InWorkspace, given: string) =>
+  given.trim() === ""
+    ? queuesOf(session).pipe(
+        Effect.flatMap((queues) =>
+          Option.match(
+            Option.fromUndefinedOr(queues.find(({ isDefault }) => isDefault)),
+            {
+              onNone: () =>
+                Effect.fail(
+                  new Refused({
+                    code: "queue_unknown",
+                    reason:
+                      "The workspace has no default queue: name one with --queue=<name-or-id>, or make one the default with peal queues update --default.",
+                  })
+                ),
+              onSome: Effect.succeed,
+            }
+          )
+        )
+      )
+    : findQueue(session, given);
+
 /** `--set <id-or-name>`, repeated: the channel sets a post goes to. */
 export const setsFlag = (description: string) =>
   Flag.String("set").pipe(
@@ -224,6 +250,11 @@ export const warningLines = (
         const one = channelIds.length === 1;
 
         return `The channel set ${channelSetName} names ${String(channelIds.length)} ${one ? "channel that is" : "channels that are"} no longer connected, which the post ${made ? "was" : "would be"} made without: ${channelIds.join(", ")}. peal sets update takes ${one ? "it" : "them"} out of the set.`;
+      },
+      queueChannelsDropped: ({ channelIds, queueName }) => {
+        const one = channelIds.length === 1;
+
+        return `The queue ${queueName} is for ${String(channelIds.length)} ${one ? "channel that is" : "channels that are"} no longer connected, which the post ${made ? "was" : "would be"} made without: ${channelIds.join(", ")}. peal queues update takes ${one ? "it" : "them"} out of the queue.`;
       },
     })
   );

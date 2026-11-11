@@ -11,6 +11,7 @@ import { Int64Schema } from "./int64.ts";
 import { PlatformSchema } from "./platform.ts";
 import { ContentViolationSchema } from "./post-content-invalid.ts";
 import { TextUnitSchema } from "./post-text.ts";
+import { QueueNoRoomSchema } from "./queue-has-no-room.ts";
 
 /** A text's length in one of the units a platform counts in, and its limit. */
 export const TextCountSchema = Schema.Struct({
@@ -122,6 +123,13 @@ export const PostValidationSchema = Schema.Struct({
   // The limit of the plan it would pass; null when it has room, on a
   // server that does not bill, or when the request gave no time.
   planLimit: Schema.NullOr(PlanShortfallSchema),
+  // Why the queue the request adds it to has no slot for it; left out
+  // when it has one, or the request adds it to no queue.
+  queueNoRoom: Schema.optionalKey(QueueNoRoomSchema),
+  // The slot of the queue the request adds it to that it would take if
+  // sent now, at which everything else was checked; left out when the
+  // request adds it to no queue, or the queue has none.
+  queueSlot: Schema.optionalKey(Schema.DateTimeUtc),
   // Null when the request gave no time.
   schedule: Schema.NullOr(ScheduleCheckSchema),
   // The channels it names that are not the workspace's.

@@ -15,6 +15,7 @@ import type { Post, PostPage } from "peal-contract";
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns, excerpt, instant } from "#print.ts";
+import { findQueue } from "#saved-items.ts";
 import { findTag } from "#tags.ts";
 import { instantOf, zoneFlag } from "#when.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
@@ -119,6 +120,13 @@ export const list = Command.make(
       ),
       Flag.optional
     ),
+    queue: Flag.String("queue").pipe(
+      Flag.withMetavar("<id-or-name>"),
+      Flag.withDescription(
+        "Only the posts this queue placed, by its id or its name, as peal queues list shows them."
+      ),
+      Flag.optional
+    ),
     sort: Flag.Literals("sort", PostSortSchema.literals).pipe(
       Flag.withDescription(
         "Their order: by creation (createdDesc, newest first, unless given; createdAsc), or by time (scheduledDesc, scheduledAsc), which lists only the posts with a time."
@@ -164,6 +172,13 @@ export const list = Command.make(
         findTag(session, named).pipe(Effect.map(({ id }) => Option.some(id))),
     });
 
+    // So is a queue.
+    const queueId = yield* Option.match(input.queue, {
+      onNone: () => Effect.succeedNone,
+      onSome: (named) =>
+        findQueue(session, named).pipe(Effect.map(({ id }) => Option.some(id))),
+    });
+
     const page = yield* client.posts
       .search({
         params: { workspaceId: workspace.id },
@@ -178,6 +193,7 @@ export const list = Command.make(
           })),
           ...given(input.outcome, (outcome) => ({ outcome })),
           ...given(input.platform, (platform) => ({ platform })),
+          ...given(queueId, (placedBy) => ({ queueId: placedBy })),
           ...given(input.sort, (sort) => ({ sort })),
           ...given(input.status, (status) => ({ status })),
           ...given(tagId, (filedUnder) => ({ tagId: filedUnder })),

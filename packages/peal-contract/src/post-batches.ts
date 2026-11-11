@@ -8,6 +8,8 @@ import { InvalidTimeZone } from "./invalid-time-zone.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PostContentInvalid } from "./post-content-invalid.ts";
 import { PostNotFound } from "./post-not-found.ts";
+import { QueueHasNoRoom } from "./queue-has-no-room.ts";
+import { QueueNotFound } from "./queue-not-found.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
 import { SignatureNotFound } from "./signature-not-found.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
@@ -42,6 +44,8 @@ export const PostRefusalSchema = Schema.Union([
   UnknownTags,
   ChannelSetNotFound,
   SignatureNotFound,
+  QueueNotFound,
+  QueueHasNoRoom,
 ]).annotate({ identifier: "PostRefusal" });
 
 export type PostRefusal = typeof PostRefusalSchema.Type;

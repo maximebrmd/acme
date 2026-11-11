@@ -89,12 +89,19 @@ export const ChannelSetReferencesSchema = Schema.Array(
  * Something a post was made without, which its request should know of.
  * `channelsDropped`: channels of a set it named are no longer connected,
  * so the post goes to the set's other channels only.
+ * `queueChannelsDropped`: added to a queue without naming channels, it
+ * goes to the queue's, and these of them are no longer connected.
  */
 export const PostWarningSchema = Schema.Union([
   Schema.TaggedStruct("channelsDropped", {
     channelIds: Schema.Array(Schema.String),
     channelSetId: Schema.String,
     channelSetName: Schema.String,
+  }),
+  Schema.TaggedStruct("queueChannelsDropped", {
+    channelIds: Schema.Array(Schema.String),
+    queueId: Schema.String,
+    queueName: Schema.String,
   }),
 ]).annotate({ identifier: "PostWarning" });
 

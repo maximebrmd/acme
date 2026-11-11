@@ -64,10 +64,10 @@ const post = (
   } = {}
 ): SendPostRequest => ({
   allowDuplicate,
-  at: Option.fromUndefinedOr(at).pipe(Option.map(utc)),
   channelIds: channels,
   content: contentOf(text, { overrides }),
   idempotency: Option.none(),
+  placement: at === undefined ? { _tag: "now" } : { _tag: "at", at: utc(at) },
   timeZone: paris,
 });
 
@@ -120,7 +120,8 @@ describe("sending the same content twice", () => {
             channelIds: [second, third],
             content: contentOf("A synthetic announcement."),
             when: Option.some({
-              at: Option.some(utc("2026-06-16T09:00:00Z")),
+              _tag: "at" as const,
+              at: utc("2026-06-16T09:00:00Z"),
             }),
           };
 
@@ -390,10 +391,10 @@ describe("sending the same content twice", () => {
           const sent = yield* Effect.all(
             occurrences.map(({ at }) =>
               scheduling.send(actor, {
-                at: Option.some(at),
                 channelIds: [channel],
                 content: contentOf("A synthetic daily reminder."),
                 idempotency: Option.none(),
+                placement: { _tag: "at", at },
                 timeZone: paris,
               })
             )
@@ -421,7 +422,6 @@ describe("sending the same content twice", () => {
             at: string,
             ...later: readonly string[]
           ): SendPostRequest => ({
-            at: Option.some(utc(at)),
             channelIds: [channel],
             content: new PostContent({
               followUps: later.map(
@@ -438,6 +438,7 @@ describe("sending the same content twice", () => {
               text: "What we found at low tide.",
             }),
             idempotency: Option.none(),
+            placement: { _tag: "at", at: utc(at) },
             timeZone: paris,
           });
 
@@ -477,7 +478,7 @@ describe("sending the same content twice", () => {
           const checked = yield* checks.check(actor, {
             channelIds: again.channelIds,
             content: again.content,
-            when: Option.some({ at: again.at }),
+            when: Option.some(again.placement),
           });
 
           assert.isFalse(isSendable(checked));

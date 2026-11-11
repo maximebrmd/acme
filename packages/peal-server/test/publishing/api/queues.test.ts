@@ -8,6 +8,7 @@ import {
   Forbidden,
   InvalidTimeZone,
   maxQueuesPerWorkspace,
+  QueueHasNoRoom,
   QueueNameTaken,
   QueueNotFound,
   TooManyQueues,
@@ -396,6 +397,158 @@ describe("queues", () => {
 
           const unknown = yield* editor.queues
             .slots({ params: { ...params, queueId: "not-a-queue" }, query: {} })
+            .pipe(Effect.flip);
+
+          assert.instanceOf(unknown, QueueNotFound);
+        })
+      ),
+    timeout
+  );
+});
+
+describe("posts added to a queue", () => {
+  it.effect(
+    "are sent onto its next free slot, checked at it, and moved onto it",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* placed() {
+          const { bluesky, editor, mastodon, params, workspaceId } =
+            yield* studio;
+
+          const queue = yield* editor.queues.create({
+            params,
+            payload: {
+              channelIds: [mastodon, bluesky],
+              name: "Weekdays",
+              slots: weekdays,
+              timeZone: "Europe/Paris",
+            },
+          });
+
+          const content = { media: [], overrides: [], text: "Evergreen." };
+
+          // Checked first: the slot it would take, and nothing held.
+          const check = yield* editor.posts.validate({
+            params,
+            payload: { channelIds: [], content, when: { _tag: "queue" } },
+          });
+
+          assert.isTrue(check.valid);
+          assert.strictEqual(
+            check.queueSlot === undefined
+              ? undefined
+              : DateTime.formatIso(check.queueSlot),
+            "2026-06-15T07:30:00.000Z"
+          );
+
+          // A channel of the queue disconnected since is left out, and said.
+          yield* ChannelRepository.use((channels) =>
+            channels.remove(workspaceId, bluesky)
+          );
+
+          const sent = yield* editor.posts.send({
+            headers: {},
+            params,
+            payload: { channelIds: [], content, when: { _tag: "queue" } },
+            query: {},
+          });
+
+          assert.strictEqual(sent.queueId, queue.id);
+          assert.deepStrictEqual(
+            sent.targets.map(({ channelId }) => channelId),
+            [mastodon]
+          );
+          assert.deepStrictEqual(sent.warnings, [
+            {
+              _tag: "queueChannelsDropped",
+              channelIds: [bluesky],
+              queueId: queue.id,
+              queueName: "Weekdays",
+            },
+          ]);
+          assert.strictEqual(sent.schedule?.timeZone, "Europe/Paris");
+          assert.strictEqual(
+            sent.schedule === null
+              ? undefined
+              : DateTime.formatIso(sent.schedule.at),
+            "2026-06-15T07:30:00.000Z"
+          );
+
+          const found = yield* editor.posts.search({
+            params,
+            query: { queueId: queue.id },
+          });
+
+          assert.deepStrictEqual(
+            found.items.map(({ id }) => id),
+            [sent.id]
+          );
+
+          // A draft put on the queue takes the slot after.
+          const draft = yield* editor.posts.create({
+            params,
+            payload: {
+              channelIds: [mastodon],
+              content: { ...content, text: "A draft for the queue." },
+            },
+          });
+
+          const enqueued = yield* editor.posts.enqueue({
+            params: { ...params, postId: draft.id },
+            payload: { queueId: queue.id },
+          });
+
+          assert.strictEqual(enqueued.status, "scheduled");
+          assert.strictEqual(
+            enqueued.schedule === null
+              ? undefined
+              : DateTime.formatIso(enqueued.schedule.at),
+            "2026-06-16T07:30:00.000Z"
+          );
+
+          // A queue without slots has no room, and the check says why.
+          const empty = yield* editor.queues.create({
+            params,
+            payload: { name: "Empty", slots: [], timeZone: "UTC" },
+          });
+
+          const noRoom = yield* editor.posts
+            .send({
+              headers: {},
+              params,
+              payload: {
+                channelIds: [mastodon],
+                content: { ...content, text: "Nowhere." },
+                when: { _tag: "queue", queueId: empty.id },
+              },
+              query: {},
+            })
+            .pipe(Effect.flip);
+
+          assert.instanceOf(noRoom, QueueHasNoRoom);
+          assert.strictEqual(
+            noRoom instanceof QueueHasNoRoom ? noRoom.reason : undefined,
+            "noSlots"
+          );
+
+          const unchecked = yield* editor.posts.validate({
+            params,
+            payload: {
+              channelIds: [mastodon],
+              content,
+              when: { _tag: "queue", queueId: empty.id },
+            },
+          });
+
+          assert.isFalse(unchecked.valid);
+          assert.strictEqual(unchecked.queueNoRoom, "noSlots");
+
+          const unknown = yield* editor.posts
+            .enqueue({
+              params: { ...params, postId: draft.id },
+              payload: { queueId: "not-a-queue" },
+            })
             .pipe(Effect.flip);
 
           assert.instanceOf(unknown, QueueNotFound);

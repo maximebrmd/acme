@@ -174,6 +174,7 @@ const coverage = {
   "posts.discard": by("drafts discard"),
   "posts.drafts": by("drafts list"),
   "posts.duplicate": by("posts duplicate"),
+  "posts.enqueue": by("posts queue"),
   "posts.get": by("posts show"),
   "posts.import": by("posts import"),
   "posts.list": exempt(

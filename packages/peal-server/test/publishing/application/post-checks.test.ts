@@ -48,7 +48,7 @@ const rowsIn = (workspaceId: WorkspaceId) =>
       }>`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${workspaceId}`
   ).pipe(Effect.map((rows) => rows[0]?.count ?? 0));
 
-const now = Option.some({ at: Option.none() });
+const now = Option.some({ _tag: "now" as const });
 
 describe("PostChecks.check", () => {
   it.effect(
@@ -136,7 +136,10 @@ describe("PostChecks.check", () => {
               media: [attachableImage, noMedia],
             }),
             // A day ago.
-            when: Option.some({ at: Option.some(utc("2026-06-14T07:00:00Z")) }),
+            when: Option.some({
+              _tag: "at" as const,
+              at: utc("2026-06-14T07:00:00Z"),
+            }),
           });
 
           assert.isFalse(isSendable(check));
@@ -210,10 +213,10 @@ describe("PostChecks.check", () => {
 
           const sent = yield* PostScheduling.use((scheduling) =>
             scheduling.send(actorIn(workspaceId), {
-              at: Option.none(),
               channelIds: [bluesky],
               content: contentOf("With a video", { media: [attachableVideo] }),
               idempotency: Option.none(),
+              placement: { _tag: "now" },
               timeZone: paris,
             })
           );
@@ -267,7 +270,7 @@ describe("PostChecks.check", () => {
         const request = (at: string) => ({
           channelIds: [channel],
           content: contentOf("A synthetic post."),
-          when: Option.some({ at: Option.some(utc(at)) }),
+          when: Option.some({ _tag: "at" as const, at: utc(at) }),
         });
 
         const before = yield* checks.check(
@@ -279,10 +282,10 @@ describe("PostChecks.check", () => {
 
         yield* PostScheduling.use((scheduling) =>
           scheduling.send(actor, {
-            at: Option.some(utc("2026-06-20T08:00:00Z")),
             channelIds: [channel],
             content: contentOf("A synthetic post."),
             idempotency: Option.none(),
+            placement: { _tag: "at", at: utc("2026-06-20T08:00:00Z") },
             timeZone: paris,
           })
         );

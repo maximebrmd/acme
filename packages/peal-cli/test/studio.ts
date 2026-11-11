@@ -36,6 +36,7 @@ import {
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
+  QueueHasNoRoom,
   ReturnUrlNotAllowed,
   ReviewLinkNotFound,
   ScheduleInPast,
@@ -1968,11 +1969,67 @@ const duplicatesOf = (
           .map((other) => ({ channelId, postId: other.id }))
       );
 
-// A new post's time: now is the studio's clock.
-const timeOf = ({ when }: Pick<NewPost, "when">) =>
-  when._tag === "now"
-    ? { at: studioNow, timeZone: when.timeZone ?? "UTC" }
-    : { at: when.at, timeZone: when.timeZone };
+// The studio's queues, over what the rest of it holds.
+const queuesOfStudio = studioQueuesOf({
+  allowed,
+  checkChannels,
+  isConnected,
+  now: studioNow,
+  record,
+  setIds: [launchSetId, videosSetId],
+  workspaceId: studioId,
+});
+
+// A new post's time: now is the studio's clock. A post added to a queue
+// has its slot's by the time it is checked (`placed`).
+const timeOf = ({ when }: Pick<NewPost, "when">) => {
+  if (when._tag === "at") {
+    return { at: when.at, timeZone: when.timeZone };
+  }
+
+  return {
+    at: studioNow,
+    timeZone: when._tag === "now" ? (when.timeZone ?? "UTC") : "UTC",
+  };
+};
+
+// A post added to a queue, as the studio places it: on the queue's next
+// free slot, in its zone, and on its channels when it names none.
+const placed = (studio: Studio, payload: NewPost) =>
+  Effect.gen(function* placing() {
+    const { when } = payload;
+
+    if (when._tag !== "queue") {
+      return { payload, queueId: null };
+    }
+
+    const queue = yield* queuesOfStudio.queueFor(
+      studio,
+      studioId,
+      when.queueId
+    );
+
+    const slot = yield* queuesOfStudio.nextFreeOf(studio, queue);
+
+    if (Option.isNone(slot)) {
+      return yield* new QueueHasNoRoom({
+        queueId: queue.id,
+        reason: queue.slots.length === 0 ? "noSlots" : "full",
+      });
+    }
+
+    const namesNone =
+      payload.channelIds.length === 0 &&
+      (payload.channelSets ?? []).length === 0;
+
+    const onSlot: NewPost = {
+      ...payload,
+      channelIds: namesNone ? queue.channelIds : payload.channelIds,
+      when: { _tag: "at", at: slot.value, timeZone: queue.timeZone },
+    };
+
+    return { payload: onSlot, queueId: queue.id };
+  });
 
 // Everything sending a post checks before making it, in the order the
 // server answers: its channels, its media, its time, what its platforms
@@ -2045,7 +2102,8 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
 
     const body = JSON.stringify(payload);
     const before = yield* Ref.get(studio.state);
-    const checked = yield* checkNewPost(studio, payload);
+    const onQueue = yield* placed(studio, payload);
+    const checked = yield* checkNewPost(studio, onQueue.payload);
     const { payload: written, warnings, when } = checked;
 
     // Where every post waits, this one does: nothing goes out.
@@ -2071,7 +2129,7 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
       createdVia: viaCommandLine,
       id,
       outcome: null,
-      queueId: null,
+      queueId: onQueue.queueId,
       schedule: when,
       scheduledBy: userId,
       scheduledVia: viaCommandLine,
@@ -2547,15 +2605,7 @@ const madeRow = (
 export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
     adsGroupLive(studio),
-    studioQueuesOf({
-      allowed,
-      checkChannels,
-      isConnected,
-      now: studioNow,
-      record,
-      setIds: [launchSetId, videosSetId],
-      workspaceId: studioId,
-    }).groupLive(studio),
+    queuesOfStudio.groupLive(studio),
     HttpApiBuilder.group(Api, "session", (handlers) =>
       handlers.handleAll({
         me: () => inPerson.pipe(Effect.as(studio.me)),
@@ -2865,6 +2915,77 @@ export const studioGroupsLive = (studio: Studio) =>
                 ...pendingOn(`${id}-${String(index)}`, target.channelId),
                 options: target.options,
               })),
+            });
+          }),
+        enqueue: ({ params, payload }) =>
+          Effect.gen(function* enqueue() {
+            yield* publishing;
+
+            const queue = yield* queuesOfStudio.queueFor(
+              studio,
+              params.workspaceId,
+              payload.queueId
+            );
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            if (
+              post.status !== "draft" &&
+              post.status !== "scheduled" &&
+              post.status !== "awaitingApproval"
+            ) {
+              return yield* new PostStatusConflict({ status: post.status });
+            }
+
+            // The post's own slot is free for it.
+            const slot = yield* queuesOfStudio.nextFreeOf(
+              studio,
+              queue,
+              post.id
+            );
+
+            if (Option.isNone(slot)) {
+              return yield* new QueueHasNoRoom({
+                queueId: queue.id,
+                reason: queue.slots.length === 0 ? "noSlots" : "full",
+              });
+            }
+
+            const own = post.targets.map(({ channelId }) => channelId);
+
+            const channelIds =
+              post.status === "draft"
+                ? (payload.channelIds ??
+                  (own.length > 0 ? own : queue.channelIds))
+                : own;
+
+            yield* checkChannels(channelIds);
+
+            const status = yield* checkTime(slot.value, queue.timeZone);
+            const options = optionsOn(post);
+
+            yield* checkContent(channelIds, post.content, options);
+            yield* record(
+              studio,
+              `enqueue:${post.id}:${queue.id}:${DateTime.formatIso(slot.value)}`
+            );
+
+            return yield* savePost(studio, {
+              ...post,
+              queueId: queue.id,
+              schedule: { at: slot.value, timeZone: queue.timeZone },
+              scheduledBy: userId,
+              scheduledVia: viaCommandLine,
+              status,
+              targets: targetsOf(post.id, {
+                channelIds,
+                content: post.content,
+                options,
+              }),
             });
           }),
         get: ({ params }) =>
@@ -3182,9 +3303,58 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new Forbidden();
             }
 
+            // Added to a queue, it is checked at the slot it would take.
+            const onQueue =
+              asked.when?._tag === "queue"
+                ? yield* queuesOfStudio
+                    .queueFor(studio, studioId, asked.when.queueId)
+                    .pipe(
+                      Effect.flatMap((queue) =>
+                        queuesOfStudio
+                          .nextFreeOf(studio, queue)
+                          .pipe(Effect.map((slot) => ({ queue, slot })))
+                      )
+                    )
+                : undefined;
+
+            const { when: _asked, ...timeless } = asked;
+
+            const onSlot: typeof asked =
+              onQueue === undefined
+                ? asked
+                : Option.match(onQueue.slot, {
+                    onNone: () => timeless,
+                    onSome: (slotAt) => ({
+                      ...timeless,
+                      channelIds:
+                        asked.channelIds.length === 0 &&
+                        (asked.channelSets ?? []).length === 0
+                          ? onQueue.queue.channelIds
+                          : asked.channelIds,
+                      when: {
+                        _tag: "at" as const,
+                        at: slotAt,
+                        timeZone: onQueue.queue.timeZone,
+                      },
+                    }),
+                  });
+
+            const queueAnswer =
+              onQueue === undefined
+                ? {}
+                : Option.match(onQueue.slot, {
+                    onNone: () => ({
+                      queueNoRoom:
+                        onQueue.queue.slots.length === 0
+                          ? ("noSlots" as const)
+                          : ("full" as const),
+                    }),
+                    onSome: (queueSlot) => ({ queueSlot }),
+                  });
+
             const { post: payload, warnings } = yield* filled(
               studio,
-              asked,
+              onSlot,
               true
             );
 
@@ -3235,7 +3405,9 @@ export const studioGroupsLive = (studio: Studio) =>
                 (validation.schedule ?? "ok") === "ok" &&
                 validation.unknownChannels.length === 0 &&
                 validation.unknownMedia.length === 0 &&
-                validation.violations.length === 0,
+                validation.violations.length === 0 &&
+                !("queueNoRoom" in queueAnswer),
+              ...queueAnswer,
               ...warned,
             };
           }),

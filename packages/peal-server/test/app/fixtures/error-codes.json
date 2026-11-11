@@ -465,6 +465,11 @@
     "tag": "PostStatusConflict"
   },
   {
+    "code": "queue_has_no_room",
+    "status": 409,
+    "tag": "QueueHasNoRoom"
+  },
+  {
     "code": "queue_name_taken",
     "status": 409,
     "tag": "QueueNameTaken"

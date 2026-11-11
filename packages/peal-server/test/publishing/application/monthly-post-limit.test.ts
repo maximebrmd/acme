@@ -604,15 +604,18 @@ describe("the channel limit", () => {
               timeZone: scheduleIn("2026-06-20T08:00:00Z").timeZone,
             };
 
-            for (const at of [
-              Option.none(),
-              Option.some(scheduleIn("2026-06-20T08:00:00Z").at),
+            for (const placement of [
+              { _tag: "now" as const },
+              {
+                _tag: "at" as const,
+                at: scheduleIn("2026-06-20T08:00:00Z").at,
+              },
             ]) {
               // Sent again with its key, it is refused again: the first
               // refusal made no post for the key to answer.
               assert.deepStrictEqual(
                 yield* scheduling
-                  .send(actor, { ...request, at })
+                  .send(actor, { ...request, placement })
                   .pipe(Effect.flip),
                 over
               );

@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, lte } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, lte, ne } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -149,7 +149,7 @@ export const DrizzleQueueStore = Layer.effect(
               and(eq(queues.workspaceId, workspaceId), eq(queues.id, queueId))
             );
         }).pipe(Effect.mapError(failed)),
-      takenFrom: (queueId, after, until) =>
+      takenFrom: (queueId, after, until, except = Option.none()) =>
         db
           .select({ id: posts.id, scheduledAt: posts.scheduledAt })
           .from(posts)
@@ -158,7 +158,11 @@ export const DrizzleQueueStore = Layer.effect(
               eq(posts.queueId, queueId),
               gt(posts.scheduledAt, DateTime.toDateUtc(after)),
               lte(posts.scheduledAt, DateTime.toDateUtc(until)),
-              inArray(posts.status, holding)
+              inArray(posts.status, holding),
+              ...except.pipe(
+                Option.map((postId) => ne(posts.id, postId)),
+                Option.toArray
+              )
             )
           )
           .orderBy(asc(posts.scheduledAt), asc(posts.id))
