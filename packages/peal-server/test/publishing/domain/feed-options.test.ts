@@ -293,6 +293,31 @@ describe("Bluesky's options", () => {
       new BlueskyOptions({ languages: ["en", "not a tag"] }).problems()
     ).toStrictEqual([{ _tag: "invalid", field: "languages" }]);
   });
+
+  it.each([
+    "en",
+    "pt-BR",
+    "zh-Hant-TW",
+    "es-419",
+    "sl-rozaj",
+    "de-CH-1901",
+    "zh-yue-HK",
+    "en-US-u-ca-gregory",
+    "en-x-synth",
+  ])("take %s, a tag BCP 47 shapes as the PDS checks it", (tag) => {
+    expect(new BlueskyOptions({ languages: [tag] }).problems()).toStrictEqual(
+      []
+    );
+  });
+
+  it.each(["en-a", "en-ab1", "e", "en-", "en--US", "en-x", "1en", "en-US-a"])(
+    "refuse %s at scheduling, as the PDS would at its time",
+    (tag) => {
+      expect(new BlueskyOptions({ languages: [tag] }).problems()).toStrictEqual(
+        [{ _tag: "invalid", field: "languages" }]
+      );
+    }
+  );
 });
 
 describe("Threads' options", () => {
