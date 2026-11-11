@@ -46,6 +46,9 @@
   tagged post "<time>, <status>: <text> Tag: <name>.", so a locator for one
   ends with its tags. A menu or popover that stays open after a choice is
   closed with `press("Escape")` before the page behind it is read.
+- `tests/queues.e2e.ts` adds a queue with two slots late today (the
+  test's weekday), adds two posts to it from the composer's **Add to
+  queue**, reads that they took 23:57 then 23:58, and cancels both.
 - CI's `e2e` job runs after `verify`, with its own Postgres and Mailpit and
   SeaweedFS from `compose.yaml`. After a failure, read the report, traces and
   screenshots under `packages/peal-e2e/.e2e/` (CI uploads it for 7 days), and

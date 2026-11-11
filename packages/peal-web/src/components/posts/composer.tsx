@@ -45,7 +45,10 @@ import { LinkWarnings } from "#components/posts/link-warnings.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
 import { PostTagsField } from "#components/posts/post-tags-field.tsx";
-import { PostQueueLine } from "#components/posts/queue-choice.tsx";
+import {
+  PostQueueLine,
+  useChosenQueue,
+} from "#components/posts/queue-choice.tsx";
 import type { Placement } from "#components/posts/queue-choice.tsx";
 import { instantOfChoice } from "#components/posts/schedule-fields.tsx";
 import type { ScheduleChoice } from "#components/posts/schedule-fields.tsx";
@@ -283,6 +286,7 @@ export const Composer = ({
 
   // A time chosen, or a queue's next free slot.
   const [placement, setPlacement] = useState<Placement>({ _tag: "time" });
+  const queueId = useChosenQueue(workspaceId, placement);
 
   const [choice, setChoice] = useState<ScheduleChoice>(() =>
     Option.getOrElse(
@@ -453,9 +457,14 @@ export const Composer = ({
 
     // On a queue, a draft for no channel takes the queue's.
     if (placement._tag === "queue") {
-      const queued = await requests.enqueue(saved.value.id, {
-        queueId: placement.queueId,
-      });
+      // No queue read yet: the server takes the default.
+      const queued = await requests.enqueue(
+        saved.value.id,
+        Option.match(queueId, {
+          onNone: () => ({}),
+          onSome: (id) => ({ queueId: id }),
+        })
+      );
 
       if (Option.isNone(queued)) {
         opened(saved.value);
@@ -503,9 +512,13 @@ export const Composer = ({
 
   const move = async (id: string) => {
     if (placement._tag === "queue") {
-      const queued = await requests.enqueue(id, {
-        queueId: placement.queueId,
-      });
+      const queued = await requests.enqueue(
+        id,
+        Option.match(queueId, {
+          onNone: () => ({}),
+          onSome: (chosen) => ({ queueId: chosen }),
+        })
+      );
 
       if (Option.isSome(queued)) {
         placed(queued.value);

@@ -232,6 +232,31 @@ export const QueueChoice = ({
   );
 };
 
+/**
+ * The queue a placement puts a post on, as the picker shows it: the one
+ * picked, else the default queue preselected. None until the queues are
+ * read, or when the workspace has none.
+ */
+export const useChosenQueue = (
+  workspaceId: string,
+  placement: Placement
+): Option.Option<string> => {
+  const queues = Option.getOrElse(
+    AsyncResult.value(useAtomValue(workspaceQueues(workspaceId))),
+    (): readonly Queue[] => []
+  );
+
+  if (placement._tag !== "queue") {
+    return Option.none();
+  }
+
+  const picked = queues.find(({ id }) => id === placement.queueId);
+
+  return Option.orElse(Option.fromUndefinedOr(picked?.id), () =>
+    defaultQueueOf(queues).pipe(Option.map(({ id }) => id))
+  );
+};
+
 /** The name of a queue of the workspace, once the queues are read. */
 export const useQueueName = (
   workspaceId: string,
