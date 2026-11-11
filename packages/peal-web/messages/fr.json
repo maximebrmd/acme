@@ -973,7 +973,29 @@
         "categoryIdHint": "Le numéro d’une catégorie YouTube, comme 22 pour People & Blogs.",
         "categoryIdInvalid": "Une catégorie est un nombre, comme 22.",
         "notifySubscribers": "Prévenir les abonnés",
-        "containsSyntheticMedia": "Contient des contenus modifiés ou synthétiques réalistes"
+        "containsSyntheticMedia": "Contient des contenus modifiés ou synthétiques réalistes",
+        "thumbnail": "Miniature",
+        "thumbnailHint": "Une image JPEG ou PNG de la médiathèque, de 8 Mo au plus, définie une fois la vidéo mise en ligne. YouTube n’accepte de miniatures personnalisées que des chaînes qui y ont droit.",
+        "thumbnailInvalid": "Choisissez une image JPEG ou PNG de la médiathèque, de 8 Mo au plus.",
+        "license": "Licence",
+        "licenseHint": "Celle que la chaîne donne par défaut à ses vidéos, sauf si vous en choisissez une autre.",
+        "channelDefault": "Celle de la chaîne",
+        "licenseYouTube": "Licence YouTube standard",
+        "licenseCreativeCommon": "Creative Commons – Attribution",
+        "embeddable": "Intégration autorisée",
+        "embeddableHint": "Si d’autres sites peuvent intégrer la vidéo. YouTube décide quand rien n’est choisi.",
+        "embeddableYes": "Oui, d’autres sites peuvent l’intégrer",
+        "embeddableNo": "Non, la garder sur YouTube",
+        "publicStatsViewable": "Statistiques publiques",
+        "publicStatsViewableHint": "Si tout le monde peut voir les statistiques détaillées de la vidéo sur sa page. YouTube décide quand rien n’est choisi.",
+        "publicStatsViewableYes": "Oui, les montrer",
+        "publicStatsViewableNo": "Non, les garder cachées",
+        "defaultLanguage": "Langue du titre et de la description",
+        "defaultLanguageHint": "Une étiquette de langue, comme fr ou pt-BR.",
+        "defaultLanguageInvalid": "Une langue est une étiquette comme fr ou pt-BR.",
+        "recordingDate": "Date d’enregistrement",
+        "recordingDateHint": "Le jour où la vidéo a été enregistrée.",
+        "recordingDateInvalid": "Choisissez un jour."
       },
       "googleBusiness": {
         "postType": "Type de publication",
@@ -1035,7 +1057,17 @@
         "noPhotos": "Ce serveur ne peut pas publier de photos sur TikTok : joignez plutôt une vidéo.",
         "processing": "Une fois publiée, la publication peut mettre quelques minutes à être traitée avant d’apparaître sur le profil.",
         "consentMusic": "En publiant, vous acceptez la <music>Confirmation d’utilisation de la musique</music> de TikTok.",
-        "consentBranded": "En publiant, vous acceptez la <brand>Politique relative au contenu de marque</brand> et la <music>Confirmation d’utilisation de la musique</music> de TikTok."
+        "consentBranded": "En publiant, vous acceptez la <brand>Politique relative au contenu de marque</brand> et la <music>Confirmation d’utilisation de la musique</music> de TikTok.",
+        "videoCover": "Image de couverture, en millisecondes",
+        "videoCoverHint": "Pour une vidéo : l’image qui devient la couverture, en millisecondes depuis le début, comme 1500. La première image si rien n’est indiqué.",
+        "videoCoverInvalid": "Un nombre entier de millisecondes dans la durée de la vidéo, comme 1500.",
+        "photoTitle": "Titre de la publication photo",
+        "photoTitleHint": "90 caractères au plus. Le texte de la publication en est la description.",
+        "photoTitleInvalid": "Un titre tient sur une ligne, en 90 caractères au plus.",
+        "photoCover": "Photo de couverture",
+        "photoCoverHint": "La place de la couverture parmi les photos : 0 pour la première, 1 pour la deuxième, et ainsi de suite. La première si rien n’est indiqué.",
+        "photoCoverInvalid": "Une place parmi les photos : un nombre entier à partir de 0, inférieur au nombre de photos.",
+        "autoAddMusic": "Ajouter de la musique automatiquement"
       },
       "mastodon": {
         "accountDefault": "Le réglage du compte",
@@ -1116,6 +1148,43 @@
         "paidPartnershipHint": "X signale chaque partie du fil comme une promotion payée.",
         "madeWithAi": "Fait avec l’IA",
         "madeWithAiHint": "X signale chaque partie avec des images ou une vidéo comme contenant des médias générés par IA."
+      },
+      "mediaNone": "Aucune image choisie.",
+      "mediaLoading": "Lecture de l’image…",
+      "mediaFailed": "L’image n’a pas pu être lue : elle a peut-être été supprimée de la médiathèque. Choisissez-en une autre, ou retirez-la.",
+      "mediaChoose": "Choisir dans la médiathèque",
+      "mediaReplace": "En choisir une autre",
+      "mediaRemove": "Retirer",
+      "mediaPickerTitle": "{label} : choisir une image",
+      "mediaPickerDescription": "Choisissez une image prête de la médiathèque de l’espace de travail. Seules celles que cette option accepte peuvent être choisies.",
+      "mediaUse": "Utiliser cette image",
+      "instagram": {
+        "shareToFeed": "Partager aussi dans le fil",
+        "shareToFeedHint": "Pour un reel : montré dans le fil en plus de l’onglet Reels. Instagram décide quand rien n’est choisi.",
+        "shareToFeedYes": "Oui, le partager dans le fil",
+        "shareToFeedNo": "Non, l’onglet Reels seulement",
+        "cover": "Image de couverture",
+        "coverHint": "Pour un reel : une image JPEG de la médiathèque, de 8 Mo au plus. Elle l’emporte sur l’image choisie dans la vidéo.",
+        "coverInvalid": "Choisissez une image JPEG de la médiathèque, de 8 Mo au plus, pour une publication d’une seule vidéo.",
+        "thumbOffset": "Couverture prise dans la vidéo, en millisecondes",
+        "thumbOffsetHint": "Pour un reel : l’image qui devient la couverture, en millisecondes depuis le début, comme 1500. La première image si rien n’est indiqué.",
+        "thumbOffsetInvalid": "Un nombre entier de millisecondes dans la durée de la vidéo, comme 1500.",
+        "audioName": "Nom de l’audio",
+        "audioNameHint": "Pour un reel : le nom que montre son audio, sur une ligne, en 100 caractères au plus. Instagram permet de le renommer une fois.",
+        "audioNameInvalid": "Une ligne, de 100 caractères au plus, pour une publication d’une seule vidéo.",
+        "trialReel": "Reel d’essai",
+        "trialReelHint": "Pour un reel : montré d’abord aux comptes qui ne vous suivent pas, puis partagé avec vos abonnés quand vous le décidez, ou s’il fonctionne bien.",
+        "trialReelNone": "Pas un reel d’essai",
+        "trialReelManual": "Le partager avec mes abonnés quand je le décide",
+        "trialReelPerformance": "Le partager avec mes abonnés s’il fonctionne bien",
+        "collaborators": "Collaborateurs",
+        "collaboratorsHint": "Jusqu’à trois noms d’utilisateur d’autres comptes Instagram, sans @, séparés par des virgules. Chaque compte reçoit une invitation à cosigner la publication : ne nommez que des comptes que vous voulez inviter.",
+        "collaboratorsInvalid": "Chacun est un nom d’utilisateur Instagram, sans @ : lettres, chiffres, points et tirets bas, 30 au plus, chacun une fois."
+      },
+      "facebook": {
+        "videoTitle": "Titre de la vidéo",
+        "videoTitleHint": "Pour une publication avec une vidéo : une ligne, de 255 caractères au plus.",
+        "videoTitleInvalid": "Un titre tient sur une ligne, en 255 caractères au plus, pour une publication avec une vidéo."
       }
     },
     "Calendar": {
@@ -1230,7 +1299,8 @@
       "notFound": "Cette publication n’existe plus.",
       "conflict": "La publication a changé entre-temps : rechargez-la pour voir où elle en est."
     },
-    "keptPrivate": "YouTube a rendu la vidéo privée, alors qu’elle devait être vue par plus de monde : les réglages du compte, ou les restrictions de Google sur le projet d’API du serveur, la gardent ainsi. Changez sa visibilité dans YouTube Studio."
+    "keptPrivate": "YouTube a rendu la vidéo privée, alors qu’elle devait être vue par plus de monde : les réglages du compte, ou les restrictions de Google sur le projet d’API du serveur, la gardent ainsi. Changez sa visibilité dans YouTube Studio.",
+    "thumbnailNotSet": "La miniature n’a pas été définie : la chaîne n’a peut-être pas droit aux miniatures personnalisées, ou YouTube a refusé l’image."
   },
   "Media": {
     "page": {
@@ -1369,7 +1439,8 @@
       "notReady": "Pas encore prête",
       "attach": "{count, plural, =0 {Ajouter} one {Ajouter # élément} other {Ajouter # éléments}}",
       "cancel": "Annuler",
-      "close": "Fermer"
+      "close": "Fermer",
+      "notAccepted": "Pas un fichier que cette option accepte"
     },
     "problem": {
       "tooManyVideos": "Trop de vidéos ({count} sur {maximum})",

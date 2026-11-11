@@ -1019,6 +1019,18 @@ export {
   ThreadsReplyControlSchema,
   XOptionsSchema,
   XReplySettingsSchema,
+  FacebookOptionsSchema,
+  InstagramOptionsSchema,
+  InstagramTrialReelSchema,
+  instagramCoverTypes,
+  maxFacebookVideoTitleLength,
+  maxInstagramAudioNameLength,
+  maxInstagramCollaborators,
+  maxInstagramCoverByteSize,
+  maxTikTokPhotoTitleLength,
+  maxYouTubeThumbnailByteSize,
+  YouTubeLicenseSchema,
+  youTubeThumbnailTypes,
 } from "./target-options.ts";
 
 export type {
@@ -1046,6 +1058,10 @@ export type {
   ThreadsReplyControl,
   XOptions,
   XReplySettings,
+  FacebookOptions,
+  InstagramOptions,
+  InstagramTrialReel,
+  YouTubeLicense,
 } from "./target-options.ts";
 
 export { PostTargetStatusSchema } from "./post-target-status.ts";

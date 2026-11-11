@@ -225,8 +225,14 @@ describe("the platforms' capabilities endpoint", () => {
         ]
       );
       assert.deepStrictEqual(
-        all.find(({ platform }) => platform === "facebook")?.options,
-        { constraints: [], fields: [] }
+        all
+          .find(({ platform }) => platform === "facebook")
+          ?.options.fields.map(({ maxLength, name, type }) => [
+            name,
+            type,
+            maxLength,
+          ]),
+        [["videoTitle", "text", 255]]
       );
 
       // Where a post may have parts after its first, and what they become.
@@ -386,9 +392,11 @@ describe("the platforms' capabilities endpoint", () => {
         assert.deepStrictEqual(
           youtube?.options.fields.find(({ name }) => name === "categoryId"),
           {
+            contentTypes: [],
             forbiddenCharacters: [],
             ifLeftOut: null,
             lookup: "youtubeVideoCategories",
+            maxByteSize: null,
             maxLength: null,
             maximum: null,
             minimum: null,

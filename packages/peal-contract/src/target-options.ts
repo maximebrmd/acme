@@ -40,6 +40,30 @@ export const youTubeTagsLength = (tags: readonly string[]): number =>
     Math.max(tags.length - 1, 0)
   );
 
+// A file of the workspace's library, by its id, as the media API answers
+// it: a lowercase UUIDv7.
+const MediaIdSchema = Schema.String.check(
+  Schema.isUUID(7),
+  Schema.isLowercased()
+);
+
+/**
+ * The largest thumbnail of a YouTube video, in bytes: Peal's ceiling, as
+ * YouTube takes 50 MB.
+ */
+export const maxYouTubeThumbnailByteSize = 8 * 1024 * 1024;
+
+/** The types a YouTube thumbnail may be. */
+export const youTubeThumbnailTypes = ["image/jpeg", "image/png"] as const;
+
+/** Under which licence a YouTube video is published. */
+export const YouTubeLicenseSchema = Schema.Literals([
+  "youtube",
+  "creativeCommon",
+]).annotate({ identifier: "YouTubeLicense" });
+
+export type YouTubeLicense = typeof YouTubeLicenseSchema.Type;
+
 /** Who can watch a YouTube video. */
 export const YouTubePrivacySchema = Schema.Literals([
   "public",
@@ -56,6 +80,13 @@ export const YouTubeOptionsSchema = Schema.Struct({
   // It holds altered or synthetic content that looks real, which YouTube
   // labels. False when left out.
   containsSyntheticMedia: Schema.optionalKey(Schema.Boolean),
+  // The language of the title and the description: a BCP 47 tag, as "en"
+  // or "pt-BR".
+  defaultLanguage: Schema.optionalKey(OptionTextSchema),
+  // Whether other sites may embed it. YouTube decides when left out.
+  embeddable: Schema.optionalKey(Schema.Boolean),
+  // YouTube decides when left out, from the channel's upload defaults.
+  license: Schema.optionalKey(YouTubeLicenseSchema),
   // Whether it is made for kids, which YouTube asks of every upload:
   // required to schedule.
   madeForKids: Schema.optionalKey(Schema.Boolean),
@@ -64,18 +95,28 @@ export const YouTubeOptionsSchema = Schema.Struct({
   platform: Schema.Literal("youtube"),
   // Public when left out.
   privacy: Schema.optionalKey(YouTubePrivacySchema),
+  // Whether its extended statistics are public. YouTube decides when left
+  // out.
+  publicStatsViewable: Schema.optionalKey(Schema.Boolean),
+  // The day it was recorded, as `2026-11-27`.
+  recordingDate: Schema.optionalKey(OptionTextSchema),
   // Without commas, `maxYouTubeTagsLength` together.
   tags: Schema.optionalKey(
     Schema.Array(OptionTextSchema).check(
       Schema.isMaxLength(maxYouTubeTagsLength)
     )
   ),
+  // An image of the workspace's library, JPEG or PNG, at most
+  // `maxYouTubeThumbnailByteSize` bytes, set as the thumbnail once the
+  // video is uploaded. A channel YouTube does not allow it keeps its own:
+  // the target is published with `thumbnailNotSet`.
+  thumbnailMediaId: Schema.optionalKey(MediaIdSchema),
   // Required to schedule: at most `maxYouTubeTitleLength` characters,
   // without "<" or ">".
   title: Schema.optionalKey(OptionTextSchema),
 }).annotate({
   description:
-    "How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`.",
+    "How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`; `thumbnailMediaId` names an image of the library, set once the video is uploaded.",
   identifier: "YouTubeOptions",
 });
 
@@ -94,10 +135,15 @@ export const TikTokPrivacyLevelSchema = Schema.Literals([
 
 export type TikTokPrivacyLevel = typeof TikTokPrivacyLevelSchema.Type;
 
+/** The longest title of a TikTok photo post, in UTF-16 units. */
+export const maxTikTokPhotoTitleLength = 90;
+
 /** A post on a TikTok account: its caption is the post's text there. */
 export const TikTokOptionsSchema = Schema.Struct({
   // Labels the post as AI-generated content. False when left out.
   aiGenerated: Schema.optionalKey(Schema.Boolean),
+  // A photo post: adds the music TikTok recommends. False when left out.
+  autoAddMusic: Schema.optionalKey(Schema.Boolean),
   // A paid partnership with a third party: labelled "Paid partnership",
   // never with `privacyLevel` SELF_ONLY.
   brandContent: Schema.optionalKey(Schema.Boolean),
@@ -111,12 +157,25 @@ export const TikTokOptionsSchema = Schema.Struct({
   disableComment: Schema.optionalKey(Schema.Boolean),
   disableDuet: Schema.optionalKey(Schema.Boolean),
   disableStitch: Schema.optionalKey(Schema.Boolean),
+  // A photo post: the place of its cover among its photos, from 0, the
+  // first when left out.
+  photoCoverIndex: Schema.optionalKey(
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
+  ),
+  // A photo post: its title, at most `maxTikTokPhotoTitleLength` UTF-16
+  // units. None when left out; the post's text is its description.
+  photoTitle: Schema.optionalKey(OptionTextSchema),
   platform: Schema.Literal("tiktok"),
   // Required to schedule, with no default: the creator chooses.
   privacyLevel: Schema.optionalKey(TikTokPrivacyLevelSchema),
+  // A video: the frame used as its cover, in milliseconds from its start,
+  // within the video. The first when left out.
+  videoCoverTimestampMs: Schema.optionalKey(
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
+  ),
 }).annotate({
   description:
-    "How a post goes out on a TikTok account. Scheduling needs `privacyLevel`.",
+    "How a post goes out on a TikTok account. Scheduling needs `privacyLevel`; `videoCoverTimestampMs` is for a video, `photoTitle`, `autoAddMusic` and `photoCoverIndex` for photos.",
   identifier: "TikTokOptions",
 });
 
@@ -494,6 +553,84 @@ export const XOptionsSchema = Schema.Struct({
 
 export type XOptions = typeof XOptionsSchema.Type;
 
+/** The most collaborators an Instagram post names. */
+export const maxInstagramCollaborators = 3;
+
+/** The longest name of an Instagram reel's audio: Peal's ceiling. */
+export const maxInstagramAudioNameLength = 100;
+
+/** The largest cover image of an Instagram reel, in bytes. */
+export const maxInstagramCoverByteSize = 8 * 1024 * 1024;
+
+/** The types an Instagram reel's cover may be. */
+export const instagramCoverTypes = ["image/jpeg"] as const;
+
+/** How an Instagram trial reel graduates to the account's followers. */
+export const InstagramTrialReelSchema = Schema.Literals([
+  "manual",
+  "performance",
+]).annotate({ identifier: "InstagramTrialReel" });
+
+export type InstagramTrialReel = typeof InstagramTrialReelSchema.Type;
+
+/**
+ * A post on an Instagram account: its caption is the post's text there.
+ * The reel's settings are for a post of one video, which Instagram makes a
+ * reel.
+ */
+export const InstagramOptionsSchema = Schema.Struct({
+  // A reel: the name of its audio, on one line, at most
+  // `maxInstagramAudioNameLength` characters. Instagram renames it once.
+  audioName: Schema.optionalKey(OptionTextSchema),
+  // Up to `maxInstagramCollaborators` usernames of other accounts invited
+  // to co-author the post: each receives an invitation, so set it only
+  // for accounts the user named.
+  collaborators: Schema.optionalKey(
+    Schema.Array(OptionTextSchema).check(
+      Schema.isMaxLength(maxInstagramCollaborators)
+    )
+  ),
+  // A reel: a JPEG of the workspace's library, at most
+  // `maxInstagramCoverByteSize` bytes, as its cover. It wins over
+  // `thumbOffsetMs`.
+  coverMediaId: Schema.optionalKey(MediaIdSchema),
+  platform: Schema.Literal("instagram"),
+  // A reel: shown in the feed too, besides the Reels tab. Instagram
+  // decides when left out.
+  shareToFeed: Schema.optionalKey(Schema.Boolean),
+  // A reel: the frame used as its cover, in milliseconds from its start.
+  // The first when left out.
+  thumbOffsetMs: Schema.optionalKey(
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
+  ),
+  // A reel shared with non-followers first, graduating by hand or by its
+  // performance.
+  trialReel: Schema.optionalKey(InstagramTrialReelSchema),
+}).annotate({
+  description:
+    "How a post goes out on an Instagram account. Scheduling needs none of them; `shareToFeed`, `coverMediaId`, `thumbOffsetMs`, `audioName` and `trialReel` are for a post of one video (a reel), and each of `collaborators` receives an invitation.",
+  identifier: "InstagramOptions",
+});
+
+export type InstagramOptions = typeof InstagramOptionsSchema.Type;
+
+/** The longest title of a Facebook Page's video: Peal's ceiling. */
+export const maxFacebookVideoTitleLength = 255;
+
+/** A post on a Facebook Page: its text is the post's text there. */
+export const FacebookOptionsSchema = Schema.Struct({
+  platform: Schema.Literal("facebook"),
+  // A video's title, on one line, at most `maxFacebookVideoTitleLength`
+  // characters: for a post of a video only.
+  videoTitle: Schema.optionalKey(OptionTextSchema),
+}).annotate({
+  description:
+    "How a post goes out on a Facebook Page. Scheduling needs none of them; `videoTitle` is for a post of a video.",
+  identifier: "FacebookOptions",
+});
+
+export type FacebookOptions = typeof FacebookOptionsSchema.Type;
+
 /**
  * The text a platform's character limit counts on a channel, with the
  * options the post has there: the text itself, but on Mastodon, which
@@ -522,6 +659,8 @@ export const TargetOptionsSchema = Schema.Union([
   BlueskyOptionsSchema,
   ThreadsOptionsSchema,
   XOptionsSchema,
+  InstagramOptionsSchema,
+  FacebookOptionsSchema,
 ]).annotate({
   description:
     "What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.",

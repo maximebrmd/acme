@@ -4,12 +4,15 @@ import { platforms } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 import { BlueskyOptions } from "./bluesky-options.ts";
+import { FacebookOptions } from "./facebook-options.ts";
 import { describeFields } from "./field-description.ts";
 import type {
   FieldDescription,
+  FieldNotes,
   UndescribedField,
 } from "./field-description.ts";
 import { GoogleBusinessOptions } from "./google-business-options.ts";
+import { InstagramOptions } from "./instagram-options.ts";
 import { LinkedInOptions } from "./linkedin-options.ts";
 import type { LookupName } from "./lookup.ts";
 import { MastodonOptions } from "./mastodon-options.ts";
@@ -43,6 +46,8 @@ export const TargetOptionsSchema = Schema.Union([
   BlueskyOptions,
   ThreadsOptions,
   XOptions,
+  InstagramOptions,
+  FacebookOptions,
 ]);
 
 export type TargetOptions = typeof TargetOptionsSchema.Type;
@@ -114,3 +119,28 @@ export const describeOptionsOn = (
 export const optionConstraintsOn = (
   platform: Platform
 ): readonly OptionConstraint[] => classOn(platform)?.constraints ?? [];
+
+/**
+ * The options of the platform that name a file of the workspace's library
+ * (a thumbnail, a cover): those whose notes say which types it may be.
+ */
+export const mediaFieldsOn = (platform: Platform): readonly string[] => {
+  const options = classOn(platform);
+
+  return options === undefined
+    ? []
+    : Object.entries(options.notes).flatMap(([field, notes]) =>
+        notes.contentTypes === undefined ? [] : [field]
+      );
+};
+
+/** Every option of any platform that names a file of the library. */
+export const mediaOptionFields: readonly string[] = [
+  ...new Set(optionsPlatforms.flatMap(mediaFieldsOn)),
+];
+
+/** The notes of each of the platform's options, by field. */
+export const describedNotesOn = (
+  platform: Platform
+): Readonly<Record<string, FieldNotes<LookupName>>> =>
+  classOn(platform)?.notes ?? {};

@@ -422,6 +422,11 @@ export const TargetView = ({
                 <AlertDescription>{t("keptPrivate")}</AlertDescription>
               </Alert>
             ) : null}
+            {target.thumbnailNotSet === true ? (
+              <Alert>
+                <AlertDescription>{t("thumbnailNotSet")}</AlertDescription>
+              </Alert>
+            ) : null}
             {target.round > 1 ? (
               <p className="text-muted-foreground text-sm">
                 {t("rounds", { count: target.round })}

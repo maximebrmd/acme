@@ -309,10 +309,12 @@ describe("a platform's capabilities", () => {
     expect(youtube.options.map(({ name }) => name)).toContain("title");
   });
 
-  it("hold no options nor lookups where a platform has none", () => {
+  it("hold no lookups where a platform has none", () => {
     const facebook = capabilitiesOf("facebook", false);
 
-    expect(facebook.options).toStrictEqual([]);
+    expect(facebook.options.map(({ name }) => name)).toStrictEqual([
+      "videoTitle",
+    ]);
     expect(facebook.lookups).toStrictEqual([]);
     expect(facebook.countsPosts).toBeFalsy();
   });

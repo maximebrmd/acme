@@ -266,6 +266,10 @@ export const PostTargetSchema = Schema.Struct({
   // How many times it was sent: 1, and one more for each repost.
   round: Schema.Int,
   status: PostTargetStatusSchema,
+  // True when it went live without the thumbnail its options named: the
+  // channel may not be allowed custom thumbnails, or the platform refused
+  // the image (YouTube); left out otherwise.
+  thumbnailNotSet: Schema.optionalKey(Schema.Boolean),
   // Why Peal cannot tell whether it went out, while it is unconfirmed.
   unconfirmedReason: Schema.NullOr(UnconfirmedReasonSchema),
 }).annotate({ identifier: "PostTarget" });

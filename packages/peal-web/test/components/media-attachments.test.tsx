@@ -164,11 +164,16 @@ describe(MediaAttachments, () => {
       "No alt text yet: Mastodon, Bluesky, and X show it to people who cannot see the video."
     );
 
-    const one = await render("en", list(["instagram", "mastodon"]));
+    const one = await render("en", list(["tiktok", "mastodon"]));
 
     expect(one).toContain("Mastodon shows it to people");
 
-    const none = await render("en", list(["instagram"]));
+    // Instagram shows alt text too.
+    const instagram = await render("en", list(["instagram"]));
+
+    expect(instagram).toContain("Instagram shows it to people");
+
+    const none = await render("en", list(["tiktok"]));
 
     expect(none).toContain("No alt text yet. Write one so that everyone");
   });

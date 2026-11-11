@@ -249,6 +249,31 @@ describe(PostDetailView, () => {
     expect(french).toContain("YouTube a rendu la vidéo privée");
   });
 
+  it("tells a video YouTube went live with without its thumbnail", async () => {
+    const shown: Post = {
+      ...post,
+      tagIds: [],
+      targets: [
+        target("t4", "c4", {
+          permalink: "https://www.youtube.com/watch?v=synthetic01",
+          publishedAt: utc("2026-06-15T08:00:02Z"),
+          status: "published",
+          thumbnailNotSet: true,
+        }),
+      ],
+    };
+
+    const english = await renderPost("en", shown);
+    const french = await renderPost("fr", shown);
+    const plain = await renderPost("en", { ...post, tagIds: [] });
+
+    expect(english).toContain(
+      "The thumbnail was not set: the channel may not be allowed custom thumbnails, or YouTube refused the image."
+    );
+    expect(french).toContain("La miniature n’a pas été définie");
+    expect(plain).not.toContain("The thumbnail was not set");
+  });
+
   it("says how the post went on each channel, and why", async () => {
     const html = await render("en", true);
 
