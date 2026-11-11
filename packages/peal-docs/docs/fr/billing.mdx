@@ -60,7 +60,7 @@ Sous l’abonnement, la page **Facturation** de l’espace de travail montre ce 
 - Peu après chaque minuit UTC, le serveur relève ce que chaque espace de travail détient à la fin de la journée : les canaux qu’il a lui-même connectés, ses membres et les octets de médias qu’il stocke. Un jour sans ce relevé (avant que l’utilisation ne soit comptée, ou un jour où le relevé n’a pas pu être fait) répond `null`, et un tiret sur la page, jamais le chiffre d’un autre jour.
 - Les totaux additionnent les publications de la période, par plateforme, et ses jours-canal : les canaux de chaque jour additionnés, sans les jours sans relevé, avec le nombre de jours qu’ils couvrent (`daysCounted`). Pour chaque mois civil que touche la période, ils donnent aussi les publications sur les plateformes qui facturent le serveur à la publication (X), avec combien contenaient un lien.
 - `current` est ce que compte chaque limite maintenant, comme sur la page Facturation. Un espace de travail qu’un partenaire possède compte ses canaux dans l’abonnement du partenaire : `sharedWith` nomme l’espace de travail du partenaire.
-- Les décomptes sont conservés 400 jours, puis supprimés ; une plage qui commence plus tôt répond ce qui est conservé. Ils sont supprimés avec l’espace de travail, et son export de données les contient.
+- Les décomptes sont conservés {{keep-usage-fr}}, puis supprimés ; une plage qui commence plus tôt répond ce qui est conservé. Ils sont supprimés avec l’espace de travail, et son export de données les contient.
 - Ce ne sont que des décomptes : rien n’est facturé, prélevé ou limité d’après eux. Un serveur qui ne facture pas conserve et répond les mêmes décomptes, avec `plan` et `allowances` à null.
 
 ## Commander [#ordering]

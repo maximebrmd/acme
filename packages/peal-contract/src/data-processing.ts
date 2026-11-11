@@ -41,6 +41,8 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  *   `trial-memory.ts`);
  * - `webhookDeliveries`: a webhook endpoint's delivery log
  *   (`webhooks/domain/delivery-policy.ts`);
+ * - `usageDays`: each workspace's usage counts, day by day
+ *   (`billing/domain/usage-meter.ts`);
  * - `reviewVisitorNames`: what people without an
  *   account leave on a review link, and the link's own record, which goes
  *   with the names (`review/domain/review-retention.ts`);
@@ -86,6 +88,7 @@ export const retentionPeriods = {
   serverLogs: { days: 31 },
   traces: { days: 14 },
   trialMemory: { years: 2 },
+  usageDays: { days: 400 },
   webhookDeliveries: { days: 30 },
 } as const;
 
@@ -437,6 +440,32 @@ export const processingRegister: readonly ProcessingCategory[] = [
     source: {
       en: "You, when you subscribe; the payment provider, for the status of your subscription",
       fr: "Vous, lorsque vous vous abonnez ; le prestataire de paiement, pour l’état de votre abonnement",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "For each workspace and each day (UTC): how many posts went out, by platform, and how many requests it made to the writing assistant; and, as the day ended, how many channels it had connected, how many members it had and how many bytes of media it stored. Counts only, never what a post says or which member did what",
+      fr: "Pour chaque espace de travail et chaque jour (UTC) : combien de publications sont parties, par plateforme, et combien de demandes il a faites à l’assistant de rédaction ; et, à la fin du jour, combien de canaux il avait connectés, combien de membres il comptait et combien d’octets de médias il stockait. Des décomptes seulement, jamais le texte d’une publication ni ce qu’a fait chaque membre",
+    },
+    id: "usage",
+    legalBasis: contract,
+    name: {
+      en: "Usage counts",
+      fr: "Décomptes d’usage",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Show a workspace’s owners and admins, and the keys and applications given access to its billing, what it used of its plan day by day, so that a month can be compared with the same month a year before; nothing is priced, charged or limited by these counts",
+      fr: "Montrer aux propriétaires et administrateurs d’un espace de travail, et aux clés et applications qui ont accès à sa facturation, ce qu’il a utilisé de son offre jour par jour, pour comparer un mois au même mois de l’année précédente ; rien n’est facturé ni limité d’après ces décomptes",
+    },
+    retention: {
+      en: `${p.usageDays.days} days from each day, then deleted within a day, or earlier with the workspace`,
+      fr: `${p.usageDays.days} jours à compter de chaque jour, puis supprimés dans la journée, ou plus tôt avec l’espace de travail`,
+    },
+    source: {
+      en: "The service, from what happens in each workspace",
+      fr: "Le service, d’après ce qui se passe dans chaque espace de travail",
     },
   },
   {

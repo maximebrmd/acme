@@ -152,7 +152,9 @@
   (billing:read, on a server that bills or not; 92 days at most, 30 by
   default; `sharedWith` from `PlanHolders`), `get_usage` and `peal
   usage`; the contract copies its constants, which
-  `test/billing/api/contract.test.ts` keeps equal. Nothing prices or
+  `test/billing/api/contract.test.ts` keeps equal, as the privacy
+  registry's `usageDays` (category `usage`) is kept by
+  `data-processing.test.ts`. Nothing prices or
   limits by it: the priced half (a partner's unit, platform costs per
   call) is undecided, and goes in as new meters and use cases. The ledger
   goes with the workspace's export (`usage`) and erasure.
