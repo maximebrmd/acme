@@ -17,15 +17,22 @@ const token = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/u;
 
 /**
  * Names an endpoint may not set, compared without case: those Peal sets
- * itself, those that describe the message or its connection, and the
- * hop-by-hop fields of RFC 9110, section 7.6.1. Any `webhook-` name too,
- * which the Standard Webhooks specification keeps.
+ * itself (`Host`, `Content-Type`, `Content-Length`, `User-Agent`), a
+ * cookie, the fields that change how the message is delivered or framed
+ * (`Connection` and the hop-by-hop fields it names, `Keep-Alive`,
+ * `Proxy-Connection`: RFC 9110, section 7.6.1; `TE`, section 10.1.4;
+ * `Trailer`, section 6.6.2; `Upgrade`, section 7.8; `Transfer-Encoding`,
+ * RFC 9112, section 6.1; `Expect`, which holds the body back for a 100
+ * answer: RFC 9110, section 10.1.1), and `Accept-Encoding` (section
+ * 12.5.3), which changes how the answer the log keeps is encoded.
  */
 export const refusedHeaderNames: readonly string[] = [
+  "accept-encoding",
   "connection",
   "content-length",
   "content-type",
   "cookie",
+  "expect",
   "host",
   "keep-alive",
   "proxy-connection",
@@ -36,14 +43,24 @@ export const refusedHeaderNames: readonly string[] = [
   "user-agent",
 ];
 
-export const refusedHeaderPrefix = "webhook-";
+/**
+ * Prefixes of the names an endpoint may not set: `webhook-`, which the
+ * Standard Webhooks specification keeps, and `content-`, the fields that
+ * describe the body Peal signs and sends (its encoding, range, language,
+ * location or digest: RFC 9110, sections 8 and 14.4), which only Peal
+ * knows.
+ */
+export const refusedHeaderPrefixes: readonly string[] = [
+  "content-",
+  "webhook-",
+];
 
 /** Whether an endpoint may set a header of this name. */
 export const isAllowedHeaderName = (name: string): boolean => {
   const lowered = name.toLowerCase();
 
   return (
-    !lowered.startsWith(refusedHeaderPrefix) &&
+    !refusedHeaderPrefixes.some((prefix) => lowered.startsWith(prefix)) &&
     !refusedHeaderNames.includes(lowered)
   );
 };

@@ -80,14 +80,17 @@ export const maxWebhookHeaderValueLength = 1024;
 
 /**
  * The header names an endpoint may not set, compared without case, beside
- * any that starts with `webhook-`: those Peal sets, and those of the
- * message and its connection.
+ * any that starts with one of `refusedWebhookHeaderPrefixes`: those Peal
+ * sets, and those that change how the message is delivered or framed, or
+ * how its answer is encoded.
  */
 export const refusedWebhookHeaderNames: readonly string[] = [
+  "accept-encoding",
   "connection",
   "content-length",
   "content-type",
   "cookie",
+  "expect",
   "host",
   "keep-alive",
   "proxy-connection",
@@ -180,6 +183,16 @@ const WorkspaceFilterSchema = Schema.Array(
   Schema.String.check(Schema.isUUID(), Schema.isLowercased())
 ).check(Schema.isMaxLength(maxWebhookFilterWorkspaces));
 
+/**
+ * The prefixes of the header names an endpoint may not set: `webhook-`,
+ * the Standard Webhooks specification's, and `content-`, the fields that
+ * describe the body Peal sends.
+ */
+export const refusedWebhookHeaderPrefixes: readonly string[] = [
+  "content-",
+  "webhook-",
+];
+
 // An HTTP token (RFC 9110, section 5.1), not one Peal sets.
 const HeaderNameSchema = Schema.String.check(
   Schema.isBetweenLength(1, maxWebhookHeaderNameLength),
@@ -188,7 +201,9 @@ const HeaderNameSchema = Schema.String.check(
     const lowered = name.toLowerCase();
 
     return (
-      (!lowered.startsWith("webhook-") &&
+      (!refusedWebhookHeaderPrefixes.some((prefix) =>
+        lowered.startsWith(prefix)
+      ) &&
         !refusedWebhookHeaderNames.includes(lowered)) ||
       "Peal sets this header, or none may set it"
     );
@@ -501,7 +516,7 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
       success: WebhookEndpointSecretSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has ${maxWebhookEndpoints} endpoints at most, whatever its plan. With \`scope\` \`partner\`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (\`workspaceExternalId\`); any other workspace answers 404 \`PartnerNotFound\`. \`channelIds\` (${maxWebhookFilterChannels} at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of \`eventTypes\` when they are not wanted. \`workspaceIds\` (${maxWebhookFilterWorkspaces} at most), on a \`partner\` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. \`headers\` (${maxWebhookHeaders} at most) go with every delivery beside Peal's own, which they never replace, for a gateway in front of the receiver that wants a token: a name is an HTTP token, once whatever its case, neither \`host\`, \`content-type\`, \`content-length\`, \`user-agent\`, \`cookie\`, a connection's own nor any \`webhook-\` name; a value is visible ASCII on one line, ${maxWebhookHeaderValueLength} characters at most. Values are write-only: the endpoint shows their names (\`headerNames\`), never them, and sends them only to the origin (scheme, host and port) of the \`url\` they were given with. The signature does not cover them. Needs webhook:manage.`,
+        description: `Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has ${maxWebhookEndpoints} endpoints at most, whatever its plan. With \`scope\` \`partner\`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (\`workspaceExternalId\`); any other workspace answers 404 \`PartnerNotFound\`. \`channelIds\` (${maxWebhookFilterChannels} at most) narrows it to the events about those channels: an event of one channel when it is listed, an event of a whole post when one of its channels is, and an event about no channel (a file, a boost) whatever it lists; leave such types out of \`eventTypes\` when they are not wanted. \`workspaceIds\` (${maxWebhookFilterWorkspaces} at most), on a \`partner\` endpoint only, narrows it to those workspaces, the home workspace only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays as saved when what it names is gone. Filters apply when each event happens. \`headers\` (${maxWebhookHeaders} at most) go with every delivery beside Peal's own, which they never replace, for a gateway in front of the receiver that wants a token: a name is an HTTP token, once whatever its case, neither \`host\`, \`user-agent\`, \`cookie\`, \`expect\`, \`accept-encoding\`, a connection's own, nor any \`content-\` or \`webhook-\` name; a value is visible ASCII on one line, ${maxWebhookHeaderValueLength} characters at most. Values are write-only: the endpoint shows their names (\`headerNames\`), never them, and sends them only to the origin (scheme, host and port) of the \`url\` they were given with. The signature does not cover them. Needs webhook:manage.`,
         summary: "Create a webhook endpoint",
       })
     ),

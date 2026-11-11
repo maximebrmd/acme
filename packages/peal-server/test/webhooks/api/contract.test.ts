@@ -14,6 +14,7 @@ import {
   maxWebhookHeaderValueLength,
   NewWebhookEndpointSchema,
   refusedWebhookHeaderNames,
+  refusedWebhookHeaderPrefixes,
   webhookBulkRedeliveriesPerHour,
   WebhookRedeliverySkipSchema,
   WebhookSettledTargetStatusSchema,
@@ -67,6 +68,7 @@ import {
   maxHeaderNameLength,
   maxHeaderValueLength,
   refusedHeaderNames,
+  refusedHeaderPrefixes,
 } from "#webhooks/domain/endpoint-headers.ts";
 import { bodyOf, RecordedEvent } from "#webhooks/domain/recorded-event.ts";
 import { sampleOf } from "#webhooks/domain/sample-events.ts";
@@ -126,6 +128,11 @@ const headerCases = [
   [header("webhook-id")],
   [header("Webhook-Signature")],
   [header("Host")],
+  [header("Content-Encoding", "gzip")],
+  [header("content-range", "bytes 0-1/2")],
+  [header("Expect", "100-continue")],
+  [header("Accept-Encoding", "identity")],
+  [header("Contents-Version")],
   [header("Bad Name")],
   [header("X-Value", "line\nbreak")],
   [header("X-Value", " padded")],
@@ -226,6 +233,7 @@ describe("the contract", () => {
 
   it("takes the headers an endpoint takes, and refuses those it refuses", () => {
     expect(refusedWebhookHeaderNames).toStrictEqual(refusedHeaderNames);
+    expect(refusedWebhookHeaderPrefixes).toStrictEqual(refusedHeaderPrefixes);
 
     const disagreeing = headerCases.filter(
       (headers) =>

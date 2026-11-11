@@ -62,7 +62,8 @@
   console name an endpoint by id and host.
 - An endpoint's own headers (`domain/endpoint-headers.ts`,
   `maxEndpointHeaders` 5, an owner's decision): names are HTTP tokens,
-  once whatever their case, never `webhook-*` nor `refusedHeaderNames`, so
+  once whatever their case, never `refusedHeaderPrefixes` (`webhook-`,
+  `content-`) nor `refusedHeaderNames` (RFC 9110 and 9112, cited there), so
   none can replace one of Peal's (the transport merges them under Peal's
   anyway); values visible ASCII on one line. Values are sealed through
   `EndpointSecrets.sealHeaders`, bound to

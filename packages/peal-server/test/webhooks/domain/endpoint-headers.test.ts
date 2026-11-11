@@ -53,6 +53,22 @@ describe("an endpoint's headers", () => {
     expect(refused.filter(isName)).toStrictEqual([]);
   });
 
+  it("refuse the names that change how the body is read or delivered", () => {
+    const refused = [
+      "Content-Encoding",
+      "content-range",
+      "Content-Language",
+      "Content-Location",
+      "Content-Digest",
+      "Expect",
+      "Accept-Encoding",
+    ];
+
+    expect(refused.filter(isName)).toStrictEqual([]);
+    // A name that merely starts like one is the receiver's own.
+    expect(isName("Contents-Version")).toBeTruthy();
+  });
+
   it("take a value of visible ASCII, spaces inside it, without a line break", () => {
     const taken = [
       "Bearer synthetic-token",

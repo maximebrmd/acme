@@ -135,7 +135,7 @@ const headersOf = (
   });
 
   const refused = new Refused({
-    reason: `--header takes "Name: value", ${String(maxWebhookHeaders)} at most, each name once: a name that is an HTTP token and not one Peal sets (Host, Content-Type, Content-Length, User-Agent, Cookie, a connection's own, any webhook- name), a value of visible ASCII on one line.`,
+    reason: `--header takes "Name: value", ${String(maxWebhookHeaders)} at most, each name once: a name that is an HTTP token and not one Peal sets (Host, User-Agent, Cookie, Expect, Accept-Encoding, a connection's own, any Content- or webhook- name), a value of visible ASCII on one line.`,
   });
 
   const names = split.flatMap((header) =>

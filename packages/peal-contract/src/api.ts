@@ -1305,6 +1305,7 @@ export {
   maxWebhookHeaders,
   maxWebhookHeaderValueLength,
   refusedWebhookHeaderNames,
+  refusedWebhookHeaderPrefixes,
   webhookBulkRedeliveriesPerHour,
   webhookManualSendsPerHour,
   maxWebhookUrlLength,
