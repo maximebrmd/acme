@@ -145,8 +145,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "Your name, email address, language, sign-in methods and sessions; the workspaces you belong to, your role in each, and the invitations you send or receive",
-      fr: "Vos nom, adresse e-mail, langue, moyens de connexion et sessions ; les espaces de travail dont vous êtes membre, votre rôle dans chacun et les invitations envoyées ou reçues",
+      en: "Your name, email address, language, sign-in methods (your password, stored hashed, and, with two-step verification, your authenticator app’s key and your recovery codes, stored encrypted) and sessions; the workspaces you belong to, your role in each, and the invitations you send or receive",
+      fr: "Vos nom, adresse e-mail, langue, moyens de connexion (votre mot de passe, conservé haché, et, avec la validation en deux étapes, la clé de votre application d’authentification et vos codes de secours, conservés chiffrés) et sessions ; les espaces de travail dont vous êtes membre, votre rôle dans chacun et les invitations envoyées ou reçues",
     },
     id: "account",
     legalBasis: contract,
@@ -160,8 +160,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Fournir le service : votre compte, vos espaces de travail et leurs membres",
     },
     retention: {
-      en: "As long as your account exists: closing it erases them at once. A workspace’s own data is erased when the workspace is deleted",
-      fr: "Tant que votre compte existe : sa fermeture les efface aussitôt. Les données propres à un espace de travail sont effacées à sa suppression",
+      en: "As long as your account exists: closing it erases them at once. Your authenticator app’s key and your recovery codes are deleted as soon as two-step verification is turned off. A workspace’s own data is erased when the workspace is deleted",
+      fr: "Tant que votre compte existe : sa fermeture les efface aussitôt. La clé de votre application d’authentification et vos codes de secours sont supprimés dès que la validation en deux étapes est désactivée. Les données propres à un espace de travail sont effacées à sa suppression",
     },
     source: {
       en: "You, when you sign up and use the service; for an invitation, the member who invited you, who gave your email address",
