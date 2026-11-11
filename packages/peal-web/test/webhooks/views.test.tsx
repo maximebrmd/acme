@@ -346,6 +346,42 @@ describe("an endpoint's filters, in the views", () => {
     ).toStrictEqual([]);
   });
 
+  it("shows the channels it hears that are no longer connected, ticked, to take off", async () => {
+    const [english, french] = await Promise.all(
+      (["en", "fr"] as const).map(
+        async (locale) =>
+          await render(
+            locale,
+            <EndpointFieldsView
+              channels={[]}
+              draft={{
+                ...emptyDraft,
+                channelIds: new Set(["00000000-0000-7000-8000-0000000000c2"]),
+              }}
+              error={null}
+              disabled={false}
+              idPrefix="edit"
+              withEnabled={false}
+              onChange={noop}
+            />
+          )
+      )
+    );
+
+    expect(
+      missingFrom(english ?? "", [
+        "A channel no longer connected (00000000-0000-7000-8000-0000000000c2)",
+        "edit-webhook-channel-00000000-0000-7000-8000-0000000000c2",
+        "Untick a channel no longer connected to stop filtering on it.",
+      ])
+    ).toStrictEqual([]);
+    expect(
+      missingFrom(french ?? "", [
+        "Une chaîne qui n’est plus connectée (00000000-0000-7000-8000-0000000000c2)",
+      ])
+    ).toStrictEqual([]);
+  });
+
   it("says what an endpoint listens to", async () => {
     const html = await render(
       "en",

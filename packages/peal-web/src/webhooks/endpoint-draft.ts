@@ -61,6 +61,20 @@ export const withChannel = (
   return { ...draft, channelIds };
 };
 
+/**
+ * The channels a draft hears that are not among those the form offers, as
+ * a channel disconnected since: shown apart, so a member can take them
+ * off, as each save sends them back otherwise.
+ */
+export const goneChannelIds = (
+  draft: EndpointDraft,
+  channels: readonly { readonly id: string }[]
+): string[] => {
+  const offered = new Set(channels.map(({ id }) => id));
+
+  return [...draft.channelIds].filter((id) => !offered.has(id));
+};
+
 /** The ids a workspaces field lists, one a line, each once. */
 export const workspaceIdsOf = (written: string): string[] => [
   ...new Set(

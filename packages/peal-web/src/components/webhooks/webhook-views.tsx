@@ -45,6 +45,7 @@ import type { ChangeEvent, ReactNode } from "react";
 import type { LogFilter } from "#webhooks/atoms.ts";
 import {
   everyTypeChosen,
+  goneChannelIds,
   withChannel,
   withEveryType,
   withType,
@@ -289,6 +290,21 @@ const ChannelsFieldset = ({
 }) => {
   const t = useTranslations("Webhooks");
   const hintId = `${idPrefix}-webhook-channels-hint`;
+  const gone = goneChannelIds(draft, channels);
+
+  const choice = (id: string, label: string) => (
+    <div key={id} className="flex items-center gap-3">
+      <Checkbox
+        id={`${idPrefix}-webhook-channel-${id}`}
+        checked={draft.channelIds.has(id)}
+        disabled={disabled}
+        onCheckedChange={(checked) => {
+          onChange(withChannel(draft, id, checked));
+        }}
+      />
+      <Label htmlFor={`${idPrefix}-webhook-channel-${id}`}>{label}</Label>
+    </div>
+  );
 
   return (
     <fieldset className="flex flex-col gap-3" aria-describedby={hintId}>
@@ -296,27 +312,17 @@ const ChannelsFieldset = ({
       <p id={hintId} className="text-muted-foreground text-sm">
         {t("channelsHint")}
       </p>
-      {channels.length === 0 ? (
+      {channels.length === 0 && gone.length === 0 ? (
         <p className="text-muted-foreground text-sm">{t("channelsNone")}</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {channels.map((channel) => (
-            <div key={channel.id} className="flex items-center gap-3">
-              <Checkbox
-                id={`${idPrefix}-webhook-channel-${channel.id}`}
-                checked={draft.channelIds.has(channel.id)}
-                disabled={disabled}
-                onCheckedChange={(checked) => {
-                  onChange(withChannel(draft, channel.id, checked));
-                }}
-              />
-              <Label htmlFor={`${idPrefix}-webhook-channel-${channel.id}`}>
-                {channel.label}
-              </Label>
-            </div>
-          ))}
+          {channels.map((channel) => choice(channel.id, channel.label))}
+          {gone.map((id) => choice(id, t("channelGone", { id })))}
         </div>
       )}
+      {gone.length > 0 ? (
+        <p className="text-muted-foreground text-sm">{t("channelsGoneHint")}</p>
+      ) : null}
     </fieldset>
   );
 };

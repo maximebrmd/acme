@@ -2044,6 +2044,8 @@
     "channelsLegend": "Only these channels",
     "channelsHint": "Leave all unticked to hear every channel. Events about no channel, such as files and boosts, still come: leave their types out above if you do not want them.",
     "channelsNone": "The workspace has no channel yet.",
+    "channelGone": "A channel no longer connected ({id})",
+    "channelsGoneHint": "Untick a channel no longer connected to stop filtering on it.",
     "workspacesLabel": "Only these workspaces",
     "workspacesHint": "Ids of the partner’s workspaces, one a line, at most {max, number}. Leave it empty to hear every workspace; the home workspace is heard only if it is listed.",
     "channelsFilter": "Only events about {count, plural, one {# channel} other {# channels}}, and those about no channel",

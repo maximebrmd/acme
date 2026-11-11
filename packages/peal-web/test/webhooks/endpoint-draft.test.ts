@@ -8,6 +8,7 @@ import {
   draftOf,
   emptyDraft,
   everyTypeChosen,
+  goneChannelIds,
   newEndpointOf,
   withChannel,
   withEveryType,
@@ -134,6 +135,21 @@ describe("an endpoint's filters", () => {
         (change) => change.channelIds
       )
     ).toStrictEqual(Option.some([]));
+  });
+
+  it("names the channels it hears that are no longer connected, which can be taken off", () => {
+    const gone = "00000000-0000-7000-8000-0000000000c2";
+    const filtered = draftOf({ ...endpoint, channelIds: [channel, gone] });
+    const connected = [{ id: channel, label: "@peal_example" }];
+
+    expect(goneChannelIds(filtered, connected)).toStrictEqual([gone]);
+    expect(
+      Option.map(
+        changeOf(withChannel(filtered, gone, false)),
+        (change) => change.channelIds
+      )
+    ).toStrictEqual(Option.some([channel]));
+    expect(goneChannelIds(draftOf(endpoint), connected)).toStrictEqual([]);
   });
 
   it("sends the workspaces of a partner endpoint only, one a line", () => {

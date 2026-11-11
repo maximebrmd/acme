@@ -2044,6 +2044,8 @@
     "channelsLegend": "Seulement ces chaînes",
     "channelsHint": "Ne cochez rien pour entendre toutes les chaînes. Les événements sans chaîne, comme les fichiers et les promotions, arrivent toujours : retirez leurs types ci-dessus si vous n’en voulez pas.",
     "channelsNone": "L’espace de travail n’a encore aucune chaîne.",
+    "channelGone": "Une chaîne qui n’est plus connectée ({id})",
+    "channelsGoneHint": "Décochez une chaîne qui n’est plus connectée pour ne plus filtrer sur elle.",
     "workspacesLabel": "Seulement ces espaces de travail",
     "workspacesHint": "Les identifiants des espaces de travail du partenaire, un par ligne, {max, number} au plus. Laissez vide pour entendre tous les espaces de travail ; l’espace de travail principal n’est entendu que s’il est listé.",
     "channelsFilter": "Seulement les événements {count, plural, one {d’# chaîne} other {de # chaînes}}, et ceux sans chaîne",
