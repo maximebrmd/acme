@@ -37,6 +37,7 @@ import type { LookupChoices } from "#posts/lookup-choices.ts";
 import {
   fieldsOf,
   isShown,
+  problemsByField,
   violationsByField,
   withValue,
 } from "#posts/target-options.ts";
@@ -46,6 +47,7 @@ import type {
   LookupField,
   NumberField,
   OptionField,
+  OptionProblem,
   OptionValues,
   OptionViolation,
   TagsField,
@@ -84,20 +86,26 @@ interface FieldProps<F extends OptionField> {
   readonly id: string;
   readonly onValue: (value: Value) => void;
   readonly value: Value;
-  readonly violation: OptionViolation | undefined;
+  /** What is wrong with the value, when anything is. */
+  readonly problem: string | undefined;
 }
 
-// What is wrong with the field's value, as the last schedule found it.
+const invalidOf = (t: Translate, field: OptionField) =>
+  field.invalid === undefined ? t("invalid") : t(field.invalid);
+
+// What is wrong with the field's value: as typed, which nothing sends
+// until it is fixed, else as the last schedule found it.
 const problemOf = (
   t: Translate,
   field: OptionField,
-  violation: OptionViolation
+  problem: OptionProblem | OptionViolation
 ): string =>
-  Match.valueTags(violation, {
-    optionInvalid: () =>
-      field.invalid === undefined ? t("invalid") : t(field.invalid),
+  Match.valueTags(problem, {
+    invalid: () => invalidOf(t, field),
+    optionInvalid: () => invalidOf(t, field),
     optionMissing: () => t("missing"),
     optionTooLong: ({ length, maximum }) => t("tooLong", { length, maximum }),
+    tooMany: ({ count, maximum }) => t("tooMany", { count, maximum }),
   });
 
 const labelOf = (t: Translate, field: OptionField) =>
@@ -110,12 +118,12 @@ const Notes = ({
   field,
   id,
   limits,
-  violation,
+  problem,
 }: {
   readonly field: OptionField;
   readonly id: string;
   readonly limits: FieldLimits;
-  readonly violation: OptionViolation | undefined;
+  readonly problem: string | undefined;
 }) => {
   const t = useTranslations("Posts.Options");
   const closed = [...(limits.closedChoices?.values() ?? [])];
@@ -135,9 +143,9 @@ const Notes = ({
           {t(reason)}
         </p>
       ))}
-      {violation === undefined ? null : (
+      {problem === undefined ? null : (
         <p id={`${id}-error`} className="text-destructive-text text-xs">
-          {problemOf(t, field, violation)}
+          {problem}
         </p>
       )}
     </>
@@ -147,11 +155,11 @@ const Notes = ({
 const describedBy = (
   field: OptionField,
   id: string,
-  violation: OptionViolation | undefined
+  problem: string | undefined
 ): string | undefined => {
   const ids = [
     ...(field.hint === undefined ? [] : [`${id}-hint`]),
-    ...(violation === undefined ? [] : [`${id}-error`]),
+    ...(problem === undefined ? [] : [`${id}-error`]),
   ];
 
   return ids.length === 0 ? undefined : ids.join(" ");
@@ -163,8 +171,8 @@ const TextInput = ({
   id,
   onValue,
   limits,
+  problem,
   value,
-  violation,
 }: FieldProps<LocalTimeField | MentionsField | TagsField | TextField>) => {
   const t = useTranslations("Posts.Options");
 
@@ -181,11 +189,11 @@ const TextInput = ({
         autoComplete="off"
         disabled={disabled}
         value={textOf(value)}
-        aria-invalid={violation !== undefined}
-        aria-describedby={describedBy(field, id, violation)}
+        aria-invalid={problem !== undefined}
+        aria-describedby={describedBy(field, id, problem)}
         onChange={handleChange}
       />
-      <Notes field={field} id={id} limits={limits} violation={violation} />
+      <Notes field={field} id={id} limits={limits} problem={problem} />
     </div>
   );
 };
@@ -204,7 +212,7 @@ const ChoiceSelect = ({
   onChoice,
   selected,
   limits,
-  violation,
+  problem,
 }: {
   readonly choices: readonly Choice[];
   readonly disabled: boolean;
@@ -213,7 +221,7 @@ const ChoiceSelect = ({
   readonly onChoice: (value: string) => void;
   readonly selected: string | undefined;
   readonly limits: FieldLimits;
-  readonly violation: OptionViolation | undefined;
+  readonly problem: string | undefined;
 }) => {
   const t = useTranslations("Posts.Options");
   const chosen = choices.find(({ value }) => value === selected);
@@ -235,8 +243,8 @@ const ChoiceSelect = ({
         <SelectTrigger
           id={id}
           aria-labelledby={`${id}-label`}
-          aria-invalid={violation !== undefined}
-          aria-describedby={describedBy(field, id, violation)}
+          aria-invalid={problem !== undefined}
+          aria-describedby={describedBy(field, id, problem)}
         >
           <SelectValue>{chosen?.label ?? t("choose")}</SelectValue>
         </SelectTrigger>
@@ -248,7 +256,7 @@ const ChoiceSelect = ({
           ))}
         </SelectContent>
       </Select>
-      <Notes field={field} id={id} limits={limits} violation={violation} />
+      <Notes field={field} id={id} limits={limits} problem={problem} />
     </div>
   );
 };
@@ -335,8 +343,8 @@ const ToggleInput = ({
   id,
   onValue,
   limits,
+  problem,
   value,
-  violation,
 }: FieldProps<ToggleField>) => {
   const t = useTranslations("Posts.Options");
   const locked = limits.locked !== undefined;
@@ -352,8 +360,8 @@ const ToggleInput = ({
           id={id}
           checked={checked}
           disabled={disabled || locked}
-          aria-invalid={violation !== undefined}
-          aria-describedby={describedBy(field, id, violation)}
+          aria-invalid={problem !== undefined}
+          aria-describedby={describedBy(field, id, problem)}
           onCheckedChange={(ticked) => {
             onValue(field.inverted === true ? !ticked : ticked);
           }}
@@ -361,7 +369,7 @@ const ToggleInput = ({
         <Label htmlFor={id}>{t(field.label)}</Label>
       </div>
       <div className="pl-6">
-        <Notes field={field} id={id} limits={limits} violation={violation} />
+        <Notes field={field} id={id} limits={limits} problem={problem} />
       </div>
     </div>
   );
@@ -373,8 +381,8 @@ const NumberInput = ({
   id,
   onValue,
   limits,
+  problem,
   value,
-  violation,
 }: FieldProps<NumberField>) => {
   const t = useTranslations("Posts.Options");
 
@@ -394,11 +402,11 @@ const NumberInput = ({
         autoComplete="off"
         disabled={disabled}
         value={textOf(value)}
-        aria-invalid={violation !== undefined}
-        aria-describedby={describedBy(field, id, violation)}
+        aria-invalid={problem !== undefined}
+        aria-describedby={describedBy(field, id, problem)}
         onChange={handleChange}
       />
-      <Notes field={field} id={id} limits={limits} violation={violation} />
+      <Notes field={field} id={id} limits={limits} problem={problem} />
     </div>
   );
 };
@@ -467,7 +475,7 @@ const LoadedLookup = ({
 // being read, or why it could not be, with a way to ask again.
 const LookupInput = (props: FieldProps<LookupField>) => {
   const t = useTranslations("Posts.Options");
-  const { field, id, limits, lookup, violation } = props;
+  const { field, id, limits, lookup, problem } = props;
   const state = lookup?.choices ?? loadingChoices;
   const handleRetry = lookup?.retry;
 
@@ -496,7 +504,7 @@ const LookupInput = (props: FieldProps<LookupField>) => {
           </Button>
         </div>
       ) : null}
-      <Notes field={field} id={id} limits={limits} violation={violation} />
+      <Notes field={field} id={id} limits={limits} problem={problem} />
     </div>
   );
 };
@@ -583,6 +591,7 @@ const ChannelOptionsFields = ({
   const t = useTranslations("Posts.Options");
   const tPosts = useTranslations("Posts");
   const byField = violationsByField(violations, channel.id);
+  const typed = problemsByField(channel.platform, values);
   const platform = tPosts("platform", { platform: channel.platform });
 
   const shown = fieldsOf(channel.platform).filter(
@@ -622,7 +631,12 @@ const ChannelOptionsFields = ({
             lookup={lookupsByField.get(field.name)}
             id={`option-${channel.id}-${field.name}`}
             value={values[field.name]}
-            violation={byField.get(field.name)}
+            problem={Option.fromUndefinedOr(
+              typed.get(field.name) ?? byField.get(field.name)
+            ).pipe(
+              Option.map((found) => problemOf(t, field, found)),
+              Option.getOrUndefined
+            )}
             onValue={(value) => {
               onChange(withValue(channel.platform, values, field.name, value));
             }}
@@ -981,6 +995,12 @@ export const TargetOptionsSection = ({
     return null;
   }
 
+  // Something filled in the API would refuse, which nothing sends.
+  const wrong = panel.channels.some(
+    (channel) =>
+      problemsByField(channel.platform, panel.valuesOf(channel)).size > 0
+  );
+
   return (
     <>
       <Separator />
@@ -988,6 +1008,11 @@ export const TargetOptionsSection = ({
         <h2 id="options-title" className="text-sm font-medium">
           {t("section")}
         </h2>
+        {wrong ? (
+          <output className="text-destructive-text text-sm">
+            {t("fixToSend")}
+          </output>
+        ) : null}
         <TargetOptionsPanel
           {...panel}
           violations={

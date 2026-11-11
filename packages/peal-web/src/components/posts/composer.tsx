@@ -320,7 +320,15 @@ export const Composer = ({
   );
 
   const content = contentOf(text, overrides, channelIds, media, parts);
-  const options = channelOptionsOf(selected, optionValues);
+
+  // The options to send, and what is wrong with those filled in: while
+  // anything is, the post is neither saved nor scheduled.
+  const { options, problems: optionProblems } = channelOptionsOf(
+    selected,
+    optionValues
+  );
+
+  const optionsTaken = optionProblems.length === 0;
 
   const optionsOfChannel = (channelId: string) =>
     options.find((chosen) => chosen.channelId === channelId)?.options;
@@ -399,6 +407,10 @@ export const Composer = ({
   };
 
   const saveDraft = async () => {
+    if (!optionsTaken) {
+      return;
+    }
+
     const saved = await requests.save(postId, {
       channelIds,
       content,
@@ -419,6 +431,10 @@ export const Composer = ({
     if (Option.isNone(at)) {
       requests.fail({ _tag: "InvalidTime" });
 
+      return;
+    }
+
+    if (!optionsTaken) {
       return;
     }
 
@@ -598,6 +614,7 @@ export const Composer = ({
               disabled={locked}
               editable={canWrite}
               options={options}
+              optionsTaken={optionsTaken}
               permissions={permissions}
               workspaceId={workspaceId}
               onApply={(applied) => {
@@ -766,6 +783,7 @@ export const Composer = ({
         <ComposerActions
           busy={busy}
           canSave={canWrite}
+          savable={optionsTaken}
           canSchedule={canWrite && canSchedule}
           canReschedule={canReschedule}
           canUnschedule={canUnschedule}
@@ -775,7 +793,9 @@ export const Composer = ({
           publishable={
             channelFits.every(
               ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)
-            ) && partsFit
+            ) &&
+            partsFit &&
+            optionsTaken
           }
           onAction={perform}
           extra={

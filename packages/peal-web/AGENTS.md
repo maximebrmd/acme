@@ -119,7 +119,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   among what a lookup answers for the account, shown `under` another once
   that one is chosen; `initial`, `inverted` and `within` for TikTok's
   boxes), turns them into the contract's `TargetOptions` with
-  Schema, and shows each `option*` violation under its field. On a TikTok
+  Schema, and shows each `option*` violation under its field. `optionsOf`
+  checks each field filled in against the contract alone and answers what
+  is wrong (`OptionProblem`: too many tags or mentions for its `maximum`,
+  a value the API would refuse), never "no options": the field shows it
+  as typed, and the composer neither saves nor schedules until it is
+  fixed, so no choice is dropped unseen. On a TikTok
   channel, `TikTokChannelOptions` reads `GET …/channels/:id/tiktok-creator`
   and limits the fields by the creator (`#posts/tiktok-account.ts`): their
   nickname, their audiences, interactions they turned off (and set off),

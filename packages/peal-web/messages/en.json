@@ -888,7 +888,9 @@
       "choose": "Choose…",
       "missing": "Required to schedule.",
       "tooLong": "{length} of {maximum} characters.",
+      "tooMany": "{count, number} given: {maximum, number} at most.",
       "invalid": "Not a value the platform takes.",
+      "fixToSend": "Fix the options marked below: the post cannot be saved or scheduled until then.",
       "unknownField": "an option",
       "linkedin": {
         "visibility": "Who can see this post",
@@ -930,6 +932,7 @@
         "linkInvalid": "A link starts with http:// or https://, and has no space.",
         "coverSecond": "Video cover, at second",
         "coverSecondHint": "For a video: the second whose frame becomes the cover. The first frame when left empty.",
+        "coverSecondInvalid": "A second is a whole number, such as 3.",
         "dominantColor": "Dominant colour",
         "dominantColorHint": "The colour shown while the image loads, as # and six hex digits, such as #6E7874.",
         "dominantColorInvalid": "A colour is # and six hex digits, such as #6E7874."

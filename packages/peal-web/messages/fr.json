@@ -888,7 +888,9 @@
       "choose": "Choisir…",
       "missing": "Obligatoire pour programmer.",
       "tooLong": "{length} sur {maximum} caractères.",
+      "tooMany": "{count, number} indiqués : {maximum, number} au plus.",
       "invalid": "Une valeur que la plateforme refuse.",
+      "fixToSend": "Corrigez les options signalées ci-dessous : d’ici là, la publication ne peut être ni enregistrée ni programmée.",
       "unknownField": "une option",
       "linkedin": {
         "visibility": "Qui peut voir cette publication",
@@ -930,6 +932,7 @@
         "linkInvalid": "Un lien commence par http:// ou https://, sans espace.",
         "coverSecond": "Couverture de la vidéo, à la seconde",
         "coverSecondHint": "Pour une vidéo : la seconde dont l’image devient la couverture. La première image si le champ reste vide.",
+        "coverSecondInvalid": "Une seconde est un nombre entier, comme 3.",
         "dominantColor": "Couleur dominante",
         "dominantColorHint": "La couleur affichée pendant le chargement de l’image : un # et six chiffres hexadécimaux, comme #6E7874.",
         "dominantColorInvalid": "Une couleur est un # suivi de six chiffres hexadécimaux, comme #6E7874."

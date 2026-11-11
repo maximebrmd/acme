@@ -1,17 +1,20 @@
-import { Match, Option, Schema } from "effect";
+import { Match, Option, Result, Schema } from "effect";
 import type { useTranslations } from "next-intl";
 import {
   LinkedInMentionSchema,
+  maxBlueskyLanguages,
   maxGoogleBusinessTitleLength,
   maxLinkedInDocumentTitleLength,
   maxLinkedInLinkDescriptionLength,
   maxLinkedInLinkTitleLength,
   maxLinkedInLinkUrlLength,
+  maxLinkedInMentions,
   maxPinterestLinkLength,
   maxMastodonContentWarningLength,
   maxPinterestTitleLength,
   maxThreadsLinkLength,
   maxThreadsTopicTagLength,
+  maxYouTubeTagsLength,
   maxYouTubeTitleLength,
   TargetOptionsSchema,
 } from "peal-contract";
@@ -64,9 +67,10 @@ export interface TextField extends Described {
   readonly required?: true;
 }
 
-/** Tags, typed separated by commas. */
+/** Tags, typed separated by commas: `maximum` of them at most. */
 export interface TagsField extends Described {
   readonly kind: "tags";
+  readonly maximum: number;
 }
 
 /**
@@ -139,6 +143,8 @@ export interface NumberField extends Described {
  */
 export interface MentionsField extends Described {
   readonly kind: "mentions";
+  /** The most pages one post names. */
+  readonly maximum: number;
 }
 
 export type OptionField =
@@ -171,6 +177,7 @@ export const optionFields = {
       invalid: "bluesky.languagesInvalid",
       kind: "tags",
       label: "bluesky.languages",
+      maximum: maxBlueskyLanguages,
       name: "languages",
     },
     {
@@ -346,6 +353,7 @@ export const optionFields = {
       invalid: "linkedin.mentionsInvalid",
       kind: "mentions",
       label: "linkedin.mentions",
+      maximum: maxLinkedInMentions,
       name: "mentions",
     },
     {
@@ -467,6 +475,7 @@ export const optionFields = {
     },
     {
       hint: "pinterest.coverSecondHint",
+      invalid: "pinterest.coverSecondInvalid",
       kind: "number",
       label: "pinterest.coverSecond",
       minimum: 0,
@@ -659,6 +668,8 @@ export const optionFields = {
       invalid: "youtube.tagsInvalid",
       kind: "tags",
       label: "youtube.tags",
+      // The contract takes as many tags as YouTube takes characters.
+      maximum: maxYouTubeTagsLength,
       name: "tags",
     },
     {
@@ -930,79 +941,186 @@ const tagsOf = (typed: string): readonly string[] =>
     .map((tag) => tag.trim())
     .filter((tag) => tag !== "");
 
-// A field's value as the API takes it, none when it is not filled in.
+/**
+ * What is wrong with an option as the member filled it in, before any
+ * request: more entries than the platform takes (`tooMany`), or a value
+ * the API would refuse (`invalid`). The composer shows it under the field
+ * and sends nothing until it is fixed.
+ */
+export type OptionProblem =
+  | {
+      readonly _tag: "tooMany";
+      readonly count: number;
+      readonly field: string;
+      readonly maximum: number;
+    }
+  | { readonly _tag: "invalid"; readonly field: string };
+
+type OptionValue =
+  | boolean
+  | number
+  | string
+  | readonly LinkedInMention[]
+  | readonly string[];
+
+// A field's value as the API takes it: none when it is not filled in, a
+// problem when what is typed is no value of the field's kind.
 const optionOf = (
   field: OptionField,
   value: boolean | string | undefined
-): Option.Option<
-  boolean | number | string | readonly LinkedInMention[] | readonly string[]
-> => {
+): Result.Result<Option.Option<OptionValue>, OptionProblem> => {
   if (value === undefined || value === "") {
-    return Option.none();
+    return Result.succeed(Option.none());
   }
+
+  const typed = decodeText(value).pipe(Option.getOrElse(() => ""));
+  const invalid: OptionProblem = { _tag: "invalid", field: field.name };
 
   // Digits only: anything else is not a number the API would take.
   if (field.kind === "number") {
-    return decodeText(value).pipe(
-      Option.map((typed) => typed.trim()),
-      Option.filter((typed) => wholeNumber.test(typed)),
-      Option.map(Number),
-      Option.filter((number) => Number.isSafeInteger(number))
+    const number = Number(typed.trim());
+
+    return wholeNumber.test(typed.trim()) && Number.isSafeInteger(number)
+      ? Result.succeed(Option.some(number))
+      : Result.fail(invalid);
+  }
+
+  if (field.kind === "mentions" || field.kind === "tags") {
+    const entries =
+      field.kind === "mentions" ? mentionsOf(typed) : tagsOf(typed);
+
+    if (entries.length > field.maximum) {
+      return Result.fail({
+        _tag: "tooMany",
+        count: entries.length,
+        field: field.name,
+        maximum: field.maximum,
+      });
+    }
+
+    return Result.succeed(
+      entries.length === 0 ? Option.none() : Option.some(entries)
     );
   }
 
-  if (field.kind === "mentions") {
-    return decodeText(value).pipe(
-      Option.map(mentionsOf),
-      Option.filter((mentions) => mentions.length > 0)
-    );
-  }
-
-  if (field.kind === "tags") {
-    return decodeText(value).pipe(
-      Option.map(tagsOf),
-      Option.filter((tags) => tags.length > 0)
-    );
-  }
-
-  return Option.some(value);
+  return Result.succeed(Option.some(value));
 };
 
 const decodeOptions = Schema.decodeUnknownOption(TargetOptionsSchema);
 
+// The fields the values fill in, as the API takes them, or what is wrong
+// with each that the contract would refuse: every field is checked alone,
+// so one wrong field never hides the others.
+const filledOf = (
+  platform: Platform,
+  values: OptionValues
+): Result.Result<
+  readonly (readonly [string, OptionValue])[],
+  readonly OptionProblem[]
+> => {
+  const filled: (readonly [string, OptionValue])[] = [];
+  const problems: OptionProblem[] = [];
+
+  for (const field of fieldsOf(platform)) {
+    if (isShown(platform, field, values)) {
+      const option = optionOf(field, values[field.name]);
+
+      if (Result.isFailure(option)) {
+        problems.push(option.failure);
+      } else if (Option.isSome(option.success)) {
+        const given = option.success.value;
+
+        if (Option.isSome(decodeOptions({ [field.name]: given, platform }))) {
+          filled.push([field.name, given]);
+        } else {
+          problems.push({ _tag: "invalid", field: field.name });
+        }
+      }
+    }
+  }
+
+  return problems.length === 0 ? Result.succeed(filled) : Result.fail(problems);
+};
+
 /**
  * The options the values give on a channel of the platform, as the API
- * takes them; none on a platform that takes no options.
+ * takes them, none on a platform that takes no options; or, when the
+ * contract would refuse some field as filled in, what is wrong with each.
+ * Never none for options that were filled in.
  */
 export const optionsOf = (
   platform: Platform,
   values: OptionValues
-): Option.Option<TargetOptions> =>
-  decodeOptions({
-    ...Object.fromEntries(
-      fieldsOf(platform)
-        .filter((field) => isShown(platform, field, values))
-        .flatMap((field) =>
-          Option.match(optionOf(field, values[field.name]), {
-            onNone: () => [],
-            onSome: (option) => [[field.name, option]],
-          })
-        )
-    ),
-    platform,
-  });
+): Result.Result<Option.Option<TargetOptions>, readonly OptionProblem[]> =>
+  filledOf(platform, values).pipe(
+    Result.flatMap((filled) => {
+      const options = decodeOptions({
+        ...Object.fromEntries(filled),
+        platform,
+      });
 
-/** The options of the post on each of these channels that takes some. */
+      if (Option.isSome(options) || fieldsOf(platform).length === 0) {
+        return Result.succeed(options);
+      }
+
+      // Each field passed alone: the problem is between them.
+      return Result.fail(
+        filled.map(([field]): OptionProblem => ({ _tag: "invalid", field }))
+      );
+    })
+  );
+
+/** What is wrong with the values on a channel of the platform, by field. */
+export const problemsByField = (
+  platform: Platform,
+  values: OptionValues
+): ReadonlyMap<string, OptionProblem> =>
+  new Map(
+    Result.match(optionsOf(platform, values), {
+      onFailure: (problems) =>
+        problems.map((problem) => [problem.field, problem] as const),
+      onSuccess: () => [],
+    })
+  );
+
+/** A problem with one of the options filled in on a channel. */
+export type ChannelOptionProblem = OptionProblem & {
+  readonly channelId: string;
+};
+
+/** What the composer has of the options of its channels. */
+export interface ChannelOptionsState {
+  /** The options to send, on each channel whose platform takes some. */
+  readonly options: readonly ChannelOptions[];
+  /** What is wrong with what was filled in: nothing is sent until fixed. */
+  readonly problems: readonly ChannelOptionProblem[];
+}
+
+/**
+ * The options of the post on each of these channels whose platform takes
+ * some, and what is wrong with those filled in.
+ */
 export const channelOptionsOf = (
   channels: readonly { readonly id: string; readonly platform: Platform }[],
   values: ValuesByChannel
-): readonly ChannelOptions[] =>
-  channels.flatMap(({ id, platform }) =>
-    Option.match(optionsOf(platform, values[id] ?? initialValues(platform)), {
-      onNone: () => [],
-      onSome: (options) => [{ channelId: id, options }],
-    })
-  );
+): ChannelOptionsState => {
+  const options: ChannelOptions[] = [];
+  const problems: ChannelOptionProblem[] = [];
+
+  for (const { id, platform } of channels) {
+    const given = optionsOf(platform, values[id] ?? initialValues(platform));
+
+    if (Result.isFailure(given)) {
+      problems.push(
+        ...given.failure.map((problem) => ({ ...problem, channelId: id }))
+      );
+    } else if (Option.isSome(given.success)) {
+      options.push({ channelId: id, options: given.success.value });
+    }
+  }
+
+  return { options, problems };
+};
 
 /** A violation about one option of a channel. */
 export type OptionViolation = Extract<

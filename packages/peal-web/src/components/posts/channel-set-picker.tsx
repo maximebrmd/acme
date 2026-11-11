@@ -258,6 +258,7 @@ export const ChannelSetPicker = ({
   editable,
   onApply,
   options,
+  optionsTaken,
   permissions,
   workspaceId,
 }: {
@@ -272,6 +273,8 @@ export const ChannelSetPicker = ({
   readonly onApply: (applied: AppliedSet) => void;
   /** The options filled now, for the channels ticked. */
   readonly options: readonly ChannelOptions[];
+  /** Whether the API takes the options filled now, which a set keeps. */
+  readonly optionsTaken: boolean;
   readonly permissions: readonly Permission[];
   readonly workspaceId: string;
 }) => {
@@ -305,7 +308,7 @@ export const ChannelSetPicker = ({
             save: (
               <SaveSelection
                 channelIds={channelIds}
-                disabled={disabled}
+                disabled={disabled || !optionsTaken}
                 options={options}
                 workspaceId={workspaceId}
               />

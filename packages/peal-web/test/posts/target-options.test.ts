@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Option } from "effect";
+import { Option, Result } from "effect";
 import { optionsPlatforms, TargetOptionsSchema } from "peal-contract";
 import type { ContentViolation, Platform } from "peal-contract";
 
@@ -151,7 +151,7 @@ describe("the options fields", () => {
   ] as const)(
     "turn %s's fields, each kind filled in, into options the contract takes, and back",
     (platform, values) => {
-      const options = optionsOf(platform, values);
+      const options = Result.getOrThrow(optionsOf(platform, values));
 
       expect(options.pipe(Option.map((given) => given.platform))).toStrictEqual(
         Option.some(platform)
@@ -209,20 +209,22 @@ describe(optionsOf, () => {
         title: "",
       })
     ).toStrictEqual(
-      Option.some({
-        madeForKids: false,
-        platform: "youtube",
-        tags: ["launch", "launch day"],
-      })
+      Result.succeed(
+        Option.some({
+          madeForKids: false,
+          platform: "youtube",
+          tags: ["launch", "launch day"],
+        })
+      )
     );
     expect(optionsOf("youtube", { tags: " , " })).toStrictEqual(
-      Option.some({ platform: "youtube" })
+      Result.succeed(Option.some({ platform: "youtube" }))
     );
   });
 
   it("gives nothing on a platform that takes no options", () => {
     expect(optionsOf("instagram", { title: "Hi" })).toStrictEqual(
-      Option.none()
+      Result.succeed(Option.none())
     );
   });
 
@@ -236,7 +238,7 @@ describe(optionsOf, () => {
     };
 
     expect(
-      optionsOf("youtube", values).pipe(
+      Result.getOrThrow(optionsOf("youtube", values)).pipe(
         Option.map((options) => valuesOf("youtube", options))
       )
     ).toStrictEqual(Option.some(values));
@@ -264,11 +266,13 @@ describe("an X post's options", () => {
     expect(
       optionsOf("x", { ...initialValues("x"), shareWithFollowers: true })
     ).toStrictEqual(
-      Option.some({
-        madeWithAi: false,
-        paidPartnership: false,
-        platform: "x",
-      })
+      Result.succeed(
+        Option.some({
+          madeWithAi: false,
+          paidPartnership: false,
+          platform: "x",
+        })
+      )
     );
   });
 });
@@ -334,7 +338,7 @@ describe("a Google Business Profile post's options", () => {
     };
 
     expect(
-      Option.getOrThrow(optionsOf("googleBusiness", filled))
+      Option.getOrThrow(Result.getOrThrow(optionsOf("googleBusiness", filled)))
     ).toStrictEqual({
       callToAction: "order",
       callToActionUrl: "https://example.com/order",
@@ -342,7 +346,9 @@ describe("a Google Business Profile post's options", () => {
     });
     expect(
       Option.getOrThrow(
-        optionsOf("googleBusiness", { ...filled, postType: "offer" })
+        Result.getOrThrow(
+          optionsOf("googleBusiness", { ...filled, postType: "offer" })
+        )
       )
     ).toStrictEqual({
       couponCode: "SYNTHETIC-10",
@@ -385,20 +391,16 @@ describe("Pinterest's fields", () => {
         title: "Tomato salad",
       })
     ).toStrictEqual(
-      Option.some({
-        boardId: "549755885001",
-        boardSectionId: "5000000000001",
-        coverSecond: 12,
-        link: "https://peal.example/recipes",
-        platform: "pinterest",
-        title: "Tomato salad",
-      })
-    );
-    // Anything but digits is no second the API would take.
-    expect(
-      optionsOf("pinterest", { boardId: "549755885001", coverSecond: "1.5" })
-    ).toStrictEqual(
-      Option.some({ boardId: "549755885001", platform: "pinterest" })
+      Result.succeed(
+        Option.some({
+          boardId: "549755885001",
+          boardSectionId: "5000000000001",
+          coverSecond: 12,
+          link: "https://peal.example/recipes",
+          platform: "pinterest",
+          title: "Tomato salad",
+        })
+      )
     );
   });
 
@@ -508,21 +510,24 @@ describe(channelOptionsOf, () => {
         ],
         {}
       )
-    ).toStrictEqual([
-      {
-        channelId: "c1",
-        options: {
-          aiGenerated: false,
-          brandContent: false,
-          brandOrganic: false,
-          commercialContent: false,
-          disableComment: true,
-          disableDuet: true,
-          disableStitch: true,
-          platform: "tiktok",
+    ).toStrictEqual({
+      options: [
+        {
+          channelId: "c1",
+          options: {
+            aiGenerated: false,
+            brandContent: false,
+            brandOrganic: false,
+            commercialContent: false,
+            disableComment: true,
+            disableDuet: true,
+            disableStitch: true,
+            platform: "tiktok",
+          },
         },
-      },
-    ]);
+      ],
+      problems: [],
+    });
   });
 });
 
@@ -563,11 +568,13 @@ describe("LinkedIn's mentions", () => {
       "Example Bakery <urn:li:organization:9000000001>; Example (UK) <urn:li:organization:9000000002>"
     );
     expect(optionsOf("linkedin", values)).toStrictEqual(
-      Option.some({
-        disableReshare: false,
-        mentions: [bakery, bikes],
-        platform: "linkedin",
-      })
+      Result.succeed(
+        Option.some({
+          disableReshare: false,
+          mentions: [bakery, bikes],
+          platform: "linkedin",
+        })
+      )
     );
   });
 
@@ -575,10 +582,92 @@ describe("LinkedIn's mentions", () => {
     expect(
       optionsOf("linkedin", { mentions: "Example Bakery;  " })
     ).toStrictEqual(
-      Option.some({
-        mentions: [{ name: "Example Bakery", urn: "" }],
-        platform: "linkedin",
-      })
+      Result.succeed(
+        Option.some({
+          mentions: [{ name: "Example Bakery", urn: "" }],
+          platform: "linkedin",
+        })
+      )
     );
+  });
+});
+
+describe("options the contract would refuse as filled in", () => {
+  const bluesky = "00000000-0000-7000-8000-00000000000b";
+
+  const gated = {
+    contentLabel: "porn",
+    disableQuotes: true,
+    languages: "en, fr, de, es",
+    replies: "nobody",
+  };
+
+  it("name the field at fault, and never answer that there are no options", () => {
+    expect(optionsOf("bluesky", gated)).toStrictEqual(
+      Result.fail([
+        { _tag: "tooMany", count: 4, field: "languages", maximum: 3 },
+      ])
+    );
+    expect(
+      optionsOf("bluesky", { ...gated, languages: "en, fr, de" })
+    ).toStrictEqual(
+      Result.succeed(
+        Option.some({
+          contentLabel: "porn",
+          disableQuotes: true,
+          languages: ["en", "fr", "de"],
+          platform: "bluesky",
+          replies: "nobody",
+        })
+      )
+    );
+  });
+
+  it("keep the channel's choices out of no request: the composer gets the problem", () => {
+    expect(
+      channelOptionsOf([{ id: bluesky, platform: "bluesky" }], {
+        [bluesky]: gated,
+      })
+    ).toStrictEqual({
+      options: [],
+      problems: [
+        {
+          _tag: "tooMany",
+          channelId: bluesky,
+          count: 4,
+          field: "languages",
+          maximum: 3,
+        },
+      ],
+    });
+  });
+
+  it("find the same on the other platforms' fields", () => {
+    const pages = Array.from(
+      { length: 31 },
+      (_, index) =>
+        `Page ${String(index)} <urn:li:organization:${String(index)}>`
+    ).join("; ");
+
+    expect(optionsOf("linkedin", { mentions: pages })).toStrictEqual(
+      Result.fail([
+        { _tag: "tooMany", count: 31, field: "mentions", maximum: 30 },
+      ])
+    );
+    expect(
+      optionsOf("linkedin", {
+        mentions: `Example Bakery <urn:li:organization:${"9".repeat(80)}>`,
+        visibility: "public",
+      })
+    ).toStrictEqual(Result.fail([{ _tag: "invalid", field: "mentions" }]));
+    expect(
+      optionsOf("pinterest", { boardId: "549755885001", coverSecond: "1.5" })
+    ).toStrictEqual(Result.fail([{ _tag: "invalid", field: "coverSecond" }]));
+    expect(
+      optionsOf("x", {
+        communityId: `17${String.fromCodePoint(0)}01`,
+        replySettings: "following",
+      })
+    ).toStrictEqual(Result.fail([{ _tag: "invalid", field: "communityId" }]));
   });
 });
