@@ -39,6 +39,12 @@ class Post extends JsonSerializableType
     public ?string $outcome;
 
     /**
+     * @var ?string $queueId
+     */
+    #[JsonProperty('queueId')]
+    public ?string $queueId;
+
+    /**
      * @var ?PostSchedule $schedule
      */
     #[JsonProperty('schedule')]
@@ -90,6 +96,7 @@ class Post extends JsonSerializableType
      *   authorId?: ?string,
      *   createdVia?: ?PostOrigin,
      *   outcome?: ?value-of<PostOutcome>,
+     *   queueId?: ?string,
      *   schedule?: ?PostSchedule,
      *   scheduledBy?: ?string,
      *   scheduledVia?: ?PostOrigin,
@@ -104,6 +111,7 @@ class Post extends JsonSerializableType
         $this->createdVia = $values['createdVia'] ?? null;
         $this->id = $values['id'];
         $this->outcome = $values['outcome'] ?? null;
+        $this->queueId = $values['queueId'] ?? null;
         $this->schedule = $values['schedule'] ?? null;
         $this->scheduledBy = $values['scheduledBy'] ?? null;
         $this->scheduledVia = $values['scheduledVia'] ?? null;

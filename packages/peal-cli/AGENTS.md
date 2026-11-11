@@ -12,9 +12,9 @@
   allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `tags`, `signatures`, `sets`, `media`, `approvals`, `review`,
-  `analytics`, `inbox`, `billing`, `usage`, `members`, `invitations`,
-  `webhooks` and `ads`, which act in the
+  `post`, `tags`, `signatures`, `sets`, `queues`, `media`, `approvals`,
+  `review`, `analytics`, `inbox`, `billing`, `usage`, `members`,
+  `invitations`, `webhooks` and `ads`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read
@@ -87,6 +87,15 @@
   each in prose after the rest (`warningLines`); `--json` prints the answer
   as it came. The MCP toolkit `saved-tools.ts` has the same, by id, and
   its posts name sets by id or name.
+- `peal queues` (list, show, preview, create, update, delete) keeps a
+  workspace's queues (`--slot mon@09:00`, repeated; `--zone`; `--channel`;
+  `--set`; `--default`), named by id or name (`saved-items.ts`:
+  `findQueue`, `queueOf`, which takes "" for the default). `peal post
+  --queue` (bare for the default, `--queue=<name-or-id>` otherwise, as an
+  optional value is attached with `=`) is one of `--at`, `--now` and
+  `--queue`; `peal posts queue` and `peal posts list --queue` follow
+  `posts.enqueue` and `search?queueId`. The studio's queues are in
+  `test/studio-queues.ts`, built over what `studio.ts` hands them.
 - `peal channels rename`, `disable` and `enable`
   (`commands/channel-settings.ts`) name a channel and turn it off or back
   on, and `peal posts duplicate` makes a draft of a post, reading it first

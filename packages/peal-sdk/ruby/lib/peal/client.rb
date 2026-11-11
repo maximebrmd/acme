@@ -160,6 +160,11 @@ module Peal
       @channel_sets ||= Peal::ChannelSets::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Queues::Client]
+    def queues
+      @queues ||= Peal::Queues::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::ChannelDefaults::Client]
     def channel_defaults
       @channel_defaults ||= Peal::ChannelDefaults::Client.new(client: @raw_client)

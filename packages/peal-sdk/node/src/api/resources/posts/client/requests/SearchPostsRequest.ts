@@ -18,6 +18,7 @@ export interface SearchPostsRequest {
     limit?: string;
     outcome?: Peal.PostOutcome;
     platform?: Peal.Platform;
+    queueId?: string;
     sort?: Peal.PostSort;
     status?: Peal.PostStatus;
     tagId?: string;

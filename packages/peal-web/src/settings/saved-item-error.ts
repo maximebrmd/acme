@@ -1,6 +1,7 @@
 import { Cause, Exit, Option, Schema } from "effect";
 import {
   TooManyChannelSets,
+  TooManyQueues,
   TooManySignatures,
   TooManyTags,
 } from "peal-contract";
@@ -13,8 +14,10 @@ import {
 export const SavedItemErrorKeySchema = Schema.Literals([
   "forbidden",
   "invalid",
+  "invalidTimeZone",
   "nameTaken",
   "notFound",
+  "setNotFound",
   "unknown",
   "unknownChannels",
 ]);
@@ -32,7 +35,10 @@ const reasons = new Map<string, SavedItemErrorKey>([
   ["ChannelSetNotFound", "notFound"],
   ["Forbidden", "forbidden"],
   ["PostContentInvalid", "invalid"],
+  ["InvalidTimeZone", "invalidTimeZone"],
   ["PostNotFound", "notFound"],
+  ["QueueNameTaken", "nameTaken"],
+  ["QueueNotFound", "notFound"],
   ["SignatureNameTaken", "nameTaken"],
   ["SignatureNotFound", "notFound"],
   ["TagNameTaken", "nameTaken"],
@@ -42,13 +48,28 @@ const reasons = new Map<string, SavedItemErrorKey>([
 ]);
 
 const isTooMany = Schema.is(
-  Schema.Union([TooManyTags, TooManySignatures, TooManyChannelSets])
+  Schema.Union([
+    TooManyTags,
+    TooManySignatures,
+    TooManyChannelSets,
+    TooManyQueues,
+  ])
 );
 
-const explain = (error: { readonly _tag: string }): SavedItemError =>
-  isTooMany(error)
-    ? { allowed: error.allowed, key: "tooMany" }
-    : { key: reasons.get(error._tag) ?? "unknown" };
+// A channel set is not found as a queue names it: the queue is there.
+const explain =
+  (inQueue: boolean) =>
+  (error: { readonly _tag: string }): SavedItemError => {
+    if (isTooMany(error)) {
+      return { allowed: error.allowed, key: "tooMany" };
+    }
+
+    if (inQueue && error._tag === "ChannelSetNotFound") {
+      return { key: "setNotFound" };
+    }
+
+    return { key: reasons.get(error._tag) ?? "unknown" };
+  };
 
 /**
  * How a call ended, for the catalogue to explain, or none if it worked.
@@ -56,13 +77,15 @@ const explain = (error: { readonly _tag: string }): SavedItemError =>
  * unknown.
  */
 export const savedItemErrorOf = <A, E extends { readonly _tag: string }>(
-  exit: Exit.Exit<A, E>
+  exit: Exit.Exit<A, E>,
+  // Whether the change was to a queue, which names a channel set.
+  inQueue = false
 ): Option.Option<SavedItemError> =>
   Exit.isSuccess(exit)
     ? Option.none()
     : Option.some(
         Cause.findErrorOption(exit.cause).pipe(
-          Option.map(explain),
+          Option.map(explain(inQueue)),
           Option.getOrElse((): SavedItemError => ({ key: "unknown" }))
         )
       );

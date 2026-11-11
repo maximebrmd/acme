@@ -1,7 +1,9 @@
 import { Array as Arr, Effect, Option, Schema } from "effect";
 import {
   CurrentMember,
+  defaultQueuePreview,
   maxChannelSetsPerWorkspace,
+  maxQueuesPerWorkspace,
   maxSignaturesPerWorkspace,
 } from "peal-contract";
 
@@ -13,6 +15,12 @@ import {
   channelSetIdFrom,
 } from "#publishing/api/channel-sets.ts";
 import { optionsFrom } from "#publishing/api/post-input.ts";
+import {
+  slotView,
+  previewView,
+  queueView,
+} from "#publishing/api/queue-view.ts";
+import { queueDetailsFrom, queueIdFrom } from "#publishing/api/queues.ts";
 import { signatureView } from "#publishing/api/signature-view.ts";
 import {
   signatureDetailsFrom,
@@ -20,6 +28,7 @@ import {
 } from "#publishing/api/signatures.ts";
 import { ChannelDefaults } from "#publishing/application/channel-defaults.ts";
 import { ChannelSets } from "#publishing/application/channel-sets.ts";
+import { Queues } from "#publishing/application/queues.ts";
 import { Signatures } from "#publishing/application/signatures.ts";
 import { TargetOptionsSchema } from "#publishing/domain/target-options.ts";
 import { actorOf } from "#shared/api/actor.ts";
@@ -85,6 +94,30 @@ const optionsRejected = ({
     `The options were refused, and nothing was changed: they must be those of each channel's own platform, for a channel that is named. Fix every violation, then call again: ${JSON.stringify(violations)}`
   );
 
+const noQueue = () =>
+  refuse(
+    "The workspace has no queue with this id: list_queues answers its queues."
+  );
+
+const queueNameTaken = () =>
+  refuse(
+    "The workspace already has a queue of this name, whatever its case: nothing was changed. list_queues answers its queues."
+  );
+
+const badZone = ({ timeZone }: { readonly timeZone: string }) =>
+  refuse(
+    `${timeZone} is not an IANA time zone, such as Europe/Paris: nothing was changed. Offsets such as +01:00 are refused.`
+  );
+
+// What saving a queue is refused with, in words the user acts on.
+const queueRefusals = {
+  ChannelSetNotFound: noSet,
+  DatabaseError: Effect.die,
+  MissingPermission: notAllowed("change queues"),
+  QueueNameTaken: queueNameTaken,
+  UnknownChannels: unknownChannels,
+} as const;
+
 /**
  * What the tools of what a workspace saves do, through the publishing
  * context's use cases.
@@ -94,6 +127,7 @@ export const SavedToolsLive = SavedTools.toLayer(
     const signatures = yield* Signatures;
     const sets = yield* ChannelSets;
     const defaults = yield* ChannelDefaults;
+    const queues = yield* Queues;
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
     return SavedTools.of({
@@ -130,6 +164,28 @@ export const SavedToolsLive = SavedTools.toLayer(
 
           return channelSetView(created);
         }).pipe(Effect.catchTags({ UnknownChannels: unknownChannels })),
+      create_queue: (given) =>
+        Effect.gen(function* create() {
+          const made = yield* queues
+            .create(yield* actor, yield* queueDetailsFrom(given))
+            .pipe(
+              Effect.catchTags({
+                ...queueRefusals,
+                TooManyQueues: () =>
+                  refuse(
+                    `The workspace keeps ${String(maxQueuesPerWorkspace)} queues, the most it may: nothing was created. Delete one first, if the user agrees.`
+                  ),
+              })
+            );
+
+          return queueView(made);
+        }).pipe(
+          Effect.catchTags({
+            ChannelSetNotFound: noSet,
+            InvalidTimeZone: badZone,
+            UnknownChannels: unknownChannels,
+          })
+        ),
       create_signature: (details) =>
         Effect.gen(function* create() {
           const created = yield* signatures
@@ -161,6 +217,17 @@ export const SavedToolsLive = SavedTools.toLayer(
 
           return { deleted: channelSetId };
         }).pipe(Effect.catchTags({ ChannelSetNotFound: noSet })),
+      delete_queue: ({ queueId }) =>
+        Effect.gen(function* remove() {
+          yield* queues.remove(yield* actor, yield* queueIdFrom(queueId)).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("delete queues"),
+            })
+          );
+
+          return { deleted: queueId };
+        }).pipe(Effect.catchTags({ QueueNotFound: noQueue })),
       delete_signature: ({ signatureId }) =>
         Effect.gen(function* remove() {
           yield* signatures
@@ -201,6 +268,17 @@ export const SavedToolsLive = SavedTools.toLayer(
 
           return { channelSets: found.map(channelSetView) };
         }),
+      list_queues: () =>
+        Effect.gen(function* list() {
+          const found = yield* queues.list(yield* actor).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read queues"),
+            })
+          );
+
+          return { queues: found.map(queueView) };
+        }),
       list_signatures: () =>
         Effect.gen(function* list() {
           const found = yield* signatures.list(yield* actor).pipe(
@@ -212,6 +290,19 @@ export const SavedToolsLive = SavedTools.toLayer(
 
           return { signatures: found.map(signatureView) };
         }),
+      preview_queue: ({ count = defaultQueuePreview, queueId }) =>
+        Effect.gen(function* preview() {
+          const coming = yield* queues
+            .preview(yield* actor, yield* queueIdFrom(queueId), count)
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("read queues"),
+              })
+            );
+
+          return previewView(coming);
+        }).pipe(Effect.catchTags({ QueueNotFound: noQueue })),
       set_channel_defaults: ({ channelId, options }) =>
         Effect.gen(function* set() {
           const id = yield* channelFrom(channelId);
@@ -307,6 +398,63 @@ export const SavedToolsLive = SavedTools.toLayer(
         }).pipe(
           Effect.catchTags({
             ChannelSetNotFound: noSet,
+            UnknownChannels: unknownChannels,
+          })
+        ),
+      update_queue: ({ queueId, ...given }) =>
+        Effect.gen(function* update() {
+          const member = yield* actor;
+          const id = yield* queueIdFrom(queueId);
+
+          // What the call leaves out stays as the queue has it.
+          const { queue, unavailable } = yield* queues.get(member, id).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("change queues"),
+            })
+          );
+
+          // But the channels disconnected since, which a queue cannot keep.
+          const channelIds =
+            given.channelIds ??
+            queue.channelIds.filter(
+              (channelId) => !unavailable.includes(channelId)
+            );
+
+          const setId =
+            given.channelSetId === undefined
+              ? Option.getOrNull(queue.channelSetId)
+              : given.channelSetId;
+
+          const details = yield* queueDetailsFrom(
+            setId === null
+              ? {
+                  channelIds,
+                  isDefault: given.isDefault ?? queue.isDefault,
+                  name: given.name ?? queue.name,
+                  slots: given.slots ?? queue.slots.map(slotView),
+                  timeZone: given.timeZone ?? queue.timeZone,
+                }
+              : {
+                  channelIds,
+                  channelSetId: setId,
+                  isDefault: given.isDefault ?? queue.isDefault,
+                  name: given.name ?? queue.name,
+                  slots: given.slots ?? queue.slots.map(slotView),
+                  timeZone: given.timeZone ?? queue.timeZone,
+                }
+          );
+
+          const updated = yield* queues
+            .update(member, id, details)
+            .pipe(Effect.catchTags(queueRefusals));
+
+          return queueView(updated);
+        }).pipe(
+          Effect.catchTags({
+            ChannelSetNotFound: noSet,
+            InvalidTimeZone: badZone,
+            QueueNotFound: noQueue,
             UnknownChannels: unknownChannels,
           })
         ),

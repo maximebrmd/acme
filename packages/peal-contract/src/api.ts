@@ -32,6 +32,7 @@ import { NotificationPreferencesApi } from "./notification-preferences.ts";
 import { PartnerAccountApi } from "./partner-account.ts";
 import { PartnerApi } from "./partner.ts";
 import { PostsApi } from "./posts.ts";
+import { QueuesApi } from "./queues.ts";
 import { ReviewLinkApi } from "./review-link.ts";
 import { ReviewApi } from "./review.ts";
 import { SessionApi } from "./session.ts";
@@ -125,6 +126,44 @@ export type {
 export { ChannelSetNotFound } from "./channel-set-not-found.ts";
 
 export { TooManyChannelSets } from "./too-many-channel-sets.ts";
+
+export {
+  defaultQueuePreview,
+  maxChannelsPerQueue,
+  maxQueueNameLength,
+  maxQueuePreview,
+  maxQueuesPerWorkspace,
+  maxSlotsPerQueue,
+  PreviewSlotSchema,
+  queueHorizonDays,
+  QueueDetailsSchema,
+  QueuePreviewSchema,
+  QueueSchema,
+  QueueSlotSchema,
+  QueuesApi,
+  SlotTimeSchema,
+  WeekdaySchema,
+  weekdays,
+} from "./queues.ts";
+
+export type {
+  PreviewSlot,
+  Queue,
+  QueueDetails,
+  QueuePreview,
+  QueueSlot,
+  Weekday,
+} from "./queues.ts";
+
+export { QueueHasNoRoom, QueueNoRoomSchema } from "./queue-has-no-room.ts";
+
+export type { QueueNoRoom } from "./queue-has-no-room.ts";
+
+export { QueueNameTaken } from "./queue-name-taken.ts";
+
+export { QueueNotFound } from "./queue-not-found.ts";
+
+export { TooManyQueues } from "./too-many-queues.ts";
 
 export {
   ActivityActorSchema,
@@ -891,6 +930,7 @@ export {
   PostTimingSchema,
   PostToValidateSchema,
   PublicationAttemptSchema,
+  QueuePostSchema,
   SchedulePostSchema,
   TargetConfirmationSchema,
   TargetPartsSchema,
@@ -928,6 +968,7 @@ export type {
   PostTiming,
   PostToValidate,
   PublicationAttempt,
+  QueuePost,
   SchedulePost,
   TargetConfirmation,
   TargetParts,
@@ -1670,6 +1711,7 @@ export class Api extends HttpApi.make("peal")
   .add(TagsApi)
   .add(SignaturesApi)
   .add(ChannelSetsApi)
+  .add(QueuesApi)
   .add(ChannelDefaultsApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.

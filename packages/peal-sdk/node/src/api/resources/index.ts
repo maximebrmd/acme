@@ -41,6 +41,8 @@ export * as partnerAccount from "./partnerAccount/index.js";
 export * from "./partnerAccount/client/requests/index.js";
 export * as posts from "./posts/index.js";
 export * from "./posts/client/requests/index.js";
+export * as queues from "./queues/index.js";
+export * from "./queues/client/requests/index.js";
 export * as review from "./review/index.js";
 export * from "./review/client/requests/index.js";
 export * as session from "./session/index.js";

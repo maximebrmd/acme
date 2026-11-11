@@ -16,6 +16,7 @@ import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PostSearch } from "#publishing/application/post-search.ts";
+import { Queues } from "#publishing/application/queues.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
@@ -134,6 +135,7 @@ describe("a plan's refusal, through the tools", () => {
                 Layer.mock(PostOutcomes, {}),
                 Layer.mock(PostQueries, {}),
                 Layer.mock(PostSearch, {}),
+                Layer.mock(Queues, {}),
                 Layer.mock(TikTokCreatorInfo, {}),
                 UpgradePaths.layerTest
               )

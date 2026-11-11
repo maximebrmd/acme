@@ -7,7 +7,7 @@ import { PostContent } from "#publishing/domain/post-content.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
-import { presetsFrom } from "./post-input.ts";
+import { placementFrom, presetsFrom, zoneOf } from "./post-input.ts";
 
 // A post to check names channels and media as strings. An id that is not
 // even of the right form names nothing here: it is answered with the
@@ -97,13 +97,12 @@ export const checkRequestFrom = (input: CheckInput) =>
           options.filter(({ channelId }) => isChannelId(channelId))
         ),
         presets,
-        when: Option.fromUndefinedOr(when).pipe(
-          Option.map((timing) => ({
-            at: timing._tag === "at" ? Option.some(timing.at) : Option.none(),
-          }))
-        ),
+        when:
+          when === undefined
+            ? Option.none()
+            : Option.some(yield* placementFrom(when)),
       },
-      zoneKnown: when === undefined || isTimeZone(when.timeZone ?? "UTC"),
+      zoneKnown: when === undefined || isTimeZone(zoneOf(when)),
     };
 
     return read;

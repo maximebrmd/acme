@@ -8,7 +8,6 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
-from .content_violation import ContentViolation
 
 
 class UnprocessableEntityErrorBody_UnknownChannels(UniversalBaseModel):
@@ -34,16 +33,16 @@ class UnprocessableEntityErrorBody_UnknownChannels(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class UnprocessableEntityErrorBody_PostContentInvalid(UniversalBaseModel):
+class UnprocessableEntityErrorBody_InvalidTimeZone(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["PostContentInvalid"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "PostContentInvalid"
+        typing.Literal["InvalidTimeZone"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "InvalidTimeZone"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
-    violations: typing.List[ContentViolation]
+    time_zone: typing_extensions.Annotated[str, FieldMetadata(alias="timeZone"), pydantic.Field(alias="timeZone")]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -56,6 +55,6 @@ class UnprocessableEntityErrorBody_PostContentInvalid(UniversalBaseModel):
 
 
 UnprocessableEntityErrorBody = typing_extensions.Annotated[
-    typing.Union[UnprocessableEntityErrorBody_UnknownChannels, UnprocessableEntityErrorBody_PostContentInvalid],
+    typing.Union[UnprocessableEntityErrorBody_UnknownChannels, UnprocessableEntityErrorBody_InvalidTimeZone],
     pydantic.Field(discriminator="type"),
 ]

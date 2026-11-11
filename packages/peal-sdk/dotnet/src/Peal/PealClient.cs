@@ -61,6 +61,7 @@ public partial class PealClient : IPealClient
         Tags = new TagsClient(_client);
         Signatures = new SignaturesClient(_client);
         ChannelSets = new ChannelSetsClient(_client);
+        Queues = new QueuesClient(_client);
         ChannelDefaults = new ChannelDefaultsClient(_client);
     }
 
@@ -119,6 +120,8 @@ public partial class PealClient : IPealClient
     public ISignaturesClient Signatures { get; }
 
     public IChannelSetsClient ChannelSets { get; }
+
+    public IQueuesClient Queues { get; }
 
     public IChannelDefaultsClient ChannelDefaults { get; }
 }

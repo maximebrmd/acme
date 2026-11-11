@@ -136,6 +136,24 @@ public record PostRefusal
     }
 
     /// <summary>
+    /// Create an instance of PostRefusal with <see cref="PostRefusal.QueueNotFound"/>.
+    /// </summary>
+    public PostRefusal(PostRefusal.QueueNotFound value)
+    {
+        Type = "QueueNotFound";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of PostRefusal with <see cref="PostRefusal.QueueHasNoRoom"/>.
+    /// </summary>
+    public PostRefusal(PostRefusal.QueueHasNoRoom value)
+    {
+        Type = "QueueHasNoRoom";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -210,6 +228,16 @@ public record PostRefusal
     /// Returns true if <see cref="Type"/> is "SignatureNotFound"
     /// </summary>
     public bool IsSignatureNotFound => Type == "SignatureNotFound";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "QueueNotFound"
+    /// </summary>
+    public bool IsQueueNotFound => Type == "QueueNotFound";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "QueueHasNoRoom"
+    /// </summary>
+    public bool IsQueueHasNoRoom => Type == "QueueHasNoRoom";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.PostContentInvalidEncoded"/> if <see cref="Type"/> is 'PostContentInvalid', otherwise throws an exception.
@@ -328,6 +356,24 @@ public record PostRefusal
             ? (Peal.SignatureNotFoundEncoded)Value!
             : throw new global::System.Exception("PostRefusal.Type is not 'SignatureNotFound'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.QueueNotFoundEncoded"/> if <see cref="Type"/> is 'QueueNotFound', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'QueueNotFound'.</exception>
+    public Peal.QueueNotFoundEncoded AsQueueNotFound() =>
+        IsQueueNotFound
+            ? (Peal.QueueNotFoundEncoded)Value!
+            : throw new global::System.Exception("PostRefusal.Type is not 'QueueNotFound'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.QueueHasNoRoomEncoded"/> if <see cref="Type"/> is 'QueueHasNoRoom', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'QueueHasNoRoom'.</exception>
+    public Peal.QueueHasNoRoomEncoded AsQueueHasNoRoom() =>
+        IsQueueHasNoRoom
+            ? (Peal.QueueHasNoRoomEncoded)Value!
+            : throw new global::System.Exception("PostRefusal.Type is not 'QueueHasNoRoom'");
+
     public T Match<T>(
         Func<Peal.PostContentInvalidEncoded, T> onPostContentInvalid,
         Func<Peal.UnknownChannelsEncoded, T> onUnknownChannels,
@@ -342,6 +388,8 @@ public record PostRefusal
         Func<Peal.UnknownTagsEncoded, T> onUnknownTags,
         Func<Peal.ChannelSetNotFoundEncoded, T> onChannelSetNotFound,
         Func<Peal.SignatureNotFoundEncoded, T> onSignatureNotFound,
+        Func<Peal.QueueNotFoundEncoded, T> onQueueNotFound,
+        Func<Peal.QueueHasNoRoomEncoded, T> onQueueHasNoRoom,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -360,6 +408,8 @@ public record PostRefusal
             "UnknownTags" => onUnknownTags(AsUnknownTags()),
             "ChannelSetNotFound" => onChannelSetNotFound(AsChannelSetNotFound()),
             "SignatureNotFound" => onSignatureNotFound(AsSignatureNotFound()),
+            "QueueNotFound" => onQueueNotFound(AsQueueNotFound()),
+            "QueueHasNoRoom" => onQueueHasNoRoom(AsQueueHasNoRoom()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -378,6 +428,8 @@ public record PostRefusal
         Action<Peal.UnknownTagsEncoded> onUnknownTags,
         Action<Peal.ChannelSetNotFoundEncoded> onChannelSetNotFound,
         Action<Peal.SignatureNotFoundEncoded> onSignatureNotFound,
+        Action<Peal.QueueNotFoundEncoded> onQueueNotFound,
+        Action<Peal.QueueHasNoRoomEncoded> onQueueHasNoRoom,
         Action<string, object?> onUnknown_
     )
     {
@@ -421,6 +473,12 @@ public record PostRefusal
                 break;
             case "SignatureNotFound":
                 onSignatureNotFound(AsSignatureNotFound());
+                break;
+            case "QueueNotFound":
+                onQueueNotFound(AsQueueNotFound());
+                break;
+            case "QueueHasNoRoom":
+                onQueueHasNoRoom(AsQueueHasNoRoom());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -610,6 +668,34 @@ public record PostRefusal
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.QueueNotFoundEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsQueueNotFound(out Peal.QueueNotFoundEncoded? value)
+    {
+        if (Type == "QueueNotFound")
+        {
+            value = (Peal.QueueNotFoundEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.QueueHasNoRoomEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsQueueHasNoRoom(out Peal.QueueHasNoRoomEncoded? value)
+    {
+        if (Type == "QueueHasNoRoom")
+        {
+            value = (Peal.QueueHasNoRoomEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator PostRefusal(PostRefusal.PostContentInvalid value) => new(value);
@@ -638,6 +724,10 @@ public record PostRefusal
     public static implicit operator PostRefusal(PostRefusal.ChannelSetNotFound value) => new(value);
 
     public static implicit operator PostRefusal(PostRefusal.SignatureNotFound value) => new(value);
+
+    public static implicit operator PostRefusal(PostRefusal.QueueNotFound value) => new(value);
+
+    public static implicit operator PostRefusal(PostRefusal.QueueHasNoRoom value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<PostRefusal>
@@ -725,6 +815,14 @@ public record PostRefusal
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.SignatureNotFoundEncoded"
                         ),
+                "QueueNotFound" => jsonWithoutDiscriminator.Deserialize<Peal.QueueNotFoundEncoded?>(
+                    options
+                ) ?? throw new JsonException("Failed to deserialize Peal.QueueNotFoundEncoded"),
+                "QueueHasNoRoom" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.QueueHasNoRoomEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.QueueHasNoRoomEncoded"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new PostRefusal(discriminator, value);
@@ -752,6 +850,8 @@ public record PostRefusal
                     "UnknownTags" => JsonSerializer.SerializeToNode(value.Value, options),
                     "ChannelSetNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SignatureNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "QueueNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "QueueHasNoRoom" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -1033,6 +1133,46 @@ public record PostRefusal
 
         public static implicit operator PostRefusal.SignatureNotFound(
             Peal.SignatureNotFoundEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for QueueNotFound
+    /// </summary>
+    [Serializable]
+    public struct QueueNotFound
+    {
+        public QueueNotFound(Peal.QueueNotFoundEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.QueueNotFoundEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator PostRefusal.QueueNotFound(
+            Peal.QueueNotFoundEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for QueueHasNoRoom
+    /// </summary>
+    [Serializable]
+    public struct QueueHasNoRoom
+    {
+        public QueueHasNoRoom(Peal.QueueHasNoRoomEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.QueueHasNoRoomEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator PostRefusal.QueueHasNoRoom(
+            Peal.QueueHasNoRoomEncoded value
         ) => new(value);
     }
 }

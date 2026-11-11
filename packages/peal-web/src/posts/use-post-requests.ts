@@ -3,7 +3,7 @@
 import { useAtomSet } from "@effect/atom-react";
 import type { DateTime } from "effect";
 import { Exit, Option } from "effect";
-import type { Post, PostDraft, PostSchedule } from "peal-contract";
+import type { Post, PostDraft, PostSchedule, QueuePost } from "peal-contract";
 import { useState } from "react";
 
 import {
@@ -18,6 +18,7 @@ import {
 } from "#posts/api.ts";
 import type { ComposerFailure } from "#posts/composer-failure.ts";
 import { failureOf } from "#posts/outcome.ts";
+import { enqueuePost, queuesChanged } from "#queues/atoms.ts";
 
 /**
  * The composer's requests, each answering with the post or none, and the
@@ -34,6 +35,7 @@ export const usePostRequests = (workspaceId: string) => {
   const cancel = useAtomSet(cancelPost, { mode: "promiseExit" });
   const unschedule = useAtomSet(unschedulePost, { mode: "promiseExit" });
   const discard = useAtomSet(discardPost, { mode: "promiseExit" });
+  const enqueue = useAtomSet(enqueuePost, { mode: "promiseExit" });
 
   const failed = <E extends ComposerFailure>(exit: Exit.Exit<unknown, E>) => {
     setFailure(
@@ -81,6 +83,15 @@ export const usePostRequests = (workspaceId: string) => {
 
       return false;
     },
+    /** Puts the post on the next free slot of a queue. */
+    enqueue: async (postId: string, payload: QueuePost) =>
+      settled(
+        await enqueue({
+          params: params(postId),
+          payload,
+          reactivityKeys: [...postsKeys, ...queuesChanged(workspaceId)],
+        })
+      ),
     fail: setFailure,
     failure,
     reschedule: async (postId: string, payload: PostSchedule) =>

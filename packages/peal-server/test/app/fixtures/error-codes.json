@@ -465,6 +465,21 @@
     "tag": "PostStatusConflict"
   },
   {
+    "code": "queue_has_no_room",
+    "status": 409,
+    "tag": "QueueHasNoRoom"
+  },
+  {
+    "code": "queue_name_taken",
+    "status": 409,
+    "tag": "QueueNameTaken"
+  },
+  {
+    "code": "queue_not_found",
+    "status": 404,
+    "tag": "QueueNotFound"
+  },
+  {
     "code": "reduction_refused",
     "status": 409,
     "tag": "ReductionRefused"
@@ -598,6 +613,11 @@
     "code": "too_many_password_attempts",
     "status": 429,
     "tag": "TooManyPasswordAttempts"
+  },
+  {
+    "code": "too_many_queues",
+    "status": 409,
+    "tag": "TooManyQueues"
   },
   {
     "code": "too_many_requests",

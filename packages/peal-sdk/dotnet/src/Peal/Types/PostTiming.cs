@@ -37,6 +37,15 @@ public record PostTiming
     }
 
     /// <summary>
+    /// Create an instance of PostTiming with <see cref="PostTiming.Queue"/>.
+    /// </summary>
+    public PostTiming(PostTiming.Queue value)
+    {
+        Type = "queue";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -58,6 +67,11 @@ public record PostTiming
     public bool IsAt => Type == "at";
 
     /// <summary>
+    /// Returns true if <see cref="Type"/> is "queue"
+    /// </summary>
+    public bool IsQueue => Type == "queue";
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.PostTimingNow"/> if <see cref="Type"/> is 'now', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'now'.</exception>
@@ -75,9 +89,19 @@ public record PostTiming
             ? (Peal.PostTimingAt)Value!
             : throw new global::System.Exception("PostTiming.Type is not 'at'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.PostTimingQueue"/> if <see cref="Type"/> is 'queue', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'queue'.</exception>
+    public Peal.PostTimingQueue AsQueue() =>
+        IsQueue
+            ? (Peal.PostTimingQueue)Value!
+            : throw new global::System.Exception("PostTiming.Type is not 'queue'");
+
     public T Match<T>(
         Func<Peal.PostTimingNow, T> onNow,
         Func<Peal.PostTimingAt, T> onAt,
+        Func<Peal.PostTimingQueue, T> onQueue,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -85,6 +109,7 @@ public record PostTiming
         {
             "now" => onNow(AsNow()),
             "at" => onAt(AsAt()),
+            "queue" => onQueue(AsQueue()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -92,6 +117,7 @@ public record PostTiming
     public void Visit(
         Action<Peal.PostTimingNow> onNow,
         Action<Peal.PostTimingAt> onAt,
+        Action<Peal.PostTimingQueue> onQueue,
         Action<string, object?> onUnknown_
     )
     {
@@ -102,6 +128,9 @@ public record PostTiming
                 break;
             case "at":
                 onAt(AsAt());
+                break;
+            case "queue":
+                onQueue(AsQueue());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -137,11 +166,27 @@ public record PostTiming
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.PostTimingQueue"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsQueue(out Peal.PostTimingQueue? value)
+    {
+        if (Type == "queue")
+        {
+            value = (Peal.PostTimingQueue)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator PostTiming(PostTiming.Now value) => new(value);
 
     public static implicit operator PostTiming(PostTiming.At value) => new(value);
+
+    public static implicit operator PostTiming(PostTiming.Queue value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<PostTiming>
@@ -188,6 +233,8 @@ public record PostTiming
                     ?? throw new JsonException("Failed to deserialize Peal.PostTimingNow"),
                 "at" => jsonWithoutDiscriminator.Deserialize<Peal.PostTimingAt?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.PostTimingAt"),
+                "queue" => jsonWithoutDiscriminator.Deserialize<Peal.PostTimingQueue?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.PostTimingQueue"),
                 _ => json.Deserialize<object?>(options),
             };
             return new PostTiming(discriminator, value);
@@ -204,6 +251,7 @@ public record PostTiming
                 {
                     "now" => JsonSerializer.SerializeToNode(value.Value, options),
                     "at" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "queue" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -266,5 +314,23 @@ public record PostTiming
         public override string ToString() => Value.ToString() ?? "null";
 
         public static implicit operator PostTiming.At(Peal.PostTimingAt value) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for queue
+    /// </summary>
+    [Serializable]
+    public struct Queue
+    {
+        public Queue(Peal.PostTimingQueue value)
+        {
+            Value = value;
+        }
+
+        internal Peal.PostTimingQueue Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator PostTiming.Queue(Peal.PostTimingQueue value) => new(value);
     }
 }

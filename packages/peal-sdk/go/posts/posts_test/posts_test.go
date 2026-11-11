@@ -647,6 +647,33 @@ func TestPostsRescheduleWithWireMock(
 	VerifyRequestCount(t, "TestPostsRescheduleWithWireMock", "POST", "/api/workspaces/workspaceId/posts/postId/reschedule", nil, 1)
 }
 
+func TestPostsEnqueueWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.QueuePost{
+		WorkspaceID: "workspaceId",
+		PostID:      "postId",
+	}
+	_, invocationErr := client.Posts.Enqueue(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsEnqueueWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsEnqueueWithWireMock", "POST", "/api/workspaces/workspaceId/posts/postId/queue", nil, 1)
+}
+
 func TestPostsUnscheduleWithWireMock(
 	t *testing.T,
 ) {

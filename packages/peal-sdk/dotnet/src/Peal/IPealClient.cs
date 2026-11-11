@@ -30,5 +30,6 @@ public partial interface IPealClient
     public ITagsClient Tags { get; }
     public ISignaturesClient Signatures { get; }
     public IChannelSetsClient ChannelSets { get; }
+    public IQueuesClient Queues { get; }
     public IChannelDefaultsClient ChannelDefaults { get; }
 }

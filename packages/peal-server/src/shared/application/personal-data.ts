@@ -96,8 +96,8 @@ export interface AuthoredPostRecord extends PostRecord {
 
 /**
  * What a workspace saved to write and file its posts: its tags, its
- * signatures, its channel sets and its channels' default options.
- * Workspace content, naming nobody.
+ * signatures, its channel sets, its channels' default options and its
+ * queues. Workspace content, naming nobody.
  */
 export interface SavedItemsRecord {
   readonly channelDefaults: readonly {
@@ -112,6 +112,17 @@ export interface SavedItemsRecord {
     readonly name: string;
     /** As stored: plain JSON, options by channel. */
     readonly options: unknown;
+  }[];
+  readonly queues: readonly {
+    readonly channelIds: readonly string[];
+    readonly channelSetId: string | null;
+    readonly createdAt: DateTime.Utc;
+    readonly id: string;
+    readonly isDefault: boolean;
+    readonly name: string;
+    /** As stored: plain JSON, weekdays and wall-clock times. */
+    readonly slots: unknown;
+    readonly timeZone: string;
   }[];
   readonly signatures: readonly {
     readonly createdAt: DateTime.Utc;

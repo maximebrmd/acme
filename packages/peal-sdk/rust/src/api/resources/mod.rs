@@ -30,6 +30,7 @@
 //! - **tags**
 //! - **signatures**
 //! - **channelSets**
+//! - **queues**
 //! - **channelDefaults**
 
 use crate::{ApiError, ClientConfig};
@@ -55,6 +56,7 @@ pub mod notification_preferences;
 pub mod partner;
 pub mod partner_account;
 pub mod posts;
+pub mod queues;
 pub mod review;
 pub mod session;
 pub mod signatures;
@@ -93,6 +95,7 @@ pub struct PealClient {
     pub tags: TagsClient,
     pub signatures: SignaturesClient,
     pub channel_sets: ChannelSetsClient,
+    pub queues: QueuesClient,
     pub channel_defaults: ChannelDefaultsClient,
 }
 
@@ -128,6 +131,7 @@ impl PealClient {
             tags: TagsClient::new(config.clone())?,
             signatures: SignaturesClient::new(config.clone())?,
             channel_sets: ChannelSetsClient::new(config.clone())?,
+            queues: QueuesClient::new(config.clone())?,
             channel_defaults: ChannelDefaultsClient::new(config.clone())?,
         })
     }
@@ -154,6 +158,7 @@ pub use notification_preferences::NotificationPreferencesClient;
 pub use partner::PartnerClient;
 pub use partner_account::PartnerAccountClient;
 pub use posts::PostsClient;
+pub use queues::QueuesClient;
 pub use review::ReviewClient;
 pub use session::SessionClient;
 pub use signatures::SignaturesClient;

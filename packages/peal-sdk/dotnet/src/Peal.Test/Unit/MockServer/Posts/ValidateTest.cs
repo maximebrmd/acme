@@ -281,6 +281,8 @@ public class ValidateTest : BaseMockServerTest
                 "planWithRoom": "starter",
                 "used": 1000000
               },
+              "queueNoRoom": "noSlots",
+              "queueSlot": "queueSlot",
               "schedule": "ok",
               "unknownChannels": [
                 "unknownChannels",
@@ -468,6 +470,8 @@ public class ValidateTest : BaseMockServerTest
                 "planWithRoom": "starter",
                 "used": 1000000
               },
+              "queueNoRoom": "noSlots",
+              "queueSlot": "queueSlot",
               "schedule": "ok",
               "unknownChannels": [
                 "unknownChannels"

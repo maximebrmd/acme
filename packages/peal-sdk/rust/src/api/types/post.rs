@@ -14,6 +14,9 @@ pub struct Post {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub outcome: Option<PostOutcome>,
+    #[serde(rename = "queueId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub queue_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schedule: Option<PostSchedule>,
     #[serde(rename = "scheduledBy")]
@@ -46,6 +49,7 @@ pub struct PostBuilder {
     created_via: Option<PostOrigin>,
     id: Option<String>,
     outcome: Option<PostOutcome>,
+    queue_id: Option<String>,
     schedule: Option<PostSchedule>,
     scheduled_by: Option<String>,
     scheduled_via: Option<PostOrigin>,
@@ -78,6 +82,11 @@ impl PostBuilder {
 
     pub fn outcome(mut self, value: PostOutcome) -> Self {
         self.outcome = Some(value);
+        self
+    }
+
+    pub fn queue_id(mut self, value: impl Into<String>) -> Self {
+        self.queue_id = Some(value.into());
         self
     }
 
@@ -132,6 +141,7 @@ impl PostBuilder {
             created_via: self.created_via,
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             outcome: self.outcome,
+            queue_id: self.queue_id,
             schedule: self.schedule,
             scheduled_by: self.scheduled_by,
             scheduled_via: self.scheduled_via,

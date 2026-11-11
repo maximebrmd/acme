@@ -34,4 +34,26 @@ class PostWarning_ChannelsDropped(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-PostWarning = PostWarning_ChannelsDropped
+class PostWarning_QueueChannelsDropped(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["queueChannelsDropped"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "queueChannelsDropped"
+    channel_ids: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="channelIds"), pydantic.Field(alias="channelIds")
+    ]
+    queue_id: typing_extensions.Annotated[str, FieldMetadata(alias="queueId"), pydantic.Field(alias="queueId")]
+    queue_name: typing_extensions.Annotated[str, FieldMetadata(alias="queueName"), pydantic.Field(alias="queueName")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+PostWarning = typing_extensions.Annotated[
+    typing.Union[PostWarning_ChannelsDropped, PostWarning_QueueChannelsDropped], pydantic.Field(discriminator="type")
+]

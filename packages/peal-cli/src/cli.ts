@@ -23,6 +23,7 @@ import { members } from "#commands/members.ts";
 import { partner } from "#commands/partner.ts";
 import { post } from "#commands/post.ts";
 import { posts } from "#commands/posts.ts";
+import { queues } from "#commands/queues.ts";
 import { review } from "#commands/review.ts";
 import { sets } from "#commands/sets.ts";
 import { signatures } from "#commands/signatures.ts";
@@ -55,6 +56,7 @@ export const cli = peal.pipe(
     tags,
     signatures,
     sets,
+    queues,
     approvals,
     review,
     media,

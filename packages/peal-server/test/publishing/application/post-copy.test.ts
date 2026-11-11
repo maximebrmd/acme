@@ -66,7 +66,6 @@ describe("duplicating a post", () => {
           ];
 
           const sent = yield* scheduling.send(actor, {
-            at: Option.some(utc("2026-06-16T08:00:00Z")),
             channelIds: [mastodon, pinterest],
             content: contentOf("Hello", {
               media: [attachableImage],
@@ -74,6 +73,7 @@ describe("duplicating a post", () => {
             }),
             idempotency: Option.none(),
             options,
+            placement: { _tag: "at", at: utc("2026-06-16T08:00:00Z") },
             tagIds: [tag.id],
             timeZone: TimeZoneIdSchema.make("Europe/Paris"),
           });

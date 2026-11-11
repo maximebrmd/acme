@@ -251,10 +251,10 @@ describe("a workspace where contributors and applications wait", () => {
 
           const sent = (actor: Actor, text: string) =>
             scheduling.send(actor, {
-              at: Option.some(at8.at),
               channelIds: [channelId],
               content: contentOf(text),
               idempotency: Option.none(),
+              placement: { _tag: "at", at: at8.at },
               timeZone: at8.timeZone,
             });
 
@@ -336,10 +336,10 @@ describe("a workspace where contributors and applications wait", () => {
           assert.deepStrictEqual(
             yield* Effect.flip(
               scheduling.send(contributor, {
-                at: Option.none(),
                 channelIds: [channelId],
                 content: contentOf("Not theirs to send."),
                 idempotency: Option.none(),
+                placement: { _tag: "now" },
                 timeZone: at8.timeZone,
               })
             ),

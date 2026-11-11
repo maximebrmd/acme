@@ -43,7 +43,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
   wait), `…/settings` (with `members`, `invitations`, `tags`, `signatures`,
-  `channel-sets`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
+  `channel-sets`, `queues`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]`,
   `admin/contract-requests` (through `deskRead`), `admin/audit` and
@@ -137,6 +137,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   and changed with post:update. Their failures are explained from the one
   `SavedItems.errors` catalogue (`#settings/saved-item-error.ts`). Draw a
   tag with peal-ui's `Tag` and `TagDot`, never a colour value.
+- Queues have a settings page too (`…/settings/queues`, views in
+  `components/queues/queue-views.tsx`, state in `queues-settings.tsx`,
+  atoms in `#queues/atoms.ts`), with each queue's next slots on its own
+  clock. The composer's schedule section (`SchedulePlacementFields`)
+  chooses a time or a queue (`QueueChoice`, its view `QueueChoiceView`,
+  the default preselected), and puts the saved draft or the scheduled post
+  on the queue with `posts.enqueue`; the calendar marks queued posts and
+  filters by queue, and `PostQueueLine` names a post's queue.
 - The composer takes them through components of their own, each wired
   with a few lines: `ChannelSetPicker` (applies a set with `appliedSet`,
   which leaves out and counts the channels disconnected since),
