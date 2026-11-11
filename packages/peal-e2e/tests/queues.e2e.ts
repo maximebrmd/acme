@@ -18,9 +18,13 @@ const queue = "Evenings";
 const first = "A field note for the first slot.";
 const second = "A field note for the next slot.";
 
-// Today, as the queue's day: its slots are late in the day, so they are
-// ahead whenever the test runs.
-const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+// Tomorrow, as the queue's day: its slots, late that day, are a day ahead
+// at least whenever the test runs, even a few minutes before midnight. The
+// composer opens the calendar on the week of the slot a post took.
+const day = new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString(
+  "en-US",
+  { weekday: "long" }
+);
 
 const postNamed = (text: string) =>
   new RegExp(`, Scheduled: ${RegExp.escape(text)}$`, "u");
@@ -88,12 +92,12 @@ describe("a member's queue", { serial: true }, () => {
     await screen.getByLabel("Name").fill(queue);
 
     await screen.getByRole("combobox", "Day").tap();
-    await screen.getByRole("option", today).tap();
+    await screen.getByRole("option", day).tap();
     await screen.getByRole("textbox", "Time").fill("23:57");
     await screen.getByRole("button", "Add the slot").tap();
 
     await screen.getByRole("combobox", "Day").tap();
-    await screen.getByRole("option", today).tap();
+    await screen.getByRole("option", day).tap();
     await screen.getByRole("textbox", "Time").fill("23:58");
     await screen.getByRole("button", "Add the slot").tap();
 
