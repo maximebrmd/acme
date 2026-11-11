@@ -56,6 +56,12 @@ class PostTarget extends JsonSerializableType
     public ?string $publishedAt;
 
     /**
+     * @var ?string $removedAt
+     */
+    #[JsonProperty('removedAt')]
+    public ?string $removedAt;
+
+    /**
      * @var int $round
      */
     #[JsonProperty('round')]
@@ -91,6 +97,7 @@ class PostTarget extends JsonSerializableType
      *   options?: ?TargetOptions,
      *   permalink?: ?string,
      *   publishedAt?: ?string,
+     *   removedAt?: ?string,
      *   thumbnailNotSet?: ?bool,
      *   unconfirmedReason?: ?value-of<UnconfirmedReason>,
      * } $values
@@ -106,6 +113,7 @@ class PostTarget extends JsonSerializableType
         $this->parts = $values['parts'];
         $this->permalink = $values['permalink'] ?? null;
         $this->publishedAt = $values['publishedAt'] ?? null;
+        $this->removedAt = $values['removedAt'] ?? null;
         $this->round = $values['round'];
         $this->status = $values['status'];
         $this->thumbnailNotSet = $values['thumbnailNotSet'] ?? null;

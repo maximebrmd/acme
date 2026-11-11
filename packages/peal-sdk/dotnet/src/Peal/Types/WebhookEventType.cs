@@ -22,6 +22,10 @@ public readonly record struct WebhookEventType : IStringEnum
 
     public static readonly WebhookEventType PostFinished = new(Values.PostFinished);
 
+    public static readonly WebhookEventType PostUnpublished = new(Values.PostUnpublished);
+
+    public static readonly WebhookEventType PostUnpublishFailed = new(Values.PostUnpublishFailed);
+
     public static readonly WebhookEventType PostApprovalRequested = new(
         Values.PostApprovalRequested
     );
@@ -179,6 +183,10 @@ public readonly record struct WebhookEventType : IStringEnum
         public const string PostCancelled = "post.cancelled";
 
         public const string PostFinished = "post.finished";
+
+        public const string PostUnpublished = "post.unpublished";
+
+        public const string PostUnpublishFailed = "post.unpublish_failed";
 
         public const string PostApprovalRequested = "post.approval_requested";
 

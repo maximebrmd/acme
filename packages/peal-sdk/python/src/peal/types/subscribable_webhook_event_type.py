@@ -11,6 +11,8 @@ SubscribableWebhookEventType = typing.Union[
         "post.unconfirmed",
         "post.cancelled",
         "post.finished",
+        "post.unpublished",
+        "post.unpublish_failed",
         "post.approval_requested",
         "post.approved",
         "post.changes_requested",

@@ -9,6 +9,8 @@ export const WebhookEventType = {
         PostUnconfirmed: "post.unconfirmed",
         PostCancelled: "post.cancelled",
         PostFinished: "post.finished",
+        PostUnpublished: "post.unpublished",
+        PostUnpublishFailed: "post.unpublish_failed",
         PostApprovalRequested: "post.approval_requested",
         PostApproved: "post.approved",
         PostChangesRequested: "post.changes_requested",
