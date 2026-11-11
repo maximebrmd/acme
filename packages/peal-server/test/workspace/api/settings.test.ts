@@ -271,6 +271,14 @@ const PortsLive = Layer.mergeAll(
                   status: "active",
                 },
               ],
+              usage: [
+                {
+                  day: "2026-11-09",
+                  dimension: "x",
+                  meter: "publishedPosts",
+                  quantity: 3,
+                },
+              ],
             },
             channels: [],
             media: [],
@@ -880,6 +888,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
               name,
               plan: billing.plan,
               statuses: billing.subscriptions.map(({ status }) => status),
+              usage: billing.usage,
               // Where the workspace is told, never the secret that signs it.
               webhooks: webhooks.map(({ url }) => url),
             })
@@ -890,6 +899,14 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
               name: "Harbour",
               plan: "pro",
               statuses: ["active"],
+              usage: [
+                {
+                  day: "2026-11-09",
+                  dimension: "x",
+                  meter: "publishedPosts",
+                  quantity: 3,
+                },
+              ],
               webhooks: ["https://hooks.example.com/peal"],
             },
           ]

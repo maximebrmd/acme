@@ -50,6 +50,15 @@ layer(LedgerTest)("the usage ledger in Postgres", (it) => {
         posts("2026-10-05", 3),
       ]);
 
+      // Every day, for the workspace's export.
+      yield* ledger.add({ record: posts("2025-12-31"), workspaceId });
+
+      assert.deepStrictEqual(yield* ledger.allOf(workspaceId), [
+        posts("2025-12-31"),
+        posts("2026-10-05", 1, "bluesky"),
+        posts("2026-10-05", 3),
+      ]);
+
       yield* ledger.eraseWorkspace(workspaceId);
     })
   );

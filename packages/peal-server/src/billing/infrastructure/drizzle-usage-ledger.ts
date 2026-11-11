@@ -52,6 +52,12 @@ export const DrizzleUsageLedgerLive = Layer.effect(
     const db = yield* Drizzle;
     const client = yield* SqlClient.SqlClient;
 
+    const ordered = [
+      asc(usageDays.day),
+      asc(usageDays.meter),
+      asc(usageDays.dimension),
+    ];
+
     return UsageLedger.of({
       add: (entry) =>
         db
@@ -65,6 +71,17 @@ export const DrizzleUsageLedgerLive = Layer.effect(
             Effect.mapError(failed),
             Effect.asVoid,
             Effect.withSpan("UsageLedger.add")
+          ),
+      allOf: (workspaceId) =>
+        db
+          .select()
+          .from(usageDays)
+          .where(eq(usageDays.workspaceId, workspaceId))
+          .orderBy(...ordered)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.flatMap(Effect.forEach(toRecord)),
+            Effect.withSpan("UsageLedger.allOf")
           ),
       eraseWorkspace: (workspaceId) =>
         db
@@ -89,11 +106,7 @@ export const DrizzleUsageLedgerLive = Layer.effect(
               )
             )
           )
-          .orderBy(
-            asc(usageDays.day),
-            asc(usageDays.meter),
-            asc(usageDays.dimension)
-          )
+          .orderBy(...ordered)
           .pipe(
             Effect.mapError(failed),
             Effect.flatMap(Effect.forEach(toRecord)),

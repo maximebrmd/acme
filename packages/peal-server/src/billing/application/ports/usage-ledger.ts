@@ -38,6 +38,13 @@ export class UsageLedger extends Context.Service<
       workspaceId: WorkspaceId,
       period: UsagePeriod
     ) => Effect.Effect<readonly UsageRecord[], DatabaseError>;
+    /**
+     * Every record the ledger keeps of the workspace, oldest day first, for
+     * its export.
+     */
+    readonly allOf: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly UsageRecord[], DatabaseError>;
     /** Deletes the workspace's counts, in the caller's transaction. */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId

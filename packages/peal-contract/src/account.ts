@@ -297,9 +297,11 @@ const ExportedAuthoredPostSchema = Schema.Struct({
 
 // The workspace's plan, null on a server that does not bill, its
 // subscriptions as Stripe last described them: no card, invoice or Stripe
-// id, which stay with Stripe; and how many posts it made each month (from
+// id, which stay with Stripe; how many posts it made each month (from
 // its first instant, UTC) on platforms that bill the server per post (X),
-// and how many of them held a link.
+// and how many of them held a link; and its usage ledger, kept 400 days:
+// each meter's quantity by UTC day (YYYY-MM-DD) and dimension (the platform
+// of `publishedPosts`, empty for the others).
 const ExportedBillingSchema = Schema.Struct({
   meteredPosts: Schema.Array(
     Schema.Struct({
@@ -316,6 +318,14 @@ const ExportedBillingSchema = Schema.Struct({
       currentPeriodEnd: nullable(instant),
       plan: Schema.String,
       status: Schema.String,
+    })
+  ),
+  usage: Schema.Array(
+    Schema.Struct({
+      day: Schema.String,
+      dimension: Schema.String,
+      meter: Schema.String,
+      quantity: Int64Schema,
     })
   ),
 });

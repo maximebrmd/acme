@@ -8,12 +8,15 @@ import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
 import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
+import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import type { SubscriptionEvent } from "#billing/application/record-subscription.ts";
+import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import type { MeteredPostCount } from "#billing/domain/metered-posts.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
+import type { UsageRecord } from "#billing/domain/usage-meter.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
@@ -315,13 +318,46 @@ const MeteredPostsInMemory = Layer.effect(
   })
 );
 
+// The usage ledger of the one workspace in memory.
+const UsageInMemory = Layer.effect(
+  UsageLedger,
+  Effect.gen(function* inMemory() {
+    const records = yield* Ref.make<readonly UsageRecord[]>([]);
+
+    return UsageLedger.of({
+      add: ({ record }) =>
+        Ref.update(records, (all) => {
+          const same = (kept: UsageRecord) =>
+            kept.meter === record.meter &&
+            kept.dimension === record.dimension &&
+            DateTime.Equivalence(kept.day, record.day);
+
+          const found = all.find(same);
+
+          return [
+            ...all.filter((kept) => !same(kept)),
+            found === undefined
+              ? record
+              : { ...found, quantity: found.quantity + record.quantity },
+          ];
+        }),
+      allOf: () => Ref.get(records),
+      eraseWorkspace: () => Ref.set(records, []),
+      ofWorkspace: () => Ref.get(records),
+      purgeBefore: () => Effect.succeed(0),
+      set: () => Effect.void,
+    });
+  })
+);
+
 // What billing keeps of a workspace, for its exports and erasures, on a
 // server that bills or not.
 const recordsWith = (enabled: boolean) =>
   Layer.mergeAll(
     BillingRecords.layer,
     RecordSubscription.layer,
-    MeteredPosts.layer
+    MeteredPosts.layer,
+    RecordedUsage.layer
   ).pipe(
     Layer.provide(
       Layer.mergeAll(
@@ -331,7 +367,7 @@ const recordsWith = (enabled: boolean) =>
         NoContractsTest
       )
     ),
-    Layer.provide(MeteredPostsInMemory),
+    Layer.provide(Layer.mergeAll(MeteredPostsInMemory, UsageInMemory)),
     Layer.provide(TransactionsTest),
     Layer.provideMerge(CheckoutsInMemory),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
@@ -386,9 +422,36 @@ layer(recordsWith(false))("posts on platforms that bill per post", (it) => {
           counted
         );
 
+        // Every post that went out is in the usage ledger, by UTC day.
+        const usage = yield* RecordedUsage;
+
+        yield* usage.postWentOut({
+          platform: "mastodon",
+          publishedAt: DateTime.makeUnsafe("2026-11-09T23:59:59Z"),
+          workspaceId,
+        });
+        yield* usage.postWentOut({
+          platform: "mastodon",
+          publishedAt: DateTime.makeUnsafe("2026-11-09T00:00:00Z"),
+          workspaceId,
+        });
+
+        assert.deepStrictEqual(
+          (yield* records.exportWorkspace(workspaceId)).usage,
+          [
+            {
+              day: "2026-11-09",
+              dimension: "mastodon",
+              meter: "publishedPosts",
+              quantity: 2,
+            },
+          ]
+        );
+
         yield* erase();
 
         assert.lengthOf(yield* metered.ofWorkspace(workspaceId), 0);
+        assert.lengthOf((yield* records.exportWorkspace(workspaceId)).usage, 0);
       })
   );
 });
@@ -415,6 +478,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
               status: "active",
             },
           ],
+          usage: [],
         });
 
         const refused = yield* erase().pipe(Effect.flip);
@@ -463,6 +527,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
           meteredPosts: [],
           plan: "free",
           subscriptions: [],
+          usage: [],
         });
       })
   );
@@ -621,6 +686,7 @@ layer(recordsWith(true))(
           meteredPosts: [],
           plan: "free",
           subscriptions: [],
+          usage: [],
         });
       })
     );
@@ -659,6 +725,7 @@ const UnreadTest = Layer.mergeAll(
   Layer.provide(
     Layer.mergeAll(
       MeteredPostsInMemory,
+      UsageInMemory,
       NoContractsTest,
       Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
       Layer.succeed(

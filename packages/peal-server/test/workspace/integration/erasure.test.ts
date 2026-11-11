@@ -137,6 +137,8 @@ const workspaceRows = {
   // account starts no second one.
   "billing.trials": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.trials WHERE workspace_id = ${id}`,
+  "billing.usage_days": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.usage_days WHERE workspace_id = ${id}`,
   "billing.withdrawals": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.withdrawals WHERE workspace_id = ${id}`,
   "channels.channels": (sql, id) =>
@@ -496,6 +498,8 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO billing.metered_posts (workspace_id, platform, month, posts, posts_with_links)
     VALUES (${workspaceId}, 'x', date_trunc('month', now())::date, 2, 1)`;
+  yield* sql`INSERT INTO billing.usage_days (workspace_id, day, meter, dimension, quantity)
+    VALUES (${workspaceId}, current_date, 'publishedPosts', 'x', 2), (${workspaceId}, current_date, 'channels', '', 1)`;
   // An order with its consent, a trial (one per account: the user's
   // first workspace has it) and a withdrawal.
   yield* sql`INSERT INTO billing.orders (id, workspace_id, user_id, plan, interval, trial, consent_version, created_at)
