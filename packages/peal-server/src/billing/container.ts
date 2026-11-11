@@ -13,6 +13,7 @@ import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { PurgeContractRecords } from "#billing/application/purge-contract-records.ts";
 import { ReceiveContractRequest } from "#billing/application/receive-contract-request.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
+import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SettleContractRequest } from "#billing/application/settle-contract-request.ts";
@@ -33,6 +34,7 @@ import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-me
 import { DrizzleOrdersLive } from "#billing/infrastructure/drizzle-orders.ts";
 import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
 import { DrizzleTrialsLive } from "#billing/infrastructure/drizzle-trials.ts";
+import { DrizzleUsageLedgerLive } from "#billing/infrastructure/drizzle-usage-ledger.ts";
 import { DrizzleWithdrawalsLive } from "#billing/infrastructure/drizzle-withdrawals.ts";
 import { EmailedRequestMailLive } from "#billing/infrastructure/emailed-request-mail.ts";
 import { KeyedContractReferencesLive } from "#billing/infrastructure/keyed-contract-references.ts";
@@ -52,6 +54,7 @@ const RecordsLive = Layer.mergeAll(
   DrizzleOrdersLive,
   DrizzleTrialsLive,
   DrizzleMeteredPostLedgerLive,
+  DrizzleUsageLedgerLive,
   ConfiguredBillingModeLive
 );
 
@@ -60,7 +63,9 @@ const RecordsLive = Layer.mergeAll(
  * workspace's plan allows (WorkspaceEntitlements), the subscriptions
  * Stripe's webhook reports (RecordSubscription), the orders a checkout
  * needs (CheckoutOrders), the posts each workspace makes on platforms that
- * bill per post, which publishing reports (MeteredPosts), and what billing
+ * bill per post, which publishing reports (MeteredPosts), the usage
+ * ledger's counts of what happens, each post that went out among them
+ * (RecordedUsage), and what billing
  * keeps of a workspace, for the workspace context's exports and erasures
  * (BillingRecords), which refuse one Stripe may still bill, and the way
  * out of a limit every surface tells (UpgradePaths). Recording a
@@ -78,6 +83,7 @@ export const BillingLive = Layer.mergeAll(
   CheckoutOrders.layer,
   BillingRecords.layer,
   MeteredPosts.layer,
+  RecordedUsage.layer,
   PurgeContractRecords.layer,
   PlanUpgradePathsLive.pipe(Layer.provide(WorkspaceEntitlements.layerShared))
 ).pipe(
