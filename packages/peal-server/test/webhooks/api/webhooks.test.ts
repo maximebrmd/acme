@@ -111,7 +111,9 @@ layer(WebhooksTest)("the webhooks endpoints", (it) => {
         assert.strictEqual(off.description, "Synthetic receiver");
         assert.strictEqual(off.url, created.endpoint.url);
         assert.strictEqual(
-          yield* tagOf(client.webhooks.sendTest({ params: endpointParams })),
+          yield* tagOf(
+            client.webhooks.sendTest({ params: endpointParams, query: {} })
+          ),
           "WebhookEndpointDisabled"
         );
 
@@ -148,7 +150,7 @@ layer(WebhooksTest)("the webhooks endpoints", (it) => {
       });
 
       const params = { endpointId: endpoint.id, workspaceId };
-      const pending = yield* client.webhooks.sendTest({ params });
+      const pending = yield* client.webhooks.sendTest({ params, query: {} });
 
       assert.deepStrictEqual(
         {
@@ -345,7 +347,16 @@ layer(WebhooksTest)("the webhooks endpoints", (it) => {
           ),
           tagOf(asReader.webhooks.delete({ params: endpointParams })),
           tagOf(asReader.webhooks.rotateSecret({ params: endpointParams })),
-          tagOf(asReader.webhooks.sendTest({ params: endpointParams })),
+          tagOf(
+            asReader.webhooks.sendTest({ params: endpointParams, query: {} })
+          ),
+          tagOf(asEditor.webhooks.searchDeliveries({ params, query: {} })),
+          tagOf(
+            asReader.webhooks.redeliverMany({
+              params,
+              payload: { endpointId: endpoint.id },
+            })
+          ),
         ]);
 
         assert.deepStrictEqual(
@@ -353,5 +364,105 @@ layer(WebhooksTest)("the webhooks endpoints", (it) => {
           refused.map(() => "Forbidden")
         );
       })
+  );
+
+  it.effect(
+    "list deliveries across endpoints, not as an endpoint named deliveries",
+    () =>
+      Effect.gen(function* acrossEndpoints() {
+        const workspaceId = yield* freshWorkspace;
+        const client = yield* clientAs(owner(workspaceId));
+        const params = { workspaceId };
+        const transport = yield* FakeTransport;
+        const receiver = host();
+
+        const { endpoint } = yield* client.webhooks.create({
+          params,
+          payload: {
+            channelIds: ["01900000-0000-7000-8000-0000000000c1"],
+            eventTypes: ["post.published"],
+            url: `https://${receiver}/hooks`,
+          },
+        });
+
+        assert.deepStrictEqual(endpoint.channelIds, [
+          "01900000-0000-7000-8000-0000000000c1",
+        ]);
+        assert.deepStrictEqual(endpoint.workspaceIds, []);
+
+        const sample = yield* client.webhooks.sendTest({
+          params: { ...params, endpointId: endpoint.id },
+          query: { eventType: "post.failed" },
+        });
+
+        assert.strictEqual(sample.eventType, "post.failed");
+        assert.strictEqual(sample.endpointId, endpoint.id);
+        assert.strictEqual(sample.workspaceId, workspaceId);
+        assert.isNull(sample.redeliveryOf);
+
+        yield* transport.next(receiver, answered(410));
+        yield* DeliverWebhook.use((delivering) =>
+          delivering.attempt(WebhookDeliveryIdSchema.make(sample.id), 1)
+        );
+
+        const page = yield* client.webhooks.searchDeliveries({
+          params,
+          query: { status: "failed" },
+        });
+
+        assert.deepStrictEqual(
+          page.items.map(({ id }) => id),
+          [sample.id]
+        );
+
+        // The endpoint was turned off by 410 Gone: sending it again skips.
+        const again = yield* client.webhooks.redeliverMany({
+          params,
+          payload: { deliveryIds: [sample.id] },
+        });
+
+        assert.deepStrictEqual(again, {
+          redelivered: [],
+          remaining: 0,
+          skipped: [{ deliveryId: sample.id, reason: "endpointDisabled" }],
+        });
+        assert.strictEqual(
+          yield* tagOf(
+            client.webhooks.redeliverMany({
+              params,
+              payload: { endpointId: "not-an-endpoint" },
+            })
+          ),
+          "WebhookEndpointNotFound"
+        );
+      })
+  );
+
+  it.effect("refuse a list of workspaces on an endpoint of its own", () =>
+    Effect.gen(function* refused() {
+      const workspaceId = yield* freshWorkspace;
+      const client = yield* clientAs(owner(workspaceId));
+      const params = { workspaceId };
+
+      const { endpoint } = yield* client.webhooks.create({
+        params,
+        payload: {
+          eventTypes: ["post.published"],
+          url: `https://${host()}/hooks`,
+        },
+      });
+
+      assert.strictEqual(
+        yield* tagOf(
+          client.webhooks.update({
+            params: { ...params, endpointId: endpoint.id },
+            payload: {
+              workspaceIds: ["5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"],
+            },
+          })
+        ),
+        "WebhookFilterRefused"
+      );
+    })
   );
 });

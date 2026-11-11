@@ -18,9 +18,21 @@
   `fixtures/persisted/events/stored.json` decoding.
 - Contexts publish through `WebhookEvents.publish({ event, key })`, which
   joins the caller's transaction (as `Notify` does): the event, one delivery
-  per endpoint that is on and subscribes, and the start of each job commit
-  with the fact, or not at all, once per key (ids and instants, never
-  content). A workspace where nobody listens keeps nothing. Publishing
+  per endpoint that is on, subscribes and whose filters match (`wants`, with
+  the endpoint as it is then), and the start of each job commit with the
+  fact, or not at all, once per key (ids and instants, never content). A
+  workspace where nobody listens keeps nothing.
+- Filters: `channelIds` (50) and, on a `partner` endpoint only,
+  `workspaceIds` (200; the home workspace heard only if listed), ids checked
+  for shape only and kept as saved, with no port into channels or
+  workspace. `channelsOf` (`domain/webhook-event.ts`, exhaustive) says
+  which channels each type concerns: `named` from its data, `none` (media,
+  boosts, tests: they pass every channel filter), or `ofPost` for the
+  whole-post events whose data names none (`postWideEventTypes`), which
+  `EventToPublish` makes the teller pass as `postChannelIds` (publishing
+  reads the targets for `post.unscheduled`; review passes the reviewed
+  post's channels, and the approval gate the submitted subject's,
+  `channelsSubmitted`). A new type does not compile until it says which. Publishing
   tells through `PostEvents` (schedule, unschedule, cancel, confirm, in
   `PostScheduling`'s and `PostFollowUp`'s transactions) and
   `webhookOutcomes` around `PublicationOutcomes`; channels through
@@ -60,7 +72,9 @@
   back on). Turning off happens once (`EndpointStore.disable`), and tells
   the members with `webhook:manage` through the `WebhookEndpointDisabled`
   notice, always emailed. A delivery whose endpoint is off fails without a
-  request.
+  request. Its payload's `startAfterMillis` (decoding default 0) is slept
+  first under the clock `start`, in memory: how deliveries sent again
+  together are spaced out (`bulkReplaySpacing`, 250 ms per endpoint).
 - The log keeps a delivery 30 days (`webhooks.delivery-retention` cron,
   `PurgeDeliveries`), and an event while a delivery refers to it: the docs
   say 30 days, change them together. Tests of the purge set the clock long
@@ -73,9 +87,29 @@
   (`fakes/fake-receiver.ts`).
 - `EndpointStore.update(endpoint, from)` writes the status and
   `failingSince` only when the member toggled them: a change of description
-  never turns back on an endpoint a delivery just turned off. Test events
-  and resends are capped per workspace (`ManualSends`,
-  `manualSendsPerHour`, `TooManyWebhookSends` 429).
+  never turns back on an endpoint a delivery just turned off.
+- Manual sends are counted in Postgres (`DrizzleManualSends`,
+  `webhooks.manual_sends`), per workspace, kind and fixed UTC hour, one
+  conditional upsert per take inside the send's transaction, so every
+  server shares them: `single` (test events and single resends,
+  `manualSendsPerHour`, 30) and `bulk` (`bulkRedeliveriesPerHour`, 1,000),
+  `TooManyWebhookSends` 429 with `retryAfterSeconds` and `Retry-After`. A
+  count that cannot be kept refuses the send. The retention cron drops
+  the counts a day old.
+- The log across endpoints (`WebhookDeliveries.search`) scopes by
+  `deliveries.workspace_id`, the endpoint's workspace, so a home workspace
+  lists its partner endpoints' deliveries of tenants' events; each delivery
+  carries the event's workspace and `externalId` (joined from `events`) and
+  `redeliveryOf`. `redeliverMany` takes ids or an endpoint's failed
+  deliveries (the last of each event, oldest first, `maxBulkRedelivery`
+  100, `remaining` the rest), in one transaction: rows locked `FOR UPDATE`,
+  then `sentAgain` read in a later statement (READ COMMITTED sees what a
+  concurrent call committed), skips (`notFound`, `endpointDisabled`,
+  `alreadySent`), the whole call's `bulk` budget, then the deliveries.
+- Test events of a type send `sampleOf` (`domain/sample-events.ts`, one per
+  subscribable type, typed so a new type needs its sample), recorded with
+  `sample` (`events.sample`) and sent with `sample: true` in the envelope,
+  whatever the endpoint subscribes to or filters.
 - An attempt the database fails past its own retries is `unrecorded`: the
   workflow sleeps `recoveryDelay` and makes the same attempt again
   (`attempt/<n>/again/<k>`, `recover/<n>/<k>`, persisted contract),

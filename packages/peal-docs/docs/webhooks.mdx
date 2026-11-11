@@ -11,7 +11,7 @@ Peal signs every request as the [Standard Webhooks](https://www.standardwebhooks
 
 ## Who manages them [#access]
 
-A workspace's webhooks are under **Settings**, then **Webhooks**, in the web app, in the `webhooks` group of the [API](#api), under `peal webhooks` on the [command line](/cli), and in the [MCP](/mcp) tools `list_webhooks` and `list_webhook_deliveries`, which read, and `create_webhook`, which adds an endpoint.
+A workspace's webhooks are under **Settings**, then **Webhooks**, in the web app, in the `webhooks` group of the [API](#api), under `peal webhooks` on the [command line](/cli), and in the [MCP](/mcp) tools `list_webhooks` and `list_webhook_deliveries`, which read, `create_webhook` and `update_webhook`, which add and change an endpoint, and `send_test_webhook` and `redeliver_webhooks`, which make Peal call your server.
 
 | Permission       | What it allows                                                              | Who holds it      |
 | ---------------- | --------------------------------------------------------------------------- | ----------------- |
@@ -24,13 +24,17 @@ Every plan includes webhooks, and an instance that does not bill has them too.
 
 ## Endpoints [#endpoints]
 
-An endpoint is an address, the events it wants, a description, and whether it is on. A workspace has 10 endpoints at most, whatever its plan.
+An endpoint is an address, the events it wants, a description, whether it is on, and, if you choose, the channels and workspaces it listens to. A workspace has 10 endpoints at most, whatever its plan.
 
 - **The address** is an HTTPS URL on the default port (443), on a public host, without a user name or a password, 2048 characters at most. Peal checks that the host resolves to public addresses when you save it, and again before every request: an address that later points inside a private network is sent nothing. Peal follows no redirect, so an answer in the 300s is a failure: give the final address.
 - **The events** are the [event types](#events) the endpoint subscribes to, one at least. It is sent those, and nothing else.
 - **The description**, up to 200 characters, says what the endpoint is for.
 - **On or off.** While an endpoint is off, Peal sends it nothing, its deliveries still waiting fail, and what happens meanwhile is not kept for it: turning it back on does not replay it.
 - **The scope**, over the API: `workspace`, the default, hears this workspace; `partner`, on the home workspace of a [partner account](/embedding#webhooks) only, hears every workspace the account owns too. Elsewhere `partner` answers 404 `PartnerNotFound`. It is set when the endpoint is created, and stays.
+- **Only these channels** (`channelIds`, 50 at most). The endpoint is then sent the events about those channels only: an event of one channel (`post.published`, `post.failed`, `post.unconfirmed`, `channel.*`, `comment.*`) when its channel is listed, and an event of a whole post (`post.scheduled`, `post.unscheduled`, `post.cancelled`, the approval events) when one of the post's channels is, its payload unchanged. An event about no channel (`media.*`, `boost.*`) reaches the endpoint whatever it lists: leave those types out of its events when you do not want them. No list means every channel.
+- **Only these workspaces** (`workspaceIds`, 200 at most), on a `partner` endpoint only: it then hears those workspaces alone, and its home workspace only if it is listed. An endpoint of the `workspace` scope refuses the field (`WebhookFilterRefused`, or `InvalidRequest` when it is created). No list means every workspace it hears.
+
+Filters are checked for the shape of their ids only: an id that names nothing matches nothing, and a filter stays as you saved it when a channel is disconnected or a workspace leaves the partner account. They apply when each event happens, with the endpoint as it is then; [sending a delivery again](#log) sends it to its endpoint whatever the filters say now.
 
 ## The signing secret [#secret]
 
@@ -914,6 +918,32 @@ Someone asked for a test event on the endpoint. It is sent to that endpoint alon
 }
 ```
 
+### Samples of a type [#samples]
+
+A test can carry a sample of any event type instead: in the web app, choose the type beside **Send a test event**; over the API, add `?eventType=post.published` to the test's address. The sample has that type's real shape, ids that name nothing (`00000000-0000-7000-8000-…`), the workspace's own id, and `"sample": true` beside the other fields of the payload, so your server can tell it from a fact: never act on a sample. It is sent whatever the endpoint subscribes to or filters. A payload of a fact never has `sample`.
+
+```json title="sample post.published"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0d",
+  "type": "post.published",
+  "version": 1,
+  "timestamp": "2026-11-10T08:12:00.000Z",
+  "workspaceExternalId": null,
+  "sample": true,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "00000000-0000-7000-8000-000000000001",
+    "targetId": "00000000-0000-7000-8000-000000000002",
+    "channelId": "00000000-0000-7000-8000-000000000003",
+    "platform": "mastodon",
+    "round": 1,
+    "parts": { "count": 1, "live": 1 },
+    "permalink": "https://social.example/@peal_example/1",
+    "publishedAt": "2026-01-01T09:00:00.000Z"
+  }
+}
+```
+
 ## Delivery and retries [#delivery]
 
 Your server has 15 seconds to answer. Any answer in the 200s is a success. Anything else is a failure: another status, the 300s included, no answer in time, or a connection that could not be made or broke.
@@ -958,14 +988,17 @@ Each endpoint has a log of its deliveries, newest first, kept 30 days. For each 
 
 For an answer that was not a success, the log keeps the start of what your server said, to help you tell what went wrong: one line, 256 characters at most. Peal keeps nothing else of an answer, and nothing of a successful one.
 
-Two actions help while you build:
+The workspace's log across its endpoints lists every delivery, newest first, filtered by status, endpoint, event type and when it was made (from `since`, before `until`). A `partner` endpoint's deliveries are in its home workspace's log, those of the partner's other workspaces included, each naming the workspace the event happened in (`workspaceId`) and the partner's id for it (`workspaceExternalId`). The deliveries that failed for good (status `failed`) are the ones to look at after an outage: the web app shows them in the **Failed** tab, with the receiver's last answer, for 30 days. A delivery sent again names the one it repeats (`redeliveryOf`).
 
-- **Send a test event** sends the endpoint a [`webhook.test`](#webhook-test) event.
+These actions help while you build, and after an outage:
+
+- **Send a test event** sends the endpoint a [`webhook.test`](#webhook-test) event, or a [sample](#samples) of the type you choose.
 - **Send again** sends a delivery's event to the endpoint once more, as a new delivery of the same event: same `webhook-id`, same body, a new timestamp and a new signature. A server that deduplicates will see it as one it already handled.
+- **Send all failed again** sends an endpoint's failed deliveries once more, oldest first, 100 a call at most, the last delivery of each event only; over the API you can name up to 100 deliveries instead. A delivery is skipped when its endpoint is off, when it is not the workspace's, and when its event was sent again since and that delivery is pending or went through (`alreadySent`), so calling again after a partial run sends nothing twice. The answer lists what was sent and skipped, and how many failed deliveries the selection still holds (`remaining`). An endpoint's new deliveries start a quarter of a second apart, so a server that just came back is not sent them all at once.
 
-A workspace sends 30 test events and deliveries again an hour at most, counted together: past it, both answer `TooManyWebhookSends` (429) until the hour is over.
+A workspace sends 30 test events and single deliveries again an hour at most, counted together, and 1,000 deliveries again by the many, counted apart. Past either, the call answers `TooManyWebhookSends` (429), with `retryAfterSeconds` and a `Retry-After` header saying when the hour ends; a call to send many again is taken whole or not at all. The counts hold for every server of an instance.
 
-Both need the endpoint to be on.
+Test events and single sends need the endpoint to be on.
 
 ## Verify a delivery [#verify]
 
@@ -1149,14 +1182,23 @@ export const verify = (secret, headers, rawBody) => {
 | `GET /api/workspaces/{workspaceId}/webhooks`                                                 | Lists the endpoints, oldest first                                 |
 | `POST /api/workspaces/{workspaceId}/webhooks`                                                | Adds an endpoint, and answers its `secret` once                   |
 | `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                    | Shows one                                                         |
-| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Changes its address, description or events, or turns it on or off |
+| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Changes its address, description, events or filters, or turns it on or off |
 | `DELETE /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                 | Deletes it, with its secret and its log                           |
 | `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/secret`                            | Rotates its secret, and answers the new one once                  |
-| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Sends it a test event                                             |
-| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries`                         | Lists its deliveries, newest first, 30 a page                     |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Sends it a test event, or a sample of `eventType`                 |
+| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries`                         | Lists its deliveries, newest first, 30 a page, by `status` and `eventType` |
 | `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries/{deliveryId}/redeliver` | Sends a delivery's event again                                    |
+| `GET /api/workspaces/{workspaceId}/webhooks/deliveries`                                      | Lists the deliveries of every endpoint, by `status`, `endpointId`, `eventType`, `since` and `until` |
+| `POST /api/workspaces/{workspaceId}/webhooks/deliveries/redeliver`                           | Sends many deliveries again: `deliveryIds`, or `endpointId` with `since`, `until` and `eventType` |
 
-The two `GET` lists and the endpoint itself need `webhook:read`; everything else needs `webhook:manage`.
+The `GET` lists and the endpoint itself need `webhook:read`; everything else needs `webhook:manage`.
+
+```bash
+curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks/deliveries/redeliver \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "endpointId": "019a6e00-77aa-7f12-b0c4-1a2b3c4d5e6f", "since": "2026-11-10T00:00:00Z" }'
+```
 
 ```bash
 curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
@@ -1179,7 +1221,9 @@ Errors come in the API's format, each with a `code` in snake case beside its nam
 | 404    | `WebhookDeliveryNotFound` | The endpoint has no delivery with this id, or its log no longer keeps it.     |
 | 409    | `TooManyWebhookEndpoints` | The workspace already has 10 endpoints.                                       |
 | 409    | `WebhookEndpointDisabled` | A test or a resend was asked of an endpoint that is off.                      |
+| 422    | `WebhookFilterRefused`    | `workspaceIds` on an endpoint of the `workspace` scope; `field` names it.     |
 | 422    | `WebhookUrlRefused`       | Peal does not deliver to the address. `reason` says why, below.               |
+| 429    | `TooManyWebhookSends`     | The hour's test events and resends are spent: see [the delivery log](#log).   |
 | 503    | `WebhooksNotConfigured`   | The instance cannot keep a signing secret: see [Self-hosting](#self-hosting). |
 
 | `reason`      | The address                                                        |

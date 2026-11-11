@@ -802,6 +802,7 @@ export const exhaustedDeliveryId = "0190f3a0-0000-7000-8000-00000000f001";
 /** Studio's endpoints: one that is on, one Peal turned off. */
 export const webhooks: readonly WebhookEndpoint[] = [
   {
+    channelIds: [],
     createdAt: at("2026-11-01T10:00:00Z"),
     description: "Synthetic receiver",
     disabledAt: null,
@@ -814,8 +815,10 @@ export const webhooks: readonly WebhookEndpoint[] = [
     scope: "workspace",
     updatedAt: at("2026-11-01T10:00:00Z"),
     url: "https://hooks.example.com/peal",
+    workspaceIds: [],
   },
   {
+    channelIds: [],
     createdAt: at("2026-10-01T10:00:00Z"),
     description: "",
     disabledAt: at("2026-11-06T10:00:00Z"),
@@ -828,6 +831,7 @@ export const webhooks: readonly WebhookEndpoint[] = [
     scope: "workspace",
     updatedAt: at("2026-11-06T10:00:00Z"),
     url: "https://hooks.example.com/old",
+    workspaceIds: [],
   },
 ];
 
@@ -840,12 +844,14 @@ export interface StudioDelivery {
 const pendingDelivery = (
   id: string,
   eventId: string,
-  eventType: WebhookEventType
+  eventType: WebhookEventType,
+  endpointId = hookId
 ): WebhookDelivery => ({
   attempts: 0,
   completedAt: null,
   createdAt: at("2026-11-09T12:00:00Z"),
   durationMs: null,
+  endpointId,
   error: null,
   eventId,
   eventType,
@@ -853,9 +859,12 @@ const pendingDelivery = (
   id,
   lastAttemptAt: null,
   nextAttemptAt: null,
+  redeliveryOf: null,
   responseExcerpt: null,
   responseStatus: null,
   status: "pending",
+  workspaceExternalId: null,
+  workspaceId: studioId,
 });
 
 // The first endpoint's log, newest first.
@@ -1902,10 +1911,43 @@ const saveEndpoint = (studio: Studio, endpoint: WebhookEndpoint) =>
   })).pipe(Effect.as(endpoint));
 
 // A new delivery of the event to the endpoint, at the top of its log.
+// A page of deliveries, newest first, filtered as a log is.
+const pageOf = (
+  listed: readonly WebhookDelivery[],
+  query: {
+    readonly cursor?: string;
+    readonly eventType?: WebhookEventType;
+    readonly limit?: number;
+    readonly status?: WebhookDelivery["status"];
+  }
+) => {
+  const matching = listed.filter(
+    ({ eventType, status }) =>
+      (query.status === undefined || status === query.status) &&
+      (query.eventType === undefined || eventType === query.eventType)
+  );
+
+  const start =
+    query.cursor === undefined
+      ? 0
+      : matching.findIndex(({ id }) => id === query.cursor) + 1;
+
+  const limit = query.limit ?? 30;
+  const items = matching.slice(start, start + limit);
+  const last = items.at(-1);
+
+  return {
+    items,
+    nextCursor:
+      last !== undefined && start + limit < matching.length ? last.id : null,
+  };
+};
+
 const deliverTo = (
   studio: Studio,
   endpoint: WebhookEndpoint,
-  event: { readonly id: string; readonly type: WebhookEventType }
+  event: { readonly id: string; readonly type: WebhookEventType },
+  redeliveryOf: string | null = null
 ) =>
   Effect.gen(function* delivering() {
     if (!endpoint.enabled) {
@@ -1914,11 +1956,15 @@ const deliverTo = (
 
     const { deliveries: all } = yield* Ref.get(studio.state);
 
-    const delivery = pendingDelivery(
-      `0190f3a0-0000-7000-8000-00000000f${String(all.length + 1).padStart(3, "0")}`,
-      event.id,
-      event.type
-    );
+    const delivery = {
+      ...pendingDelivery(
+        `0190f3a0-0000-7000-8000-00000000f${String(all.length + 1).padStart(3, "0")}`,
+        event.id,
+        event.type,
+        endpoint.id
+      ),
+      redeliveryOf,
+    };
 
     yield* Ref.update(studio.state, (current) => ({
       ...current,
@@ -4280,6 +4326,7 @@ export const studioGroupsLive = (studio: Studio) =>
             const now = at("2026-11-09T12:00:00Z");
 
             const endpoint = yield* saveEndpoint(studio, {
+              channelIds: payload.channelIds ?? [],
               createdAt: now,
               description: payload.description ?? "",
               disabledAt: enabled ? null : now,
@@ -4289,9 +4336,10 @@ export const studioGroupsLive = (studio: Studio) =>
               failingSince: null,
               id: `0190f3a0-0000-7000-8000-00000000b${String(current.webhooks.length + 1).padStart(3, "0")}`,
               previousSecretExpiresAt: null,
-              scope: "workspace",
+              scope: payload.scope ?? "workspace",
               updatedAt: now,
               url: payload.url,
+              workspaceIds: payload.workspaceIds ?? [],
             });
 
             yield* record(studio, `webhook:create:${endpoint.url}`);
@@ -4343,26 +4391,12 @@ export const studioGroupsLive = (studio: Studio) =>
 
             const { deliveries: all } = yield* Ref.get(studio.state);
 
-            const listed = all
-              .filter(({ endpointId }) => endpointId === endpoint.id)
-              .map(({ delivery }) => delivery);
-
-            const start =
-              query.cursor === undefined
-                ? 0
-                : listed.findIndex(({ id }) => id === query.cursor) + 1;
-
-            const limit = query.limit ?? 30;
-            const items = listed.slice(start, start + limit);
-            const last = items.at(-1);
-
-            return {
-              items,
-              nextCursor:
-                last !== undefined && start + limit < listed.length
-                  ? last.id
-                  : null,
-            };
+            return pageOf(
+              all
+                .filter(({ endpointId }) => endpointId === endpoint.id)
+                .map(({ delivery }) => delivery),
+              query
+            );
           }),
         redeliver: ({ params }) =>
           Effect.gen(function* redeliver() {
@@ -4385,14 +4419,92 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new WebhookDeliveryNotFound();
             }
 
-            const again = yield* deliverTo(studio, endpoint, {
-              id: past.delivery.eventId,
-              type: past.delivery.eventType,
-            });
+            const again = yield* deliverTo(
+              studio,
+              endpoint,
+              { id: past.delivery.eventId, type: past.delivery.eventType },
+              past.delivery.id
+            );
 
             yield* record(studio, `webhook:redeliver:${past.delivery.id}`);
 
             return again;
+          }),
+        redeliverMany: ({ params, payload }) =>
+          Effect.gen(function* redeliverMany() {
+            yield* allowed("webhook:manage");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new WebhookEndpointNotFound();
+            }
+
+            const { deliveries: all, webhooks: endpoints } = yield* Ref.get(
+              studio.state
+            );
+
+            if ("endpointId" in payload) {
+              yield* findEndpoint(
+                studio,
+                params.workspaceId,
+                payload.endpointId
+              );
+            }
+
+            const chosen =
+              "deliveryIds" in payload
+                ? payload.deliveryIds.map((id) => ({
+                    found: all.find(({ delivery }) => delivery.id === id),
+                    id,
+                  }))
+                : all
+                    .filter(
+                      ({ delivery, endpointId }) =>
+                        endpointId === payload.endpointId &&
+                        delivery.status === "failed"
+                    )
+                    .toReversed()
+                    .map((found) => ({ found, id: found.delivery.id }));
+
+            const redelivered: WebhookDelivery[] = [];
+
+            const skipped: {
+              readonly deliveryId: string;
+              readonly reason: "endpointDisabled" | "notFound";
+            }[] = [];
+
+            for (const { found, id } of chosen) {
+              const endpoint = endpoints.find(
+                ({ id: endpointId }) => endpointId === found?.endpointId
+              );
+
+              if (found === undefined || endpoint === undefined) {
+                skipped.push({ deliveryId: id, reason: "notFound" });
+              } else if (endpoint.enabled) {
+                redelivered.push(
+                  yield* deliverTo(
+                    studio,
+                    endpoint,
+                    {
+                      id: found.delivery.eventId,
+                      type: found.delivery.eventType,
+                    },
+                    found.delivery.id
+                  ).pipe(
+                    // It is on: checked above.
+                    Effect.catchTag("WebhookEndpointDisabled", Effect.die)
+                  )
+                );
+              } else {
+                skipped.push({ deliveryId: id, reason: "endpointDisabled" });
+              }
+            }
+
+            yield* record(
+              studio,
+              `webhook:redeliver-many:${redelivered.map(({ redeliveryOf }) => redeliveryOf).join(",")}`
+            );
+
+            return { redelivered, remaining: 0, skipped };
           }),
         rotateSecret: ({ params }) =>
           Effect.gen(function* rotateSecret() {
@@ -4420,7 +4532,26 @@ export const studioGroupsLive = (studio: Studio) =>
 
             return { endpoint, secret: secretAfter(current.changes) };
           }),
-        sendTest: ({ params }) =>
+        searchDeliveries: ({ params, query }) =>
+          Effect.gen(function* searchDeliveries() {
+            yield* allowed("webhook:read");
+
+            const { deliveries: all } = yield* Ref.get(studio.state);
+
+            return pageOf(
+              params.workspaceId === studioId
+                ? all
+                    .filter(
+                      ({ endpointId }) =>
+                        query.endpointId === undefined ||
+                        endpointId === query.endpointId
+                    )
+                    .map(({ delivery }) => delivery)
+                : [],
+              query
+            );
+          }),
+        sendTest: ({ params, query }) =>
           Effect.gen(function* sendTest() {
             yield* allowed("webhook:manage");
 
@@ -4432,10 +4563,13 @@ export const studioGroupsLive = (studio: Studio) =>
 
             const delivery = yield* deliverTo(studio, endpoint, {
               id: "0190f3a0-0000-7000-8000-00000000ee99",
-              type: "webhook.test",
+              type: query.eventType ?? "webhook.test",
             });
 
-            yield* record(studio, `webhook:test:${endpoint.id}`);
+            yield* record(
+              studio,
+              `webhook:test:${endpoint.id}${query.eventType === undefined ? "" : `:${query.eventType}`}`
+            );
 
             return delivery;
           }),

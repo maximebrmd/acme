@@ -429,6 +429,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           publish_post: [false, false, false, true],
           quote_boost: [true, false, true, false],
           // It takes the place of the name the channel had.
+          // Peal calls receivers outside it again.
+          redeliver_webhooks: [false, false, false, true],
           rename_channel: [false, true, true, false],
           // A reply is a public message from the account.
           reply_to_comment: [false, false, false, true],
@@ -440,6 +442,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           revoke_invitation: [false, true, true, false],
           run_channel_lookup: [true, false, true, true],
           schedule_post: [false, false, false, true],
+          // Peal calls the receiver, a server outside it.
+          send_test_webhook: [false, false, false, true],
           server_health: [true, false, true, false],
           // They replace the options the channel had.
           set_channel_defaults: [false, true, true, false],
@@ -452,6 +456,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           update_draft: [false, true, true, false],
           update_signature: [false, true, true, false],
           update_tag: [false, true, true, false],
+          // Its address may name another server outside Peal.
+          update_webhook: [false, false, true, true],
           // It asks TikTok what a creator takes.
           validate_post: [true, false, true, true],
           whoami: [true, false, true, false],

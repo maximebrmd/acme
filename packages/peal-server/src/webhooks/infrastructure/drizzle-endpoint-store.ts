@@ -30,6 +30,7 @@ const utc = (stored: Date | null) =>
 
 const toEndpoint = (row: Row) =>
   decodeEndpoint({
+    channelIds: row.channelIds,
     createdAt: DateTime.fromDateUnsafe(row.createdAt),
     description: row.description,
     eventTypes: row.eventTypes,
@@ -48,6 +49,7 @@ const toEndpoint = (row: Row) =>
     updatedAt: DateTime.fromDateUnsafe(row.updatedAt),
     url: row.url,
     workspaceId: row.workspaceId,
+    workspaceIds: row.workspaceIds,
   }).pipe(Effect.orDie);
 
 // What a member, or the endpoint's own failures, change of it.
@@ -56,6 +58,7 @@ const settingsOf = (endpoint: WebhookEndpoint) => {
   const off = status._tag === "disabled" ? status : undefined;
 
   return {
+    channelIds: [...endpoint.channelIds],
     description: endpoint.description,
     disabledAt: off === undefined ? null : date(off.at),
     disabledReason: off?.reason ?? null,
@@ -67,15 +70,24 @@ const settingsOf = (endpoint: WebhookEndpoint) => {
     status: status._tag,
     updatedAt: date(endpoint.updatedAt),
     url: endpoint.url,
+    workspaceIds: [...endpoint.workspaceIds],
   };
 };
 
 // What a member writes of an endpoint they neither turned on nor off:
 // whether it is on, and since when it fails, stay as the row has them.
 const writtenOf = (endpoint: WebhookEndpoint) => {
-  const { description, eventTypes, updatedAt, url } = settingsOf(endpoint);
+  const { channelIds, description, eventTypes, updatedAt, url, workspaceIds } =
+    settingsOf(endpoint);
 
-  return { description, eventTypes, updatedAt, url };
+  return {
+    channelIds,
+    description,
+    eventTypes,
+    updatedAt,
+    url,
+    workspaceIds,
+  };
 };
 
 const byId = (workspaceId: WorkspaceId, endpointId: WebhookEndpointId) =>

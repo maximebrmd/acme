@@ -36,6 +36,7 @@ const noop = () => {
 };
 
 const on: WebhookEndpoint = {
+  channelIds: [],
   createdAt: at("2026-11-01T09:00:00Z"),
   description: "Synthetic receiver",
   disabledAt: null,
@@ -48,6 +49,7 @@ const on: WebhookEndpoint = {
   scope: "workspace",
   updatedAt: at("2026-11-01T09:00:00Z"),
   url: "https://hooks.example.com/peal?source=test",
+  workspaceIds: [],
 };
 
 const failing: WebhookEndpoint = {
@@ -67,6 +69,7 @@ const delivery: WebhookDelivery = {
   completedAt: at("2026-11-10T09:00:01Z"),
   createdAt: at("2026-11-10T09:00:00Z"),
   durationMs: 182,
+  endpointId: "00000000-0000-7000-8000-000000000001",
   error: null,
   eventId: "00000000-0000-7000-8000-00000000000a",
   eventType: "post.published",
@@ -74,9 +77,12 @@ const delivery: WebhookDelivery = {
   id: "00000000-0000-7000-8000-00000000000b",
   lastAttemptAt: at("2026-11-10T09:00:01Z"),
   nextAttemptAt: null,
+  redeliveryOf: null,
   responseExcerpt: null,
   responseStatus: 204,
   status: "succeeded",
+  workspaceExternalId: null,
+  workspaceId: "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f",
 };
 
 describe(EndpointItemView, () => {
@@ -246,6 +252,7 @@ describe(EndpointFieldsView, () => {
       render(
         "en",
         <EndpointFieldsView
+          channels={[]}
           draft={{ ...emptyDraft, url: "https://10.0.0.8/hooks" }}
           error={{ key: "urlRefused", reason: "notPublic" }}
           disabled={false}
@@ -257,6 +264,7 @@ describe(EndpointFieldsView, () => {
       render(
         "fr",
         <EndpointFieldsView
+          channels={[]}
           draft={emptyDraft}
           error={{ key: "urlRefused", reason: "notHttps" }}
           disabled={false}
@@ -282,6 +290,7 @@ describe(EndpointFieldsView, () => {
     const html = await render(
       "en",
       <EndpointFieldsView
+        channels={[]}
         draft={emptyDraft}
         error={{ allowed: 10, key: "tooMany" }}
         disabled={false}
@@ -294,5 +303,81 @@ describe(EndpointFieldsView, () => {
     expect(html).toContain(
       "The workspace already has 10 endpoints, the most it may. Delete one first."
     );
+  });
+});
+
+describe("an endpoint's filters, in the views", () => {
+  it("offers the channels, and the workspaces of a partner endpoint", async () => {
+    const [english, french] = await Promise.all(
+      (["en", "fr"] as const).map(
+        async (locale) =>
+          await render(
+            locale,
+            <EndpointFieldsView
+              channels={[
+                {
+                  id: "00000000-0000-7000-8000-0000000000c1",
+                  label: "@peal_example",
+                },
+              ]}
+              draft={{ ...emptyDraft, scope: "partner" }}
+              error={null}
+              disabled={false}
+              idPrefix="edit"
+              withEnabled={false}
+              onChange={noop}
+            />
+          )
+      )
+    );
+
+    expect(
+      missingFrom(english ?? "", [
+        "Only these channels",
+        "@peal_example",
+        "Only these workspaces",
+      ])
+    ).toStrictEqual([]);
+    expect(
+      missingFrom(french ?? "", [
+        "Seulement ces chaînes",
+        "Seulement ces espaces de travail",
+      ])
+    ).toStrictEqual([]);
+  });
+
+  it("says what an endpoint listens to", async () => {
+    const html = await render(
+      "en",
+      <EndpointItemView
+        endpoint={{
+          ...on,
+          channelIds: ["00000000-0000-7000-8000-0000000000c1"],
+          scope: "partner",
+          workspaceIds: ["5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"],
+        }}
+      />
+    );
+
+    expect(
+      missingFrom(html, [
+        "Only events about 1 channel, and those about no channel",
+        "Only 1 workspace",
+      ])
+    ).toStrictEqual([]);
+  });
+
+  it("names each delivery's endpoint in the log across endpoints", async () => {
+    const html = await render(
+      "fr",
+      <DeliveryLogView
+        deliveries={[delivery]}
+        endpointOf={() => "hooks.example.com"}
+      />
+    );
+
+    expect(
+      missingFrom(html, ["Point de terminaison", "hooks.example.com"])
+    ).toStrictEqual([]);
   });
 });

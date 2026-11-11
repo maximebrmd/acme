@@ -1,9 +1,14 @@
 import { DateTime, Duration, Effect, Option, Schema } from "effect";
 
-import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 
-import { secretOverlap, turnOffAfterFailingFor } from "./delivery-policy.ts";
+import {
+  maxFilterChannels,
+  maxFilterWorkspaces,
+  secretOverlap,
+  turnOffAfterFailingFor,
+} from "./delivery-policy.ts";
 import { WebhookEndpointIdSchema } from "./webhook-endpoint-id.ts";
 import type { WebhookEndpointId } from "./webhook-endpoint-id.ts";
 import { SubscribableEventTypeSchema } from "./webhook-event-type.ts";
@@ -27,6 +32,25 @@ export const EventTypesSchema = Schema.NonEmptyArray(
 );
 
 export type EventTypes = typeof EventTypesSchema.Type;
+
+/**
+ * The channels an endpoint listens to, `maxFilterChannels` at most: none
+ * means every channel. Checked for shape only: an id that names no channel
+ * of the workspace matches nothing, and a filter outlives the channels it
+ * names.
+ */
+export const ChannelFilterSchema = Schema.Array(ChannelIdSchema).check(
+  Schema.isMaxLength(maxFilterChannels)
+);
+
+/**
+ * The workspaces a partner endpoint listens to, `maxFilterWorkspaces` at
+ * most: none means every workspace it hears. Checked for shape only, as
+ * the channels are.
+ */
+export const WorkspaceFilterSchema = Schema.Array(WorkspaceIdSchema).check(
+  Schema.isMaxLength(maxFilterWorkspaces)
+);
 
 /**
  * Why an endpoint is off: a member turned it off (`manual`), every attempt
@@ -69,6 +93,10 @@ export type EndpointStatus = typeof EndpointStatusSchema.Type;
 export class WebhookEndpoint extends Schema.Class<WebhookEndpoint>(
   "peal-server/webhooks/domain/WebhookEndpoint"
 )({
+  // The channels it hears about; none for every channel.
+  channelIds: ChannelFilterSchema.pipe(
+    Schema.withConstructorDefault(Effect.succeed([]))
+  ),
   createdAt: Schema.DateTimeUtc,
   description: EndpointDescriptionSchema,
   eventTypes: EventTypesSchema,
@@ -83,10 +111,16 @@ export class WebhookEndpoint extends Schema.Class<WebhookEndpoint>(
   updatedAt: Schema.DateTimeUtc,
   url: WebhookUrlSchema,
   workspaceId: WorkspaceIdSchema,
+  // The workspaces a partner endpoint hears; none for every one it hears.
+  workspaceIds: WorkspaceFilterSchema.pipe(
+    Schema.withConstructorDefault(Effect.succeed([]))
+  ),
 }) {}
 
 /** What a member chooses for an endpoint. */
 export interface EndpointSettings {
+  /** The channels it hears about; empty or left out for every one. */
+  readonly channelIds?: readonly ChannelId[];
   readonly description: string;
   readonly enabled: boolean;
   readonly eventTypes: readonly [
@@ -94,6 +128,12 @@ export interface EndpointSettings {
     ...SubscribableEventType[],
   ];
   readonly url: WebhookUrl;
+  /**
+   * The workspaces a partner endpoint hears; empty or left out for every
+   * one. An endpoint of the `workspace` scope takes none
+   * (`takesWorkspaceFilter`).
+   */
+  readonly workspaceIds?: readonly WorkspaceId[];
 }
 
 type Fields = ConstructorParameters<typeof WebhookEndpoint>[0];
@@ -104,6 +144,7 @@ const withFields = (
   changed: Partial<Fields>
 ): WebhookEndpoint =>
   new WebhookEndpoint({
+    channelIds: endpoint.channelIds,
     createdAt: endpoint.createdAt,
     description: endpoint.description,
     eventTypes: endpoint.eventTypes,
@@ -115,6 +156,7 @@ const withFields = (
     updatedAt: endpoint.updatedAt,
     url: endpoint.url,
     workspaceId: endpoint.workspaceId,
+    workspaceIds: endpoint.workspaceIds,
     ...changed,
   });
 
@@ -126,6 +168,18 @@ const distinct = (types: EndpointSettings["eventTypes"]): EventTypes => {
 
   return first === undefined ? types : [first, ...rest];
 };
+
+// Each id once, in the order given.
+const once = <Id extends string>(ids: readonly Id[]): readonly Id[] => [
+  ...new Set(ids),
+];
+
+/**
+ * Whether an endpoint of this scope may name the workspaces it hears: only
+ * a `partner` one, which hears more than its own.
+ */
+export const takesWorkspaceFilter = (scope: EndpointScope): boolean =>
+  scope === "partner";
 
 const statusOf = (
   enabled: boolean,
@@ -156,6 +210,7 @@ export const createEndpoint = (
   scope: EndpointScope = "workspace"
 ): WebhookEndpoint =>
   new WebhookEndpoint({
+    channelIds: once(settings.channelIds ?? []),
     createdAt: now,
     description: settings.description,
     eventTypes: distinct(settings.eventTypes),
@@ -167,6 +222,9 @@ export const createEndpoint = (
     updatedAt: now,
     url: settings.url,
     workspaceId,
+    workspaceIds: takesWorkspaceFilter(scope)
+      ? once(settings.workspaceIds ?? [])
+      : [],
   });
 
 /**
@@ -182,6 +240,10 @@ export const changeEndpoint = (
   const turnedOn = enabled && endpoint.status._tag === "disabled";
 
   return withFields(endpoint, {
+    channelIds:
+      change.channelIds === undefined
+        ? endpoint.channelIds
+        : once(change.channelIds),
     description: change.description ?? endpoint.description,
     eventTypes:
       change.eventTypes === undefined
@@ -191,6 +253,10 @@ export const changeEndpoint = (
     status: statusOf(enabled, Option.some(endpoint.status), now),
     updatedAt: now,
     url: change.url ?? endpoint.url,
+    workspaceIds:
+      change.workspaceIds === undefined || !takesWorkspaceFilter(endpoint.scope)
+        ? endpoint.workspaceIds
+        : once(change.workspaceIds),
   });
 };
 
@@ -226,16 +292,38 @@ export const hearsPartner = (endpoint: WebhookEndpoint): boolean =>
   endpoint.scope === "partner";
 
 /**
- * Whether the endpoint is sent an event of this type: while it is on, those
- * it subscribes to. A test event goes to the endpoint it was asked for,
- * whatever it subscribes to.
+ * What an endpoint's filters read of an event: its type, the workspace it
+ * happened in, and the channels it concerns, none for an event about no
+ * channel (`channelsOf`).
  */
-export const wants = (
-  endpoint: WebhookEndpoint,
-  type: WebhookEventType
-): boolean =>
+export interface EventReach {
+  readonly channelIds: Option.Option<readonly ChannelId[]>;
+  readonly type: WebhookEventType;
+  readonly workspaceId: WorkspaceId;
+}
+
+/**
+ * Whether the endpoint is sent an event: while it is on, those of the
+ * types it subscribes to, of the workspaces it listens to, if it names
+ * some (a partner endpoint's own home workspace included: heard only when
+ * named), and about one of the channels it listens to, if it names some.
+ * An event about no channel passes the channel filter. A test event goes
+ * to the endpoint it was asked for, whatever it subscribes to.
+ */
+export const wants = (endpoint: WebhookEndpoint, event: EventReach): boolean =>
   endpoint.status._tag === "enabled" &&
-  (type === "webhook.test" || endpoint.eventTypes.includes(type));
+  (event.type === "webhook.test" ||
+    (endpoint.eventTypes.includes(event.type) &&
+      (endpoint.workspaceIds.length === 0 ||
+        endpoint.workspaceIds.includes(event.workspaceId)) &&
+      (endpoint.channelIds.length === 0 ||
+        Option.match(event.channelIds, {
+          onNone: () => true,
+          onSome: (concerned) =>
+            concerned.some((channelId) =>
+              endpoint.channelIds.includes(channelId)
+            ),
+        }))));
 
 /**
  * Whether an endpoint failing since `failingSince`, and failing again at

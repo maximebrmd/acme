@@ -12,11 +12,11 @@ import { WebhookOversight } from "#webhooks/application/webhook-oversight.ts";
 import { CipherEndpointSecrets } from "#webhooks/infrastructure/cipher-endpoint-secrets.ts";
 import { DrizzleDeliveryStore } from "#webhooks/infrastructure/drizzle-delivery-store.ts";
 import { DrizzleEndpointStore } from "#webhooks/infrastructure/drizzle-endpoint-store.ts";
+import { DrizzleManualSends } from "#webhooks/infrastructure/drizzle-manual-sends.ts";
 import { DrizzleWebhookRecords } from "#webhooks/infrastructure/drizzle-webhook-records.ts";
 import { HttpWebhookTransport } from "#webhooks/infrastructure/http-webhook-transport.ts";
 import { NotifiedEndpointNotices } from "#webhooks/infrastructure/notified-endpoint-notices.ts";
 import { PartnerEventOrigins } from "#webhooks/infrastructure/partner-event-origins.ts";
-import { WindowedManualSends } from "#webhooks/infrastructure/windowed-manual-sends.ts";
 import { WorkflowDeliveryJobs } from "#webhooks/infrastructure/workflow-delivery-jobs.ts";
 
 // Deliveries go to hosts members chose: through the outbound guard, which
@@ -44,9 +44,10 @@ export const webhooksWith = <ROut, E, R>(adapters: Layer.Layer<ROut, E, R>) =>
     WebhookOversight.layer
   ).pipe(
     Layer.provideMerge(adapters),
-    // Counted in this process, unless the adapters bring another count;
-    // and no workspace a partner's, unless they say whose each is.
-    Layer.provide(Layer.mergeAll(WindowedManualSends, EventOrigins.layerNone))
+    // Manual sends counted in Postgres, for every server at once, unless
+    // the adapters bring another count; and no workspace a partner's,
+    // unless they say whose each is.
+    Layer.provide(Layer.mergeAll(DrizzleManualSends, EventOrigins.layerNone))
   );
 
 /**

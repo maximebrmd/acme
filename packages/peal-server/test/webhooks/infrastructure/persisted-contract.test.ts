@@ -61,6 +61,26 @@ describe("the persisted contract of DeliverWebhookV1", () => {
         yield* DeliverWebhookV1.executionId(payload),
         keys.executionId
       );
+      // Stored before deliveries could wait: the first attempt is at once.
+      assert.strictEqual(payload.startAfterMillis, 0);
+    })
+  );
+
+  it.effect("decodes a payload that waits before its first attempt", () =>
+    Effect.gen(function* paced() {
+      const payload = yield* fixture(
+        "DeliverWebhookV1/payload-paced.json",
+        DeliverWebhookV1.payloadSchema
+      );
+
+      const keys = yield* fixture("DeliverWebhookV1/keys.json", KeysSchema);
+
+      assert.strictEqual(payload.startAfterMillis, 250);
+      // The same delivery is the same execution, however long it waits.
+      assert.strictEqual(
+        yield* DeliverWebhookV1.executionId(payload),
+        keys.executionId
+      );
     })
   );
 });

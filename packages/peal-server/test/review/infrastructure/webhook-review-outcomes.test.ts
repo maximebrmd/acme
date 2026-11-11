@@ -5,6 +5,7 @@ import { ReviewOutcomes } from "#review/application/ports/review-outcomes.ts";
 import { ReviewLinkIdSchema } from "#review/domain/review-ids.ts";
 import { webhookReviewOutcomes } from "#review/infrastructure/webhook-review-outcomes.ts";
 import {
+  ChannelIdSchema,
   PostIdSchema,
   UserIdSchema,
   WorkspaceIdSchema,
@@ -20,8 +21,14 @@ const postId = PostIdSchema.make("01900000-0000-7000-8000-0000000000a1");
 const memberId = UserIdSchema.make("8d0f7780-8536-41ef-a55c-f18fd2a01bf8");
 const scheduledAt = DateTime.makeUnsafe("2026-11-21T09:00:00Z");
 
+const channelIds = [
+  ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c1"),
+  ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c2"),
+];
+
 const about = {
   authorId: Option.some(memberId),
+  channelIds,
   postId,
   requestedBy: Option.some(memberId),
   workspaceId,
@@ -93,6 +100,8 @@ describe("a review's outcomes, for the workspace's webhook endpoints", () => {
             type: "post.approval_requested",
           },
           key: `review:approval:1:${String(scheduledAt.epochMilliseconds)}`,
+          // The post's channels, which the event's data does not name.
+          postChannelIds: channelIds,
         },
       ]);
       // Members are told as before.
@@ -176,6 +185,7 @@ describe("a review's outcomes, for the workspace's webhook endpoints", () => {
               type: "post.approved",
             },
             key: "review:approval-decision:1",
+            postChannelIds: channelIds,
           },
           {
             event: {
@@ -183,6 +193,7 @@ describe("a review's outcomes, for the workspace's webhook endpoints", () => {
               type: "post.changes_requested",
             },
             key: "review:approval-decision:2",
+            postChannelIds: channelIds,
           },
         ]);
         // Never the name a visitor gave.

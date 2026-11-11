@@ -1,7 +1,10 @@
 import { Effect, Layer } from "effect";
 import { Digest } from "effect/crypto";
 
-import { ApprovalGate } from "#publishing/application/approval-gate.ts";
+import {
+  ApprovalGate,
+  channelsSubmitted,
+} from "#publishing/application/approval-gate.ts";
 import { ApprovalIntake } from "#review/application/approval-intake.ts";
 
 const encoder = new TextEncoder();
@@ -27,7 +30,11 @@ export const ReviewApprovalGate = Layer.effect(
       admit: (actor, { subject, ...submission }) =>
         hashOf(subject).pipe(
           Effect.flatMap((subjectHash) =>
-            intake.consider(actor, { ...submission, subjectHash })
+            intake.consider(actor, {
+              ...submission,
+              channelIds: channelsSubmitted({ subject }),
+              subjectHash,
+            })
           )
         ),
       approved: ({ postId, subject, workspaceId }) =>

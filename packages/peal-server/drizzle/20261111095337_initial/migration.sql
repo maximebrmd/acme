@@ -902,6 +902,7 @@ CREATE TABLE "webhooks"."deliveries" (
 	"id" uuid PRIMARY KEY,
 	"last_attempt_at" timestamp with time zone,
 	"next_attempt_at" timestamp with time zone,
+	"redelivery_of" uuid,
 	"response_excerpt" text,
 	"response_status" integer,
 	"status" text NOT NULL,
@@ -911,6 +912,7 @@ CREATE TABLE "webhooks"."deliveries" (
 );
 --> statement-breakpoint
 CREATE TABLE "webhooks"."endpoints" (
+	"channel_ids" uuid[] DEFAULT '{}'::uuid[] NOT NULL,
 	"created_at" timestamp with time zone NOT NULL,
 	"description" text NOT NULL,
 	"disabled_at" timestamp with time zone,
@@ -926,6 +928,7 @@ CREATE TABLE "webhooks"."endpoints" (
 	"updated_at" timestamp with time zone NOT NULL,
 	"url" text NOT NULL,
 	"workspace_id" uuid NOT NULL,
+	"workspace_ids" uuid[] DEFAULT '{}'::uuid[] NOT NULL,
 	CONSTRAINT "endpoints_status" CHECK ("status" IN ('enabled', 'disabled')),
 	CONSTRAINT "endpoints_scope" CHECK ("scope" IN ('workspace', 'partner')),
 	CONSTRAINT "endpoints_disabled" CHECK (("status" = 'disabled') = ("disabled_reason" IS NOT NULL AND "disabled_at" IS NOT NULL))
@@ -937,8 +940,19 @@ CREATE TABLE "webhooks"."events" (
 	"id" uuid PRIMARY KEY,
 	"key" text NOT NULL CONSTRAINT "events_key" UNIQUE,
 	"occurred_at" timestamp with time zone NOT NULL,
+	"sample" boolean DEFAULT false NOT NULL,
 	"type" text NOT NULL,
 	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "webhooks"."manual_sends" (
+	"kind" text,
+	"sent" integer NOT NULL,
+	"window_start" timestamp with time zone,
+	"workspace_id" uuid,
+	CONSTRAINT "manual_sends_pkey" PRIMARY KEY("workspace_id","kind","window_start"),
+	CONSTRAINT "manual_sends_kind" CHECK ("kind" IN ('single', 'bulk')),
+	CONSTRAINT "manual_sends_sent" CHECK ("sent" > 0)
 );
 --> statement-breakpoint
 CREATE TABLE "workspace"."partner_idempotency_keys" (
@@ -1387,9 +1401,11 @@ CREATE INDEX "audit_events_workspace" ON "staff"."audit_events" ("workspace_id",
 CREATE INDEX "deliveries_endpoint" ON "webhooks"."deliveries" ("endpoint_id","id");--> statement-breakpoint
 CREATE INDEX "deliveries_event" ON "webhooks"."deliveries" ("event_id");--> statement-breakpoint
 CREATE INDEX "deliveries_created" ON "webhooks"."deliveries" ("created_at");--> statement-breakpoint
-CREATE INDEX "deliveries_workspace" ON "webhooks"."deliveries" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "deliveries_workspace" ON "webhooks"."deliveries" ("workspace_id","id");--> statement-breakpoint
+CREATE INDEX "deliveries_endpoint_failed" ON "webhooks"."deliveries" ("endpoint_id","id") WHERE "status" = 'failed';--> statement-breakpoint
 CREATE INDEX "endpoints_workspace" ON "webhooks"."endpoints" ("workspace_id","id");--> statement-breakpoint
 CREATE INDEX "events_workspace" ON "webhooks"."events" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "manual_sends_window_start" ON "webhooks"."manual_sends" ("window_start");--> statement-breakpoint
 CREATE INDEX "partner_idempotency_keys_created" ON "workspace"."partner_idempotency_keys" ("created_at");--> statement-breakpoint
 CREATE INDEX "partner_keys_partner" ON "workspace"."partner_keys" ("partner_id","id");--> statement-breakpoint
 CREATE INDEX "partner_keys_created_by" ON "workspace"."partner_keys" ("created_by");--> statement-breakpoint

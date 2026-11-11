@@ -1,7 +1,10 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Option } from "effect";
 
-import { approvalSubject } from "#publishing/domain/approval-subject.ts";
+import {
+  approvalSubject,
+  channelsOfSubject,
+} from "#publishing/domain/approval-subject.ts";
 import { GoogleBusinessOptions } from "#publishing/domain/google-business-options.ts";
 import { LinkedInOptions } from "#publishing/domain/linkedin-options.ts";
 import { PinterestOptions } from "#publishing/domain/pinterest-options.ts";
@@ -167,5 +170,23 @@ describe("what an approval of a post covers", () => {
     expect(approvalSubject(content, [target("1", Option.none())])).not.toBe(
       subjectWith(new LinkedInOptions({}))
     );
+  });
+});
+
+describe(channelsOfSubject, () => {
+  it("reads back the channels a subject names", () => {
+    const subject = approvalSubject(content, [
+      target("2", Option.none()),
+      target("1", Option.none()),
+    ]);
+
+    expect(channelsOfSubject(subject)).toStrictEqual([
+      "00000000-0000-7000-8000-000000000001",
+      "00000000-0000-7000-8000-000000000002",
+    ]);
+  });
+
+  it("names none of a string that is not a subject", () => {
+    expect(channelsOfSubject("not a subject")).toStrictEqual([]);
   });
 });

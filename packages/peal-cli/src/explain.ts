@@ -587,9 +587,9 @@ const reasonOf =
         refused(
           `The workspace has ${String(allowed)} webhook endpoints, the most it may, whatever its plan: delete one first, with peal webhooks delete.`
         ),
-      TooManyWebhookSends: ({ allowed }) =>
+      TooManyWebhookSends: ({ allowed, retryAfterSeconds }) =>
         refused(
-          `The workspace sent ${String(allowed)} test events and deliveries again within an hour, the most it may: nothing was sent. Try again later.`
+          `The workspace sent ${String(allowed)} of these within an hour, the most it may, or this would send more than are left: nothing was sent. Try again in ${String(retryAfterSeconds)} seconds.`
         ),
       Unauthenticated: () => new SignInExpired({ url }),
       UnknownChannels: ({ channelIds }) =>
@@ -629,6 +629,12 @@ const reasonOf =
       WebhookEndpointNotFound: () =>
         refused(
           "The workspace has no webhook endpoint with that id: peal webhooks list shows them."
+        ),
+      WebhookFilterRefused: ({ field }) =>
+        refused(
+          field === "workspaceIds"
+            ? "Only a partner endpoint, in a partner account's home workspace, takes --workspace-id: an endpoint of its own workspace hears that workspace alone."
+            : "--channel takes channels of the workspace, as peal channels list shows them."
         ),
       WebhookUrlRefused: ({ reason }) => refused(urlRefusals[reason]),
       WebhooksNotConfigured: () =>

@@ -10,28 +10,69 @@ import {
   TooManyWebhookSends,
   WebhookEndpointDisabled,
   WebhookEndpointNotFound,
+  WebhookFilterRefused,
   WebhooksNotConfigured,
   WebhookUrlRefused,
 } from "peal-contract";
 import type { WebhookUrlRefusal } from "peal-contract";
 
 import { actorOf } from "#shared/api/actor.ts";
+import { setAnswerHeader } from "#shared/api/answer-headers.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
+import type { DeliveryPage } from "#webhooks/application/ports/delivery-store.ts";
 import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
 import type { EndpointWithSecret } from "#webhooks/application/webhook-endpoints.ts";
 import { WebhookDeliveryIdSchema } from "#webhooks/domain/webhook-delivery-id.ts";
+import type { WebhookDeliveryId } from "#webhooks/domain/webhook-delivery-id.ts";
 
-import { toDeliveryView, toEndpointView } from "./webhook-view.ts";
+import {
+  toBulkRedeliveryView,
+  toDeliveryView,
+  toEndpointView,
+} from "./webhook-view.ts";
 
 const decodeCursor = Schema.decodeUnknownOption(WebhookDeliveryIdSchema);
+
+// A cursor is the id of the last delivery of the page before: one that is
+// not is a bad request.
+const cursorOf = (
+  cursor: string | undefined
+): Effect.Effect<Option.Option<WebhookDeliveryId>, HttpApiError.BadRequest> => {
+  const after = Option.fromUndefinedOr(cursor).pipe(Option.map(decodeCursor));
+
+  return Option.isSome(after) && Option.isNone(after.value)
+    ? Effect.fail(new HttpApiError.BadRequest())
+    : Effect.succeed(Option.flatten(after));
+};
+
+const pageOf = ({ items, next }: DeliveryPage) => ({
+  items: items.map(toDeliveryView),
+  nextCursor: Option.getOrNull(next),
+});
+
+const filterRefused = ({
+  field,
+}: {
+  readonly field: "channelIds" | "workspaceIds";
+}) => Effect.fail(new WebhookFilterRefused({ field }));
 
 const endpointNotFound = () => Effect.fail(new WebhookEndpointNotFound());
 
 const endpointDisabled = () => Effect.fail(new WebhookEndpointDisabled());
 
-const tooManySends = ({ allowed }: { readonly allowed: number }) =>
-  Effect.fail(new TooManyWebhookSends({ allowed }));
+const tooManySends = ({
+  allowed,
+  retryAfterSeconds,
+}: {
+  readonly allowed: number;
+  readonly retryAfterSeconds: number;
+}) =>
+  setAnswerHeader("Retry-After", String(retryAfterSeconds)).pipe(
+    Effect.andThen(
+      Effect.fail(new TooManyWebhookSends({ allowed, retryAfterSeconds }))
+    )
+  );
 
 const urlRefused = ({ reason }: { readonly reason: WebhookUrlRefusal }) =>
   Effect.fail(new WebhookUrlRefused({ reason }));
@@ -64,16 +105,19 @@ export const WebhooksHandlers = HttpApiBuilder.group(
 
           return yield* endpoints
             .create(actor, {
+              channelIds: payload.channelIds ?? [],
               description: payload.description ?? "",
               enabled: payload.enabled ?? true,
               eventTypes: payload.eventTypes,
               scope: payload.scope ?? "workspace",
               url: payload.url,
+              workspaceIds: payload.workspaceIds ?? [],
             })
             .pipe(
               Effect.map(withSecret),
               Effect.catchTags({
                 DatabaseError: Effect.die,
+                FilterRefused: filterRefused,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: forbidden,
                 PartnerScopeUnavailable: () =>
@@ -126,20 +170,19 @@ export const WebhooksHandlers = HttpApiBuilder.group(
         Effect.gen(function* listDeliveries() {
           const actor = actorOf(yield* CurrentMember);
 
-          // A cursor is the id of the last delivery of the page before.
-          const after = Option.fromUndefinedOr(query.cursor).pipe(
-            Option.map(decodeCursor)
-          );
-
-          if (Option.isSome(after) && Option.isNone(after.value)) {
-            return yield* new HttpApiError.BadRequest();
-          }
-
           const page = yield* deliveries
-            .page(actor, params.endpointId, {
-              after: Option.flatten(after),
-              limit: query.limit ?? defaultWebhookDeliveryPageSize,
-            })
+            .page(
+              actor,
+              params.endpointId,
+              {
+                after: yield* cursorOf(query.cursor),
+                limit: query.limit ?? defaultWebhookDeliveryPageSize,
+              },
+              {
+                eventType: Option.fromUndefinedOr(query.eventType),
+                status: Option.fromUndefinedOr(query.status),
+              }
+            )
             .pipe(
               Effect.catchTags({
                 DatabaseError: Effect.die,
@@ -148,10 +191,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
               })
             );
 
-          return {
-            items: page.items.map(toDeliveryView),
-            nextCursor: Option.getOrNull(page.next),
-          };
+          return pageOf(page);
         }),
       redeliver: ({ params }) =>
         Effect.gen(function* redeliver() {
@@ -172,6 +212,33 @@ export const WebhooksHandlers = HttpApiBuilder.group(
               })
             );
         }),
+      redeliverMany: ({ payload }) =>
+        Effect.gen(function* redeliverMany() {
+          const actor = actorOf(yield* CurrentMember);
+
+          return yield* deliveries
+            .redeliverMany(
+              actor,
+              "deliveryIds" in payload
+                ? { _tag: "ids", deliveryIds: payload.deliveryIds }
+                : {
+                    _tag: "failed",
+                    endpointId: payload.endpointId,
+                    eventType: Option.fromUndefinedOr(payload.eventType),
+                    since: Option.fromUndefinedOr(payload.since),
+                    until: Option.fromUndefinedOr(payload.until),
+                  }
+            )
+            .pipe(
+              Effect.map(toBulkRedeliveryView),
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                EndpointNotFound: endpointNotFound,
+                MissingPermission: forbidden,
+                TooManyManualSends: tooManySends,
+              })
+            );
+        }),
       rotateSecret: ({ params }) =>
         Effect.gen(function* rotateSecret() {
           const actor = actorOf(yield* CurrentMember);
@@ -186,20 +253,50 @@ export const WebhooksHandlers = HttpApiBuilder.group(
             })
           );
         }),
-      sendTest: ({ params }) =>
+      searchDeliveries: ({ query }) =>
+        Effect.gen(function* searchDeliveries() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const page = yield* deliveries
+            .search(
+              actor,
+              {
+                endpointId: Option.fromUndefinedOr(query.endpointId),
+                eventType: Option.fromUndefinedOr(query.eventType),
+                since: Option.fromUndefinedOr(query.since),
+                status: Option.fromUndefinedOr(query.status),
+                until: Option.fromUndefinedOr(query.until),
+              },
+              {
+                after: yield* cursorOf(query.cursor),
+                limit: query.limit ?? defaultWebhookDeliveryPageSize,
+              }
+            )
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+              })
+            );
+
+          return pageOf(page);
+        }),
+      sendTest: ({ params, query }) =>
         Effect.gen(function* sendTest() {
           const actor = actorOf(yield* CurrentMember);
 
-          return yield* endpoints.sendTest(actor, params.endpointId).pipe(
-            Effect.map(toDeliveryView),
-            Effect.catchTags({
-              DatabaseError: Effect.die,
-              EndpointDisabled: endpointDisabled,
-              EndpointNotFound: endpointNotFound,
-              MissingPermission: forbidden,
-              TooManyManualSends: tooManySends,
-            })
-          );
+          return yield* endpoints
+            .sendTest(actor, params.endpointId, query.eventType)
+            .pipe(
+              Effect.map(toDeliveryView),
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                EndpointDisabled: endpointDisabled,
+                EndpointNotFound: endpointNotFound,
+                MissingPermission: forbidden,
+                TooManyManualSends: tooManySends,
+              })
+            );
         }),
       update: ({ params, payload }) =>
         Effect.gen(function* update() {
@@ -212,6 +309,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
               Effect.catchTags({
                 DatabaseError: Effect.die,
                 EndpointNotFound: endpointNotFound,
+                FilterRefused: filterRefused,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: forbidden,
                 UrlNotDeliverable: urlRefused,

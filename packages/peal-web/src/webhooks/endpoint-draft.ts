@@ -5,31 +5,71 @@ import type {
   SubscribableWebhookEventType,
   WebhookEndpoint,
   WebhookEndpointChange,
+  WebhookEndpointScope,
 } from "peal-contract";
 
 /** An endpoint as its form holds it, while a member writes it. */
 export interface EndpointDraft {
+  /** The channels it hears about; none for every channel. */
+  readonly channelIds: ReadonlySet<string>;
   readonly description: string;
   readonly enabled: boolean;
   readonly eventTypes: ReadonlySet<SubscribableWebhookEventType>;
+  /** Whether it hears a partner's every workspace: the workspaces field. */
+  readonly scope: WebhookEndpointScope;
   readonly url: string;
+  /** The workspaces a partner endpoint hears, one id a line; none for all. */
+  readonly workspaceIds: string;
 }
 
 /** A new endpoint's form: on, with nothing chosen yet. */
 export const emptyDraft: EndpointDraft = {
+  channelIds: new Set(),
   description: "",
   enabled: true,
   eventTypes: new Set(),
+  scope: "workspace",
   url: "",
+  workspaceIds: "",
 };
 
 /** The form of an endpoint the workspace has. */
 export const draftOf = (endpoint: WebhookEndpoint): EndpointDraft => ({
+  channelIds: new Set(endpoint.channelIds),
   description: endpoint.description,
   enabled: endpoint.enabled,
   eventTypes: new Set(endpoint.eventTypes),
+  scope: endpoint.scope,
   url: endpoint.url,
+  workspaceIds: endpoint.workspaceIds.join("\n"),
 });
+
+/** The draft with one channel listened to, or left out. */
+export const withChannel = (
+  draft: EndpointDraft,
+  channelId: string,
+  chosen: boolean
+): EndpointDraft => {
+  const channelIds = new Set(draft.channelIds);
+
+  if (chosen) {
+    channelIds.add(channelId);
+  } else {
+    channelIds.delete(channelId);
+  }
+
+  return { ...draft, channelIds };
+};
+
+/** The ids a workspaces field lists, one a line, each once. */
+export const workspaceIdsOf = (written: string): string[] => [
+  ...new Set(
+    written
+      .split(/[\s,]+/u)
+      .map((id) => id.trim())
+      .filter((id) => id !== "")
+  ),
+];
 
 /** The draft with one event chosen, or left out. */
 export const withType = (
@@ -87,13 +127,35 @@ export const newEndpointOf = (
   draft: EndpointDraft
 ): Option.Option<NewWebhookEndpoint> =>
   written(draft).pipe(
-    Option.map((fields) => ({ ...fields, enabled: draft.enabled }))
+    Option.map((fields) =>
+      draft.channelIds.size === 0
+        ? { ...fields, enabled: draft.enabled }
+        : {
+            ...fields,
+            channelIds: [...draft.channelIds],
+            enabled: draft.enabled,
+          }
+    )
   );
 
 /**
- * What to save of an endpoint's form: its address, description and events.
- * Whether it is on changes on its own.
+ * What to save of an endpoint's form: its address, description, events and
+ * filters, an empty filter hearing everything again; the workspaces only of
+ * a partner endpoint. Whether it is on changes on its own.
  */
 export const changeOf = (
   draft: EndpointDraft
-): Option.Option<WebhookEndpointChange> => written(draft);
+): Option.Option<WebhookEndpointChange> =>
+  written(draft).pipe(
+    Option.map((fields) => {
+      const channelIds = [...draft.channelIds];
+
+      return draft.scope === "partner"
+        ? {
+            ...fields,
+            channelIds,
+            workspaceIds: workspaceIdsOf(draft.workspaceIds),
+          }
+        : { ...fields, channelIds };
+    })
+  );

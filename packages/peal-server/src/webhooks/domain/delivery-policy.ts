@@ -53,3 +53,44 @@ export const manualSendsPerHour = 30;
 
 /** How long a delivery stays in its endpoint's log, with its event. */
 export const deliveryRetention = Duration.days(30);
+
+/**
+ * How many channels an endpoint may listen to, and how many workspaces a
+ * partner endpoint: enough for an embedding product's tenants, a filter a
+ * person can still read. The contract copies them.
+ */
+export const maxFilterChannels = 50;
+export const maxFilterWorkspaces = 200;
+
+/**
+ * How many deliveries a workspace's members may send again in an hour by
+ * the many, apart from the test events and single sends of
+ * `manualSendsPerHour`: enough to replay a day of failures after an
+ * outage, and a call is taken whole or not at all. The contract copies it.
+ */
+export const bulkRedeliveriesPerHour = 1000;
+
+/** How many deliveries one call sends again at most. */
+export const maxBulkRedelivery = 100;
+
+/**
+ * How far apart the deliveries of one call to send many again start, per
+ * endpoint, so a receiver that just came back is not sent them all at once.
+ */
+export const bulkReplaySpacing = Duration.millis(250);
+
+/**
+ * What members send by hand, each kind counted apart: test events and
+ * deliveries sent again one by one, or deliveries sent again by the many.
+ */
+export type ManualSendKind = "bulk" | "single";
+
+/** How many sends of the kind a workspace may start in an hour. */
+export const manualSendAllowance = (kind: ManualSendKind): number =>
+  kind === "bulk" ? bulkRedeliveriesPerHour : manualSendsPerHour;
+
+/** The window manual sends are counted in. */
+export const manualSendWindow = Duration.hours(1);
+
+/** How long the counts of ended windows are kept. */
+export const manualSendCountRetention = Duration.days(1);
