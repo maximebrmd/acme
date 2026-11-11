@@ -262,13 +262,13 @@ export const authWithoutDatabase = () =>
     },
   });
 
-// An endpoint served over HTTP has a path; the server-only ones have none.
-const decodeRoute = Schema.decodeUnknownOption(
-  Schema.Struct({ path: Schema.String })
-);
-
-/** Every path the instance serves over HTTP. */
-export const servedRoutes = (auth: ReturnType<typeof authWithoutDatabase>) =>
-  Object.values(auth.api).flatMap((endpoint) =>
-    Option.toArray(decodeRoute(endpoint)).map(({ path }) => path)
+/**
+ * Every path the instance serves over HTTP: the server-only endpoints have
+ * none.
+ */
+export const servedRoutes = (
+  auth: ReturnType<typeof authWithoutDatabase>
+): readonly string[] =>
+  Object.values(auth.api).flatMap(({ path }: { readonly path?: string }) =>
+    path === undefined ? [] : [path]
   );

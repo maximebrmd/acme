@@ -21,11 +21,18 @@ import {
   cookiesOf,
   IntegrationLive,
   makeAdmin,
+  password,
   signIn,
   signedUp,
   TestApp,
   workspaceOf,
 } from "#test/workspace/integration/harness.ts";
+import {
+  enrolled,
+  passwordStep,
+  secondStep,
+  withCookies,
+} from "#test/workspace/support.ts";
 
 // Answers as JSON carries them: instants as strings.
 const json = <S extends Schema.Top>(schema: S) => Schema.toCodecJson(schema);
@@ -473,6 +480,54 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
               .map(({ staffId, targetId }) => ({ staffId, targetId })),
             [{ staffId: staff.id, targetId: member.id }]
           );
+        })
+    );
+
+    it.effect(
+      "refuses staff acting as a member every route of two-step verification",
+      () =>
+        Effect.gen(function* twoStep() {
+          const app = yield* TestApp;
+          const sql = yield* SqlClient.SqlClient;
+          const { actingAs, member } = yield* impersonation("two-step");
+          const { backupCodes } = yield* enrolled(member);
+
+          const refusedRoutes = [
+            ["enable", { password }],
+            ["disable", { password }],
+            ["get-totp-uri", { password }],
+            ["generate-backup-codes", { password }],
+            ["verify-backup-code", { code: backupCodes[0] ?? "" }],
+          ] as const;
+
+          for (const [route, body] of refusedRoutes) {
+            const refused = yield* app.request(
+              `/api/auth/two-factor/${route}`,
+              { body, headers: { cookie: actingAs } }
+            );
+
+            assert.strictEqual(refused.status, 403, route);
+            assert.deepInclude(refused.body, {
+              code: "IMPERSONATION_READ_ONLY",
+            });
+          }
+
+          // Nothing changed: it is still on, with every recovery code.
+          const [row] =
+            yield* sql`SELECT two_factor_enabled AS enabled FROM auth."user" WHERE id = ${member.id}`.pipe(
+              Effect.orDie
+            );
+
+          assert.strictEqual(row?.["enabled"], true);
+
+          const signingIn = yield* passwordStep(member.email);
+
+          const used = yield* secondStep(withCookies("", signingIn), {
+            code: backupCodes[0] ?? "",
+            route: "verify-backup-code",
+          });
+
+          assert.strictEqual(used.status, 200);
         })
     );
   }
