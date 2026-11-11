@@ -18,7 +18,7 @@ import type { Post } from "#publishing/domain/post.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
 import type { QueueSlot } from "#publishing/domain/queue.ts";
 import { newId } from "#shared/application/ids.ts";
-import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { PostIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import type { Weekday } from "#shared/domain/wall-clock.ts";
@@ -856,6 +856,67 @@ describe("making another queue the default while a channel set goes", () => {
             ),
             Option.some({ channelSetId: Option.none(), isDefault: false })
           );
+        })
+      ),
+    timeout
+  );
+});
+
+describe("adding a post to a queue without room", () => {
+  it.effect(
+    "says first what is wrong with the post",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* refusals() {
+          const scheduling = yield* PostScheduling;
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const editor = actorIn(workspaceId);
+          const full = yield* queueIn(workspaceId, { name: "Full", slots: [] });
+
+          const onFull = (postId: PostId) =>
+            scheduling
+              .enqueue(editor, postId, {
+                channelIds: Option.none(),
+                queueId: Option.some(full.id),
+              })
+              .pipe(
+                Effect.flip,
+                Effect.map(({ _tag }) => _tag)
+              );
+
+          // A post the workspace does not have.
+          assert.strictEqual(
+            yield* onFull(yield* newId(PostIdSchema)),
+            "PostNotFound"
+          );
+
+          // A post that can no longer be scheduled.
+          const sent = yield* scheduling.send(editor, {
+            channelIds: [channel],
+            content: contentOf("A post cancelled since."),
+            idempotency: Option.none(),
+            placement: { _tag: "at", at: utc("2026-07-01T10:00:00Z") },
+            timeZone: paris,
+          });
+
+          yield* scheduling.cancel(editor, sent.post.id);
+
+          assert.strictEqual(
+            yield* onFull(sent.post.id),
+            "InvalidPostTransition"
+          );
+
+          // A post it may be added to: the queue's lack of room.
+          const draft = yield* PostDrafts.use((drafts) =>
+            drafts.create(editor, {
+              channelIds: [channel],
+              content: contentOf("A draft for a full queue."),
+            })
+          );
+
+          assert.strictEqual(yield* onFull(draft.post.id), "QueueHasNoRoom");
         })
       ),
     timeout

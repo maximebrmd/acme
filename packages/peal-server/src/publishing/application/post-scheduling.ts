@@ -1185,24 +1185,40 @@ export class PostScheduling extends Context.Service<
         return yield* transaction(
           Effect.gen(function* placeAndRestart() {
             // The queue before the post: deleting a queue holds it, then
-            // writes its posts.
-            const placed = yield* onQueue(queue, received, Option.some(postId));
+            // writes its posts. A queue without room is said once the post
+            // is known to be one it could take.
+            const slot = yield* onQueue(
+              queue,
+              received,
+              Option.some(postId)
+            ).pipe(
+              Effect.map(Result.succeed),
+              Effect.catchTag("QueueHasNoRoom", (noRoom) =>
+                Effect.succeed(Result.fail(noRoom))
+              )
+            );
+
             const current = yield* lockPost(actor, postId);
             const { status } = current.post;
 
             if (
-              status._tag === "scheduled" ||
-              status._tag === "awaitingApproval"
+              status._tag !== "draft" &&
+              status._tag !== "scheduled" &&
+              status._tag !== "awaitingApproval"
             ) {
-              return yield* moved(actor, current, placed, received);
-            }
-
-            if (status._tag !== "draft") {
               return yield* new InvalidPostTransition({
                 action: "schedule",
                 from: status._tag,
                 postId,
               });
+            }
+
+            yield* mayChange(actor, current.post);
+
+            const placed = yield* Effect.fromResult(slot);
+
+            if (status._tag !== "draft") {
+              return yield* moved(actor, current, placed, received);
             }
 
             const own = (yield* posts.targets(postId)).map(
