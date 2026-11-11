@@ -2137,6 +2137,15 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             }),
             "The post is not on that channel"
           );
+          // One target, named one way: never whichever of two comes first.
+          assert.include(
+            yield* publisher.refused("unpublish_post", {
+              channelId: "00000000-0000-7000-8000-00000000c0de",
+              postId: created.id,
+              targetId: "00000000-0000-7000-8000-00000000e0de",
+            }),
+            "Give channelId or targetId, not both"
+          );
           assert.deepStrictEqual(
             yield* writer.call("list_post_changes", ChangesJsonSchema, {
               postId: created.id,

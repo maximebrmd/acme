@@ -284,9 +284,10 @@ export const PostToolsLive = PostTools.toLayer(
           })
         );
 
-        const found = targets.find(
-          (target) =>
-            target.id === named.targetId || target.channelId === named.channelId
+        const found = targets.find((target) =>
+          named.targetId === undefined
+            ? target.channelId === named.channelId
+            : target.id === named.targetId
         );
 
         return found === undefined
@@ -832,10 +833,17 @@ export const PostToolsLive = PostTools.toLayer(
         ),
       unpublish_post: ({ channelId, postId, targetId }) =>
         Effect.gen(function* unpublishPost() {
+          // A channel, or a target, names one channel of the post: one way,
+          // so that two names that disagree never remove either.
+          if (channelId !== undefined && targetId !== undefined) {
+            return yield* refuse(
+              "Give channelId or targetId, not both: nothing was removed."
+            );
+          }
+
           const member = yield* actor;
           const id = yield* postIdFrom(postId);
 
-          // A channel, or a target, names one channel of the post.
           const onChannel =
             channelId === undefined && targetId === undefined
               ? Option.none()
