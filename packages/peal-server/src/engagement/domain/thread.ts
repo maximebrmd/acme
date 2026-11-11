@@ -21,12 +21,15 @@ import type { ThreadId } from "./thread-id.ts";
  * - `disconnected`: its channel left the workspace.
  * - `unsupported`: Peal reads no comments on its platform.
  * - `missing`: the platform no longer shows the post.
+ * - `removed`: Peal deleted the post from its platform at a member's
+ *   request; the comments read until then are kept for their retention.
  */
 export const CollectionEndSchema = Schema.Literals([
   "window",
   "disconnected",
   "unsupported",
   "missing",
+  "removed",
 ]);
 
 export type CollectionEnd = typeof CollectionEndSchema.Type;

@@ -2030,6 +2030,8 @@
         "failed": "Une publication échoue sur un canal",
         "unconfirmed": "Une publication est peut-être partie sur un canal",
         "cancelled": "Une publication est annulée",
+        "unpublished": "Une publication est supprimée de la plateforme d’un canal",
+        "unpublish_failed": "Une publication n’a pas pu être supprimée de la plateforme d’un canal",
         "approval_requested": "Une publication attend une approbation",
         "approved": "Une publication est approuvée",
         "changes_requested": "Des modifications sont demandées sur une publication"
@@ -2983,7 +2985,7 @@
       "noComment": "Aucun commentaire ne reste sur la plateforme.",
       "openPost": "Ouvrir la publication",
       "onPlatform": "Voir la publication sur la plateforme",
-      "ended": "{reason, select, window {Ses commentaires ne sont plus lus : la publication a dépassé les jours pendant lesquels Peal les lit.} disconnected {Ses commentaires ne sont plus lus : son canal a été déconnecté.} unsupported {Ses commentaires ne sont plus lus : Peal n’en lit aucun sur cette plateforme.} missing {Ses commentaires ne sont plus lus : la plateforme n’affiche plus la publication.} other {Ses commentaires ne sont plus lus.}}"
+      "ended": "{reason, select, window {Ses commentaires ne sont plus lus : la publication a dépassé les jours pendant lesquels Peal les lit.} disconnected {Ses commentaires ne sont plus lus : son canal a été déconnecté.} unsupported {Ses commentaires ne sont plus lus : Peal n’en lit aucun sur cette plateforme.} missing {Ses commentaires ne sont plus lus : la plateforme n’affiche plus la publication.} removed {Ses commentaires ne sont plus lus : la publication a été supprimée de la plateforme depuis Peal.} other {Ses commentaires ne sont plus lus.}}"
     },
     "thread": {
       "title": "Commentaires",

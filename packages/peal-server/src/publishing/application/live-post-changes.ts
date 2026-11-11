@@ -135,7 +135,11 @@ export class LivePostChanges extends Context.Service<
             return Result.fail<LivePostRefusal>(parts.failure);
           }
 
-          const held = yield* holds.ofTarget(target.id);
+          const held = yield* holds.ofTarget({
+            postId: post.id,
+            targetId: target.id,
+            workspaceId: post.workspaceId,
+          });
 
           if (Option.isSome(held)) {
             return Result.fail<LivePostRefusal>(held.value);

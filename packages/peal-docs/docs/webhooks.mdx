@@ -31,7 +31,7 @@ An endpoint is an address, the events it wants, a description, whether it is on,
 - **The description**, up to 200 characters, says what the endpoint is for.
 - **On or off.** While an endpoint is off, Peal sends it nothing, its deliveries still waiting fail, and what happens meanwhile is not kept for it: turning it back on does not replay it.
 - **The scope**, over the API: `workspace`, the default, hears this workspace; `partner`, on the home workspace of a [partner account](/embedding#webhooks) only, hears every workspace the account owns too. Elsewhere `partner` answers 404 `PartnerNotFound`. It is set when the endpoint is created, and stays.
-- **Only these channels** (`channelIds`, 50 at most). The endpoint is then sent the events about those channels only: an event of one channel (`post.published`, `post.failed`, `post.unconfirmed`, `channel.*`, `comment.*`) when its channel is listed, and an event of a whole post (`post.scheduled`, `post.unscheduled`, `post.cancelled`, the approval events) when one of the post's channels is, its payload unchanged. An event about no channel (`media.*`, `boost.*`) reaches the endpoint whatever it lists: leave those types out of its events when you do not want them. No list means every channel.
+- **Only these channels** (`channelIds`, 50 at most). The endpoint is then sent the events about those channels only: an event of one channel (`post.published`, `post.failed`, `post.unconfirmed`, `post.unpublished`, `post.unpublish_failed`, `channel.*`, `comment.*`) when its channel is listed, and an event of a whole post (`post.scheduled`, `post.unscheduled`, `post.cancelled`, the approval events) when one of the post's channels is, its payload unchanged. An event about no channel (`media.*`, `boost.*`) reaches the endpoint whatever it lists: leave those types out of its events when you do not want them. No list means every channel.
 - **Only these workspaces** (`workspaceIds`, 200 at most), on a `partner` endpoint only: it then hears those workspaces alone, and its home workspace only if it is listed. An endpoint of the `workspace` scope refuses the field (`WebhookFilterRefused`, or `InvalidRequest` when it is created). No list means every workspace it hears.
 
 Filters are checked for the shape of their ids only: an id that names nothing matches nothing, and a filter stays as you saved it when a channel is disconnected or a workspace leaves the partner account. The endpoint's form lists such a channel apart, ticked, as **A channel no longer connected**: untick it to take it off. They apply when each event happens, with the endpoint as it is then; [sending a delivery again](#log) sends it to its endpoint whatever the filters say now.
@@ -95,6 +95,8 @@ Event types and their fields are a public contract. Peal adds event types, and f
 | [`post.failed`](#post-failed)                           | A post did not go out on a channel                                        |
 | [`post.unconfirmed`](#post-unconfirmed)                 | Peal cannot tell whether a post went live on a channel                    |
 | [`post.cancelled`](#post-cancelled)                     | A post was cancelled                                                      |
+| [`post.unpublished`](#post-unpublished)                 | A post was deleted from a channel's platform                              |
+| [`post.unpublish_failed`](#post-unpublish-failed)       | Peal could not delete a post from a channel's platform                    |
 | [`post.approval_requested`](#post-approval-requested)   | A post waits for an approval                                              |
 | [`post.approved`](#post-approved)                       | A post that waited was approved                                           |
 | [`post.changes_requested`](#post-changes-requested)     | Changes were asked for on a post that waited                              |
@@ -350,6 +352,72 @@ The post was cancelled. `targets` are the channels it will not go out on; a chan
         "platform": "mastodon"
       }
     ]
+  }
+}
+```
+
+### post.unpublished [#post-unpublished]
+
+Peal deleted the post from the channel's platform, every part of it, as a member, a key or an application asked ([Unpublish a post](/scheduling#unpublish)). The post stays `published` in Peal: its target gets `removedAt`, and keeps its permalink as a record.
+
+| Field         | Type           | What it holds                                                                  |
+| ------------- | -------------- | ------------------------------------------------------------------------------ |
+| `workspaceId` | string         | The workspace                                                                  |
+| `postId`      | string         | The post                                                                       |
+| `targetId`    | string         | The post on that channel                                                       |
+| `channelId`   | string         | The channel                                                                    |
+| `platform`    | string or null | The channel's platform; null once the channel was disconnected                 |
+| `removedAt`   | string         | When the last part was deleted, as an instant in UTC                           |
+| `alreadyGone` | boolean        | Whether the platform had a part no longer, as when it was deleted there before |
+
+```json title="post.unpublished"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e21",
+  "type": "post.unpublished",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "removedAt": "2026-11-10T09:00:00.000Z",
+    "alreadyGone": false
+  }
+}
+```
+
+### post.unpublish_failed [#post-unpublish-failed]
+
+Peal could not delete the post from the channel's platform, after the tries a deletion makes: `code` says why, as the change's `code` does (`unavailable`, `rateLimited`, `channelUnavailable`, or the platform's own). The post may still be there, whole or in part: a member may ask again, which deletes the parts left.
+
+| Field         | Type           | What it holds                                                  |
+| ------------- | -------------- | -------------------------------------------------------------- |
+| `workspaceId` | string         | The workspace                                                  |
+| `postId`      | string         | The post                                                       |
+| `targetId`    | string         | The post on that channel                                       |
+| `channelId`   | string         | The channel                                                    |
+| `platform`    | string or null | The channel's platform; null once the channel was disconnected |
+| `code`        | string         | Why the deletion stopped                                       |
+| `failedAt`    | string         | When Peal gave up, as an instant in UTC                        |
+
+```json title="post.unpublish_failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e22",
+  "type": "post.unpublish_failed",
+  "version": 1,
+  "timestamp": "2026-11-10T11:22:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "code": "unavailable",
+    "failedAt": "2026-11-10T11:22:00.000Z"
   }
 }
 ```

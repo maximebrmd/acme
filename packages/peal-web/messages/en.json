@@ -2030,6 +2030,8 @@
         "failed": "A post fails on a channel",
         "unconfirmed": "A post may have gone out on a channel",
         "cancelled": "A post is cancelled",
+        "unpublished": "A post is deleted from a channel’s platform",
+        "unpublish_failed": "A post could not be deleted from a channel’s platform",
         "approval_requested": "A post waits for an approval",
         "approved": "A post is approved",
         "changes_requested": "Changes are requested on a post"
@@ -2983,7 +2985,7 @@
       "noComment": "No comment is left on the platform.",
       "openPost": "Open the post",
       "onPlatform": "View the post on the platform",
-      "ended": "{reason, select, window {Its comments are no longer read: the post is past the days Peal reads them for.} disconnected {Its comments are no longer read: its channel was disconnected.} unsupported {Its comments are no longer read: Peal reads none on this platform.} missing {Its comments are no longer read: the platform no longer shows the post.} other {Its comments are no longer read.}}"
+      "ended": "{reason, select, window {Its comments are no longer read: the post is past the days Peal reads them for.} disconnected {Its comments are no longer read: its channel was disconnected.} unsupported {Its comments are no longer read: Peal reads none on this platform.} missing {Its comments are no longer read: the platform no longer shows the post.} removed {Its comments are no longer read: the post was deleted from the platform from Peal.} other {Its comments are no longer read.}}"
     },
     "thread": {
       "title": "Comments",

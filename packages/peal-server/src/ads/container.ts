@@ -114,3 +114,9 @@ export const AdsWorkersLive = Layer.merge(AdGateLive, PlaceBoostV1Live);
 
 /** The hourly sync, the end of boosts and the daily retention. */
 export { AdsCronsLive } from "#ads/infrastructure/crons.ts";
+
+/**
+ * Whether boosts show a published post, for publishing to ask before it
+ * deletes the post from its platform. Needs the database alone.
+ */
+export { DrizzlePostBoosts as PostBoostsLive } from "#ads/infrastructure/drizzle-post-boosts.ts";

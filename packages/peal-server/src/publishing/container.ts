@@ -39,6 +39,7 @@ import { RoutedPlatformPublisher } from "#publishing/application/routed-platform
 import { Signatures } from "#publishing/application/signatures.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import type { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
+import { AdsLivePostHolds } from "#publishing/infrastructure/ads-live-post-holds.ts";
 import { AnalyticsCountedPlatforms } from "#publishing/infrastructure/analytics-counted-platforms.ts";
 import { ChannelAccessCredentials } from "#publishing/infrastructure/channel-access-credentials.ts";
 import { ChannelAccessGrants } from "#publishing/infrastructure/channel-access-grants.ts";
@@ -80,6 +81,7 @@ import { LivePostClientsLive } from "#publishing/infrastructure/platforms/live-p
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platform-lookups-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
+import { ToldLivePostEvents } from "#publishing/infrastructure/told-live-post-events.ts";
 import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
 import {
   webhookOutcomes,
@@ -270,11 +272,10 @@ export const PublishingLive = publishingOver(
   AccountRules.layer.pipe(Layer.provide(ChannelAccessGrants)),
   NamedPostOrigins,
   WebhookPostEvents,
-  Layer.mergeAll(
-    ChannelAccessCredentials,
-    LivePostHolds.none,
-    LivePostEvents.none
-  )
+  // Changes of live posts: the channels context says whether a channel
+  // can be used, the ads context which posts a boost shows, and the
+  // webhooks, analytics and the inbox hear how a change ended.
+  Layer.mergeAll(ChannelAccessCredentials, AdsLivePostHolds, ToldLivePostEvents)
 ).pipe(
   // The operator's X_THREADS, which scheduling reads.
   Layer.provide(XThreadsLive),

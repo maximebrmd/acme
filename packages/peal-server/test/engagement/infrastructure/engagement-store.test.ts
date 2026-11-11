@@ -145,6 +145,67 @@ layer(StoreTest)("the engagement store", (it) => {
     })
   );
 
+  it.effect(
+    "stops reading a post removed from its platform, a read finishing after it included",
+    () =>
+      Effect.gen(function* removed() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* EngagementStore;
+        const records = yield* EngagementRecords;
+        const channelId = yield* newId(ChannelIdSchema);
+
+        const thread = yield* threadOn(
+          workspaceId,
+          channelId,
+          "2043-03-05T10:20:00.000Z"
+        );
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([thread]);
+
+          const at = utc("2043-03-05T10:30:00.000Z");
+          const removedAt = utc("2043-03-05T10:31:00.000Z");
+
+          // A read that began before the post was removed.
+          const [due] = yield* store.dueOn(at, [channelId], 10);
+
+          yield* records.postRemoved(thread.targetId, removedAt);
+
+          if (due !== undefined) {
+            yield* store.saveCollections([
+              recordCollection(
+                due,
+                utc("2043-03-05T10:31:30.000Z"),
+                at,
+                Duration.days(30)
+              ),
+            ]);
+          }
+
+          const [kept] = yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql<{
+                readonly endReason: string | null;
+                readonly nextCollectionAt: Date | null;
+              }>`SELECT end_reason AS "endReason", next_collection_at AS "nextCollectionAt" FROM engagement.threads WHERE target_id = ${thread.targetId}`
+          ).pipe(Effect.orDie);
+
+          assert.deepStrictEqual(kept, {
+            endReason: "removed",
+            nextCollectionAt: null,
+          });
+          assert.deepStrictEqual(
+            yield* store.dueOn(
+              utc("2043-03-06T10:30:00.000Z"),
+              [channelId],
+              10
+            ),
+            []
+          );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
   it.effect("keeps a comment once, with its thread's counts", () =>
     Effect.gen(function* keeps() {
       const workspaceId = yield* freshWorkspace;

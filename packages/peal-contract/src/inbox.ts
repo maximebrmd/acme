@@ -219,14 +219,15 @@ export type InboxReply = typeof InboxReplySchema.Type;
 /**
  * Why a post's comments are no longer read: it left the collection
  * `window`, its channel was `disconnected`, Peal reads no comments on its
- * platform (`unsupported`), or the platform no longer shows the post
- * (`missing`).
+ * platform (`unsupported`), the platform no longer shows the post
+ * (`missing`), or Peal deleted it from the platform (`removed`).
  */
 export const InboxCollectionEndSchema = Schema.Literals([
   "window",
   "disconnected",
   "unsupported",
   "missing",
+  "removed",
 ]).annotate({ identifier: "InboxCollectionEnd" });
 
 export type InboxCollectionEnd = typeof InboxCollectionEndSchema.Type;

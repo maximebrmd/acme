@@ -43,6 +43,72 @@ const utc = (iso: string) => DateTime.makeUnsafe(iso);
 const paris = TimeZoneIdSchema.make("Europe/Paris");
 
 layer(StoreTest)("the analytics store", (it) => {
+  it.effect(
+    "stops reading a post removed from its platform, and keeps what it read",
+    () =>
+      Effect.gen(function* removed() {
+        const workspaceId = yield* freshWorkspace;
+        const tracked = yield* TrackedPosts;
+        const records = yield* AnalyticsRecords;
+
+        const publication = yield* publicationOf(
+          workspaceId,
+          yield* newChannelId,
+          "2041-06-02T10:20:00.000Z"
+        );
+
+        const post = trackPublication(publication);
+
+        yield* Effect.gen(function* checks() {
+          yield* tracked.track([post]);
+
+          const first = recordReading(
+            post,
+            countsOf(3, 1, 0, 2),
+            utc("2041-06-02T11:07:01.000Z"),
+            utc("2041-06-02T11:07:00.000Z")
+          );
+
+          yield* tracked.saveReading(first);
+          yield* records.postRemoved(
+            post.targetId,
+            utc("2041-06-02T11:30:00.000Z")
+          );
+
+          // A read that began before the removal, saved after it.
+          yield* tracked.saveReadings([
+            recordReading(
+              first,
+              countsOf(9, 9, 9, 9),
+              utc("2041-06-02T12:07:01.000Z"),
+              utc("2041-06-02T12:07:00.000Z")
+            ),
+          ]);
+
+          const due = yield* tracked.dueOn(
+            utc("2041-06-04T12:07:00.000Z"),
+            [publication.channelId],
+            1000
+          );
+
+          assert.isFalse(
+            due.some(({ targetId }) => targetId === post.targetId)
+          );
+
+          const [history] = yield* AnalyticsReports.use((reports) =>
+            reports.history(workspaceId, publication.postId)
+          );
+
+          assert.deepStrictEqual(history?.snapshots, [
+            {
+              collectedAt: utc("2041-06-02T11:07:01.000Z"),
+              metrics: countsOf(3, 1, 0, 2),
+            },
+          ]);
+        }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+      })
+  );
+
   it.effect("follows a post once, and keeps its readings", () =>
     Effect.gen(function* follows() {
       const workspaceId = yield* freshWorkspace;

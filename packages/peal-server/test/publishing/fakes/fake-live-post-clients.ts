@@ -168,7 +168,7 @@ export const FakeHolds = Layer.effect(
   FakeRemovals.use((removals) =>
     Effect.succeed(
       LivePostHolds.of({
-        ofTarget: (targetId) =>
+        ofTarget: ({ targetId }) =>
           removals
             .isHeld(targetId)
             .pipe(
