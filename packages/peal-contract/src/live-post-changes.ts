@@ -16,6 +16,11 @@ import { Schema } from "effect";
  *   be reconnected.
  * - `boostRunning`: a boost that is not over shows the post: stop it
  *   first.
+ * - `approvalRequired`: your posts need an approval, and an edit would put
+ *   text nobody approved out at once: an approver makes it.
+ *
+ * An edit is refused `noPlatformId` too for a part the post does not have
+ * live on that channel.
  */
 export const LivePostRefusalSchema = Schema.Literals([
   "notPublished",
@@ -25,17 +30,20 @@ export const LivePostRefusalSchema = Schema.Literals([
   "changeInProgress",
   "channelUnavailable",
   "boostRunning",
+  "approvalRequired",
 ]).annotate({ identifier: "LivePostRefusal" });
 
 export type LivePostRefusal = typeof LivePostRefusalSchema.Type;
 
 /**
- * What a change of a live post does: `unpublish` deletes it. More kinds
- * may come (a new value of this enum).
+ * What a change of a live post does: `unpublish` deletes it, `edit`
+ * replaces the text of one of its parts. More kinds may come (a new value
+ * of this enum).
  */
-export const LivePostChangeKindSchema = Schema.Literal("unpublish").annotate({
-  identifier: "LivePostChangeKind",
-});
+export const LivePostChangeKindSchema = Schema.Literals([
+  "unpublish",
+  "edit",
+]).annotate({ identifier: "LivePostChangeKind" });
 
 export type LivePostChangeKind = typeof LivePostChangeKindSchema.Type;
 
@@ -51,10 +59,13 @@ export type LivePostChangeStatus = typeof LivePostChangeStatusSchema.Type;
 /**
  * A change asked of a post that is live on one channel: `unpublish`
  * deletes it from the platform, every part of it, the last part of a
- * thread first. `pending` while Peal deletes the parts left (`partsLeft`),
- * `done` once none is, `failed` when Peal gave up: `code` says why
- * (`unavailable`, `rateLimited`, `channelUnavailable`, or the platform's
- * own code), and asking again deletes the parts left.
+ * thread first; `edit` replaces the text of one part (`partsLeft` is 1
+ * until it is done). `pending` while Peal deletes or edits the parts left
+ * (`partsLeft`), `done` once none is, `failed` when Peal gave up: `code`
+ * says why (`unavailable`, `rateLimited`, `channelUnavailable`, or the
+ * platform's own code, as `postGone` when the platform no longer has the
+ * post), and asking again deletes the parts left, or makes the edit anew.
+ * The change never holds an edit's text.
  */
 export const LivePostChangeSchema = Schema.Struct({
   // Whether the platform had a part no longer, as when it was deleted
@@ -65,7 +76,7 @@ export const LivePostChangeSchema = Schema.Struct({
   finishedAt: Schema.NullOr(Schema.DateTimeUtc),
   id: Schema.String,
   kind: LivePostChangeKindSchema,
-  // How many parts are still to delete: 0 once done.
+  // How many parts are still to delete, or to edit: 0 once done.
   partsLeft: Schema.Int,
   postId: Schema.String,
   requestedAt: Schema.DateTimeUtc,

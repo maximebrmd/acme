@@ -50,11 +50,10 @@ const fieldView = (field: FieldDescription<LookupName>): FieldView => ({
  * alike.
  */
 // What Peal can do to a post once it is live, as clients read it: each
-// action, and why not, when it is known. Editing is not built yet: it is
-// false everywhere, with the reason only where the platform stops it.
+// action, and why not where Peal cannot.
 const livePostView = (ability: PlatformCapabilities["livePost"]) => ({
-  edit: false,
-  ...Option.match(ability.editBlockedBy, {
+  edit: Option.isNone(ability.edit),
+  ...Option.match(ability.edit, {
     onNone: () => ({}),
     onSome: (blocker) => ({ editBlockedBy: blocker }),
   }),

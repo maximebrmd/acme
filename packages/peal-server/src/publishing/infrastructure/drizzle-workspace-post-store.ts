@@ -141,6 +141,7 @@ const recordOf = Effect.fnUntraced(function* recordOf(
               Effect.orDie,
               Effect.map((live) => ({
                 channelId: target.channelId,
+                editedAt: utcOrNull(target.editedAt),
                 finishedAt: utcOrNull(target.finishedAt),
                 keptPrivate: target.keptPrivate,
                 options: target.options,

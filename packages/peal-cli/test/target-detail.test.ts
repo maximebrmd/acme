@@ -6,6 +6,7 @@ import { targetDetail } from "#commands/posts.ts";
 // A published YouTube target, as the API answers it.
 const published: PostTarget = {
   channelId: "0190f3a0-0000-7000-8000-00000000c001",
+  editedAt: null,
   failureReason: null,
   id: "0190f3a0-0000-7000-8000-00000000d001",
   options: null,

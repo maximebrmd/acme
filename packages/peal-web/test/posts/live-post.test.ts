@@ -12,6 +12,7 @@ const at = DateTime.makeUnsafe("2026-06-15T08:00:00Z");
 
 const target = (fields: Partial<PostTarget> = {}): PostTarget => ({
   channelId: "c1",
+  editedAt: null,
   failureReason: null,
   id: "t1",
   options: null,

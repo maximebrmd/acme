@@ -253,6 +253,9 @@ export type TargetParts = typeof TargetPartsSchema.Type;
 /** A post on one of its channels. */
 export const PostTargetSchema = Schema.Struct({
   channelId: Schema.String,
+  // When Peal last replaced the text of a part of it on the channel's
+  // platform, at someone's request; null until then.
+  editedAt: Schema.NullOr(Schema.DateTimeUtc),
   // Why it failed, once it has.
   failureReason: Schema.NullOr(FailureReasonSchema),
   id: Schema.String,

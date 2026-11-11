@@ -60,6 +60,7 @@ const removed: Post = {
   targets: [
     {
       channelId: "c1",
+      editedAt: null,
       failureReason: null,
       id: "t1",
       options: null,

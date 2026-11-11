@@ -733,6 +733,7 @@ CREATE TABLE "publishing"."live_post_changes" (
 	"requested_via" jsonb,
 	"status" text NOT NULL,
 	"target_id" uuid NOT NULL,
+	"text" text,
 	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
@@ -740,6 +741,7 @@ CREATE TABLE "publishing"."post_targets" (
 	"cancel_requested" boolean DEFAULT false NOT NULL,
 	"channel_id" uuid NOT NULL,
 	"content_digest" text,
+	"edited_at" timestamp with time zone,
 	"failure_code" text,
 	"failure_reason" text,
 	"finished_at" timestamp with time zone,

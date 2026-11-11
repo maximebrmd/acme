@@ -179,7 +179,7 @@ const stranger = memberOf(workspaceId, []);
 
 describe("the platforms' capabilities endpoint", () => {
   it.effect(
-    "say where a post can be unpublished, as live-post-support does",
+    "say where a post can be unpublished or edited, as live-post-support does",
     () =>
       Effect.gen(function* livePosts() {
         const client = yield* clientWith(viewer);
@@ -191,13 +191,13 @@ describe("the platforms' capabilities endpoint", () => {
         assert.deepStrictEqual(
           all.map(({ livePost, platform }) => [platform, livePost]),
           platforms.map((platform) => {
-            const { editBlockedBy, unpublish } = livePostSupport[platform];
+            const { edit, unpublish } = livePostSupport[platform];
 
             return [
               platform,
               {
-                edit: false,
-                ...Option.match(editBlockedBy, {
+                edit: Option.isNone(edit),
+                ...Option.match(edit, {
                   onNone: () => ({}),
                   onSome: (blocker) => ({ editBlockedBy: blocker }),
                 }),

@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "0341807b-60ae-49e9-b26b-c126f006a3b7",
+  "id": "72c8c45e-0b3c-4ae6-913c-5b127ef391ac",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -13357,6 +13357,19 @@
     {
       "schema": "publishing",
       "table": "live_post_changes",
+      "name": "text",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "live_post_changes",
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
@@ -13398,6 +13411,19 @@
       "table": "post_targets",
       "name": "content_digest",
       "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "edited_at",
+      "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,

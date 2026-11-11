@@ -497,6 +497,7 @@ describe(valuesOfPost, () => {
         tagIds: [],
         targets: ["c1", "c2", "gone"].map((id) => ({
           channelId: id,
+          editedAt: null,
           failureReason: null,
           id: `target-${id}`,
           options: id === "c1" ? { platform: "youtube", title: "Hi" } : null,
@@ -626,6 +627,7 @@ describe(channelOptionsOf, () => {
         targets: [
           {
             channelId: "c1",
+            editedAt: null,
             failureReason: null,
             id: "target-c1",
             options: { platform: "mastodon", visibility: "private" },

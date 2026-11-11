@@ -348,6 +348,7 @@ export const quotaTargetId = "0190f3a0-0000-7000-8000-00000000e003";
 
 const pendingOn = (id: string, channelId: string): PostTarget => ({
   channelId,
+  editedAt: null,
   failureReason: null,
   id,
   options: null,

@@ -10,7 +10,7 @@ import {
   PostPart,
 } from "./post-part.ts";
 import { PostTextSchema } from "./post-text.ts";
-import type { TextOverride } from "./text-override.ts";
+import { TextOverride } from "./text-override.ts";
 
 export { maxMediaPerPost } from "./post-part.ts";
 
@@ -113,6 +113,55 @@ export const partAlone = (content: PostContent, index: number): PostContent => {
         text: part.text,
       });
 };
+
+// The overrides with `text` as the channel's own, in the place its
+// override had, or after the others.
+const overriddenWith = (
+  overrides: readonly TextOverride[],
+  channelId: ChannelId,
+  text: string
+): readonly TextOverride[] => {
+  const override = new TextOverride({ channelId, text });
+
+  return overrides.some((kept) => kept.channelId === channelId)
+    ? overrides.map((kept) => (kept.channelId === channelId ? override : kept))
+    : [...overrides, override];
+};
+
+/**
+ * The post's content with `text` as the part at `index`'s own text on
+ * the channel (its override there), every other channel's text, and
+ * every other part, as they were. A part the post does not have changes
+ * nothing.
+ */
+export const withTextOn = (
+  content: PostContent,
+  index: number,
+  channelId: ChannelId,
+  text: string
+): PostContent =>
+  index === 0
+    ? new PostContent({
+        followUps: content.followUps,
+        media: content.media,
+        overrides: overriddenWith(content.overrides, channelId, text),
+        text: content.text,
+      })
+    : new PostContent({
+        followUps: content.followUps.map((part, position) =>
+          position + 1 === index
+            ? new PostPart({
+                delaySeconds: part.delaySeconds,
+                media: part.media,
+                overrides: overriddenWith(part.overrides, channelId, text),
+                text: part.text,
+              })
+            : part
+        ),
+        media: content.media,
+        overrides: content.overrides,
+        text: content.text,
+      });
 
 /** Every image and video the post shows, in any part, each once. */
 export const shownMedia = (

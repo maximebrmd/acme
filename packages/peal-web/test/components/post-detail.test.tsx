@@ -38,6 +38,7 @@ const target = (
   fields: Partial<PostTarget>
 ): PostTarget => ({
   channelId,
+  editedAt: null,
   failureReason: null,
   id,
   options: null,

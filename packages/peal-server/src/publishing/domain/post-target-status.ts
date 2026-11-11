@@ -73,6 +73,9 @@ const PublishingSchema = Schema.TaggedStruct("publishing", {
 });
 
 const PublishedSchema = Schema.TaggedStruct("published", {
+  // When Peal last replaced the text of a part of it on the platform, at
+  // a member's request (`./live-post-change.ts`). Absent until then.
+  editedAt: Schema.optionalKey(Schema.DateTimeUtc),
   // The platform made it private, although it was asked to show it to more
   // people (YouTube, for an API project or a channel it restricts).
   keptPrivate: Schema.optionalKey(Schema.Boolean),
