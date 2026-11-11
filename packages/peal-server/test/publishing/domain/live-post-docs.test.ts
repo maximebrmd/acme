@@ -21,19 +21,19 @@ const docs = path.join(
   "docs"
 );
 
-const names: Readonly<Record<string, Platform>> = {
-  Bluesky: "bluesky",
-  "Facebook Pages": "facebook",
-  "Google Business Profile": "googleBusiness",
-  Instagram: "instagram",
-  LinkedIn: "linkedin",
-  Mastodon: "mastodon",
-  Pinterest: "pinterest",
-  Threads: "threads",
-  TikTok: "tiktok",
-  X: "x",
-  YouTube: "youtube",
-};
+const names = new Map<string, Platform>([
+  ["Bluesky", "bluesky"],
+  ["Facebook Pages", "facebook"],
+  ["Google Business Profile", "googleBusiness"],
+  ["Instagram", "instagram"],
+  ["LinkedIn", "linkedin"],
+  ["Mastodon", "mastodon"],
+  ["Pinterest", "pinterest"],
+  ["Threads", "threads"],
+  ["TikTok", "tiktok"],
+  ["X", "x"],
+  ["YouTube", "youtube"],
+]);
 
 // The table under the page's #unpublish heading: each platform, and
 // whether Peal deletes posts there.
@@ -46,7 +46,8 @@ const tableOf = async (page: string) => {
     const [, name = "", answer = ""] = line
       .split("|")
       .map((cell) => cell.trim());
-    const platform = names[name];
+
+    const platform = names.get(name);
 
     if (platform !== undefined && !rows.has(platform)) {
       rows.set(platform, answer === "Yes" || answer === "Oui");
