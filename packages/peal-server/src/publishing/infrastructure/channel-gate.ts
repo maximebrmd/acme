@@ -36,12 +36,15 @@ import type {
   SendOutcome,
 } from "#engagement/application/ports/reply-sender.ts";
 import {
+  EditOutcomeSchema,
+  EditRequestSchema,
   LivePostClients,
   RemovalFailureSchema,
   RemovalOutcomeSchema,
   RemovalRequestSchema,
 } from "#publishing/application/live-post-clients.ts";
 import type {
+  EditOutcome,
   RemovalFailure,
   RemovalOutcome,
 } from "#publishing/application/live-post-clients.ts";
@@ -78,6 +81,9 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
  * text of a reply stays in engagement's tables. `RemoveLivePost` deletes a
  * post, or a part of one, that a member asked to unpublish, by the
  * platform's id for it: a removal never overlaps a publish on the channel.
+ * `EditLivePost` replaces the text of a part a member asked to edit, by
+ * the change's id and the platform's: the text never passes through the
+ * gate, whose side reads it from the change.
  *
  * Calls run in the order they came, whichever context sent them. Each
  * collection (post counts, the account, comments) has one call a channel
@@ -132,6 +138,11 @@ export const ChannelGate = Entity.make("ChannelGate", [
     payload: { request: RemovalRequestSchema },
     success: RemovalOutcomeSchema,
   }),
+  Rpc.make("EditLivePost", {
+    error: RemovalFailureSchema,
+    payload: { request: EditRequestSchema },
+    success: EditOutcomeSchema,
+  }),
 ]);
 
 /**
@@ -148,6 +159,7 @@ export const ChannelGateLive = ChannelGate.toLayer(
     const live = yield* LivePostClients;
 
     return ChannelGate.of({
+      EditLivePost: ({ payload }) => live.edit(payload.request),
       ModerateComment: ({ payload }) => replies.moderate(payload.request),
       Publish: ({ payload }) => platforms.publish(payload.request),
       ReadAccount: ({ payload }) => metrics.account(payload.request),
@@ -463,10 +475,15 @@ export const GatedReplySender = Layer.effect(
 const notRemoved = (): Effect.Effect<RemovalOutcome, RemovalFailure> =>
   Effect.fail(new PlatformUnavailable());
 
+// The same of an edit: the post may still say what it did, and editing
+// it again with the same text is safe.
+const notEdited = (): Effect.Effect<EditOutcome, RemovalFailure> =>
+  Effect.fail(new PlatformUnavailable());
+
 /**
- * The LivePostClients the jobs that unpublish posts use: each deletion
- * goes through its channel's gate, in turn with the channel's publishing.
- * Provide ChannelGateLive, with the real clients, beside it.
+ * The LivePostClients the jobs that unpublish and edit posts use: each
+ * call goes through its channel's gate, in turn with the channel's
+ * publishing. Provide ChannelGateLive, with the real clients, beside it.
  */
 export const GatedLivePostClients = Layer.effect(
   LivePostClients,
@@ -474,6 +491,29 @@ export const GatedLivePostClients = Layer.effect(
     const gateFor = yield* ChannelGate.client;
 
     return LivePostClients.of({
+      edit: (request) =>
+        gateFor(request.channelId)
+          .EditLivePost({ request })
+          .pipe(
+            Effect.retry({
+              schedule: notTakenRetry,
+              times: 4,
+              while: (error) =>
+                error._tag === "MailboxFull" ||
+                error._tag === "EntityNotAssignedToRunner",
+            }),
+            Effect.catchTags({
+              AlreadyProcessingMessage: notEdited,
+              EntityNotAssignedToRunner: notEdited,
+              MailboxFull: notEdited,
+              PersistenceError: notEdited,
+            }),
+            Effect.catchDefect((cause) =>
+              Effect.logError("An edit failed in its adapter", cause).pipe(
+                Effect.andThen(notEdited())
+              )
+            )
+          ),
       remove: (request) =>
         gateFor(request.channelId)
           .RemoveLivePost({ request })

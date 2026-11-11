@@ -1,6 +1,8 @@
 import { Effect, Schema } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 
+import { postGone } from "#publishing/infrastructure/platforms/live-post-editor.ts";
+import type { LivePostEditor } from "#publishing/infrastructure/platforms/live-post-editor.ts";
 import {
   asRemovalFailure,
   invalidPlatformId,
@@ -26,6 +28,11 @@ const isNotFound = (response: HttpClientResponse.HttpClientResponse) =>
     Effect.orElseSucceed(() => false)
   );
 
+// A local post's name under the channel's location, or none.
+const ownPost = (accountId: string, platformPostId: string) =>
+  postNamePattern.test(platformPostId) &&
+  platformPostId.startsWith(`${accountId}/localPosts/`);
+
 /**
  * Deletes a local post with DELETE /v4/{name} on mybusiness.googleapis.com,
  * with `business.manage`: "Returns NOT_FOUND if the local post does not
@@ -41,10 +48,7 @@ export const googleBusinessLivePost =
   }): LivePostRemover =>
   (token, platformPostId) =>
     Effect.gen(function* remove() {
-      if (
-        !postNamePattern.test(platformPostId) ||
-        !platformPostId.startsWith(`${token.accountId}/localPosts/`)
-      ) {
+      if (!ownPost(token.accountId, platformPostId)) {
         return yield* new BadRequest({ code: invalidPlatformId });
       }
 
@@ -70,6 +74,61 @@ export const googleBusinessLivePost =
 
       if (response.status === 404 && (yield* isNotFound(response))) {
         return "alreadyGone" as const;
+      }
+
+      return yield* readRefusal(response).pipe(
+        Effect.mapError(asRemovalFailure)
+      );
+    });
+
+/**
+ * Replaces a local post's text with PATCH /v4/{name}?updateMask=summary on
+ * mybusiness.googleapis.com, with `business.manage`: "You must specify
+ * each field that is being updated in the mask", so the post's type,
+ * event, offer, button and photos are left as they are
+ * (https://developers.google.com/my-business/reference/rest/v4/accounts.locations.localPosts/patch,
+ * and the "Edit Posts" example of
+ * https://developers.google.com/my-business/content/posts-data , read
+ * 2026-11-12). NOT_FOUND is a post gone (`postGone`). The reference
+ * lists no error of its own: refusals read as publishing's do. Only a
+ * post under the channel's own location is asked for.
+ */
+export const googleBusinessLiveEdit =
+  (options: {
+    readonly api: GoogleBusinessHttp;
+    readonly apiUrl: URL;
+  }): LivePostEditor =>
+  (token, { platformPostId, text }) =>
+    Effect.gen(function* edit() {
+      if (!ownPost(token.accountId, platformPostId)) {
+        return yield* new BadRequest({ code: invalidPlatformId });
+      }
+
+      const url = new URL(`/v4/${platformPostId}`, options.apiUrl);
+
+      url.searchParams.set("updateMask", "summary");
+
+      const response = yield* options.api
+        .execute(
+          HttpClientRequest.patch(url).pipe(
+            HttpClientRequest.bearerToken(token.accessToken),
+            HttpClientRequest.setHeader("X-GOOG-API-FORMAT-VERSION", "2"),
+            HttpClientRequest.bodyJsonUnsafe({ summary: text })
+          )
+        )
+        .pipe(
+          Effect.catchTags({
+            HttpClientError: unanswered,
+            OutboundRequestRefused: unanswered,
+          })
+        );
+
+      if (response.status >= 200 && response.status < 300) {
+        return "edited" as const;
+      }
+
+      if (response.status === 404 && (yield* isNotFound(response))) {
+        return yield* new BadRequest({ code: postGone });
       }
 
       return yield* readRefusal(response).pipe(

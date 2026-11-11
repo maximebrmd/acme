@@ -12,6 +12,7 @@ import { ChannelSets } from "#publishing/application/channel-sets.ts";
 import { HeldPosts } from "#publishing/application/held-posts.ts";
 import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
 import { LivePostClients } from "#publishing/application/live-post-clients.ts";
+import { LivePostEdits } from "#publishing/application/live-post-edits.ts";
 import { LivePostEvents } from "#publishing/application/live-post-events.ts";
 import { LivePostHolds } from "#publishing/application/live-post-holds.ts";
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
@@ -441,9 +442,11 @@ export const publishingWorkersReading = <E, R, E2, R2>(
     PlatformsLive,
     readers,
     engagement,
-    // What deletes the posts members unpublish, with the channels'
-    // tokens.
-    LivePostClientsLive.pipe(Layer.provide(ChannelAccessCredentials))
+    // What deletes the posts members unpublish, and edits those they
+    // edit, with the channels' tokens and the edits' texts.
+    LivePostClientsLive.pipe(
+      Layer.provide(Layer.merge(ChannelAccessCredentials, LivePostEdits.layer))
+    )
   );
 
 /**

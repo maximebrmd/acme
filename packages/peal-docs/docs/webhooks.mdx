@@ -112,6 +112,8 @@ The API's OpenAPI document, at `/api/openapi.json`, describes every event in its
 | [`post.finished`](#post-finished)                       | Every channel of a post has its result                                    |
 | [`post.unpublished`](#post-unpublished)                 | A post was deleted from a channel's platform                              |
 | [`post.unpublish_failed`](#post-unpublish-failed)       | Peal could not delete a post from a channel's platform                    |
+| [`post.edited`](#post-edited)                           | A post's text was edited on a channel's platform                          |
+| [`post.edit_failed`](#post-edit-failed)                 | Peal could not edit a post's text on a channel's platform                 |
 | [`post.approval_requested`](#post-approval-requested)   | A post waits for an approval                                              |
 | [`post.approved`](#post-approved)                       | A post that waited was approved                                           |
 | [`post.changes_requested`](#post-changes-requested)     | Changes were asked for on a post that waited                              |
@@ -486,6 +488,74 @@ Peal could not delete the post from the channel's platform, after the tries a de
     "platform": "mastodon",
     "code": "unavailable",
     "failedAt": "2026-11-10T11:22:00.000Z"
+  }
+}
+```
+
+### post.edited [#post-edited]
+
+Peal replaced the text of one part of the post on the channel's platform, at someone's request ([Edit a published post](/scheduling#edit-live)): that part's text on the channel is the new one in Peal too, and the target has its `editedAt`. The text itself is not sent: read the post.
+
+| Field         | Type           | What it holds                                                  |
+| ------------- | -------------- | -------------------------------------------------------------- |
+| `workspaceId` | string         | The workspace                                                  |
+| `postId`      | string         | The post                                                       |
+| `targetId`    | string         | The post on that channel                                       |
+| `channelId`   | string         | The channel                                                    |
+| `platform`    | string or null | The channel's platform; null once the channel was disconnected |
+| `part`        | integer        | The part edited, from 0 (the post itself)                      |
+| `editedAt`    | string         | When the platform took the new text, as an instant in UTC      |
+
+```json title="post.edited"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e23",
+  "type": "post.edited",
+  "version": 1,
+  "timestamp": "2026-11-10T12:05:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "part": 0,
+    "editedAt": "2026-11-10T12:05:00.000Z"
+  }
+}
+```
+
+### post.edit_failed [#post-edit-failed]
+
+Peal could not edit the post's part on the channel's platform, after the tries an edit makes: `code` says why, as the change's `code` does (`postGone` when the platform no longer has the post, `pollNotEditable` for a Mastodon post with a poll, `permissionDenied`, `unavailable`, `rateLimited`, `channelUnavailable`, or the platform's own). The post says what it said before, and Peal's text is unchanged: a member may ask again.
+
+| Field         | Type           | What it holds                                                  |
+| ------------- | -------------- | -------------------------------------------------------------- |
+| `workspaceId` | string         | The workspace                                                  |
+| `postId`      | string         | The post                                                       |
+| `targetId`    | string         | The post on that channel                                       |
+| `channelId`   | string         | The channel                                                    |
+| `platform`    | string or null | The channel's platform; null once the channel was disconnected |
+| `part`        | integer        | The part Peal was asked to edit, from 0                        |
+| `code`        | string         | Why the edit stopped                                           |
+| `failedAt`    | string         | When Peal gave up, as an instant in UTC                        |
+
+```json title="post.edit_failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e24",
+  "type": "post.edit_failed",
+  "version": 1,
+  "timestamp": "2026-11-10T12:07:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "part": 0,
+    "code": "postGone",
+    "failedAt": "2026-11-10T12:07:00.000Z"
   }
 }
 ```

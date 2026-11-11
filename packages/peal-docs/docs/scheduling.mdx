@@ -305,23 +305,31 @@ The deletion runs in the background, with the channel's other calls, one at a ti
 
 Statistics stop: analytics reads the post no more and keeps the counts it read, and the inbox stops reading its comments and keeps those it has for their 30 days. A post shown by a boost that is not over cannot be unpublished: stop the boost first, as the ad would go on spending on a post that is gone.
 
-Where Peal deletes posts:
+Where Peal deletes posts, and where it [edits them](#edit-live):
 
-| Platform                | Unpublish | Why not                                                 |
-| ----------------------- | --------- | ------------------------------------------------------- |
-| Mastodon                | Yes       |                                                         |
-| Bluesky                 | Yes       |                                                         |
-| X                       | Yes       |                                                         |
-| Pinterest               | Yes       |                                                         |
-| Google Business Profile | Yes       |                                                         |
-| LinkedIn                | No        | LinkedIn does not say which permission a deletion needs |
-| Facebook Pages          | No        | Meta says that only some apps may delete Page posts     |
-| Threads                 | No        | It needs a permission Meta grants after a review        |
-| Instagram               | No        | It needs a permission Meta grants after a review        |
-| YouTube                 | No        | It needs a wider permission than the one Peal asks for  |
-| TikTok                  | No        | TikTok's API has no call to delete a post               |
+| Platform                | Unpublish | Edit | Why not                                                                                |
+| ----------------------- | --------- | ---- | -------------------------------------------------------------------------------------- |
+| Mastodon                | Yes       | Yes  |                                                                                        |
+| Google Business Profile | Yes       | Yes  |                                                                                        |
+| Bluesky                 | Yes       | No   | Bluesky has no call to edit a post                                                     |
+| X                       | Yes       | No   | X does not say which posts may be edited, or on which access                           |
+| Pinterest               | Yes       | No   | Editing a Pin is in beta, not open to every app                                        |
+| LinkedIn                | No        | No   | LinkedIn does not say which permission a deletion or an edit needs                     |
+| Facebook Pages          | No        | No   | Meta says only some apps may delete Page posts, and not which permission an edit needs |
+| Threads                 | No        | No   | Deleting needs a permission Meta grants after a review; Threads has no call to edit    |
+| Instagram               | No        | No   | Deleting needs a permission Meta grants after a review; Instagram has no call to edit  |
+| YouTube                 | No        | No   | It needs a wider permission than the one Peal asks for                                 |
+| TikTok                  | No        | No   | TikTok's API has no call to delete or edit a post                                      |
 
 Where it cannot, delete the post on the platform itself. A post confirmed by hand cannot be unpublished from Peal either: Peal has no id for it. A channel disconnected, turned off or to reconnect cannot be unpublished on until it is back.
+
+## Edit a published post [#edit-live]
+
+A post that went out can have its text corrected on Mastodon and Google Business Profile: **Edit**, beside the channel on the post's page, opens the text of that channel with the channel's counter, and **Save** replaces it on the platform. Only the text changes: never the media, the options, the audience or the time. The change is public at once, so whoever may unpublish may edit (`post:publish`), but not a member whose posts need an [approval](/review): an approver makes the edit for them, as it would put text nobody reviewed out.
+
+The new text is checked as the channel's text is when a post is scheduled: the platform's length (a Mastodon content warning counts), its characters, and the rest. Once the platform took it, it is that part's own text on that channel in Peal (other channels keep theirs), the channel reads **Edited on** with the date, and webhooks hear `post.edited`. Peal keeps no earlier text; Mastodon shows its own history of edits. The edit runs in the background, with the channel's other calls, and is tried again as a deletion is; after that it **failed**, with why, and **Try again** asks again.
+
+Mastodon is sent the post again with its media, its content warning and its sensitivity, as Mastodon clears whatever an edit leaves out; a post with a poll is refused, as the edit would remove the poll. Reading the post first needs the `read:statuses` permission, which channels connected before Peal asked for it lack: reconnect the channel. Each part of a thread is edited on its own, by its place from 0 (the post itself).
 
 ## From an agent, the command line or the API [#api]
 
