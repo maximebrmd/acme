@@ -469,3 +469,36 @@ groups:
                 - evaluator:
                     type: gt
                     params: [0]
+
+      - uid: peal-recycling-overdue
+        title: Repeating posts fall behind
+        condition: B
+        for: 30m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Recycling rules whose next occurrence was due more than 30 minutes ago (peal.publishing.recycling.overdue) stayed above 0 for 30 minutes, so repeating posts are not made on time. Look at the publishing.recycling cron's logs, which say how many occurrences each run made, left and ended.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The least seen over the window: above 0, some rule stayed late
+              # the whole time.
+              expr: min_over_time((max(peal_publishing_recycling_overdue) or vector(0))[10m:1m])
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]

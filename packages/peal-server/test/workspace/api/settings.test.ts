@@ -307,6 +307,25 @@ const PortsLive = Layer.mergeAll(
                   timeZone: "Europe/Paris",
                 },
               ],
+              recyclingRules: [
+                {
+                  anchorAt: at,
+                  count: 10,
+                  createdAt: at,
+                  endedReason: null,
+                  id: "019a6f10-0000-7000-8000-0000000000d1",
+                  interval: { count: 2, unit: "weeks" },
+                  lastDueAt: at,
+                  made: 3,
+                  nextDueAt: at,
+                  queueId: null,
+                  sourcePostId: "019a6f10-0000-7000-8000-0000000000d2",
+                  status: "active",
+                  timeZone: "Europe/Paris",
+                  until: null,
+                  variants: [{ overrides: [], text: "Open all summer" }],
+                },
+              ],
               signatures: [],
               tags: [
                 {
@@ -910,6 +929,10 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
                 queue,
                 slots,
               })),
+              // The rules that repeat its posts, with their variants.
+              recycling: saved.recyclingRules.map(
+                ({ interval, made, variants }) => ({ interval, made, variants })
+              ),
               statuses: billing.subscriptions.map(({ status }) => status),
               usage: billing.usage,
               // Where the workspace is told, never the secret that signs it.
@@ -926,6 +949,13 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
                   isDefault: true,
                   queue: "Weekdays",
                   slots: [{ day: "monday", time: "09:30" }],
+                },
+              ],
+              recycling: [
+                {
+                  interval: { count: 2, unit: "weeks" },
+                  made: 3,
+                  variants: [{ overrides: [], text: "Open all summer" }],
                 },
               ],
               statuses: ["active"],

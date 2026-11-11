@@ -324,17 +324,21 @@ export const pauseRule = (
  * Sets a paused rule going again, or one that ended for a reason a member
  * can put right (`resumableReasons`): its next occurrence is due at the
  * first due instant after now and after its latest one. An active rule
- * stays as it is. RecyclingEndsTooSoon when its ending leaves nothing to
- * make, RecyclingRuleEnded for any other ended rule.
+ * stays as it is, but for the variants given. RecyclingEndsTooSoon when
+ * its ending leaves nothing to make, RecyclingRuleEnded for any other
+ * ended rule.
  */
 export const resumeRule = (
   rule: RecyclingRule,
-  now: DateTime.Utc
+  now: DateTime.Utc,
+  // Variants it takes instead of its own, as a rule that ended because a
+  // platform refused what it would say is resumed with others.
+  variants: readonly RecyclingVariant[] = rule.variants
 ): Result.Result<RecyclingRule, RecyclingEndsTooSoon | RecyclingRuleEnded> => {
   const { status } = rule;
 
   if (status._tag === "active") {
-    return Result.succeed(rule);
+    return Result.succeed(changed(rule, { variants }));
   }
 
   if (status._tag === "ended" && !resumableReasons.has(status.reason)) {
@@ -364,6 +368,7 @@ export const resumeRule = (
       resumptions:
         status._tag === "ended" ? rule.resumptions + 1 : rule.resumptions,
       status: { _tag: "active" },
+      variants,
     })
   );
 };

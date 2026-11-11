@@ -38,6 +38,7 @@ import { SendReply } from "#engagement/application/send-reply.ts";
 import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import type { Recycling } from "#publishing/application/recycling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
 import { publishingWith, publishingWorkers } from "#publishing/container.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
@@ -302,6 +303,7 @@ const serverWith = <E, R>(
     never,
     | Layer.Success<typeof ChannelJobsTest>
     | PostScheduling
+    | Recycling
     | Sharding.Sharding
     | SqlClient.SqlClient
   > = CronsLive

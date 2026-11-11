@@ -8,9 +8,12 @@ import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-chann
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
+import type { RecyclingActors } from "#publishing/application/recycling-actors.ts";
+import type { RecyclingNotices } from "#publishing/application/recycling-notices.ts";
 import {
   publishingBehind,
   publishingWorkers,
+  RecyclingUnused,
   UnreadComments,
 } from "#publishing/container.ts";
 import { UnreadMetrics } from "#publishing/infrastructure/channel-gate.ts";
@@ -65,7 +68,9 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
   media: Layer.Layer<AttachableMedia, E, R>,
   allowance: ReturnType<typeof postAllowance>,
   // Who hears what happens to posts, and what a test reads it with.
-  events: Layer.Layer<PostEvents | H, never, R4>
+  events: Layer.Layer<PostEvents | H, never, R4>,
+  // Who a recycling rule's starter is, and who hears it ended.
+  recycling: Layer.Layer<RecyclingActors | RecyclingNotices> = RecyclingUnused
 ) =>
   publishingWorkers(
     FakePlatformPublisher,
@@ -80,7 +85,8 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
         events,
         // Changes of live posts: the channels' rows say whether one can be
         // used, and FakeRemovals deletes, holds and hears.
-        Layer.mergeAll(RepositoryCredentials, FakeHolds, RecordedLiveEvents)
+        Layer.mergeAll(RepositoryCredentials, FakeHolds, RecordedLiveEvents),
+        recycling
       )
     ),
     Layer.provideMerge(FakeLivePostClients),

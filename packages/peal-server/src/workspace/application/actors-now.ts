@@ -20,6 +20,7 @@ import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 import { ApiKeyIssuer } from "./api-key-issuer.ts";
 import { ConnectedAppStore } from "./connected-app-store.ts";
+import type { DirectoryUnavailable } from "./directory-unavailable.ts";
 import { PartnerOwnership } from "./partner-ownership.ts";
 import { PartnerStore } from "./partner-store.ts";
 import { ResolveMember } from "./resolve-member.ts";
@@ -57,6 +58,16 @@ const standingAfter = (refusal: AccessDenied): ActorStanding =>
     NotAMember: () => gone,
     WorkspaceMismatch: () => gone,
   });
+
+/**
+ * What a failure to resolve them means: the directory not answering is
+ * the server's to answer for, any other the workspace refusing them,
+ * judged in one place (`standingAfter`).
+ */
+const answered = (failure: AccessDenied | DirectoryUnavailable) =>
+  failure._tag === "DirectoryUnavailable"
+    ? Effect.fail(new DatabaseError({ cause: failure.cause }))
+    : Effect.succeed(standingAfter(failure));
 
 /**
  * The actor someone who acted earlier is now, from the ids a job kept of
@@ -106,17 +117,7 @@ export class ActorsNow extends Context.Service<
       const standingOf = (principal: Principal, workspaceId: WorkspaceId) =>
         members.resolve(principal, workspaceId).pipe(
           Effect.map((actor): ActorStanding => ({ _tag: "acting", actor })),
-          // The directory not answering is the server's; anything else is
-          // the workspace refusing them, each refusal named (a new one
-          // leaves the error channel, and this, not compiling).
-          Effect.catchTags({
-            BannedUser: (refusal) => Effect.succeed(standingAfter(refusal)),
-            DirectoryUnavailable: ({ cause }) =>
-              Effect.fail(new DatabaseError({ cause })),
-            NotAMember: (refusal) => Effect.succeed(standingAfter(refusal)),
-            WorkspaceMismatch: (refusal) =>
-              Effect.succeed(standingAfter(refusal)),
-          })
+          Effect.catch(answered)
         );
 
       const ofMember = Effect.fn("ActorsNow.ofMember")(function* ofMember(

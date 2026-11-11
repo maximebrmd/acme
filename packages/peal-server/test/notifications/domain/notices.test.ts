@@ -318,6 +318,20 @@ describe(recipientsOf, () => {
     ).toStrictEqual([follower, scheduler]);
   });
 
+  it("tell a rule's starter that it ended, or everyone who may schedule once they left", () => {
+    expect([
+      recipientsOf(events.RecyclingEnded, Option.some(author), members),
+      recipientsOf(
+        events.RecyclingEnded,
+        Option.some(UserIdSchema.make("9a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f")),
+        members
+      ),
+    ]).toStrictEqual([
+      [author, follower],
+      [follower, scheduler],
+    ]);
+  });
+
   it("tell every member who may act about a channel, whatever they follow", () => {
     expect(
       recipientsOf(
