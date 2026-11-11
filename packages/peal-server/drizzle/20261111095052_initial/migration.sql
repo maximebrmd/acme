@@ -411,6 +411,16 @@ CREATE TABLE "billing"."trials" (
 	"workspace_id" uuid
 );
 --> statement-breakpoint
+CREATE TABLE "billing"."usage_days" (
+	"day" date,
+	"dimension" text DEFAULT '',
+	"meter" text,
+	"quantity" bigint NOT NULL,
+	"workspace_id" uuid,
+	CONSTRAINT "usage_days_pkey" PRIMARY KEY("workspace_id","day","meter","dimension"),
+	CONSTRAINT "usage_days_quantity" CHECK ("quantity" >= 0)
+);
+--> statement-breakpoint
 CREATE TABLE "billing"."withdrawals" (
 	"currency" text NOT NULL,
 	"erased_at" timestamp with time zone,
@@ -1324,6 +1334,7 @@ CREATE INDEX "trials_pseudonym" ON "billing"."trials" ("user_pseudonym");--> sta
 CREATE UNIQUE INDEX "trials_subscription" ON "billing"."trials" ("stripe_subscription_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "trials_user" ON "billing"."trials" ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "trials_workspace" ON "billing"."trials" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "usage_days_day" ON "billing"."usage_days" ("day");--> statement-breakpoint
 CREATE INDEX "withdrawals_workspace" ON "billing"."withdrawals" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "withdrawals_user" ON "billing"."withdrawals" ("user_id");--> statement-breakpoint
 CREATE INDEX "withdrawals_erased" ON "billing"."withdrawals" ("erased_at");--> statement-breakpoint

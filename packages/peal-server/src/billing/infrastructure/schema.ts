@@ -92,6 +92,32 @@ export const meteredPosts = billing.table(
 );
 
 /**
+ * Each workspace's usage ledger: a meter's quantity on a day (UTC), by
+ * dimension (the platform of `publishedPosts`, empty for the others; see
+ * `billing/domain/usage-meter.ts`). Counts and ids only, never a post, a
+ * name or an address. A new meter is a new `meter` value, not a new
+ * column. Rows are kept 400 days (`usageRetentionDays`), the `day` index
+ * serving the daily purge; deleting a workspace deletes its rows.
+ */
+export const usageDays = billing.table(
+  "usage_days",
+  {
+    day: date("day", { mode: "date" }).notNull(),
+    dimension: text("dimension").notNull().default(""),
+    meter: text("meter").notNull(),
+    quantity: bigint("quantity", { mode: "number" }).notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.workspaceId, table.day, table.meter, table.dimension],
+    }),
+    index("usage_days_day").on(table.day),
+    check("usage_days_quantity", sql`${table.quantity} >= 0`),
+  ]
+);
+
+/**
  * Each order a member placed on the billing page before checkout: the plan
  * and interval, whether it is the trial, and the consent they gave, the
  * version of its words and when, which checkout then requires (used once,
