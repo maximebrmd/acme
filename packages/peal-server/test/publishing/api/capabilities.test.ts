@@ -29,6 +29,7 @@ import { PostingCapabilities } from "#publishing/application/posting-capabilitie
 import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
 import type { CreatorFailure } from "#publishing/application/tiktok-creators.ts";
 import { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
+import { livePostSupport } from "#publishing/domain/live-post-support.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import {
   capabilitiesOf,
@@ -177,6 +178,41 @@ const viewer = memberOf(workspaceId, permissionsFor("viewer"));
 const stranger = memberOf(workspaceId, []);
 
 describe("the platforms' capabilities endpoint", () => {
+  it.effect(
+    "say where a post can be unpublished, as live-post-support does",
+    () =>
+      Effect.gen(function* livePosts() {
+        const client = yield* clientWith(viewer);
+
+        const all = yield* client.capabilities.platforms({
+          params: { workspaceId },
+        });
+
+        assert.deepStrictEqual(
+          all.map(({ livePost, platform }) => [platform, livePost]),
+          platforms.map((platform) => {
+            const { editBlockedBy, unpublish } = livePostSupport[platform];
+
+            return [
+              platform,
+              {
+                edit: false,
+                ...Option.match(editBlockedBy, {
+                  onNone: () => ({}),
+                  onSome: (blocker) => ({ editBlockedBy: blocker }),
+                }),
+                unpublish: Option.isNone(unpublish),
+                ...Option.match(unpublish, {
+                  onNone: () => ({}),
+                  onSome: (blocker) => ({ unpublishBlockedBy: blocker }),
+                }),
+              },
+            ];
+          })
+        );
+      })
+  );
+
   it.effect("describes every platform to anyone who reads channels", () =>
     Effect.gen(function* everyPlatform() {
       const client = yield* clientWith(viewer);

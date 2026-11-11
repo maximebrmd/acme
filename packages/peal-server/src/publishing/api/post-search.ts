@@ -31,6 +31,7 @@ export interface SearchInput {
   readonly outcome?: PostOutcome;
   readonly platform?: Platform;
   readonly queueId?: string;
+  readonly removed?: boolean;
   readonly sort?: PostSort;
   readonly status?: PostStatus;
   readonly tagId?: string;
@@ -72,6 +73,7 @@ export const searchRequestFrom = (input: SearchInput): PostSearchRequest => ({
   queueId: Option.fromUndefinedOr(input.queueId).pipe(
     Option.map((id) => Option.getOrElse(decodeQueueId(id), () => noQueue))
   ),
+  removed: Option.fromUndefinedOr(input.removed),
   sort: input.sort ?? "createdDesc",
   status: Option.fromUndefinedOr(input.status),
   tagId: Option.fromUndefinedOr(input.tagId).pipe(

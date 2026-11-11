@@ -1,4 +1,13 @@
-import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
+import {
+  Context,
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Option,
+  Result,
+  Semaphore,
+} from "effect";
 
 import { LivePostChangeIdSchema } from "#publishing/domain/live-post-change-id.ts";
 import {
@@ -29,8 +38,12 @@ import { LivePostNotChangeable } from "./live-post-not-changeable.ts";
 import { PlatformCredentials } from "./platform-credentials.ts";
 import { PostNotFound } from "./post-not-found.ts";
 import { PostOrigins } from "./post-origins.ts";
+import { maxOutcomeWait, maxWaitingRequests } from "./post-outcomes.ts";
 import { PostRepository } from "./post-repository.ts";
 import { findInWorkspace, lockInWorkspace } from "./workspace-posts.ts";
+
+// How often a waiting request reads the change again.
+const readEvery = Duration.millis(500);
 
 type Failure =
   | DatabaseError
@@ -82,6 +95,16 @@ export class LivePostChanges extends Context.Service<
       PostUnpublish,
       DatabaseError | MissingPermission | PostNotFound
     >;
+    /**
+     * The change as it stands once it ended, or once `wait` ran out
+     * (`maxOutcomeWait` at most), read again every half second: no lock is
+     * held while it waits, and the job alone changes it. A process lets
+     * `maxWaitingRequests` wait at once; one more is answered at once.
+     */
+    readonly awaitEnd: (
+      change: LivePostChange,
+      wait: Duration.Duration
+    ) => Effect.Effect<LivePostChange, DatabaseError>;
     /** The post's changes, newest first. Needs post:read. */
     readonly list: (
       actor: Actor,
@@ -103,6 +126,7 @@ export class LivePostChanges extends Context.Service<
       const origins = yield* PostOrigins;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<Ids | PostRepository>();
+      const waiting = yield* Semaphore.make(maxWaitingRequests);
 
       // The channel's platform, while it can be used: none once it was
       // disconnected, turned off, or must be reconnected.
@@ -251,7 +275,52 @@ export class LivePostChanges extends Context.Service<
         return yield* store.ofPost(actor.workspaceId, postId);
       });
 
-      return LivePostChanges.of({ list, unpublishPost, unpublishTarget });
+      const awaitEnd = Effect.fn("LivePostChanges.awaitEnd")(function* awaitEnd(
+        change: LivePostChange,
+        wait: Duration.Duration
+      ) {
+        const deadline = DateTime.addDuration(
+          yield* DateTime.now,
+          Duration.min(wait, maxOutcomeWait)
+        );
+
+        const untilEnded = Effect.gen(function* untilEnded() {
+          let current = change;
+
+          while (
+            current.status === "pending" &&
+            DateTime.isLessThan(yield* DateTime.now, deadline)
+          ) {
+            yield* Effect.sleep(readEvery);
+
+            const read = yield* store.find(change.id);
+
+            // Gone, as with its workspace: it stays as last read.
+            if (Option.isSome(read)) {
+              current = read.value;
+            }
+          }
+
+          return current;
+        });
+
+        if (change.status !== "pending" || Duration.isZero(wait)) {
+          return change;
+        }
+
+        const ended = yield* waiting
+          .withPermitsIfAvailable(1)(untilEnded)
+          .pipe(Effect.map(Option.getOrElse(() => change)));
+
+        return ended;
+      });
+
+      return LivePostChanges.of({
+        awaitEnd,
+        list,
+        unpublishPost,
+        unpublishTarget,
+      });
     })
   );
 }

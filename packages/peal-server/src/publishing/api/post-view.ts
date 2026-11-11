@@ -81,6 +81,7 @@ const targetView = (target: PostTarget, count: number): TargetView => {
     permalink:
       status._tag === "published" ? Option.getOrNull(status.permalink) : null,
     publishedAt: status._tag === "published" ? status.publishedAt : null,
+    removedAt: status._tag === "published" ? (status.removedAt ?? null) : null,
     round,
     status: status._tag,
     unconfirmedReason: status._tag === "unconfirmed" ? status.reason : null,

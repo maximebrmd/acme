@@ -320,6 +320,11 @@
     "tag": "LastOwner"
   },
   {
+    "code": "live_post_not_changeable",
+    "status": 409,
+    "tag": "LivePostNotChangeable"
+  },
+  {
     "code": "lookup_input_invalid",
     "status": 422,
     "tag": "LookupInputInvalid"

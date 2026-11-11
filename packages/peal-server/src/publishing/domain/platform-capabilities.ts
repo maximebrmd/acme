@@ -7,6 +7,8 @@ import { platforms } from "#shared/domain/platform.ts";
 import type { AccountStanding } from "./account-restriction.ts";
 import { isDescribed } from "./field-description.ts";
 import type { FieldDescription } from "./field-description.ts";
+import { livePostSupport } from "./live-post-support.ts";
+import type { LivePostAbility } from "./live-post-support.ts";
 import { lookupsOn } from "./lookup.ts";
 import type { LookupDescription, LookupName } from "./lookup.ts";
 import { maxAltTextLength } from "./media-attachment.ts";
@@ -42,6 +44,11 @@ export interface PlatformCapabilities {
   };
   /** Peal reads the counts of each post published there. */
   readonly countsPosts: boolean;
+  /**
+   * What Peal can do to a post once it is live there, or what stops it
+   * (`./live-post-support.ts`).
+   */
+  readonly livePost: LivePostAbility;
   readonly lookups: readonly OptionLookup[];
   /**
    * The longest alt text of one image or video: the platform's, or Peal's
@@ -143,6 +150,7 @@ export const capabilitiesOf = (
   return {
     counted,
     countsPosts,
+    livePost: livePostSupport[platform],
     lookups: optionLookupsOn(platform, connection),
     maxAltTextLength: Math.min(
       rules.media?.maxAltTextLength ?? maxAltTextLength,

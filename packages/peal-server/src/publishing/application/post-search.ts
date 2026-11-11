@@ -41,6 +41,8 @@ export interface PostSearchRequest {
   readonly platform: Option.Option<Platform>;
   /** Posts this queue placed. */
   readonly queueId: Option.Option<QueueId>;
+  /** Posts Peal deleted from a channel's platform, or from none. */
+  readonly removed: Option.Option<boolean>;
   readonly sort: PostSort;
   readonly status: Option.Option<PostStatusName>;
   /** Posts filed under this tag. */
@@ -177,6 +179,7 @@ export class PostSearch extends Context.Service<
             createdVia: request.createdVia,
             outcome: request.outcome,
             queueId: request.queueId,
+            removed: request.removed,
             scheduledBefore: to,
             scheduledFrom: from,
             status: request.status,

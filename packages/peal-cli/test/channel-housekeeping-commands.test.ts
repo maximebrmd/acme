@@ -535,6 +535,7 @@ describe("peal posts duplicate", () => {
                     parts: { count: 1, live: [] },
                     permalink: null,
                     publishedAt: null,
+                    removedAt: null,
                     round: 1,
                     status: "pending" as const,
                     unconfirmedReason: null,

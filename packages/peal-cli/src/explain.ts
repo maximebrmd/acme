@@ -28,6 +28,7 @@ import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";
 import { PealApi } from "#api.ts";
 import { CredentialStore } from "#credentials.ts";
+import { livePostRefusalWords } from "#live-post-refusals.ts";
 import { planLimitReason } from "#plan-limit.ts";
 import { Refused } from "#refused.ts";
 import { SignInExpired } from "#sign-in-expired.ts";
@@ -445,6 +446,10 @@ const reasonOf =
       InvitationNotFound: () =>
         refused(
           "The workspace has no pending invitation with that id: it was accepted, declined or revoked."
+        ),
+      LivePostNotChangeable: ({ reason }) =>
+        refused(
+          `The post was not deleted from that channel: ${livePostRefusalWords[reason]}. Nothing was asked of the platform.`
         ),
       LookupInputInvalid: () =>
         refused(
