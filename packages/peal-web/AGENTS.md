@@ -144,7 +144,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   and `channelOptionsOf`; every field shows while one is being read): like
   one hidden by `shownWith`, it is not sent. The counter takes the
   channel's options (`fitOn`'s fourth argument), as a Mastodon content
-  warning counts with the text. On a Bluesky channel,
+  warning counts with the text, and so do `mediaFitOn`, `showsAltText`
+  and `partsTaken`, which read the contract's `rulesFor`: a `format`
+  (Instagram's and Facebook's first field, a feed post when nothing is
+  chosen) gives a story or a reel its own media rules, and a story no text
+  (`textNotSent`, said under the counters). A feed post's own fields have
+  `shownWith` on `format` (`feedPost`), so a story sends none. On a Bluesky channel,
   `BlueskyChannelOptions` reads the channel's capabilities
   (`channelCapabilities`) and closes each gate its
   account must be reconnected to set (`optionNeedsReconnect`,

@@ -179,6 +179,7 @@ On **Instagram**:
 
 | Option                           | API name        | Values                                                       | Left out             |
 | -------------------------------- | --------------- | ------------------------------------------------------------ | -------------------- |
+| **Format**                       | `format`        | `story` (see [stories and reels](#formats)), or `feed`       | A feed post          |
 | **Also share to the feed**       | `shareToFeed`   | A reel: yes or no                                            | As Instagram decides |
 | **Cover image**                  | `coverMediaId`  | A reel: a JPEG image of the library, 8 MiB at most           | The cover frame      |
 | **Cover frame, in milliseconds** | `thumbOffsetMs` | A reel: its frame, in milliseconds from its start, within it | The first frame      |
@@ -186,17 +187,34 @@ On **Instagram**:
 | **Trial reel**                   | `trialReel`     | A reel: `manual` or `performance`                            | Not a trial          |
 | **Collaborators**                | `collaborators` | One to three Instagram usernames                             | None                 |
 
-A reel is a post of one video. A cover image wins over a cover frame: only the image is sent then. Instagram renames a reel's audio once. A trial reel is shown to accounts that do not follow yours first, and reaches your followers when you share it in the app (`manual`) or by itself when it does well (`performance`). Each collaborator is another account, which receives an invitation to be named as a co-author: name only accounts you mean to invite. Instagram does not document collaborators for accounts connected with Instagram Login: when Instagram refuses such a post, the channel reads **Failed** with Meta's own code. Instagram also shows the alt text of a post's images, up to 1,000 characters, and none on a video.
+On Instagram, a reel is a feed post of one video; a story takes none of these options. A cover image wins over a cover frame: only the image is sent then. Instagram renames a reel's audio once. A trial reel is shown to accounts that do not follow yours first, and reaches your followers when you share it in the app (`manual`) or by itself when it does well (`performance`). Each collaborator is another account, which receives an invitation to be named as a co-author: name only accounts you mean to invite. Instagram does not document collaborators for accounts connected with Instagram Login: when Instagram refuses such a post, the channel reads **Failed** with Meta's own code. Instagram also shows the alt text of a post's images, up to 1,000 characters, and none on a video.
 
 On **Facebook**:
 
-| Option          | API name     | Values                                    | Left out |
-| --------------- | ------------ | ----------------------------------------- | -------- |
-| **Video title** | `videoTitle` | A video: one line, 255 characters at most | No title |
+| Option          | API name     | Values                                                           | Left out    |
+| --------------- | ------------ | ---------------------------------------------------------------- | ----------- |
+| **Format**      | `format`     | `story` or `reel` (see [stories and reels](#formats)), or `feed` | A feed post |
+| **Video title** | `videoTitle` | A video or a reel: one line, 255 characters at most              | No title    |
 
 A thumbnail or a cover is a file of the library that the post does not show: it must be ready and the workspace's, it cannot be deleted while a post that goes out names it, a draft loses it when it is deleted, and a copy of the post leaves it out once it is gone. A channel set or a channel's default options cannot name one.
 
 Through the API, a draft takes its options in `options`, one entry per channel, each tagged by its `platform`; each of the post's targets answers with its own. Updating a draft replaces its options: those left out are removed. A channel added only when the post is scheduled has none yet, so on YouTube, TikTok or Pinterest, give it its options in the draft first.
+
+### Stories and reels [#formats]
+
+On Instagram and Facebook, **Format** chooses what kind of post a channel receives. Peal never guesses it from the file: a vertical video stays a feed post (a reel, on Instagram) unless you choose **Story**, or **Reel** on Facebook.
+
+| Format    | Where     | What it takes                                                                                                                 | The post's text |
+| --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| **Story** | Instagram | One JPEG image of 8 MiB at most, or one MP4 or QuickTime video of 3 to 60 seconds and 100 MiB at most                         | Not sent        |
+| **Story** | Facebook  | One JPEG, PNG or GIF image of 10 MiB at most, or one vertical MP4 video (9:16, 540 pixels a side at least) of 3 to 60 seconds | Not sent        |
+| **Reel**  | Facebook  | One vertical MP4 video (9:16, 540 pixels a side at least) of 3 to 90 seconds                                                  | Its description |
+
+A story is sent without the post's text: the composer says so under the counters and counts nothing there, and a check through the API answers `textNotSent` for that channel. A story takes no other option (no collaborators, none of a reel's settings, no title) and a story or a reel has no parts after it. A Facebook reel's title is the **Video title**. A story and the feed post of the same file and text are not taken for duplicates of each other.
+
+A story disappears after 24 hours. Peal keeps no link to it and reads no statistics or comments of it, and neither a story nor a reel can be boosted from Peal; each counts in the month's posts as any other. Meta asks a reel's and a video story's video to run at 24 to 60 frames a second, which Peal does not check: Meta refuses a video outside it when the post goes out, and the channel reads **Failed** with Meta's code. Meta also takes 30 reels a Page within any 24 hours through its API; past them, the reel fails with Meta's code, and you can post it again later.
+
+If Peal's server restarts while a story or a reel is going out, Peal cannot read it back: the channel reads **To check**, for you to check the account, then confirm it or post it again. Peal never sends it again by itself. Through the API, a channel's capabilities list its platform's formats in `postFormats`, each with the media it takes and whether the text is sent.
 
 ## Schedule it [#schedule]
 
