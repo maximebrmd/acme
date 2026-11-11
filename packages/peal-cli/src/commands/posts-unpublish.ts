@@ -6,13 +6,13 @@ import {
   maxOutcomeWaitSeconds,
   PostUnpublishSchema,
 } from "peal-contract";
-import type { LivePostChange, Post, PostTarget } from "peal-contract";
+import type { Channel, LivePostChange, Post, PostTarget } from "peal-contract";
 
 import { confirmed, neverAsksInJson, yesFlagName } from "#confirm.ts";
 import { explain, explainingPublishing } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { livePostRefusalWords } from "#live-post-refusals.ts";
-import { instant } from "#print.ts";
+import { channelName, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { channelNames, inWorkspace, named, workspaceFlag } from "#workspace.ts";
 
@@ -45,26 +45,39 @@ const changeLine = (
   return `Deleting it from ${channel}: ${String(change.partsLeft)} part(s) left. peal posts changes ${change.postId} says how it goes.`;
 };
 
-// The target `channel` names, by channel id or by the channel's handle or
-// name as the workspace's channels list shows it.
-const targetOn = (
-  post: Post,
-  names: ReadonlyMap<string, string>,
-  channel: string
-): Option.Option<PostTarget> => {
-  const wanted = channel.replace(/^@/u, "").toLowerCase();
+// A handle as people write it: without case, the leading @ optional.
+const handleKey = (handle: string) =>
+  handle.trim().replace(/^@/u, "").toLowerCase();
 
-  return Option.fromUndefinedOr(
-    post.targets.find(
-      ({ channelId }) =>
-        channelId === channel ||
-        (names.get(channelId) ?? "")
-          .toLowerCase()
-          .split(/[\s()]+/u)
-          .some((word) => word.replace(/^@/u, "") === wanted)
-    )
+// Whether `given` names the channel: its id, its exact handle, or its
+// platform and handle ("bluesky studio.example.test", or with a colon).
+// Never a platform alone, nor a word of the channel's name.
+const isNamedBy = (channel: Channel, given: string): boolean => {
+  const handle = handleKey(channel.handle);
+  const split = /^(?<platform>[a-z]+)[\s:]+(?<rest>\S.*)$/iu.exec(given.trim());
+
+  return (
+    channel.id === given ||
+    handleKey(given) === handle ||
+    (split?.groups?.["platform"]?.toLowerCase() === channel.platform &&
+      handleKey(split.groups["rest"] ?? "") === handle)
   );
 };
+
+// The post's targets `given` names: by the target's channel id, or the
+// channel's handle, or its platform and handle.
+const targetsOn = (
+  post: Post,
+  channels: readonly Channel[],
+  given: string
+): readonly PostTarget[] =>
+  post.targets.filter(
+    ({ channelId }) =>
+      channelId === given ||
+      channels.some(
+        (channel) => channel.id === channelId && isNamedBy(channel, given)
+      )
+  );
 
 // Arguments are read in the order of their keys.
 export const unpublish = Command.make(
@@ -73,7 +86,7 @@ export const unpublish = Command.make(
     channel: Flag.String("channel").pipe(
       Flag.withMetavar("<id-or-handle>"),
       Flag.withDescription(
-        "Only this channel of the post, by its id or its handle; without it, every channel where the post can be deleted."
+        'Only this channel of the post: its id, its exact handle, or its platform and handle ("bluesky studio.example"); a handle two of its channels share is refused. Without it, every channel where the post can be deleted.'
       ),
       Flag.optional
     ),
@@ -113,20 +126,43 @@ export const unpublish = Command.make(
       .get({ params: { postId: input.postId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
 
-    const names = yield* channelNames(client, workspace.id);
+    const channels = yield* client.channels
+      .list({ params: { workspaceId: workspace.id } })
+      .pipe(Effect.orElseSucceed((): readonly Channel[] => []));
 
+    const names: ReadonlyMap<string, string> = new Map(
+      channels.map((channel) => [channel.id, channelName(channel)])
+    );
+
+    // One target, or a refusal: never the first of several that match.
     const target = yield* Option.match(input.channel, {
       onNone: () => Effect.succeedNone,
-      onSome: (channel) =>
-        Option.match(targetOn(post, names, channel), {
-          onNone: () =>
-            Effect.fail(
+      onSome: (channel) => {
+        const [first, ...others] = targetsOn(post, channels, channel);
+
+        if (first === undefined) {
+          return Effect.fail(
+            new Refused({
+              reason: `Post ${post.id} is not on ${channel}: give a channel's id, its handle, or its platform and handle, as peal posts show ${post.id} lists them.`,
+            })
+          );
+        }
+
+        return others.length === 0
+          ? Effect.succeed(Option.some(first))
+          : Effect.fail(
               new Refused({
-                reason: `Post ${post.id} is not on ${channel}: peal posts show ${post.id} lists its channels.`,
+                reason: `${channel} names more than one of the post's channels: ${[
+                  first,
+                  ...others,
+                ]
+                  .map(({ channelId }) => named(names, channelId))
+                  .join(
+                    ", "
+                  )}. Give the channel's id, or its platform and handle. Nothing was done.`,
               })
-            ),
-          onSome: (found) => Effect.succeed(Option.some(found)),
-        }),
+            );
+      },
     });
 
     const where = Option.match(target, {

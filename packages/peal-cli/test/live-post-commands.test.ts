@@ -2,7 +2,13 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect, Ref, Schema } from "effect";
 
 import { filesLayer, signedIn } from "./signed-in.ts";
-import { failedTargetId, finishedId, unconfirmedTargetId } from "./studio.ts";
+import {
+  failedTargetId,
+  finishedId,
+  instagramId,
+  tiktokId,
+  unconfirmedTargetId,
+} from "./studio.ts";
 import type { Studio } from "./studio.ts";
 
 // peal posts unpublish and peal posts changes, against the studio, whose
@@ -35,6 +41,42 @@ const liveOnBluesky = (studio: Studio) =>
                   }
                 : target
             ),
+          }
+        : post
+    ),
+  }));
+
+// Two more channels on the post, live, which share a handle.
+const tiktokTargetId = "0190f3a0-0000-7000-8000-00000000e091";
+
+const instagramTargetId = "0190f3a0-0000-7000-8000-00000000e092";
+
+const liveOnTwinHandles = (studio: Studio) =>
+  Ref.update(studio.state, (current) => ({
+    ...current,
+    posts: current.posts.map((post) =>
+      post.id === finishedId
+        ? {
+            ...post,
+            targets: [
+              ...post.targets,
+              ...[
+                [tiktokTargetId, tiktokId],
+                [instagramTargetId, instagramId],
+              ].map(([id = "", channelId = ""]) => ({
+                channelId,
+                failureReason: null,
+                id,
+                options: null,
+                parts: { count: 1, live: [] },
+                permalink: `https://${channelId}.example.test/post/1`,
+                publishedAt: null,
+                removedAt: null,
+                round: 1,
+                status: "published" as const,
+                unconfirmedReason: null,
+              })),
+            ],
           }
         : post
     ),
@@ -152,6 +194,60 @@ describe("peal posts unpublish", () => {
       ]);
       assert.notInclude(said, failedTargetId);
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
+    "refuses a handle two of the post's channels share, naming both, before deleting",
+    () =>
+      Effect.gen(function* ambiguous() {
+        const session = yield* signedIn();
+
+        yield* liveOnTwinHandles(session.studio);
+
+        const refused = yield* session.refused(
+          unpublishArgs("--channel", "@studio_example", "--yes")
+        );
+
+        assert.include(refused, "more than one of the post's channels");
+        assert.include(refused, tiktokId);
+        assert.include(refused, instagramId);
+        assert.deepStrictEqual(yield* changes(session.studio), []);
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
+    "takes a channel by its exact handle, or its platform and handle, never by its platform alone",
+    () =>
+      Effect.gen(function* exact() {
+        const session = yield* signedIn();
+
+        yield* liveOnBluesky(session.studio);
+        yield* liveOnTwinHandles(session.studio);
+
+        // A platform's name, or a word of a channel's name, is no channel.
+        for (const channel of ["bluesky", "studio", "instagram"]) {
+          assert.include(
+            yield* session.refused(
+              unpublishArgs("--channel", channel, "--yes")
+            ),
+            `is not on ${channel}`
+          );
+        }
+
+        assert.deepStrictEqual(yield* changes(session.studio), []);
+
+        yield* session.printed(
+          unpublishArgs("--channel", "instagram @studio_example", "--yes")
+        );
+        yield* session.printed(
+          unpublishArgs("--channel", "studio.example.test", "--yes")
+        );
+
+        assert.deepStrictEqual(yield* changes(session.studio), [
+          `unpublish:${instagramTargetId}`,
+          `unpublish:${unconfirmedTargetId}`,
+        ]);
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
   it.effect("refuses a channel the post is not on, before deleting", () =>
