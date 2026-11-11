@@ -10,6 +10,7 @@ import {
   CurrentMember,
   CurrentPrincipal,
   CurrentStaff,
+  Forbidden,
   ReviewVisitor,
   ReviewVisitorAddress,
   StaffAccess,
@@ -36,6 +37,7 @@ import { ImpersonationGuard } from "#workspace/application/impersonation-guard.t
 import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
+import { answerAccessDenied } from "#workspace/domain/membership.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 
 import { recorded } from "./activity-recording.ts";
@@ -357,13 +359,18 @@ export const WorkspaceAccessLive = Layer.effect(
           return yield* new WorkspaceNotFound();
         }
 
+        // A member whose account lacks the two-step verification the
+        // workspace requires is told so, and what to do; keys never are.
         const actor = yield* members.resolve(principal, workspaceId.value).pipe(
-          Effect.catchTags({
-            BannedUser: forbidden,
-            DirectoryUnavailable: Effect.die,
-            NotAMember: () => Effect.fail(new WorkspaceNotFound()),
-            WorkspaceMismatch: forbidden,
-          })
+          Effect.catchTag("DirectoryUnavailable", Effect.die),
+          Effect.catch(
+            answerAccessDenied({
+              BannedUser: forbidden,
+              NotAMember: () => Effect.fail(new WorkspaceNotFound()),
+              TwoStepRequired: forbidden,
+              WorkspaceMismatch: forbidden,
+            })
+          )
         );
 
         const current = memberOf(actor, principal);
@@ -440,6 +447,14 @@ export const StaffAccessLive = Layer.effect(
             Effect.catchTags({
               DirectoryUnavailable: Effect.die,
               NotStaff: notFound,
+              StaffTwoStepRequired: () =>
+                Effect.fail(
+                  new Forbidden({
+                    message:
+                      "This server requires staff to have two-step verification on: turn it on in your account settings, then open the console again.",
+                    reason: "twoStepRequired",
+                  })
+                ),
             })
           );
 

@@ -194,12 +194,14 @@ export {
   AccountClosureSchema,
   AccountExportSchema,
   DeleteAccountSchema,
+  TwoStepStatusSchema,
 } from "./account.ts";
 
 export type {
   AccountClosure,
   AccountExport,
   DeleteAccount,
+  TwoStepStatus,
 } from "./account.ts";
 
 export { ConnectedAppNotFound } from "./connected-app-not-found.ts";
@@ -214,7 +216,12 @@ export { LastOwner } from "./last-owner.ts";
 
 export { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 
-export { DeleteWorkspaceSchema, WorkspacesApi } from "./workspaces.ts";
+export {
+  DeleteWorkspaceSchema,
+  SecureWorkspaceSchema,
+  WorkspaceSecuritySchema,
+  WorkspacesApi,
+} from "./workspaces.ts";
 
 export { AlreadyMember } from "./already-member.ts";
 
@@ -238,7 +245,11 @@ export type { Role } from "./role.ts";
 
 export { TooManyInvitations } from "./too-many-invitations.ts";
 
-export type { DeleteWorkspace } from "./workspaces.ts";
+export type {
+  DeleteWorkspace,
+  SecureWorkspace,
+  WorkspaceSecurity,
+} from "./workspaces.ts";
 
 export { WorkspaceBusy } from "./workspace-busy.ts";
 

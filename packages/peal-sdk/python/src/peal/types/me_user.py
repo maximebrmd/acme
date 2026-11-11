@@ -18,6 +18,9 @@ class MeUser(UniversalBaseModel):
     image: typing.Optional[str] = None
     locale: MeUserLocale
     name: str
+    two_step_enabled: typing_extensions.Annotated[
+        bool, FieldMetadata(alias="twoStepEnabled"), pydantic.Field(alias="twoStepEnabled")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

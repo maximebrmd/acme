@@ -212,6 +212,9 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM workspace.partner_usage_days d JOIN workspace.partners p ON p.id = d.partner_id WHERE p.workspace_id = ${id}`,
   "workspace.partners": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM workspace.partners WHERE workspace_id = ${id}`,
+  // Whether it required two-step verification of its members.
+  "workspace.security_policies": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM workspace.security_policies WHERE workspace_id = ${id}`,
 } satisfies Readonly<Record<string, Count>>;
 
 // The tables whose rows go with a workspace a partner owns, which has no
@@ -262,9 +265,13 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM auth.session WHERE user_id = ${id} OR impersonated_by = ${id}`,
   "auth.subscription": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.subscription WHERE reference_id = ${id}`,
+  // Their authenticator's key and recovery codes, deleted with the user.
+  "auth.two_factor": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM auth.two_factor WHERE user_id = ${id}`,
   "auth.user": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth."user" WHERE id = ${id}`,
-  // Password reset tokens hold their user's id.
+  // Password reset tokens, the browsers two-step verification trusts and
+  // the second steps of sign-ins in progress hold their user's id.
   "auth.verification": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.verification WHERE value = ${id}`,
   // Orders, trials, withdrawals and requests to cancel or withdraw stay
@@ -632,6 +639,21 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO workspace.partner_idempotency_keys (partner_id, key_digest, request_digest, workspace_id, created_at)
     VALUES (${partnerId}, ${randomUUID()}, ${randomUUID()}, ${randomUUID()}, now())`;
 
+  // What the workspace requires of its members, and the person's
+  // two-step verification: an authenticator, a browser it trusts and a
+  // second step of a sign-in in progress, as Better Auth keeps them.
+  yield* sql`INSERT INTO workspace.security_policies (workspace_id, two_step_required, updated_at)
+    VALUES (${workspaceId}, false, now())
+    ON CONFLICT DO NOTHING`;
+
+  yield* sql`INSERT INTO auth.two_factor (secret, backup_codes, user_id, verified)
+    SELECT 'synthetic.iv.ciphertext', 'synthetic.iv.ciphertext', ${person.id}, true
+    WHERE NOT EXISTS (SELECT 1 FROM auth.two_factor WHERE user_id = ${person.id})`;
+
+  yield* sql`INSERT INTO auth.verification (identifier, value, expires_at, created_at, updated_at)
+    VALUES (${`trust-device-${randomUUID()}`}, ${person.id}, now() + interval '30 days', now(), now()),
+      (${`2fa-${randomUUID()}`}, ${person.id}, now() + interval '10 minutes', now(), now())`;
+
   yield* sql`INSERT INTO workspace.partner_usage_days (partner_id, day, workspaces, channels)
     VALUES (${partnerId}, '2026-11-09', 0, 1)`;
 
@@ -957,7 +979,9 @@ layer(RetainingLive, {
           UNION ALL SELECT token FROM auth.oauth_refresh_token WHERE user_id = ${lee.id}
           UNION ALL SELECT token FROM auth.session WHERE user_id = ${lee.id}
           UNION ALL SELECT password FROM auth.account WHERE user_id = ${lee.id} AND password IS NOT NULL
-          UNION ALL SELECT split_part(identifier, ':', 2) FROM auth.verification WHERE value = ${lee.id}
+          UNION ALL SELECT CASE WHEN identifier LIKE '%:%' THEN split_part(identifier, ':', 2) ELSE identifier END FROM auth.verification WHERE value = ${lee.id}
+          UNION ALL SELECT secret FROM auth.two_factor WHERE user_id = ${lee.id}
+          UNION ALL SELECT backup_codes FROM auth.two_factor WHERE user_id = ${lee.id}
           UNION ALL SELECT device_code FROM auth.device_code WHERE user_id = ${lee.id}
           UNION ALL SELECT stripe_customer_id FROM billing.subscriptions WHERE workspace_id = ${own}
           UNION ALL SELECT stripe_subscription_id FROM billing.subscriptions WHERE workspace_id = ${own}`.pipe(

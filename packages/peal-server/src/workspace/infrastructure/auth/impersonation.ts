@@ -67,17 +67,26 @@ export const changesWorkspace = (path: string): boolean =>
   (path.startsWith("/organization/") && !allowedWhileImpersonating.has(path)) ||
   (path.startsWith("/subscription/") && !billingReads.has(path));
 
+// Two-step verification's routes: turning it on or off, its key, its
+// recovery codes, and verifying a code, which would spend one of those.
+// Every one, those an upgrade adds included: they are the member's alone.
+const twoStepRoutes = "/two-factor/";
+
 /**
  * Whether staff impersonating a member are refused a Better Auth route: every
  * workspace route but those that only read, those that give an OAuth client
- * access, those that change the account, and those that subscribe, cancel
- * or open the billing portal. Creating, inviting, accepting, changing roles,
- * removing, deleting, granting access, changing the account and paying all
- * outlive the impersonation, as what `withheldWhileImpersonating` lists
- * does, and these routes never reach Peal's API, which applies that list.
+ * access, those that change the account or its two-step verification, and
+ * those that subscribe, cancel or open the billing portal. Creating,
+ * inviting, accepting, changing roles, removing, deleting, granting access,
+ * changing the account and paying all outlive the impersonation, as what
+ * `withheldWhileImpersonating` lists does, and these routes never reach
+ * Peal's API, which applies that list.
  */
 export const refusedWhileImpersonating = (path: string): boolean =>
-  grantsAccess.has(path) || changesAccount.has(path) || changesWorkspace(path);
+  grantsAccess.has(path) ||
+  changesAccount.has(path) ||
+  path.startsWith(twoStepRoutes) ||
+  changesWorkspace(path);
 
 const isImpersonation = Schema.is(
   Schema.Struct({

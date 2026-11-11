@@ -373,3 +373,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   changed, the whole list, a saved row without a value by its name alone
   (the server keeps its value). Values are typed in password fields. Every
   string is in the `Webhooks` namespace, en and fr.
+- Two-step verification (`TwoStep` catalogue): the sign-in form asks for
+  the second step in place (`TwoStepChallengeView`, its state in
+  `sign-in-form.tsx`) when the answer has `twoFactorRedirect`, so an OAuth
+  authorization's signed query is kept: never set the client plugin's
+  `twoFactorPage`. The account page's `TwoStepSection` draws the key's QR
+  code in the browser (`qrcode.react`, SVG) beside the key as text; the
+  URI and the recovery codes stay in component state, sent nowhere but to
+  Better Auth's routes, never logged. A workspace that requires it shows
+  `TwoStepRequiredNotice` instead of its pages to a member without it
+  (`app/[workspaceId]/layout.tsx`); a 403 `twoStepRequired` met later is
+  read once, in the API client (`#two-step/refusals.ts`), and
+  `TwoStepRefusalWatch` reads the page again. The owners' switch is
+  `settings/security`.

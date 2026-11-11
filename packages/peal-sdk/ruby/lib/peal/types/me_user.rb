@@ -16,6 +16,8 @@ module Peal
       field :locale, -> { Peal::Types::MeUserLocale }, optional: false, nullable: false
 
       field :name, -> { String }, optional: false, nullable: false
+
+      field :two_step_enabled, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "twoStepEnabled"
     end
   end
 end

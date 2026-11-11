@@ -21,15 +21,15 @@ Peal's own servers also put `/admin`, `/en/admin`, `/fr/admin` and `/api/admin` 
 
 ## What the console shows [#screens]
 
-| Page              | What it shows                                                                                                                                                                      |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| System            | Whether the database answers, the release the server runs (`OTEL_SERVICE_VERSION`), the posts due within the hour, those overdue, and the channels to reconnect in every workspace |
-| Accounts          | Accounts by email, name or id, newest first, 25 a page                                                                                                                             |
-| An account        | Its name and email, whether the address is confirmed, its language, when it was created and last signed in, its ban, its workspaces and roles, and how many sessions it has open   |
-| Workspaces        | Workspaces by name, slug or id, with their members                                                                                                                                 |
-| A workspace       | Its members and roles, its plan and subscription, its channels and whether each works, how many posts it has in each status, and the latest posts that failed or went unconfirmed  |
-| Contract requests | The requests to cancel a contract or withdraw from one that wait for staff, oldest first                                                                                           |
-| Audit log         | What staff did, newest first                                                                                                                                                       |
+| Page              | What it shows                                                                                                                                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| System            | Whether the database answers, the release the server runs (`OTEL_SERVICE_VERSION`), the posts due within the hour, those overdue, and the channels to reconnect in every workspace                                           |
+| Accounts          | Accounts by email, name or id, newest first, 25 a page                                                                                                                                                                       |
+| An account        | Its name and email, whether the address is confirmed, its language, when it was created and last signed in, its ban, its workspaces and roles, how many sessions it has open, and whether two-step verification is on        |
+| Workspaces        | Workspaces by name, slug or id, with their members                                                                                                                                                                           |
+| A workspace       | Its members and roles, its plan and subscription, its channels and whether each works, how many posts it has in each status, the latest posts that failed or went unconfirmed, and whether it requires two-step verification |
+| Contract requests | The requests to cancel a contract or withdraw from one that wait for staff, oldest first                                                                                                                                     |
+| Audit log         | What staff did, newest first                                                                                                                                                                                                 |
 
 Staff see who an account is, never what it wrote: no post's text, no image or video, no token. A failed post shows as its ids, its platform, why it failed and the platform's code. To see what a member sees, staff act as them (see below).
 
@@ -42,13 +42,18 @@ Each action asks why, and keeps the reason in the audit log with the staff membe
 - **Ban**, for a day, a week, 30 days or until lifted: the account is signed out everywhere, sessions it opened as staff to act as someone else included, and can neither sign in nor use its API keys meanwhile. **Lift the ban** undoes it.
 - **Sign out everywhere** ends every session of the account, on every device, those staff opened to act as it and those it opened as staff to act as someone else included. Its API keys keep working.
 - **Send the confirmation again** emails a new link to confirm the address, in the account's language, while it is not confirmed.
+- **Reset two-step verification**, while it is on, for a person who lost their phone and their recovery codes: it turns [two-step verification](/settings#two-step) off, deletes the authenticator and the recovery codes, forgets the browsers it trusted, signs the account out everywhere, and emails it. They then sign in with their password, and may turn it on again. Check who is asking first: an email from the account's address is not proof, as the mailbox may be what was taken. Owners cannot reset a member's: it is staff's alone.
 - **Act as this account** signs the staff member's browser in as the account for an hour. A banner at the top of every page says whose account it is, with **Stop acting as them**, which brings back the staff member's own session.
 
 While acting as an account, staff see its posts and media, and can write and edit drafts in its name; they cannot schedule or publish, connect channels, manage API keys or billing, change its workspaces or the account, or let an application act for it. They can read its notifications, not mark them read. They can ask the writing assistant in its workspaces, which counts toward those workspaces' daily requests. What they make carries the account's name, as its author, and the audit log keeps who made it (see below).
 
-Staff never ban, sign out or act as themselves, and never act as other staff. No one deletes an account but its owner, from [their account settings](/settings#delete-account).
+Staff never ban, sign out, reset the two-step verification of or act as themselves, and never act as other staff. Acting as an account, they cannot turn its two-step verification on or off, see its key or make recovery codes, and are never asked the second step: the session is theirs, opened from the console; whether a workspace that requires it opens follows the account's own. No one deletes an account but its owner, from [their account settings](/settings#delete-account).
 
 Better Auth's own admin endpoints under `/api/auth/admin/` are off, so nothing staff do bypasses the audit log; only `POST /api/auth/admin/stop-impersonating` stays, which the banner calls.
+
+## Two-step verification for staff [#two-step]
+
+An account's page says whether its two-step verification is on, and a workspace's whether it requires it of its members. With `PEAL_STAFF_TWO_STEP=true` ([Environment variables](/environment-variables)), the console is refused to staff whose own account does not have it on: they are told to turn it on in their account settings, while anyone who is not staff still finds no console. Turn it on once every staff account has it on.
 
 ## Partner accounts [#partners]
 

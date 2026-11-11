@@ -262,6 +262,16 @@ const amountsIn = (currency: string, digits: MinorUnitDigits | undefined) => ({
 
 const refused = (reason: string) => new Refused({ reason });
 
+/**
+ * Where a person turns two-step verification on: the account page of the
+ * web app, which the API shares its address with.
+ */
+export const accountPageOf = (url: string): string =>
+  `${new URL(url).origin}/app/account`;
+
+const twoStepRequired = (url: string): string =>
+  `This workspace requires two-step verification. Turn it on at ${accountPageOf(url)}, then run the command again.`;
+
 const reasonOf =
   (url: string, digits?: MinorUnitDigits) =>
   (failure: ApiFailure): ApiRequestFailed | Refused | SignInExpired =>
@@ -384,6 +394,12 @@ const reasonOf =
       // The server says what is missing and how to get it; one older than
       // that says nothing.
       Forbidden: ({ message, permission, reason, scope }) => {
+        // Nothing the command line does turns it on: the person does, in
+        // the web app, and the command works again at once.
+        if (reason === "twoStepRequired") {
+          return refused(twoStepRequired(url));
+        }
+
         // Whatever scope the server names first, a sign-in refused over an
         // ads permission lacks the scope --ads asks for.
         if (

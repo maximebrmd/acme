@@ -60,6 +60,8 @@ export interface AccountRecords {
     readonly image: string | null;
     readonly locale: Locale;
     readonly name: string;
+    /** Whether two-step verification is on: never its key nor its codes. */
+    readonly twoStepEnabled: boolean;
     readonly updatedAt: DateTime.Utc;
   };
 }

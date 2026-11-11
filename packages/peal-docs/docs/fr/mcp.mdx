@@ -38,6 +38,8 @@ Peal connecte les clients MCP avec OAuth. Vous ne donnez aucune clé au client :
 
 De retour dans le client, ses outils fonctionnent. Peal retient votre réponse pour ce client et cet espace de travail : le connecter de nouveau ne repose pas la question.
 
+Quand votre compte a activé la [validation en deux étapes](/settings#two-step), le navigateur demande la seconde étape quand vous vous y connectez, et la connexion se poursuit ensuite ; une connexion faite auparavant n’est pas redemandée. Dans un espace de travail qui l’[exige](/settings#require-two-step) alors que votre compte ne l’a pas activée, chaque requête d’un client qui agit pour vous est refusée avec une erreur JSON-RPC et le statut 403, qui dit de l’activer dans les paramètres de votre compte Peal ; une fois activée, la même connexion fonctionne de nouveau. Un client qui utilise une [clé d’API](#api-key) n’est pas concerné. Aucun outil ne lit ni ne modifie la validation en deux étapes ou l’exigence d’un espace de travail : elles reviennent à une personne, dans un navigateur.
+
 <Callout type="note" title="Si le client ne peut pas s’enregistrer">
   La plupart des clients MCP s’enregistrent eux-mêmes avant de se connecter, ce
   qu’un serveur Peal n’autorise que si son administrateur l’active

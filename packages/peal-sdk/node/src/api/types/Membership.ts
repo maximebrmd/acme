@@ -8,4 +8,5 @@ export interface Membership {
     permissions: Peal.Permission[];
     role: string;
     slug: string;
+    twoStepRequired: boolean;
 }

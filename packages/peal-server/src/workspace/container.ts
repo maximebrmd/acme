@@ -39,6 +39,7 @@ import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
 import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";
 import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
+import { WorkspaceSecurity } from "#workspace/application/workspace-security.ts";
 import { AccountModerationLive } from "#workspace/infrastructure/auth/account-moderation.ts";
 import { ApiKeyIssuerLive } from "#workspace/infrastructure/auth/api-key-issuer.ts";
 import { BetterAuthLive } from "#workspace/infrastructure/auth/better-auth.ts";
@@ -64,6 +65,7 @@ import { DrizzleCustomerWorkspaces } from "#workspace/infrastructure/drizzle-cus
 import { DrizzleImpersonationSessions } from "#workspace/infrastructure/drizzle-impersonation-sessions.ts";
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
 import { DrizzlePartnerStore } from "#workspace/infrastructure/drizzle-partner-store.ts";
+import { SecurityPoliciesLive } from "#workspace/infrastructure/drizzle-security-policies.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 import { EmailedAccountMail } from "#workspace/infrastructure/emailed-account-mail.ts";
 import { LoggedActivityJournal } from "#workspace/infrastructure/logged-activity-journal.ts";
@@ -72,6 +74,7 @@ import { PrivacyDeclarationLive } from "#workspace/infrastructure/privacy-declar
 import { RandomPartnerKeyTokens } from "#workspace/infrastructure/random-partner-key-tokens.ts";
 import { S3ErasureLedger } from "#workspace/infrastructure/s3-erasure-ledger.ts";
 import { StaffImpersonationLog } from "#workspace/infrastructure/staff-impersonation-log.ts";
+import { StaffSettingsLive } from "#workspace/infrastructure/staff-settings.ts";
 
 // Where the partner accounts, their keys and the workspaces they own are
 // kept: the database alone.
@@ -99,6 +102,7 @@ const AdaptersLive = Layer.mergeAll(
   PartnerStoresLive,
   RandomPartnerKeyTokens,
   PartnerSettingsLive,
+  StaffSettingsLive,
   DrizzleAccountStore
 );
 
@@ -113,7 +117,8 @@ const UseCasesLive = Layer.mergeAll(
   StaffStanding.layer,
   WorkspaceContacts.layer,
   WorkspaceMembers.layer,
-  WorkspaceSeats.layer
+  WorkspaceSeats.layer,
+  WorkspaceSecurity.layer
 );
 
 // What the staff console reads of accounts and workspaces, and does to
@@ -174,6 +179,11 @@ export const WorkspaceLive = Layer.mergeAll(
   // The directory other contexts name members with (the review context),
   // and Better Auth's hooks check a membership with.
   Layer.provideMerge(MemberDirectoryLive),
+  // What each workspace requires of its members, which Better Auth's
+  // hooks and the workspace's settings read, and the account's emails,
+  // which its hooks send when two-step verification changes.
+  Layer.provideMerge(SecurityPoliciesLive),
+  Layer.provideMerge(EmailedAccountMail),
   Layer.provideMerge(ImpersonationGuardLive),
   Layer.provideMerge(LegalConnectionJournal),
   Layer.provideMerge(CountedRequestLimits),

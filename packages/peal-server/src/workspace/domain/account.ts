@@ -26,5 +26,7 @@ export class Account extends Schema.Class<Account>(
   image: Schema.Option(Schema.String),
   locale: LocaleSchema,
   name: Schema.String,
+  // Whether two-step verification is on for the account.
+  twoStepEnabled: Schema.Boolean,
   workspaces: Schema.Array(WorkspaceMembershipSchema),
 }) {}

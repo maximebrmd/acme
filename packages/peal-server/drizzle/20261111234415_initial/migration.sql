@@ -1056,6 +1056,12 @@ CREATE TABLE "workspace"."partners" (
 	"workspace_id" uuid NOT NULL CONSTRAINT "partners_workspace" UNIQUE
 );
 --> statement-breakpoint
+CREATE TABLE "workspace"."security_policies" (
+	"two_step_required" boolean DEFAULT false NOT NULL,
+	"updated_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid PRIMARY KEY
+);
+--> statement-breakpoint
 CREATE TABLE "auth"."account" (
 	"id" uuid PRIMARY KEY DEFAULT pg_catalog.gen_random_uuid(),
 	"account_id" text NOT NULL,
@@ -1312,6 +1318,16 @@ CREATE TABLE "auth"."subscription" (
 	"stripe_schedule_id" text
 );
 --> statement-breakpoint
+CREATE TABLE "auth"."two_factor" (
+	"id" uuid PRIMARY KEY DEFAULT pg_catalog.gen_random_uuid(),
+	"secret" text NOT NULL,
+	"backup_codes" text NOT NULL,
+	"user_id" uuid NOT NULL,
+	"verified" boolean DEFAULT true,
+	"failed_verification_count" integer DEFAULT 0,
+	"locked_until" timestamp with time zone
+);
+--> statement-breakpoint
 CREATE TABLE "auth"."user" (
 	"id" uuid PRIMARY KEY DEFAULT pg_catalog.gen_random_uuid(),
 	"name" text NOT NULL,
@@ -1324,6 +1340,7 @@ CREATE TABLE "auth"."user" (
 	"banned" boolean DEFAULT false,
 	"ban_reason" text,
 	"ban_expires" timestamp with time zone,
+	"two_factor_enabled" boolean DEFAULT false,
 	"stripe_customer_id" text,
 	"locale" text DEFAULT 'en'
 );
@@ -1496,6 +1513,8 @@ CREATE INDEX "oauthRefreshToken_userId_idx" ON "auth"."oauth_refresh_token" ("us
 CREATE INDEX "oauthRefreshToken_authorizationCodeId_idx" ON "auth"."oauth_refresh_token" ("authorization_code_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "organization_slug_uidx" ON "auth"."organization" ("slug");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "auth"."session" ("user_id");--> statement-breakpoint
+CREATE INDEX "twoFactor_secret_idx" ON "auth"."two_factor" ("secret");--> statement-breakpoint
+CREATE INDEX "twoFactor_userId_idx" ON "auth"."two_factor" ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "auth"."verification" ("identifier");--> statement-breakpoint
 ALTER TABLE "ads"."accounts" ADD CONSTRAINT "accounts_grant_id_grants_id_fkey" FOREIGN KEY ("grant_id") REFERENCES "ads"."grants"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "ads"."ad_sets" ADD CONSTRAINT "ad_sets_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
@@ -1536,4 +1555,5 @@ ALTER TABLE "auth"."oauth_consent" ADD CONSTRAINT "oauth_consent_user_id_user_id
 ALTER TABLE "auth"."oauth_refresh_token" ADD CONSTRAINT "oauth_refresh_token_client_id_oauth_client_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "auth"."oauth_client"("client_id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."oauth_refresh_token" ADD CONSTRAINT "oauth_refresh_token_session_id_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "auth"."session"("id") ON DELETE SET NULL;--> statement-breakpoint
 ALTER TABLE "auth"."oauth_refresh_token" ADD CONSTRAINT "oauth_refresh_token_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE CASCADE;--> statement-breakpoint
-ALTER TABLE "auth"."session" ADD CONSTRAINT "session_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE CASCADE;
+ALTER TABLE "auth"."session" ADD CONSTRAINT "session_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "auth"."two_factor" ADD CONSTRAINT "two_factor_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE CASCADE;

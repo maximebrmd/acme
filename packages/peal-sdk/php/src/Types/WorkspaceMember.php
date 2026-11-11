@@ -32,6 +32,12 @@ class WorkspaceMember extends JsonSerializableType
     public string $role;
 
     /**
+     * @var ?bool $twoStepEnabled
+     */
+    #[JsonProperty('twoStepEnabled')]
+    public ?bool $twoStepEnabled;
+
+    /**
      * @var string $userId
      */
     #[JsonProperty('userId')]
@@ -44,6 +50,7 @@ class WorkspaceMember extends JsonSerializableType
      *   name: string,
      *   role: string,
      *   userId: string,
+     *   twoStepEnabled?: ?bool,
      * } $values
      */
     public function __construct(
@@ -53,6 +60,7 @@ class WorkspaceMember extends JsonSerializableType
         $this->joinedAt = $values['joinedAt'];
         $this->name = $values['name'];
         $this->role = $values['role'];
+        $this->twoStepEnabled = $values['twoStepEnabled'] ?? null;
         $this->userId = $values['userId'];
     }
 

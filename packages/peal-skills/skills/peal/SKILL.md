@@ -191,10 +191,9 @@ peal drafts discard <post-id> --json
 `drafts save` answers the post, with its `id`. Saving a draft again makes
 another draft: keep the id, and change the draft with `--post`.
 
-To write a post like one the workspace has, whatever its status, duplicate
-it: the new draft has its text, media, channels with their options, and
-tags, without what the workspace no longer has, and no time. Each call makes
-another draft.
+To copy a post the workspace has, whatever its status, duplicate it: the new
+draft has its text, media, channels with their options and tags, without what
+the workspace no longer has, and no time. Each call makes another draft.
 
 ```sh
 peal posts duplicate <post-id> --json
@@ -436,13 +435,14 @@ Every error of the API carries:
 
 `forbidden` carries a `reason`:
 
-| `reason`            | Meaning, and what to do                                                        |
-| ------------------- | ------------------------------------------------------------------------------ |
-| `missingScope`      | The person did not give this client `scope`. Tell them; do not work around it. |
-| `missingPermission` | The role or the key lacks `permission`. Tell them; do not work around it.      |
-| `personRequired`    | Only a person in the web app does this.                                        |
-| `wrongWorkspace`    | The key or token belongs to another workspace: check `PEAL_WORKSPACE`.         |
-| `suspended`         | The account is suspended.                                                      |
+| `reason`            | Meaning, and what to do                                                                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `missingScope`      | The person did not give this client `scope`. Tell them; do not work around it.                                                                        |
+| `missingPermission` | The role or the key lacks `permission`. Tell them; do not work around it.                                                                             |
+| `personRequired`    | Only a person in the web app does this.                                                                                                               |
+| `wrongWorkspace`    | The key or token belongs to another workspace: check `PEAL_WORKSPACE`.                                                                                |
+| `suspended`         | The account is suspended.                                                                                                                             |
+| `twoStepRequired`   | The workspace requires two-step verification: the person turns it on in the web app's account settings, then the same sign-in works. An agent cannot. |
 
 ### Error codes
 

@@ -20,6 +20,8 @@ export interface PersonInWorkspace {
   readonly name: string;
   /** Their role, as Better Auth stores it. */
   readonly role: string;
+  /** Whether their account has two-step verification on. */
+  readonly twoStepEnabled: boolean;
   readonly userId: UserId;
 }
 

@@ -9,6 +9,7 @@ pub enum ForbiddenReason {
     WrongWorkspace,
     Suspended,
     UntrustedOrigin,
+    TwoStepRequired,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -23,6 +24,7 @@ impl Serialize for ForbiddenReason {
             Self::WrongWorkspace => serializer.serialize_str("wrongWorkspace"),
             Self::Suspended => serializer.serialize_str("suspended"),
             Self::UntrustedOrigin => serializer.serialize_str("untrustedOrigin"),
+            Self::TwoStepRequired => serializer.serialize_str("twoStepRequired"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -38,6 +40,7 @@ impl<'de> Deserialize<'de> for ForbiddenReason {
             "wrongWorkspace" => Ok(Self::WrongWorkspace),
             "suspended" => Ok(Self::Suspended),
             "untrustedOrigin" => Ok(Self::UntrustedOrigin),
+            "twoStepRequired" => Ok(Self::TwoStepRequired),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -52,6 +55,7 @@ impl fmt::Display for ForbiddenReason {
             Self::WrongWorkspace => write!(f, "wrongWorkspace"),
             Self::Suspended => write!(f, "suspended"),
             Self::UntrustedOrigin => write!(f, "untrustedOrigin"),
+            Self::TwoStepRequired => write!(f, "twoStepRequired"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

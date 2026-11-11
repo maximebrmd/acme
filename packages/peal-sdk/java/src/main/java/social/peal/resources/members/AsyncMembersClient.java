@@ -29,7 +29,7 @@ public class AsyncMembersClient {
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public CompletableFuture<List<WorkspaceMember>> list(String workspaceId) {
         CompletableFuture<PealClientHttpResponse<List<WorkspaceMember>>> rawFuture = this.rawClient.list(workspaceId);
@@ -43,7 +43,7 @@ public class AsyncMembersClient {
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public CompletableFuture<List<WorkspaceMember>> list(String workspaceId, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<List<WorkspaceMember>>> rawFuture =
@@ -58,7 +58,7 @@ public class AsyncMembersClient {
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public CompletableFuture<List<WorkspaceMember>> list(String workspaceId, ListMembersRequest request) {
         CompletableFuture<PealClientHttpResponse<List<WorkspaceMember>>> rawFuture =
@@ -73,7 +73,7 @@ public class AsyncMembersClient {
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public CompletableFuture<List<WorkspaceMember>> list(
             String workspaceId, ListMembersRequest request, RequestOptions requestOptions) {

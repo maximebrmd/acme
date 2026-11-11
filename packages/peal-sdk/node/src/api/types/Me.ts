@@ -16,6 +16,7 @@ export namespace Me {
         image: string | null;
         locale: User.Locale;
         name: string;
+        twoStepEnabled: boolean;
     }
 
     export namespace User {

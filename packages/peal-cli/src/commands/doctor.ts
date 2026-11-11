@@ -8,7 +8,7 @@ import { mcpEndpoint } from "#commands/mcp.ts";
 import { CredentialStore } from "#credentials.ts";
 import { display } from "#display.ts";
 import { DoctorFailed } from "#doctor-failed.ts";
-import { adsScope, publishScope } from "#explain.ts";
+import { accountPageOf, adsScope, publishScope } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns } from "#print.ts";
 import {
@@ -163,12 +163,30 @@ const serverChecks = Effect.gen(function* serverChecks() {
 const membershipLine = ({ id, name, role, slug }: Me["workspaces"][number]) =>
   `${name} (${slug}, ${id}, ${role})`;
 
+// A workspace that requires two-step verification refuses every command
+// while the account does not have it on.
+const lockedOut = (
+  me: Me,
+  workspace: Me["workspaces"][number],
+  url: string
+): Option.Option<Check> =>
+  workspace.twoStepRequired && !me.user.twoStepEnabled
+    ? Option.some(
+        failing(
+          "workspace",
+          `${membershipLine(workspace)} requires two-step verification, which your account does not have on: the server refuses every command there.`,
+          `Turn it on at ${accountPageOf(url)}, then run the command again.`
+        )
+      )
+    : Option.none();
+
 // The workspace commands act in, for a person: the one they named, or
 // their only one.
 const personWorkspace = (
   me: Me,
   choice: Option.Option<string>,
-  source: string
+  source: string,
+  url: string
 ): Check => {
   const [only] = me.workspaces;
 
@@ -179,16 +197,20 @@ const personWorkspace = (
       ({ id, slug }) => id === wanted || slug === wanted
     );
 
-    return found === undefined
-      ? failing(
-          "workspace",
-          `${source} names ${wanted}, which is none of your workspaces: ${me.workspaces.map(membershipLine).join("; ")}.`,
-          "Name one of them, by its slug or its id."
-        )
-      : ok(
-          "workspace",
-          `Commands act in ${membershipLine(found)}, from ${source}.`
-        );
+    if (found === undefined) {
+      return failing(
+        "workspace",
+        `${source} names ${wanted}, which is none of your workspaces: ${me.workspaces.map(membershipLine).join("; ")}.`,
+        "Name one of them, by its slug or its id."
+      );
+    }
+
+    return Option.getOrElse(lockedOut(me, found, url), () =>
+      ok(
+        "workspace",
+        `Commands act in ${membershipLine(found)}, from ${source}.`
+      )
+    );
   }
 
   if (only === undefined) {
@@ -200,9 +222,11 @@ const personWorkspace = (
   }
 
   return me.workspaces.length === 1
-    ? ok(
-        "workspace",
-        `Commands act in ${membershipLine(only)}, your only workspace.`
+    ? Option.getOrElse(lockedOut(me, only, url), () =>
+        ok(
+          "workspace",
+          `Commands act in ${membershipLine(only)}, your only workspace.`
+        )
       )
     : failing(
         "workspace",
@@ -349,7 +373,7 @@ const personChecks = (choice: Option.Option<string>, up: boolean) =>
       ),
       scope,
       ads,
-      personWorkspace(me.value, choice, source),
+      personWorkspace(me.value, choice, source, url),
     ];
   });
 

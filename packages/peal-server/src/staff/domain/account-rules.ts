@@ -22,11 +22,13 @@ export type Request =
 const refuse = (reason: ActionRefused["reason"]) =>
   Result.fail(new ActionRefused({ reason }));
 
-// Actions that would lock staff out of their own account, or hand them a
-// session of their own, which they have already.
+// Actions that would lock staff out of their own account, hand them a
+// session of their own, which they have already, or take the second step
+// off the account the console may require it of.
 const notOnSelf: ReadonlySet<StaffAction> = new Set([
   "ban",
   "impersonate",
+  "resetTwoStep",
   "revokeSessions",
 ]);
 

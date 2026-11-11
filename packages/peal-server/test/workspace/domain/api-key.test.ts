@@ -51,4 +51,19 @@ describe(grantableBy, () => {
       "ads:authorize"
     );
   });
+
+  it("never gives a key the right to require two-step verification", () => {
+    const owner = new Actor({
+      permissions: ["organization:secure", "post:read"],
+      subject: actor.subject,
+      workspaceId: actor.workspaceId,
+    });
+
+    const result = grantableBy(owner, ["post:read", "organization:secure"]);
+
+    assert.strictEqual(
+      Result.isFailure(result) ? result.failure.permission : "",
+      "organization:secure"
+    );
+  });
 });

@@ -112,6 +112,11 @@ export const connectedApps = PealApi.query("connectedApps", "list", {
 
 export const revokeConnectedApp = PealApi.mutation("connectedApps", "revoke");
 
+/** The account's two-step verification, as its settings show it. */
+export const twoStepStatus = PealApi.query("account", "twoStep", {
+  reactivityKeys: ["two-step"],
+});
+
 export const deleteWorkspace = PealApi.mutation("workspaces", "delete");
 
 export const deleteAccount = PealApi.mutation("account", "delete");

@@ -37,28 +37,28 @@ public class RawMembersClient {
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public PealClientHttpResponse<List<WorkspaceMember>> list(String workspaceId) {
         return list(workspaceId, ListMembersRequest.builder().build());
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public PealClientHttpResponse<List<WorkspaceMember>> list(String workspaceId, RequestOptions requestOptions) {
         return list(workspaceId, ListMembersRequest.builder().build(), requestOptions);
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public PealClientHttpResponse<List<WorkspaceMember>> list(String workspaceId, ListMembersRequest request) {
         return list(workspaceId, request, null);
     }
 
     /**
-     * Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+     * Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
      */
     public PealClientHttpResponse<List<WorkspaceMember>> list(
             String workspaceId, ListMembersRequest request, RequestOptions requestOptions) {

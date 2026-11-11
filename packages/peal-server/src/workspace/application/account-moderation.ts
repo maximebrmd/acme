@@ -53,6 +53,16 @@ export class AccountModeration extends Context.Service<
       request: ModerationRequest
     ) => Effect.Effect<readonly EndedImpersonation[], AuthUnavailable>;
     /**
+     * Turns the account's two-step verification off, for its person who
+     * lost their phone and recovery codes: deletes its authenticator and
+     * recovery codes, forgets the browsers it trusted, ends every session
+     * as `revokeSessions` does, which it answers with, and emails the
+     * account.
+     */
+    readonly resetTwoStep: (
+      request: ModerationRequest
+    ) => Effect.Effect<readonly EndedImpersonation[], AuthUnavailable>;
+    /**
      * Emails the account a new link to confirm its address, which opens the
      * confirmation page in its language.
      */

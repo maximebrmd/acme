@@ -34,6 +34,7 @@ import {
   session,
   user,
 } from "./auth-schema.generated.ts";
+import { securityPolicies } from "./schema.ts";
 
 const unavailable = Effect.mapError(
   (cause: unknown) => new DirectoryUnavailable({ cause })
@@ -83,6 +84,7 @@ const accountColumns = {
   locale: user.locale,
   name: user.name,
   role: user.role,
+  twoStepEnabled: user.twoFactorEnabled,
 };
 
 interface AccountRow {
@@ -217,6 +219,7 @@ export const AccountDirectoryLive = Layer.effect(
         ...listingOf(found),
         locale: found.locale ?? defaultLocale,
         sessions: sessions?.open ?? 0,
+        twoStepEnabled: found.twoStepEnabled === true,
         workspaces: workspaces.map((workspace) => ({
           ...workspace,
           id: WorkspaceIdSchema.make(workspace.id),
@@ -267,8 +270,13 @@ export const AccountDirectoryLive = Layer.effect(
             createdAt: organization.createdAt,
             name: organization.name,
             slug: organization.slug,
+            twoStepRequired: securityPolicies.twoStepRequired,
           })
           .from(organization)
+          .leftJoin(
+            securityPolicies,
+            eq(securityPolicies.workspaceId, organization.id)
+          )
           .where(eq(organization.id, workspaceId))
           .limit(1)
           .pipe(unavailable);
@@ -299,6 +307,7 @@ export const AccountDirectoryLive = Layer.effect(
           })),
           name: found.name,
           slug: found.slug,
+          twoStepRequired: found.twoStepRequired === true,
         });
       }
     );
@@ -327,6 +336,7 @@ export const AccountDirectoryLive = Layer.effect(
           banExpires: user.banExpires,
           banned: user.banned,
           role: user.role,
+          twoStepEnabled: user.twoFactorEnabled,
         })
         .from(user)
         .where(eq(user.id, userId))
@@ -338,6 +348,7 @@ export const AccountDirectoryLive = Layer.effect(
           ban: banOf(row.banned, row.banExpires),
           legal: isLegalRole(Option.fromNullOr(row.role)),
           staff: isStaffRole(Option.fromNullOr(row.role)),
+          twoStepEnabled: row.twoStepEnabled === true,
         }))
       );
     });

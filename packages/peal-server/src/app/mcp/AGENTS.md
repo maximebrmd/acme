@@ -11,7 +11,11 @@
   also takes a workspace's API key as the bearer token (never in the URL),
   for agents that run with nobody to sign in: the key's permissions apply,
   as on the API, `whoami` answers `apiKey` with a null `user` and role, and
-  what only a person does refuses it in words about keys. A key acts in its
+  what only a person does refuses it in words about keys. A workspace that
+  requires two-step verification refuses a person without it with a
+  JSON-RPC 403 that says what to do (`mcp-authentication.ts`); no tool
+  reads or changes two-step verification or a workspace's requirement,
+  which are a person's, in a browser. A key acts in its
   own workspace (`workspaceOfKey` in `Authenticate`: the one place to
   change if a key ever spans several). Past the rate limit it answers a
   JSON-RPC error with 429.

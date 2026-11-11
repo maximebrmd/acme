@@ -29,6 +29,9 @@ public record MeUser : IJsonOnDeserialized
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    [JsonPropertyName("twoStepEnabled")]
+    public required bool TwoStepEnabled { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

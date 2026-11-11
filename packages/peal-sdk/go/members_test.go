@@ -87,6 +87,14 @@ func TestSettersWorkspaceMember(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetTwoStepEnabled", func(t *testing.T) {
+		obj := &WorkspaceMember{}
+		var fernTestValueTwoStepEnabled *bool
+		obj.SetTwoStepEnabled(fernTestValueTwoStepEnabled)
+		assert.Equal(t, fernTestValueTwoStepEnabled, obj.TwoStepEnabled)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetUserID", func(t *testing.T) {
 		obj := &WorkspaceMember{}
 		var fernTestValueUserID string
@@ -188,6 +196,39 @@ func TestGettersWorkspaceMember(t *testing.T) {
 			}
 		}()
 		_ = obj.GetRole() // Should return zero value
+	})
+
+	t.Run("GetTwoStepEnabled", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WorkspaceMember{}
+		var expected *bool
+		obj.TwoStepEnabled = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetTwoStepEnabled(), "getter should return the property value")
+	})
+
+	t.Run("GetTwoStepEnabled_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WorkspaceMember{}
+		obj.TwoStepEnabled = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetTwoStepEnabled(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetTwoStepEnabled_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WorkspaceMember
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetTwoStepEnabled() // Should return zero value
 	})
 
 	t.Run("GetUserID", func(t *testing.T) {
@@ -317,6 +358,37 @@ func TestSettersMarkExplicitWorkspaceMember(t *testing.T) {
 
 		// Act
 		obj.SetRole(fernTestValueRole)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetTwoStepEnabled_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WorkspaceMember{}
+		var fernTestValueTwoStepEnabled *bool
+
+		// Act
+		obj.SetTwoStepEnabled(fernTestValueTwoStepEnabled)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)

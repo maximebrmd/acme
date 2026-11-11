@@ -36,6 +36,8 @@ public final class MeUser {
 
     private final String name;
 
+    private final boolean twoStepEnabled;
+
     private final Map<String, Object> additionalProperties;
 
     private MeUser(
@@ -45,6 +47,7 @@ public final class MeUser {
             Optional<String> image,
             MeUserLocale locale,
             String name,
+            boolean twoStepEnabled,
             Map<String, Object> additionalProperties) {
         this.email = email;
         this.emailVerified = emailVerified;
@@ -52,6 +55,7 @@ public final class MeUser {
         this.image = image;
         this.locale = locale;
         this.name = name;
+        this.twoStepEnabled = twoStepEnabled;
         this.additionalProperties = additionalProperties;
     }
 
@@ -88,6 +92,11 @@ public final class MeUser {
         return name;
     }
 
+    @JsonProperty("twoStepEnabled")
+    public boolean getTwoStepEnabled() {
+        return twoStepEnabled;
+    }
+
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("image")
     private Optional<String> _getImage() {
@@ -111,12 +120,14 @@ public final class MeUser {
                 && id.equals(other.id)
                 && image.equals(other.image)
                 && locale.equals(other.locale)
-                && name.equals(other.name);
+                && name.equals(other.name)
+                && twoStepEnabled == other.twoStepEnabled;
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.email, this.emailVerified, this.id, this.image, this.locale, this.name);
+        return Objects.hash(
+                this.email, this.emailVerified, this.id, this.image, this.locale, this.name, this.twoStepEnabled);
     }
 
     @java.lang.Override
@@ -147,7 +158,11 @@ public final class MeUser {
     }
 
     public interface NameStage {
-        _FinalStage name(@NotNull String name);
+        TwoStepEnabledStage name(@NotNull String name);
+    }
+
+    public interface TwoStepEnabledStage {
+        _FinalStage twoStepEnabled(boolean twoStepEnabled);
     }
 
     public interface _FinalStage {
@@ -166,7 +181,13 @@ public final class MeUser {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements EmailStage, EmailVerifiedStage, IdStage, LocaleStage, NameStage, _FinalStage {
+            implements EmailStage,
+                    EmailVerifiedStage,
+                    IdStage,
+                    LocaleStage,
+                    NameStage,
+                    TwoStepEnabledStage,
+                    _FinalStage {
         private String email;
 
         private boolean emailVerified;
@@ -176,6 +197,8 @@ public final class MeUser {
         private MeUserLocale locale;
 
         private String name;
+
+        private boolean twoStepEnabled;
 
         private Optional<String> image = Optional.empty();
 
@@ -191,6 +214,7 @@ public final class MeUser {
             image(other.getImage());
             locale(other.getLocale());
             name(other.getName());
+            twoStepEnabled(other.getTwoStepEnabled());
             return this;
         }
 
@@ -224,8 +248,15 @@ public final class MeUser {
 
         @java.lang.Override
         @JsonSetter("name")
-        public _FinalStage name(@NotNull String name) {
+        public TwoStepEnabledStage name(@NotNull String name) {
             this.name = Objects.requireNonNull(name, "name must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("twoStepEnabled")
+        public _FinalStage twoStepEnabled(boolean twoStepEnabled) {
+            this.twoStepEnabled = twoStepEnabled;
             return this;
         }
 
@@ -256,7 +287,7 @@ public final class MeUser {
 
         @java.lang.Override
         public MeUser build() {
-            return new MeUser(email, emailVerified, id, image, locale, name, additionalProperties);
+            return new MeUser(email, emailVerified, id, image, locale, name, twoStepEnabled, additionalProperties);
         }
 
         @JsonAnySetter
@@ -266,7 +297,8 @@ public final class MeUser {
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("image")
                     || key.equalsIgnoreCase("locale")
-                    || key.equalsIgnoreCase("name")) {
+                    || key.equalsIgnoreCase("name")
+                    || key.equalsIgnoreCase("twoStepEnabled")) {
                 return;
             }
             this.additionalProperties.put(key, value);

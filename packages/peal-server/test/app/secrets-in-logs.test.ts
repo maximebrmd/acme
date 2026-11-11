@@ -1,7 +1,8 @@
 // What the server writes about a request never holds a credential: a
 // connect link's token, a review link's, a partner key, the token of a
-// link that applies a request to cancel, or the value of a header a
-// webhook endpoint's deliveries carry. The app runs here as production
+// link that applies a request to cancel, the value of a header a webhook
+// endpoint's deliveries carry, or two-step verification's key, codes and
+// recovery codes. The app runs here as production
 // runs it, logging each request and tracing it, and everything a log line
 // or a span would export is searched for each secret.
 import { assert, layer } from "@effect/vitest";
@@ -29,6 +30,8 @@ import {
 import {
   bodyOf,
   MigratedSqlLive,
+  password,
+  signedUp,
   TestApp,
   unconfirmedEmails,
 } from "#test/workspace/integration/harness.ts";
@@ -38,6 +41,14 @@ import {
   keyOf,
   partnerOf,
 } from "#test/workspace/integration/partner-support.ts";
+import {
+  codeOf,
+  enrolled,
+  passwordStep,
+  secondStep,
+  withCookies,
+  wrongCodeOf,
+} from "#test/workspace/support.ts";
 import { toDeliveryView, toEndpointView } from "#webhooks/api/webhook-view.ts";
 import { DeliverWebhook } from "#webhooks/application/deliver-webhook.ts";
 import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
@@ -173,6 +184,74 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             assert.notInclude(all, secret, name);
           }
         })
+    );
+  }
+);
+
+// Two-step verification needs a confirmed address: this app asks for one.
+const TwoStepTest = Layer.mergeAll(
+  TestApp.layerWith(
+    {},
+    Layer.merge(capture, Layer.succeed(Tracer.Tracer, tracer))
+  ),
+  MigratedSqlLive
+);
+
+layer(TwoStepTest, { excludeTestServices: true, timeout: "180 seconds" })(
+  "what the server writes about two-step verification",
+  (it) => {
+    it.effect("holds no authenticator key, no code and no recovery code", () =>
+      Effect.gen(function* twoStep() {
+        const app = yield* TestApp;
+        const person = yield* signedUp("secrets-two-step");
+        const { backupCodes, cookies, key, totpURI } = yield* enrolled(person);
+        const secret = new URL(totpURI).searchParams.get("secret") ?? "";
+
+        assert.isAbove(secret.length, 20);
+
+        // A sign-in with a wrong code, then a recovery code, then new
+        // codes and the account's status.
+        const browser = withCookies("", yield* passwordStep(person.email));
+        const wrong = yield* Effect.promise(async () => await wrongCodeOf(key));
+        const code = yield* Effect.promise(async () => await codeOf(key));
+
+        yield* secondStep(browser, { code: wrong, route: "verify-totp" });
+        yield* secondStep(browser, {
+          code: backupCodes[0] ?? "",
+          route: "verify-backup-code",
+        });
+
+        const renewed = yield* app.request(
+          "/api/auth/two-factor/generate-backup-codes",
+          { body: { password }, headers: { cookie: cookies } }
+        );
+
+        yield* app.request("/api/me/two-step", {
+          headers: { cookie: cookies },
+        });
+
+        const all = written();
+
+        assert.include(all, "/api/auth/two-factor/verify-totp");
+
+        for (const [name, value] of [
+          ["the authenticator's key", secret],
+          ["the URI the QR code holds", totpURI],
+          ...backupCodes.map((recovery) => ["a recovery code", recovery]),
+          ...(JSON.stringify(renewed.body)
+            .match(/[A-Za-z0-9]{5}-[A-Za-z0-9]{5}/gu)
+            ?.map((recovery) => ["a new recovery code", recovery]) ?? []),
+        ] as const) {
+          assert.notInclude(all, value, name);
+        }
+
+        // A six-digit code could be part of any number: it never appears
+        // as a value of its own.
+        for (const sent of [wrong, code]) {
+          assert.notInclude(all, `"${sent}"`);
+          assert.notInclude(all, `=${sent}`);
+        }
+      })
     );
   }
 );

@@ -45,6 +45,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   const ads = await getTranslations("Ads");
   const review = await getTranslations("Review");
   const inbox = await getTranslations("Inbox");
+  const twoStep = await getTranslations("TwoStep");
 
   return (
     <div className="flex flex-col gap-8">
@@ -64,7 +65,11 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                 <CardHeader>
                   <CardTitle>{workspace.name}</CardTitle>
                   <CardDescription>
-                    {t("permissions", { count: workspace.permissions.length })}
+                    {workspace.twoStepRequired && !user.twoStepEnabled
+                      ? twoStep("workspaceRequiresBadge")
+                      : t("permissions", {
+                          count: workspace.permissions.length,
+                        })}
                   </CardDescription>
                   <CardAction>
                     <Badge variant="outline">

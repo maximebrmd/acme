@@ -19,7 +19,7 @@ export const statements = {
   invitation: ["create", "cancel"],
   media: ["read", "upload", "delete"],
   member: ["create", "update", "delete"],
-  organization: ["update", "delete"],
+  organization: ["update", "delete", "secure"],
   partner: ["read", "manage"],
   post: [
     "read",
@@ -72,6 +72,7 @@ export const PermissionSchema = Schema.Literals([
   "member:delete",
   "organization:update",
   "organization:delete",
+  "organization:secure",
   "partner:read",
   "partner:manage",
   "post:read",

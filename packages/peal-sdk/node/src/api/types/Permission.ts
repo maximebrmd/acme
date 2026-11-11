@@ -30,6 +30,7 @@ export const Permission = {
         MemberDelete: "member:delete",
         OrganizationUpdate: "organization:update",
         OrganizationDelete: "organization:delete",
+        OrganizationSecure: "organization:secure",
         PartnerRead: "partner:read",
         PartnerManage: "partner:manage",
         PostRead: "post:read",

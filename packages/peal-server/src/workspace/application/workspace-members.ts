@@ -38,6 +38,17 @@ export interface SeatsFreed {
 
 const decodeUserId = Schema.decodeUnknownOption(UserIdSchema);
 
+/**
+ * A member as the members list shows them: whether their account has
+ * two-step verification on only to a reader who may manage members.
+ */
+export interface ListedMember extends Omit<
+  PersonInWorkspace,
+  "twoStepEnabled"
+> {
+  readonly twoStepEnabled: Option.Option<boolean>;
+}
+
 /** Whom to invite, and as what. */
 export interface NewInvitation {
   readonly email: string;
@@ -118,7 +129,7 @@ export class WorkspaceMembers extends Context.Service<
     readonly list: (
       actor: Actor
     ) => Effect.Effect<
-      readonly PersonInWorkspace[],
+      readonly ListedMember[],
       DirectoryUnavailable | UserRequired
     >;
     /**
@@ -164,7 +175,16 @@ export class WorkspaceMembers extends Context.Service<
       ) {
         yield* person(actor);
 
-        return yield* people.members(actor.workspaceId);
+        const manages = actor.permissions.includes("member:update");
+
+        return (yield* people.members(actor.workspaceId)).map(
+          ({ twoStepEnabled, ...listed }) => ({
+            ...listed,
+            twoStepEnabled: manages
+              ? Option.some(twoStepEnabled)
+              : Option.none(),
+          })
+        );
       });
 
       const invitations = Effect.fn("WorkspaceMembers.invitations")(

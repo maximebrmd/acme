@@ -45,6 +45,12 @@ export class StaffActions extends Context.Service<
     ) => Effect.Effect<void, Failure>;
     readonly unban: (action: Action) => Effect.Effect<void, Failure>;
     readonly revokeSessions: (action: Action) => Effect.Effect<void, Failure>;
+    /**
+     * Turns the account's two-step verification off, for its person who
+     * lost their phone and recovery codes: signs it out everywhere and
+     * emails it.
+     */
+    readonly resetTwoStep: (action: Action) => Effect.Effect<void, Failure>;
     readonly resendVerification: (
       action: Action
     ) => Effect.Effect<void, Failure>;
@@ -163,6 +169,13 @@ export class StaffActions extends Context.Service<
           act(action, { action: "resendVerification" }, (target) =>
             moderation.resendVerification(target)
           ).pipe(Effect.withSpan("StaffActions.resendVerification")),
+        resetTwoStep: (action) =>
+          act(action, { action: "resetTwoStep" }, () =>
+            moderation.resetTwoStep(action)
+          ).pipe(
+            Effect.flatMap(recordEnded),
+            Effect.withSpan("StaffActions.resetTwoStep")
+          ),
         revokeSessions: (action) =>
           act(action, { action: "revokeSessions" }, () =>
             moderation.revokeSessions(action)

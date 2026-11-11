@@ -95,7 +95,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"impersonatedBy\": \"impersonatedBy\",\n  \"user\": {\n    \"email\": \"email\",\n    \"emailVerified\": true,\n    \"id\": \"id\",\n    \"image\": \"image\",\n    \"locale\": \"en\",\n    \"name\": \"name\"\n  },\n  \"workspaces\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"permissions\": [\n        \"activity:read\"\n      ],\n      \"role\": \"role\",\n      \"slug\": \"slug\"\n    }\n  ]\n}",
+        "body": "{\n  \"impersonatedBy\": \"impersonatedBy\",\n  \"user\": {\n    \"email\": \"email\",\n    \"emailVerified\": true,\n    \"id\": \"id\",\n    \"image\": \"image\",\n    \"locale\": \"en\",\n    \"name\": \"name\",\n    \"twoStepEnabled\": true\n  },\n  \"workspaces\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"permissions\": [\n        \"activity:read\"\n      ],\n      \"role\": \"role\",\n      \"slug\": \"slug\",\n      \"twoStepRequired\": true\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2237,7 +2237,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"email\": \"email\",\n    \"joinedAt\": \"joinedAt\",\n    \"name\": \"name\",\n    \"role\": \"role\",\n    \"userId\": \"userId\"\n  }\n]",
+        "body": "[\n  {\n    \"email\": \"email\",\n    \"joinedAt\": \"joinedAt\",\n    \"name\": \"name\",\n    \"role\": \"role\",\n    \"twoStepEnabled\": true,\n    \"userId\": \"userId\"\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }

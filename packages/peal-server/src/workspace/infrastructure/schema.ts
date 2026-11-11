@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   date,
   index,
@@ -21,6 +22,17 @@ import {
 export const workspaceSchema = pgSchema("workspace");
 
 const instant = (name: string) => timestamp(name, { withTimezone: true });
+
+/**
+ * What a workspace requires of its members: `two_step_required`, that every
+ * member's account has two-step verification on. No row requires nothing.
+ * Who changed it is in the workspace's activity log.
+ */
+export const securityPolicies = workspaceSchema.table("security_policies", {
+  twoStepRequired: boolean("two_step_required").notNull().default(false),
+  updatedAt: instant("updated_at").notNull(),
+  workspaceId: uuid("workspace_id").primaryKey(),
+});
 
 /**
  * One row per partner account, which belongs to its home workspace.

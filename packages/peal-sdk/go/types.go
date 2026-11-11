@@ -12862,6 +12862,7 @@ const (
 	PermissionMemberDelete       Permission = "member:delete"
 	PermissionOrganizationUpdate Permission = "organization:update"
 	PermissionOrganizationDelete Permission = "organization:delete"
+	PermissionOrganizationSecure Permission = "organization:secure"
 	PermissionPartnerRead        Permission = "partner:read"
 	PermissionPartnerManage      Permission = "partner:manage"
 	PermissionPostRead           Permission = "post:read"
@@ -12933,6 +12934,8 @@ func NewPermissionFromString(s string) (Permission, error) {
 		return PermissionOrganizationUpdate, nil
 	case "organization:delete":
 		return PermissionOrganizationDelete, nil
+	case "organization:secure":
+		return PermissionOrganizationSecure, nil
 	case "partner:read":
 		return PermissionPartnerRead, nil
 	case "partner:manage":

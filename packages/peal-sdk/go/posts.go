@@ -7749,6 +7749,7 @@ const (
 	ForbiddenReasonWrongWorkspace    ForbiddenReason = "wrongWorkspace"
 	ForbiddenReasonSuspended         ForbiddenReason = "suspended"
 	ForbiddenReasonUntrustedOrigin   ForbiddenReason = "untrustedOrigin"
+	ForbiddenReasonTwoStepRequired   ForbiddenReason = "twoStepRequired"
 )
 
 func NewForbiddenReasonFromString(s string) (ForbiddenReason, error) {
@@ -7765,6 +7766,8 @@ func NewForbiddenReasonFromString(s string) (ForbiddenReason, error) {
 		return ForbiddenReasonSuspended, nil
 	case "untrustedOrigin":
 		return ForbiddenReasonUntrustedOrigin, nil
+	case "twoStepRequired":
+		return ForbiddenReasonTwoStepRequired, nil
 	}
 	var t ForbiddenReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

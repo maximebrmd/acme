@@ -49,6 +49,8 @@ Dans chaque espace de travail qu’il possède, une clé partenaire détient les
 
 Dans l’autre sens, une clé d’API d’un espace de travail, la session d’un membre ou un jeton OAuth n’appelle jamais `/api/partner` : 403.
 
+La [validation en deux étapes](/settings#require-two-step) concerne les personnes : les clés partenaires et les espaces de travail de vos clients, qui n’ont aucun membre, n’en dépendent pas, tandis que les propriétaires de votre espace de travail principal peuvent l’exiger de ses membres comme dans tout espace de travail.
+
 ## Créer un espace de travail pour chaque client [#workspaces]
 
 Quand un client s’inscrit chez vous, créez son espace de travail, avec **votre propre identifiant pour lui** comme `externalId`. Peal le conserve, retrouve l’espace par lui, et l’écrit dans chaque [webhook](#webhooks) de cet espace : vous ne tenez aucune table de correspondance entre vos identifiants et ceux de Peal.

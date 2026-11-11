@@ -36547,6 +36547,13 @@ func TestEnumForbiddenReason(t *testing.T) {
 		assert.Equal(t, ForbiddenReason("untrustedOrigin"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_twoStepRequired", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewForbiddenReasonFromString("twoStepRequired")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, ForbiddenReason("twoStepRequired"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewForbiddenReasonFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)

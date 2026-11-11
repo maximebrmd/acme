@@ -38,6 +38,8 @@ Peal signs MCP clients in with OAuth. You give the client no key: on its first r
 
 Back in the client, its tools work. Peal remembers your answer for that client and workspace, so connecting it again skips the question.
 
+When your account has [two-step verification](/settings#two-step) on, the browser asks for the second step when you sign in there, and the connection goes on after it; a connection made before is not asked again. In a workspace that [requires it](/settings#require-two-step) while your account does not have it on, every request of a client acting for you is refused with a JSON-RPC error and status 403 that says to turn it on in your Peal account settings; once it is on, the same connection works again. A client that uses an [API key](#api-key) is not concerned. No tool reads or changes two-step verification or a workspace's requirement: they are a person's, in a browser.
+
 <Callout type="note" title="If the client cannot register">
   Most MCP clients register themselves before they sign in, which a Peal server
   allows only when its administrator turns it on (`MCP_DYNAMIC_REGISTRATION`,

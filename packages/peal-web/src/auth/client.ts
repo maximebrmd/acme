@@ -6,6 +6,7 @@ import {
   adminClient,
   inferAdditionalFields,
   organizationClient,
+  twoFactorClient,
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
@@ -20,6 +21,11 @@ export const authClient = createAuthClient({
     }),
     organizationClient(),
     adminClient(),
+    // Two-step verification. Without a page to send the browser to, a
+    // sign-in that needs the second step answers `twoFactorRedirect`, and
+    // the sign-in form asks for the code in place, keeping an OAuth
+    // authorization's signed query, which a reload would lose.
+    twoFactorClient(),
     // During an OAuth authorization, sends the page's signed query with
     // each request (sign-in, workspace picker, consent), so Better Auth
     // resumes it; its answers then redirect the browser onwards.

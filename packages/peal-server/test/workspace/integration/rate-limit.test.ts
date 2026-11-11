@@ -11,9 +11,11 @@ import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
+import { AccountMail } from "#workspace/application/account-mail.ts";
 import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { MemberDirectory } from "#workspace/application/member-directory.ts";
+import { SecurityPolicies } from "#workspace/application/security-policies.ts";
 import { PartnerOwnershipLive } from "#workspace/container.ts";
 import {
   BetterAuth,
@@ -65,6 +67,19 @@ const authWith = (env: Record<string, string>) =>
     ),
     // Nor changes a workspace.
     Layer.provide(ActivityJournal.none),
+    Layer.provide(SecurityPolicies.none),
+    // Nothing here changes two-step verification.
+    Layer.provide(
+      Layer.succeed(
+        AccountMail,
+        AccountMail.of({
+          deleted: () => Effect.void,
+          exported: () => Effect.void,
+          twoStepChanged: () => Effect.void,
+          workspaceDeleted: () => Effect.void,
+        })
+      )
+    ),
     Layer.provide(
       Layer.succeed(
         MemberDirectory,

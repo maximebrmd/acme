@@ -70,6 +70,9 @@ public final class Permission {
 
     public static final Permission MEDIA_UPLOAD = new Permission(Value.MEDIA_UPLOAD, "media:upload");
 
+    public static final Permission ORGANIZATION_SECURE =
+            new Permission(Value.ORGANIZATION_SECURE, "organization:secure");
+
     public static final Permission MEDIA_READ = new Permission(Value.MEDIA_READ, "media:read");
 
     public static final Permission WEBHOOK_MANAGE = new Permission(Value.WEBHOOK_MANAGE, "webhook:manage");
@@ -180,6 +183,8 @@ public final class Permission {
                 return visitor.visitAssistantUse();
             case MEDIA_UPLOAD:
                 return visitor.visitMediaUpload();
+            case ORGANIZATION_SECURE:
+                return visitor.visitOrganizationSecure();
             case MEDIA_READ:
                 return visitor.visitMediaRead();
             case WEBHOOK_MANAGE:
@@ -267,6 +272,8 @@ public final class Permission {
                 return ASSISTANT_USE;
             case "media:upload":
                 return MEDIA_UPLOAD;
+            case "organization:secure":
+                return ORGANIZATION_SECURE;
             case "media:read":
                 return MEDIA_READ;
             case "webhook:manage":
@@ -344,6 +351,8 @@ public final class Permission {
         ORGANIZATION_UPDATE,
 
         ORGANIZATION_DELETE,
+
+        ORGANIZATION_SECURE,
 
         PARTNER_READ,
 
@@ -426,6 +435,8 @@ public final class Permission {
         T visitOrganizationUpdate();
 
         T visitOrganizationDelete();
+
+        T visitOrganizationSecure();
 
         T visitPartnerRead();
 

@@ -4,6 +4,7 @@ import { permissionsOf } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { AuthGateway } from "#workspace/application/auth-gateway.ts";
+import { AuthUnavailable } from "#workspace/application/auth-unavailable.ts";
 import { ApiKeyPrincipal } from "#workspace/domain/api-key-principal.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
@@ -70,6 +71,18 @@ const principalOf = (claims: {
   });
 
 const decodeSession = Schema.decodeUnknownOption(SessionSchema);
+
+// What the two-factor plugin's server-only call answers: the codes, which
+// only their count leaves this file.
+const decodeCodes = Schema.decodeUnknownOption(
+  Schema.Struct({ backupCodes: Schema.Array(Schema.String) })
+);
+
+const isNotEnabled = Schema.is(
+  Schema.Struct({
+    body: Schema.Struct({ code: Schema.Literal("BACKUP_CODES_NOT_ENABLED") }),
+  })
+);
 
 const decodeVerifiedKey = Schema.decodeUnknownOption(VerifiedKeySchema);
 
@@ -153,6 +166,22 @@ export const AuthGatewayLive = Layer.effect(
             })),
             Effect.withSpan("AuthGateway.mcpToken")
           ),
+      // Better Auth's own server-only call, which decrypts the codes as its
+      // routes do: their count alone is answered.
+      recoveryCodesLeft: (userId) =>
+        Effect.tryPromise({
+          catch: (cause) => cause,
+          try: async () => await auth.api.viewBackupCodes({ body: { userId } }),
+        }).pipe(
+          Effect.map((answer) =>
+            decodeCodes(answer).pipe(
+              Option.map(({ backupCodes }) => backupCodes.length)
+            )
+          ),
+          Effect.catchIf(isNotEnabled, () => Effect.succeedNone),
+          Effect.mapError((cause) => new AuthUnavailable({ cause })),
+          Effect.withSpan("AuthGateway.recoveryCodesLeft")
+        ),
       session: (cookies, { fresh }) =>
         attempt(
           async () =>

@@ -21,6 +21,7 @@ import { forbidden } from "#shared/api/forbidden.ts";
 import type { PostRecord } from "#shared/application/personal-data.ts";
 import { AccountData } from "#workspace/application/account-data.ts";
 import type { AccountExport } from "#workspace/application/account-data.ts";
+import { Accounts } from "#workspace/application/accounts.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
 
 import { aboutOf } from "./about.ts";
@@ -145,6 +146,7 @@ export const AccountHandlers = HttpApiBuilder.group(
   Effect.fn(function* accountHandlers(handlers) {
     const data = yield* AccountData;
     const closing = yield* CloseAccount;
+    const accounts = yield* Accounts;
 
     return handlers.handleAll({
       closure: () =>
@@ -221,6 +223,23 @@ export const AccountHandlers = HttpApiBuilder.group(
               "content-disposition": `attachment; filename="${fileNameOf(exported.exportedAt)}"`,
             },
           });
+        }),
+      twoStep: () =>
+        Effect.gen(function* twoStep() {
+          const status = yield* accounts.twoStep(yield* currentUser).pipe(
+            Effect.catchTags({
+              AuthUnavailable: Effect.die,
+              BannedUser: forbidden,
+              DirectoryUnavailable: Effect.die,
+              NotSignedIn: () => Effect.fail(new Unauthenticated()),
+            })
+          );
+
+          return {
+            enabled: status.enabled,
+            recoveryCodesLeft: Option.getOrNull(status.recoveryCodesLeft),
+            requiredBy: status.requiredBy,
+          };
         }),
     });
   })

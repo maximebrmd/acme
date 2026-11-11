@@ -1,5 +1,6 @@
 import {
   Context,
+  Deferred,
   Duration,
   Effect,
   FiberSet,
@@ -16,9 +17,13 @@ import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import type { UpgradePath } from "#shared/application/upgrade-paths.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { AccountMail } from "#workspace/application/account-mail.ts";
+import type { TwoStepChange } from "#workspace/application/account-mail.ts";
 import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { MemberDirectory } from "#workspace/application/member-directory.ts";
+import { SecurityPolicies } from "#workspace/application/security-policies.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 import { AuthStartFailed } from "./auth-start-failed.ts";
@@ -171,6 +176,96 @@ const keptChange =
       Effect.withSpan("BetterAuth.workspaceChange")
     );
 
+// Whether one of these workspaces requires two-step verification while the
+// account does not have it on: read from the database, never from a
+// session's cached copy of the user.
+const lockedOut =
+  (
+    directory: MemberDirectory["Service"],
+    policies: SecurityPolicies["Service"]
+  ) =>
+  (userId: string, workspaceIds: readonly WorkspaceId[]) =>
+    Effect.gen(function* twoStepLockedOut() {
+      const required = yield* policies.requiredAmong(workspaceIds);
+
+      if (required.size === 0) {
+        return false;
+      }
+
+      const account = yield* directory.account(yield* decodeUserId(userId));
+
+      return !Option.exists(account, ({ twoStepEnabled }) => twoStepEnabled);
+    }).pipe(Effect.orDie, Effect.withSpan("BetterAuth.twoStepLockedOut"));
+
+// The names of the workspaces the user belongs to that require two-step
+// verification.
+const requiredBy =
+  (
+    directory: MemberDirectory["Service"],
+    policies: SecurityPolicies["Service"]
+  ) =>
+  (userId: string) =>
+    Effect.gen(function* twoStepRequiredBy() {
+      const account = yield* directory.account(yield* decodeUserId(userId));
+
+      if (Option.isNone(account)) {
+        return [];
+      }
+
+      const { workspaces } = account.value;
+
+      const required = yield* policies.requiredAmong(
+        workspaces.map(({ id }) => id)
+      );
+
+      return workspaces
+        .filter(({ id }) => required.has(id))
+        .map(({ name }) => name);
+    }).pipe(Effect.orDie, Effect.withSpan("BetterAuth.twoStepRequiredBy"));
+
+// Emails the account what changed in its two-step verification, in its
+// language, with how many recovery codes are left once one was used. A
+// failure is logged: the change is done.
+const toldTwoStep =
+  (
+    directory: MemberDirectory["Service"],
+    mail: AccountMail["Service"],
+    instance: Effect.Effect<PealAuth>
+  ) =>
+  (kind: TwoStepChange, userId: string) =>
+    Effect.gen(function* tellTwoStep() {
+      const account = yield* directory.account(yield* decodeUserId(userId));
+
+      if (Option.isNone(account)) {
+        return;
+      }
+
+      const { email, locale } = account.value;
+
+      const recoveryCodesLeft =
+        kind === "recoveryCodeUsed"
+          ? yield* instance.pipe(
+              Effect.flatMap((auth) =>
+                Effect.tryPromise(
+                  async () =>
+                    await auth.api.viewBackupCodes({ body: { userId } })
+                )
+              ),
+              Effect.map(({ backupCodes }) => backupCodes.length)
+            )
+          : null;
+
+      yield* mail.twoStepChanged({ email, kind, locale, recoveryCodesLeft });
+    }).pipe(
+      Effect.catchCause((cause) =>
+        Effect.logError(
+          "Telling an account its two-step verification changed failed",
+          cause
+        )
+      ),
+      Effect.withSpan("BetterAuth.twoStepChanged")
+    );
+
 export const BetterAuthLive = Layer.effect(
   BetterAuth,
   Effect.gen(function* betterAuthLive() {
@@ -184,6 +279,12 @@ export const BetterAuthLive = Layer.effect(
     const guard = yield* ImpersonationGuard;
     const activity = yield* ActivityJournal;
     const directory = yield* MemberDirectory;
+    const policies = yield* SecurityPolicies;
+    const accountMail = yield* AccountMail;
+
+    // The instance, once made: the email of a recovery code used says how
+    // many are left, which only the instance reads.
+    const made = yield* Deferred.make<PealAuth>();
 
     // Better Auth calls back outside any fiber. Work it starts runs on fibers
     // of this layer, with its logger and tracer, and is waited for, then
@@ -271,6 +372,24 @@ export const BetterAuthLive = Layer.effect(
       subscriptionChanged: async (event) => {
         await runPromise(subscriptions.record(event).pipe(Effect.asVoid));
       },
+      // Read on each request, from the database: a failure refuses it.
+      twoStep: {
+        lockedOut: async (userId, workspaceIds) =>
+          await runPromise(
+            lockedOut(directory, policies)(userId, workspaceIds)
+          ),
+        requiredBy: async (userId) =>
+          await runPromise(requiredBy(directory, policies)(userId)),
+      },
+      twoStepChanged: ({ kind, userId }) => {
+        run(
+          toldTwoStep(
+            directory,
+            accountMail,
+            Deferred.await(made)
+          )(kind, userId)
+        );
+      },
       verifyEmail: (link) => {
         run(emails.send({ _tag: "VerifyEmail", ...link }));
       },
@@ -281,6 +400,8 @@ export const BetterAuthLive = Layer.effect(
     };
 
     const auth = makeAuth({ database, hooks, settings });
+
+    yield* Deferred.succeed(made, auth);
 
     // Checks the secret and options, and fails the server's start if they
     // are wrong, rather than its first request.

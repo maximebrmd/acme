@@ -214,6 +214,7 @@ export const studioMe: Me = {
     image: null,
     locale: "en",
     name: "Synthetic User",
+    twoStepEnabled: false,
   },
   workspaces: [
     {
@@ -222,6 +223,7 @@ export const studioMe: Me = {
       permissions: everything,
       role: "owner",
       slug: "studio",
+      twoStepRequired: false,
     },
     {
       id: shopId,
@@ -229,6 +231,7 @@ export const studioMe: Me = {
       permissions: reading,
       role: "viewer",
       slug: "shop",
+      twoStepRequired: false,
     },
   ],
 };
@@ -774,6 +777,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     image: null,
     locale: "en",
     name: "Synthetic User",
+    twoStepEnabled: false,
     updatedAt: at("2026-10-01T08:00:00Z"),
   },
   workspaces: [],
@@ -4254,6 +4258,7 @@ export const studioGroupsLive = (studio: Studio) =>
               },
             });
           }),
+        twoStep: () => refusing,
       })
     ),
     HttpApiBuilder.group(Api, "connectedApps", (handlers) =>
@@ -5536,6 +5541,17 @@ export const studioAccessLive = (studio: Studio) =>
 
         if (workspace === undefined) {
           return yield* new WorkspaceNotFound();
+        }
+
+        // A workspace that requires two-step verification refuses a
+        // person whose account does not have it on.
+        if (workspace.twoStepRequired && !studio.me.user.twoStepEnabled) {
+          return yield* new Forbidden({
+            code: "forbidden",
+            message:
+              "This workspace requires two-step verification. Turn it on in your Peal account settings, then try again.",
+            reason: "twoStepRequired",
+          });
         }
 
         return yield* httpEffect.pipe(

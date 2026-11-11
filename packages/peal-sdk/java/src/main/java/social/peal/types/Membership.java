@@ -32,6 +32,8 @@ public final class Membership {
 
     private final String slug;
 
+    private final boolean twoStepRequired;
+
     private final Map<String, Object> additionalProperties;
 
     private Membership(
@@ -40,12 +42,14 @@ public final class Membership {
             List<Permission> permissions,
             String role,
             String slug,
+            boolean twoStepRequired,
             Map<String, Object> additionalProperties) {
         this.id = id;
         this.name = name;
         this.permissions = permissions;
         this.role = role;
         this.slug = slug;
+        this.twoStepRequired = twoStepRequired;
         this.additionalProperties = additionalProperties;
     }
 
@@ -74,6 +78,11 @@ public final class Membership {
         return slug;
     }
 
+    @JsonProperty("twoStepRequired")
+    public boolean getTwoStepRequired() {
+        return twoStepRequired;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -90,12 +99,13 @@ public final class Membership {
                 && name.equals(other.name)
                 && permissions.equals(other.permissions)
                 && role.equals(other.role)
-                && slug.equals(other.slug);
+                && slug.equals(other.slug)
+                && twoStepRequired == other.twoStepRequired;
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.id, this.name, this.permissions, this.role, this.slug);
+        return Objects.hash(this.id, this.name, this.permissions, this.role, this.slug, this.twoStepRequired);
     }
 
     @java.lang.Override
@@ -122,7 +132,11 @@ public final class Membership {
     }
 
     public interface SlugStage {
-        _FinalStage slug(@NotNull String slug);
+        TwoStepRequiredStage slug(@NotNull String slug);
+    }
+
+    public interface TwoStepRequiredStage {
+        _FinalStage twoStepRequired(boolean twoStepRequired);
     }
 
     public interface _FinalStage {
@@ -140,7 +154,8 @@ public final class Membership {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements IdStage, NameStage, RoleStage, SlugStage, _FinalStage {
+    public static final class Builder
+            implements IdStage, NameStage, RoleStage, SlugStage, TwoStepRequiredStage, _FinalStage {
         private String id;
 
         private String name;
@@ -148,6 +163,8 @@ public final class Membership {
         private String role;
 
         private String slug;
+
+        private boolean twoStepRequired;
 
         private List<Permission> permissions = new ArrayList<>();
 
@@ -162,6 +179,7 @@ public final class Membership {
             permissions(other.getPermissions());
             role(other.getRole());
             slug(other.getSlug());
+            twoStepRequired(other.getTwoStepRequired());
             return this;
         }
 
@@ -188,8 +206,15 @@ public final class Membership {
 
         @java.lang.Override
         @JsonSetter("slug")
-        public _FinalStage slug(@NotNull String slug) {
+        public TwoStepRequiredStage slug(@NotNull String slug) {
             this.slug = Objects.requireNonNull(slug, "slug must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("twoStepRequired")
+        public _FinalStage twoStepRequired(boolean twoStepRequired) {
+            this.twoStepRequired = twoStepRequired;
             return this;
         }
 
@@ -219,7 +244,7 @@ public final class Membership {
 
         @java.lang.Override
         public Membership build() {
-            return new Membership(id, name, permissions, role, slug, additionalProperties);
+            return new Membership(id, name, permissions, role, slug, twoStepRequired, additionalProperties);
         }
 
         @JsonAnySetter
@@ -228,7 +253,8 @@ public final class Membership {
                     || key.equalsIgnoreCase("name")
                     || key.equalsIgnoreCase("permissions")
                     || key.equalsIgnoreCase("role")
-                    || key.equalsIgnoreCase("slug")) {
+                    || key.equalsIgnoreCase("slug")
+                    || key.equalsIgnoreCase("twoStepRequired")) {
                 return;
             }
             this.additionalProperties.put(key, value);

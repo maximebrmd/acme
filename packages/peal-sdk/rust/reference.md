@@ -160,7 +160,7 @@ async fn main() {
 <dl>
 <dd>
 
-Answers with the signed-in user and every workspace they belong to, with their role and permissions in each. API keys belong to a workspace, not a user, and get 403.
+Answers with the signed-in user and every workspace they belong to, with their role and permissions in each, whether the account has two-step verification on, and whether each workspace requires it (a workspace that requires it refuses the user while it is off). API keys belong to a workspace, not a user, and get 403.
 </dd>
 </dl>
 </dd>
@@ -5171,7 +5171,7 @@ async fn main() {
 <dl>
 <dd>
 
-Lists the workspace's members, in the order they joined, with their name, email address and role. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
+Lists the workspace's members, in the order they joined, with their name, email address and role, and, to a member who may manage members (member:update), whether each one's account has two-step verification on. Every member may see them, as the workspace's settings show them; an API key may not, as members' addresses are not a script's to read.
 </dd>
 </dl>
 </dd>

@@ -17,6 +17,10 @@ export const resendVerification = PealApi.mutation(
 
 export const impersonateUser = PealApi.mutation("staff", "impersonate");
 
+// Turns an account's two-step verification off, for its person who lost
+// their phone and recovery codes.
+export const resetTwoStep = PealApi.mutation("staff", "resetTwoStep");
+
 // Opens a partner account for a workspace.
 export const grantPartner = PealApi.mutation("staff", "grantPartner");
 
