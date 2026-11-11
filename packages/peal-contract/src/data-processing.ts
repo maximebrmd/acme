@@ -275,8 +275,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The addresses a workspace has Peal call when something happens in it, with their description, the events each wants and its signing secret, stored encrypted; the events sent (identifiers, states and times, never what a post says) and, for each delivery, its attempts, the receiver’s status code and the start of its answer",
-      fr: "Les adresses qu’un espace de travail fait appeler par Peal quand il s’y passe quelque chose, avec leur description, les événements que chacune veut recevoir et son secret de signature, stocké chiffré ; les événements envoyés (identifiants, états et dates, jamais le texte d’une publication) et, pour chaque livraison, ses tentatives, le code de réponse du destinataire et le début de sa réponse",
+      en: "The addresses a workspace has Peal call when something happens in it, with their description, the events each wants, its signing secret and the values of the headers its owners and admins chose for its deliveries (up to five, such as a token the receiving server asks for), stored encrypted; the events sent (identifiers, states and times, never what a post says) and, for each delivery, its attempts, the receiver’s status code and the start of its answer",
+      fr: "Les adresses qu’un espace de travail fait appeler par Peal quand il s’y passe quelque chose, avec leur description, les événements que chacune veut recevoir, son secret de signature et les valeurs des en-têtes que ses propriétaires et administrateurs ont choisis pour ses livraisons (cinq au plus, comme un jeton que demande le serveur destinataire), stockés chiffrés ; les événements envoyés (identifiants, états et dates, jamais le texte d’une publication) et, pour chaque livraison, ses tentatives, le code de réponse du destinataire et le début de sa réponse",
     },
     id: "webhooks",
     legalBasis: contract,
@@ -286,12 +286,12 @@ export const processingRegister: readonly ProcessingCategory[] = [
     },
     operatorSet: false,
     purposes: {
-      en: "Tell the systems a workspace names what happens in it, and show its owners and admins whether each delivery arrived",
-      fr: "Prévenir les systèmes qu’un espace de travail désigne de ce qui s’y passe, et montrer à ses propriétaires et administrateurs si chaque livraison est arrivée",
+      en: "Tell the systems a workspace names what happens in it, with the headers their servers ask for, and show its owners and admins whether each delivery arrived",
+      fr: "Prévenir les systèmes qu’un espace de travail désigne de ce qui s’y passe, avec les en-têtes que leurs serveurs demandent, et montrer à ses propriétaires et administrateurs si chaque livraison est arrivée",
     },
     retention: {
-      en: `Endpoints: until an owner or admin deletes them, or the workspace is deleted. Deliveries: ${p.webhookDeliveries.days} days from each, then deleted within a day; an event, as long as one of its deliveries, so one sent again stays that long after it was last sent`,
-      fr: `Points de terminaison : jusqu’à leur suppression par un propriétaire ou un administrateur, ou celle de l’espace de travail. Livraisons : ${p.webhookDeliveries.days} jours à compter de chacune, puis supprimées dans la journée ; un événement, aussi longtemps que l’une de ses livraisons, donc autant après son dernier renvoi`,
+      en: `Endpoints, with their headers’ values: until an owner or admin deletes them (a header goes when it is removed from its endpoint), or the workspace is deleted. Deliveries: ${p.webhookDeliveries.days} days from each, then deleted within a day; an event, as long as one of its deliveries, so one sent again stays that long after it was last sent`,
+      fr: `Points de terminaison, avec les valeurs de leurs en-têtes : jusqu’à leur suppression par un propriétaire ou un administrateur (un en-tête part quand il est retiré de son point de terminaison), ou celle de l’espace de travail. Livraisons : ${p.webhookDeliveries.days} jours à compter de chacune, puis supprimées dans la journée ; un événement, aussi longtemps que l’une de ses livraisons, donc autant après son dernier renvoi`,
     },
     source: {
       en: "The owners and admins of your workspaces, for the endpoints; the service, from what happens to posts, channels and media; the receiving server, for its answers",
