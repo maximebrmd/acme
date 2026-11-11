@@ -1092,7 +1092,7 @@ A failed delivery is tried again, 8 attempts in all, over about a day:
 | 7       | 8 hours after the sixth failed    |
 | 8       | 8 hours after the seventh failed  |
 
-After the eighth, the delivery has failed for good. You can still [send it again](#log) by hand.
+After the eighth, the delivery has failed for good. You can still [send it again](#log) by hand. While the endpoint stays on, the members who manage webhooks are told so, once a day at most for each endpoint, with a [notification](/notifications#events), and an email unless they turned it off.
 
 Peal turns an endpoint off on its own in two cases, and then tells the members who manage webhooks, with a notification and an email:
 

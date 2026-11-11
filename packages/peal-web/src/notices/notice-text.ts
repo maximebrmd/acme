@@ -230,6 +230,14 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
                 workspace,
               })
         ),
+      WebhookDeliveriesFailing: ({ host }) =>
+        webhooks(
+          t("event.WebhookDeliveriesFailing", {
+            days: webhookFailingDays,
+            host,
+            workspace,
+          })
+        ),
       WebhookEndpointDisabled: ({ host, reason }) =>
         webhooks(
           t("event.WebhookEndpointDisabled", {

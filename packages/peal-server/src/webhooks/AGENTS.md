@@ -74,7 +74,12 @@
   failed attempts (`failing_since`, cleared by a success or by turning it
   back on). Turning off happens once (`EndpointStore.disable`), and tells
   the members with `webhook:manage` through the `WebhookEndpointDisabled`
-  notice, always emailed. A delivery whose endpoint is off fails without a
+  notice, always emailed. A delivery that fails for good (its attempts used up,
+  or a secret that no longer decrypts) while its endpoint is still on once
+  the attempt is recorded tells them `WebhookDeliveriesFailing` in the same
+  transaction (`EndpointNotices.failing`, keyed
+  `webhook-failing:<endpoint>:<UTC day>`, so once a day), emailed as their
+  `webhookFailing` preference says. A delivery whose endpoint is off fails without a
   request. Its payload's `startAfterMillis` (decoding default 0) is slept
   first under the clock `start`, in memory: how deliveries sent again
   together are spaced out (`bulkReplaySpacing`, 250 ms per endpoint).

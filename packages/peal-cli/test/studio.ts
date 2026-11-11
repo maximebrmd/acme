@@ -751,6 +751,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       postPublished: false,
       postReview: true,
       postUnconfirmed: true,
+      webhookFailing: true,
     },
     everyPost: false,
   },

@@ -139,6 +139,11 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       over,
       plan,
     }),
+    WebhookDeliveriesFailing: ({ endpointId, host }): NoticeEventRecord => ({
+      _tag: "WebhookDeliveriesFailing",
+      endpointId,
+      host,
+    }),
     WebhookEndpointDisabled: ({
       endpointId,
       host,
@@ -201,6 +206,7 @@ export const DrizzleNoticeRecords = Layer.effect(
                   postPublished: chosen.emailPostPublished,
                   postReview: chosen.emailPostReview,
                   postUnconfirmed: chosen.emailPostUnconfirmed,
+                  webhookFailing: chosen.emailWebhookFailing,
                 },
                 everyPost: chosen.everyPost,
               };

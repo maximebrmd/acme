@@ -192,6 +192,13 @@ export const NoticeEventSchema = Schema.Union([
     host: Schema.NonEmptyString,
     reason: Schema.Literals(["failing", "gone"]),
   }),
+  // A delivery to a webhook endpoint that is still on failed for good, its
+  // attempts used up: the system behind it missed an event. Told once a
+  // day per endpoint, named as `WebhookEndpointDisabled` names it.
+  Schema.TaggedStruct("WebhookDeliveriesFailing", {
+    endpointId: Schema.NonEmptyString,
+    host: Schema.NonEmptyString,
+  }),
   // An ad network refused a member's sign-in: the ad accounts it connects
   // are no longer read until they sign in again.
   Schema.TaggedStruct("AdConnectionReconnectRequired", {
@@ -228,13 +235,15 @@ export type EmailKind =
   | "postFailed"
   | "postPublished"
   | "postReview"
-  | "postUnconfirmed";
+  | "postUnconfirmed"
+  | "webhookFailing";
 
 /**
  * Which email preference covers the event: none for billing's reminders and
  * confirmations, always emailed, as consumer law asks them on a durable
  * medium, and none for a webhook endpoint turned off, as the systems that
- * listened on it hear nothing more until someone acts.
+ * listened on it hear nothing more until someone acts; deliveries failing
+ * on an endpoint still on have one of their own.
  */
 export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
   Match.valueTags(event, {
@@ -256,6 +265,7 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     SubscriptionStarted: () => Option.none<EmailKind>(),
     SubscriptionWithdrawn: () => Option.none<EmailKind>(),
     TrialEnding: () => Option.none<EmailKind>(),
+    WebhookDeliveriesFailing: () => Option.some<EmailKind>("webhookFailing"),
     WebhookEndpointDisabled: () => Option.none<EmailKind>(),
   });
 
@@ -288,6 +298,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     SubscriptionStarted: (): Permission => "billing:manage",
     SubscriptionWithdrawn: (): Permission => "billing:manage",
     TrialEnding: (): Permission => "billing:manage",
+    WebhookDeliveriesFailing: (): Permission => "webhook:manage",
     WebhookEndpointDisabled: (): Permission => "webhook:manage",
   });
 
@@ -311,6 +322,7 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     SubscriptionStarted: () => false,
     SubscriptionWithdrawn: () => false,
     TrialEnding: () => false,
+    WebhookDeliveriesFailing: () => false,
     WebhookEndpointDisabled: () => false,
   });
 
@@ -430,5 +442,6 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     SubscriptionStarted: () => `/app/${workspaceId}/billing`,
     SubscriptionWithdrawn: () => `/app/${workspaceId}/billing`,
     TrialEnding: () => `/app/${workspaceId}/billing`,
+    WebhookDeliveriesFailing: () => `/app/${workspaceId}/settings/webhooks`,
     WebhookEndpointDisabled: () => `/app/${workspaceId}/settings/webhooks`,
   });

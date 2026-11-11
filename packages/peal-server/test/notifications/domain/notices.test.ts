@@ -133,6 +133,11 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     over: [],
     plan: "pro",
   },
+  WebhookDeliveriesFailing: {
+    _tag: "WebhookDeliveriesFailing",
+    endpointId: "00000000-0000-7000-8000-000000000051",
+    host: "hooks.example.com",
+  },
   WebhookEndpointDisabled: {
     _tag: "WebhookEndpointDisabled",
     endpointId: "00000000-0000-7000-8000-000000000051",
@@ -178,6 +183,21 @@ describe("notice events", () => {
       `/app/${workspaceId}/settings/webhooks`
     );
     expect(wantsEmail(nothing, events.WebhookEndpointDisabled)).toBeTruthy();
+  });
+
+  it("tell those who manage webhooks that deliveries fail, by email unless they turned it off", () => {
+    const off = changePreferences(defaultPreferences, {
+      email: { webhookFailing: false },
+    });
+
+    expect(audienceOf(events.WebhookDeliveriesFailing)).toBe("webhook:manage");
+    expect(pageOf(events.WebhookDeliveriesFailing, workspaceId)).toBe(
+      `/app/${workspaceId}/settings/webhooks`
+    );
+    expect(
+      wantsEmail(defaultPreferences, events.WebhookDeliveriesFailing)
+    ).toBeTruthy();
+    expect(wantsEmail(off, events.WebhookDeliveriesFailing)).toBeFalsy();
   });
 
   it("tell a boost's news to the owners, who answer for what it spends, always by email", () => {
@@ -347,12 +367,14 @@ describe("notification preferences", () => {
       Option.some("postReview"),
       Option.some("postFailed"),
       Option.some("postUnconfirmed"),
-      // Billing's five, then the webhook endpoint turned off.
+      // Billing's five, deliveries failing, then the webhook endpoint
+      // turned off.
       Option.none(),
       Option.none(),
       Option.none(),
       Option.none(),
       Option.none(),
+      Option.some("webhookFailing"),
       Option.none(),
     ]);
   });
@@ -369,6 +391,7 @@ describe("notification preferences", () => {
       postPublished: true,
       postReview: true,
       postUnconfirmed: true,
+      webhookFailing: true,
     });
     expect(wantsEmail(changed, events.PostPublished)).toBeTruthy();
     expect(wantsEmail(changed, events.PostFailed)).toBeFalsy();

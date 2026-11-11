@@ -20,6 +20,9 @@ export class NotificationPreferences extends Schema.Class<NotificationPreference
     // Comments on posts, and approvals asked for and decided.
     postReview: Schema.Boolean,
     postUnconfirmed: Schema.Boolean,
+    // Deliveries to a webhook endpoint that fail for good, for those who
+    // manage webhooks.
+    webhookFailing: Schema.Boolean,
   }),
   // How the posts others wrote went, for members who may schedule posts.
   everyPost: Schema.Boolean,
@@ -28,7 +31,7 @@ export class NotificationPreferences extends Schema.Class<NotificationPreference
 /**
  * Until a user chooses: email for what needs them (a post that failed or may
  * not have gone out, a channel to reconnect, a post to approve or what its
- * review brought), and not for posts that went out as planned nor for the
+ * review brought, deliveries to a webhook endpoint failing for good), and not for posts that went out as planned nor for the
  * comments they receive, which the app shows; and only the posts they wrote.
  */
 export const defaultPreferences = new NotificationPreferences({
@@ -39,6 +42,7 @@ export const defaultPreferences = new NotificationPreferences({
     postPublished: false,
     postReview: true,
     postUnconfirmed: true,
+    webhookFailing: true,
   },
   everyPost: false,
 });
@@ -64,6 +68,7 @@ export const changePreferences = (
       postPublished: asked.postPublished ?? email.postPublished,
       postReview: asked.postReview ?? email.postReview,
       postUnconfirmed: asked.postUnconfirmed ?? email.postUnconfirmed,
+      webhookFailing: asked.webhookFailing ?? email.webhookFailing,
     },
     everyPost: change.everyPost ?? preferences.everyPost,
   });

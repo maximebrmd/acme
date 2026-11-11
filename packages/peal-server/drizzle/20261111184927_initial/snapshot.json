@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "61dc936c-05c5-42fa-8d79-c92773cfd2dd",
+  "id": "6ec86351-d374-4179-8607-7a49dfe08469",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -12745,6 +12745,19 @@
       "notNull": true,
       "dimensions": 0,
       "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
+      "name": "email_webhook_failing",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
       "generated": null,
       "identity": null,
       "entityType": "columns"

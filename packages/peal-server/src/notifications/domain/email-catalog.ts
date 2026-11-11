@@ -212,6 +212,11 @@ export interface EmailCatalog {
    */
   readonly webhookEndpointDisabled: EmailMessages;
   /**
+   * A delivery to the webhook endpoint at `{host}` in `{workspaceName}`,
+   * still on, failed for good.
+   */
+  readonly webhookDeliveriesFailing: EmailMessages;
+  /**
    * A boost of `{budget}` in `{workspaceName}`, which runs until
    * `{endsAt}`: started, ended, used its budget, failed for `{reason}`
    * (one of `adBoostFailureReasons`, or `adBoostFailureOther`), or could

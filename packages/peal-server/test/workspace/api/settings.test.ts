@@ -240,6 +240,7 @@ const PortsLive = Layer.mergeAll(
                 postPublished: false,
                 postReview: true,
                 postUnconfirmed: true,
+                webhookFailing: true,
               },
               everyPost: false,
             },

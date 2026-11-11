@@ -77,6 +77,10 @@ export const notificationPreferences = notificationsSchema.table(
     // Comments on posts, approvals asked for and decided: on unless chosen.
     emailPostReview: boolean("email_post_review").notNull().default(true),
     emailPostUnconfirmed: boolean("email_post_unconfirmed").notNull(),
+    // Deliveries to a webhook endpoint failing for good: on unless chosen.
+    emailWebhookFailing: boolean("email_webhook_failing")
+      .notNull()
+      .default(true),
     everyPost: boolean("every_post").notNull().default(false),
     updatedAt: instant("updated_at").notNull(),
     userId: uuid("user_id").primaryKey(),

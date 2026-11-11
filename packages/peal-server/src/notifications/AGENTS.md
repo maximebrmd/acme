@@ -26,9 +26,10 @@
   an author, or whose author left the workspace, every member with
   `post:schedule`; for billing, every member with `billing:manage`. Every
   notice reaches the app; `NotificationPreferences` say which are also
-  emailed (failed and unconfirmed posts and channels to reconnect by
-  default, not published posts; billing's always, as no preference covers
-  them). A preferences change writes only what it names.
+  emailed (failed and unconfirmed posts, channels to reconnect and
+  deliveries failing on a webhook endpoint, `webhookFailing`, by default,
+  not published posts; billing's and a webhook endpoint turned off always,
+  as no preference covers them). A preferences change writes only what it names.
 - `Notify.resolve(key)` says an event was dealt with: its notices are marked
   read for everyone and its pending emails skipped. Publishing resolves a
   round once a member confirms or reposts it.

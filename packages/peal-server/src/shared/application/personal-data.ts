@@ -557,6 +557,11 @@ export type NoticeEventRecord =
       readonly plan: string;
     }
   | {
+      readonly _tag: "WebhookDeliveriesFailing";
+      readonly endpointId: string;
+      readonly host: string;
+    }
+  | {
       readonly _tag: "WebhookEndpointDisabled";
       readonly endpointId: string;
       readonly host: string;
@@ -604,6 +609,7 @@ export interface PreferencesRecord {
     readonly postPublished: boolean;
     readonly postReview: boolean;
     readonly postUnconfirmed: boolean;
+    readonly webhookFailing: boolean;
   };
   readonly everyPost: boolean;
 }

@@ -1092,7 +1092,7 @@ Une livraison en échec est retentée, 8 tentatives en tout, sur environ une jou
 | 7         | 8 heures après l’échec de la sixième     |
 | 8         | 8 heures après l’échec de la septième    |
 
-Après la huitième, la livraison a échoué pour de bon. Vous pouvez encore [la renvoyer](#log) à la main.
+Après la huitième, la livraison a échoué pour de bon. Vous pouvez encore [la renvoyer](#log) à la main. Tant que le point de terminaison reste actif, les membres qui gèrent les webhooks en sont prévenus, au plus une fois par jour pour chaque point de terminaison, par une [notification](/notifications#events), et un e-mail sauf s’ils l’ont désactivé.
 
 Peal désactive de lui-même un point de terminaison dans deux cas, et prévient alors les membres qui gèrent les webhooks, par une notification et un e-mail :
 
