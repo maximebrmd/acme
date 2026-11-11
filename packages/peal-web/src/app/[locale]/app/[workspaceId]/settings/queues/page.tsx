@@ -8,7 +8,8 @@ import { routing } from "#i18n/routing.ts";
 import { membershipOf } from "#posts/membership.ts";
 
 // A workspace's queues, for members who may read its posts and its
-// channels. Adding, changing or deleting one takes post:update.
+// channels. Adding, changing or deleting one takes post:update; moving its
+// waiting posts onto its slots, post:schedule.
 const QueuesPage = async ({
   params,
 }: PageProps<"/[locale]/app/[workspaceId]/settings/queues">) => {
@@ -37,7 +38,11 @@ const QueuesPage = async ({
       {mayManage ? null : (
         <p className="text-muted-foreground text-sm">{t("readOnly")}</p>
       )}
-      <QueuesSettings workspaceId={workspace.id} mayManage={mayManage} />
+      <QueuesSettings
+        workspaceId={workspace.id}
+        mayManage={mayManage}
+        mayReshuffle={may.has("post:schedule")}
+      />
     </div>
   );
 };

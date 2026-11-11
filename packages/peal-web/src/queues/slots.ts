@@ -89,3 +89,21 @@ export const defaultQueueOf = (
   Option.fromUndefinedOr(
     queues.find(({ isDefault }) => isDefault) ?? queues[0]
   );
+
+const timetableOf = ({
+  slots,
+  timeZone,
+}: Pick<QueueDetails, "slots" | "timeZone">) =>
+  `${timeZone}|${slotsInWeek(slots)
+    .map(({ day, time }) => `${day}@${time}`)
+    .join(",")}`;
+
+/**
+ * Whether saving the queue as `saved` gives it other instants: other
+ * slots, or another zone. Its waiting posts then keep their times until a
+ * member reshuffles it.
+ */
+export const timetableChanged = (
+  queue: Queue,
+  saved: Pick<QueueDetails, "slots" | "timeZone">
+): boolean => timetableOf(queue) !== timetableOf(saved);

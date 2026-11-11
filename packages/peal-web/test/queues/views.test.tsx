@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { QueueChoiceView } from "#components/posts/queue-choice.tsx";
+import { QueueReshuffleView } from "#components/queues/queue-reshuffle-view.tsx";
 import {
   QueueFieldsView,
   QueueItemView,
@@ -273,5 +274,59 @@ describe(QueueChoiceView, () => {
     expect(html).toContain(
       "Tous les créneaux des 366 prochains jours sont pris."
     );
+  });
+});
+
+describe(QueueReshuffleView, () => {
+  it("offers to move the waiting posts, and says what moved and why it stopped, in both languages", async () => {
+    const offered = await render(
+      "en",
+      <QueueReshuffleView
+        action={<button type="button">Move</button>}
+        count={3}
+        more={false}
+        state={{ _tag: "offered" }}
+      />
+    );
+
+    expect(offered).toContain(
+      "3 posts wait in this queue at the times they had."
+    );
+
+    const done = {
+      _tag: "done",
+      result: { moved: 12, remaining: 2, stoppedBy: "planLimit", unchanged: 1 },
+    } as const;
+
+    expect(
+      missingFrom(
+        await render(
+          "en",
+          <QueueReshuffleView action={null} count={100} more state={done} />
+        ),
+        [
+          "More than 100 posts wait in this queue",
+          "12 posts moved, 1 unchanged, 2 remaining.",
+          "It stopped at a month the plan has no room in.",
+        ]
+      )
+    ).toStrictEqual([]);
+    expect(
+      missingFrom(
+        await render(
+          "fr",
+          <QueueReshuffleView
+            action={null}
+            count={1}
+            more={false}
+            state={done}
+          />
+        ),
+        [
+          "1 publication attend dans cette file",
+          "12 publications déplacées, 1 inchangée, 2 restantes.",
+        ]
+      )
+    ).toStrictEqual([]);
   });
 });

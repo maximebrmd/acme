@@ -7,6 +7,7 @@ import {
   queueDetailsOf,
   queueDraftOf,
   slotsInWeek,
+  timetableChanged,
   withoutSlot,
   withSlot,
 } from "#queues/slots.ts";
@@ -119,5 +120,48 @@ describe(defaultQueueOf, () => {
     );
     expect(defaultQueueOf([first])).toStrictEqual(Option.some(first));
     expect(defaultQueueOf([])).toStrictEqual(Option.none());
+  });
+});
+
+describe(timetableChanged, () => {
+  const before = queue({
+    slots: [
+      { day: "monday", time: "09:00" },
+      { day: "tuesday", time: "09:00" },
+    ],
+  });
+
+  const saved = (fields: Partial<Queue>) => ({
+    name: "Weekdays",
+    slots: before.slots,
+    timeZone: before.timeZone,
+    ...fields,
+  });
+
+  it("is false for a save that keeps the slots and the zone, whatever their order or the name", () => {
+    expect(
+      timetableChanged(
+        before,
+        saved({
+          name: "Mornings",
+          slots: [
+            { day: "tuesday", time: "09:00" },
+            { day: "monday", time: "09:00" },
+          ],
+        })
+      )
+    ).toBeFalsy();
+  });
+
+  it("is true for another slot or another zone", () => {
+    expect(
+      timetableChanged(
+        before,
+        saved({ slots: [{ day: "monday", time: "09:00" }] })
+      )
+    ).toBeTruthy();
+    expect(
+      timetableChanged(before, saved({ timeZone: "Asia/Tokyo" }))
+    ).toBeTruthy();
   });
 });
