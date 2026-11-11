@@ -50,6 +50,10 @@
   test's weekday), adds two posts to it from the composer's **Add to
   queue**, reads that they took 23:57 then 23:58, swaps the 23:57 slot
   for 23:59 and moves both posts onto the new slots, then cancels both.
+- `tests/two-step.e2e.ts` turns two-step verification on from the account
+  page, reading the key written beside the QR code and computing the codes
+  an authenticator app would (`tests/support/totp.ts`, RFC 6238), signs in
+  again with the password then a code, and requires it of its workspace.
 - CI's `e2e` job runs after `verify`, with its own Postgres and Mailpit and
   SeaweedFS from `compose.yaml`. After a failure, read the report, traces and
   screenshots under `packages/peal-e2e/.e2e/` (CI uploads it for 7 days), and
