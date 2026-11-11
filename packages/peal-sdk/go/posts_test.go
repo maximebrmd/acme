@@ -26494,6 +26494,14 @@ func TestSettersMarkExplicitPublicationAttempt(t *testing.T) {
 }
 
 func TestSettersQueueHasNoRoomEncoded(t *testing.T) {
+	t.Run("SetTag", func(t *testing.T) {
+		obj := &QueueHasNoRoomEncoded{}
+		var fernTestValueTag QueueHasNoRoomEncodedTag
+		obj.SetTag(fernTestValueTag)
+		assert.Equal(t, fernTestValueTag, obj.Tag)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetCode", func(t *testing.T) {
 		obj := &QueueHasNoRoomEncoded{}
 		var fernTestValueCode *string
@@ -26537,6 +26545,29 @@ func TestSettersQueueHasNoRoomEncoded(t *testing.T) {
 }
 
 func TestGettersQueueHasNoRoomEncoded(t *testing.T) {
+	t.Run("GetTag", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &QueueHasNoRoomEncoded{}
+		var expected QueueHasNoRoomEncodedTag
+		obj.Tag = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetTag(), "getter should return the property value")
+	})
+
+	t.Run("GetTag_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *QueueHasNoRoomEncoded
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetTag() // Should return zero value
+	})
+
 	t.Run("GetCode", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -26685,6 +26716,37 @@ func TestGettersQueueHasNoRoomEncoded(t *testing.T) {
 }
 
 func TestSettersMarkExplicitQueueHasNoRoomEncoded(t *testing.T) {
+	t.Run("SetTag_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &QueueHasNoRoomEncoded{}
+		var fernTestValueTag QueueHasNoRoomEncodedTag
+
+		// Act
+		obj.SetTag(fernTestValueTag)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetCode_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -34880,6 +34942,28 @@ func TestEnumPostTargetStatus(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewPostTargetStatusFromString("pending")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumQueueHasNoRoomEncodedTag(t *testing.T) {
+	t.Run("NewFromString_QueueHasNoRoom", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewQueueHasNoRoomEncodedTagFromString("QueueHasNoRoom")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, QueueHasNoRoomEncodedTag("QueueHasNoRoom"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewQueueHasNoRoomEncodedTagFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewQueueHasNoRoomEncodedTagFromString("QueueHasNoRoom")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)

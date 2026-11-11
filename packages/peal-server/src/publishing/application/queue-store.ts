@@ -3,6 +3,7 @@ import type { DateTime, Effect, Option } from "effect";
 
 import type { ChannelSetId } from "#publishing/domain/channel-set-id.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
+import type { QueuedPost } from "#publishing/domain/queue-reshuffle.ts";
 import type { Queue, TakenSlots } from "#publishing/domain/queue.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -71,5 +72,14 @@ export class QueueStore extends Context.Service<
       until: DateTime.Utc,
       except?: Option.Option<PostId>
     ) => Effect.Effect<TakenSlots, DatabaseError>;
+    /**
+     * The queue's posts after `after` (excluded), by time then id: those
+     * that wait for their time, scheduled or awaiting approval, and those
+     * publishing.
+     */
+    readonly queuedFrom: (
+      queueId: QueueId,
+      after: DateTime.Utc
+    ) => Effect.Effect<readonly QueuedPost[], DatabaseError>;
   }
 >()("peal-server/publishing/application/QueueStore") {}

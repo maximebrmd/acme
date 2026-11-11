@@ -157,7 +157,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Queues have a settings page too (`…/settings/queues`, views in
   `components/queues/queue-views.tsx`, state in `queues-settings.tsx`,
   atoms in `#queues/atoms.ts`), with each queue's next slots on its own
-  clock. The composer's schedule section (`SchedulePlacementFields`)
+  clock. A save that changed a queue's slots or zone (`timetableChanged`)
+  offers, to members with post:schedule and while posts wait in it,
+  `QueueReshuffle` (`queues.reshuffle`, after a confirmation that says
+  posts moved by hand move too; its view `QueueReshuffleView`): saving
+  alone moves no post. The composer's schedule section (`SchedulePlacementFields`)
   chooses a time or a queue (`QueueChoice`, its view `QueueChoiceView`,
   the default preselected), and puts the saved draft or the scheduled post
   on the queue with `posts.enqueue`; the calendar marks queued posts and

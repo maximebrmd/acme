@@ -6,8 +6,9 @@ import { credentials, expect } from "e2e";
 import { seedChannel } from "./support/channels.ts";
 import { emailedLink } from "./support/mailpit.ts";
 
-// A member makes a queue, adds two posts to it, and sees them take its two
-// slots one after the other, in one browser: each test starts where the
+// A member makes a queue, adds two posts to it, sees them take its two
+// slots one after the other, then changes the slots and moves the posts
+// onto them, in one browser: each test starts where the
 // previous one left off. The module loads again for each attempt, so a
 // retry signs up under a new address.
 const run = randomUUID();
@@ -21,10 +22,12 @@ const second = "A field note for the next slot.";
 // Tomorrow, as the queue's day: its slots, late that day, are a day ahead
 // at least whenever the test runs, even a few minutes before midnight. The
 // composer opens the calendar on the week of the slot a post took.
-const day = new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString(
-  "en-US",
-  { weekday: "long" }
-);
+const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+const day = tomorrow.toLocaleDateString("en-US", { weekday: "long" });
+
+// Tomorrow's date, as the calendar's `date` takes it.
+const date = tomorrow.toLocaleDateString("en-CA");
 
 const postNamed = (text: string) =>
   new RegExp(`, Scheduled: ${RegExp.escape(text)}$`, "u");
@@ -141,6 +144,45 @@ describe("a member's queue", { serial: true }, () => {
     ).toBeVisible();
     await expect(screen.getByRole("link", postNamed(second))).toBeVisible();
     await expect(screen.getByRole("link", postNamed(first))).toBeVisible();
+  });
+
+  test("moves the waiting posts onto the queue's new slots", async ({
+    app,
+    screen,
+  }) => {
+    await app.open(`/app/${workspaceId}/settings/queues`);
+
+    const queues = screen.getByRole("region", "Queues");
+
+    await queues.getByRole("button", "Edit").tap();
+    await queues.getByRole("button", `Remove the slot ${day}, 11:57 PM`).tap();
+    await queues.getByRole("combobox", "Day").tap();
+    await screen.getByRole("option", day).tap();
+    await queues.getByRole("textbox", "Time").fill("23:59");
+    await queues.getByRole("button", "Add the slot").tap();
+    await queues.getByRole("button", "Save").tap();
+
+    await expect(
+      screen.getByText("The queue is saved. Its posts keep their times.")
+    ).toBeVisible();
+    await expect(
+      screen.getByText("2 posts wait in this queue at the times they had.")
+    ).toBeVisible();
+
+    await screen
+      .getByRole("button", "Move the waiting posts onto the new slots")
+      .tap();
+    await screen
+      .getByRole("alertdialog", "Move the waiting posts onto the new slots?")
+      .getByRole("button", "Move the posts")
+      .tap();
+
+    await expect(
+      screen.getByText("2 posts moved, 0 unchanged, 0 remaining.")
+    ).toBeVisible();
+
+    await app.open(`/app/${workspaceId}/calendar?date=${date}`);
+    await expect(screen.getByRole("heading", "Calendar")).toBeVisible();
   });
 
   // Nothing goes out: both posts are cancelled.

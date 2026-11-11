@@ -652,8 +652,24 @@ publishing's schema, naming nobody: each goes with its workspace
   writes its posts. A request naming no channel and no set goes to the
   queue's (`queueChannelsDropped` for those disconnected since).
   `PostChecks` computes the slot unlocked. `QueueHasNoRoom` (`noSlots`,
-  `full` within `queueHorizonDays`). Part 2 (recycling, reshuffling) reuses
-  `onQueue` and `move`: add no other way of placing a post.
+  `full` within `queueHorizonDays`). Recycling reuses `onQueue` and
+  `move`: add no other way of placing a post.
+- `PostScheduling.reshuffle` moves a queue's waiting posts (scheduled or
+  awaiting approval, after `received`) onto its slots as they now are,
+  hand-moved ones included: `reshufflePlan` (`domain/queue-reshuffle.ts`)
+  gives post n, in time-then-id order, the n-th slot no publishing post
+  holds, ignoring where waiting posts are, so the plan is the same however
+  often it is made and two posts on one instant end apart. Planned once
+  under `QueueStore.lock` (`queuedFrom`), then batches of
+  `reshuffleBatchSize`, one transaction each: the queue's lock, the queue
+  read again (a changed timetable, `sameTimetable`, stops it `changed`),
+  the posts' rows in id order, then each move through `moved`, in a
+  savepoint of its own so a `PlanLimitReached` (it stops `planLimit`)
+  keeps the moves before it. A post on its slot is not written; one moved,
+  sent back or cancelled since the plan is left alone; a scheduled post
+  that someone who only asks cannot move is `unchanged`. Each move is a
+  hand move's, the gate included: someone whose posts need no approval
+  schedules a held post they move, as `reschedule` does.
 - `PostDrafts.duplicate` copies a post, whatever its status, into a new
   draft of whoever asked, every part included: what the workspace no
   longer has (a channel, a media, a tag) is left out rather than refused.

@@ -2952,7 +2952,18 @@
     "upcomingLoading": "Lecture des prochains créneaux…",
     "upcomingFailed": "Les prochains créneaux n’ont pas pu être lus.",
     "nextFree": "Prochain créneau libre : {at}.",
-    "noRoom": "{reason, select, noSlots {Aucun créneau libre : la file n’a aucun créneau.} other {Aucun créneau libre dans les {days, number} prochains jours.}}"
+    "noRoom": "{reason, select, noSlots {Aucun créneau libre : la file n’a aucun créneau.} other {Aucun créneau libre dans les {days, number} prochains jours.}}",
+    "reshuffle": {
+      "waiting": "{more, select, true {Plus de {count, number} publications attendent dans cette file à l’heure qu’elles avaient.} other {{count, plural, one {# publication attend dans cette file à l’heure qu’elle avait.} other {# publications attendent dans cette file à l’heure qu’elles avaient.}}}}",
+      "action": "Replacer les publications en attente sur les nouveaux créneaux",
+      "confirmTitle": "Replacer les publications en attente sur les nouveaux créneaux ?",
+      "confirmDescription": "Chaque publication en attente dans cette file passe sur ses créneaux tels qu’ils sont maintenant, dans l’ordre de leurs heures : la première sur le premier créneau libre, et ainsi de suite. Les publications déplacées à la main sont déplacées aussi. Une publication déjà sur son créneau y reste, et ce que disent les publications et où elles vont ne change pas.",
+      "confirm": "Replacer les publications",
+      "moving": "Déplacement…",
+      "result": "{moved, plural, one {# publication déplacée} other {# publications déplacées}}, {unchanged, plural, one {# inchangée} other {# inchangées}}, {remaining, plural, one {# restante} other {# restantes}}.",
+      "stopped": "{reason, select, planLimit {Le déplacement s’est arrêté à un mois où l’offre n’a plus de place.} full {Il ne reste aucun créneau dans les {days, number} prochains jours pour les autres.} other {La file a changé entre-temps : replacez-les à nouveau.}}",
+      "failed": "Les publications n’ont pas pu être déplacées. Réessayez."
+    }
   },
   "Inbox": {
     "open": "Boîte de réception",

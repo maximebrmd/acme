@@ -1,4 +1,5 @@
 import { Atom } from "effect/reactivity";
+import { maxPostPageSize } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 
@@ -40,3 +41,21 @@ export const updateQueue = PealApi.mutation("queues", "update");
 export const deleteQueue = PealApi.mutation("queues", "delete");
 
 export const enqueuePost = PealApi.mutation("posts", "enqueue");
+
+/** Moves a queue's waiting posts onto its slots as they now are. */
+export const reshuffleQueue = PealApi.mutation("queues", "reshuffle");
+
+/**
+ * The queue's posts with this status, the first page of them: enough to
+ * say how many wait, and whether more do.
+ */
+export const queuedPosts = (
+  workspaceId: string,
+  queueId: string,
+  status: "awaitingApproval" | "scheduled"
+) =>
+  PealApi.query("posts", "search", {
+    params: { workspaceId },
+    query: { limit: maxPostPageSize, queueId, status },
+    reactivityKeys: [...queuesChanged(workspaceId), "posts"],
+  });

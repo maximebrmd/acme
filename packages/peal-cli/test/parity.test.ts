@@ -194,6 +194,7 @@ const coverage = {
   "queues.delete": by("queues delete"),
   "queues.get": by("queues show"),
   "queues.list": by("queues list"),
+  "queues.reshuffle": by("queues reshuffle"),
   "queues.slots": by("queues preview"),
   "queues.update": by("queues update"),
   "review.approve": by("approvals approve"),

@@ -461,17 +461,26 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/send" \
 
 Les publications portent la file qui les a placées (`queueId`, null une fois la file supprimée), et `GET …/posts/search?queueId=…` les liste.
 
+Enregistrer les créneaux d’une file ne déplace aucune publication. `POST …/queues/{queueId}/reshuffle`, sans corps, place ses publications en attente (programmées ou en attente d’approbation, après maintenant) sur ses créneaux tels qu’ils sont maintenant, dans l’ordre de leurs heures, celles déplacées à la main comprises ([Replacer les publications en attente](/fr/scheduling#reshuffle)). Chaque déplacement est un `reschedule` : approbations demandées de nouveau, abonnement compté dans le nouveau mois, `post.scheduled` annoncé ; une publication sur son créneau n’est pas réécrite. Il faut `post:schedule`, ou `post:create` là où les publications attendent une approbation, et la réponse dit ce qui a été fait :
+
+```json
+{ "moved": 12, "unchanged": 3, "remaining": 0, "stoppedBy": null }
+```
+
+`remaining` compte les publications pas encore placées quand le déplacement s’est arrêté, et `stoppedBy` dit pourquoi : `planLimit` (un mois sans place), `full` (plus de créneau dans les 366 jours) ou `changed` (la file a été enregistrée entre-temps). Rappelez-le pour continuer ; appelé deux fois, le second appel ne déplace rien. Une file sans créneau répond 409 `queue_has_no_room` (`noSlots`).
+
 ## Depuis MCP et la ligne de commande [#tools]
 
-| Requête                        | Outil MCP                         | Commande                             |
-| ------------------------------ | --------------------------------- | ------------------------------------ |
-| `POST …/posts/validate`        | `validate_post`                   | `peal post … --dry-run`              |
-| `POST …/posts/send?wait=…`     | `create_post`, avec `waitSeconds` | `peal post … --now --wait <seconds>` |
-| `GET …/posts/{postId}/outcome` | `await_post`                      | `peal posts wait <post-id>`          |
-| `POST …/posts/bulk`            | `create_posts`                    |                                      |
-| `POST …/posts/import`          |                                   | `peal posts import <file.csv>`       |
-| `GET …/posts/search`           | `list_posts`                      | `peal posts list`                    |
-| `POST …/posts/{postId}/queue`  | `queue_post`                      | `peal posts queue <post-id>`         |
-| `GET …/queues/{queueId}/slots` | `preview_queue`                   | `peal queues preview <queue>`        |
+| Requête                             | Outil MCP                         | Commande                             |
+| ----------------------------------- | --------------------------------- | ------------------------------------ |
+| `POST …/posts/validate`             | `validate_post`                   | `peal post … --dry-run`              |
+| `POST …/posts/send?wait=…`          | `create_post`, avec `waitSeconds` | `peal post … --now --wait <seconds>` |
+| `GET …/posts/{postId}/outcome`      | `await_post`                      | `peal posts wait <post-id>`          |
+| `POST …/posts/bulk`                 | `create_posts`                    |                                      |
+| `POST …/posts/import`               |                                   | `peal posts import <file.csv>`       |
+| `GET …/posts/search`                | `list_posts`                      | `peal posts list`                    |
+| `POST …/posts/{postId}/queue`       | `queue_post`                      | `peal posts queue <post-id>`         |
+| `GET …/queues/{queueId}/slots`      | `preview_queue`                   | `peal queues preview <queue>`        |
+| `POST …/queues/{queueId}/reshuffle` | `reshuffle_queue`                 | `peal queues reshuffle <queue>`      |
 
 [Connecter un client MCP](/mcp#tools) décrit les outils, et [Ligne de commande](/cli#post) les commandes.

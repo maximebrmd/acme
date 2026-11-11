@@ -19,6 +19,7 @@ import {
   ChannelSchema,
   ChannelSetSchema,
   QueuePreviewSchema,
+  QueueReshuffleSchema,
   QueueSchema,
   InboxCommentSchema,
   InboxReplySchema,
@@ -451,6 +452,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           repost_target: [false, false, false, true],
           request_changes: [false, true, false, false],
           reschedule_post: [false, true, true, true],
+          reshuffle_queue: [false, false, true, false],
           resume_boost: [false, true, true, true],
           revoke_connect_link: [false, true, true, false],
           revoke_invitation: [false, true, true, false],
@@ -711,6 +713,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               postId,
               timeZone: "Europe/Paris",
             },
+            reshuffle_queue: { queue: postId },
             schedule_post: {
               at: "2030-01-01T10:00:00Z",
               postId,
@@ -1965,6 +1968,29 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
         );
         assert.include(
           yield* writer.refused("queue_post", { postId: draft.id }),
+          "workspace:publish"
+        );
+
+        // Its waiting posts are moved onto its slots as they now are: none
+        // waits, so none moves; a queue without slots is told.
+        const reshuffled = yield* publisher.call(
+          "reshuffle_queue",
+          Schema.toCodecJson(QueueReshuffleSchema),
+          { queue: "Synthetic EVERGREEN" }
+        );
+
+        assert.deepStrictEqual(reshuffled, {
+          moved: 0,
+          remaining: 0,
+          stoppedBy: null,
+          unchanged: 0,
+        });
+        assert.include(
+          yield* publisher.refused("reshuffle_queue", { queue: empty.id }),
+          "The queue has no slot"
+        );
+        assert.include(
+          yield* writer.refused("reshuffle_queue", { queue: queue.id }),
           "workspace:publish"
         );
 

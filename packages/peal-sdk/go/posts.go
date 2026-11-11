@@ -13477,25 +13477,34 @@ func (p *PublicationAttempt) String() string {
 }
 
 var (
-	queueHasNoRoomEncodedFieldCode      = big.NewInt(1 << 0)
-	queueHasNoRoomEncodedFieldMessage   = big.NewInt(1 << 1)
-	queueHasNoRoomEncodedFieldRequestID = big.NewInt(1 << 2)
-	queueHasNoRoomEncodedFieldQueueID   = big.NewInt(1 << 3)
-	queueHasNoRoomEncodedFieldReason    = big.NewInt(1 << 4)
+	queueHasNoRoomEncodedFieldTag       = big.NewInt(1 << 0)
+	queueHasNoRoomEncodedFieldCode      = big.NewInt(1 << 1)
+	queueHasNoRoomEncodedFieldMessage   = big.NewInt(1 << 2)
+	queueHasNoRoomEncodedFieldRequestID = big.NewInt(1 << 3)
+	queueHasNoRoomEncodedFieldQueueID   = big.NewInt(1 << 4)
+	queueHasNoRoomEncodedFieldReason    = big.NewInt(1 << 5)
 )
 
 type QueueHasNoRoomEncoded struct {
-	Code      *string     `json:"code,omitempty" url:"code,omitempty"`
-	Message   *string     `json:"message,omitempty" url:"message,omitempty"`
-	RequestID *string     `json:"requestId,omitempty" url:"requestId,omitempty"`
-	QueueID   string      `json:"queueId" url:"queueId"`
-	Reason    QueueNoRoom `json:"reason" url:"reason"`
+	Tag       QueueHasNoRoomEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                  `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                  `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                  `json:"requestId,omitempty" url:"requestId,omitempty"`
+	QueueID   string                   `json:"queueId" url:"queueId"`
+	Reason    QueueNoRoom              `json:"reason" url:"reason"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (q *QueueHasNoRoomEncoded) GetTag() QueueHasNoRoomEncodedTag {
+	if q == nil {
+		return ""
+	}
+	return q.Tag
 }
 
 func (q *QueueHasNoRoomEncoded) GetCode() *string {
@@ -13547,6 +13556,13 @@ func (q *QueueHasNoRoomEncoded) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	q.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueHasNoRoomEncoded) SetTag(tag QueueHasNoRoomEncodedTag) {
+	q.Tag = tag
+	q.require(queueHasNoRoomEncodedFieldTag)
 }
 
 // SetCode sets the Code field and marks it as non-optional;
@@ -13624,6 +13640,25 @@ func (q *QueueHasNoRoomEncoded) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", q)
+}
+
+type QueueHasNoRoomEncodedTag string
+
+const (
+	QueueHasNoRoomEncodedTagQueueHasNoRoom QueueHasNoRoomEncodedTag = "QueueHasNoRoom"
+)
+
+func NewQueueHasNoRoomEncodedTagFromString(s string) (QueueHasNoRoomEncodedTag, error) {
+	switch s {
+	case "QueueHasNoRoom":
+		return QueueHasNoRoomEncodedTagQueueHasNoRoom, nil
+	}
+	var t QueueHasNoRoomEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (q QueueHasNoRoomEncodedTag) Ptr() *QueueHasNoRoomEncodedTag {
+	return &q
 }
 
 var (

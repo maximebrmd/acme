@@ -165,12 +165,18 @@ A queue is a weekly timetable of slots in a time zone, such as every weekday at 
 - A slot is a day and a time of day on the queue's clock, daylight saving included, as a time you choose: a time the clocks skip moves to the moment they jump, and a time that happens twice is the first one.
 - A slot is taken while a post the queue placed is scheduled, waiting for an approval or publishing at exactly its time. Nothing else is kept of slots: unscheduling, cancelling or moving such a post by hand frees its slot, and a post of the queue moved onto a slot's time takes it.
 - The first queue of a workspace is its **default**, which a post added to no queue in particular goes to. Marking another as the default moves it; deleting the default leaves none until another is marked.
-- Changing a queue's slots moves no post: posts already placed keep their times.
+- Changing a queue's slots moves no post: posts already placed keep their times, until you [move them onto the new slots](#reshuffle).
 - Deleting a queue leaves its posts scheduled at their times.
 
 In the composer, under **When**, choose **Add to queue**, pick the queue (the default to start with), and read where the post would go: **Next free slot**. Then choose **Schedule**: the slot is decided when Peal receives the post, so two posts added at the same moment never take the same one. A post that names no channel goes to the queue's channels and channel set; one of them disconnected since is left out, and said. From then on the post is an ordinary scheduled post: it is checked against its channels, waits for an approval where the workspace asks for one, shows on the calendar with a queue mark, and can be moved, unscheduled or cancelled. A queued post scheduled already moves to the queue's next free slot the same way.
 
 The plan's posts a month count in the month of the slot found. When that month has no room, the post is refused, as for a time you chose: Peal never skips to a later month by itself. A queue with no slot, or with every slot of the next 366 days taken, refuses the post too.
+
+### Move the waiting posts onto new slots [#reshuffle]
+
+After you change a queue's slots or its time zone, **Settings**, **Queues** offers, while posts wait in it, **Move the waiting posts onto the new slots**, with how many wait. Once you confirm, every post that waits in the queue (scheduled, or waiting for an approval, at a time to come) moves onto the queue's slots as they are now, in the order of their times: the first onto the first free slot, the second onto the next, and so on. Posts moved by hand onto another time move too, as the queue keeps no record of which were. A post already on its slot stays where it is, a slot a publishing post holds is skipped, and what the posts say and where they go do not change. Owners, admins and editors may do it (post:schedule through the API); through the API, a contributor whose posts wait for an approval moves those alone.
+
+Each post moves as if moved by hand: it gets its new time, the workspace's approvals are asked again (a post waiting for one keeps waiting, at its new time, unless your own posts need none), and it counts in its new month. Peal then says how many posts moved, how many stayed, and how many remain. It stops, keeping what it moved, at a month the plan has no room in, when no slot is left within 366 days, or when someone saves the queue meanwhile: move them again once there is room. Moving them twice moves nothing the second time.
 
 ## Drafts [#drafts]
 

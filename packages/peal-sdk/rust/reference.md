@@ -13823,6 +13823,81 @@ async fn main() {
 </dl>
 </details>
 
+<details><summary><code>client.queues.<a href="/src/api/resources/queues/client.rs">reshuffle</a>(workspace_id: String, queue_id: String) -> Result&lt;QueueReshuffle, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and `post.scheduled` told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (`stoppedBy` `planLimit`), when no slot is left within 366 days (`full`), or when the queue was saved meanwhile (`changed`); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (`noSlots`) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .queues
+        .reshuffle(&"workspaceId".to_string(), &"queueId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**queue_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## channelDefaults
 <details><summary><code>client.channel_defaults.<a href="/src/api/resources/channel_defaults/client.rs">get</a>(workspace_id: String, channel_id: String) -> Result&lt;ChannelDefaults, ApiError&gt;</code></summary>
 <dl>

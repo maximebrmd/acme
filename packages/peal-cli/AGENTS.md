@@ -87,7 +87,7 @@
   each in prose after the rest (`warningLines`); `--json` prints the answer
   as it came. The MCP toolkit `saved-tools.ts` has the same, by id, and
   its posts name sets by id or name.
-- `peal queues` (list, show, preview, create, update, delete) keeps a
+- `peal queues` (list, show, preview, create, update, reshuffle, delete) keeps a
   workspace's queues (`--slot mon@09:00`, repeated; `--zone`; `--channel`;
   `--set`; `--default`; on `update`, `--clear-channels` and `--clear-slots`
   empty them), named by id or name (`saved-items.ts`:
@@ -96,8 +96,10 @@
   the next word as an optional value, which would read a name as the
   post's text) or `--default-queue` is one of `--at`, `--now`, `--queue`
   and `--default-queue`; `peal posts queue` and `peal posts list --queue` follow
-  `posts.enqueue` and `search?queueId`. The studio's queues are in
-  `test/studio-queues.ts`, built over what `studio.ts` hands them.
+  `posts.enqueue` and `search?queueId`. `peal queues reshuffle` follows
+  `queues.reshuffle` and says why it stopped (`reshuffleLines`). The
+  studio's queues are in `test/studio-queues.ts`, built over what
+  `studio.ts` hands them.
 - `peal channels rename`, `disable` and `enable`
   (`commands/channel-settings.ts`) name a channel and turn it off or back
   on, and `peal posts duplicate` makes a draft of a post, reading it first

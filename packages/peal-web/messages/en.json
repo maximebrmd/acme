@@ -2952,7 +2952,18 @@
     "upcomingLoading": "Reading the next slots…",
     "upcomingFailed": "The next slots could not be read.",
     "nextFree": "Next free slot: {at}.",
-    "noRoom": "{reason, select, noSlots {No free slot: the queue has no slot.} other {No free slot in the next {days, number} days.}}"
+    "noRoom": "{reason, select, noSlots {No free slot: the queue has no slot.} other {No free slot in the next {days, number} days.}}",
+    "reshuffle": {
+      "waiting": "{more, select, true {More than {count, number} posts wait in this queue at the times they had.} other {{count, plural, one {# post waits in this queue at the time it had.} other {# posts wait in this queue at the times they had.}}}}",
+      "action": "Move the waiting posts onto the new slots",
+      "confirmTitle": "Move the waiting posts onto the new slots?",
+      "confirmDescription": "Every post that waits in this queue moves onto its slots as they are now, in the order of their times: the first onto the first free slot, and so on. Posts moved by hand move too. A post already on its slot stays where it is, and what the posts say and where they go do not change.",
+      "confirm": "Move the posts",
+      "moving": "Moving…",
+      "result": "{moved, plural, one {# post moved} other {# posts moved}}, {unchanged, number} unchanged, {remaining, number} remaining.",
+      "stopped": "{reason, select, planLimit {It stopped at a month the plan has no room in.} full {No slot is left in the next {days, number} days for the others.} other {The queue changed meanwhile: move them again.}}",
+      "failed": "The posts could not be moved. Try again."
+    }
   },
   "Inbox": {
     "open": "Inbox",

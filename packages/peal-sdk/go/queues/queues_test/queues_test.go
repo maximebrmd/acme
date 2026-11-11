@@ -256,3 +256,30 @@ func TestQueuesSlotsWithWireMock(
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestQueuesSlotsWithWireMock", "GET", "/api/workspaces/workspaceId/queues/queueId/slots", nil, 1)
 }
+
+func TestQueuesReshuffleWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.ReshuffleQueuesRequest{
+		WorkspaceID: "workspaceId",
+		QueueID:     "queueId",
+	}
+	_, invocationErr := client.Queues.Reshuffle(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestQueuesReshuffleWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestQueuesReshuffleWithWireMock", "POST", "/api/workspaces/workspaceId/queues/queueId/reshuffle", nil, 1)
+}

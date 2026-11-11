@@ -409,4 +409,65 @@ export class QueuesClient {
 
         return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/api/workspaces/{workspaceId}/queues/{queueId}/slots");
     }
+
+    /**
+     * Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and `post.scheduled` told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (`stoppedBy` `planLimit`), when no slot is left within 366 days (`full`), or when the queue was saved meanwhile (`changed`); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (`noSlots`) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+     *
+     * @param {Peal.ReshuffleQueuesRequest} request
+     * @param {QueuesClient.RequestOptions} requestOptions - Request-specific configuration.
+     *
+     * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.ConflictError}
+     * @throws {@link Peal.TooManyRequestsError}
+     * @throws {@link errors.PealError}
+     * @throws {@link errors.PealTimeoutError}
+     *
+     * @example
+     *     await client.queues.reshuffle({
+     *         workspaceId: "workspaceId",
+     *         queueId: "queueId"
+     *     })
+     */
+    public reshuffle(request: Peal.ReshuffleQueuesRequest, requestOptions?: QueuesClient.RequestOptions): core.HttpResponsePromise<Peal.QueueReshuffle> {
+        return core.HttpResponsePromise.fromPromise(this.__reshuffle(request, requestOptions));
+    }
+
+    private async __reshuffle(request: Peal.ReshuffleQueuesRequest, requestOptions?: QueuesClient.RequestOptions): Promise<core.WithRawResponse<Peal.QueueReshuffle>> {
+        const { workspaceId, queueId } = request;
+        const _authRequest: core.AuthRequest = await this._options.authProvider.getAuthRequest();
+        let _headers: core.Fetcher.Args["headers"] = mergeHeaders(_authRequest.headers, this._options?.headers, requestOptions?.headers);
+        const _response = await core.fetcher({
+            url: core.url.join(await core.Supplier.get(this._options.baseUrl) ?? (await core.Supplier.get(this._options.environment) ?? environments.PealEnvironment.Default), `api/workspaces/${core.url.encodePathParam(workspaceId, errors.PealError)}/queues/${core.url.encodePathParam(queueId, errors.PealError)}/reshuffle`),
+            method: "POST",
+            headers: _headers,
+            queryString: core.url.queryBuilder().mergeAdditional(requestOptions?.queryParams).build(),
+            timeoutMs: (requestOptions?.timeoutInSeconds ?? this._options?.timeoutInSeconds ?? 60) * 1000,
+            maxRetries: 0,
+            abortSignal: requestOptions?.abortSignal,
+            fetchFn: this._options?.fetch,
+            logging: this._options.logging
+        });
+        if (_response.ok) {
+            return { data: _response.body as Peal.QueueReshuffle, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            switch (_response.error.statusCode) {
+                case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
+                case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
+                default: throw new errors.PealError({
+                    statusCode: _response.error.statusCode,
+                    body: _response.error.body,
+                    rawResponse: _response.rawResponse
+                });
+            }
+        }
+
+        return handleNonStatusCodeError(_response.error, _response.rawResponse, "POST", "/api/workspaces/{workspaceId}/queues/{queueId}/reshuffle");
+    }
 }

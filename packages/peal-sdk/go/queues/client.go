@@ -219,3 +219,31 @@ func (c *Client) Slots(
 	}
 	return response.Body, nil
 }
+
+// Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and `post.scheduled` told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (`stoppedBy` `planLimit`), when no slot is left within 366 days (`full`), or when the queue was saved meanwhile (`changed`); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (`noSlots`) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+//
+// Example:
+//
+//	request := &peal.ReshuffleQueuesRequest{
+//	    WorkspaceID: "workspaceId",
+//	    QueueID: "queueId",
+//	}
+//	_, err := client.Queues.Reshuffle(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Reshuffle(
+	ctx context.Context,
+	request *peal.ReshuffleQueuesRequest,
+	opts ...option.RequestOption,
+) (*peal.QueueReshuffle, error) {
+	response, err := c.WithRawResponse.Reshuffle(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}

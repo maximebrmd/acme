@@ -148,6 +148,16 @@ export const queueKeyOf = (name: string): string =>
 
 const minutesOf = ({ hour, minute }: LocalTime) => hour * 60 + minute;
 
+const timetableOf = ({ slots, timeZone }: Queue) =>
+  `${timeZone}|${slots.map(slotKeyOf).toSorted().join(",")}`;
+
+/**
+ * Whether two versions of a queue give the same instants: the same slots,
+ * in whatever order, in the same zone.
+ */
+export const sameTimetable = (left: Queue, right: Queue): boolean =>
+  timetableOf(left) === timetableOf(right);
+
 /**
  * The instants of the queue's slots strictly after `after`, in order, for
  * as long as it is read: each a weekday and time of the week in the

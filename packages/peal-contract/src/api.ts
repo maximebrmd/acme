@@ -138,9 +138,11 @@ export {
   queueHorizonDays,
   QueueDetailsSchema,
   QueuePreviewSchema,
+  QueueReshuffleSchema,
   QueueSchema,
   QueueSlotSchema,
   QueuesApi,
+  ReshuffleStopSchema,
   SlotTimeSchema,
   WeekdaySchema,
   weekdays,
@@ -151,7 +153,9 @@ export type {
   Queue,
   QueueDetails,
   QueuePreview,
+  QueueReshuffle,
   QueueSlot,
+  ReshuffleStop,
   Weekday,
 } from "./queues.ts";
 

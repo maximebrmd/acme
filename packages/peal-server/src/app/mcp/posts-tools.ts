@@ -28,6 +28,7 @@ import {
   PublicationAttemptSchema,
   queueHorizonDays,
   QueuePostSchema,
+  QueueReshuffleSchema,
   TargetConfirmationSchema,
   TikTokAccountSchema,
 } from "peal-contract";
@@ -420,6 +421,23 @@ export const QueuePost = Tool.make("queue_post", {
   )
   .annotate(Tool.Title, "Add a post to a queue");
 
+export const ReshuffleQueue = Tool.make("reshuffle_queue", {
+  dependencies: [CurrentMember],
+  description: `Moves the posts that wait in a queue (\`queue\`, by its id or its name) onto its slots as they are now: for after its timetable changed with update_queue, which moves no post by itself. The waiting posts (scheduled or awaiting approval, from now on) keep their order and take the queue's slots from now, the first onto the first, those moved by hand included; a post already on its slot stays as it is. Each move is what reschedule_post does: a new time on the same channels, the approval asked again where the workspace asks for approvals. What the posts say and where they go do not change. Answers how many moved, how many stayed (\`unchanged\`), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (\`stoppedBy\` \`planLimit\`), when no slot is left within ${String(queueHorizonDays)} days (\`full\`), or when the queue was saved meanwhile (\`changed\`: call it again). Called again, it moves nothing. Do it only when the user asks for the queue's posts to be moved. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    queue: Schema.String.annotate({
+      description:
+        "The queue, by its id or its name whatever its case, as list_queues answers them.",
+    }),
+  }),
+  success: QueueReshuffleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Reshuffle a queue");
+
 export const CancelPost = Tool.make("cancel_post", {
   dependencies: [CurrentMember],
   description: `Cancels a draft or a scheduled post for good: it goes out at no time, stays in the calendar as cancelled, and cannot be scheduled again (to keep its text, use unschedule_post instead, which takes it back to draft). A post already publishing finishes with what its channels did: those not yet sent are cancelled, and what is out stays out. Nothing reaches a platform. ${needsPublishing}`,
@@ -533,6 +551,7 @@ export const PostTools = Toolkit.make(
   PublishPost,
   ReschedulePost,
   QueuePost,
+  ReshuffleQueue,
   CreatePost,
   CreatePosts,
   ValidatePost,

@@ -39,10 +39,12 @@ import social.peal.resources.queues.requests.CreateQueuesRequest;
 import social.peal.resources.queues.requests.DeleteQueuesRequest;
 import social.peal.resources.queues.requests.GetQueuesRequest;
 import social.peal.resources.queues.requests.ListQueuesRequest;
+import social.peal.resources.queues.requests.ReshuffleQueuesRequest;
 import social.peal.resources.queues.requests.SlotsQueuesRequest;
 import social.peal.resources.queues.requests.UpdateQueuesRequest;
 import social.peal.types.Queue;
 import social.peal.types.QueuePreview;
+import social.peal.types.QueueReshuffle;
 import social.peal.types.UnauthenticatedEncoded;
 
 public class AsyncRawQueuesClient {
@@ -757,6 +759,134 @@ public class AsyncRawQueuesClient {
                                 return;
                             case 404:
                                 future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                        }
+                    } catch (JsonProcessingException ignored) {
+                        // unable to map error response, throwing generic error
+                    }
+                    Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+                    future.completeExceptionally(new PealClientApiException(
+                            "Error with status code " + response.code(), response.code(), errorBody, response));
+                    return;
+                } catch (JsonProcessingException e) {
+                    future.completeExceptionally(
+                            new PealClientException("Failed to deserialize response: " + e.getMessage(), e));
+                } catch (IOException e) {
+                    future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+            }
+        });
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                okhttpCall.cancel();
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and <code>post.scheduled</code> told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (<code>stoppedBy</code> <code>planLimit</code>), when no slot is left within 366 days (<code>full</code>), or when the queue was saved meanwhile (<code>changed</code>); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (<code>noSlots</code>) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+     */
+    public CompletableFuture<PealClientHttpResponse<QueueReshuffle>> reshuffle(String workspaceId, String queueId) {
+        return reshuffle(workspaceId, queueId, ReshuffleQueuesRequest.builder().build());
+    }
+
+    /**
+     * Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and <code>post.scheduled</code> told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (<code>stoppedBy</code> <code>planLimit</code>), when no slot is left within 366 days (<code>full</code>), or when the queue was saved meanwhile (<code>changed</code>); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (<code>noSlots</code>) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+     */
+    public CompletableFuture<PealClientHttpResponse<QueueReshuffle>> reshuffle(
+            String workspaceId, String queueId, RequestOptions requestOptions) {
+        return reshuffle(workspaceId, queueId, ReshuffleQueuesRequest.builder().build(), requestOptions);
+    }
+
+    /**
+     * Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and <code>post.scheduled</code> told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (<code>stoppedBy</code> <code>planLimit</code>), when no slot is left within 366 days (<code>full</code>), or when the queue was saved meanwhile (<code>changed</code>); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (<code>noSlots</code>) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+     */
+    public CompletableFuture<PealClientHttpResponse<QueueReshuffle>> reshuffle(
+            String workspaceId, String queueId, ReshuffleQueuesRequest request) {
+        return reshuffle(workspaceId, queueId, request, null);
+    }
+
+    /**
+     * Moves the posts that wait in the queue (scheduled or awaiting approval, after now) onto its slots as they are now, after its timetable changed: in the order of their times, the first onto the first free slot, and so on, those moved by hand included; a slot a publishing post holds is skipped. Each move is what moving a post by hand does: a new time, the approval policy asked again (a post that waits for an approval keeps waiting, at its new time, unless the caller's posts need none), the month's room in the plan, and <code>post.scheduled</code> told. A post already on its slot is left as it is. Answers how many posts moved, how many were left where they were (on their slots already, scheduled ones when the caller may only ask for posts to go out, or those moved, sent back or cancelled by someone else meanwhile), and how many remain unplaced: it stops, keeping what it moved, at a month the plan has no room in (<code>stoppedBy</code> <code>planLimit</code>), when no slot is left within 366 days (<code>full</code>), or when the queue was saved meanwhile (<code>changed</code>); call it again to go on. Called twice, the second call moves nothing. QueueHasNoRoom (<code>noSlots</code>) for a queue without slots. Needs post:schedule, or post:create where posts wait for an approval.
+     */
+    public CompletableFuture<PealClientHttpResponse<QueueReshuffle>> reshuffle(
+            String workspaceId, String queueId, ReshuffleQueuesRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("queues")
+                .addPathSegment(PathSegments.validate(queueId))
+                .addPathSegments("reshuffle");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method(
+                        "POST",
+                        BodyProperties.toRequestBody(
+                                requestOptions != null ? requestOptions.getBodyProperties() : null,
+                                RequestBody.create("", null)))
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        okhttpRequest = okhttpRequest
+                .newBuilder()
+                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
+                .build();
+        CompletableFuture<PealClientHttpResponse<QueueReshuffle>> future = new CompletableFuture<>();
+        RetryInterceptor.AsyncCall okhttpCall = RetryInterceptor.newAsyncCall(client, okhttpRequest);
+        okhttpCall.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try (ResponseBody responseBody = response.body()) {
+                    String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                    if (response.isSuccessful()) {
+                        future.complete(new PealClientHttpResponse<>(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, QueueReshuffle.class),
+                                response));
+                        return;
+                    }
+                    try {
+                        switch (response.code()) {
+                            case 401:
+                                future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 403:
+                                future.completeExceptionally(new ForbiddenError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 404:
+                                future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 409:
+                                future.completeExceptionally(new ConflictError(
                                         ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
