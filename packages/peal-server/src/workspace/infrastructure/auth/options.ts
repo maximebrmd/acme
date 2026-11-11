@@ -14,7 +14,7 @@ import type { OAuthOptions, Scope } from "@better-auth/oauth-provider";
 import { betterAuth } from "better-auth";
 import type { Session, User } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
-import { admin, jwt, organization } from "better-auth/plugins";
+import { admin, jwt, organization, twoFactor } from "better-auth/plugins";
 import { Option, Redacted, Schema } from "effect";
 
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -389,7 +389,8 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     emailAndPassword: {
       // A sign-up for an email that already has an account answers with a
       // made-up user. Built with the admin plugin's fields, it reads the same
-      // as a real one.
+      // as a real one; `additionalFields` holds the defaults of the others
+      // (the locale, two-step verification's flag).
       customSyntheticUser: ({ additionalFields, coreFields, id }) => ({
         ...coreFields,
         banExpires: null,
@@ -533,6 +534,14 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
       }),
       // Signs OAuth access tokens and publishes its keys at /api/auth/jwks.
       jwt({ disableSettingJwtHeader: true }),
+      // Two-step verification: a code from an authenticator app, or a
+      // recovery code, after the password. It comes before the OAuth
+      // server, as Better Auth runs plugins' after hooks in this order:
+      // on a sign-in during an authorization, its hook must delete the
+      // session the password made before the OAuth server's resumes the
+      // authorization with it. Its options are the library's own, but the
+      // issuer the authenticator app shows.
+      twoFactor({ issuer: "Peal" }),
       oauthServer(settings),
       // The command line's sign-in (RFC 8628): it shows a code, which the
       // user enters on the web app's /device page.

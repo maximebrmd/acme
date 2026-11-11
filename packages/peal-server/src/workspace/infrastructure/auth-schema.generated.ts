@@ -32,6 +32,7 @@ export const user = authSchema.table("user", {
   banned: boolean("banned").default(false),
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires", { withTimezone: true }),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
   stripeCustomerId: text("stripe_customer_id"),
   locale: text("locale", { enum: ["en", "fr"] }).default("en"),
 });
@@ -213,6 +214,27 @@ export const jwks = authSchema.table("jwks", {
   alg: text("alg"),
   crv: text("crv"),
 });
+
+export const twoFactor = authSchema.table(
+  "two_factor",
+  {
+    id: uuid("id")
+      .default(sql`pg_catalog.gen_random_uuid()`)
+      .primaryKey(),
+    secret: text("secret").notNull(),
+    backupCodes: text("backup_codes").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    verified: boolean("verified").default(true),
+    failedVerificationCount: integer("failed_verification_count").default(0),
+    lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  },
+  (table) => [
+    index("twoFactor_secret_idx").on(table.secret),
+    index("twoFactor_userId_idx").on(table.userId),
+  ]
+);
 
 export const oauthClient = authSchema.table(
   "oauth_client",
@@ -486,6 +508,7 @@ export const authRelations = defineRelationsPart(
     invitation,
     apikey,
     jwks,
+    twoFactor,
     oauthClient,
     oauthResource,
     oauthClientResource,
@@ -514,6 +537,10 @@ export const authRelations = defineRelationsPart(
       invitations: r.many.invitation({
         from: r.user.id,
         to: r.invitation.inviterId,
+      }),
+      twoFactors: r.many.twoFactor({
+        from: r.user.id,
+        to: r.twoFactor.userId,
       }),
       oauthClients: r.many.oauthClient({
         from: r.user.id,
@@ -579,6 +606,12 @@ export const authRelations = defineRelationsPart(
       }),
       user: r.one.user({
         from: r.invitation.inviterId,
+        to: r.user.id,
+      }),
+    },
+    twoFactor: {
+      user: r.one.user({
+        from: r.twoFactor.userId,
         to: r.user.id,
       }),
     },
