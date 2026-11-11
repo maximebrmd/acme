@@ -12,6 +12,7 @@ import type {
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { ThreadsOptions } from "#publishing/domain/threads-options.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
@@ -91,6 +92,46 @@ const formats: ReadonlySet<string> = new Set([
   "video/mp4",
   "video/quicktime",
 ]);
+
+const isThreads = Schema.is(ThreadsOptions);
+
+/**
+ * The parameters the post's options give the container that publishes
+ * (the single one, or the carousel's own, never its items), each only when
+ * chosen. A link attachment goes on a post of text alone, as scheduling
+ * refuses it with media.
+ */
+/** What a Threads container takes of a post's options. */
+interface ContainerOptions {
+  link_attachment?: string;
+  reply_control?: string;
+  topic_tag?: string;
+}
+
+const optionParams = (post: OutgoingPost): ContainerOptions => {
+  const params: ContainerOptions = {};
+  const chosen = post.options.pipe(Option.filter(isThreads));
+
+  if (Option.isNone(chosen)) {
+    return params;
+  }
+
+  const { linkAttachment, replyControl, topicTag } = chosen.value;
+
+  if (replyControl !== undefined) {
+    params.reply_control = replyControl;
+  }
+
+  if (topicTag !== undefined) {
+    params.topic_tag = topicTag;
+  }
+
+  if (linkAttachment !== undefined && post.media.length === 0) {
+    params.link_attachment = linkAttachment;
+  }
+
+  return params;
+};
 
 const listedOf = (
   listed: (typeof ThreadsSchema.Type)["data"][number]
@@ -238,6 +279,7 @@ export const threadsClient = Effect.fn("ThreadsClient.make")(
         const id = yield* container(post, {
           media_type: "TEXT",
           text: post.text,
+          ...optionParams(post),
         });
 
         return processing({ items: [], post: Option.some(id), video });
@@ -250,7 +292,10 @@ export const threadsClient = Effect.fn("ThreadsClient.make")(
           single.described
         );
 
-        const id = yield* container(post, withText(params, "text", post.text));
+        const id = yield* container(post, {
+          ...withText(params, "text", post.text),
+          ...optionParams(post),
+        });
 
         return processing({ items: [], post: Option.some(id), video });
       }
@@ -314,14 +359,14 @@ export const threadsClient = Effect.fn("ThreadsClient.make")(
       }
 
       // Every item is processed: the carousel's own container comes next.
-      const id = yield* container(
-        post,
-        withText(
+      const id = yield* container(post, {
+        ...withText(
           { children: prepared.items.join(","), media_type: "CAROUSEL" },
           "text",
           post.text
-        )
-      );
+        ),
+        ...optionParams(post),
+      });
 
       return processing({ ...prepared, post: Option.some(id) });
     });

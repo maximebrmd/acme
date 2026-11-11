@@ -143,6 +143,18 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
 
   const newContainer: Handler = (params) => {
     const url = params["image_url"] ?? params["video_url"] ?? "";
+    const topic = params["topic_tag"] ?? "";
+
+    // Threads takes a link attachment on a post of text alone, and a topic
+    // without periods or ampersands.
+    if (
+      (params["link_attachment"] !== undefined &&
+        params["media_type"] !== "TEXT") ||
+      topic.includes(".") ||
+      topic.includes("&")
+    ) {
+      return metaError(100);
+    }
 
     const container: FakeContainer = {
       error: options.failing?.[url],
