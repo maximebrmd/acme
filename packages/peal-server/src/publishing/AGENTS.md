@@ -172,7 +172,14 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   with its `resource-not-found` problem (a bare 404 is X unreachable, and
   no message's words count); Bluesky's PDS answers
   a record gone with no `commit`; LinkedIn and Facebook Pages stay
-  `unverified` until their permission for a deletion is confirmed.
+  `unverified` until their permission for a deletion is confirmed. The
+  boost hold (`AdsLivePostHolds`, `boostRunning`) is read under the post's
+  and the target's locks, which creating a boost does not take, and a
+  target with a pending change is still promotable: before Facebook or
+  Instagram deletes, make boost creation lock the target (post first) and
+  refuse one with a pending change, and leave such targets out of
+  `PromotablePosts` (`test/publishing/domain/live-post-boost-hold.test.ts`
+  fails the day one does).
 - Every way of scheduling passes the `ApprovalGate` in the transaction that
   saves the post: `schedule`, `scheduleDraft`, `reschedule` and `send` (so
   `posts.send`, `create_post`, `publish_post` and `peal post` too) ask
