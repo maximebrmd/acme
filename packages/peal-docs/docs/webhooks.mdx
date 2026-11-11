@@ -1177,19 +1177,19 @@ export const verify = (secret, headers, rawBody) => {
 
 ## Through the API [#api]
 
-| Endpoint                                                                                     | What it does                                                      |
-| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `GET /api/workspaces/{workspaceId}/webhooks`                                                 | Lists the endpoints, oldest first                                 |
-| `POST /api/workspaces/{workspaceId}/webhooks`                                                | Adds an endpoint, and answers its `secret` once                   |
-| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                    | Shows one                                                         |
-| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Changes its address, description, events or filters, or turns it on or off |
-| `DELETE /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                 | Deletes it, with its secret and its log                           |
-| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/secret`                            | Rotates its secret, and answers the new one once                  |
-| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Sends it a test event, or a sample of `eventType`                 |
-| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries`                         | Lists its deliveries, newest first, 30 a page, by `status` and `eventType` |
-| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries/{deliveryId}/redeliver` | Sends a delivery's event again                                    |
+| Endpoint                                                                                     | What it does                                                                                        |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/webhooks`                                                 | Lists the endpoints, oldest first                                                                   |
+| `POST /api/workspaces/{workspaceId}/webhooks`                                                | Adds an endpoint, and answers its `secret` once                                                     |
+| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                    | Shows one                                                                                           |
+| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Changes its address, description, events or filters, or turns it on or off                          |
+| `DELETE /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                 | Deletes it, with its secret and its log                                                             |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/secret`                            | Rotates its secret, and answers the new one once                                                    |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Sends it a test event, or a sample of `eventType`                                                   |
+| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries`                         | Lists its deliveries, newest first, 30 a page, by `status` and `eventType`                          |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries/{deliveryId}/redeliver` | Sends a delivery's event again                                                                      |
 | `GET /api/workspaces/{workspaceId}/webhooks/deliveries`                                      | Lists the deliveries of every endpoint, by `status`, `endpointId`, `eventType`, `since` and `until` |
-| `POST /api/workspaces/{workspaceId}/webhooks/deliveries/redeliver`                           | Sends many deliveries again: `deliveryIds`, or `endpointId` with `since`, `until` and `eventType` |
+| `POST /api/workspaces/{workspaceId}/webhooks/deliveries/redeliver`                           | Sends many deliveries again: `deliveryIds`, or `endpointId` with `since`, `until` and `eventType`   |
 
 The `GET` lists and the endpoint itself need `webhook:read`; everything else needs `webhook:manage`.
 
