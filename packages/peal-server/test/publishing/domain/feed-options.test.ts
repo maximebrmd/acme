@@ -347,6 +347,15 @@ describe("Threads' options", () => {
     ]);
   });
 
+  it.each(["Synthetic\nlaunches", "Synthetic\rlaunches"])(
+    "take a topic on one line only: %j",
+    (topicTag) => {
+      expect(new ThreadsOptions({ topicTag }).problems()).toStrictEqual([
+        { _tag: "invalid", field: "topicTag" },
+      ]);
+    }
+  );
+
   it("take a link attachment by https only", () => {
     expect(
       new ThreadsOptions({

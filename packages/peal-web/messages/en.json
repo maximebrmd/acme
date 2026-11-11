@@ -1079,7 +1079,7 @@
         "replyAuthorOnly": "Only you",
         "topicTag": "Topic",
         "topicTagHint": "One topic for the post, up to 50 characters, without periods or ampersands.",
-        "topicTagInvalid": "A topic cannot be only spaces, and holds no period (.) or ampersand (&).",
+        "topicTagInvalid": "A topic is one line, not only spaces, and holds no period (.) or ampersand (&).",
         "linkAttachment": "Link preview",
         "linkAttachmentHint": "An address starting with https://, previewed under the post. For a post without images or video only.",
         "linkAttachmentInvalid": "A link starting with https://, on a post without images or video."

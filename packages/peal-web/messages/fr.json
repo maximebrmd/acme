@@ -1079,7 +1079,7 @@
         "replyAuthorOnly": "Vous seul",
         "topicTag": "Sujet",
         "topicTagHint": "Un sujet pour la publication, 50 caractères au plus, sans point ni esperluette.",
-        "topicTagInvalid": "Un sujet n’est pas fait que d’espaces, et ne contient ni point (.) ni esperluette (&).",
+        "topicTagInvalid": "Un sujet tient sur une ligne, n’est pas fait que d’espaces, et ne contient ni point (.) ni esperluette (&).",
         "linkAttachment": "Aperçu de lien",
         "linkAttachmentHint": "Une adresse commençant par https://, prévisualisée sous la publication. Seulement pour une publication sans image ni vidéo.",
         "linkAttachmentInvalid": "Un lien commençant par https://, sur une publication sans image ni vidéo."

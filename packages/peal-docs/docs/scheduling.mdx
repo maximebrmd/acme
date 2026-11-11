@@ -128,7 +128,7 @@ On **Threads**:
 | Option            | API name         | Values                                                                                           | Left out                                                |
 | ----------------- | ---------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
 | **Who can reply** | `replyControl`   | `everyone`, `accounts_you_follow`, `followers_only`, `mentioned_only`, `parent_post_author_only` | Everyone                                                |
-| **Topic**         | `topicTag`       | One topic, 50 characters at most, without `.` or `&`                                             | None                                                    |
+| **Topic**         | `topicTag`       | One topic on one line, 50 characters at most, without `.` or `&`                                 | None                                                    |
 | **Link preview**  | `linkAttachment` | An address starting with `https://`, on a post without images or video                           | Threads previews the first link of a post of text alone |
 
 Threads takes a post alone, so each option is the post's. A link preview on a post with media is refused when you schedule it.

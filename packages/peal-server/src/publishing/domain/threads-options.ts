@@ -30,8 +30,9 @@ export const ThreadsReplyControlSchema = Schema.Literals([
 
 export type ThreadsReplyControl = typeof ThreadsReplyControlSchema.Type;
 
-// "Periods (.)" and "Ampersands (&)" are not allowed in a topic tag.
-const topicForbidden = [".", "&"] as const;
+// "Periods (.)" and "Ampersands (&)" are not allowed in a topic tag, which
+// is one line, as the app writes it.
+const topicForbidden = [".", "&", "\n", "\r"] as const;
 
 // An address shown as the post's link preview: https only, as Peal sends
 // it. Written without a flag, so the pattern clients are told (its source)
