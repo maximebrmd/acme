@@ -47,6 +47,8 @@ import {
   workspaceClaim,
 } from "./oauth.ts";
 import type { AuthConfiguration } from "./settings.ts";
+import { guardTwoStepChanges, refuseLockedOutMembers } from "./two-step.ts";
+import type { TwoStepPolicy } from "./two-step.ts";
 import { recordWorkspaceChange } from "./workspace-changes.ts";
 import type { WorkspaceChangeRecorder } from "./workspace-changes.ts";
 
@@ -81,6 +83,11 @@ export interface AuthHooks extends BillingHooks {
   readonly invitation: (link: InvitationLink) => void;
   readonly log: (level: AuthLogLevel, message: string) => void;
   readonly resetPassword: (link: AuthLink) => void;
+  /**
+   * Awaited on the routes that read or change a workspace, and on turning
+   * two-step verification off: what the user's workspaces require.
+   */
+  readonly twoStep: TwoStepPolicy;
   readonly verifyEmail: (link: AuthLink) => void;
   /**
    * Awaited once a route that changes a workspace has answered a browser:
@@ -295,12 +302,16 @@ const oauthServer = (settings: AuthConfiguration) => {
 };
 
 // Every route's before hook. A request staff send while acting as someone
-// is checked and recorded first, refused or not.
+// is checked and recorded first, refused or not. Then what two-step
+// verification decides: a workspace's routes for a member it refuses, and
+// turning it on or off.
 const beforeEveryRoute = (hooks: AuthHooks) =>
   createAuthMiddleware(async (ctx) => {
     await guardImpersonatedRequest(ctx, hooks.impersonatedRequest);
     await refuseImpersonatedChanges(ctx);
     refusePersonalSubscriptions(ctx);
+    await refuseLockedOutMembers(ctx, hooks.twoStep);
+    await guardTwoStepChanges(ctx, hooks.twoStep);
   });
 
 /**

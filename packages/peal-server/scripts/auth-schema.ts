@@ -54,6 +54,10 @@ const auth = makeAuth({
       }),
     resetPassword: ignore,
     subscriptionChanged: nothing,
+    twoStep: {
+      lockedOut: async () => await Promise.resolve(false),
+      requiredBy: async () => await Promise.resolve([]),
+    },
     verifyEmail: ignore,
     workspaceChange: nothing,
   },

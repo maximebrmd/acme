@@ -16,9 +16,11 @@ import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import type { UpgradePath } from "#shared/application/upgrade-paths.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { MemberDirectory } from "#workspace/application/member-directory.ts";
+import { SecurityPolicies } from "#workspace/application/security-policies.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 import { AuthStartFailed } from "./auth-start-failed.ts";
@@ -171,6 +173,53 @@ const keptChange =
       Effect.withSpan("BetterAuth.workspaceChange")
     );
 
+// Whether one of these workspaces requires two-step verification while the
+// account does not have it on: read from the database, never from a
+// session's cached copy of the user.
+const lockedOut =
+  (
+    directory: MemberDirectory["Service"],
+    policies: SecurityPolicies["Service"]
+  ) =>
+  (userId: string, workspaceIds: readonly WorkspaceId[]) =>
+    Effect.gen(function* twoStepLockedOut() {
+      const required = yield* policies.requiredAmong(workspaceIds);
+
+      if (required.size === 0) {
+        return false;
+      }
+
+      const account = yield* directory.account(yield* decodeUserId(userId));
+
+      return !Option.exists(account, ({ twoStepEnabled }) => twoStepEnabled);
+    }).pipe(Effect.orDie, Effect.withSpan("BetterAuth.twoStepLockedOut"));
+
+// The names of the workspaces the user belongs to that require two-step
+// verification.
+const requiredBy =
+  (
+    directory: MemberDirectory["Service"],
+    policies: SecurityPolicies["Service"]
+  ) =>
+  (userId: string) =>
+    Effect.gen(function* twoStepRequiredBy() {
+      const account = yield* directory.account(yield* decodeUserId(userId));
+
+      if (Option.isNone(account)) {
+        return [];
+      }
+
+      const { workspaces } = account.value;
+
+      const required = yield* policies.requiredAmong(
+        workspaces.map(({ id }) => id)
+      );
+
+      return workspaces
+        .filter(({ id }) => required.has(id))
+        .map(({ name }) => name);
+    }).pipe(Effect.orDie, Effect.withSpan("BetterAuth.twoStepRequiredBy"));
+
 export const BetterAuthLive = Layer.effect(
   BetterAuth,
   Effect.gen(function* betterAuthLive() {
@@ -184,6 +233,7 @@ export const BetterAuthLive = Layer.effect(
     const guard = yield* ImpersonationGuard;
     const activity = yield* ActivityJournal;
     const directory = yield* MemberDirectory;
+    const policies = yield* SecurityPolicies;
 
     // Better Auth calls back outside any fiber. Work it starts runs on fibers
     // of this layer, with its logger and tracer, and is waited for, then
@@ -270,6 +320,15 @@ export const BetterAuthLive = Layer.effect(
       // so Stripe sends it again.
       subscriptionChanged: async (event) => {
         await runPromise(subscriptions.record(event).pipe(Effect.asVoid));
+      },
+      // Read on each request, from the database: a failure refuses it.
+      twoStep: {
+        lockedOut: async (userId, workspaceIds) =>
+          await runPromise(
+            lockedOut(directory, policies)(userId, workspaceIds)
+          ),
+        requiredBy: async (userId) =>
+          await runPromise(requiredBy(directory, policies)(userId)),
       },
       verifyEmail: (link) => {
         run(emails.send({ _tag: "VerifyEmail", ...link }));
