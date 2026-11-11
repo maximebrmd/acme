@@ -2,6 +2,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "name": "peal-site",
   "projectType": "application",
+  "implicitDependencies": ["peal-skills"],
   "targets": {
     "typegen": {
       "command": "astro sync",

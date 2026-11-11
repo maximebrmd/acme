@@ -149,7 +149,7 @@ const me = await peal.session.me();
 AI agents work in a workspace through the
 [MCP endpoint](https://docs.peal.social/mcp), the
 [`peal` command line](https://docs.peal.social/cli) or the
-[agent skill](skills/peal/SKILL.md), drafting posts for a person to review or
+[agent skill](packages/peal-skills/skills/peal/SKILL.md), drafting posts for a person to review or
 publishing them, as the workspace allows.
 
 ## Self-hosting
@@ -200,7 +200,7 @@ licences:
 | Everything, unless a folder below has a `LICENSE` of its own | [FSL-1.1-ALv2](LICENSE.md): any use but a competing service, and Apache-2.0 two years after each release |
 | [`peal-contract`](packages/peal-contract), the API contract  | [Apache-2.0](packages/peal-contract/LICENSE)                                                             |
 | [`peal-sdk`](packages/peal-sdk), the SDKs                    | [Apache-2.0](packages/peal-sdk/LICENSE)                                                                  |
-| [`skills/peal`](skills/peal), the agent skill                | [Apache-2.0](skills/peal/LICENSE)                                                                        |
+| [`peal-skills`](packages/peal-skills), the agent skill       | [Apache-2.0](packages/peal-skills/LICENSE)                                                               |
 
 Peal is fair source, not open source: you may use, modify and self-host it for
 anything but offering it to others as a competing service, and each release
