@@ -20,6 +20,7 @@ public class ListDeliveriesTest : BaseMockServerTest
                   "completedAt": "completedAt",
                   "createdAt": "createdAt",
                   "durationMs": 1,
+                  "endpointId": "endpointId",
                   "error": "timeout",
                   "eventId": "eventId",
                   "eventType": "post.scheduled",
@@ -27,15 +28,19 @@ public class ListDeliveriesTest : BaseMockServerTest
                   "id": "id",
                   "lastAttemptAt": "lastAttemptAt",
                   "nextAttemptAt": "nextAttemptAt",
+                  "redeliveryOf": "redeliveryOf",
                   "responseExcerpt": "responseExcerpt",
                   "responseStatus": 1,
-                  "status": "pending"
+                  "status": "pending",
+                  "workspaceExternalId": "workspaceExternalId",
+                  "workspaceId": "workspaceId"
                 },
                 {
                   "attempts": 1,
                   "completedAt": "completedAt",
                   "createdAt": "createdAt",
                   "durationMs": 1,
+                  "endpointId": "endpointId",
                   "error": "timeout",
                   "eventId": "eventId",
                   "eventType": "post.scheduled",
@@ -43,9 +48,12 @@ public class ListDeliveriesTest : BaseMockServerTest
                   "id": "id",
                   "lastAttemptAt": "lastAttemptAt",
                   "nextAttemptAt": "nextAttemptAt",
+                  "redeliveryOf": "redeliveryOf",
                   "responseExcerpt": "responseExcerpt",
                   "responseStatus": 1,
-                  "status": "pending"
+                  "status": "pending",
+                  "workspaceExternalId": "workspaceExternalId",
+                  "workspaceId": "workspaceId"
                 }
               ],
               "nextCursor": "nextCursor"
@@ -87,6 +95,7 @@ public class ListDeliveriesTest : BaseMockServerTest
                   "completedAt": "completedAt",
                   "createdAt": "createdAt",
                   "durationMs": 1,
+                  "endpointId": "endpointId",
                   "error": "timeout",
                   "eventId": "eventId",
                   "eventType": "post.scheduled",
@@ -94,9 +103,12 @@ public class ListDeliveriesTest : BaseMockServerTest
                   "id": "id",
                   "lastAttemptAt": "lastAttemptAt",
                   "nextAttemptAt": "nextAttemptAt",
+                  "redeliveryOf": "redeliveryOf",
                   "responseExcerpt": "responseExcerpt",
                   "responseStatus": 1,
-                  "status": "pending"
+                  "status": "pending",
+                  "workspaceExternalId": "workspaceExternalId",
+                  "workspaceId": "workspaceId"
                 }
               ],
               "nextCursor": "nextCursor"

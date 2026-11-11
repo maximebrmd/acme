@@ -46,10 +46,13 @@ import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
 import { PostTagsField } from "#components/posts/post-tags-field.tsx";
 import {
-  instantOfChoice,
-  ScheduleFields,
-} from "#components/posts/schedule-fields.tsx";
+  PostQueueLine,
+  useChosenQueue,
+} from "#components/posts/queue-choice.tsx";
+import type { Placement } from "#components/posts/queue-choice.tsx";
+import { instantOfChoice } from "#components/posts/schedule-fields.tsx";
 import type { ScheduleChoice } from "#components/posts/schedule-fields.tsx";
+import { SchedulePlacementFields } from "#components/posts/schedule-placement.tsx";
 import { SignatureMenu } from "#components/posts/signature-menu.tsx";
 import { SignaturePause } from "#components/posts/signature-pause.tsx";
 import { TargetOptionsSection } from "#components/posts/target-options-panel.tsx";
@@ -64,6 +67,7 @@ import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits } from "#posts/media-fit.ts";
 import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
+import { queuedSlotFormat, queuedSlotWeek } from "#posts/queued-slot.ts";
 import { startChoiceOf } from "#posts/start-time.ts";
 import {
   channelOptionsOf,
@@ -281,6 +285,10 @@ export const Composer = ({
 
   const [tagIds, setTagIds] = useState<readonly string[]>(start.tagIds);
 
+  // A time chosen, or a queue's next free slot.
+  const [placement, setPlacement] = useState<Placement>({ _tag: "time" });
+  const queueId = useChosenQueue(workspaceId, placement);
+
   const [choice, setChoice] = useState<ScheduleChoice>(() =>
     Option.getOrElse(
       startChoiceOf(startAt, browserTimeZone(), DateTime.nowUnsafe()),
@@ -349,13 +357,46 @@ export const Composer = ({
       )
   );
 
-  const formatted = (at: DateTime.Utc) =>
+  const formatted = (at: DateTime.Utc, timeZone?: string) =>
     format.dateTime(DateTime.toDate(at), {
       dateStyle: "medium",
       timeStyle: "short",
-      timeZone: choice.timeZone,
+      timeZone: timeZone ?? choice.timeZone,
       ...timeOptions,
     });
+
+  // A post put on a queue: told the time it got there, on the queue's
+  // clock with its zone named.
+  const placed = (queued: Post) => {
+    if (queued.schedule === null) {
+      return;
+    }
+
+    const { at, timeZone } = queued.schedule;
+
+    toast.success(
+      t(queued.status === "awaitingApproval" ? "queuedForApproval" : "queued", {
+        at: format.dateTime(DateTime.toDate(at), {
+          ...queuedSlotFormat(timeZone),
+          ...timeOptions,
+        }),
+      })
+    );
+  };
+
+  // The calendar, on the week of the slot a queue gave the post.
+  const toSlotWeek = (queued: Post) => {
+    const week =
+      queued.schedule === null
+        ? undefined
+        : queuedSlotWeek(queued.schedule, browserTimeZone());
+
+    router.push(
+      week === undefined
+        ? `/app/${workspaceId}/calendar`
+        : calendarOf(workspaceId, week)
+    );
+  };
 
   const opened = (saved: Post) => {
     if (postId === undefined) {
@@ -400,7 +441,7 @@ export const Composer = ({
   const scheduleDraft = async () => {
     const at = instantOfChoice(choice);
 
-    if (Option.isNone(at)) {
+    if (placement._tag === "time" && Option.isNone(at)) {
       requests.fail({ _tag: "InvalidTime" });
 
       return;
@@ -436,7 +477,30 @@ export const Composer = ({
       return;
     }
 
-    if (first === undefined) {
+    // On a queue, a draft for no channel takes the queue's.
+    if (placement._tag === "queue") {
+      // No queue read yet: the server takes the default.
+      const queued = await requests.enqueue(
+        saved.value.id,
+        Option.match(queueId, {
+          onNone: () => ({}),
+          onSome: (id) => ({ queueId: id }),
+        })
+      );
+
+      if (Option.isNone(queued)) {
+        opened(saved.value);
+
+        return;
+      }
+
+      placed(queued.value);
+      toSlotWeek(queued.value);
+
+      return;
+    }
+
+    if (first === undefined || Option.isNone(at)) {
       requests.fail(
         new PostContentInvalid({ violations: [{ _tag: "noChannels" }] })
       );
@@ -469,6 +533,23 @@ export const Composer = ({
   };
 
   const move = async (id: string) => {
+    if (placement._tag === "queue") {
+      const queued = await requests.enqueue(
+        id,
+        Option.match(queueId, {
+          onNone: () => ({}),
+          onSome: (chosen) => ({ queueId: chosen }),
+        })
+      );
+
+      if (Option.isSome(queued)) {
+        placed(queued.value);
+        opened(queued.value);
+      }
+
+      return;
+    }
+
     const at = instantOfChoice(choice);
 
     if (Option.isNone(at)) {
@@ -564,7 +645,10 @@ export const Composer = ({
           </div>
         )}
         {post === undefined ? null : (
-          <PostOrigins post={post} viewerId={userId} />
+          <>
+            <PostQueueLine queueId={post.queueId} workspaceId={workspaceId} />
+            <PostOrigins post={post} viewerId={userId} />
+          </>
         )}
       </CardHeader>
       <CardContent>
@@ -710,10 +794,13 @@ export const Composer = ({
             <legend className="mb-3 text-sm font-medium">
               {t("scheduleLegend")}
             </legend>
-            <ScheduleFields
-              value={choice}
+            <SchedulePlacementFields
+              choice={choice}
+              placement={placement}
+              workspaceId={workspaceId}
               disabled={!(canSchedule || canReschedule) || busy !== null}
-              onChange={setChoice}
+              onChoice={setChoice}
+              onPlacement={setPlacement}
             />
           </fieldset>
           <PostTagsField

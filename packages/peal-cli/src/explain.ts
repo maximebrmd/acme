@@ -2,7 +2,11 @@ import { Effect, Match, Option } from "effect";
 import type { Schema } from "effect";
 import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
-import { duplicateWindowHours, maxImportRows } from "peal-contract";
+import {
+  duplicateWindowHours,
+  maxImportRows,
+  queueHorizonDays,
+} from "peal-contract";
 import type {
   AdAccountUnusable,
   BoostViolation,
@@ -503,6 +507,20 @@ const reasonOf =
         ),
       PostStatusConflict: ({ status }) =>
         refused(`The post is ${status}, which does not allow this.`),
+      QueueHasNoRoom: ({ reason }) =>
+        refused(
+          reason === "noSlots"
+            ? "The queue has no slot: add some with peal queues update --slot, or give the post a time with --at. Nothing was made or moved."
+            : `Every slot of the queue's next ${String(queueHorizonDays)} days is taken: add slots with peal queues update --slot, or give the post a time with --at. Nothing was made or moved.`
+        ),
+      QueueNameTaken: () =>
+        refused(
+          "The workspace already has a queue of that name, whatever its case: nothing was changed. peal queues list shows them."
+        ),
+      QueueNotFound: () =>
+        refused(
+          "The workspace has no such queue, or no default queue: peal queues list shows them, and peal queues update --default makes one the default."
+        ),
       ReplyInvalid: ({ length, maximum, reason, unit }) =>
         refused(
           reason === "empty" || length === null || maximum === null
@@ -567,6 +585,10 @@ const reasonOf =
         refused(
           "The workspace has 100 invitations pending, the most it may: revoke some first."
         ),
+      TooManyQueues: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} queues, the most it may: delete one first, with peal queues delete.`
+        ),
       TooManyRequests: ({ limit, retryAfterSeconds, windowSeconds }) =>
         refused(
           `Peal takes ${String(limit)} requests every ${String(windowSeconds)} seconds from one sign-in or key, and this one sent more: nothing was done. Try again in ${String(retryAfterSeconds)} seconds.`
@@ -587,9 +609,9 @@ const reasonOf =
         refused(
           `The workspace has ${String(allowed)} webhook endpoints, the most it may, whatever its plan: delete one first, with peal webhooks delete.`
         ),
-      TooManyWebhookSends: ({ allowed }) =>
+      TooManyWebhookSends: ({ allowed, retryAfterSeconds }) =>
         refused(
-          `The workspace sent ${String(allowed)} test events and deliveries again within an hour, the most it may: nothing was sent. Try again later.`
+          `The workspace sent ${String(allowed)} of these within an hour, the most it may, or this would send more than are left: nothing was sent. Try again in ${String(retryAfterSeconds)} seconds.`
         ),
       Unauthenticated: () => new SignInExpired({ url }),
       UnknownChannels: ({ channelIds }) =>
@@ -629,6 +651,12 @@ const reasonOf =
       WebhookEndpointNotFound: () =>
         refused(
           "The workspace has no webhook endpoint with that id: peal webhooks list shows them."
+        ),
+      WebhookFilterRefused: ({ field }) =>
+        refused(
+          field === "workspaceIds"
+            ? "Only a partner endpoint, in a partner account's home workspace, takes --workspace-id: an endpoint of its own workspace hears that workspace alone."
+            : "--channel takes channels of the workspace, as peal channels list shows them."
         ),
       WebhookUrlRefused: ({ reason }) => refused(urlRefusals[reason]),
       WebhooksNotConfigured: () =>

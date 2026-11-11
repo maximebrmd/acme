@@ -52,6 +52,11 @@ class SearchPostsRequest extends JsonSerializableType
     public ?string $platform;
 
     /**
+     * @var ?string $queueId
+     */
+    public ?string $queueId;
+
+    /**
      * @var ?value-of<PostSort> $sort
      */
     public ?string $sort;
@@ -81,6 +86,7 @@ class SearchPostsRequest extends JsonSerializableType
      *   limit?: ?string,
      *   outcome?: ?value-of<PostOutcome>,
      *   platform?: ?value-of<Platform>,
+     *   queueId?: ?string,
      *   sort?: ?value-of<PostSort>,
      *   status?: ?value-of<PostStatus>,
      *   tagId?: ?string,
@@ -98,6 +104,7 @@ class SearchPostsRequest extends JsonSerializableType
         $this->limit = $values['limit'] ?? null;
         $this->outcome = $values['outcome'] ?? null;
         $this->platform = $values['platform'] ?? null;
+        $this->queueId = $values['queueId'] ?? null;
         $this->sort = $values['sort'] ?? null;
         $this->status = $values['status'] ?? null;
         $this->tagId = $values['tagId'] ?? null;

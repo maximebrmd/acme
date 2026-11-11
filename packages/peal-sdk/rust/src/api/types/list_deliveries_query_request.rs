@@ -7,6 +7,11 @@ pub struct ListDeliveriesQueryRequest {
     pub cursor: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<String>,
+    #[serde(rename = "eventType")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_type: Option<WebhookEventType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<WebhookDeliveryStatus>,
 }
 
 impl ListDeliveriesQueryRequest {
@@ -20,6 +25,8 @@ impl ListDeliveriesQueryRequest {
 pub struct ListDeliveriesQueryRequestBuilder {
     cursor: Option<String>,
     limit: Option<String>,
+    event_type: Option<WebhookEventType>,
+    status: Option<WebhookDeliveryStatus>,
 }
 
 impl ListDeliveriesQueryRequestBuilder {
@@ -33,11 +40,23 @@ impl ListDeliveriesQueryRequestBuilder {
         self
     }
 
+    pub fn event_type(mut self, value: WebhookEventType) -> Self {
+        self.event_type = Some(value);
+        self
+    }
+
+    pub fn status(mut self, value: WebhookDeliveryStatus) -> Self {
+        self.status = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`ListDeliveriesQueryRequest`].
     pub fn build(self) -> Result<ListDeliveriesQueryRequest, BuildError> {
         Ok(ListDeliveriesQueryRequest {
             cursor: self.cursor,
             limit: self.limit,
+            event_type: self.event_type,
+            status: self.status,
         })
     }
 }

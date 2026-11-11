@@ -13,6 +13,9 @@ pub struct WebhookDelivery {
     #[serde(rename = "durationMs")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration_ms: Option<i64>,
+    #[serde(rename = "endpointId")]
+    #[serde(default)]
+    pub endpoint_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<WebhookAttemptError>,
     #[serde(rename = "eventId")]
@@ -31,6 +34,9 @@ pub struct WebhookDelivery {
     #[serde(rename = "nextAttemptAt")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub next_attempt_at: Option<String>,
+    #[serde(rename = "redeliveryOf")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub redelivery_of: Option<String>,
     #[serde(rename = "responseExcerpt")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub response_excerpt: Option<String>,
@@ -38,6 +44,12 @@ pub struct WebhookDelivery {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub response_status: Option<i64>,
     pub status: WebhookDeliveryStatus,
+    #[serde(rename = "workspaceExternalId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub workspace_external_id: Option<String>,
+    #[serde(rename = "workspaceId")]
+    #[serde(default)]
+    pub workspace_id: String,
 }
 
 impl WebhookDelivery {
@@ -53,6 +65,7 @@ pub struct WebhookDeliveryBuilder {
     completed_at: Option<String>,
     created_at: Option<String>,
     duration_ms: Option<i64>,
+    endpoint_id: Option<String>,
     error: Option<WebhookAttemptError>,
     event_id: Option<String>,
     event_type: Option<WebhookEventType>,
@@ -60,9 +73,12 @@ pub struct WebhookDeliveryBuilder {
     id: Option<String>,
     last_attempt_at: Option<String>,
     next_attempt_at: Option<String>,
+    redelivery_of: Option<String>,
     response_excerpt: Option<String>,
     response_status: Option<i64>,
     status: Option<WebhookDeliveryStatus>,
+    workspace_external_id: Option<String>,
+    workspace_id: Option<String>,
 }
 
 impl WebhookDeliveryBuilder {
@@ -83,6 +99,11 @@ impl WebhookDeliveryBuilder {
 
     pub fn duration_ms(mut self, value: i64) -> Self {
         self.duration_ms = Some(value);
+        self
+    }
+
+    pub fn endpoint_id(mut self, value: impl Into<String>) -> Self {
+        self.endpoint_id = Some(value.into());
         self
     }
 
@@ -121,6 +142,11 @@ impl WebhookDeliveryBuilder {
         self
     }
 
+    pub fn redelivery_of(mut self, value: impl Into<String>) -> Self {
+        self.redelivery_of = Some(value.into());
+        self
+    }
+
     pub fn response_excerpt(mut self, value: impl Into<String>) -> Self {
         self.response_excerpt = Some(value.into());
         self
@@ -136,14 +162,26 @@ impl WebhookDeliveryBuilder {
         self
     }
 
+    pub fn workspace_external_id(mut self, value: impl Into<String>) -> Self {
+        self.workspace_external_id = Some(value.into());
+        self
+    }
+
+    pub fn workspace_id(mut self, value: impl Into<String>) -> Self {
+        self.workspace_id = Some(value.into());
+        self
+    }
+
     /// Consumes the builder and constructs a [`WebhookDelivery`].
     /// This method will fail if any of the following fields are not set:
     /// - [`attempts`](WebhookDeliveryBuilder::attempts)
     /// - [`created_at`](WebhookDeliveryBuilder::created_at)
+    /// - [`endpoint_id`](WebhookDeliveryBuilder::endpoint_id)
     /// - [`event_id`](WebhookDeliveryBuilder::event_id)
     /// - [`event_type`](WebhookDeliveryBuilder::event_type)
     /// - [`id`](WebhookDeliveryBuilder::id)
     /// - [`status`](WebhookDeliveryBuilder::status)
+    /// - [`workspace_id`](WebhookDeliveryBuilder::workspace_id)
     pub fn build(self) -> Result<WebhookDelivery, BuildError> {
         Ok(WebhookDelivery {
             attempts: self
@@ -154,6 +192,9 @@ impl WebhookDeliveryBuilder {
                 .created_at
                 .ok_or_else(|| BuildError::missing_field("created_at"))?,
             duration_ms: self.duration_ms,
+            endpoint_id: self
+                .endpoint_id
+                .ok_or_else(|| BuildError::missing_field("endpoint_id"))?,
             error: self.error,
             event_id: self
                 .event_id
@@ -165,11 +206,16 @@ impl WebhookDeliveryBuilder {
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             last_attempt_at: self.last_attempt_at,
             next_attempt_at: self.next_attempt_at,
+            redelivery_of: self.redelivery_of,
             response_excerpt: self.response_excerpt,
             response_status: self.response_status,
             status: self
                 .status
                 .ok_or_else(|| BuildError::missing_field("status"))?,
+            workspace_external_id: self.workspace_external_id,
+            workspace_id: self
+                .workspace_id
+                .ok_or_else(|| BuildError::missing_field("workspace_id"))?,
         })
     }
 }

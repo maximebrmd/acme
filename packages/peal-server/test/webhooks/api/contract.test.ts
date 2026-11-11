@@ -2,10 +2,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { describe, expect, it } from "@effect/vitest";
-import { Duration, Schema } from "effect";
+import { DateTime, Duration, Schema } from "effect";
 import {
   FailureReasonSchema,
   maxWebhookAttempts,
+  maxWebhookBulkRedelivery,
+  maxWebhookFilterChannels,
+  maxWebhookFilterWorkspaces,
+  webhookBulkRedeliveriesPerHour,
+  WebhookRedeliverySkipSchema,
   maxWebhookDescriptionLength,
   maxWebhookEndpoints,
   webhookManualSendsPerHour,
@@ -29,21 +34,30 @@ import {
   RejectionReasonSchema,
 } from "#media/domain/media-status.ts";
 import { FailureReasonSchema as DomainFailureReasonSchema } from "#publishing/domain/post-target-status.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { UnconfirmedReasonSchema as DomainUnconfirmedReasonSchema } from "#shared/domain/publish-result.ts";
+import type { SkipReason } from "#webhooks/application/webhook-deliveries.ts";
 import { AttemptOutcomeSchema } from "#webhooks/domain/delivery-attempt.ts";
 import {
+  bulkRedeliveriesPerHour,
   deliveryRetention,
   maxAttempts,
+  maxBulkRedelivery,
+  maxFilterChannels,
+  maxFilterWorkspaces,
   manualSendsPerHour,
   maxEndpointsPerWorkspace,
   secretOverlap,
   turnOffAfterFailingFor,
 } from "#webhooks/domain/delivery-policy.ts";
+import { bodyOf, RecordedEvent } from "#webhooks/domain/recorded-event.ts";
+import { sampleOf } from "#webhooks/domain/sample-events.ts";
 import { DeliveryFailureSchema } from "#webhooks/domain/webhook-delivery.ts";
 import {
   DisabledReasonSchema,
   maxDescriptionLength,
 } from "#webhooks/domain/webhook-endpoint.ts";
+import { WebhookEventIdSchema } from "#webhooks/domain/webhook-event-id.ts";
 import {
   SubscribableEventTypeSchema,
   WebhookEventTypeSchema as DomainEventTypeSchema,
@@ -67,7 +81,11 @@ const docs = path.join(
   "docs"
 );
 
-const example = /^```json title="(?<type>[^"]+)"\n(?<body>[\s\S]*?)\n```$/gmu;
+const example =
+  /^```json title="(?!sample )(?<type>[^"]+)"\n(?<body>[\s\S]*?)\n```$/gmu;
+
+const sampleExample =
+  /^```json title="sample (?<type>[^"]+)"\n(?<body>[\s\S]*?)\n```$/gmu;
 
 const decodePayload = Schema.decodeUnknownSync(
   Schema.fromJsonString(Schema.toCodecJson(WebhookPayloadSchema)),
@@ -115,6 +133,9 @@ describe("the contract", () => {
   it("states the limits and delays the server applies", () => {
     expect({
       attempts: maxWebhookAttempts,
+      bulk: maxWebhookBulkRedelivery,
+      bulkPerHour: webhookBulkRedeliveriesPerHour,
+      channels: maxWebhookFilterChannels,
       description: maxWebhookDescriptionLength,
       endpoints: maxWebhookEndpoints,
       failingDays: webhookFailingDays,
@@ -122,8 +143,12 @@ describe("the contract", () => {
       overlapHours: webhookSecretOverlapHours,
       retentionDays: webhookDeliveryRetentionDays,
       url: maxWebhookUrlLength,
+      workspaces: maxWebhookFilterWorkspaces,
     }).toStrictEqual({
       attempts: maxAttempts,
+      bulk: maxBulkRedelivery,
+      bulkPerHour: bulkRedeliveriesPerHour,
+      channels: maxFilterChannels,
       description: maxDescriptionLength,
       endpoints: maxEndpointsPerWorkspace,
       failingDays: Duration.toDays(turnOffAfterFailingFor),
@@ -131,8 +156,46 @@ describe("the contract", () => {
       overlapHours: Duration.toHours(secretOverlap),
       retentionDays: Duration.toDays(deliveryRetention),
       url: domainMaxUrlLength,
+      workspaces: maxFilterWorkspaces,
     });
   });
+
+  it("names why a delivery is not sent again as the server does", () => {
+    const reasons: readonly SkipReason[] = [
+      "alreadySent",
+      "endpointDisabled",
+      "notFound",
+    ];
+
+    expect(WebhookRedeliverySkipSchema.literals).toStrictEqual(reasons);
+  });
+
+  it.each(SubscribableEventTypeSchema.literals)(
+    "has a sample of %s that receivers read, marked as one",
+    (type) => {
+      const workspaceId = WorkspaceIdSchema.make(
+        "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+      );
+
+      const payload = decodePayload(
+        bodyOf(
+          new RecordedEvent({
+            event: sampleOf(type, workspaceId),
+            id: WebhookEventIdSchema.make(
+              "00000000-0000-7000-8000-0000000000ff"
+            ),
+            occurredAt: DateTime.makeUnsafe("2026-01-01T09:00:00Z"),
+            sample: true,
+            workspaceId,
+          })
+        )
+      );
+
+      expect(payload.type).toBe(type);
+      expect(payload.sample).toBeTruthy();
+      expect(payload.data.workspaceId).toBe(workspaceId);
+    }
+  );
 
   it("names how endpoints and deliveries end as the server does", () => {
     expect(WebhookDisabledReasonSchema.literals).toStrictEqual(
@@ -175,6 +238,25 @@ describe.each(["webhooks.mdx", "fr/webhooks.mdx"])(
             type,
           }).type
         ).toBe(type);
+      }
+    });
+  }
+);
+
+describe.each(["webhooks.mdx", "fr/webhooks.mdx"])(
+  "the sample of the docs' %s",
+  (page) => {
+    it("is a payload marked as a sample", async () => {
+      const text = await readFile(path.join(docs, page), "utf-8");
+      const samples = [...text.matchAll(sampleExample)];
+
+      expect(samples).toHaveLength(1);
+
+      for (const { groups } of samples) {
+        const payload = decodePayload(groups?.["body"] ?? "");
+
+        expect(payload.type).toBe(groups?.["type"]);
+        expect(payload.sample).toBeTruthy();
       }
     });
   }

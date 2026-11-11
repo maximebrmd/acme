@@ -3,15 +3,15 @@
 import * as Peal from "../index.js";
 
 export type ConflictErrorBody = 
-    | Peal.ConflictErrorBody.ChannelSetNameTaken
-    | Peal.ConflictErrorBody.TooManyChannelSets;
+    | Peal.ConflictErrorBody.QueueNameTaken
+    | Peal.ConflictErrorBody.TooManyQueues;
 
 export namespace ConflictErrorBody {
-    export interface ChannelSetNameTaken extends Peal.ChannelSetNameTakenEncoded {
-        _tag: "ChannelSetNameTaken";
+    export interface QueueNameTaken extends Peal.QueueNameTakenEncoded {
+        _tag: "QueueNameTaken";
     }
 
-    export interface TooManyChannelSets extends Peal.TooManyChannelSetsEncoded {
-        _tag: "TooManyChannelSets";
+    export interface TooManyQueues extends Peal.TooManyQueuesEncoded {
+        _tag: "TooManyQueues";
     }
 }

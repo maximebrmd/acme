@@ -1,4 +1,4 @@
-import { and, eq, gt, lt, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, lt, sql } from "drizzle-orm";
 import { Effect, Layer, Option } from "effect";
 
 import { AssistantUsage } from "#assistant/application/ports/assistant-usage.ts";
@@ -74,6 +74,42 @@ export const DrizzleAssistantUsageLive = Layer.effect(
           .pipe(Effect.orDie);
 
         return rows[0]?.requests ?? 0;
+      }),
+      usedIn: Effect.fn("AssistantUsage.usedIn")(function* usedIn(
+        workspaceIds: readonly WorkspaceId[],
+        day: LocalDate
+      ) {
+        if (workspaceIds.length === 0) {
+          return new Map<WorkspaceId, number>();
+        }
+
+        const rows = yield* db
+          .select({
+            requests: dailyUsage.requests,
+            workspaceId: dailyUsage.workspaceId,
+          })
+          .from(dailyUsage)
+          .where(
+            and(
+              inArray(dailyUsage.workspaceId, [...workspaceIds]),
+              eq(dailyUsage.day, isoDay(day)),
+              gt(dailyUsage.requests, 0)
+            )
+          )
+          .pipe(Effect.orDie);
+
+        const sent = new Map(
+          rows.map((row) => [row.workspaceId, row.requests])
+        );
+
+        // Keyed by the ids asked for, which are the workspaces' own.
+        return new Map(
+          workspaceIds.flatMap((id) => {
+            const requests = sent.get(id);
+
+            return requests === undefined ? [] : [[id, requests] as const];
+          })
+        );
       }),
     });
   })

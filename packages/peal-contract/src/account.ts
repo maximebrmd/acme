@@ -297,9 +297,11 @@ const ExportedAuthoredPostSchema = Schema.Struct({
 
 // The workspace's plan, null on a server that does not bill, its
 // subscriptions as Stripe last described them: no card, invoice or Stripe
-// id, which stay with Stripe; and how many posts it made each month (from
+// id, which stay with Stripe; how many posts it made each month (from
 // its first instant, UTC) on platforms that bill the server per post (X),
-// and how many of them held a link.
+// and how many of them held a link; and its usage ledger, kept 400 days:
+// each meter's quantity by UTC day (YYYY-MM-DD) and dimension (the platform
+// of `publishedPosts`, empty for the others).
 const ExportedBillingSchema = Schema.Struct({
   meteredPosts: Schema.Array(
     Schema.Struct({
@@ -316,6 +318,14 @@ const ExportedBillingSchema = Schema.Struct({
       currentPeriodEnd: nullable(instant),
       plan: Schema.String,
       status: Schema.String,
+    })
+  ),
+  usage: Schema.Array(
+    Schema.Struct({
+      day: Schema.String,
+      dimension: Schema.String,
+      meter: Schema.String,
+      quantity: Int64Schema,
     })
   ),
 });
@@ -537,6 +547,21 @@ const ExportedSavedItemsSchema = Schema.Struct({
       options: Schema.Unknown,
     })
   ),
+  // Weekly timetables posts are put on: their slots in their time zone,
+  // for some channels and at most one channel set.
+  queues: Schema.Array(
+    Schema.Struct({
+      channelIds: Schema.Array(Schema.String),
+      channelSetId: nullable(Schema.String),
+      createdAt: instant,
+      id: Schema.String,
+      isDefault: Schema.Boolean,
+      name: Schema.String,
+      // As stored: each slot a weekday and a time of day.
+      slots: Schema.Unknown,
+      timeZone: Schema.String,
+    })
+  ),
   signatures: Schema.Array(
     Schema.Struct({
       createdAt: instant,
@@ -631,7 +656,7 @@ const ExportedWorkspaceSchema = Schema.Struct({
   name: Schema.String,
   posts: Schema.Array(ExportedPostSchema),
   review: ExportedReviewSchema,
-  // Its tags, signatures, channel sets and channels' default options.
+  // Its tags, signatures, channel sets, queues and channels' default options.
   saved: ExportedSavedItemsSchema,
   slug: Schema.String,
   webhooks: Schema.Array(ExportedWebhookSchema),

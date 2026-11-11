@@ -43,7 +43,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
   wait), `…/settings` (with `members`, `invitations`, `tags`, `signatures`,
-  `channel-sets`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
+  `channel-sets`, `queues`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]`,
   `admin/contract-requests` (through `deskRead`), `admin/audit` and
@@ -137,6 +137,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   and changed with post:update. Their failures are explained from the one
   `SavedItems.errors` catalogue (`#settings/saved-item-error.ts`). Draw a
   tag with peal-ui's `Tag` and `TagDot`, never a colour value.
+- Queues have a settings page too (`…/settings/queues`, views in
+  `components/queues/queue-views.tsx`, state in `queues-settings.tsx`,
+  atoms in `#queues/atoms.ts`), with each queue's next slots on its own
+  clock. The composer's schedule section (`SchedulePlacementFields`)
+  chooses a time or a queue (`QueueChoice`, its view `QueueChoiceView`,
+  the default preselected), and puts the saved draft or the scheduled post
+  on the queue with `posts.enqueue`; the calendar marks queued posts and
+  filters by queue, and `PostQueueLine` names a post's queue.
 - The composer takes them through components of their own, each wired
   with a few lines: `ChannelSetPicker` (applies a set with `appliedSet`,
   which leaves out and counts the channels disconnected since),
@@ -243,6 +251,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   service at `PEAL_TERMS_URL`. Explain a `PlanLimitReached`, and Better
   Auth's `MEMBER_LIMIT_REACHED`, wherever they surface, from the `Billing`
   catalogue and `Auth.errors`.
+- Below it, on a server that bills or not, `UsageHistoryScreen` reads
+  `GET …/usage` for the last 7, 30 or 90 UTC days (`usageOf`): the
+  totals, a partner's plan when `sharedWith` says so, and
+  `UsageHistoryView`'s chart (posts published as bars, channels as a
+  line) with `UsageDaysTable` behind the **Table** tab, a dash for a day
+  without a snapshot. Its strings are `Billing.usage.history`.
 - The sign-up and password reset pages read the Turnstile site key at
   request time (`captchaSiteKey()`, `GET /api/captcha`); `useCaptcha` shows
   the widget only with one, sends its token as `x-captcha-response`, and
@@ -306,3 +320,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - The consent page lets a person leave `workspace:ads` out as it does
   publishing (`mayLeaveAdsOut`, `consentAnswer` in
   `#auth/consent-scopes.ts`).
+- The webhooks settings (`components/webhooks/`) offer an endpoint's
+  channels as a picker (`workspaceChannels`) and a partner endpoint's
+  workspaces as ids, one a line (`#webhooks/endpoint-draft.ts`; an edit
+  always sends `channelIds`, an empty list hearing every channel), a status
+  and event filter on each log, a **Failed** tab across endpoints
+  (`searchPage`), "Send all failed again" naming how many and the hour's
+  budget, and a test event type (a sample). Every string is in the
+  `Webhooks` namespace, en and fr.

@@ -180,6 +180,12 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
           } as const;
 
           const requests = {
+            // Onto the default queue, which the workspace does not have:
+            // refused once the caller may publish.
+            enqueuePost: {
+              body: {},
+              path: `${base}/posts/0190f3a0-0000-7000-8000-00000000d0de/queue`,
+            },
             // Fetched from nowhere: a loopback address is refused once the
             // caller may add media.
             importMedia: {
@@ -201,6 +207,17 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             reduce: {
               body: { keepChannelIds: [], keepMemberIds: [] },
               path: `${base}/billing/reduction`,
+            },
+            // For a channel the workspace does not have: refused once the
+            // caller may save what posts are written with.
+            saveQueue: {
+              body: {
+                channelIds: ["0190f3a0-0000-7000-8000-00000000c0de"],
+                name: "Synthetic queue",
+                slots: [{ day: "monday", time: "09:00" }],
+                timeZone: "Europe/Paris",
+              },
+              path: `${base}/queues`,
             },
             // On a channel the workspace does not have: refused once the
             // caller may publish.
@@ -252,10 +269,12 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             // No publishing, no webhooks, no billing: only what it was
             // given, and where the workspace stands, as any member reads.
             apiKey: {
+              enqueuePost: "forbidden",
               importMedia: "let through",
               listWebhooks: "forbidden",
               manageWebhooks: "forbidden",
               reduce: "forbidden",
+              saveQueue: "forbidden",
               sendPost: "forbidden",
               standing: "let through",
             },
@@ -263,45 +282,55 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             // they publish nothing, and change neither webhooks nor what
             // the workspace keeps.
             impersonating: {
+              enqueuePost: "forbidden",
               importMedia: "let through",
               listWebhooks: "let through",
               manageWebhooks: "forbidden",
               reduce: "forbidden",
+              saveQueue: "let through",
               sendPost: "forbidden",
               standing: "let through",
             },
             owner: {
+              enqueuePost: "let through",
               importMedia: "let through",
               listWebhooks: "let through",
               manageWebhooks: "let through",
               reduce: "let through",
+              saveQueue: "let through",
               sendPost: "let through",
               standing: "let through",
             },
             // Everything the owner's role allows, but choosing what the
             // workspace keeps, which is the person's own to do.
             publisher: {
+              enqueuePost: "let through",
               importMedia: "let through",
               listWebhooks: "let through",
               manageWebhooks: "let through",
               reduce: "forbidden",
+              saveQueue: "let through",
               sendPost: "let through",
               standing: "let through",
             },
             reader: {
+              enqueuePost: "forbidden",
               importMedia: "forbidden",
               listWebhooks: "let through",
               manageWebhooks: "forbidden",
               reduce: "forbidden",
+              saveQueue: "forbidden",
               sendPost: "forbidden",
               standing: "let through",
             },
             // Writing is not publishing.
             writer: {
+              enqueuePost: "forbidden",
               importMedia: "let through",
               listWebhooks: "let through",
               manageWebhooks: "let through",
               reduce: "forbidden",
+              saveQueue: "let through",
               sendPost: "forbidden",
               standing: "let through",
             },
@@ -324,10 +353,12 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
               ])
             ),
             {
+              enqueuePost: "QueueNotFound",
               importMedia: "MediaSourceNotPublic",
               listWebhooks: "ok",
               manageWebhooks: "WebhookUrlRefused",
               reduce: "BillingNotEnabled",
+              saveQueue: "UnknownChannels",
               sendPost: "UnknownChannels",
               standing: "ok",
             }

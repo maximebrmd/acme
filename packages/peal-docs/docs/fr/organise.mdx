@@ -83,14 +83,15 @@ Pour envoyer la même publication à plusieurs moments, dupliquez-la et programm
 
 Tout ce qui précède se trouve dans l’[API HTTP](/api-overview), sous `/api/workspaces/{workspaceId}`, dans les [outils MCP](/mcp#tools) et dans la [ligne de commande](/cli).
 
-| Quoi                                     | Points d’accès                                                                      |
-| ---------------------------------------- | ----------------------------------------------------------------------------------- |
-| Étiquettes                               | `GET`, `POST …/tags`, `PATCH`, `DELETE …/tags/{tagId}`, `PUT …/posts/{postId}/tags` |
-| Signatures                               | `GET`, `POST …/signatures`, `PUT`, `DELETE …/signatures/{signatureId}`              |
-| Groupes de canaux                        | `GET`, `POST …/channel-sets`, `PUT`, `DELETE …/channel-sets/{channelSetId}`         |
-| Options par défaut                       | `GET`, `PUT`, `DELETE …/channels/{channelId}/default-options`                       |
-| Dupliquer                                | `POST …/posts/{postId}/duplicate`                                                   |
-| Publications classées sous une étiquette | `GET …/posts/search?tagId=…`                                                        |
+| Quoi                                     | Points d’accès                                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Étiquettes                               | `GET`, `POST …/tags`, `PATCH`, `DELETE …/tags/{tagId}`, `PUT …/posts/{postId}/tags`               |
+| Signatures                               | `GET`, `POST …/signatures`, `PUT`, `DELETE …/signatures/{signatureId}`                            |
+| Groupes de canaux                        | `GET`, `POST …/channel-sets`, `PUT`, `DELETE …/channel-sets/{channelSetId}`                       |
+| Files d’attente                          | `GET`, `POST …/queues`, `GET`, `PUT`, `DELETE …/queues/{queueId}`, `GET …/queues/{queueId}/slots` |
+| Options par défaut                       | `GET`, `PUT`, `DELETE …/channels/{channelId}/default-options`                                     |
+| Dupliquer                                | `POST …/posts/{postId}/duplicate`                                                                 |
+| Publications classées sous une étiquette | `GET …/posts/search?tagId=…`                                                                      |
 
 Une publication nomme ce qu’elle prend à sa création. Celle-ci part sur les canaux du groupe « Launch », prend la signature par défaut de chaque canal, et est classée sous une étiquette :
 

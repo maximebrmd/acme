@@ -40,6 +40,7 @@ import {
   BillingActionsApiLive,
   BillingLive,
   BillingOverviewLive,
+  UsageApiLive,
   ContractRequestsDeskApiLive,
   ContractRequestsLive as ContractRequestsUseCasesLive,
 } from "#billing/container.ts";
@@ -84,6 +85,7 @@ import {
   MediaInPostsLive,
   PostsApiLive,
   PublishingLive,
+  QueuesApiLive,
   SignaturesApiLive,
   TagsApiLive,
   TikTokApiLive,
@@ -137,6 +139,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   AssistantApiLive,
   BillingApiLive,
   BillingActionsApiLive,
+  UsageApiLive,
   AnalyticsApiLive,
   TikTokApiLive,
   CapabilitiesApiLive,
@@ -151,6 +154,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   TagsApiLive,
   SignaturesApiLive,
   ChannelSetsApiLive,
+  QueuesApiLive,
   ChannelDefaultsApiLive,
   AdsApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));

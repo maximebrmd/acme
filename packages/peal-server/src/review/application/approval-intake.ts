@@ -18,7 +18,12 @@ import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import type { PostId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type {
+  ChannelId,
+  PostId,
+  UserId,
+  WorkspaceId,
+} from "#shared/domain/ids.ts";
 import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 
 import { ApprovalStore } from "./ports/approval-store.ts";
@@ -29,6 +34,8 @@ import { ReviewSettingsStore } from "./ports/review-settings-store.ts";
 /** A post someone asks to send, as publishing shows it to the gate. */
 export interface PostSubmission {
   readonly authorId: Option.Option<UserId>;
+  /** The channels it goes to. */
+  readonly channelIds: readonly ChannelId[];
   readonly postId: PostId;
   readonly scheduledAt: DateTime.Utc;
   /** The SHA-256 of what the post says and where it goes. */
@@ -154,6 +161,7 @@ export class ApprovalIntake extends Context.Service<
 
           yield* outcomes.approvalRequested({
             authorId: submission.authorId,
+            channelIds: submission.channelIds,
             key: requestKeyOf(renewed),
             postId: renewed.postId,
             requestedBy: renewed.requestedBy,
@@ -184,6 +192,7 @@ export class ApprovalIntake extends Context.Service<
 
         yield* outcomes.approvalRequested({
           authorId: submission.authorId,
+          channelIds: submission.channelIds,
           key: requestKeyOf(request),
           postId: request.postId,
           requestedBy: request.requestedBy,

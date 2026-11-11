@@ -78,6 +78,14 @@ public final class PostRefusal {
         return new PostRefusal(new SignatureNotFoundValue(value));
     }
 
+    public static PostRefusal queueNotFound(QueueNotFoundEncoded value) {
+        return new PostRefusal(new QueueNotFoundValue(value));
+    }
+
+    public static PostRefusal queueHasNoRoom(QueueHasNoRoomEncoded value) {
+        return new PostRefusal(new QueueHasNoRoomValue(value));
+    }
+
     public boolean isPostContentInvalid() {
         return value instanceof PostContentInvalidValue;
     }
@@ -128,6 +136,14 @@ public final class PostRefusal {
 
     public boolean isSignatureNotFound() {
         return value instanceof SignatureNotFoundValue;
+    }
+
+    public boolean isQueueNotFound() {
+        return value instanceof QueueNotFoundValue;
+    }
+
+    public boolean isQueueHasNoRoom() {
+        return value instanceof QueueHasNoRoomValue;
     }
 
     public boolean _isUnknown() {
@@ -225,6 +241,20 @@ public final class PostRefusal {
         return Optional.empty();
     }
 
+    public Optional<QueueNotFoundEncoded> getQueueNotFound() {
+        if (isQueueNotFound()) {
+            return Optional.of(((QueueNotFoundValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<QueueHasNoRoomEncoded> getQueueHasNoRoom() {
+        if (isQueueHasNoRoom()) {
+            return Optional.of(((QueueHasNoRoomValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<Object> _getUnknown() {
         if (_isUnknown()) {
             return Optional.of(((_UnknownValue) value).value);
@@ -280,6 +310,10 @@ public final class PostRefusal {
 
         T visitSignatureNotFound(SignatureNotFoundEncoded signatureNotFound);
 
+        T visitQueueNotFound(QueueNotFoundEncoded queueNotFound);
+
+        T visitQueueHasNoRoom(QueueHasNoRoomEncoded queueHasNoRoom);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -297,7 +331,9 @@ public final class PostRefusal {
         @JsonSubTypes.Type(ForbiddenValue.class),
         @JsonSubTypes.Type(UnknownTagsValue.class),
         @JsonSubTypes.Type(ChannelSetNotFoundValue.class),
-        @JsonSubTypes.Type(SignatureNotFoundValue.class)
+        @JsonSubTypes.Type(SignatureNotFoundValue.class),
+        @JsonSubTypes.Type(QueueNotFoundValue.class),
+        @JsonSubTypes.Type(QueueHasNoRoomValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -810,6 +846,86 @@ public final class PostRefusal {
         }
 
         private boolean equalTo(SignatureNotFoundValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "PostRefusal{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("QueueNotFound")
+    @JsonIgnoreProperties("_tag")
+    private static final class QueueNotFoundValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private QueueNotFoundEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private QueueNotFoundValue() {}
+
+        private QueueNotFoundValue(QueueNotFoundEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitQueueNotFound(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof QueueNotFoundValue && equalTo((QueueNotFoundValue) other);
+        }
+
+        private boolean equalTo(QueueNotFoundValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "PostRefusal{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("QueueHasNoRoom")
+    @JsonIgnoreProperties("_tag")
+    private static final class QueueHasNoRoomValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private QueueHasNoRoomEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private QueueHasNoRoomValue() {}
+
+        private QueueHasNoRoomValue(QueueHasNoRoomEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitQueueHasNoRoom(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof QueueHasNoRoomValue && equalTo((QueueHasNoRoomValue) other);
+        }
+
+        private boolean equalTo(QueueHasNoRoomValue other) {
             return value.equals(other.value);
         }
 

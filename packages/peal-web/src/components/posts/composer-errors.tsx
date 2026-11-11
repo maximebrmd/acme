@@ -2,6 +2,7 @@
 
 import { Match, Option } from "effect";
 import { useTranslations } from "next-intl";
+import { queueHorizonDays } from "peal-contract";
 import type { Channel, ContentViolation, Platform } from "peal-contract";
 import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 
@@ -183,6 +184,9 @@ export const ComposerErrors = ({
     PostContentInvalid: () => t("errors.content"),
     PostNotFound: () => t("errors.notFound"),
     PostStatusConflict: ({ status }) => t("errors.conflict", { status }),
+    QueueHasNoRoom: ({ reason }) =>
+      t("errors.queueNoRoom", { days: queueHorizonDays, reason }),
+    QueueNotFound: () => t("errors.queueNotFound"),
     ScheduleInPast: () => t("errors.inPast"),
     SignatureNotFound: () => t("errors.unknownSignature"),
     TooManyRequests: generic,

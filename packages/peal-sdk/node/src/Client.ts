@@ -21,12 +21,14 @@ import { NotificationPreferencesClient } from "./api/resources/notificationPrefe
 import { PartnerClient } from "./api/resources/partner/client/Client.js";
 import { PartnerAccountClient } from "./api/resources/partnerAccount/client/Client.js";
 import { PostsClient } from "./api/resources/posts/client/Client.js";
+import { QueuesClient } from "./api/resources/queues/client/Client.js";
 import { ReviewClient } from "./api/resources/review/client/Client.js";
 import { SessionClient } from "./api/resources/session/client/Client.js";
 import { SignaturesClient } from "./api/resources/signatures/client/Client.js";
 import { SystemClient } from "./api/resources/system/client/Client.js";
 import { TagsClient } from "./api/resources/tags/client/Client.js";
 import { TiktokClient } from "./api/resources/tiktok/client/Client.js";
+import { UsageClient } from "./api/resources/usage/client/Client.js";
 import { WebhooksClient } from "./api/resources/webhooks/client/Client.js";
 import type { BaseClientOptions, BaseRequestOptions } from "./BaseClient.js";
 import { normalizeClientOptionsWithAuth, type NormalizedClientOptionsWithAuth } from "./BaseClient.js";
@@ -54,6 +56,7 @@ export class PealClient {
     protected _members: MembersClient | undefined;
     protected _invitations: InvitationsClient | undefined;
     protected _billing: BillingClient | undefined;
+    protected _usage: UsageClient | undefined;
     protected _analytics: AnalyticsClient | undefined;
     protected _tiktok: TiktokClient | undefined;
     protected _capabilities: CapabilitiesClient | undefined;
@@ -69,6 +72,7 @@ export class PealClient {
     protected _tags: TagsClient | undefined;
     protected _signatures: SignaturesClient | undefined;
     protected _channelSets: ChannelSetsClient | undefined;
+    protected _queues: QueuesClient | undefined;
     protected _channelDefaults: ChannelDefaultsClient | undefined;
 
     constructor(options: PealClient.Options = {}) {
@@ -122,6 +126,10 @@ export class PealClient {
 
     public get billing(): BillingClient {
         return (this._billing ??= new BillingClient(this._options));
+    }
+
+    public get usage(): UsageClient {
+        return (this._usage ??= new UsageClient(this._options));
     }
 
     public get analytics(): AnalyticsClient {
@@ -182,6 +190,10 @@ export class PealClient {
 
     public get channelSets(): ChannelSetsClient {
         return (this._channelSets ??= new ChannelSetsClient(this._options));
+    }
+
+    public get queues(): QueuesClient {
+        return (this._queues ??= new QueuesClient(this._options));
     }
 
     public get channelDefaults(): ChannelDefaultsClient {

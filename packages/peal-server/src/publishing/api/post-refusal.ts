@@ -1,4 +1,4 @@
-import { Array as Arr, Effect, Match, Option, Schema } from "effect";
+import { Array as Arr, Effect, Match, Option, Result, Schema } from "effect";
 import {
   ChannelSetNotFound,
   DuplicatePost,
@@ -7,6 +7,8 @@ import {
   PostContentInvalid,
   PostNotFound,
   PostRefusalSchema,
+  QueueHasNoRoom,
+  QueueNotFound,
   ScheduleInPast,
   SignatureNotFound,
   UnknownChannels,
@@ -116,6 +118,9 @@ export const refusalOf =
       PostContentRejected: ({ violations }) =>
         Effect.succeed<PostRefusal>(new PostContentInvalid({ violations })),
       PostNotFound: () => Effect.succeed<PostRefusal>(new PostNotFound()),
+      QueueHasNoRoom: ({ queueId, reason }) =>
+        Effect.succeed<PostRefusal>(new QueueHasNoRoom({ queueId, reason })),
+      QueueNotFound: () => Effect.succeed<PostRefusal>(new QueueNotFound()),
       ScheduleInPast: () => Effect.succeed<PostRefusal>(new ScheduleInPast()),
       SignatureNotFound: () =>
         Effect.succeed<PostRefusal>(new SignatureNotFound()),
@@ -162,6 +167,18 @@ export const refusalOfCheck =
 
     if (Option.contains(check.schedule, "inPast")) {
       return Effect.succeed(Option.some(new ScheduleInPast()));
+    }
+
+    const noRoom = check.queueSlot.pipe(
+      Option.flatMap(({ queueId, slot }) =>
+        Result.getFailure(slot).pipe(
+          Option.map((reason) => new QueueHasNoRoom({ queueId, reason }))
+        )
+      )
+    );
+
+    if (Option.isSome(noRoom)) {
+      return Effect.succeed(noRoom);
     }
 
     if (Option.isSome(check.planLimit)) {

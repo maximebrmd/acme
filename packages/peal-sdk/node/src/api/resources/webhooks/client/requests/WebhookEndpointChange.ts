@@ -12,8 +12,10 @@ import * as Peal from "../../../../index.js";
 export interface WebhookEndpointChange {
     workspaceId: string;
     endpointId: string;
+    channelIds?: string[];
     description?: string;
     enabled?: boolean;
     eventTypes?: Peal.SubscribableWebhookEventType[];
     url?: string;
+    workspaceIds?: string[];
 }

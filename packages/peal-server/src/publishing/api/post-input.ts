@@ -3,6 +3,7 @@ import { Array as Arr, Effect, Option, Schema } from "effect";
 import {
   InvalidTimeZone,
   PostNotFound,
+  QueueNotFound,
   SignatureNotFound,
   UnknownChannels,
   UnknownMedia,
@@ -13,14 +14,18 @@ import type {
   ChannelOptions as OptionsInput,
   NewPost as NewPostInput,
   PostContent as ContentInput,
+  PostTiming,
 } from "peal-contract";
 
 import type { KeyedRequest } from "#publishing/application/idempotency-keys.ts";
+import type { Placement } from "#publishing/application/placement.ts";
 import type { PresetAsk } from "#publishing/application/post-presets.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
 import { ChannelOptionsListSchema } from "#publishing/domain/channel-options.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
+import { QueueIdSchema } from "#publishing/domain/queue-id.ts";
+import type { QueueId } from "#publishing/domain/queue-id.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
 import { SignatureIdSchema } from "#publishing/domain/signature-id.ts";
 import { TagIdSchema } from "#publishing/domain/tag-id.ts";
@@ -48,6 +53,8 @@ const decodeSignatureId = Schema.decodeUnknownOption(SignatureIdSchema);
 const decodeTagId = Schema.decodeUnknownOption(TagIdSchema);
 
 const decodeTimeZone = Schema.decodeUnknownOption(TimeZoneIdSchema);
+
+const decodeQueueId = Schema.decodeUnknownOption(QueueIdSchema);
 
 // The contract checks the same limits as the domain, so content that passed
 // it always decodes.
@@ -170,6 +177,42 @@ export const targetIdFrom = (raw: string) =>
     onSome: Effect.succeed,
   });
 
+/**
+ * The queue a request names, if it names one: an id that is not even of
+ * the right form is QueueNotFound.
+ */
+export const queueIdOf = (
+  raw: string | undefined
+): Effect.Effect<Option.Option<QueueId>, QueueNotFound> => {
+  if (raw === undefined) {
+    return Effect.succeed(Option.none());
+  }
+
+  return Option.match(decodeQueueId(raw), {
+    onNone: () => Effect.fail(new QueueNotFound()),
+    onSome: (queueId) => Effect.succeed(Option.some(queueId)),
+  });
+};
+
+/** When a request says a post goes out, with its queue decoded. */
+export const placementFrom = (
+  when: PostTiming
+): Effect.Effect<Placement, QueueNotFound> => {
+  if (when._tag === "queue") {
+    return queueIdOf(when.queueId).pipe(
+      Effect.map((queueId): Placement => ({ _tag: "queue", queueId }))
+    );
+  }
+
+  return Effect.succeed(
+    when._tag === "at" ? { _tag: "at", at: when.at } : { _tag: "now" }
+  );
+};
+
+/** The zone a request's time is chosen in: UTC unless it says. */
+export const zoneOf = (when: PostTiming): string =>
+  when._tag === "queue" ? "UTC" : (when.timeZone ?? "UTC");
+
 /** A schedule at the instant, in the zone, or InvalidTimeZone. */
 export const scheduleFrom = (at: DateTime.Utc, timeZone: string) =>
   Option.match(decodeTimeZone(timeZone), {
@@ -228,13 +271,18 @@ export const sendRequestFrom = (input: NewPostInput, key?: string) =>
     const channelIds = yield* channelIdsFrom(input.channelIds);
     const presets = yield* presetsFrom(input);
 
-    // One channel at least, unless a channel set brings some.
-    if (channelIds.length === 0 && presets.channelSets.length === 0) {
+    const { when } = input;
+
+    // One channel at least, unless a channel set or a queue brings some.
+    if (
+      channelIds.length === 0 &&
+      presets.channelSets.length === 0 &&
+      when._tag !== "queue"
+    ) {
       return yield* new UnknownChannels({ channelIds: [] });
     }
 
-    const { when } = input;
-    const timeZone = when.timeZone ?? "UTC";
+    const timeZone = zoneOf(when);
 
     const zone = yield* Option.match(decodeTimeZone(timeZone), {
       onNone: () => Effect.fail(new InvalidTimeZone({ timeZone })),
@@ -243,11 +291,11 @@ export const sendRequestFrom = (input: NewPostInput, key?: string) =>
 
     const request: SendPostRequest = {
       allowDuplicate: input.allowDuplicate ?? false,
-      at: when._tag === "at" ? Option.some(when.at) : Option.none(),
       channelIds,
       content: yield* contentFrom(input.content),
       idempotency: yield* keyedFrom(input, key),
       options: yield* optionsFrom(input.options ?? []),
+      placement: yield* placementFrom(when),
       presets,
       ...(yield* tagsGiven(input.tagIds)),
       timeZone: zone,

@@ -18,6 +18,7 @@ public class RedeliverTest : BaseMockServerTest
               "completedAt": "completedAt",
               "createdAt": "createdAt",
               "durationMs": 1,
+              "endpointId": "endpointId",
               "error": "timeout",
               "eventId": "eventId",
               "eventType": "post.scheduled",
@@ -25,9 +26,12 @@ public class RedeliverTest : BaseMockServerTest
               "id": "id",
               "lastAttemptAt": "lastAttemptAt",
               "nextAttemptAt": "nextAttemptAt",
+              "redeliveryOf": "redeliveryOf",
               "responseExcerpt": "responseExcerpt",
               "responseStatus": 1,
-              "status": "pending"
+              "status": "pending",
+              "workspaceExternalId": "workspaceExternalId",
+              "workspaceId": "workspaceId"
             }
             """;
 
@@ -67,6 +71,7 @@ public class RedeliverTest : BaseMockServerTest
               "completedAt": "completedAt",
               "createdAt": "createdAt",
               "durationMs": 1,
+              "endpointId": "endpointId",
               "error": "timeout",
               "eventId": "eventId",
               "eventType": "post.scheduled",
@@ -74,9 +79,12 @@ public class RedeliverTest : BaseMockServerTest
               "id": "id",
               "lastAttemptAt": "lastAttemptAt",
               "nextAttemptAt": "nextAttemptAt",
+              "redeliveryOf": "redeliveryOf",
               "responseExcerpt": "responseExcerpt",
               "responseStatus": 1,
-              "status": "pending"
+              "status": "pending",
+              "workspaceExternalId": "workspaceExternalId",
+              "workspaceId": "workspaceId"
             }
             """;
 

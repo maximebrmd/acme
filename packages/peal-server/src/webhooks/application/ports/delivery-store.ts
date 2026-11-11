@@ -1,5 +1,5 @@
-import { Context } from "effect";
-import type { DateTime, Effect, Option } from "effect";
+import { Context, Option } from "effect";
+import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -8,12 +8,51 @@ import type { WebhookDeliveryId } from "#webhooks/domain/webhook-delivery-id.ts"
 import type { WebhookDelivery } from "#webhooks/domain/webhook-delivery.ts";
 import type { WebhookEndpointId } from "#webhooks/domain/webhook-endpoint-id.ts";
 import type { WebhookEventId } from "#webhooks/domain/webhook-event-id.ts";
+import type {
+  SubscribableEventType,
+  WebhookEventType,
+} from "#webhooks/domain/webhook-event-type.ts";
 
-/** A page of an endpoint's deliveries, newest first. */
+/** A page of deliveries, newest first. */
 export interface DeliveryPageRequest {
   /** The last delivery of the page before, if this is not the first. */
   readonly after: Option.Option<WebhookDeliveryId>;
   readonly limit: number;
+}
+
+/** Where a delivery stands, as the log filters it. */
+export type DeliveryStatusTag = WebhookDelivery["status"]["_tag"];
+
+/**
+ * Which deliveries of a workspace's log to list: each filter left out
+ * keeps them all. `since` and `until` bound when a delivery was made,
+ * `since` included and `until` not.
+ */
+export interface DeliveryFilters {
+  readonly endpointId: Option.Option<WebhookEndpointId>;
+  readonly eventType: Option.Option<WebhookEventType>;
+  readonly since: Option.Option<DateTime.Utc>;
+  readonly status: Option.Option<DeliveryStatusTag>;
+  readonly until: Option.Option<DateTime.Utc>;
+}
+
+/** No filter: every delivery. */
+export const anyDelivery: DeliveryFilters = {
+  endpointId: Option.none(),
+  eventType: Option.none(),
+  since: Option.none(),
+  status: Option.none(),
+  until: Option.none(),
+};
+
+/**
+ * Which of an endpoint's failed deliveries to send again: those made in
+ * a time range, of a type.
+ */
+export interface FailedSelection {
+  readonly eventType: Option.Option<SubscribableEventType>;
+  readonly since: Option.Option<DateTime.Utc>;
+  readonly until: Option.Option<DateTime.Utc>;
 }
 
 export interface DeliveryPage {
@@ -58,10 +97,57 @@ export class DeliveryStore extends Context.Service<
     readonly save: (
       delivery: WebhookDelivery
     ) => Effect.Effect<void, DatabaseError>;
-    readonly page: (
-      endpointId: WebhookEndpointId,
+    /**
+     * The workspace's deliveries, of every endpoint it has (a partner
+     * endpoint's of its tenants' events included), newest first.
+     */
+    readonly search: (
+      workspaceId: WorkspaceId,
+      filters: DeliveryFilters,
       request: DeliveryPageRequest
     ) => Effect.Effect<DeliveryPage, DatabaseError>;
+    /**
+     * These deliveries of the workspace's endpoints, held until the
+     * transaction ends, so calls to send them again take turns; those that
+     * are not its own are left out.
+     */
+    readonly lockIn: (
+      workspaceId: WorkspaceId,
+      deliveryIds: readonly WebhookDeliveryId[]
+    ) => Effect.Effect<readonly WebhookDelivery[], DatabaseError>;
+    /**
+     * The endpoint's failed deliveries that `selection` names and that
+     * are the last of their event to it, oldest first, `limit` at most,
+     * held as `lockIn` holds them; and how many there are in all.
+     */
+    readonly lockFailed: (
+      endpointId: WebhookEndpointId,
+      selection: FailedSelection,
+      limit: number
+    ) => Effect.Effect<
+      {
+        readonly deliveries: readonly WebhookDelivery[];
+        readonly total: number;
+      },
+      DatabaseError
+    >;
+    /**
+     * Holds back, until the transaction it runs in ends, any other that
+     * holds one of these endpoints' events: sending an event again to an
+     * endpoint takes turns, whichever of its deliveries each call names.
+     * Taken after the deliveries' rows, in one order, so two calls never
+     * wait on each other.
+     */
+    readonly holdEvents: (
+      deliveries: readonly WebhookDelivery[]
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Those of these deliveries whose event has a newer delivery to the
+     * same endpoint that is pending or succeeded: sent again already.
+     */
+    readonly sentAgain: (
+      deliveries: readonly WebhookDelivery[]
+    ) => Effect.Effect<ReadonlySet<WebhookDeliveryId>, DatabaseError>;
     /**
      * Deletes up to `limit` deliveries created before `before`, then the
      * events no delivery refers to any more, and says how many deliveries

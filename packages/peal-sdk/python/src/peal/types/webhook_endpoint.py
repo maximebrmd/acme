@@ -12,6 +12,9 @@ from .webhook_endpoint_scope import WebhookEndpointScope
 
 
 class WebhookEndpoint(UniversalBaseModel):
+    channel_ids: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="channelIds"), pydantic.Field(alias="channelIds")
+    ]
     created_at: typing_extensions.Annotated[str, FieldMetadata(alias="createdAt"), pydantic.Field(alias="createdAt")]
     description: str
     disabled_at: typing_extensions.Annotated[
@@ -38,6 +41,9 @@ class WebhookEndpoint(UniversalBaseModel):
     scope: WebhookEndpointScope
     updated_at: typing_extensions.Annotated[str, FieldMetadata(alias="updatedAt"), pydantic.Field(alias="updatedAt")]
     url: str
+    workspace_ids: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="workspaceIds"), pydantic.Field(alias="workspaceIds")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

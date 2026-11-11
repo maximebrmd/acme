@@ -33,6 +33,18 @@ class PostValidation extends JsonSerializableType
     public ?PlanShortfall $planLimit;
 
     /**
+     * @var ?value-of<QueueNoRoom> $queueNoRoom
+     */
+    #[JsonProperty('queueNoRoom')]
+    public ?string $queueNoRoom;
+
+    /**
+     * @var ?string $queueSlot
+     */
+    #[JsonProperty('queueSlot')]
+    public ?string $queueSlot;
+
+    /**
      * @var ?value-of<ScheduleCheck> $schedule
      */
     #[JsonProperty('schedule')]
@@ -78,6 +90,8 @@ class PostValidation extends JsonSerializableType
      *   valid: bool,
      *   violations: array<ContentViolation>,
      *   planLimit?: ?PlanShortfall,
+     *   queueNoRoom?: ?value-of<QueueNoRoom>,
+     *   queueSlot?: ?string,
      *   schedule?: ?value-of<ScheduleCheck>,
      *   warnings?: ?array<PostWarning>,
      * } $values
@@ -89,6 +103,8 @@ class PostValidation extends JsonSerializableType
         $this->channels = $values['channels'];
         $this->duplicates = $values['duplicates'];
         $this->planLimit = $values['planLimit'] ?? null;
+        $this->queueNoRoom = $values['queueNoRoom'] ?? null;
+        $this->queueSlot = $values['queueSlot'] ?? null;
         $this->schedule = $values['schedule'] ?? null;
         $this->unknownChannels = $values['unknownChannels'];
         $this->unknownMedia = $values['unknownMedia'];

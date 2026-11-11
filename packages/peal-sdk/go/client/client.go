@@ -27,12 +27,14 @@ import (
 	partner "github.com/peal-social/peal/packages/peal-sdk/go/partner"
 	partneraccount "github.com/peal-social/peal/packages/peal-sdk/go/partneraccount"
 	posts "github.com/peal-social/peal/packages/peal-sdk/go/posts"
+	queues "github.com/peal-social/peal/packages/peal-sdk/go/queues"
 	review "github.com/peal-social/peal/packages/peal-sdk/go/review"
 	session "github.com/peal-social/peal/packages/peal-sdk/go/session"
 	signatures "github.com/peal-social/peal/packages/peal-sdk/go/signatures"
 	system "github.com/peal-social/peal/packages/peal-sdk/go/system"
 	tags "github.com/peal-social/peal/packages/peal-sdk/go/tags"
 	tiktok "github.com/peal-social/peal/packages/peal-sdk/go/tiktok"
+	usage "github.com/peal-social/peal/packages/peal-sdk/go/usage"
 	webhooks "github.com/peal-social/peal/packages/peal-sdk/go/webhooks"
 )
 
@@ -49,6 +51,7 @@ type Client struct {
 	Members                 *members.Client
 	Invitations             *invitations.Client
 	Billing                 *billing.Client
+	Usage                   *usage.Client
 	Analytics               *analytics.Client
 	Tiktok                  *tiktok.Client
 	Capabilities            *capabilities.Client
@@ -64,6 +67,7 @@ type Client struct {
 	Tags                    *tags.Client
 	Signatures              *signatures.Client
 	ChannelSets             *channelsets.Client
+	Queues                  *queues.Client
 	ChannelDefaults         *channeldefaults.Client
 
 	options *core.RequestOptions
@@ -86,6 +90,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Members:                 members.NewClient(options),
 		Invitations:             invitations.NewClient(options),
 		Billing:                 billing.NewClient(options),
+		Usage:                   usage.NewClient(options),
 		Analytics:               analytics.NewClient(options),
 		Tiktok:                  tiktok.NewClient(options),
 		Capabilities:            capabilities.NewClient(options),
@@ -101,6 +106,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Tags:                    tags.NewClient(options),
 		Signatures:              signatures.NewClient(options),
 		ChannelSets:             channelsets.NewClient(options),
+		Queues:                  queues.NewClient(options),
 		ChannelDefaults:         channeldefaults.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,

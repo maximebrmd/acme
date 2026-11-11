@@ -32,5 +32,13 @@ export class AssistantUsage extends Context.Service<
       workspaceId: WorkspaceId,
       day: LocalDate
     ) => Effect.Effect<number>;
+    /**
+     * How many requests each of these workspaces sent on the day, in one
+     * query; one that sent none is left out.
+     */
+    readonly usedIn: (
+      workspaceIds: readonly WorkspaceId[],
+      day: LocalDate
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>>;
   }
 >()("peal-server/assistant/application/AssistantUsage") {}

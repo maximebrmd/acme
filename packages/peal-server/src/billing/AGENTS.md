@@ -130,6 +130,36 @@
   text on the channel holds a link (`countLinks`); an unconfirmed post found
   later is not counted. No plan limits them yet; the counts go with the
   workspace's export and erasure (`BillingRecords`).
+- The usage ledger (`billing.usage_days`, `UsageLedger`; vocabulary in
+  `domain/usage-meter.ts`) keeps each workspace's counts by UTC day,
+  meter and dimension: counts and ids only, and a new meter is a new
+  `meter` value, never a column. `publishedPosts` (dimension: the
+  platform) is added by `RecordedUsage.postWentOut` from `meteredOutcomes`,
+  in the settling transaction: one per target, on the day its first part
+  went out, in the round that sent that part (a thread once; a repost that
+  sends it again counts again; an unconfirmed post confirmed later
+  never). `channels` (the workspace's own), `members`, `mediaStorage` and
+  the day's `assistantRequests` are written by `SnapshotUsage` (cron
+  `billing.usage-snapshot`, 00:11 UTC) for the day that just ended: every
+  workspace created before its end, by id, `snapshotBatchSize` a batch,
+  through `UsageStates` (`ContextUsageStatesLive`: one set-based read a
+  batch from each context: `WorkspaceSeats.page`,
+  `ChannelUsage.connectedIn`, `MediaStorageUsage.storedIn`,
+  `AssistantRequests.onDay`), each batch one statement that replaces, so
+  a second run or server changes nothing. A missed day keeps no state:
+  never backfill one. Each batch, once written, reads its workspaces again
+  (`UsageStates.workspaces`) and erases the rows of those erased meanwhile.
+  The same run purges the rows past `usageRetentionDays` (400), whether the
+  snapshot went through or not. `UsageReports` answers `GET …/usage`
+  (billing:read, on a server that bills or not; 92 days at most, 30 by
+  default; `sharedWith` from `PlanHolders`), `get_usage` and `peal
+  usage`; the contract copies its constants, which
+  `test/billing/api/contract.test.ts` keeps equal, as the privacy
+  registry's `usageDays` (category `usage`) is kept by
+  `data-processing.test.ts`. Nothing prices or
+  limits by it: the priced half (a partner's unit, platform costs per
+  call) is undecided, and goes in as new meters and use cases. The ledger
+  goes with the workspace's export (`usage`) and erasure.
 - Entitlements come only from `billing.subscriptions`, which
   `RecordSubscription` keeps from Stripe's `customer.subscription.*` events:
   Better Auth's webhook checks their signature, then its `onEvent` finds the

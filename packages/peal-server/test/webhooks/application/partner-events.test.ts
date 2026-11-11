@@ -249,4 +249,94 @@ layer(PartnerWebhooksTest)("a partner's webhook endpoints", (it) => {
       assert.strictEqual(added.endpoint.scope, "partner");
     })
   );
+
+  it.effect("hear the workspaces they list only, the home one if listed", () =>
+    Effect.gen(function* filtered() {
+      const home = yield* freshOwner;
+      const listed = yield* freshOwner;
+      const unlisted = yield* freshOwner;
+      const events = yield* WebhookEvents;
+
+      yield* owns(home, listed, Option.some("staging"));
+      yield* owns(home, unlisted, Option.none());
+
+      const staging = yield* freshEndpoint(home, {
+        ...channelEvents,
+        scope: "partner",
+        workspaceIds: [listed.workspaceId],
+      });
+
+      yield* events.publish(yield* connected(unlisted));
+      yield* events.publish(yield* connected(home));
+      yield* events.publish(yield* connected(listed));
+
+      assert.deepStrictEqual(yield* payloadOf(home, staging.endpoint.id), {
+        data: { workspaceId: listed.workspaceId },
+        workspaceExternalId: "staging",
+      });
+      assert.lengthOf(yield* logOf(home, staging.endpoint.id), 1);
+    })
+  );
+
+  it.effect("are logged in the home workspace, naming each tenant", () =>
+    Effect.gen(function* logged() {
+      const home = yield* freshOwner;
+      const customer = yield* freshOwner;
+      const events = yield* WebhookEvents;
+      const deliveries = yield* WebhookDeliveries;
+
+      yield* owns(home, customer, Option.some("cus_7"));
+
+      const partnerWide = yield* freshEndpoint(home, {
+        ...channelEvents,
+        scope: "partner",
+      });
+
+      yield* events.publish(yield* connected(customer));
+
+      const { items } = yield* deliveries.search(
+        home,
+        {
+          endpointId: Option.none(),
+          eventType: Option.none(),
+          since: Option.none(),
+          status: Option.none(),
+          until: Option.none(),
+        },
+        { after: Option.none(), limit: 10 }
+      );
+
+      assert.deepStrictEqual(
+        items.map((delivery) => [
+          delivery.endpointId,
+          delivery.workspaceId,
+          delivery.eventWorkspaceId,
+          Option.getOrNull(delivery.externalId),
+        ]),
+        [
+          [
+            partnerWide.endpoint.id,
+            home.workspaceId,
+            customer.workspaceId,
+            "cus_7",
+          ],
+        ]
+      );
+
+      // The tenant's own log has none of the partner's deliveries.
+      const theirs = yield* deliveries.search(
+        customer,
+        {
+          endpointId: Option.none(),
+          eventType: Option.none(),
+          since: Option.none(),
+          status: Option.none(),
+          until: Option.none(),
+        },
+        { after: Option.none(), limit: 10 }
+      );
+
+      assert.lengthOf(theirs.items, 0);
+    })
+  );
 });

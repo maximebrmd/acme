@@ -27,12 +27,14 @@ import social.peal.resources.notificationpreferences.AsyncNotificationPreference
 import social.peal.resources.partner.AsyncPartnerClient;
 import social.peal.resources.partneraccount.AsyncPartnerAccountClient;
 import social.peal.resources.posts.AsyncPostsClient;
+import social.peal.resources.queues.AsyncQueuesClient;
 import social.peal.resources.review.AsyncReviewClient;
 import social.peal.resources.session.AsyncSessionClient;
 import social.peal.resources.signatures.AsyncSignaturesClient;
 import social.peal.resources.system.AsyncSystemClient;
 import social.peal.resources.tags.AsyncTagsClient;
 import social.peal.resources.tiktok.AsyncTiktokClient;
+import social.peal.resources.usage.AsyncUsageClient;
 import social.peal.resources.webhooks.AsyncWebhooksClient;
 
 public class AsyncPealClient implements AutoCloseable {
@@ -61,6 +63,8 @@ public class AsyncPealClient implements AutoCloseable {
     protected final Supplier<AsyncInvitationsClient> invitationsClient;
 
     protected final Supplier<AsyncBillingClient> billingClient;
+
+    protected final Supplier<AsyncUsageClient> usageClient;
 
     protected final Supplier<AsyncAnalyticsClient> analyticsClient;
 
@@ -92,6 +96,8 @@ public class AsyncPealClient implements AutoCloseable {
 
     protected final Supplier<AsyncChannelSetsClient> channelSetsClient;
 
+    protected final Supplier<AsyncQueuesClient> queuesClient;
+
     protected final Supplier<AsyncChannelDefaultsClient> channelDefaultsClient;
 
     public AsyncPealClient(ClientOptions clientOptions) {
@@ -109,6 +115,7 @@ public class AsyncPealClient implements AutoCloseable {
         this.membersClient = Suppliers.memoize(() -> new AsyncMembersClient(clientOptions));
         this.invitationsClient = Suppliers.memoize(() -> new AsyncInvitationsClient(clientOptions));
         this.billingClient = Suppliers.memoize(() -> new AsyncBillingClient(clientOptions));
+        this.usageClient = Suppliers.memoize(() -> new AsyncUsageClient(clientOptions));
         this.analyticsClient = Suppliers.memoize(() -> new AsyncAnalyticsClient(clientOptions));
         this.tiktokClient = Suppliers.memoize(() -> new AsyncTiktokClient(clientOptions));
         this.capabilitiesClient = Suppliers.memoize(() -> new AsyncCapabilitiesClient(clientOptions));
@@ -124,6 +131,7 @@ public class AsyncPealClient implements AutoCloseable {
         this.tagsClient = Suppliers.memoize(() -> new AsyncTagsClient(clientOptions));
         this.signaturesClient = Suppliers.memoize(() -> new AsyncSignaturesClient(clientOptions));
         this.channelSetsClient = Suppliers.memoize(() -> new AsyncChannelSetsClient(clientOptions));
+        this.queuesClient = Suppliers.memoize(() -> new AsyncQueuesClient(clientOptions));
         this.channelDefaultsClient = Suppliers.memoize(() -> new AsyncChannelDefaultsClient(clientOptions));
     }
 
@@ -173,6 +181,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncBillingClient billing() {
         return this.billingClient.get();
+    }
+
+    public AsyncUsageClient usage() {
+        return this.usageClient.get();
     }
 
     public AsyncAnalyticsClient analytics() {
@@ -233,6 +245,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncChannelSetsClient channelSets() {
         return this.channelSetsClient.get();
+    }
+
+    public AsyncQueuesClient queues() {
+        return this.queuesClient.get();
     }
 
     public AsyncChannelDefaultsClient channelDefaults() {

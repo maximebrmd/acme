@@ -44,6 +44,9 @@
   `PostTools` and `MediaTools` that change something are `contentTools`,
   whose calls the ConnectionJournal keeps. The account's own
   data (its export, its applications) has no tool.
+- `get_usage` (`reports-tools.ts`) answers the usage endpoint's view
+  (`#billing/api/usage-view.ts`), with `from` and `to` as text days;
+  `get_billing` stays as it is. The CLI's is `peal usage`.
 - `get_channel_capabilities` and `run_channel_lookup`
   (`capabilities-tools.ts`) answer the views of the capabilities and lookups
   endpoints; they read, and are open world, as they may ask the platform.
@@ -88,6 +91,13 @@
   The CLI's are `peal signatures`, `peal sets`, `peal channels defaults`,
   and `--set`, `--signature`, `--default-signatures` on `peal post` and
   `peal drafts save`.
+- Queues are in the `saved` area (`list_queues`, `preview_queue`,
+  `create_queue`, `update_queue`, which reads first and keeps what the call
+  leaves out, `delete_queue`). `create_post`, `create_posts` and
+  `validate_post` take `when: queue` naming a queue by id or name
+  (`queueReferenced`), the default when left out; `queue_post` (in
+  `publishingTools`, open world) puts a draft or a scheduled post on a
+  queue's next free slot.
 - On `/api/mcp`, a partner key names the workspace it acts in with each
   request, by id, in the `Peal-Workspace` header (`workspaceNamed` in
   `authenticate.ts`; 400 without it), and is told 404 for any workspace
@@ -112,3 +122,10 @@
   and `boost_post` takes an `idempotencyKey`. No tool signs in to an ad
   network, connects an account or sets a ceiling: those are a person's.
   Instants in parameters are text (`boostFields`).
+- `webhooks-tools.ts`: `list_webhook_deliveries` reads one endpoint's log
+  with `endpointId`, the log across endpoints without it, by `status` and
+  `eventType`; `create_webhook` and `update_webhook` (the contract's
+  change, what is left out stays) take the filters; `send_test_webhook`
+  (`eventType` for a sample) and `redeliver_webhooks` (ids, or an
+  endpoint's failed ones) are `openWorld`, as they make Peal call
+  receivers. No tool returns a secret but `create_webhook`'s answer.

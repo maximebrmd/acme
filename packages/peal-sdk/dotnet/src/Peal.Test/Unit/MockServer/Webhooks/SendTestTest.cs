@@ -18,6 +18,7 @@ public class SendTestTest : BaseMockServerTest
               "completedAt": "completedAt",
               "createdAt": "createdAt",
               "durationMs": 1,
+              "endpointId": "endpointId",
               "error": "timeout",
               "eventId": "eventId",
               "eventType": "post.scheduled",
@@ -25,9 +26,12 @@ public class SendTestTest : BaseMockServerTest
               "id": "id",
               "lastAttemptAt": "lastAttemptAt",
               "nextAttemptAt": "nextAttemptAt",
+              "redeliveryOf": "redeliveryOf",
               "responseExcerpt": "responseExcerpt",
               "responseStatus": 1,
-              "status": "pending"
+              "status": "pending",
+              "workspaceExternalId": "workspaceExternalId",
+              "workspaceId": "workspaceId"
             }
             """;
 
@@ -60,6 +64,7 @@ public class SendTestTest : BaseMockServerTest
               "completedAt": "completedAt",
               "createdAt": "createdAt",
               "durationMs": 1,
+              "endpointId": "endpointId",
               "error": "timeout",
               "eventId": "eventId",
               "eventType": "post.scheduled",
@@ -67,9 +72,12 @@ public class SendTestTest : BaseMockServerTest
               "id": "id",
               "lastAttemptAt": "lastAttemptAt",
               "nextAttemptAt": "nextAttemptAt",
+              "redeliveryOf": "redeliveryOf",
               "responseExcerpt": "responseExcerpt",
               "responseStatus": 1,
-              "status": "pending"
+              "status": "pending",
+              "workspaceExternalId": "workspaceExternalId",
+              "workspaceId": "workspaceId"
             }
             """;
 

@@ -30,8 +30,16 @@ public final class PostWarning {
         return new PostWarning(new ChannelsDroppedValue(value));
     }
 
+    public static PostWarning queueChannelsDropped(PostWarningQueueChannelsDropped value) {
+        return new PostWarning(new QueueChannelsDroppedValue(value));
+    }
+
     public boolean isChannelsDropped() {
         return value instanceof ChannelsDroppedValue;
+    }
+
+    public boolean isQueueChannelsDropped() {
+        return value instanceof QueueChannelsDroppedValue;
     }
 
     public boolean _isUnknown() {
@@ -41,6 +49,13 @@ public final class PostWarning {
     public Optional<PostWarningChannelsDropped> getChannelsDropped() {
         if (isChannelsDropped()) {
             return Optional.of(((ChannelsDroppedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<PostWarningQueueChannelsDropped> getQueueChannelsDropped() {
+        if (isQueueChannelsDropped()) {
+            return Optional.of(((QueueChannelsDroppedValue) value).value);
         }
         return Optional.empty();
     }
@@ -76,11 +91,13 @@ public final class PostWarning {
     public interface Visitor<T> {
         T visitChannelsDropped(PostWarningChannelsDropped channelsDropped);
 
+        T visitQueueChannelsDropped(PostWarningQueueChannelsDropped queueChannelsDropped);
+
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes(@JsonSubTypes.Type(ChannelsDroppedValue.class))
+    @JsonSubTypes({@JsonSubTypes.Type(ChannelsDroppedValue.class), @JsonSubTypes.Type(QueueChannelsDroppedValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
@@ -112,6 +129,46 @@ public final class PostWarning {
         }
 
         private boolean equalTo(ChannelsDroppedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "PostWarning{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("queueChannelsDropped")
+    @JsonIgnoreProperties("_tag")
+    private static final class QueueChannelsDroppedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private PostWarningQueueChannelsDropped value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private QueueChannelsDroppedValue() {}
+
+        private QueueChannelsDroppedValue(PostWarningQueueChannelsDropped value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitQueueChannelsDropped(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof QueueChannelsDroppedValue && equalTo((QueueChannelsDroppedValue) other);
+        }
+
+        private boolean equalTo(QueueChannelsDroppedValue other) {
             return value.equals(other.value);
         }
 

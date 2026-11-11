@@ -10,6 +10,8 @@ module Peal
       discriminant :type
 
       member -> { Peal::Types::PostWarningChannelsDropped }, key: "CHANNELS_DROPPED"
+
+      member -> { Peal::Types::PostWarningQueueChannelsDropped }, key: "QUEUE_CHANNELS_DROPPED"
     end
   end
 end

@@ -41,10 +41,10 @@ const now = (
   text: string,
   at?: string
 ): SendPostRequest => ({
-  at: Option.fromUndefinedOr(at).pipe(Option.map(utc)),
   channelIds: channels,
   content: contentOf(text),
   idempotency: Option.none(),
+  placement: at === undefined ? { _tag: "now" } : { _tag: "at", at: utc(at) },
   timeZone: TimeZoneIdSchema.make("Europe/Paris"),
 });
 

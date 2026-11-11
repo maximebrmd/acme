@@ -11,6 +11,7 @@ class PostTiming extends JsonSerializableType
      * @var (
      *    'now'
      *   |'at'
+     *   |'queue'
      *   |'_unknown'
      * ) $type
      */
@@ -20,6 +21,7 @@ class PostTiming extends JsonSerializableType
      * @var (
      *    PostTimingNow
      *   |PostTimingAt
+     *   |PostTimingQueue
      *   |mixed
      * ) $value
      */
@@ -30,11 +32,13 @@ class PostTiming extends JsonSerializableType
      *   type: (
      *    'now'
      *   |'at'
+     *   |'queue'
      *   |'_unknown'
      * ),
      *   value: (
      *    PostTimingNow
      *   |PostTimingAt
+     *   |PostTimingQueue
      *   |mixed
      * ),
      * } $values
@@ -67,6 +71,18 @@ class PostTiming extends JsonSerializableType
         return new PostTiming([
             'type' => 'at',
             'value' => $at,
+        ]);
+    }
+
+    /**
+     * @param PostTimingQueue $queue
+     * @return PostTiming
+     */
+    public static function queue(PostTimingQueue $queue): PostTiming
+    {
+        return new PostTiming([
+            'type' => 'queue',
+            'value' => $queue,
         ]);
     }
 
@@ -115,6 +131,28 @@ class PostTiming extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isQueue(): bool
+    {
+        return $this->value instanceof PostTimingQueue && $this->type === 'queue';
+    }
+
+    /**
+     * @return PostTimingQueue
+     */
+    public function asQueue(): PostTimingQueue
+    {
+        if (!($this->value instanceof PostTimingQueue && $this->type === 'queue')) {
+            throw new Exception(
+                "Expected queue; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -140,6 +178,10 @@ class PostTiming extends JsonSerializableType
                 break;
             case 'at':
                 $value = $this->asAt()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'queue':
+                $value = $this->asQueue()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -183,6 +225,9 @@ class PostTiming extends JsonSerializableType
                 break;
             case 'at':
                 $args['value'] = PostTimingAt::jsonDeserialize($data);
+                break;
+            case 'queue':
+                $args['value'] = PostTimingQueue::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

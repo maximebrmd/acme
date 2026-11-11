@@ -337,13 +337,16 @@ describe("a post's webhook events", () => {
           const channel = yield* connect(owner.workspaceId, "mastodon");
 
           const request = {
-            at: Option.some(scheduleIn("2026-06-15T08:00:00Z").at),
             channelIds: [channel] as const,
             content: syntheticContent,
             idempotency: Option.some({
               fingerprint: "synthetic-fingerprint",
               key: "synthetic-key",
             }),
+            placement: {
+              _tag: "at" as const,
+              at: scheduleIn("2026-06-15T08:00:00Z").at,
+            },
             timeZone: scheduleIn("2026-06-15T08:00:00Z").timeZone,
           };
 
@@ -409,10 +412,10 @@ describe("a post's webhook events", () => {
             const { at, timeZone } = scheduleIn("2026-06-16T08:00:00Z");
 
             return {
-              at: Option.some(at),
               channelIds: [channel] as const,
               content: contentOf(text),
               idempotency: Option.some({ fingerprint: text, key }),
+              placement: { _tag: "at" as const, at },
               timeZone,
             };
           };

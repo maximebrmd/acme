@@ -1,4 +1,4 @@
-import { Duration, Effect, Match, Option, Result } from "effect";
+import { Array as Arr, Duration, Effect, Match, Option, Result } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
@@ -13,6 +13,8 @@ import {
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
+  QueueHasNoRoom,
+  QueueNotFound,
   ScheduleInPast,
   SignatureNotFound,
   TargetStatusConflict,
@@ -59,6 +61,7 @@ import {
   presetsFrom,
   postIdFrom,
   postIdOption,
+  queueIdOf,
   scheduleFrom,
   sendRequestFrom,
   tagIdsFrom,
@@ -95,6 +98,16 @@ const setNotFound = () => Effect.fail(new ChannelSetNotFound());
 const signatureNotFound = () => Effect.fail(new SignatureNotFound());
 
 const inPast = () => Effect.fail(new ScheduleInPast());
+
+const queueNotFound = () => Effect.fail(new QueueNotFound());
+
+const noRoom = ({
+  queueId,
+  reason,
+}: {
+  readonly queueId: string;
+  readonly reason: "full" | "noSlots";
+}) => Effect.fail(new QueueHasNoRoom({ queueId, reason }));
 
 const duplicate = ({ duplicates }: DuplicateContent) =>
   Effect.fail(
@@ -324,6 +337,43 @@ export const PostsHandlers = HttpApiBuilder.group(
           );
 
           return postView(copy);
+        }),
+      enqueue: ({ params, payload }) =>
+        Effect.gen(function* enqueue() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+          const queueId = yield* queueIdOf(payload.queueId);
+
+          // The channels it names for a draft, if it names some.
+          const named =
+            payload.channelIds === undefined
+              ? []
+              : yield* channelIdsFrom(payload.channelIds);
+
+          const channelIds = Arr.isReadonlyArrayNonEmpty(named)
+            ? Option.some(named)
+            : Option.none();
+
+          const placed = yield* scheduling
+            .enqueue(actor, postId, { channelIds, queueId })
+            .pipe(
+              Effect.catchTags({
+                ChannelSetNotFound: setNotFound,
+                DatabaseError: Effect.die,
+                InvalidPostTransition: conflict,
+                MissingPermission: forbidden,
+                PlanLimitReached: limitReached,
+                PostContentRejected: contentInvalid,
+                PostNotFound: notFound,
+                QueueHasNoRoom: noRoom,
+                QueueNotFound: queueNotFound,
+                ScheduleInPast: inPast,
+                UnknownChannels: unknownChannels,
+                UnknownMedia: unknownMedia,
+              })
+            );
+
+          return postView(placed);
         }),
       get: ({ params }) =>
         Effect.gen(function* get() {
@@ -657,6 +707,8 @@ export const PostsHandlers = HttpApiBuilder.group(
               PlanLimitReached: limitReached,
               PostContentRejected: contentInvalid,
               PostNotFound: notFound,
+              QueueHasNoRoom: noRoom,
+              QueueNotFound: queueNotFound,
               ScheduleInPast: inPast,
               SignatureNotFound: signatureNotFound,
               UnknownChannels: unknownChannels,
@@ -751,6 +803,7 @@ export const PostsHandlers = HttpApiBuilder.group(
               ChannelSetNotFound: setNotFound,
               DatabaseError: Effect.die,
               MissingPermission: forbidden,
+              QueueNotFound: queueNotFound,
               SignatureNotFound: signatureNotFound,
             })
           );

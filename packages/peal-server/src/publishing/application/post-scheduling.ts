@@ -24,6 +24,7 @@ import {
   createDraft,
   finishPost,
   moveToDraft,
+  placedBy,
   scheduledThrough,
   schedulePost,
   asReceived,
@@ -31,6 +32,8 @@ import {
 } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import { postingMonthOf, sameMonth } from "#publishing/domain/posting-month.ts";
+import type { QueueId } from "#publishing/domain/queue-id.ts";
+import type { Queue } from "#publishing/domain/queue.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
@@ -57,24 +60,29 @@ import { admit, remember } from "./duplicate-guard.ts";
 import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { IdempotencyKeys } from "./idempotency-keys.ts";
 import type { KeyedRequest, KeyUse } from "./idempotency-keys.ts";
+import { freeSlotOf, queueNamed } from "./placement.ts";
+import type { Placement } from "./placement.ts";
 import { PostAllowance } from "./post-allowance.ts";
 import { PostEvents } from "./post-events.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { PostOrigins } from "./post-origins.ts";
 import { nothingAsked, PostPresets } from "./post-presets.ts";
-import type { PresetAsk } from "./post-presets.ts";
+import type { PresetAsk, DroppedChannels } from "./post-presets.ts";
 import { channelsFor, mediaFor, tagsFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets, StoredPost } from "./post-repository.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
 import { violationsOf } from "./publishability.ts";
+import { QueueHasNoRoom } from "./queue-has-no-room.ts";
+import type { QueueNotFound } from "./queue-not-found.ts";
+import { QueueStore } from "./queue-store.ts";
 import type { SignatureNotFound } from "./signature-not-found.ts";
 import type { TagStore } from "./tag-store.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
 import type { UnknownTags } from "./unknown-tags.ts";
 import { withinPlan as withinPlanOf } from "./within-plan.ts";
-import type { WorkspaceChannels } from "./workspace-channels.ts";
+import { WorkspaceChannels } from "./workspace-channels.ts";
 import {
   findInWorkspace,
   lockInWorkspace,
@@ -120,10 +128,9 @@ export interface SendPostRequest {
    * within `duplicateWindow`; otherwise that is DuplicateContent.
    */
   readonly allowDuplicate?: boolean;
-  /** When it goes out; none is now. */
-  readonly at: Option.Option<DateTime.Utc>;
-  // At least one, with those of the sets it names; a channel listed
-  // twice gets one target.
+  // At least one, with those of the sets it names, unless it goes to a
+  // queue, whose channels it then takes; a channel listed twice gets one
+  // target.
   readonly channelIds: readonly ChannelId[];
   readonly content: PostContent;
   /**
@@ -133,10 +140,39 @@ export interface SendPostRequest {
   readonly idempotency: Option.Option<KeyedRequest>;
   // The options it has on some channels, one at most per channel.
   readonly options?: readonly ChannelOptions[];
+  /** When it goes out: now, at an instant, or on a queue's next free slot. */
+  readonly placement: Placement;
   /** The workspace's tags it is filed under; left out, none. */
   readonly tagIds?: readonly TagId[];
-  /** The zone its time was chosen in, which calendars show it in. */
+  /**
+   * The zone its time was chosen in, which calendars show it in; a post
+   * added to a queue takes the queue's.
+   */
   readonly timeZone: TimeZoneId;
+}
+
+/**
+ * A post to put on a queue's next free slot: the queue named, or the
+ * workspace's default; for a draft, the channels named, else its own,
+ * else the queue's.
+ */
+export interface EnqueueRequest {
+  readonly channelIds: Option.Option<readonly [ChannelId, ...ChannelId[]]>;
+  readonly queueId: Option.Option<QueueId>;
+}
+
+// A new post, whatever its time: what it says and where it goes.
+interface NewPostRequest {
+  readonly channelIds: readonly ChannelId[];
+  readonly content: PostContent;
+  readonly options?: readonly ChannelOptions[];
+  readonly tagIds?: readonly TagId[];
+}
+
+// When a post goes out, once decided, and the queue that decided it.
+interface Placed {
+  readonly queueId: Option.Option<QueueId>;
+  readonly schedule: Schedule;
 }
 
 /** The post a request made, or made when it was first sent. */
@@ -181,8 +217,22 @@ type Ports =
   | PostOrigins
   | PostPresets
   | PostRepository
+  | QueueStore
   | TagStore
   | WorkspaceChannels;
+
+// A time chosen by hand, placed by no queue.
+const byHand = (schedule: Schedule): Placed => ({
+  queueId: Option.none(),
+  schedule,
+});
+
+// The post as a placement leaves it: placed by its queue, if one did.
+const withQueue = (post: Post, queueId: Option.Option<QueueId>) =>
+  Option.match(queueId, {
+    onNone: () => post,
+    onSome: (id) => placedBy(post, id),
+  });
 
 // Someone who only asks acts on drafts and on posts that wait: a scheduled
 // post is for those who may schedule to move or stop.
@@ -245,6 +295,12 @@ export class PostScheduling extends Context.Service<
      * the post went out is not told its time has passed. The same key with
      * another request is IdempotencyKeyReused, and PostNotFound once the
      * post it made was deleted.
+     *
+     * Added to a queue, it takes the queue's first free slot after the
+     * request came, decided under the queue's lock in the transaction that
+     * saves it, so posts sent together take different slots; then it is
+     * an ordinary scheduled post, the month's room counted in the slot's
+     * month. Naming no channel and no set, it goes to the queue's.
      */
     readonly send: (
       actor: Actor,
@@ -256,8 +312,38 @@ export class PostScheduling extends Context.Service<
       | IdempotencyKeyReused
       | MissingPermission
       | PostNotFound
+      | QueueHasNoRoom
+      | QueueNotFound
       | ScheduleInPast
       | Unfiled
+    >;
+    /**
+     * Puts a post on the next free slot of a queue: a draft is scheduled
+     * there as `scheduleDraft` schedules it, and a scheduled post or one
+     * that waits for an approval is moved there as `reschedule` moves it.
+     * The slot is decided under the queue's lock, the post's own slot
+     * apart, so a post added again to its queue stays where it is unless an
+     * earlier slot was freed since, which it takes. A draft
+     * for no channel, given none, goes where the same content sent onto
+     * the queue would: its channels still connected and its channel set's,
+     * with the set's options and the channels' defaults, the channels gone
+     * since told in `dropped`.
+     */
+    readonly enqueue: (
+      actor: Actor,
+      postId: PostId,
+      request: EnqueueRequest
+    ) => Effect.Effect<
+      PostWithTargets,
+      | ChannelSetNotFound
+      | DatabaseError
+      | InvalidPostTransition
+      | MissingPermission
+      | PostNotFound
+      | QueueHasNoRoom
+      | QueueNotFound
+      | ScheduleInPast
+      | Unpublishable
     >;
     /**
      * Deletes the idempotency keys past their lifetime, and says how many:
@@ -488,11 +574,11 @@ export class PostScheduling extends Context.Service<
         PostOrigins.use((origins) => origins.of(actor)).pipe(withPorts);
 
       // Saves the post at its new time, with who moved it there, and swaps
-      // its job for one then.
+      // its job for one then. A queue that placed it is kept with it.
       const move = Effect.fn("PostScheduling.move")(function* move(
         actor: Actor,
         current: StoredPost,
-        at: Schedule,
+        { queueId, schedule: at }: Placed,
         received: DateTime.Utc,
         targets: readonly PostTarget[]
       ) {
@@ -500,12 +586,15 @@ export class PostScheduling extends Context.Service<
 
         const moved = yield* throughGate(
           actor,
-          scheduledThrough(
-            yield* Effect.fromResult(
-              schedulePost(current.post, asReceived(at, received, now), now)
+          withQueue(
+            scheduledThrough(
+              yield* Effect.fromResult(
+                schedulePost(current.post, asReceived(at, received, now), now)
+              ),
+              yield* originOf(actor),
+              authorOf(actor)
             ),
-            yield* originOf(actor),
-            authorOf(actor)
+            queueId
           ),
           targets
         );
@@ -571,22 +660,58 @@ export class PostScheduling extends Context.Service<
         lockInWorkspace(actor.workspaceId, postId).pipe(withPorts);
 
       const keys = yield* IdempotencyKeys;
+      const queues = yield* QueueStore;
+
+      // The queue's first free slot after `after`, `except` the post being
+      // placed: taken under the queue's lock, which the transaction holds
+      // until the post is saved, so posts placed together take turns. Run
+      // after an idempotency key's claim, and before the post's row and
+      // the plan's month are locked: always in that order. The queue is
+      // read again under the lock, as it may have changed or gone.
+      const onQueue = Effect.fn("PostScheduling.onQueue")(function* onQueue(
+        queue: Queue,
+        after: DateTime.Utc,
+        except: Option.Option<PostId>
+      ) {
+        yield* queues.lock(queue.id);
+
+        const current = yield* queueNamed(
+          queue.workspaceId,
+          Option.some(queue.id)
+        ).pipe(withPorts);
+
+        const slot = yield* freeSlotOf(current, after, except).pipe(withPorts);
+
+        if (Result.isFailure(slot)) {
+          return yield* new QueueHasNoRoom({
+            queueId: current.id,
+            reason: slot.failure,
+          });
+        }
+
+        const placed: Placed = {
+          queueId: Option.some(current.id),
+          schedule: new Schedule({
+            at: slot.success,
+            timeZone: current.timeZone,
+          }),
+        };
+
+        return placed;
+      });
 
       // A new post scheduled on the channels, saved with its job unless
       // `claimed` finds, in the same transaction, that another request made
-      // it already.
+      // it already. Its time is `placing`'s, decided in that transaction
+      // after the claim, so a request answered from an earlier one takes
+      // no slot of a queue.
       const scheduleNew = Effect.fn("PostScheduling.scheduleNew")(
-        function* scheduleNew<E, E2>(
+        function* scheduleNew<E, E2, E3>(
           actor: Actor,
-          {
-            channelIds,
-            content,
-            options = [],
-            schedule: at,
-            tagIds = [],
-          }: SchedulePostRequest,
+          { channelIds, content, options = [], tagIds = [] }: NewPostRequest,
+          placing: (received: DateTime.Utc) => Effect.Effect<Placed, E3>,
           claimed: (
-            post: Post
+            postId: PostId
           ) => Effect.Effect<Option.Option<KeyUse>, DatabaseError | E>,
           // Keeps what the post sends to its channels, once nothing
           // refuses it: `remember`, or `admit`, which refuses duplicates.
@@ -610,31 +735,19 @@ export class PostScheduling extends Context.Service<
             withPorts
           );
 
-          const now = yield* DateTime.now;
           const postId = yield* newId(PostIdSchema).pipe(withPorts);
 
           const via = yield* originOf(actor);
 
-          // A new draft can always be scheduled.
-          const post = scheduledThrough(
-            yield* Effect.fromResult(
-              schedulePost(
-                tagPost(
-                  createDraft(
-                    postId,
-                    actor.workspaceId,
-                    content,
-                    authorOf(actor),
-                    Option.some(via)
-                  ),
-                  tags
-                ),
-                asReceived(at, received, now),
-                now
-              )
-            ).pipe(Effect.catchTag("InvalidPostTransition", Effect.die)),
-            via,
-            authorOf(actor)
+          const draft = tagPost(
+            createDraft(
+              postId,
+              actor.workspaceId,
+              content,
+              authorOf(actor),
+              Option.some(via)
+            ),
+            tags
           );
 
           const targets = yield* targetsOn(
@@ -646,11 +759,26 @@ export class PostScheduling extends Context.Service<
 
           const used = yield* transaction(
             Effect.gen(function* insertAndStart() {
-              const earlier = yield* claimed(post);
+              const earlier = yield* claimed(postId);
 
               if (Option.isSome(earlier)) {
-                return { placed: post, used: earlier };
+                return { placed: Option.none<Post>(), used: earlier };
               }
+
+              const { queueId, schedule: at } = yield* placing(received);
+              const now = yield* DateTime.now;
+
+              // A new draft can always be scheduled.
+              const post = withQueue(
+                scheduledThrough(
+                  yield* Effect.fromResult(
+                    schedulePost(draft, asReceived(at, received, now), now)
+                  ).pipe(Effect.catchTag("InvalidPostTransition", Effect.die)),
+                  via,
+                  authorOf(actor)
+                ),
+                queueId
+              );
 
               // The gate first: a post it holds waits with its time, takes
               // its room in the month, and gets no job.
@@ -664,11 +792,14 @@ export class PostScheduling extends Context.Service<
               // used made none, and tells nothing.
               yield* announce(placed, targets);
 
-              return { placed, used: earlier };
+              return { placed: Option.some(placed), used: earlier };
             })
           );
 
-          return { made: { post: used.placed, targets }, used: used.used };
+          return {
+            made: used.placed.pipe(Option.map((post) => ({ post, targets }))),
+            used: used.used,
+          };
         }
       );
 
@@ -681,11 +812,15 @@ export class PostScheduling extends Context.Service<
         const { made } = yield* scheduleNew(
           actor,
           request,
+          () => Effect.succeed(byHand(request.schedule)),
           () => Effect.succeed(Option.none()),
           remember
         );
 
-        return made;
+        return yield* Option.match(made, {
+          onNone: () => Effect.die("A post scheduled anew was not made"),
+          onSome: Effect.succeed,
+        });
       });
 
       // The post a key was first used for, as it now stands, if this is
@@ -711,12 +846,45 @@ export class PostScheduling extends Context.Service<
         return sent;
       });
 
+      // The queue's channels a post goes to when it names none, and those
+      // of them the workspace no longer has, which it is told of.
+      const queueChannels = Effect.fn("PostScheduling.queueChannels")(
+        function* queueChannels(actor: Actor, queue: Queue) {
+          const connected = new Set(
+            queue.channelIds.length === 0
+              ? []
+              : (yield* WorkspaceChannels.use((channels) =>
+                  channels.lookUp(actor, queue.channelIds)
+                ).pipe(withPorts)).map(({ channelId }) => channelId)
+          );
+
+          const gone = queue.channelIds.filter((id) => !connected.has(id));
+
+          const dropped: readonly DroppedChannels[] =
+            Arr.isReadonlyArrayNonEmpty(gone)
+              ? [
+                  {
+                    _tag: "queue",
+                    channelIds: gone,
+                    queueId: queue.id,
+                    queueName: queue.name,
+                  },
+                ]
+              : [];
+
+          return {
+            channelIds: queue.channelIds.filter((id) => connected.has(id)),
+            dropped,
+          };
+        }
+      );
+
       const send = Effect.fn("PostScheduling.send")(function* send(
         actor: Actor,
         {
           allowDuplicate = false,
-          at,
           idempotency,
+          placement,
           timeZone,
           ...request
         }: SendPostRequest
@@ -738,29 +906,98 @@ export class PostScheduling extends Context.Service<
           return yield* replay(actor, before.value);
         }
 
+        // The queue it is added to, read once for its channels; its slots
+        // are read again under its lock, once the post is checked.
+        const queue =
+          placement._tag === "queue"
+            ? Option.some(
+                yield* queueNamed(actor.workspaceId, placement.queueId).pipe(
+                  withPorts
+                )
+              )
+            : Option.none<Queue>();
+
+        const asked = request.presets ?? nothingAsked;
+
+        // Naming no channel and no set, it goes to the queue's: its
+        // channels still connected, and its set.
+        const fromQueue = yield* Option.match(
+          queue.pipe(
+            Option.filter(
+              () =>
+                request.channelIds.length === 0 &&
+                asked.channelSets.length === 0
+            )
+          ),
+          {
+            onNone: () => Effect.succeed(Option.none()),
+            onSome: (chosen) =>
+              queueChannels(actor, chosen).pipe(
+                Effect.map((channels) =>
+                  Option.some({
+                    ...channels,
+                    channelSets: Option.toArray(chosen.channelSetId),
+                  })
+                )
+              ),
+          }
+        );
+
         // What it names of the workspace's saved items, filled in: the
         // sets' channels and options, the channels' default options, and
         // signatures.
         const filled = yield* PostPresets.use((presets) =>
           presets.fill(actor, {
-            ...(request.presets ?? nothingAsked),
-            channelIds: request.channelIds,
+            ...asked,
+            channelIds: Option.match(fromQueue, {
+              onNone: () => request.channelIds,
+              onSome: ({ channelIds }) => channelIds,
+            }),
+            channelSets: Option.match(fromQueue, {
+              onNone: () => asked.channelSets,
+              onSome: ({ channelSets }) => channelSets,
+            }),
             content: request.content,
             defaultOptions: true,
             options: request.options ?? [],
           })
         ).pipe(withPorts);
 
-        const { channelIds, dropped } = filled;
+        const { channelIds } = filled;
 
-        // Every channel its sets named is gone, and it lists no other.
-        if (!Arr.isReadonlyArrayNonEmpty(channelIds)) {
-          const gone = dropped.flatMap((set) => set.channelIds);
+        const dropped = [
+          ...Option.match(fromQueue, {
+            onNone: () => [],
+            onSome: (left) => left.dropped,
+          }),
+          ...filled.dropped,
+        ];
 
-          return yield* Arr.isReadonlyArrayNonEmpty(gone)
-            ? new UnknownChannels({ channelIds: gone })
-            : Effect.die("A post was sent to no channel");
+        // Every channel its sets, or its queue, named is gone, and it
+        // lists no other. A queue for no channel leaves it for none, which
+        // its checks refuse (`noChannels`).
+        const gone = dropped.flatMap((left) => left.channelIds);
+
+        if (
+          !Arr.isReadonlyArrayNonEmpty(channelIds) &&
+          Arr.isReadonlyArrayNonEmpty(gone)
+        ) {
+          return yield* new UnknownChannels({ channelIds: gone });
         }
+
+        const placing = (received: DateTime.Utc) =>
+          Option.match(queue, {
+            onNone: () =>
+              Effect.succeed(
+                byHand(
+                  new Schedule({
+                    at: placement._tag === "at" ? placement.at : now,
+                    timeZone,
+                  })
+                )
+              ),
+            onSome: (chosen) => onQueue(chosen, received, Option.none()),
+          });
 
         const { made, used } = yield* scheduleNew(
           actor,
@@ -769,19 +1006,16 @@ export class PostScheduling extends Context.Service<
             channelIds,
             content: filled.content,
             options: filled.options,
-            schedule: new Schedule({
-              at: Option.getOrElse(at, () => now),
-              timeZone,
-            }),
           },
-          (post) =>
+          placing,
+          (postId) =>
             Option.match(idempotency, {
               onNone: () => Effect.succeed(Option.none<KeyUse>()),
               onSome: (keyed) =>
                 keys.claim(
                   actor.workspaceId,
                   keyed,
-                  { at: now, postId: post.id },
+                  { at: now, postId },
                   since
                 ),
             }),
@@ -793,7 +1027,11 @@ export class PostScheduling extends Context.Service<
           return yield* replay(actor, used.value);
         }
 
-        const sent: SentPost = { ...made, dropped, replayed: false };
+        if (Option.isNone(made)) {
+          return yield* Effect.die("A post sent anew was not made");
+        }
+
+        const sent: SentPost = { ...made.value, dropped, replayed: false };
 
         return sent;
       });
@@ -804,6 +1042,96 @@ export class PostScheduling extends Context.Service<
         ),
         Effect.withSpan("PostScheduling.forgetExpiredKeys")
       );
+
+      // A draft, locked, scheduled on the channels as placed: they become
+      // its targets, keeping the options of those it had.
+      const draftScheduled = Effect.fn("PostScheduling.draftScheduled")(
+        function* draftScheduled(
+          actor: Actor,
+          current: StoredPost,
+          channelIds: readonly ChannelId[],
+          placed: Placed,
+          received: DateTime.Utc,
+          given: Option.Option<readonly ChannelOptions[]> = Option.none()
+        ) {
+          const postId = current.post.id;
+
+          // Only a draft takes new channels: a scheduled post moves.
+          if (current.post.status._tag !== "draft") {
+            return yield* new InvalidPostTransition({
+              action: "schedule",
+              from: current.post.status._tag,
+              postId,
+            });
+          }
+
+          const existing = yield* posts.lockTargets(postId);
+
+          // A channel it had keeps its options, and a new one has none,
+          // unless they were filled in for it.
+          const channels = yield* publishableOn(
+            actor,
+            current.post.content,
+            channelIds,
+            Option.getOrElse(given, () =>
+              optionsOfTargets(existing, channelIds)
+            )
+          );
+
+          const targets = yield* targetsOn(
+            postId,
+            channels,
+            existing,
+            given
+          ).pipe(withPorts);
+
+          yield* posts.setTargets(postId, targets);
+
+          const post = yield* move(actor, current, placed, received, targets);
+
+          yield* announce(post, targets);
+
+          const scheduled: PostWithTargets = { post, targets };
+
+          return scheduled;
+        }
+      );
+
+      // A post, locked, moved as placed, or a draft scheduled on the
+      // channels it has.
+      const moved = Effect.fn("PostScheduling.moved")(function* moved(
+        actor: Actor,
+        current: StoredPost,
+        placed: Placed,
+        received: DateTime.Utc
+      ) {
+        const postId = current.post.id;
+
+        yield* mayChange(actor, current.post);
+
+        const targets = yield* posts.targets(postId);
+
+        // A draft is checked as it is scheduled. A scheduled post was
+        // checked then, and moving it changes nothing it says.
+        if (current.post.status._tag === "draft") {
+          const channelIds = targets.map(({ channelId }) => channelId);
+
+          yield* publishableOn(
+            actor,
+            current.post.content,
+            channelIds,
+            optionsOfTargets(targets, channelIds)
+          );
+        }
+
+        const post = yield* move(actor, current, placed, received, targets);
+
+        yield* announce(post, targets);
+
+        const changed: PostWithTargets = { post, targets };
+
+        return changed;
+      });
 
       const scheduleDraft = Effect.fn("PostScheduling.scheduleDraft")(
         function* scheduleDraft(
@@ -816,40 +1144,11 @@ export class PostScheduling extends Context.Service<
           const received = yield* DateTime.now;
 
           return yield* transaction(
-            Effect.gen(function* retargetAndStart() {
-              const current = yield* lockPost(actor, postId);
-
-              // Only a draft takes new channels: a scheduled post moves.
-              if (current.post.status._tag !== "draft") {
-                return yield* new InvalidPostTransition({
-                  action: "schedule",
-                  from: current.post.status._tag,
-                  postId,
-                });
-              }
-
-              const existing = yield* posts.lockTargets(postId);
-
-              // A channel it had keeps its options; a new one has none.
-              const channels = yield* publishableOn(
-                actor,
-                current.post.content,
-                channelIds,
-                optionsOfTargets(existing, channelIds)
-              );
-
-              const targets = yield* targetsOn(postId, channels, existing).pipe(
-                withPorts
-              );
-
-              yield* posts.setTargets(postId, targets);
-
-              const post = yield* move(actor, current, at, received, targets);
-
-              yield* announce(post, targets);
-
-              return { post, targets };
-            })
+            lockPost(actor, postId).pipe(
+              Effect.flatMap((current) =>
+                draftScheduled(actor, current, channelIds, byHand(at), received)
+              )
+            )
           );
         }
       );
@@ -861,35 +1160,124 @@ export class PostScheduling extends Context.Service<
           const received = yield* DateTime.now;
 
           return yield* transaction(
-            Effect.gen(function* moveAndRestart() {
-              const current = yield* lockPost(actor, postId);
-
-              yield* mayChange(actor, current.post);
-
-              const targets = yield* posts.targets(postId);
-
-              // A draft is checked as it is scheduled. A scheduled post was
-              // checked then, and moving it changes nothing it says.
-              if (current.post.status._tag === "draft") {
-                const channelIds = targets.map(({ channelId }) => channelId);
-
-                yield* publishableOn(
-                  actor,
-                  current.post.content,
-                  channelIds,
-                  optionsOfTargets(targets, channelIds)
-                );
-              }
-
-              const post = yield* move(actor, current, at, received, targets);
-
-              yield* announce(post, targets);
-
-              return { post, targets };
-            })
+            lockPost(actor, postId).pipe(
+              Effect.flatMap((current) =>
+                moved(actor, current, byHand(at), received)
+              )
+            )
           );
         }
       );
+
+      const enqueue = Effect.fn("PostScheduling.enqueue")(function* enqueue(
+        actor: Actor,
+        postId: PostId,
+        request: EnqueueRequest
+      ) {
+        yield* mayAsk(actor);
+
+        const received = yield* DateTime.now;
+
+        const queue = yield* queueNamed(
+          actor.workspaceId,
+          request.queueId
+        ).pipe(withPorts);
+
+        return yield* transaction(
+          Effect.gen(function* placeAndRestart() {
+            // The queue before the post: deleting a queue holds it, then
+            // writes its posts. A queue without room is said once the post
+            // is known to be one it could take.
+            const slot = yield* onQueue(
+              queue,
+              received,
+              Option.some(postId)
+            ).pipe(
+              Effect.map(Result.succeed),
+              Effect.catchTag("QueueHasNoRoom", (noRoom) =>
+                Effect.succeed(Result.fail(noRoom))
+              )
+            );
+
+            const current = yield* lockPost(actor, postId);
+            const { status } = current.post;
+
+            if (
+              status._tag !== "draft" &&
+              status._tag !== "scheduled" &&
+              status._tag !== "awaitingApproval"
+            ) {
+              return yield* new InvalidPostTransition({
+                action: "schedule",
+                from: status._tag,
+                postId,
+              });
+            }
+
+            yield* mayChange(actor, current.post);
+
+            const placed = yield* Effect.fromResult(slot);
+
+            if (status._tag !== "draft") {
+              return yield* moved(actor, current, placed, received);
+            }
+
+            const own = (yield* posts.targets(postId)).map(
+              ({ channelId }) => channelId
+            );
+
+            if (Option.isSome(request.channelIds) || own.length > 0) {
+              return yield* draftScheduled(
+                actor,
+                current,
+                Option.getOrElse(request.channelIds, () => own),
+                placed,
+                received
+              );
+            }
+
+            // A draft for no channel goes where the same content sent onto
+            // the queue would: its channels still connected, and its set.
+            const fromQueue = yield* queueChannels(actor, queue);
+
+            const filled = yield* PostPresets.use((presets) =>
+              presets.fill(actor, {
+                ...nothingAsked,
+                channelIds: fromQueue.channelIds,
+                channelSets: Option.toArray(queue.channelSetId),
+                content: current.post.content,
+                defaultOptions: true,
+                options: [],
+              })
+            ).pipe(
+              withPorts,
+              // Nothing asks for a signature here.
+              Effect.catchTag("SignatureNotFound", Effect.die)
+            );
+
+            const dropped = [...fromQueue.dropped, ...filled.dropped];
+            const gone = dropped.flatMap((left) => left.channelIds);
+
+            if (
+              !Arr.isReadonlyArrayNonEmpty(filled.channelIds) &&
+              Arr.isReadonlyArrayNonEmpty(gone)
+            ) {
+              return yield* new UnknownChannels({ channelIds: gone });
+            }
+
+            const scheduled = yield* draftScheduled(
+              actor,
+              current,
+              filled.channelIds,
+              placed,
+              received,
+              Option.some(filled.options)
+            );
+
+            return dropped.length === 0 ? scheduled : { ...scheduled, dropped };
+          })
+        );
+      });
 
       const unschedule = Effect.fn("PostScheduling.unschedule")(
         function* unschedule(actor: Actor, postId: PostId) {
@@ -988,6 +1376,7 @@ export class PostScheduling extends Context.Service<
 
       return PostScheduling.of({
         cancel,
+        enqueue,
         forgetExpiredKeys,
         mayAsk,
         reschedule,

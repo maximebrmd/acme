@@ -2,8 +2,6 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct WebhookUrlRefusedEncoded {
-    #[serde(rename = "_tag")]
-    pub tag: WebhookUrlRefusedEncodedTag,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -23,7 +21,6 @@ impl WebhookUrlRefusedEncoded {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct WebhookUrlRefusedEncodedBuilder {
-    tag: Option<WebhookUrlRefusedEncodedTag>,
     code: Option<String>,
     message: Option<String>,
     request_id: Option<String>,
@@ -31,11 +28,6 @@ pub struct WebhookUrlRefusedEncodedBuilder {
 }
 
 impl WebhookUrlRefusedEncodedBuilder {
-    pub fn tag(mut self, value: WebhookUrlRefusedEncodedTag) -> Self {
-        self.tag = Some(value);
-        self
-    }
-
     pub fn code(mut self, value: impl Into<String>) -> Self {
         self.code = Some(value.into());
         self
@@ -58,11 +50,9 @@ impl WebhookUrlRefusedEncodedBuilder {
 
     /// Consumes the builder and constructs a [`WebhookUrlRefusedEncoded`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`tag`](WebhookUrlRefusedEncodedBuilder::tag)
     /// - [`reason`](WebhookUrlRefusedEncodedBuilder::reason)
     pub fn build(self) -> Result<WebhookUrlRefusedEncoded, BuildError> {
         Ok(WebhookUrlRefusedEncoded {
-            tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
             code: self.code,
             message: self.message,
             request_id: self.request_id,

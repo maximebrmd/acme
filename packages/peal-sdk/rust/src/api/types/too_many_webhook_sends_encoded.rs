@@ -11,6 +11,9 @@ pub struct TooManyWebhookSendsEncoded {
     pub request_id: Option<String>,
     #[serde(default)]
     pub allowed: i64,
+    #[serde(rename = "retryAfterSeconds")]
+    #[serde(default)]
+    pub retry_after_seconds: i64,
 }
 
 impl TooManyWebhookSendsEncoded {
@@ -26,6 +29,7 @@ pub struct TooManyWebhookSendsEncodedBuilder {
     message: Option<String>,
     request_id: Option<String>,
     allowed: Option<i64>,
+    retry_after_seconds: Option<i64>,
 }
 
 impl TooManyWebhookSendsEncodedBuilder {
@@ -49,9 +53,15 @@ impl TooManyWebhookSendsEncodedBuilder {
         self
     }
 
+    pub fn retry_after_seconds(mut self, value: i64) -> Self {
+        self.retry_after_seconds = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`TooManyWebhookSendsEncoded`].
     /// This method will fail if any of the following fields are not set:
     /// - [`allowed`](TooManyWebhookSendsEncodedBuilder::allowed)
+    /// - [`retry_after_seconds`](TooManyWebhookSendsEncodedBuilder::retry_after_seconds)
     pub fn build(self) -> Result<TooManyWebhookSendsEncoded, BuildError> {
         Ok(TooManyWebhookSendsEncoded {
             code: self.code,
@@ -60,6 +70,9 @@ impl TooManyWebhookSendsEncodedBuilder {
             allowed: self
                 .allowed
                 .ok_or_else(|| BuildError::missing_field("allowed"))?,
+            retry_after_seconds: self
+                .retry_after_seconds
+                .ok_or_else(|| BuildError::missing_field("retry_after_seconds"))?,
         })
     }
 }

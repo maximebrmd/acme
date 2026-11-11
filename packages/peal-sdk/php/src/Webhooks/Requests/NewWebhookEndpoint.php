@@ -4,12 +4,18 @@ namespace Peal\Webhooks\Requests;
 
 use Peal\Core\Json\JsonSerializableType;
 use Peal\Core\Json\JsonProperty;
-use Peal\Types\SubscribableWebhookEventType;
 use Peal\Core\Types\ArrayType;
+use Peal\Types\SubscribableWebhookEventType;
 use Peal\Types\WebhookEndpointScope;
 
 class NewWebhookEndpoint extends JsonSerializableType
 {
+    /**
+     * @var ?array<string> $channelIds
+     */
+    #[JsonProperty('channelIds'), ArrayType(['string'])]
+    public ?array $channelIds;
+
     /**
      * @var ?string $description
      */
@@ -41,21 +47,31 @@ class NewWebhookEndpoint extends JsonSerializableType
     public string $url;
 
     /**
+     * @var ?array<string> $workspaceIds
+     */
+    #[JsonProperty('workspaceIds'), ArrayType(['string'])]
+    public ?array $workspaceIds;
+
+    /**
      * @param array{
      *   eventTypes: array<value-of<SubscribableWebhookEventType>>,
      *   url: string,
+     *   channelIds?: ?array<string>,
      *   description?: ?string,
      *   enabled?: ?bool,
      *   scope?: ?value-of<WebhookEndpointScope>,
+     *   workspaceIds?: ?array<string>,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->channelIds = $values['channelIds'] ?? null;
         $this->description = $values['description'] ?? null;
         $this->enabled = $values['enabled'] ?? null;
         $this->eventTypes = $values['eventTypes'];
         $this->scope = $values['scope'] ?? null;
         $this->url = $values['url'];
+        $this->workspaceIds = $values['workspaceIds'] ?? null;
     }
 }

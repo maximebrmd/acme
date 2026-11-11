@@ -37,8 +37,10 @@ const delivery = createDelivery(
   WebhookDeliveryIdSchema.make("00000000-0000-7000-8000-000000000003"),
   endpoint,
   {
+    externalId: Option.none(),
     id: WebhookEventIdSchema.make("00000000-0000-7000-8000-000000000002"),
     type: "post.published",
+    workspaceId: endpoint.workspaceId,
   },
   now
 );

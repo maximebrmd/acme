@@ -166,6 +166,9 @@ describe("the integers of the OpenAPI document", () => {
       "budgetAmount",
       "capRoom",
       "ceiling",
+      // A usage report's channels added up over its days: a base a price
+      // multiplies, which sums across a partner's workspaces too.
+      "channelDays",
       "channels",
       "clicks",
       "commitment",
@@ -175,6 +178,8 @@ describe("the integers of the OpenAPI document", () => {
       "impressions",
       "members",
       "monthlyCeiling",
+      // An exported usage count, whose media storage is in bytes.
+      "quantity",
       "reach",
       "requested",
       "results",

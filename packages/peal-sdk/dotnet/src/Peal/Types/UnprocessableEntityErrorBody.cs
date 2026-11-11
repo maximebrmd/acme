@@ -28,11 +28,11 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.PostContentInvalid"/>.
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.InvalidTimeZone"/>.
     /// </summary>
-    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.PostContentInvalid value)
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.InvalidTimeZone value)
     {
-        Type = "PostContentInvalid";
+        Type = "InvalidTimeZone";
         Value = value.Value;
     }
 
@@ -53,9 +53,9 @@ public record UnprocessableEntityErrorBody
     public bool IsUnknownChannels => Type == "UnknownChannels";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "PostContentInvalid"
+    /// Returns true if <see cref="Type"/> is "InvalidTimeZone"
     /// </summary>
-    public bool IsPostContentInvalid => Type == "PostContentInvalid";
+    public bool IsInvalidTimeZone => Type == "InvalidTimeZone";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.UnknownChannelsEncoded"/> if <see cref="Type"/> is 'UnknownChannels', otherwise throws an exception.
@@ -69,33 +69,33 @@ public record UnprocessableEntityErrorBody
             );
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.PostContentInvalidEncoded"/> if <see cref="Type"/> is 'PostContentInvalid', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.InvalidTimeZoneEncoded"/> if <see cref="Type"/> is 'InvalidTimeZone', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostContentInvalid'.</exception>
-    public Peal.PostContentInvalidEncoded AsPostContentInvalid() =>
-        IsPostContentInvalid
-            ? (Peal.PostContentInvalidEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'InvalidTimeZone'.</exception>
+    public Peal.InvalidTimeZoneEncoded AsInvalidTimeZone() =>
+        IsInvalidTimeZone
+            ? (Peal.InvalidTimeZoneEncoded)Value!
             : throw new global::System.Exception(
-                "UnprocessableEntityErrorBody.Type is not 'PostContentInvalid'"
+                "UnprocessableEntityErrorBody.Type is not 'InvalidTimeZone'"
             );
 
     public T Match<T>(
         Func<Peal.UnknownChannelsEncoded, T> onUnknownChannels,
-        Func<Peal.PostContentInvalidEncoded, T> onPostContentInvalid,
+        Func<Peal.InvalidTimeZoneEncoded, T> onInvalidTimeZone,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
             "UnknownChannels" => onUnknownChannels(AsUnknownChannels()),
-            "PostContentInvalid" => onPostContentInvalid(AsPostContentInvalid()),
+            "InvalidTimeZone" => onInvalidTimeZone(AsInvalidTimeZone()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
         Action<Peal.UnknownChannelsEncoded> onUnknownChannels,
-        Action<Peal.PostContentInvalidEncoded> onPostContentInvalid,
+        Action<Peal.InvalidTimeZoneEncoded> onInvalidTimeZone,
         Action<string, object?> onUnknown_
     )
     {
@@ -104,8 +104,8 @@ public record UnprocessableEntityErrorBody
             case "UnknownChannels":
                 onUnknownChannels(AsUnknownChannels());
                 break;
-            case "PostContentInvalid":
-                onPostContentInvalid(AsPostContentInvalid());
+            case "InvalidTimeZone":
+                onInvalidTimeZone(AsInvalidTimeZone());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -128,13 +128,13 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.PostContentInvalidEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.InvalidTimeZoneEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsPostContentInvalid(out Peal.PostContentInvalidEncoded? value)
+    public bool TryAsInvalidTimeZone(out Peal.InvalidTimeZoneEncoded? value)
     {
-        if (Type == "PostContentInvalid")
+        if (Type == "InvalidTimeZone")
         {
-            value = (Peal.PostContentInvalidEncoded)Value!;
+            value = (Peal.InvalidTimeZoneEncoded)Value!;
             return true;
         }
         value = null;
@@ -148,7 +148,7 @@ public record UnprocessableEntityErrorBody
     ) => new(value);
 
     public static implicit operator UnprocessableEntityErrorBody(
-        UnprocessableEntityErrorBody.PostContentInvalid value
+        UnprocessableEntityErrorBody.InvalidTimeZone value
     ) => new(value);
 
     [Serializable]
@@ -188,10 +188,8 @@ public record UnprocessableEntityErrorBody
             {
                 "UnknownChannels" => json.Deserialize<Peal.UnknownChannelsEncoded?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.UnknownChannelsEncoded"),
-                "PostContentInvalid" => json.Deserialize<Peal.PostContentInvalidEncoded?>(options)
-                    ?? throw new JsonException(
-                        "Failed to deserialize Peal.PostContentInvalidEncoded"
-                    ),
+                "InvalidTimeZone" => json.Deserialize<Peal.InvalidTimeZoneEncoded?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.InvalidTimeZoneEncoded"),
                 _ => json.Deserialize<object?>(options),
             };
             return new UnprocessableEntityErrorBody(discriminator, value);
@@ -207,7 +205,7 @@ public record UnprocessableEntityErrorBody
                 value.Type switch
                 {
                     "UnknownChannels" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "PostContentInvalid" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "InvalidTimeZone" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -257,22 +255,22 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for PostContentInvalid
+    /// Discriminated union type for InvalidTimeZone
     /// </summary>
     [Serializable]
-    public struct PostContentInvalid
+    public struct InvalidTimeZone
     {
-        public PostContentInvalid(Peal.PostContentInvalidEncoded value)
+        public InvalidTimeZone(Peal.InvalidTimeZoneEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.PostContentInvalidEncoded Value { get; set; }
+        internal Peal.InvalidTimeZoneEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator UnprocessableEntityErrorBody.PostContentInvalid(
-            Peal.PostContentInvalidEncoded value
+        public static implicit operator UnprocessableEntityErrorBody.InvalidTimeZone(
+            Peal.InvalidTimeZoneEncoded value
         ) => new(value);
     }
 }

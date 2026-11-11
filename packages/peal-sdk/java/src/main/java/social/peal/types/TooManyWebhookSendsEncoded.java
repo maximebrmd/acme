@@ -28,6 +28,8 @@ public final class TooManyWebhookSendsEncoded {
 
     private final int allowed;
 
+    private final int retryAfterSeconds;
+
     private final Map<String, Object> additionalProperties;
 
     private TooManyWebhookSendsEncoded(
@@ -35,11 +37,13 @@ public final class TooManyWebhookSendsEncoded {
             Optional<String> message,
             Optional<String> requestId,
             int allowed,
+            int retryAfterSeconds,
             Map<String, Object> additionalProperties) {
         this.code = code;
         this.message = message;
         this.requestId = requestId;
         this.allowed = allowed;
+        this.retryAfterSeconds = retryAfterSeconds;
         this.additionalProperties = additionalProperties;
     }
 
@@ -63,6 +67,11 @@ public final class TooManyWebhookSendsEncoded {
         return allowed;
     }
 
+    @JsonProperty("retryAfterSeconds")
+    public int getRetryAfterSeconds() {
+        return retryAfterSeconds;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -78,12 +87,13 @@ public final class TooManyWebhookSendsEncoded {
         return code.equals(other.code)
                 && message.equals(other.message)
                 && requestId.equals(other.requestId)
-                && allowed == other.allowed;
+                && allowed == other.allowed
+                && retryAfterSeconds == other.retryAfterSeconds;
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.code, this.message, this.requestId, this.allowed);
+        return Objects.hash(this.code, this.message, this.requestId, this.allowed, this.retryAfterSeconds);
     }
 
     @java.lang.Override
@@ -96,9 +106,13 @@ public final class TooManyWebhookSendsEncoded {
     }
 
     public interface AllowedStage {
-        _FinalStage allowed(int allowed);
+        RetryAfterSecondsStage allowed(int allowed);
 
         Builder from(TooManyWebhookSendsEncoded other);
+    }
+
+    public interface RetryAfterSecondsStage {
+        _FinalStage retryAfterSeconds(int retryAfterSeconds);
     }
 
     public interface _FinalStage {
@@ -122,8 +136,10 @@ public final class TooManyWebhookSendsEncoded {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements AllowedStage, _FinalStage {
+    public static final class Builder implements AllowedStage, RetryAfterSecondsStage, _FinalStage {
         private int allowed;
+
+        private int retryAfterSeconds;
 
         private Optional<String> requestId = Optional.empty();
 
@@ -141,13 +157,21 @@ public final class TooManyWebhookSendsEncoded {
             message(other.getMessage());
             requestId(other.getRequestId());
             allowed(other.getAllowed());
+            retryAfterSeconds(other.getRetryAfterSeconds());
             return this;
         }
 
         @java.lang.Override
         @JsonSetter("allowed")
-        public _FinalStage allowed(int allowed) {
+        public RetryAfterSecondsStage allowed(int allowed) {
             this.allowed = allowed;
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("retryAfterSeconds")
+        public _FinalStage retryAfterSeconds(int retryAfterSeconds) {
+            this.retryAfterSeconds = retryAfterSeconds;
             return this;
         }
 
@@ -192,7 +216,8 @@ public final class TooManyWebhookSendsEncoded {
 
         @java.lang.Override
         public TooManyWebhookSendsEncoded build() {
-            return new TooManyWebhookSendsEncoded(code, message, requestId, allowed, additionalProperties);
+            return new TooManyWebhookSendsEncoded(
+                    code, message, requestId, allowed, retryAfterSeconds, additionalProperties);
         }
 
         @JsonAnySetter
@@ -200,7 +225,8 @@ public final class TooManyWebhookSendsEncoded {
             if (key.equalsIgnoreCase("code")
                     || key.equalsIgnoreCase("message")
                     || key.equalsIgnoreCase("requestId")
-                    || key.equalsIgnoreCase("allowed")) {
+                    || key.equalsIgnoreCase("allowed")
+                    || key.equalsIgnoreCase("retryAfterSeconds")) {
                 return;
             }
             this.additionalProperties.put(key, value);

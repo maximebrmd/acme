@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from "peal-ui/components/alert";
 import type { SavedItemError } from "#settings/saved-item-error.ts";
 
 /** What a workspace keeps for its posts: what an error is about. */
-export type SavedItemKind = "channelSet" | "signature" | "tag";
+export type SavedItemKind = "channelSet" | "queue" | "signature" | "tag";
 
 /** Writes why a change to a tag, a signature or a channel set failed. */
 export const useSavedItemErrorText = (kind: SavedItemKind) => {

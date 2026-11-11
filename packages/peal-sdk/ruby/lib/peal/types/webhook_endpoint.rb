@@ -5,6 +5,8 @@ require_relative "../../peal"
 module Peal
   module Types
     class WebhookEndpoint < Internal::Types::Model
+      field :channel_ids, -> { Internal::Types::Array[String] }, optional: false, nullable: false, api_name: "channelIds"
+
       field :created_at, -> { String }, optional: false, nullable: false, api_name: "createdAt"
 
       field :description, -> { String }, optional: false, nullable: false
@@ -28,6 +30,8 @@ module Peal
       field :updated_at, -> { String }, optional: false, nullable: false, api_name: "updatedAt"
 
       field :url, -> { String }, optional: false, nullable: false
+
+      field :workspace_ids, -> { Internal::Types::Array[String] }, optional: false, nullable: false, api_name: "workspaceIds"
     end
   end
 end

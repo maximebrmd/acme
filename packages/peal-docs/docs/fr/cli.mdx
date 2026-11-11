@@ -225,7 +225,7 @@ peal post "Le catalogue de printemps est sorti" --channel <channel-id> --now --w
 
 `peal post` écrit une publication et l’envoie en une seule commande, au public des comptes que connectent ses canaux. Ce qui part ne peut pas être repris depuis Peal.
 
-- **Quand.** `--at` la programme, `--now` la publie aussitôt, et l’un des deux est obligatoire : publier n’est jamais le comportement par défaut. `--at` prend un instant avec son décalage, comme `2026-11-20T09:00:00Z` ou `2026-11-20T10:00:00+01:00`, ou une heure locale sans décalage, comme `2026-11-20T10:00`, lue dans `--time-zone` (ou `--zone`), un fuseau IANA comme `Europe/Paris`. Sans l’option, le fuseau est `TZ`, puis celui de votre ordinateur. Une heure locale que les horloges sautent ou répètent dans ce fuseau est refusée : donnez l’instant avec son décalage.
+- **Quand.** `--at` la programme, `--now` la publie aussitôt, `--queue <nom-ou-identifiant>` ou `--default-queue` la place sur le prochain créneau libre d’une [file d’attente](#queues), et l’une d’elles est obligatoire : publier n’est jamais le comportement par défaut. `--at` prend un instant avec son décalage, comme `2026-11-20T09:00:00Z` ou `2026-11-20T10:00:00+01:00`, ou une heure locale sans décalage, comme `2026-11-20T10:00`, lue dans `--time-zone` (ou `--zone`), un fuseau IANA comme `Europe/Paris`. Sans l’option, le fuseau est `TZ`, puis celui de votre ordinateur. Une heure locale que les horloges sautent ou répètent dans ce fuseau est refusée : donnez l’instant avec son décalage.
 - **Où.** `--channel` (ou `--channels`) nomme un canal par son identifiant ; répétez-le, ou séparez les identifiants par des virgules. `--set <id-ou-nom>` nomme un [groupe de canaux](#sets), et vaut pour ses canaux connectés : il faut au moins un canal ou un groupe. Un canal d’un groupe qui n’est plus connecté est laissé de côté, et `peal` dit lequel après la publication ; quand il n’en reste aucun et qu’aucun `--channel` n’est donné, rien n’est publié.
 - **Médias.** Chaque `--media` est un fichier, importé d’abord ; une adresse `https://`, que le serveur va chercher ; ou l’identifiant d’un média que l’espace de travail a déjà, tel que `peal media list` le montre. Ils s’affichent dans l’ordre donné, 20 au plus. Le premier `--alt` décrit le premier `--media`, le deuxième le deuxième.
 - **Fil.** Chaque `--then <text>` ajoute une partie à la suite de la publication, dans l’ordre donné, en texte seul : une réponse à la partie précédente sur les plateformes qui ont des [fils](/scheduling#threads). `--then-delay <seconds>` fait attendre chaque partie ce temps-là après le départ de la précédente, un jour (86400) au plus ; sans lui, elles se suivent. Une plateforme qui prend une publication seule refuse la publication.
@@ -329,6 +329,27 @@ peal post "Le catalogue de printemps est sorti" --set Lancement --at 2026-11-20T
 - `peal sets list` montre les canaux de chaque groupe, et dit lesquels ne sont plus connectés. Une publication créée avec le groupe les laisse de côté et le dit ; elle ne part jamais sur moins de canaux en silence.
 - `peal sets update` change le nom, les canaux (ceux que nomme `--channel` remplacent ceux du groupe) ou les options, et garde ce que vous laissez de côté, sauf les canaux qui ne sont plus connectés : un groupe n’est enregistré qu’avec des canaux connectés, et c’est donc aussi ainsi qu’on en retire un. Les publications créées avec le groupe auparavant gardent leurs canaux.
 - `peal sets delete` supprime définitivement un groupe ; ses canaux, et les publications créées avec lui, restent.
+
+## Files d’attente [#queues]
+
+```sh
+peal queues list
+peal queues create "Weekdays" --slot mon@09:30 --slot wed@09:30 --slot fri@17:00 --zone Europe/Paris --channel <channel-id>
+peal queues update "Weekdays" --slot tue@12:00 --default
+peal queues show "Weekdays"
+peal queues preview "Weekdays" --count 5
+peal queues delete "Weekdays"
+peal post "Un conseil intemporel" --default-queue
+peal post "Un conseil intemporel" --queue Weekdays --channel <channel-id> --dry-run
+peal posts queue <post-id> --queue Weekdays
+peal posts list --queue Weekdays
+```
+
+- Une [file d’attente](/fr/scheduling#queues) est un emploi du temps hebdomadaire de créneaux dans un fuseau horaire, pour certains canaux et au plus un groupe de canaux (`--set`). `--slot` prend un jour (`mon` ou `monday`…, en anglais) et une heure sur 24 heures, comme `mon@09:30` ; répétez-le, 100 au plus. `--zone` est le fuseau IANA de la file, `TZ` ou celui de votre ordinateur sans lui. Un espace de travail garde 20 files, et une file se nomme par son identifiant ou son nom, quelle que soit sa casse.
+- `peal queues update` garde ce que vous laissez de côté, sauf les canaux qui ne sont plus connectés ; `--slot` remplace la semaine et `--clear-slots` la vide, `--channel` remplace les canaux et `--clear-channels` les retire tous, `--no-set` retire le groupe de canaux, `--default` en fait la file par défaut. Les publications placées par la file gardent leur heure. `peal queues delete` les laisse programmées.
+- `peal queues preview` liste les prochains créneaux, libres ou pris, et où irait une publication ajoutée maintenant : rien n’est retenu.
+- `peal post --queue <nom-ou-identifiant>` place une publication sur le prochain créneau libre de cette file (`--queue=<nom-ou-identifiant>` aussi), et `peal post --default-queue` sur celui de la file par défaut. Chacune est l’une de `--at`, `--now`, `--queue` et `--default-queue`, et sans `--channel` ni `--set` la publication va sur les canaux de la file. Avec `--dry-run`, la commande affiche le créneau qu’elle prendrait.
+- `peal posts queue` place un brouillon, ou une publication programmée, sur le prochain créneau libre d’une file (`--queue`, ou celle par défaut). `peal posts list --queue` liste les publications placées par une file.
 
 ## Options par défaut [#default-options]
 
@@ -456,6 +477,15 @@ peal billing
 
 `peal billing --json` affiche les deux réponses de l’API en un seul document, sous `billing` et `standing`. Sans cette option, la commande affiche la formule et l’abonnement de l’espace de travail, et, pour chaque limite (canaux, membres, publications qui partent ce mois-ci, demandes à l’assistant aujourd’hui, médias stockés), ce qui est utilisé de ce que la formule permet, et si l’espace de travail peut encore commencer son essai. Il ne change rien : les propriétaires et administrateurs commandent, résilient ou se rétractent sur la page **Facturation** de l’espace de travail ([Abonnements et facturation](/billing)). Sur une instance qui ne facture pas, rien n’est limité.
 
+## Utilisation [#usage]
+
+```sh
+peal usage
+peal usage --from 2026-10-01 --to 2026-10-31
+```
+
+`peal usage` affiche l’abonnement de l’espace de travail, chaque limite face à ce qui est utilisé maintenant, puis, sur des jours UTC (les 30 derniers sauf si `--from` et `--to` disent autre chose, 92 au plus), les publications parties par plateforme, les jours-canal, les publications sur les plateformes qui facturent à la publication, et une ligne pour chaque jour qui a quelque chose : ses publications, les canaux, membres et médias tels que le relevé du jour les a trouvés (un tiret pour un jour sans relevé), et ses demandes à l’assistant. `--json` affiche la réponse de l’API telle qu’elle est venue. Il ne change rien, et rien n’y est facturé ([Utilisation](/billing#usage)).
+
 ## Membres et invitations [#members]
 
 ```sh
@@ -493,19 +523,26 @@ peal inbox moderate <comment-id> --action hide
 
 ```sh
 peal webhooks list
-peal webhooks create --url https://hooks.example.com/peal --events post.published,post.failed
+peal webhooks create --url https://hooks.example.com/peal --events post.published,post.failed --channel <channel-id>
 peal webhooks update <endpoint-id> --events all --disable
+peal webhooks update <endpoint-id> --clear-channels
 peal webhooks rotate-secret <endpoint-id>
-peal webhooks test <endpoint-id>
+peal webhooks test <endpoint-id> --event post.published
 peal webhooks deliveries <endpoint-id>
-peal webhooks redeliver <endpoint-id> <delivery-id>
+peal webhooks deliveries --status failed --since 2026-11-10T00:00:00Z
+peal webhooks redeliver --endpoint <endpoint-id> <delivery-id>
+peal webhooks redeliver --failed --endpoint <endpoint-id>
+peal webhooks redeliver <delivery-id> <delivery-id>
 peal webhooks delete <endpoint-id>
 ```
 
 - Les propriétaires et administrateurs lisent et gèrent les points de terminaison de [webhook](/webhooks) de l’espace de travail. `peal webhooks show <endpoint-id>` en affiche un.
 - `--events` prend des types d’événements séparés par des virgules, ou `all`. `create` prend aussi `--description` et `--disabled` ; `update` n’envoie que ce que vous lui donnez, avec `--enable` ou `--disable` pour activer ou désactiver le point de terminaison.
 - `create` et `rotate-secret` affichent le secret de signature, une seule fois : enregistrez-le à ce moment. Après un renouvellement, l’ancien secret signe encore pendant 24 heures, à côté du nouveau.
-- `test` envoie un événement `webhook.test` ; `deliveries` montre comment chaque livraison s’est terminée, la plus récente d’abord, et `redeliver` en renvoie une.
+- `--channel` (répété, ou des identifiants séparés par des virgules) limite un point de terminaison à ces chaînes, et `--clear-channels` lui fait de nouveau entendre toutes les chaînes ; `--workspace-id`, avec `--partner` sur `create`, limite un point de terminaison partenaire à ces espaces de travail, et `--clear-workspaces` retire la liste. `update` remplace une liste qu’on lui donne.
+- `test` envoie un événement `webhook.test`, ou avec `--event` un exemple de ce type, marqué `sample: true`.
+- `deliveries` montre comment chaque livraison s’est terminée, la plus récente d’abord : celles d’un point de terminaison, ou sans lui celles de tous, avec `--status`, `--event`, `--since` et `--until` (des instants avec leur décalage).
+- `redeliver` renvoie des livraisons : une avec `--endpoint` et son identifiant, comptée comme un renvoi un à un ; plusieurs par identifiant ; ou `--failed --endpoint <endpoint-id>` pour les échouées d’un point de terminaison, les plus anciennes d’abord, 100 par appel, avec `--since`, `--until` et `--event`, qui ne vont qu’avec `--failed`. Il affiche ce qu’il a ignoré et pourquoi, et combien il en reste : relancez-le pour celles-là. Quand il ne renvoie rien, il se termine en refus (`nothing_redelivered`, code de sortie 1). Ses arguments sont des identifiants de livraison : une ligne de commande plus ancienne prenait d’abord le point de terminaison (`redeliver <endpoint-id> <delivery-id>`), qui se nomme maintenant avec `--endpoint` ; un identifiant de point de terminaison donné comme livraison est ignoré, et la commande le dit.
 
 ## Journal d’activité [#activity]
 

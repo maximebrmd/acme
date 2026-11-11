@@ -137,6 +137,8 @@ const workspaceRows = {
   // account starts no second one.
   "billing.trials": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.trials WHERE workspace_id = ${id}`,
+  "billing.usage_days": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.usage_days WHERE workspace_id = ${id}`,
   "billing.withdrawals": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.withdrawals WHERE workspace_id = ${id}`,
   "channels.channels": (sql, id) =>
@@ -173,6 +175,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.publication_attempts a JOIN publishing.post_targets t ON t.id = a.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.publication_calls": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.publication_calls c JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
+  "publishing.queues": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.queues WHERE workspace_id = ${id}`,
   "publishing.signatures": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.signatures WHERE workspace_id = ${id}`,
   "publishing.tags": (sql, id) =>
@@ -193,6 +197,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM webhooks.endpoints WHERE workspace_id = ${id}`,
   "webhooks.events": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM webhooks.events WHERE workspace_id = ${id}`,
+  "webhooks.manual_sends": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM webhooks.manual_sends WHERE workspace_id = ${id}`,
   // A partner account goes with its home workspace, and with it its keys,
   // its creations' idempotency keys and its daily counts.
   "workspace.partner_idempotency_keys": (sql, id) =>
@@ -437,6 +443,9 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO publishing.channel_defaults (channel_id, workspace_id, options, updated_at)
     VALUES (${savedChannel}, ${workspaceId}, '{"platform":"youtube"}'::jsonb, now())`;
 
+  yield* sql`INSERT INTO publishing.queues (id, workspace_id, name, name_key, time_zone, slots, channel_ids, is_default, created_at)
+    VALUES (${uuid7()}, ${workspaceId}, 'Synthetic', 'synthetic', 'Europe/Paris', '[{"day":"monday","time":{"hour":9,"minute":0}}]'::jsonb, ARRAY[${savedChannel}]::uuid[], true, now())`;
+
   // The key of the request that made it, as `posts.send` keeps it.
   yield* sql`INSERT INTO publishing.idempotency_keys (workspace_id, key_digest, request_digest, post_id, created_at)
     VALUES (${workspaceId}, ${randomUUID()}, 'synthetic-digest', ${postId}, now())`;
@@ -496,6 +505,8 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO billing.metered_posts (workspace_id, platform, month, posts, posts_with_links)
     VALUES (${workspaceId}, 'x', date_trunc('month', now())::date, 2, 1)`;
+  yield* sql`INSERT INTO billing.usage_days (workspace_id, day, meter, dimension, quantity)
+    VALUES (${workspaceId}, current_date, 'publishedPosts', 'x', 2), (${workspaceId}, current_date, 'channels', '', 1)`;
   // An order with its consent, a trial (one per account: the user's
   // first workspace has it) and a withdrawal.
   yield* sql`INSERT INTO billing.orders (id, workspace_id, user_id, plan, interval, trial, consent_version, created_at)
@@ -589,6 +600,10 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO webhooks.deliveries (id, endpoint_id, event_id, workspace_id, event_type, status, attempts, created_at)
     VALUES (${uuid7()}, ${endpointId}, ${eventId}, ${workspaceId}, 'webhook.test', 'pending', 0, now())`;
+
+  // The hour's count of the test events sent by hand.
+  yield* sql`INSERT INTO webhooks.manual_sends (workspace_id, kind, window_start, sent)
+    VALUES (${workspaceId}, 'single', date_trunc('hour', now()), 1)`;
 
   // A connect link the person created, not yet used.
   yield* sql`INSERT INTO channels.connect_links (id, workspace_id, platform, channel_ids, token_digest, created_by, starts, status, created_at, expires_at)

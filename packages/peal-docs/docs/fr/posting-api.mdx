@@ -441,6 +441,26 @@ curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/search?status=f
 
 `GET …/posts?from=…&to=…` reste, pour les calendriers : il liste en une seule réponse les publications programmées entre deux instants, séparés de 62 jours au plus, par instant programmé. Les brouillons n’en font pas partie.
 
+## Ajouter une publication à une file d’attente [#queues]
+
+Une file d’attente est un emploi du temps hebdomadaire de créneaux dans un fuseau horaire ([Files d’attente](/fr/scheduling#queues)) : `GET`, `POST …/queues`, `GET`, `PUT`, `DELETE …/queues/{queueId}` les gardent, avec post:read pour lire et post:update pour modifier. `when: { "_tag": "queue", "queueId": "…" }` sur `send`, sur chaque élément de `bulk` et sur `validate` place une publication sur le prochain créneau libre de la file au lieu d’une heure ; sans `queueId`, sur la file par défaut de l’espace de travail. Le créneau est décidé dans la transaction qui enregistre la publication, sous le verrou de la file : des publications envoyées ensemble prennent des créneaux différents, et une requête renvoyée avec son `Idempotency-Key` n’en prend aucun. Une publication qui ne nomme ni canal ni groupe va sur les canaux et le groupe de canaux de la file, et les `warnings` de sa réponse nomment les canaux de la file déconnectés depuis (`queueChannelsDropped`).
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/send" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"channelIds": [], "content": {"text": "Un conseil intemporel.", "media": [], "overrides": []}, "when": {"_tag": "queue"}}'
+```
+
+`POST …/posts/{postId}/queue`, avec `{ "queueId"?, "channelIds"? }`, place un brouillon sur le prochain créneau libre (sur `channelIds`, sinon ses propres canaux, sinon les canaux et le groupe de canaux de la file, comme une publication envoyée sur la file, avec les mêmes `warnings`), ou y déplace une publication programmée ou en attente d’approbation. Son propre créneau compte comme libre : une publication ajoutée de nouveau à sa file reste où elle est, sauf si un créneau avant le sien s’est libéré depuis, qu’elle prend alors. `GET …/queues/{queueId}/slots?count=…` montre les prochains créneaux, chacun avec la publication qui le prend, et `nextFree`, où irait une publication ajoutée maintenant : un conseil, rien n’est retenu.
+
+- Une file sans créneau, ou dont tous les créneaux des 366 prochains jours sont pris, répond 409 `queue_has_no_room`, avec `reason` `noSlots` ou `full`.
+- Une file qui n’est pas celle de l’espace de travail, ou une file par défaut qu’il n’a pas, répond 404 `queue_not_found`.
+- La place de l’abonnement se compte dans le mois du créneau : `plan_limit_reached` quand il est plein, jamais un mois suivant.
+- `validate` répond `queueSlot`, le créneau que la publication prendrait maintenant, auquel tout le reste a été vérifié, ou `queueNoRoom`.
+
+Les publications portent la file qui les a placées (`queueId`, null une fois la file supprimée), et `GET …/posts/search?queueId=…` les liste.
+
 ## Depuis MCP et la ligne de commande [#tools]
 
 | Requête                        | Outil MCP                         | Commande                             |
@@ -451,5 +471,7 @@ curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/search?status=f
 | `POST …/posts/bulk`            | `create_posts`                    |                                      |
 | `POST …/posts/import`          |                                   | `peal posts import <file.csv>`       |
 | `GET …/posts/search`           | `list_posts`                      | `peal posts list`                    |
+| `POST …/posts/{postId}/queue`  | `queue_post`                      | `peal posts queue <post-id>`         |
+| `GET …/queues/{queueId}/slots` | `preview_queue`                   | `peal queues preview <queue>`        |
 
 [Connecter un client MCP](/mcp#tools) décrit les outils, et [Ligne de commande](/cli#post) les commandes.

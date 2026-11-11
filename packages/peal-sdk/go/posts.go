@@ -365,6 +365,81 @@ func (d *DuplicatePostsRequest) SetPostID(postID string) {
 }
 
 var (
+	queuePostFieldWorkspaceID = big.NewInt(1 << 0)
+	queuePostFieldPostID      = big.NewInt(1 << 1)
+	queuePostFieldChannelIDs  = big.NewInt(1 << 2)
+	queuePostFieldQueueID     = big.NewInt(1 << 3)
+)
+
+type QueuePost struct {
+	WorkspaceID string   `json:"-" url:"-"`
+	PostID      string   `json:"-" url:"-"`
+	ChannelIDs  []string `json:"channelIds,omitempty" url:"-"`
+	QueueID     *string  `json:"queueId,omitempty" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (q *QueuePost) require(field *big.Int) {
+	next := new(big.Int)
+	if q.explicitFields != nil {
+		next.Set(q.explicitFields)
+	}
+	next.Or(next, field)
+	q.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueuePost) SetWorkspaceID(workspaceID string) {
+	q.WorkspaceID = workspaceID
+	q.require(queuePostFieldWorkspaceID)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueuePost) SetPostID(postID string) {
+	q.PostID = postID
+	q.require(queuePostFieldPostID)
+}
+
+// SetChannelIDs sets the ChannelIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueuePost) SetChannelIDs(channelIDs []string) {
+	q.ChannelIDs = channelIDs
+	q.require(queuePostFieldChannelIDs)
+}
+
+// SetQueueID sets the QueueID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueuePost) SetQueueID(queueID *string) {
+	q.QueueID = queueID
+	q.require(queuePostFieldQueueID)
+}
+
+func (q *QueuePost) UnmarshalJSON(data []byte) error {
+	type unmarshaler QueuePost
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*q = QueuePost(body)
+	return nil
+}
+
+func (q *QueuePost) MarshalJSON() ([]byte, error) {
+	type embed QueuePost
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*q),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, q.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
 	getPostsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	getPostsRequestFieldPostID      = big.NewInt(1 << 1)
 )
@@ -754,10 +829,11 @@ var (
 	searchPostsRequestFieldLimit       = big.NewInt(1 << 6)
 	searchPostsRequestFieldOutcome     = big.NewInt(1 << 7)
 	searchPostsRequestFieldPlatform    = big.NewInt(1 << 8)
-	searchPostsRequestFieldSort        = big.NewInt(1 << 9)
-	searchPostsRequestFieldStatus      = big.NewInt(1 << 10)
-	searchPostsRequestFieldTagID       = big.NewInt(1 << 11)
-	searchPostsRequestFieldTo          = big.NewInt(1 << 12)
+	searchPostsRequestFieldQueueID     = big.NewInt(1 << 9)
+	searchPostsRequestFieldSort        = big.NewInt(1 << 10)
+	searchPostsRequestFieldStatus      = big.NewInt(1 << 11)
+	searchPostsRequestFieldTagID       = big.NewInt(1 << 12)
+	searchPostsRequestFieldTo          = big.NewInt(1 << 13)
 )
 
 type SearchPostsRequest struct {
@@ -770,6 +846,7 @@ type SearchPostsRequest struct {
 	Limit       *string        `json:"-" url:"limit,omitempty"`
 	Outcome     *PostOutcome   `json:"-" url:"outcome,omitempty"`
 	Platform    *Platform      `json:"-" url:"platform,omitempty"`
+	QueueID     *string        `json:"-" url:"queueId,omitempty"`
 	Sort        *PostSort      `json:"-" url:"sort,omitempty"`
 	Status      *PostStatus    `json:"-" url:"status,omitempty"`
 	TagID       *string        `json:"-" url:"tagId,omitempty"`
@@ -849,6 +926,13 @@ func (s *SearchPostsRequest) SetOutcome(outcome *PostOutcome) {
 func (s *SearchPostsRequest) SetPlatform(platform *Platform) {
 	s.Platform = platform
 	s.require(searchPostsRequestFieldPlatform)
+}
+
+// SetQueueID sets the QueueID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SearchPostsRequest) SetQueueID(queueID *string) {
+	s.QueueID = queueID
+	s.require(searchPostsRequestFieldQueueID)
 }
 
 // SetSort sets the Sort field and marks it as non-optional;
@@ -9862,13 +9946,14 @@ var (
 	postFieldCreatedVia   = big.NewInt(1 << 2)
 	postFieldID           = big.NewInt(1 << 3)
 	postFieldOutcome      = big.NewInt(1 << 4)
-	postFieldSchedule     = big.NewInt(1 << 5)
-	postFieldScheduledBy  = big.NewInt(1 << 6)
-	postFieldScheduledVia = big.NewInt(1 << 7)
-	postFieldStatus       = big.NewInt(1 << 8)
-	postFieldTagIDs       = big.NewInt(1 << 9)
-	postFieldTargets      = big.NewInt(1 << 10)
-	postFieldWarnings     = big.NewInt(1 << 11)
+	postFieldQueueID      = big.NewInt(1 << 5)
+	postFieldSchedule     = big.NewInt(1 << 6)
+	postFieldScheduledBy  = big.NewInt(1 << 7)
+	postFieldScheduledVia = big.NewInt(1 << 8)
+	postFieldStatus       = big.NewInt(1 << 9)
+	postFieldTagIDs       = big.NewInt(1 << 10)
+	postFieldTargets      = big.NewInt(1 << 11)
+	postFieldWarnings     = big.NewInt(1 << 12)
 )
 
 // postNullableFields maps the wire names of Post's nullable fields (required or optional) to their field bits.
@@ -9876,6 +9961,7 @@ var postNullableFields = map[string]*big.Int{
 	"authorId":     postFieldAuthorID,
 	"createdVia":   postFieldCreatedVia,
 	"outcome":      postFieldOutcome,
+	"queueId":      postFieldQueueID,
 	"schedule":     postFieldSchedule,
 	"scheduledBy":  postFieldScheduledBy,
 	"scheduledVia": postFieldScheduledVia,
@@ -9887,6 +9973,7 @@ type Post struct {
 	CreatedVia   *PostOrigin    `json:"createdVia,omitempty" url:"createdVia,omitempty"`
 	ID           string         `json:"id" url:"id"`
 	Outcome      *PostOutcome   `json:"outcome,omitempty" url:"outcome,omitempty"`
+	QueueID      *string        `json:"queueId,omitempty" url:"queueId,omitempty"`
 	Schedule     *PostSchedule  `json:"schedule,omitempty" url:"schedule,omitempty"`
 	ScheduledBy  *string        `json:"scheduledBy,omitempty" url:"scheduledBy,omitempty"`
 	ScheduledVia *PostOrigin    `json:"scheduledVia,omitempty" url:"scheduledVia,omitempty"`
@@ -9935,6 +10022,13 @@ func (p *Post) GetOutcome() *PostOutcome {
 		return nil
 	}
 	return p.Outcome
+}
+
+func (p *Post) GetQueueID() *string {
+	if p == nil {
+		return nil
+	}
+	return p.QueueID
 }
 
 func (p *Post) GetSchedule() *PostSchedule {
@@ -10035,6 +10129,13 @@ func (p *Post) SetID(id string) {
 func (p *Post) SetOutcome(outcome *PostOutcome) {
 	p.Outcome = outcome
 	p.require(postFieldOutcome)
+}
+
+// SetQueueID sets the QueueID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Post) SetQueueID(queueID *string) {
+	p.QueueID = queueID
+	p.require(postFieldQueueID)
 }
 
 // SetSchedule sets the Schedule field and marks it as non-optional;
@@ -11306,6 +11407,8 @@ type PostRefusal struct {
 	UnknownTags          *UnknownTagsEncoded
 	ChannelSetNotFound   *ChannelSetNotFoundEncoded
 	SignatureNotFound    *SignatureNotFoundEncoded
+	QueueNotFound        *QueueNotFoundEncoded
+	QueueHasNoRoom       *QueueHasNoRoomEncoded
 
 	rawJSON json.RawMessage
 }
@@ -11408,6 +11511,20 @@ func (p *PostRefusal) GetSignatureNotFound() *SignatureNotFoundEncoded {
 	return p.SignatureNotFound
 }
 
+func (p *PostRefusal) GetQueueNotFound() *QueueNotFoundEncoded {
+	if p == nil {
+		return nil
+	}
+	return p.QueueNotFound
+}
+
+func (p *PostRefusal) GetQueueHasNoRoom() *QueueHasNoRoomEncoded {
+	if p == nil {
+		return nil
+	}
+	return p.QueueHasNoRoom
+}
+
 func (p *PostRefusal) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -11498,6 +11615,18 @@ func (p *PostRefusal) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		p.SignatureNotFound = value
+	case "QueueNotFound":
+		value := new(QueueNotFoundEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.QueueNotFound = value
+	case "QueueHasNoRoom":
+		value := new(QueueHasNoRoomEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.QueueHasNoRoom = value
 	}
 	p.rawJSON = json.RawMessage(data)
 	return nil
@@ -11546,6 +11675,12 @@ func (p PostRefusal) MarshalJSON() ([]byte, error) {
 	if p.SignatureNotFound != nil {
 		return internal.MarshalJSONWithExtraProperty(p.SignatureNotFound, "_tag", "SignatureNotFound")
 	}
+	if p.QueueNotFound != nil {
+		return internal.MarshalJSONWithExtraProperty(p.QueueNotFound, "_tag", "QueueNotFound")
+	}
+	if p.QueueHasNoRoom != nil {
+		return internal.MarshalJSONWithExtraProperty(p.QueueHasNoRoom, "_tag", "QueueHasNoRoom")
+	}
 	if len(p.rawJSON) > 0 {
 		return p.rawJSON, nil
 	}
@@ -11566,6 +11701,8 @@ type PostRefusalVisitor interface {
 	VisitUnknownTags(*UnknownTagsEncoded) error
 	VisitChannelSetNotFound(*ChannelSetNotFoundEncoded) error
 	VisitSignatureNotFound(*SignatureNotFoundEncoded) error
+	VisitQueueNotFound(*QueueNotFoundEncoded) error
+	VisitQueueHasNoRoom(*QueueHasNoRoomEncoded) error
 }
 
 func (p *PostRefusal) Accept(visitor PostRefusalVisitor) error {
@@ -11607,6 +11744,12 @@ func (p *PostRefusal) Accept(visitor PostRefusalVisitor) error {
 	}
 	if p.SignatureNotFound != nil {
 		return visitor.VisitSignatureNotFound(p.SignatureNotFound)
+	}
+	if p.QueueNotFound != nil {
+		return visitor.VisitQueueNotFound(p.QueueNotFound)
+	}
+	if p.QueueHasNoRoom != nil {
+		return visitor.VisitQueueHasNoRoom(p.QueueHasNoRoom)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", p)
 }
@@ -11654,6 +11797,12 @@ func (p *PostRefusal) validate() error {
 	}
 	if p.SignatureNotFound != nil {
 		fields = append(fields, "SignatureNotFound")
+	}
+	if p.QueueNotFound != nil {
+		fields = append(fields, "QueueNotFound")
+	}
+	if p.QueueHasNoRoom != nil {
+		fields = append(fields, "QueueHasNoRoom")
 	}
 	if len(fields) == 0 {
 		if p.Type != "" {
@@ -12040,9 +12189,10 @@ func (p PostTargetStatus) Ptr() *PostTargetStatus {
 }
 
 type PostTiming struct {
-	Type string
-	Now  *PostTimingNow
-	At   *PostTimingAt
+	Type  string
+	Now   *PostTimingNow
+	At    *PostTimingAt
+	Queue *PostTimingQueue
 
 	rawJSON json.RawMessage
 }
@@ -12066,6 +12216,13 @@ func (p *PostTiming) GetAt() *PostTimingAt {
 		return nil
 	}
 	return p.At
+}
+
+func (p *PostTiming) GetQueue() *PostTimingQueue {
+	if p == nil {
+		return nil
+	}
+	return p.Queue
 }
 
 func (p *PostTiming) UnmarshalJSON(data []byte) error {
@@ -12092,6 +12249,12 @@ func (p *PostTiming) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		p.At = value
+	case "queue":
+		value := new(PostTimingQueue)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.Queue = value
 	}
 	p.rawJSON = json.RawMessage(data)
 	return nil
@@ -12107,6 +12270,9 @@ func (p PostTiming) MarshalJSON() ([]byte, error) {
 	if p.At != nil {
 		return internal.MarshalJSONWithExtraProperty(p.At, "_tag", "at")
 	}
+	if p.Queue != nil {
+		return internal.MarshalJSONWithExtraProperty(p.Queue, "_tag", "queue")
+	}
 	if len(p.rawJSON) > 0 {
 		return p.rawJSON, nil
 	}
@@ -12116,6 +12282,7 @@ func (p PostTiming) MarshalJSON() ([]byte, error) {
 type PostTimingVisitor interface {
 	VisitNow(*PostTimingNow) error
 	VisitAt(*PostTimingAt) error
+	VisitQueue(*PostTimingQueue) error
 }
 
 func (p *PostTiming) Accept(visitor PostTimingVisitor) error {
@@ -12124,6 +12291,9 @@ func (p *PostTiming) Accept(visitor PostTimingVisitor) error {
 	}
 	if p.At != nil {
 		return visitor.VisitAt(p.At)
+	}
+	if p.Queue != nil {
+		return visitor.VisitQueue(p.Queue)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", p)
 }
@@ -12138,6 +12308,9 @@ func (p *PostTiming) validate() error {
 	}
 	if p.At != nil {
 		fields = append(fields, "at")
+	}
+	if p.Queue != nil {
+		fields = append(fields, "queue")
 	}
 	if len(fields) == 0 {
 		if p.Type != "" {
@@ -12354,16 +12527,104 @@ func (p *PostTimingNow) String() string {
 }
 
 var (
+	postTimingQueueFieldQueueID = big.NewInt(1 << 0)
+)
+
+type PostTimingQueue struct {
+	QueueID *string `json:"queueId,omitempty" url:"queueId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostTimingQueue) GetQueueID() *string {
+	if p == nil {
+		return nil
+	}
+	return p.QueueID
+}
+
+func (p *PostTimingQueue) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostTimingQueue) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetQueueID sets the QueueID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTimingQueue) SetQueueID(queueID *string) {
+	p.QueueID = queueID
+	p.require(postTimingQueueFieldQueueID)
+}
+
+func (p *PostTimingQueue) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostTimingQueue
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostTimingQueue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostTimingQueue) MarshalJSON() ([]byte, error) {
+	type embed PostTimingQueue
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostTimingQueue) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
 	postValidationFieldAwaitsApproval  = big.NewInt(1 << 0)
 	postValidationFieldChannels        = big.NewInt(1 << 1)
 	postValidationFieldDuplicates      = big.NewInt(1 << 2)
 	postValidationFieldPlanLimit       = big.NewInt(1 << 3)
-	postValidationFieldSchedule        = big.NewInt(1 << 4)
-	postValidationFieldUnknownChannels = big.NewInt(1 << 5)
-	postValidationFieldUnknownMedia    = big.NewInt(1 << 6)
-	postValidationFieldValid           = big.NewInt(1 << 7)
-	postValidationFieldViolations      = big.NewInt(1 << 8)
-	postValidationFieldWarnings        = big.NewInt(1 << 9)
+	postValidationFieldQueueNoRoom     = big.NewInt(1 << 4)
+	postValidationFieldQueueSlot       = big.NewInt(1 << 5)
+	postValidationFieldSchedule        = big.NewInt(1 << 6)
+	postValidationFieldUnknownChannels = big.NewInt(1 << 7)
+	postValidationFieldUnknownMedia    = big.NewInt(1 << 8)
+	postValidationFieldValid           = big.NewInt(1 << 9)
+	postValidationFieldViolations      = big.NewInt(1 << 10)
+	postValidationFieldWarnings        = big.NewInt(1 << 11)
 )
 
 // postValidationNullableFields maps the wire names of PostValidation's nullable fields (required or optional) to their field bits.
@@ -12377,6 +12638,8 @@ type PostValidation struct {
 	Channels        []*ChannelPreview     `json:"channels" url:"channels"`
 	Duplicates      []*DuplicateOnChannel `json:"duplicates" url:"duplicates"`
 	PlanLimit       *PlanShortfall        `json:"planLimit,omitempty" url:"planLimit,omitempty"`
+	QueueNoRoom     *QueueNoRoom          `json:"queueNoRoom,omitempty" url:"queueNoRoom,omitempty"`
+	QueueSlot       *string               `json:"queueSlot,omitempty" url:"queueSlot,omitempty"`
 	Schedule        *ScheduleCheck        `json:"schedule,omitempty" url:"schedule,omitempty"`
 	UnknownChannels []string              `json:"unknownChannels" url:"unknownChannels"`
 	UnknownMedia    []string              `json:"unknownMedia" url:"unknownMedia"`
@@ -12417,6 +12680,20 @@ func (p *PostValidation) GetPlanLimit() *PlanShortfall {
 		return nil
 	}
 	return p.PlanLimit
+}
+
+func (p *PostValidation) GetQueueNoRoom() *QueueNoRoom {
+	if p == nil {
+		return nil
+	}
+	return p.QueueNoRoom
+}
+
+func (p *PostValidation) GetQueueSlot() *string {
+	if p == nil {
+		return nil
+	}
+	return p.QueueSlot
 }
 
 func (p *PostValidation) GetSchedule() *ScheduleCheck {
@@ -12503,6 +12780,20 @@ func (p *PostValidation) SetDuplicates(duplicates []*DuplicateOnChannel) {
 func (p *PostValidation) SetPlanLimit(planLimit *PlanShortfall) {
 	p.PlanLimit = planLimit
 	p.require(postValidationFieldPlanLimit)
+}
+
+// SetQueueNoRoom sets the QueueNoRoom field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostValidation) SetQueueNoRoom(queueNoRoom *QueueNoRoom) {
+	p.QueueNoRoom = queueNoRoom
+	p.require(postValidationFieldQueueNoRoom)
+}
+
+// SetQueueSlot sets the QueueSlot field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostValidation) SetQueueSlot(queueSlot *string) {
+	p.QueueSlot = queueSlot
+	p.require(postValidationFieldQueueSlot)
 }
 
 // SetSchedule sets the Schedule field and marks it as non-optional;
@@ -12597,8 +12888,9 @@ func (p *PostValidation) String() string {
 }
 
 type PostWarning struct {
-	Type            string
-	ChannelsDropped *PostWarningChannelsDropped
+	Type                 string
+	ChannelsDropped      *PostWarningChannelsDropped
+	QueueChannelsDropped *PostWarningQueueChannelsDropped
 
 	rawJSON json.RawMessage
 }
@@ -12615,6 +12907,13 @@ func (p *PostWarning) GetChannelsDropped() *PostWarningChannelsDropped {
 		return nil
 	}
 	return p.ChannelsDropped
+}
+
+func (p *PostWarning) GetQueueChannelsDropped() *PostWarningQueueChannelsDropped {
+	if p == nil {
+		return nil
+	}
+	return p.QueueChannelsDropped
 }
 
 func (p *PostWarning) UnmarshalJSON(data []byte) error {
@@ -12635,6 +12934,12 @@ func (p *PostWarning) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		p.ChannelsDropped = value
+	case "queueChannelsDropped":
+		value := new(PostWarningQueueChannelsDropped)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.QueueChannelsDropped = value
 	}
 	p.rawJSON = json.RawMessage(data)
 	return nil
@@ -12647,6 +12952,9 @@ func (p PostWarning) MarshalJSON() ([]byte, error) {
 	if p.ChannelsDropped != nil {
 		return internal.MarshalJSONWithExtraProperty(p.ChannelsDropped, "_tag", "channelsDropped")
 	}
+	if p.QueueChannelsDropped != nil {
+		return internal.MarshalJSONWithExtraProperty(p.QueueChannelsDropped, "_tag", "queueChannelsDropped")
+	}
 	if len(p.rawJSON) > 0 {
 		return p.rawJSON, nil
 	}
@@ -12655,11 +12963,15 @@ func (p PostWarning) MarshalJSON() ([]byte, error) {
 
 type PostWarningVisitor interface {
 	VisitChannelsDropped(*PostWarningChannelsDropped) error
+	VisitQueueChannelsDropped(*PostWarningQueueChannelsDropped) error
 }
 
 func (p *PostWarning) Accept(visitor PostWarningVisitor) error {
 	if p.ChannelsDropped != nil {
 		return visitor.VisitChannelsDropped(p.ChannelsDropped)
+	}
+	if p.QueueChannelsDropped != nil {
+		return visitor.VisitQueueChannelsDropped(p.QueueChannelsDropped)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", p)
 }
@@ -12671,6 +12983,9 @@ func (p *PostWarning) validate() error {
 	var fields []string
 	if p.ChannelsDropped != nil {
 		fields = append(fields, "channelsDropped")
+	}
+	if p.QueueChannelsDropped != nil {
+		fields = append(fields, "queueChannelsDropped")
 	}
 	if len(fields) == 0 {
 		if p.Type != "" {
@@ -12802,6 +13117,124 @@ func (p *PostWarningChannelsDropped) MarshalJSON() ([]byte, error) {
 }
 
 func (p *PostWarningChannelsDropped) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	postWarningQueueChannelsDroppedFieldChannelIDs = big.NewInt(1 << 0)
+	postWarningQueueChannelsDroppedFieldQueueID    = big.NewInt(1 << 1)
+	postWarningQueueChannelsDroppedFieldQueueName  = big.NewInt(1 << 2)
+)
+
+type PostWarningQueueChannelsDropped struct {
+	ChannelIDs []string `json:"channelIds" url:"channelIds"`
+	QueueID    string   `json:"queueId" url:"queueId"`
+	QueueName  string   `json:"queueName" url:"queueName"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostWarningQueueChannelsDropped) GetChannelIDs() []string {
+	if p == nil {
+		return nil
+	}
+	return p.ChannelIDs
+}
+
+func (p *PostWarningQueueChannelsDropped) GetQueueID() string {
+	if p == nil {
+		return ""
+	}
+	return p.QueueID
+}
+
+func (p *PostWarningQueueChannelsDropped) GetQueueName() string {
+	if p == nil {
+		return ""
+	}
+	return p.QueueName
+}
+
+func (p *PostWarningQueueChannelsDropped) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostWarningQueueChannelsDropped) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetChannelIDs sets the ChannelIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostWarningQueueChannelsDropped) SetChannelIDs(channelIDs []string) {
+	p.ChannelIDs = channelIDs
+	p.require(postWarningQueueChannelsDroppedFieldChannelIDs)
+}
+
+// SetQueueID sets the QueueID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostWarningQueueChannelsDropped) SetQueueID(queueID string) {
+	p.QueueID = queueID
+	p.require(postWarningQueueChannelsDroppedFieldQueueID)
+}
+
+// SetQueueName sets the QueueName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostWarningQueueChannelsDropped) SetQueueName(queueName string) {
+	p.QueueName = queueName
+	p.require(postWarningQueueChannelsDroppedFieldQueueName)
+}
+
+func (p *PostWarningQueueChannelsDropped) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostWarningQueueChannelsDropped
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostWarningQueueChannelsDropped(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostWarningQueueChannelsDropped) MarshalJSON() ([]byte, error) {
+	type embed PostWarningQueueChannelsDropped
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostWarningQueueChannelsDropped) String() string {
 	if p == nil {
 		return "<nil>"
 	}
@@ -13041,6 +13474,274 @@ func (p *PublicationAttempt) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	queueHasNoRoomEncodedFieldCode      = big.NewInt(1 << 0)
+	queueHasNoRoomEncodedFieldMessage   = big.NewInt(1 << 1)
+	queueHasNoRoomEncodedFieldRequestID = big.NewInt(1 << 2)
+	queueHasNoRoomEncodedFieldQueueID   = big.NewInt(1 << 3)
+	queueHasNoRoomEncodedFieldReason    = big.NewInt(1 << 4)
+)
+
+type QueueHasNoRoomEncoded struct {
+	Code      *string     `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string     `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string     `json:"requestId,omitempty" url:"requestId,omitempty"`
+	QueueID   string      `json:"queueId" url:"queueId"`
+	Reason    QueueNoRoom `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (q *QueueHasNoRoomEncoded) GetCode() *string {
+	if q == nil {
+		return nil
+	}
+	return q.Code
+}
+
+func (q *QueueHasNoRoomEncoded) GetMessage() *string {
+	if q == nil {
+		return nil
+	}
+	return q.Message
+}
+
+func (q *QueueHasNoRoomEncoded) GetRequestID() *string {
+	if q == nil {
+		return nil
+	}
+	return q.RequestID
+}
+
+func (q *QueueHasNoRoomEncoded) GetQueueID() string {
+	if q == nil {
+		return ""
+	}
+	return q.QueueID
+}
+
+func (q *QueueHasNoRoomEncoded) GetReason() QueueNoRoom {
+	if q == nil {
+		return ""
+	}
+	return q.Reason
+}
+
+func (q *QueueHasNoRoomEncoded) GetExtraProperties() map[string]interface{} {
+	if q == nil {
+		return nil
+	}
+	return q.extraProperties
+}
+
+func (q *QueueHasNoRoomEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if q.explicitFields != nil {
+		next.Set(q.explicitFields)
+	}
+	next.Or(next, field)
+	q.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueHasNoRoomEncoded) SetCode(code *string) {
+	q.Code = code
+	q.require(queueHasNoRoomEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueHasNoRoomEncoded) SetMessage(message *string) {
+	q.Message = message
+	q.require(queueHasNoRoomEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueHasNoRoomEncoded) SetRequestID(requestID *string) {
+	q.RequestID = requestID
+	q.require(queueHasNoRoomEncodedFieldRequestID)
+}
+
+// SetQueueID sets the QueueID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueHasNoRoomEncoded) SetQueueID(queueID string) {
+	q.QueueID = queueID
+	q.require(queueHasNoRoomEncodedFieldQueueID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueHasNoRoomEncoded) SetReason(reason QueueNoRoom) {
+	q.Reason = reason
+	q.require(queueHasNoRoomEncodedFieldReason)
+}
+
+func (q *QueueHasNoRoomEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler QueueHasNoRoomEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*q = QueueHasNoRoomEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *q)
+	if err != nil {
+		return err
+	}
+	q.extraProperties = extraProperties
+	q.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (q *QueueHasNoRoomEncoded) MarshalJSON() ([]byte, error) {
+	type embed QueueHasNoRoomEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*q),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, q.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (q *QueueHasNoRoomEncoded) String() string {
+	if q == nil {
+		return "<nil>"
+	}
+	if len(q.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(q.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(q); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", q)
+}
+
+var (
+	queueNotFoundEncodedFieldCode      = big.NewInt(1 << 0)
+	queueNotFoundEncodedFieldMessage   = big.NewInt(1 << 1)
+	queueNotFoundEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type QueueNotFoundEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (q *QueueNotFoundEncoded) GetCode() *string {
+	if q == nil {
+		return nil
+	}
+	return q.Code
+}
+
+func (q *QueueNotFoundEncoded) GetMessage() *string {
+	if q == nil {
+		return nil
+	}
+	return q.Message
+}
+
+func (q *QueueNotFoundEncoded) GetRequestID() *string {
+	if q == nil {
+		return nil
+	}
+	return q.RequestID
+}
+
+func (q *QueueNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if q == nil {
+		return nil
+	}
+	return q.extraProperties
+}
+
+func (q *QueueNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if q.explicitFields != nil {
+		next.Set(q.explicitFields)
+	}
+	next.Or(next, field)
+	q.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueNotFoundEncoded) SetCode(code *string) {
+	q.Code = code
+	q.require(queueNotFoundEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueNotFoundEncoded) SetMessage(message *string) {
+	q.Message = message
+	q.require(queueNotFoundEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (q *QueueNotFoundEncoded) SetRequestID(requestID *string) {
+	q.RequestID = requestID
+	q.require(queueNotFoundEncodedFieldRequestID)
+}
+
+func (q *QueueNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler QueueNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*q = QueueNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *q)
+	if err != nil {
+		return err
+	}
+	q.extraProperties = extraProperties
+	q.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (q *QueueNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed QueueNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*q),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, q.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (q *QueueNotFoundEncoded) String() string {
+	if q == nil {
+		return "<nil>"
+	}
+	if len(q.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(q.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(q); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", q)
 }
 
 type ScheduleCheck string

@@ -2,7 +2,7 @@
 // no limit, exactly as before billing existed.
 import { assert, layer } from "@effect/vitest";
 import { Effect, Schema } from "effect";
-import { BillingSchema } from "peal-contract";
+import { BillingSchema, WorkspaceUsageReportSchema } from "peal-contract";
 
 import {
   bodyOf,
@@ -42,6 +42,25 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
           members: null,
           scheduledPosts: null,
         });
+
+        // Its usage, counted all the same, without a plan.
+        const usage = yield* app.request(
+          `/api/workspaces/${workspaceId}/usage?from=2026-11-01&to=2026-11-07`,
+          { headers: { cookie: owner.cookies } }
+        );
+
+        assert.strictEqual(usage.status, 200);
+
+        const report = yield* bodyOf(
+          Schema.toCodecJson(WorkspaceUsageReportSchema),
+          usage
+        );
+
+        assert.isNull(report.plan);
+        assert.isNull(report.allowances);
+        assert.isNull(report.sharedWith);
+        assert.lengthOf(report.days, 7);
+        assert.strictEqual(report.current.members, 1);
 
         // More members than any plan's free tier.
         for (const label of ["one", "two", "three"]) {

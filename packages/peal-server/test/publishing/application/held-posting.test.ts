@@ -59,10 +59,10 @@ const at8 = (
   text: string,
   more: Partial<SendPostRequest> = {}
 ): SendPostRequest => ({
-  at: Option.some(utc("2026-06-15T08:00:00Z")),
   channelIds: [channel],
   content: contentOf(text),
   idempotency: Option.none(),
+  placement: { _tag: "at", at: utc("2026-06-15T08:00:00Z") },
   timeZone: TimeZoneIdSchema.make("Europe/Paris"),
   ...more,
 });
@@ -133,7 +133,7 @@ describe("posting in one call behind an ApprovalGate", () => {
           const checked = yield* checks.check(editor, {
             channelIds: [channel],
             content: thread("The gulls.").content,
-            when: Option.some({ at: Option.none() }),
+            when: Option.some({ _tag: "now" as const }),
           });
 
           assert.isTrue(checked.awaitsApproval);
@@ -271,7 +271,7 @@ describe("posting in one call behind an ApprovalGate", () => {
           const timed = yield* checks.check(editor, {
             channelIds: request.channelIds,
             content: request.content,
-            when: Option.some({ at: request.at }),
+            when: Option.some(request.placement),
           });
 
           assert.isTrue(timed.awaitsApproval);

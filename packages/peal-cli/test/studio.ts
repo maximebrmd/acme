@@ -36,6 +36,7 @@ import {
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
+  QueueHasNoRoom,
   ReturnUrlNotAllowed,
   ReviewLinkNotFound,
   ScheduleInPast,
@@ -69,6 +70,7 @@ import type {
   ApprovalPolicy,
   ApprovalRequest,
   Billing,
+  WorkspaceUsageReport,
   Channel,
   ChannelOptions,
   ChannelPreview,
@@ -131,6 +133,8 @@ import {
 } from "./studio-capabilities.ts";
 import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
 import type { InboxState } from "./studio-inbox.ts";
+import { studioQueues, studioQueuesOf } from "./studio-queues.ts";
+import type { StudioQueue } from "./studio-queues.ts";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
@@ -446,6 +450,7 @@ const posts: readonly Post[] = [
     createdVia: null,
     id: draftId,
     outcome: null,
+    queueId: null,
     schedule: null,
     scheduledBy: null,
     scheduledVia: null,
@@ -459,6 +464,7 @@ const posts: readonly Post[] = [
     createdVia: null,
     id: scheduledId,
     outcome: null,
+    queueId: null,
     schedule: { at: at("2026-11-20T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: null,
     scheduledVia: null,
@@ -472,6 +478,7 @@ const posts: readonly Post[] = [
     createdVia: null,
     id: awaitingId,
     outcome: null,
+    queueId: null,
     schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: contributorId,
     scheduledVia: null,
@@ -485,6 +492,7 @@ const posts: readonly Post[] = [
     createdVia: null,
     id: finishedId,
     outcome: "failed",
+    queueId: null,
     schedule: { at: at("2026-11-08T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: null,
     scheduledVia: null,
@@ -640,6 +648,63 @@ const billing: Billing = {
   vatRate: 20,
   withdrawableUntil: null,
 };
+
+// The workspace's usage over three days: two with posts, the last
+// without a snapshot.
+const usageReport = (period: {
+  readonly from: string;
+  readonly to: string;
+}): WorkspaceUsageReport => ({
+  allowances: billing.allowances,
+  current: billing.usage,
+  days: [
+    {
+      assistantRequests: 1,
+      byPlatform: [
+        { platform: "bluesky", posts: 1 },
+        { platform: "x", posts: 2 },
+      ],
+      channels: 2,
+      day: "2026-11-01",
+      mediaStorage: 125_000_000,
+      members: 2,
+      publishedPosts: 3,
+    },
+    {
+      assistantRequests: 0,
+      byPlatform: [],
+      channels: 2,
+      day: "2026-11-02",
+      mediaStorage: 125_000_000,
+      members: 2,
+      publishedPosts: 0,
+    },
+    {
+      assistantRequests: null,
+      byPlatform: [],
+      channels: null,
+      day: "2026-11-03",
+      mediaStorage: null,
+      members: null,
+      publishedPosts: 0,
+    },
+  ],
+  period,
+  plan: billing.plan,
+  sharedWith: null,
+  totals: {
+    byPlatform: [
+      { platform: "bluesky", posts: 1 },
+      { platform: "x", posts: 2 },
+    ],
+    channelDays: 4,
+    daysCounted: 2,
+    meteredPosts: [
+      { month: "2026-11-01", platform: "x", posts: 2, postsWithLinks: 1 },
+    ],
+    publishedPosts: 3,
+  },
+});
 
 const cli: ConnectedApp = {
   authorizedAt: at("2026-10-01T08:00:00Z"),
@@ -802,6 +867,7 @@ export const exhaustedDeliveryId = "0190f3a0-0000-7000-8000-00000000f001";
 /** Studio's endpoints: one that is on, one Peal turned off. */
 export const webhooks: readonly WebhookEndpoint[] = [
   {
+    channelIds: [],
     createdAt: at("2026-11-01T10:00:00Z"),
     description: "Synthetic receiver",
     disabledAt: null,
@@ -814,8 +880,10 @@ export const webhooks: readonly WebhookEndpoint[] = [
     scope: "workspace",
     updatedAt: at("2026-11-01T10:00:00Z"),
     url: "https://hooks.example.com/peal",
+    workspaceIds: [],
   },
   {
+    channelIds: [],
     createdAt: at("2026-10-01T10:00:00Z"),
     description: "",
     disabledAt: at("2026-11-06T10:00:00Z"),
@@ -828,6 +896,7 @@ export const webhooks: readonly WebhookEndpoint[] = [
     scope: "workspace",
     updatedAt: at("2026-11-06T10:00:00Z"),
     url: "https://hooks.example.com/old",
+    workspaceIds: [],
   },
 ];
 
@@ -840,12 +909,14 @@ export interface StudioDelivery {
 const pendingDelivery = (
   id: string,
   eventId: string,
-  eventType: WebhookEventType
+  eventType: WebhookEventType,
+  endpointId = hookId
 ): WebhookDelivery => ({
   attempts: 0,
   completedAt: null,
   createdAt: at("2026-11-09T12:00:00Z"),
   durationMs: null,
+  endpointId,
   error: null,
   eventId,
   eventType,
@@ -853,9 +924,12 @@ const pendingDelivery = (
   id,
   lastAttemptAt: null,
   nextAttemptAt: null,
+  redeliveryOf: null,
   responseExcerpt: null,
   responseStatus: null,
   status: "pending",
+  workspaceExternalId: null,
+  workspaceId: studioId,
 });
 
 // The first endpoint's log, newest first.
@@ -987,6 +1061,8 @@ export interface StudioState {
   readonly media: readonly Media[];
   readonly policy: ApprovalPolicy;
   readonly posts: readonly Post[];
+  /** The workspace's queues, oldest first. */
+  readonly queues: readonly StudioQueue[];
   /** The posts made under an idempotency key, with the request's body. */
   readonly sent: Readonly<
     Record<string, { readonly body: string; readonly postId: string }>
@@ -1081,6 +1157,7 @@ export const makeStudio = (
       overPlan: false,
       policy: "contributorsAndApplications",
       posts,
+      queues: studioQueues(mastodonId),
       sent: {},
       signatures,
       signingKeys: true,
@@ -1902,10 +1979,43 @@ const saveEndpoint = (studio: Studio, endpoint: WebhookEndpoint) =>
   })).pipe(Effect.as(endpoint));
 
 // A new delivery of the event to the endpoint, at the top of its log.
+// A page of deliveries, newest first, filtered as a log is.
+const pageOf = (
+  listed: readonly WebhookDelivery[],
+  query: {
+    readonly cursor?: string;
+    readonly eventType?: WebhookEventType;
+    readonly limit?: number;
+    readonly status?: WebhookDelivery["status"];
+  }
+) => {
+  const matching = listed.filter(
+    ({ eventType, status }) =>
+      (query.status === undefined || status === query.status) &&
+      (query.eventType === undefined || eventType === query.eventType)
+  );
+
+  const start =
+    query.cursor === undefined
+      ? 0
+      : matching.findIndex(({ id }) => id === query.cursor) + 1;
+
+  const limit = query.limit ?? 30;
+  const items = matching.slice(start, start + limit);
+  const last = items.at(-1);
+
+  return {
+    items,
+    nextCursor:
+      last !== undefined && start + limit < matching.length ? last.id : null,
+  };
+};
+
 const deliverTo = (
   studio: Studio,
   endpoint: WebhookEndpoint,
-  event: { readonly id: string; readonly type: WebhookEventType }
+  event: { readonly id: string; readonly type: WebhookEventType },
+  redeliveryOf: string | null = null
 ) =>
   Effect.gen(function* delivering() {
     if (!endpoint.enabled) {
@@ -1914,11 +2024,15 @@ const deliverTo = (
 
     const { deliveries: all } = yield* Ref.get(studio.state);
 
-    const delivery = pendingDelivery(
-      `0190f3a0-0000-7000-8000-00000000f${String(all.length + 1).padStart(3, "0")}`,
-      event.id,
-      event.type
-    );
+    const delivery = {
+      ...pendingDelivery(
+        `0190f3a0-0000-7000-8000-00000000f${String(all.length + 1).padStart(3, "0")}`,
+        event.id,
+        event.type,
+        endpoint.id
+      ),
+      redeliveryOf,
+    };
 
     yield* Ref.update(studio.state, (current) => ({
       ...current,
@@ -1959,11 +2073,67 @@ const duplicatesOf = (
           .map((other) => ({ channelId, postId: other.id }))
       );
 
-// A new post's time: now is the studio's clock.
-const timeOf = ({ when }: Pick<NewPost, "when">) =>
-  when._tag === "now"
-    ? { at: studioNow, timeZone: when.timeZone ?? "UTC" }
-    : { at: when.at, timeZone: when.timeZone };
+// The studio's queues, over what the rest of it holds.
+const queuesOfStudio = studioQueuesOf({
+  allowed,
+  checkChannels,
+  isConnected,
+  now: studioNow,
+  record,
+  setIds: [launchSetId, videosSetId],
+  workspaceId: studioId,
+});
+
+// A new post's time: now is the studio's clock. A post added to a queue
+// has its slot's by the time it is checked (`placed`).
+const timeOf = ({ when }: Pick<NewPost, "when">) => {
+  if (when._tag === "at") {
+    return { at: when.at, timeZone: when.timeZone };
+  }
+
+  return {
+    at: studioNow,
+    timeZone: when._tag === "now" ? (when.timeZone ?? "UTC") : "UTC",
+  };
+};
+
+// A post added to a queue, as the studio places it: on the queue's next
+// free slot, in its zone, and on its channels when it names none.
+const placed = (studio: Studio, payload: NewPost) =>
+  Effect.gen(function* placing() {
+    const { when } = payload;
+
+    if (when._tag !== "queue") {
+      return { payload, queueId: null };
+    }
+
+    const queue = yield* queuesOfStudio.queueFor(
+      studio,
+      studioId,
+      when.queueId
+    );
+
+    const slot = yield* queuesOfStudio.nextFreeOf(studio, queue);
+
+    if (Option.isNone(slot)) {
+      return yield* new QueueHasNoRoom({
+        queueId: queue.id,
+        reason: queue.slots.length === 0 ? "noSlots" : "full",
+      });
+    }
+
+    const namesNone =
+      payload.channelIds.length === 0 &&
+      (payload.channelSets ?? []).length === 0;
+
+    const onSlot: NewPost = {
+      ...payload,
+      channelIds: namesNone ? queue.channelIds : payload.channelIds,
+      when: { _tag: "at", at: slot.value, timeZone: queue.timeZone },
+    };
+
+    return { payload: onSlot, queueId: queue.id };
+  });
 
 // Everything sending a post checks before making it, in the order the
 // server answers: its channels, its media, its time, what its platforms
@@ -2036,7 +2206,8 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
 
     const body = JSON.stringify(payload);
     const before = yield* Ref.get(studio.state);
-    const checked = yield* checkNewPost(studio, payload);
+    const onQueue = yield* placed(studio, payload);
+    const checked = yield* checkNewPost(studio, onQueue.payload);
     const { payload: written, warnings, when } = checked;
 
     // Where every post waits, this one does: nothing goes out.
@@ -2062,6 +2233,7 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
       createdVia: viaCommandLine,
       id,
       outcome: null,
+      queueId: onQueue.queueId,
       schedule: when,
       scheduledBy: userId,
       scheduledVia: viaCommandLine,
@@ -2537,6 +2709,7 @@ const madeRow = (
 export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
     adsGroupLive(studio),
+    queuesOfStudio.groupLive(studio),
     HttpApiBuilder.group(Api, "session", (handlers) =>
       handlers.handleAll({
         me: () => inPerson.pipe(Effect.as(studio.me)),
@@ -2739,6 +2912,7 @@ export const studioGroupsLive = (studio: Studio) =>
               createdVia: null,
               id,
               outcome: null,
+              queueId: null,
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,
@@ -2833,6 +3007,7 @@ export const studioGroupsLive = (studio: Studio) =>
               createdVia: null,
               id,
               outcome: null,
+              queueId: null,
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,
@@ -2844,6 +3019,77 @@ export const studioGroupsLive = (studio: Studio) =>
                 ...pendingOn(`${id}-${String(index)}`, target.channelId),
                 options: target.options,
               })),
+            });
+          }),
+        enqueue: ({ params, payload }) =>
+          Effect.gen(function* enqueue() {
+            yield* publishing;
+
+            const queue = yield* queuesOfStudio.queueFor(
+              studio,
+              params.workspaceId,
+              payload.queueId
+            );
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            if (
+              post.status !== "draft" &&
+              post.status !== "scheduled" &&
+              post.status !== "awaitingApproval"
+            ) {
+              return yield* new PostStatusConflict({ status: post.status });
+            }
+
+            // The post's own slot is free for it.
+            const slot = yield* queuesOfStudio.nextFreeOf(
+              studio,
+              queue,
+              post.id
+            );
+
+            if (Option.isNone(slot)) {
+              return yield* new QueueHasNoRoom({
+                queueId: queue.id,
+                reason: queue.slots.length === 0 ? "noSlots" : "full",
+              });
+            }
+
+            const own = post.targets.map(({ channelId }) => channelId);
+
+            const channelIds =
+              post.status === "draft"
+                ? (payload.channelIds ??
+                  (own.length > 0 ? own : queue.channelIds))
+                : own;
+
+            yield* checkChannels(channelIds);
+
+            const status = yield* checkTime(slot.value, queue.timeZone);
+            const options = optionsOn(post);
+
+            yield* checkContent(channelIds, post.content, options);
+            yield* record(
+              studio,
+              `enqueue:${post.id}:${queue.id}:${DateTime.formatIso(slot.value)}`
+            );
+
+            return yield* savePost(studio, {
+              ...post,
+              queueId: queue.id,
+              schedule: { at: slot.value, timeZone: queue.timeZone },
+              scheduledBy: userId,
+              scheduledVia: viaCommandLine,
+              status,
+              targets: targetsOf(post.id, {
+                channelIds,
+                content: post.content,
+                options,
+              }),
             });
           }),
         get: ({ params }) =>
@@ -3161,9 +3407,58 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new Forbidden();
             }
 
+            // Added to a queue, it is checked at the slot it would take.
+            const onQueue =
+              asked.when?._tag === "queue"
+                ? yield* queuesOfStudio
+                    .queueFor(studio, studioId, asked.when.queueId)
+                    .pipe(
+                      Effect.flatMap((queue) =>
+                        queuesOfStudio
+                          .nextFreeOf(studio, queue)
+                          .pipe(Effect.map((slot) => ({ queue, slot })))
+                      )
+                    )
+                : undefined;
+
+            const { when: _asked, ...timeless } = asked;
+
+            const onSlot: typeof asked =
+              onQueue === undefined
+                ? asked
+                : Option.match(onQueue.slot, {
+                    onNone: () => timeless,
+                    onSome: (slotAt) => ({
+                      ...timeless,
+                      channelIds:
+                        asked.channelIds.length === 0 &&
+                        (asked.channelSets ?? []).length === 0
+                          ? onQueue.queue.channelIds
+                          : asked.channelIds,
+                      when: {
+                        _tag: "at" as const,
+                        at: slotAt,
+                        timeZone: onQueue.queue.timeZone,
+                      },
+                    }),
+                  });
+
+            const queueAnswer =
+              onQueue === undefined
+                ? {}
+                : Option.match(onQueue.slot, {
+                    onNone: () => ({
+                      queueNoRoom:
+                        onQueue.queue.slots.length === 0
+                          ? ("noSlots" as const)
+                          : ("full" as const),
+                    }),
+                    onSome: (queueSlot) => ({ queueSlot }),
+                  });
+
             const { post: payload, warnings } = yield* filled(
               studio,
-              asked,
+              onSlot,
               true
             );
 
@@ -3214,7 +3509,9 @@ export const studioGroupsLive = (studio: Studio) =>
                 (validation.schedule ?? "ok") === "ok" &&
                 validation.unknownChannels.length === 0 &&
                 validation.unknownMedia.length === 0 &&
-                validation.violations.length === 0,
+                validation.violations.length === 0 &&
+                !("queueNoRoom" in queueAnswer),
+              ...queueAnswer,
               ...warned,
             };
           }),
@@ -3615,6 +3912,19 @@ export const studioGroupsLive = (studio: Studio) =>
         standing: () =>
           Ref.get(studio.state).pipe(
             Effect.map(({ overPlan }) => (overPlan ? over : within))
+          ),
+      })
+    ),
+    HttpApiBuilder.group(Api, "usage", (handlers) =>
+      handlers.handleAll({
+        get: ({ query }) =>
+          allowed("billing:read").pipe(
+            Effect.as(
+              usageReport({
+                from: query.from ?? "2026-11-01",
+                to: query.to ?? "2026-11-03",
+              })
+            )
           ),
       })
     ),
@@ -4280,6 +4590,7 @@ export const studioGroupsLive = (studio: Studio) =>
             const now = at("2026-11-09T12:00:00Z");
 
             const endpoint = yield* saveEndpoint(studio, {
+              channelIds: payload.channelIds ?? [],
               createdAt: now,
               description: payload.description ?? "",
               disabledAt: enabled ? null : now,
@@ -4289,9 +4600,10 @@ export const studioGroupsLive = (studio: Studio) =>
               failingSince: null,
               id: `0190f3a0-0000-7000-8000-00000000b${String(current.webhooks.length + 1).padStart(3, "0")}`,
               previousSecretExpiresAt: null,
-              scope: "workspace",
+              scope: payload.scope ?? "workspace",
               updatedAt: now,
               url: payload.url,
+              workspaceIds: payload.workspaceIds ?? [],
             });
 
             yield* record(studio, `webhook:create:${endpoint.url}`);
@@ -4343,26 +4655,12 @@ export const studioGroupsLive = (studio: Studio) =>
 
             const { deliveries: all } = yield* Ref.get(studio.state);
 
-            const listed = all
-              .filter(({ endpointId }) => endpointId === endpoint.id)
-              .map(({ delivery }) => delivery);
-
-            const start =
-              query.cursor === undefined
-                ? 0
-                : listed.findIndex(({ id }) => id === query.cursor) + 1;
-
-            const limit = query.limit ?? 30;
-            const items = listed.slice(start, start + limit);
-            const last = items.at(-1);
-
-            return {
-              items,
-              nextCursor:
-                last !== undefined && start + limit < listed.length
-                  ? last.id
-                  : null,
-            };
+            return pageOf(
+              all
+                .filter(({ endpointId }) => endpointId === endpoint.id)
+                .map(({ delivery }) => delivery),
+              query
+            );
           }),
         redeliver: ({ params }) =>
           Effect.gen(function* redeliver() {
@@ -4385,14 +4683,92 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new WebhookDeliveryNotFound();
             }
 
-            const again = yield* deliverTo(studio, endpoint, {
-              id: past.delivery.eventId,
-              type: past.delivery.eventType,
-            });
+            const again = yield* deliverTo(
+              studio,
+              endpoint,
+              { id: past.delivery.eventId, type: past.delivery.eventType },
+              past.delivery.id
+            );
 
             yield* record(studio, `webhook:redeliver:${past.delivery.id}`);
 
             return again;
+          }),
+        redeliverMany: ({ params, payload }) =>
+          Effect.gen(function* redeliverMany() {
+            yield* allowed("webhook:manage");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new WebhookEndpointNotFound();
+            }
+
+            const { deliveries: all, webhooks: endpoints } = yield* Ref.get(
+              studio.state
+            );
+
+            if ("endpointId" in payload) {
+              yield* findEndpoint(
+                studio,
+                params.workspaceId,
+                payload.endpointId
+              );
+            }
+
+            const chosen =
+              "deliveryIds" in payload
+                ? payload.deliveryIds.map((id) => ({
+                    found: all.find(({ delivery }) => delivery.id === id),
+                    id,
+                  }))
+                : all
+                    .filter(
+                      ({ delivery, endpointId }) =>
+                        endpointId === payload.endpointId &&
+                        delivery.status === "failed"
+                    )
+                    .toReversed()
+                    .map((found) => ({ found, id: found.delivery.id }));
+
+            const redelivered: WebhookDelivery[] = [];
+
+            const skipped: {
+              readonly deliveryId: string;
+              readonly reason: "endpointDisabled" | "notFound";
+            }[] = [];
+
+            for (const { found, id } of chosen) {
+              const endpoint = endpoints.find(
+                ({ id: endpointId }) => endpointId === found?.endpointId
+              );
+
+              if (found === undefined || endpoint === undefined) {
+                skipped.push({ deliveryId: id, reason: "notFound" });
+              } else if (endpoint.enabled) {
+                redelivered.push(
+                  yield* deliverTo(
+                    studio,
+                    endpoint,
+                    {
+                      id: found.delivery.eventId,
+                      type: found.delivery.eventType,
+                    },
+                    found.delivery.id
+                  ).pipe(
+                    // It is on: checked above.
+                    Effect.catchTag("WebhookEndpointDisabled", Effect.die)
+                  )
+                );
+              } else {
+                skipped.push({ deliveryId: id, reason: "endpointDisabled" });
+              }
+            }
+
+            yield* record(
+              studio,
+              `webhook:redeliver-many:${redelivered.map(({ redeliveryOf }) => redeliveryOf).join(",")}`
+            );
+
+            return { redelivered, remaining: 0, skipped };
           }),
         rotateSecret: ({ params }) =>
           Effect.gen(function* rotateSecret() {
@@ -4420,7 +4796,26 @@ export const studioGroupsLive = (studio: Studio) =>
 
             return { endpoint, secret: secretAfter(current.changes) };
           }),
-        sendTest: ({ params }) =>
+        searchDeliveries: ({ params, query }) =>
+          Effect.gen(function* searchDeliveries() {
+            yield* allowed("webhook:read");
+
+            const { deliveries: all } = yield* Ref.get(studio.state);
+
+            return pageOf(
+              params.workspaceId === studioId
+                ? all
+                    .filter(
+                      ({ endpointId }) =>
+                        query.endpointId === undefined ||
+                        endpointId === query.endpointId
+                    )
+                    .map(({ delivery }) => delivery)
+                : [],
+              query
+            );
+          }),
+        sendTest: ({ params, query }) =>
           Effect.gen(function* sendTest() {
             yield* allowed("webhook:manage");
 
@@ -4432,10 +4827,13 @@ export const studioGroupsLive = (studio: Studio) =>
 
             const delivery = yield* deliverTo(studio, endpoint, {
               id: "0190f3a0-0000-7000-8000-00000000ee99",
-              type: "webhook.test",
+              type: query.eventType ?? "webhook.test",
             });
 
-            yield* record(studio, `webhook:test:${endpoint.id}`);
+            yield* record(
+              studio,
+              `webhook:test:${endpoint.id}${query.eventType === undefined ? "" : `:${query.eventType}`}`
+            );
 
             return delivery;
           }),

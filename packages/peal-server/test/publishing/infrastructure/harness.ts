@@ -44,6 +44,7 @@ import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-c
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
+import { DrizzleQueueStore } from "#publishing/infrastructure/drizzle-queue-store.ts";
 import { DrizzleSignatureStore } from "#publishing/infrastructure/drizzle-signature-store.ts";
 import { DrizzleTagStore } from "#publishing/infrastructure/drizzle-tag-store.ts";
 import {
@@ -152,6 +153,7 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
         DrizzleContentFingerprints,
         DrizzleIdempotencyKeys,
         DrizzlePostRepository,
+        DrizzleQueueStore,
         DrizzleTagStore,
         journal,
         RecordingChannelHealth,
@@ -277,6 +279,30 @@ export const eventually = <E, R>(
 
       yield* sharding.pollStorage;
       yield* TestClock.adjust(Duration.millis(1));
+      yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+    }
+
+    assert.fail(`Timed out waiting until ${label}`);
+  });
+
+/**
+ * As `eventually`, without moving the virtual clock: what is checked
+ * happens at this instant, however many rounds the machine needs, so a
+ * test can then say that what waits for a later instant has not happened.
+ */
+export const eventuallyNow = <E, R>(
+  label: string,
+  condition: Effect.Effect<boolean, E, R>
+) =>
+  Effect.gen(function* waitingNow() {
+    const sharding = yield* Sharding.Sharding;
+
+    for (let round = 0; round < 1000; round += 1) {
+      if (yield* condition) {
+        return;
+      }
+
+      yield* sharding.pollStorage;
       yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
     }
 

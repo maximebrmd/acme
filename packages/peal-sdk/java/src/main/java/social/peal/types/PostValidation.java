@@ -33,6 +33,10 @@ public final class PostValidation {
 
     private final Optional<PlanShortfall> planLimit;
 
+    private final Optional<QueueNoRoom> queueNoRoom;
+
+    private final Optional<String> queueSlot;
+
     private final Optional<ScheduleCheck> schedule;
 
     private final List<String> unknownChannels;
@@ -52,6 +56,8 @@ public final class PostValidation {
             List<ChannelPreview> channels,
             List<DuplicateOnChannel> duplicates,
             Optional<PlanShortfall> planLimit,
+            Optional<QueueNoRoom> queueNoRoom,
+            Optional<String> queueSlot,
             Optional<ScheduleCheck> schedule,
             List<String> unknownChannels,
             List<String> unknownMedia,
@@ -63,6 +69,8 @@ public final class PostValidation {
         this.channels = channels;
         this.duplicates = duplicates;
         this.planLimit = planLimit;
+        this.queueNoRoom = queueNoRoom;
+        this.queueSlot = queueSlot;
         this.schedule = schedule;
         this.unknownChannels = unknownChannels;
         this.unknownMedia = unknownMedia;
@@ -93,6 +101,16 @@ public final class PostValidation {
             return Optional.empty();
         }
         return planLimit;
+    }
+
+    @JsonProperty("queueNoRoom")
+    public Optional<QueueNoRoom> getQueueNoRoom() {
+        return queueNoRoom;
+    }
+
+    @JsonProperty("queueSlot")
+    public Optional<String> getQueueSlot() {
+        return queueSlot;
     }
 
     @JsonIgnore
@@ -156,6 +174,8 @@ public final class PostValidation {
                 && channels.equals(other.channels)
                 && duplicates.equals(other.duplicates)
                 && planLimit.equals(other.planLimit)
+                && queueNoRoom.equals(other.queueNoRoom)
+                && queueSlot.equals(other.queueSlot)
                 && schedule.equals(other.schedule)
                 && unknownChannels.equals(other.unknownChannels)
                 && unknownMedia.equals(other.unknownMedia)
@@ -171,6 +191,8 @@ public final class PostValidation {
                 this.channels,
                 this.duplicates,
                 this.planLimit,
+                this.queueNoRoom,
+                this.queueSlot,
                 this.schedule,
                 this.unknownChannels,
                 this.unknownMedia,
@@ -223,6 +245,14 @@ public final class PostValidation {
 
         _FinalStage planLimit(Nullable<PlanShortfall> planLimit);
 
+        _FinalStage queueNoRoom(Optional<QueueNoRoom> queueNoRoom);
+
+        _FinalStage queueNoRoom(QueueNoRoom queueNoRoom);
+
+        _FinalStage queueSlot(Optional<String> queueSlot);
+
+        _FinalStage queueSlot(String queueSlot);
+
         _FinalStage schedule(Optional<ScheduleCheck> schedule);
 
         _FinalStage schedule(ScheduleCheck schedule);
@@ -268,6 +298,10 @@ public final class PostValidation {
 
         private Optional<ScheduleCheck> schedule = Optional.empty();
 
+        private Optional<String> queueSlot = Optional.empty();
+
+        private Optional<QueueNoRoom> queueNoRoom = Optional.empty();
+
         private Optional<PlanShortfall> planLimit = Optional.empty();
 
         private List<DuplicateOnChannel> duplicates = new ArrayList<>();
@@ -284,6 +318,8 @@ public final class PostValidation {
             channels(other.getChannels());
             duplicates(other.getDuplicates());
             planLimit(other.getPlanLimit());
+            queueNoRoom(other.getQueueNoRoom());
+            queueSlot(other.getQueueSlot());
             schedule(other.getSchedule());
             unknownChannels(other.getUnknownChannels());
             unknownMedia(other.getUnknownMedia());
@@ -418,6 +454,32 @@ public final class PostValidation {
         }
 
         @java.lang.Override
+        public _FinalStage queueSlot(String queueSlot) {
+            this.queueSlot = Optional.ofNullable(queueSlot);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "queueSlot", nulls = Nulls.SKIP)
+        public _FinalStage queueSlot(Optional<String> queueSlot) {
+            this.queueSlot = queueSlot;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage queueNoRoom(QueueNoRoom queueNoRoom) {
+            this.queueNoRoom = Optional.ofNullable(queueNoRoom);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "queueNoRoom", nulls = Nulls.SKIP)
+        public _FinalStage queueNoRoom(Optional<QueueNoRoom> queueNoRoom) {
+            this.queueNoRoom = queueNoRoom;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage planLimit(Nullable<PlanShortfall> planLimit) {
             if (planLimit.isNull()) {
                 this.planLimit = null;
@@ -497,6 +559,8 @@ public final class PostValidation {
                     channels,
                     duplicates,
                     planLimit,
+                    queueNoRoom,
+                    queueSlot,
                     schedule,
                     unknownChannels,
                     unknownMedia,
@@ -512,6 +576,8 @@ public final class PostValidation {
                     || key.equalsIgnoreCase("channels")
                     || key.equalsIgnoreCase("duplicates")
                     || key.equalsIgnoreCase("planLimit")
+                    || key.equalsIgnoreCase("queueNoRoom")
+                    || key.equalsIgnoreCase("queueSlot")
                     || key.equalsIgnoreCase("schedule")
                     || key.equalsIgnoreCase("unknownChannels")
                     || key.equalsIgnoreCase("unknownMedia")

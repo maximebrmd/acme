@@ -58,7 +58,6 @@ const request = (
   text: string,
   { at, key }: { readonly at?: string; readonly key?: string } = {}
 ): SendPostRequest => ({
-  at: Option.fromUndefinedOr(at).pipe(Option.map(utc)),
   channelIds: [channel],
   content: contentOf(text),
   // The request as its caller sent it, which the key is kept with.
@@ -68,6 +67,7 @@ const request = (
       key: value,
     }))
   ),
+  placement: at === undefined ? { _tag: "now" } : { _tag: "at", at: utc(at) },
   timeZone: paris,
 });
 

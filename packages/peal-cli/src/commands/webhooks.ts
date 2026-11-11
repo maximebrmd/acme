@@ -1,13 +1,20 @@
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
+  maxWebhookBulkRedelivery,
   maxWebhookDeliveryPageSize,
   maxWebhookEndpoints,
+  maxWebhookFilterChannels,
+  maxWebhookFilterWorkspaces,
   SubscribableWebhookEventTypeSchema,
+  webhookBulkRedeliveriesPerHour,
+  WebhookBulkRedeliverySchema,
   WebhookDeliveryPageSchema,
   WebhookDeliverySchema,
+  WebhookDeliveryStatusSchema,
   WebhookEndpointSchema,
   WebhookEndpointSecretSchema,
+  WebhookEventTypeSchema,
   webhookFailingDays,
   webhookSecretOverlapHours,
 } from "peal-contract";
@@ -15,7 +22,9 @@ import type {
   SubscribableWebhookEventType,
   WebhookAttemptError,
   WebhookDelivery,
+  WebhookBulkRedelivery,
   WebhookDeliveryFailure,
+  WebhookDeliveryPage,
   WebhookDisabledReason,
   WebhookEndpoint,
   WebhookEndpointChange,
@@ -23,8 +32,10 @@ import type {
 
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson, printNothing } from "#json.ts";
+import { channelIdsOf } from "#post-flags.ts";
 import { columns, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
+import { instantOf } from "#when.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
 const everyEvent = SubscribableWebhookEventTypeSchema.literals;
@@ -76,6 +87,26 @@ const endpointArgument = Argument.String("endpoint-id").pipe(
   Argument.withDescription("The endpoint, as peal webhooks list shows its id.")
 );
 
+const channelFilterFlag = Flag.String("channel").pipe(
+  Flag.withMetavar("<channel-id>"),
+  Flag.withDescription(
+    `Only the events about this channel, as peal channels list shows its id: repeat it, or separate ids with commas, ${String(maxWebhookFilterChannels)} at most. Events about no channel (files, boosts) still come: leave their types out of --events.`
+  ),
+  Flag.atLeast(0)
+);
+
+const workspaceFilterFlag = Flag.String("workspace-id").pipe(
+  Flag.withMetavar("<workspace-id>"),
+  Flag.withDescription(
+    `On a partner endpoint, only the events of this workspace: repeat it, ${String(maxWebhookFilterWorkspaces)} at most. The home workspace is heard only if it is listed.`
+  ),
+  Flag.atLeast(0)
+);
+
+// Ids given to a filter flag, each once, as the server keeps them.
+const filterOf = (given: readonly string[]) =>
+  given.length === 0 ? Option.none() : Option.some(channelIdsOf(given));
+
 const offReasons: Readonly<Record<WebhookDisabledReason, string>> = {
   failing: `every delivery failed for ${String(webhookFailingDays)} days`,
   gone: "the receiver answered 410 Gone",
@@ -100,6 +131,9 @@ const eventsOn = (endpoint: WebhookEndpoint): string =>
     ? "all events"
     : endpoint.eventTypes.join(", ");
 
+const listed = (ids: readonly string[], every: string): string =>
+  ids.length === 0 ? every : ids.join(", ");
+
 // An endpoint, a line per thing known of it. Never its secret, which the
 // server shows once.
 const endpointLines = (endpoint: WebhookEndpoint): string[] =>
@@ -107,6 +141,10 @@ const endpointLines = (endpoint: WebhookEndpoint): string[] =>
     ["  Address", endpoint.url],
     ["  Status", statusOf(endpoint)],
     ["  Events", eventsOn(endpoint)],
+    ["  Channels", listed(endpoint.channelIds, "every channel")],
+    ...(endpoint.scope === "partner"
+      ? [["  Workspaces", listed(endpoint.workspaceIds, "every workspace")]]
+      : []),
     ["  Description", endpoint.description === "" ? "–" : endpoint.description],
     ["  Created", instant(endpoint.createdAt)],
     ...(endpoint.previousSecretExpiresAt === null
@@ -141,8 +179,12 @@ const answerOf = (delivery: WebhookDelivery): string => {
   return delivery.error === null ? "–" : attemptErrors[delivery.error];
 };
 
-const deliveryRow = (delivery: WebhookDelivery): string[] => [
+const deliveryRow = (
+  delivery: WebhookDelivery,
+  ofEndpoints = false
+): string[] => [
   `  ${delivery.id}`,
+  ...(ofEndpoints ? [`to ${delivery.endpointId}`] : []),
   delivery.eventType,
   delivery.failureReason === null
     ? delivery.status
@@ -202,6 +244,7 @@ const list = Command.make(
 const create = Command.make(
   "create",
   {
+    channels: channelFilterFlag,
     description: descriptionFlag.pipe(Flag.optional),
     disabled: Flag.Boolean("disabled").pipe(
       Flag.withDescription(
@@ -211,11 +254,26 @@ const create = Command.make(
     ),
     events: eventsFlag,
     json: jsonFlag,
+    partner: Flag.Boolean("partner").pipe(
+      Flag.withDescription(
+        "In a partner account's home workspace, hear every workspace the partner owns too."
+      ),
+      Flag.withDefault(false)
+    ),
     url: urlFlag,
     workspace: workspaceFlag,
+    workspaceIds: workspaceFilterFlag,
   },
   Effect.fn("webhooks.create")(function* create(input) {
     const eventTypes = yield* eventsOf(input.events);
+
+    if (input.workspaceIds.length > 0 && !input.partner) {
+      yield* new Refused({
+        reason:
+          "--workspace-id narrows a partner endpoint: give --partner too, in a partner account's home workspace.",
+      });
+    }
+
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
 
     const created = yield* client.webhooks
@@ -226,9 +284,18 @@ const create = Command.make(
             onNone: () => ({}),
             onSome: (description) => ({ description }),
           }),
+          ...Option.match(filterOf(input.channels), {
+            onNone: () => ({}),
+            onSome: (channelIds) => ({ channelIds }),
+          }),
           enabled: !input.disabled,
           eventTypes,
+          scope: input.partner ? "partner" : "workspace",
           url: input.url,
+          ...Option.match(filterOf(input.workspaceIds), {
+            onNone: () => ({}),
+            onSome: (workspaceIds) => ({ workspaceIds }),
+          }),
         },
       })
       .pipe(Effect.mapError(explain(url)));
@@ -297,6 +364,17 @@ const show = Command.make(
 const update = Command.make(
   "update",
   {
+    channels: channelFilterFlag,
+    clearChannels: Flag.Boolean("clear-channels").pipe(
+      Flag.withDescription("Hear every channel again."),
+      Flag.withDefault(false)
+    ),
+    clearWorkspaces: Flag.Boolean("clear-workspaces").pipe(
+      Flag.withDescription(
+        "On a partner endpoint, hear every workspace again."
+      ),
+      Flag.withDefault(false)
+    ),
     description: descriptionFlag.pipe(Flag.optional),
     disable: Flag.Boolean("disable").pipe(
       Flag.withDescription(
@@ -315,11 +393,32 @@ const update = Command.make(
     json: jsonFlag,
     url: urlFlag.pipe(Flag.optional),
     workspace: workspaceFlag,
+    workspaceIds: workspaceFilterFlag,
   },
   Effect.fn("webhooks.update")(function* update(input) {
     if (input.enable && input.disable) {
       yield* new Refused({ reason: "Give --enable or --disable, not both." });
     }
+
+    if (input.clearChannels && input.channels.length > 0) {
+      yield* new Refused({
+        reason: "Give --channel or --clear-channels, not both.",
+      });
+    }
+
+    if (input.clearWorkspaces && input.workspaceIds.length > 0) {
+      yield* new Refused({
+        reason: "Give --workspace-id or --clear-workspaces, not both.",
+      });
+    }
+
+    const channelIds = input.clearChannels
+      ? Option.some([])
+      : filterOf(input.channels);
+
+    const workspaceIds = input.clearWorkspaces
+      ? Option.some([])
+      : filterOf(input.workspaceIds);
 
     const eventTypes = yield* Effect.transposeOption(
       input.events.pipe(Option.map(eventsOf))
@@ -330,6 +429,10 @@ const update = Command.make(
 
     // Only what was given: the endpoint keeps the rest.
     const payload: WebhookEndpointChange = {
+      ...Option.match(channelIds, {
+        onNone: () => ({}),
+        onSome: (ids) => ({ channelIds: ids }),
+      }),
       ...Option.match(input.description, {
         onNone: () => ({}),
         onSome: (description) => ({ description }),
@@ -346,12 +449,16 @@ const update = Command.make(
         onNone: () => ({}),
         onSome: (address) => ({ url: address }),
       }),
+      ...Option.match(workspaceIds, {
+        onNone: () => ({}),
+        onSome: (ids) => ({ workspaceIds: ids }),
+      }),
     };
 
     if (Object.keys(payload).length === 0) {
       yield* new Refused({
         reason:
-          "Nothing to change: give --url, --events, --description, --enable or --disable.",
+          "Nothing to change: give --url, --events, --description, --channel, --workspace-id, a --clear flag, --enable or --disable.",
       });
     }
 
@@ -380,7 +487,7 @@ const update = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Change a webhook endpoint's address, events or description, or turn it off or back on. What you leave out stays as it is."
+    "Change a webhook endpoint's address, events, description or filters, or turn it off or back on. What you leave out stays as it is; --channel and --workspace-id replace the lists the endpoint had."
   )
 );
 
@@ -452,16 +559,33 @@ const rotateSecret = Command.make(
 
 const test = Command.make(
   "test",
-  { endpointId: endpointArgument, json: jsonFlag, workspace: workspaceFlag },
+  {
+    endpointId: endpointArgument,
+    event: Flag.Literals("event", everyEvent).pipe(
+      Flag.withDescription(
+        "Send a sample of this type instead of webhook.test: its real shape, ids that name nothing, and sample: true, which the receiver must never act on."
+      ),
+      Flag.optional
+    ),
+    json: jsonFlag,
+    workspace: workspaceFlag,
+  },
   Effect.fn("webhooks.test")(function* test({
     endpointId,
+    event,
     json,
     workspace: choice,
   }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const delivery = yield* client.webhooks
-      .sendTest({ params: { endpointId, workspaceId: workspace.id } })
+      .sendTest({
+        params: { endpointId, workspaceId: workspace.id },
+        query: Option.match(event, {
+          onNone: () => ({}),
+          onSome: (eventType) => ({ eventType }),
+        }),
+      })
       .pipe(Effect.mapError(explain(url)));
 
     if (json) {
@@ -471,7 +595,9 @@ const test = Command.make(
     }
 
     yield* Console.log(
-      `Sent a ${delivery.eventType} event to endpoint ${endpointId}: delivery ${delivery.id} is ${delivery.status}.`
+      Option.isSome(event)
+        ? `Sent a sample ${delivery.eventType} event to endpoint ${endpointId}, marked sample: true: delivery ${delivery.id} is ${delivery.status}.`
+        : `Sent a ${delivery.eventType} event to endpoint ${endpointId}: delivery ${delivery.id} is ${delivery.status}.`
     );
     yield* Console.log(
       `See how it ended: peal webhooks deliveries ${endpointId} --workspace ${workspace.slug}`
@@ -479,19 +605,72 @@ const test = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Send a webhook.test event to an endpoint, whatever it subscribes to, to try its receiver."
+    "Send a webhook.test event to an endpoint, or a sample of an event type, whatever it subscribes to or filters, to try its receiver."
   )
 );
+
+const instantFlag = (name: string, description: string) =>
+  Flag.String(name).pipe(
+    Flag.withMetavar("<instant>"),
+    Flag.withDescription(
+      `${description}: an instant with its offset, such as 2026-11-20T09:00:00Z.`
+    ),
+    Flag.optional
+  );
+
+// An instant a flag gave, with its offset: there is no time zone to read a
+// local time in.
+const givenInstant = (given: Option.Option<string>, flag: string) =>
+  Effect.transposeOption(
+    given.pipe(Option.map((written) => instantOf(written, "UTC", flag)))
+  );
+
+const printPage = Effect.fn("webhooks.printPage")(function* printPage(
+  page: WebhookDeliveryPage,
+  ofEndpoints: boolean,
+  title: string,
+  empty: string,
+  more: string
+) {
+  if (page.items.length === 0) {
+    yield* Console.log(empty);
+
+    return;
+  }
+
+  yield* Console.log(title);
+
+  for (const line of columns(
+    page.items.map((delivery) => deliveryRow(delivery, ofEndpoints))
+  )) {
+    yield* Console.log(line);
+  }
+
+  if (page.nextCursor !== null) {
+    yield* Console.log(`More: ${more} --cursor ${page.nextCursor}`);
+  }
+});
 
 const deliveries = Command.make(
   "deliveries",
   {
     cursor: Flag.String("cursor").pipe(
       Flag.withMetavar("<cursor>"),
-      Flag.withDescription("Where the page before ended, as it printed."),
+      Flag.withDescription(
+        "Where the page before ended, as it printed: give it with the same filters."
+      ),
       Flag.optional
     ),
-    endpointId: endpointArgument,
+    endpointId: endpointArgument.pipe(
+      Argument.withDescription(
+        "The endpoint, as peal webhooks list shows its id; every endpoint's deliveries when left out."
+      ),
+      Argument.optional
+    ),
+    event: Flag.Literals("event", WebhookEventTypeSchema.literals).pipe(
+      Flag.withDescription("Only the deliveries of this event type."),
+      Flag.optional
+    ),
     json: jsonFlag,
     limit: Flag.Int("limit").pipe(
       Flag.withDescription(
@@ -499,113 +678,324 @@ const deliveries = Command.make(
       ),
       Flag.optional
     ),
+    since: instantFlag("since", "Only the deliveries made then or later"),
+    status: Flag.Literals("status", WebhookDeliveryStatusSchema.literals).pipe(
+      Flag.withDescription(
+        "Only the deliveries pending, succeeded, or failed for good (the ones to send again)."
+      ),
+      Flag.optional
+    ),
+    until: instantFlag("until", "Only the deliveries made before then"),
     workspace: workspaceFlag,
   },
-  Effect.fn("webhooks.deliveries")(function* deliveries({
-    cursor,
-    endpointId,
-    json,
-    limit,
-    workspace: choice,
-  }) {
-    const { client, url, workspace } = yield* inWorkspace(choice);
+  Effect.fn("webhooks.deliveries")(function* deliveries(input) {
+    const since = yield* givenInstant(input.since, "--since");
+    const until = yield* givenInstant(input.until, "--until");
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
 
-    const page = yield* client.webhooks
-      .listDeliveries({
-        params: { endpointId, workspaceId: workspace.id },
-        query: {
-          ...Option.match(cursor, {
-            onNone: () => ({}),
-            onSome: (after) => ({ cursor: after }),
-          }),
-          ...Option.match(limit, {
-            onNone: () => ({}),
-            onSome: (size) => ({
-              limit: Math.min(Math.max(size, 1), maxWebhookDeliveryPageSize),
-            }),
-          }),
-        },
-      })
-      .pipe(Effect.mapError(explain(url)));
+    const query = {
+      ...Option.match(input.cursor, {
+        onNone: () => ({}),
+        onSome: (after) => ({ cursor: after }),
+      }),
+      ...Option.match(input.event, {
+        onNone: () => ({}),
+        onSome: (eventType) => ({ eventType }),
+      }),
+      ...Option.match(input.limit, {
+        onNone: () => ({}),
+        onSome: (size) => ({
+          limit: Math.min(Math.max(size, 1), maxWebhookDeliveryPageSize),
+        }),
+      }),
+      ...Option.match(input.status, {
+        onNone: () => ({}),
+        onSome: (status) => ({ status }),
+      }),
+    };
 
-    if (json) {
+    // One endpoint's log, unless the time asks for the log across them.
+    const page =
+      Option.isSome(input.endpointId) &&
+      Option.isNone(since) &&
+      Option.isNone(until)
+        ? yield* client.webhooks
+            .listDeliveries({
+              params: {
+                endpointId: input.endpointId.value,
+                workspaceId: workspace.id,
+              },
+              query,
+            })
+            .pipe(Effect.mapError(explain(url)))
+        : yield* client.webhooks
+            .searchDeliveries({
+              params: { workspaceId: workspace.id },
+              query: {
+                ...query,
+                ...Option.match(input.endpointId, {
+                  onNone: () => ({}),
+                  onSome: (endpointId) => ({ endpointId }),
+                }),
+                ...Option.match(since, {
+                  onNone: () => ({}),
+                  onSome: (at) => ({ since: at }),
+                }),
+                ...Option.match(until, {
+                  onNone: () => ({}),
+                  onSome: (at) => ({ until: at }),
+                }),
+              },
+            })
+            .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
       yield* printJson(WebhookDeliveryPageSchema, page);
 
       return;
     }
 
-    if (page.items.length === 0) {
-      yield* Console.log(`Endpoint ${endpointId} has no deliveries.`);
+    const where = Option.match(input.endpointId, {
+      onNone: () => `of ${workspace.name}'s endpoints`,
+      onSome: (endpointId) => `to endpoint ${endpointId}`,
+    });
 
-      return;
-    }
-
-    yield* Console.log(`Deliveries to endpoint ${endpointId}, newest first:`);
-
-    for (const line of columns(page.items.map(deliveryRow))) {
-      yield* Console.log(line);
-    }
-
-    if (page.nextCursor !== null) {
-      yield* Console.log(
-        `More: peal webhooks deliveries ${endpointId} --workspace ${workspace.slug} --cursor ${page.nextCursor}`
-      );
-    }
+    yield* printPage(
+      page,
+      Option.isNone(input.endpointId),
+      `Deliveries ${where}, newest first:`,
+      Option.isSome(input.endpointId) &&
+        Option.isNone(input.status) &&
+        Option.isNone(input.event) &&
+        Option.isNone(since) &&
+        Option.isNone(until)
+        ? `Endpoint ${input.endpointId.value} has no deliveries.`
+        : `No deliveries ${where} match.`,
+      `peal webhooks deliveries ${Option.getOrElse(input.endpointId, () => "")} --workspace ${workspace.slug}`.replace(
+        "  ",
+        " "
+      )
+    );
   })
 ).pipe(
   Command.withDescription(
-    "List an endpoint's recent deliveries, newest first: each one's event, status, attempts, the receiver's last answer and when the next attempt is."
+    "List recent deliveries, newest first, of one endpoint or of every one: each one's endpoint, event, status, attempts, the receiver's last answer and when the next attempt is. --status failed lists the deliveries to send again."
   )
 );
 
-// Arguments are read in the order of their keys: the endpoint, then the
-// delivery of its log to send again.
+const skipReasons: Readonly<
+  Record<WebhookBulkRedelivery["skipped"][number]["reason"], string>
+> = {
+  alreadySent:
+    "sent again already, and that delivery is pending or went through",
+  endpointDisabled: "its endpoint is off",
+  notFound: "not a delivery of this workspace",
+};
+
+const printRedelivered = Effect.fn("webhooks.printRedelivered")(
+  function* printRedelivered(
+    result: WebhookBulkRedelivery,
+    endpointIds: ReadonlySet<string>
+  ) {
+    yield* Console.log(
+      `Sending ${String(result.redelivered.length)} ${result.redelivered.length === 1 ? "delivery" : "deliveries"} again, as new deliveries of the same events.`
+    );
+
+    for (const line of columns(
+      result.redelivered.map((delivery) => deliveryRow(delivery, true))
+    )) {
+      yield* Console.log(line);
+    }
+
+    for (const { deliveryId, reason } of result.skipped) {
+      yield* Console.log(
+        reason === "notFound" && endpointIds.has(deliveryId)
+          ? `  Skipped ${deliveryId}: an endpoint's id, not a delivery's: name the endpoint with --endpoint ${deliveryId}.`
+          : `  Skipped ${deliveryId}: ${skipReasons[reason]}.`
+      );
+    }
+
+    if (result.remaining > 0) {
+      yield* Console.log(
+        `${String(result.remaining)} more failed deliveries are left: run the same command again.`
+      );
+    }
+  }
+);
+
+// What a redeliver's flags ask for holds together, before any request.
+const checkRedelivery = Effect.fn("webhooks.checkRedelivery")(
+  function* checkRedelivery(input: {
+    readonly deliveryIds: readonly string[];
+    readonly endpoint: Option.Option<string>;
+    readonly event: Option.Option<string>;
+    readonly failed: boolean;
+    readonly since: Option.Option<string>;
+    readonly until: Option.Option<string>;
+  }) {
+    if (input.failed && input.deliveryIds.length > 0) {
+      yield* new Refused({
+        reason: "Give --failed with --endpoint, or delivery ids, not both.",
+      });
+    }
+
+    if (input.failed && Option.isNone(input.endpoint)) {
+      yield* new Refused({
+        reason:
+          "--failed sends one endpoint's failed deliveries again: give --endpoint too.",
+      });
+    }
+
+    if (
+      !input.failed &&
+      (Option.isSome(input.since) ||
+        Option.isSome(input.until) ||
+        Option.isSome(input.event))
+    ) {
+      yield* new Refused({
+        reason:
+          "--since, --until and --event go with --failed, which picks an endpoint's failed deliveries: deliveries named by id are sent again whatever their time or type.",
+      });
+    }
+
+    if (!input.failed && input.deliveryIds.length === 0) {
+      yield* new Refused({
+        reason:
+          "Give the deliveries to send again, or --failed --endpoint <id>.",
+      });
+    }
+  }
+);
+
 const redeliver = Command.make(
   "redeliver",
   {
-    endpointId: endpointArgument,
-    json: jsonFlag,
-    pastDeliveryId: Argument.String("delivery-id").pipe(
+    deliveryIds: Argument.String("delivery-id").pipe(
       Argument.withDescription(
-        "The delivery, as peal webhooks deliveries shows its id."
-      )
+        `The deliveries to send again, as peal webhooks deliveries shows their ids, ${String(maxWebhookBulkRedelivery)} at most; none with --failed.`
+      ),
+      Argument.atLeast(0)
     ),
+    endpoint: Flag.String("endpoint").pipe(
+      Flag.withMetavar("<endpoint-id>"),
+      Flag.withDescription(
+        "The endpoint: with --failed, whose failed deliveries to send again; with one delivery id, the endpoint it went to."
+      ),
+      Flag.optional
+    ),
+    event: Flag.Literals("event", everyEvent).pipe(
+      Flag.withDescription("With --failed, only the deliveries of this type."),
+      Flag.optional
+    ),
+    failed: Flag.Boolean("failed").pipe(
+      Flag.withDescription(
+        `Send the endpoint's failed deliveries again, oldest first, ${String(maxWebhookBulkRedelivery)} a call, the last of each event only.`
+      ),
+      Flag.withDefault(false)
+    ),
+    json: jsonFlag,
+    since: instantFlag("since", "With --failed, only those made then or later"),
+    until: instantFlag("until", "With --failed, only those made before then"),
     workspace: workspaceFlag,
   },
-  Effect.fn("webhooks.redeliver")(function* redeliver({
-    endpointId,
-    json,
-    pastDeliveryId,
-    workspace: choice,
-  }) {
-    const { client, url, workspace } = yield* inWorkspace(choice);
+  Effect.fn("webhooks.redeliver")(function* redeliver(input) {
+    yield* checkRedelivery(input);
 
-    const delivery = yield* client.webhooks
-      .redeliver({
-        params: {
-          deliveryId: pastDeliveryId,
-          endpointId,
-          workspaceId: workspace.id,
-        },
-      })
-      .pipe(Effect.mapError(explain(url)));
+    const since = yield* givenInstant(input.since, "--since");
+    const until = yield* givenInstant(input.until, "--until");
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+    const [single, ...others] = input.deliveryIds;
 
-    if (json) {
-      yield* printJson(WebhookDeliverySchema, delivery);
+    // One delivery of a named endpoint: sent again on its own.
+    if (
+      !input.failed &&
+      Option.isSome(input.endpoint) &&
+      single !== undefined &&
+      others.length === 0
+    ) {
+      const delivery = yield* client.webhooks
+        .redeliver({
+          params: {
+            deliveryId: single,
+            endpointId: input.endpoint.value,
+            workspaceId: workspace.id,
+          },
+        })
+        .pipe(Effect.mapError(explain(url)));
+
+      if (input.json) {
+        yield* printJson(WebhookDeliverySchema, delivery);
+
+        return;
+      }
+
+      yield* Console.log(
+        `Sending the ${delivery.eventType} event of delivery ${single} to endpoint ${input.endpoint.value} again: delivery ${delivery.id} is ${delivery.status}.`
+      );
+      yield* Console.log(
+        `The receiver gets the same webhook-id. See how it ended: peal webhooks deliveries ${input.endpoint.value} --workspace ${workspace.slug}`
+      );
 
       return;
     }
 
-    yield* Console.log(
-      `Sending the ${delivery.eventType} event of delivery ${pastDeliveryId} to endpoint ${endpointId} again: delivery ${delivery.id} is ${delivery.status}.`
-    );
-    yield* Console.log(
-      `The receiver gets the same webhook-id. See how it ended: peal webhooks deliveries ${endpointId} --workspace ${workspace.slug}`
-    );
+    const result = yield* client.webhooks
+      .redeliverMany({
+        params: { workspaceId: workspace.id },
+        payload:
+          input.failed && Option.isSome(input.endpoint)
+            ? {
+                endpointId: input.endpoint.value,
+                ...Option.match(input.event, {
+                  onNone: () => ({}),
+                  onSome: (eventType) => ({ eventType }),
+                }),
+                ...Option.match(since, {
+                  onNone: () => ({}),
+                  onSome: (at) => ({ since: at }),
+                }),
+                ...Option.match(until, {
+                  onNone: () => ({}),
+                  onSome: (at) => ({ until: at }),
+                }),
+              }
+            : {
+                deliveryIds: [single ?? "", ...others],
+              },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(WebhookBulkRedeliverySchema, result);
+    } else {
+      // An id skipped as no delivery may be an endpoint's, as the command
+      // once took the endpoint first.
+      const endpointIds = result.skipped.some(
+        ({ reason }) => reason === "notFound"
+      )
+        ? new Set(
+            (yield* client.webhooks
+              .list({ params: { workspaceId: workspace.id } })
+              .pipe(Effect.mapError(explain(url)))).map(({ id }) => id)
+          )
+        : new Set<string>();
+
+      yield* printRedelivered(result, endpointIds);
+    }
+
+    if (result.redelivered.length === 0) {
+      yield* new Refused({
+        code: "nothing_redelivered",
+        reason:
+          result.skipped.length === 0
+            ? "Nothing was sent again: no delivery matched."
+            : "Nothing was sent again: every delivery was skipped, as said above.",
+      });
+    }
   })
 ).pipe(
   Command.withDescription(
-    "Send a delivery's event to its endpoint again, as a new delivery: the receiver gets the same webhook-id and body."
+    `Send deliveries again, as new deliveries of the same events: the receivers get the same webhook-id and body. Name them by id, or give --failed --endpoint <id> for an endpoint's failed ones. A workspace sends ${String(webhookBulkRedeliveriesPerHour)} again this way an hour; one delivery with --endpoint counts with the test events.`
   )
 );
 

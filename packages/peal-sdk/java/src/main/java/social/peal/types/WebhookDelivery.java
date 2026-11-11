@@ -32,6 +32,8 @@ public final class WebhookDelivery {
 
     private final Optional<Integer> durationMs;
 
+    private final String endpointId;
+
     private final Optional<WebhookAttemptError> error;
 
     private final String eventId;
@@ -46,11 +48,17 @@ public final class WebhookDelivery {
 
     private final Optional<String> nextAttemptAt;
 
+    private final Optional<String> redeliveryOf;
+
     private final Optional<String> responseExcerpt;
 
     private final Optional<Integer> responseStatus;
 
     private final WebhookDeliveryStatus status;
+
+    private final Optional<String> workspaceExternalId;
+
+    private final String workspaceId;
 
     private final Map<String, Object> additionalProperties;
 
@@ -59,6 +67,7 @@ public final class WebhookDelivery {
             Optional<String> completedAt,
             String createdAt,
             Optional<Integer> durationMs,
+            String endpointId,
             Optional<WebhookAttemptError> error,
             String eventId,
             WebhookEventType eventType,
@@ -66,14 +75,18 @@ public final class WebhookDelivery {
             String id,
             Optional<String> lastAttemptAt,
             Optional<String> nextAttemptAt,
+            Optional<String> redeliveryOf,
             Optional<String> responseExcerpt,
             Optional<Integer> responseStatus,
             WebhookDeliveryStatus status,
+            Optional<String> workspaceExternalId,
+            String workspaceId,
             Map<String, Object> additionalProperties) {
         this.attempts = attempts;
         this.completedAt = completedAt;
         this.createdAt = createdAt;
         this.durationMs = durationMs;
+        this.endpointId = endpointId;
         this.error = error;
         this.eventId = eventId;
         this.eventType = eventType;
@@ -81,9 +94,12 @@ public final class WebhookDelivery {
         this.id = id;
         this.lastAttemptAt = lastAttemptAt;
         this.nextAttemptAt = nextAttemptAt;
+        this.redeliveryOf = redeliveryOf;
         this.responseExcerpt = responseExcerpt;
         this.responseStatus = responseStatus;
         this.status = status;
+        this.workspaceExternalId = workspaceExternalId;
+        this.workspaceId = workspaceId;
         this.additionalProperties = additionalProperties;
     }
 
@@ -111,6 +127,11 @@ public final class WebhookDelivery {
             return Optional.empty();
         }
         return durationMs;
+    }
+
+    @JsonProperty("endpointId")
+    public String getEndpointId() {
+        return endpointId;
     }
 
     @JsonIgnore
@@ -161,6 +182,14 @@ public final class WebhookDelivery {
     }
 
     @JsonIgnore
+    public Optional<String> getRedeliveryOf() {
+        if (redeliveryOf == null) {
+            return Optional.empty();
+        }
+        return redeliveryOf;
+    }
+
+    @JsonIgnore
     public Optional<String> getResponseExcerpt() {
         if (responseExcerpt == null) {
             return Optional.empty();
@@ -179,6 +208,19 @@ public final class WebhookDelivery {
     @JsonProperty("status")
     public WebhookDeliveryStatus getStatus() {
         return status;
+    }
+
+    @JsonIgnore
+    public Optional<String> getWorkspaceExternalId() {
+        if (workspaceExternalId == null) {
+            return Optional.empty();
+        }
+        return workspaceExternalId;
+    }
+
+    @JsonProperty("workspaceId")
+    public String getWorkspaceId() {
+        return workspaceId;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
@@ -218,6 +260,12 @@ public final class WebhookDelivery {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("redeliveryOf")
+    private Optional<String> _getRedeliveryOf() {
+        return redeliveryOf;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("responseExcerpt")
     private Optional<String> _getResponseExcerpt() {
         return responseExcerpt;
@@ -227,6 +275,12 @@ public final class WebhookDelivery {
     @JsonProperty("responseStatus")
     private Optional<Integer> _getResponseStatus() {
         return responseStatus;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("workspaceExternalId")
+    private Optional<String> _getWorkspaceExternalId() {
+        return workspaceExternalId;
     }
 
     @java.lang.Override
@@ -245,6 +299,7 @@ public final class WebhookDelivery {
                 && completedAt.equals(other.completedAt)
                 && createdAt.equals(other.createdAt)
                 && durationMs.equals(other.durationMs)
+                && endpointId.equals(other.endpointId)
                 && error.equals(other.error)
                 && eventId.equals(other.eventId)
                 && eventType.equals(other.eventType)
@@ -252,9 +307,12 @@ public final class WebhookDelivery {
                 && id.equals(other.id)
                 && lastAttemptAt.equals(other.lastAttemptAt)
                 && nextAttemptAt.equals(other.nextAttemptAt)
+                && redeliveryOf.equals(other.redeliveryOf)
                 && responseExcerpt.equals(other.responseExcerpt)
                 && responseStatus.equals(other.responseStatus)
-                && status.equals(other.status);
+                && status.equals(other.status)
+                && workspaceExternalId.equals(other.workspaceExternalId)
+                && workspaceId.equals(other.workspaceId);
     }
 
     @java.lang.Override
@@ -264,6 +322,7 @@ public final class WebhookDelivery {
                 this.completedAt,
                 this.createdAt,
                 this.durationMs,
+                this.endpointId,
                 this.error,
                 this.eventId,
                 this.eventType,
@@ -271,9 +330,12 @@ public final class WebhookDelivery {
                 this.id,
                 this.lastAttemptAt,
                 this.nextAttemptAt,
+                this.redeliveryOf,
                 this.responseExcerpt,
                 this.responseStatus,
-                this.status);
+                this.status,
+                this.workspaceExternalId,
+                this.workspaceId);
     }
 
     @java.lang.Override
@@ -292,7 +354,11 @@ public final class WebhookDelivery {
     }
 
     public interface CreatedAtStage {
-        EventIdStage createdAt(@NotNull String createdAt);
+        EndpointIdStage createdAt(@NotNull String createdAt);
+    }
+
+    public interface EndpointIdStage {
+        EventIdStage endpointId(@NotNull String endpointId);
     }
 
     public interface EventIdStage {
@@ -308,7 +374,11 @@ public final class WebhookDelivery {
     }
 
     public interface StatusStage {
-        _FinalStage status(@NotNull WebhookDeliveryStatus status);
+        WorkspaceIdStage status(@NotNull WebhookDeliveryStatus status);
+    }
+
+    public interface WorkspaceIdStage {
+        _FinalStage workspaceId(@NotNull String workspaceId);
     }
 
     public interface _FinalStage {
@@ -354,6 +424,12 @@ public final class WebhookDelivery {
 
         _FinalStage nextAttemptAt(Nullable<String> nextAttemptAt);
 
+        _FinalStage redeliveryOf(Optional<String> redeliveryOf);
+
+        _FinalStage redeliveryOf(String redeliveryOf);
+
+        _FinalStage redeliveryOf(Nullable<String> redeliveryOf);
+
         _FinalStage responseExcerpt(Optional<String> responseExcerpt);
 
         _FinalStage responseExcerpt(String responseExcerpt);
@@ -365,14 +441,30 @@ public final class WebhookDelivery {
         _FinalStage responseStatus(Integer responseStatus);
 
         _FinalStage responseStatus(Nullable<Integer> responseStatus);
+
+        _FinalStage workspaceExternalId(Optional<String> workspaceExternalId);
+
+        _FinalStage workspaceExternalId(String workspaceExternalId);
+
+        _FinalStage workspaceExternalId(Nullable<String> workspaceExternalId);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements AttemptsStage, CreatedAtStage, EventIdStage, EventTypeStage, IdStage, StatusStage, _FinalStage {
+            implements AttemptsStage,
+                    CreatedAtStage,
+                    EndpointIdStage,
+                    EventIdStage,
+                    EventTypeStage,
+                    IdStage,
+                    StatusStage,
+                    WorkspaceIdStage,
+                    _FinalStage {
         private int attempts;
 
         private String createdAt;
+
+        private String endpointId;
 
         private String eventId;
 
@@ -382,9 +474,15 @@ public final class WebhookDelivery {
 
         private WebhookDeliveryStatus status;
 
+        private String workspaceId;
+
+        private Optional<String> workspaceExternalId = Optional.empty();
+
         private Optional<Integer> responseStatus = Optional.empty();
 
         private Optional<String> responseExcerpt = Optional.empty();
+
+        private Optional<String> redeliveryOf = Optional.empty();
 
         private Optional<String> nextAttemptAt = Optional.empty();
 
@@ -408,6 +506,7 @@ public final class WebhookDelivery {
             completedAt(other.getCompletedAt());
             createdAt(other.getCreatedAt());
             durationMs(other.getDurationMs());
+            endpointId(other.getEndpointId());
             error(other.getError());
             eventId(other.getEventId());
             eventType(other.getEventType());
@@ -415,9 +514,12 @@ public final class WebhookDelivery {
             id(other.getId());
             lastAttemptAt(other.getLastAttemptAt());
             nextAttemptAt(other.getNextAttemptAt());
+            redeliveryOf(other.getRedeliveryOf());
             responseExcerpt(other.getResponseExcerpt());
             responseStatus(other.getResponseStatus());
             status(other.getStatus());
+            workspaceExternalId(other.getWorkspaceExternalId());
+            workspaceId(other.getWorkspaceId());
             return this;
         }
 
@@ -430,8 +532,15 @@ public final class WebhookDelivery {
 
         @java.lang.Override
         @JsonSetter("createdAt")
-        public EventIdStage createdAt(@NotNull String createdAt) {
+        public EndpointIdStage createdAt(@NotNull String createdAt) {
             this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("endpointId")
+        public EventIdStage endpointId(@NotNull String endpointId) {
+            this.endpointId = Objects.requireNonNull(endpointId, "endpointId must not be null");
             return this;
         }
 
@@ -458,8 +567,40 @@ public final class WebhookDelivery {
 
         @java.lang.Override
         @JsonSetter("status")
-        public _FinalStage status(@NotNull WebhookDeliveryStatus status) {
+        public WorkspaceIdStage status(@NotNull WebhookDeliveryStatus status) {
             this.status = Objects.requireNonNull(status, "status must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("workspaceId")
+        public _FinalStage workspaceId(@NotNull String workspaceId) {
+            this.workspaceId = Objects.requireNonNull(workspaceId, "workspaceId must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage workspaceExternalId(Nullable<String> workspaceExternalId) {
+            if (workspaceExternalId.isNull()) {
+                this.workspaceExternalId = null;
+            } else if (workspaceExternalId.isEmpty()) {
+                this.workspaceExternalId = Optional.empty();
+            } else {
+                this.workspaceExternalId = Optional.of(workspaceExternalId.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage workspaceExternalId(String workspaceExternalId) {
+            this.workspaceExternalId = Optional.ofNullable(workspaceExternalId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "workspaceExternalId", nulls = Nulls.SKIP)
+        public _FinalStage workspaceExternalId(Optional<String> workspaceExternalId) {
+            this.workspaceExternalId = workspaceExternalId;
             return this;
         }
 
@@ -510,6 +651,31 @@ public final class WebhookDelivery {
         @JsonSetter(value = "responseExcerpt", nulls = Nulls.SKIP)
         public _FinalStage responseExcerpt(Optional<String> responseExcerpt) {
             this.responseExcerpt = responseExcerpt;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage redeliveryOf(Nullable<String> redeliveryOf) {
+            if (redeliveryOf.isNull()) {
+                this.redeliveryOf = null;
+            } else if (redeliveryOf.isEmpty()) {
+                this.redeliveryOf = Optional.empty();
+            } else {
+                this.redeliveryOf = Optional.of(redeliveryOf.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage redeliveryOf(String redeliveryOf) {
+            this.redeliveryOf = Optional.ofNullable(redeliveryOf);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "redeliveryOf", nulls = Nulls.SKIP)
+        public _FinalStage redeliveryOf(Optional<String> redeliveryOf) {
+            this.redeliveryOf = redeliveryOf;
             return this;
         }
 
@@ -670,6 +836,7 @@ public final class WebhookDelivery {
                     completedAt,
                     createdAt,
                     durationMs,
+                    endpointId,
                     error,
                     eventId,
                     eventType,
@@ -677,9 +844,12 @@ public final class WebhookDelivery {
                     id,
                     lastAttemptAt,
                     nextAttemptAt,
+                    redeliveryOf,
                     responseExcerpt,
                     responseStatus,
                     status,
+                    workspaceExternalId,
+                    workspaceId,
                     additionalProperties);
         }
 
@@ -689,6 +859,7 @@ public final class WebhookDelivery {
                     || key.equalsIgnoreCase("completedAt")
                     || key.equalsIgnoreCase("createdAt")
                     || key.equalsIgnoreCase("durationMs")
+                    || key.equalsIgnoreCase("endpointId")
                     || key.equalsIgnoreCase("error")
                     || key.equalsIgnoreCase("eventId")
                     || key.equalsIgnoreCase("eventType")
@@ -696,9 +867,12 @@ public final class WebhookDelivery {
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("lastAttemptAt")
                     || key.equalsIgnoreCase("nextAttemptAt")
+                    || key.equalsIgnoreCase("redeliveryOf")
                     || key.equalsIgnoreCase("responseExcerpt")
                     || key.equalsIgnoreCase("responseStatus")
-                    || key.equalsIgnoreCase("status")) {
+                    || key.equalsIgnoreCase("status")
+                    || key.equalsIgnoreCase("workspaceExternalId")
+                    || key.equalsIgnoreCase("workspaceId")) {
                 return;
             }
             this.additionalProperties.put(key, value);

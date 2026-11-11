@@ -12,6 +12,8 @@ module Peal
       member -> { Peal::Types::PostTimingNow }, key: "NOW"
 
       member -> { Peal::Types::PostTimingAt }, key: "AT"
+
+      member -> { Peal::Types::PostTimingQueue }, key: "QUEUE"
     end
   end
 end

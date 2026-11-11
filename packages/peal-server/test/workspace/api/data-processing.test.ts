@@ -23,6 +23,7 @@ import {
 } from "#analytics/domain/analytics-retention.ts";
 import { contractRetention } from "#billing/domain/contract-retention.ts";
 import { trialMemory } from "#billing/domain/trial-memory.ts";
+import { usageRetentionDays } from "#billing/domain/usage-meter.ts";
 import { linkRetention } from "#channels/domain/connect-link.ts";
 import {
   defaultWindow,
@@ -123,6 +124,13 @@ describe("the data processing registry", () => {
   it("says how long the platforms' figures are kept", () => {
     expect(kept("content")).toContain("2 years");
     expect(kept("content")).toContain("LinkedIn 1 year");
+  });
+
+  it("keeps the usage counts as long as the ledger's purge does", () => {
+    expect(retentionPeriods.usageDays.days).toBe(usageRetentionDays);
+    expect(kept("usage")).toContain("400 days from each day");
+    // Counts only: nothing of a post, and no member named.
+    expect(categoryOf("usage")?.data.en).toContain("Counts only");
   });
 
   it("keeps a webhook delivery's log as long as its purge does", () => {

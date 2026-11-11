@@ -55,6 +55,7 @@ const names = {
   metrics: "metrics",
   serverLogs: "logs",
   traces: "traces",
+  usageDays: "usage",
 } as const satisfies Partial<Record<keyof typeof retentionPeriods, string>>;
 
 const units: readonly Unit[] = ["days", "weeks", "months", "years"];
@@ -91,6 +92,7 @@ const namedPeriods: readonly (readonly [
   [names.metrics, retentionPeriods.metrics],
   [names.serverLogs, retentionPeriods.serverLogs],
   [names.traces, retentionPeriods.traces],
+  [names.usageDays, retentionPeriods.usageDays],
 ];
 
 /** Every retention period, in each language, by variable name. */

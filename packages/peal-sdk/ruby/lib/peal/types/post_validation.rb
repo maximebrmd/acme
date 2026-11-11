@@ -13,6 +13,10 @@ module Peal
 
       field :plan_limit, -> { Peal::Types::PlanShortfall }, optional: false, nullable: true, api_name: "planLimit"
 
+      field :queue_no_room, -> { Peal::Types::QueueNoRoom }, optional: true, nullable: false, api_name: "queueNoRoom"
+
+      field :queue_slot, -> { String }, optional: true, nullable: false, api_name: "queueSlot"
+
       field :schedule, -> { Peal::Types::ScheduleCheck }, optional: false, nullable: true
 
       field :unknown_channels, -> { Internal::Types::Array[String] }, optional: false, nullable: false, api_name: "unknownChannels"

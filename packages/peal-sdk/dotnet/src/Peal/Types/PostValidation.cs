@@ -24,6 +24,12 @@ public record PostValidation : IJsonOnDeserialized
     [JsonPropertyName("planLimit")]
     public PlanShortfall? PlanLimit { get; set; }
 
+    [JsonPropertyName("queueNoRoom")]
+    public QueueNoRoom? QueueNoRoom { get; set; }
+
+    [JsonPropertyName("queueSlot")]
+    public string? QueueSlot { get; set; }
+
     [JsonPropertyName("schedule")]
     public ScheduleCheck? Schedule { get; set; }
 

@@ -1,13 +1,16 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt, lt, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
-import { UserIdSchema } from "#shared/domain/ids.ts";
+import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { defaultLocale, LocaleSchema } from "#shared/domain/locale.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { DirectoryUnavailable } from "#workspace/application/directory-unavailable.ts";
 import { WorkspaceRoster } from "#workspace/application/workspace-roster.ts";
-import type { RosterMember } from "#workspace/application/workspace-roster.ts";
+import type {
+  RosterMember,
+  WorkspacePageRequest,
+} from "#workspace/application/workspace-roster.ts";
 
 import { member, organization, user } from "./auth-schema.generated.ts";
 
@@ -70,6 +73,40 @@ export const WorkspaceRosterLive = Layer.effect(
       return Option.some({ members: roster, name: workspace.name });
     });
 
-    return WorkspaceRoster.of({ members });
+    // The workspaces by their primary key, each counting its members by
+    // the members' index, so a page reads its own rows only.
+    const seatsPage = Effect.fn("WorkspaceRoster.seatsPage")(
+      function* seatsPage({
+        after,
+        createdBefore,
+        limit,
+      }: WorkspacePageRequest) {
+        const rows = yield* db
+          .select({
+            members: sql<number>`(SELECT count(*)::int FROM ${member} WHERE ${member.organizationId} = ${organization.id})`,
+            workspaceId: organization.id,
+          })
+          .from(organization)
+          .where(
+            and(
+              after.pipe(
+                Option.map((id) => gt(organization.id, id)),
+                Option.getOrUndefined
+              ),
+              lt(organization.createdAt, DateTime.toDate(createdBefore))
+            )
+          )
+          .orderBy(asc(organization.id))
+          .limit(limit)
+          .pipe(unavailable);
+
+        return rows.map((row) => ({
+          members: row.members,
+          workspaceId: WorkspaceIdSchema.make(row.workspaceId),
+        }));
+      }
+    );
+
+    return WorkspaceRoster.of({ members, seatsPage });
   })
 );

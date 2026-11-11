@@ -19,6 +19,7 @@ import { Drizzle } from "#shared/infrastructure/database.ts";
 import {
   channelDefaults,
   channelSets,
+  queues,
   idempotencyKeys,
   postTargets,
   posts,
@@ -316,6 +317,20 @@ export const DrizzleWorkspacePostStore = Layer.effect(
             .from(channelSets)
             .where(eq(channelSets.workspaceId, workspaceId))
             .orderBy(asc(channelSets.id))).map(dated),
+          queues: (yield* db
+            .select({
+              channelIds: queues.channelIds,
+              channelSetId: queues.channelSetId,
+              createdAt: queues.createdAt,
+              id: queues.id,
+              isDefault: queues.isDefault,
+              name: queues.name,
+              slots: queues.slots,
+              timeZone: queues.timeZone,
+            })
+            .from(queues)
+            .where(eq(queues.workspaceId, workspaceId))
+            .orderBy(asc(queues.id))).map(dated),
           signatures: (yield* db
             .select({
               createdAt: signatures.createdAt,
@@ -367,7 +382,7 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .pipe(Effect.mapError(failed));
 
         // And what the workspace saved to write them: its signatures, its
-        // channel sets and its channels' default options.
+        // channel sets, its channels' default options and its queues.
         yield* db
           .delete(signatures)
           .where(eq(signatures.workspaceId, workspaceId))
@@ -381,6 +396,11 @@ export const DrizzleWorkspacePostStore = Layer.effect(
         yield* db
           .delete(channelDefaults)
           .where(eq(channelDefaults.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        yield* db
+          .delete(queues)
+          .where(eq(queues.workspaceId, workspaceId))
           .pipe(Effect.mapError(failed));
       }
     );

@@ -3,10 +3,15 @@
 import * as Peal from "../index.js";
 
 export type PostWarning = 
-    | Peal.PostWarning.ChannelsDropped;
+    | Peal.PostWarning.ChannelsDropped
+    | Peal.PostWarning.QueueChannelsDropped;
 
 export namespace PostWarning {
     export interface ChannelsDropped extends Peal.PostWarningChannelsDropped {
         _tag: "channelsDropped";
+    }
+
+    export interface QueueChannelsDropped extends Peal.PostWarningQueueChannelsDropped {
+        _tag: "queueChannelsDropped";
     }
 }

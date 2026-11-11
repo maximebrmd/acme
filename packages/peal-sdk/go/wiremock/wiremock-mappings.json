@@ -663,7 +663,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"items\": [\n    {\n      \"authorId\": \"authorId\",\n      \"content\": {\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      },\n      \"createdVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"id\": \"id\",\n      \"outcome\": \"published\",\n      \"schedule\": {\n        \"at\": \"at\",\n        \"timeZone\": \"timeZone\"\n      },\n      \"scheduledBy\": \"scheduledBy\",\n      \"scheduledVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"status\": \"draft\",\n      \"tagIds\": [\n        \"tagIds\"\n      ],\n      \"targets\": [\n        {\n          \"channelId\": \"channelId\",\n          \"failureReason\": null,\n          \"id\": \"id\",\n          \"options\": null,\n          \"parts\": {\n            \"count\": 1,\n            \"live\": [\n              {\n                \"index\": 1,\n                \"permalink\": null,\n                \"platformPostId\": null,\n                \"publishedAt\": \"publishedAt\"\n              }\n            ]\n          },\n          \"permalink\": null,\n          \"publishedAt\": null,\n          \"round\": 1,\n          \"status\": \"pending\",\n          \"unconfirmedReason\": null\n        }\n      ],\n      \"warnings\": [\n        {\n          \"channelIds\": [\n            \"channelIds\"\n          ],\n          \"channelSetId\": \"channelSetId\",\n          \"channelSetName\": \"channelSetName\",\n          \"_tag\": \"channelsDropped\"\n        }\n      ]\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "body": "{\n  \"items\": [\n    {\n      \"authorId\": \"authorId\",\n      \"content\": {\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      },\n      \"createdVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"id\": \"id\",\n      \"outcome\": \"published\",\n      \"queueId\": \"queueId\",\n      \"schedule\": {\n        \"at\": \"at\",\n        \"timeZone\": \"timeZone\"\n      },\n      \"scheduledBy\": \"scheduledBy\",\n      \"scheduledVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"status\": \"draft\",\n      \"tagIds\": [\n        \"tagIds\"\n      ],\n      \"targets\": [\n        {\n          \"channelId\": \"channelId\",\n          \"failureReason\": null,\n          \"id\": \"id\",\n          \"options\": null,\n          \"parts\": {\n            \"count\": 1,\n            \"live\": [\n              {\n                \"index\": 1,\n                \"permalink\": null,\n                \"platformPostId\": null,\n                \"publishedAt\": \"publishedAt\"\n              }\n            ]\n          },\n          \"permalink\": null,\n          \"publishedAt\": null,\n          \"round\": 1,\n          \"status\": \"pending\",\n          \"unconfirmedReason\": null\n        }\n      ],\n      \"warnings\": [\n        {\n          \"channelIds\": [\n            \"channelIds\"\n          ],\n          \"channelSetId\": \"channelSetId\",\n          \"channelSetName\": \"channelSetName\",\n          \"_tag\": \"channelsDropped\"\n        }\n      ]\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -707,7 +707,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"authorId\": \"authorId\",\n    \"content\": {\n      \"followUps\": [\n        {\n          \"delaySeconds\": 1,\n          \"media\": [\n            {\n              \"altText\": \"altText\",\n              \"mediaId\": \"mediaId\"\n            }\n          ],\n          \"overrides\": [\n            {\n              \"channelId\": \"channelId\",\n              \"text\": \"text\"\n            }\n          ],\n          \"text\": \"text\"\n        }\n      ],\n      \"media\": [\n        {\n          \"altText\": \"altText\",\n          \"mediaId\": \"mediaId\"\n        }\n      ],\n      \"overrides\": [\n        {\n          \"channelId\": \"channelId\",\n          \"text\": \"text\"\n        }\n      ],\n      \"text\": \"text\"\n    },\n    \"createdVia\": {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"via\": \"web\"\n    },\n    \"id\": \"id\",\n    \"outcome\": \"published\",\n    \"schedule\": {\n      \"at\": \"at\",\n      \"timeZone\": \"timeZone\"\n    },\n    \"scheduledBy\": \"scheduledBy\",\n    \"scheduledVia\": {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"via\": \"web\"\n    },\n    \"status\": \"draft\",\n    \"tagIds\": [\n      \"tagIds\"\n    ],\n    \"targets\": [\n      {\n        \"channelId\": \"channelId\",\n        \"failureReason\": null,\n        \"id\": \"id\",\n        \"options\": null,\n        \"parts\": {\n          \"count\": 1,\n          \"live\": [\n            {\n              \"index\": 1,\n              \"permalink\": null,\n              \"platformPostId\": null,\n              \"publishedAt\": \"publishedAt\"\n            }\n          ]\n        },\n        \"permalink\": null,\n        \"publishedAt\": null,\n        \"round\": 1,\n        \"status\": \"pending\",\n        \"unconfirmedReason\": null\n      }\n    ],\n    \"warnings\": [\n      {\n        \"channelIds\": [\n          \"channelIds\"\n        ],\n        \"channelSetId\": \"channelSetId\",\n        \"channelSetName\": \"channelSetName\",\n        \"_tag\": \"channelsDropped\"\n      }\n    ]\n  }\n]",
+        "body": "[\n  {\n    \"authorId\": \"authorId\",\n    \"content\": {\n      \"followUps\": [\n        {\n          \"delaySeconds\": 1,\n          \"media\": [\n            {\n              \"altText\": \"altText\",\n              \"mediaId\": \"mediaId\"\n            }\n          ],\n          \"overrides\": [\n            {\n              \"channelId\": \"channelId\",\n              \"text\": \"text\"\n            }\n          ],\n          \"text\": \"text\"\n        }\n      ],\n      \"media\": [\n        {\n          \"altText\": \"altText\",\n          \"mediaId\": \"mediaId\"\n        }\n      ],\n      \"overrides\": [\n        {\n          \"channelId\": \"channelId\",\n          \"text\": \"text\"\n        }\n      ],\n      \"text\": \"text\"\n    },\n    \"createdVia\": {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"via\": \"web\"\n    },\n    \"id\": \"id\",\n    \"outcome\": \"published\",\n    \"queueId\": \"queueId\",\n    \"schedule\": {\n      \"at\": \"at\",\n      \"timeZone\": \"timeZone\"\n    },\n    \"scheduledBy\": \"scheduledBy\",\n    \"scheduledVia\": {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"via\": \"web\"\n    },\n    \"status\": \"draft\",\n    \"tagIds\": [\n      \"tagIds\"\n    ],\n    \"targets\": [\n      {\n        \"channelId\": \"channelId\",\n        \"failureReason\": null,\n        \"id\": \"id\",\n        \"options\": null,\n        \"parts\": {\n          \"count\": 1,\n          \"live\": [\n            {\n              \"index\": 1,\n              \"permalink\": null,\n              \"platformPostId\": null,\n              \"publishedAt\": \"publishedAt\"\n            }\n          ]\n        },\n        \"permalink\": null,\n        \"publishedAt\": null,\n        \"round\": 1,\n        \"status\": \"pending\",\n        \"unconfirmedReason\": null\n      }\n    ],\n    \"warnings\": [\n      {\n        \"channelIds\": [\n          \"channelIds\"\n        ],\n        \"channelSetId\": \"channelSetId\",\n        \"channelSetName\": \"channelSetName\",\n        \"_tag\": \"channelsDropped\"\n      }\n    ]\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -743,7 +743,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -779,7 +779,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"platform\": \"x\"\n    }\n  ],\n  \"items\": [\n    {\n      \"authorId\": \"authorId\",\n      \"content\": {\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      },\n      \"createdVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"id\": \"id\",\n      \"outcome\": \"published\",\n      \"schedule\": {\n        \"at\": \"at\",\n        \"timeZone\": \"timeZone\"\n      },\n      \"scheduledBy\": \"scheduledBy\",\n      \"scheduledVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"status\": \"draft\",\n      \"tagIds\": [\n        \"tagIds\"\n      ],\n      \"targets\": [\n        {\n          \"channelId\": \"channelId\",\n          \"failureReason\": null,\n          \"id\": \"id\",\n          \"options\": null,\n          \"parts\": {\n            \"count\": 1,\n            \"live\": [\n              {\n                \"index\": 1,\n                \"permalink\": null,\n                \"platformPostId\": null,\n                \"publishedAt\": \"publishedAt\"\n              }\n            ]\n          },\n          \"permalink\": null,\n          \"publishedAt\": null,\n          \"round\": 1,\n          \"status\": \"pending\",\n          \"unconfirmedReason\": null\n        }\n      ],\n      \"warnings\": [\n        {\n          \"channelIds\": [\n            \"channelIds\"\n          ],\n          \"channelSetId\": \"channelSetId\",\n          \"channelSetName\": \"channelSetName\",\n          \"_tag\": \"channelsDropped\"\n        }\n      ]\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "body": "{\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"platform\": \"x\"\n    }\n  ],\n  \"items\": [\n    {\n      \"authorId\": \"authorId\",\n      \"content\": {\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      },\n      \"createdVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"id\": \"id\",\n      \"outcome\": \"published\",\n      \"queueId\": \"queueId\",\n      \"schedule\": {\n        \"at\": \"at\",\n        \"timeZone\": \"timeZone\"\n      },\n      \"scheduledBy\": \"scheduledBy\",\n      \"scheduledVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"status\": \"draft\",\n      \"tagIds\": [\n        \"tagIds\"\n      ],\n      \"targets\": [\n        {\n          \"channelId\": \"channelId\",\n          \"failureReason\": null,\n          \"id\": \"id\",\n          \"options\": null,\n          \"parts\": {\n            \"count\": 1,\n            \"live\": [\n              {\n                \"index\": 1,\n                \"permalink\": null,\n                \"platformPostId\": null,\n                \"publishedAt\": \"publishedAt\"\n              }\n            ]\n          },\n          \"permalink\": null,\n          \"publishedAt\": null,\n          \"round\": 1,\n          \"status\": \"pending\",\n          \"unconfirmedReason\": null\n        }\n      ],\n      \"warnings\": [\n        {\n          \"channelIds\": [\n            \"channelIds\"\n          ],\n          \"channelSetId\": \"channelSetId\",\n          \"channelSetName\": \"channelSetName\",\n          \"_tag\": \"channelsDropped\"\n        }\n      ]\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -815,7 +815,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -851,7 +851,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"created\": 1,\n  \"items\": [\n    {\n      \"index\": 1,\n      \"post\": {\n        \"authorId\": null,\n        \"content\": {\n          \"media\": [\n            {\n              \"altText\": \"altText\",\n              \"mediaId\": \"mediaId\"\n            }\n          ],\n          \"overrides\": [\n            {\n              \"channelId\": \"channelId\",\n              \"text\": \"text\"\n            }\n          ],\n          \"text\": \"text\"\n        },\n        \"createdVia\": null,\n        \"id\": \"id\",\n        \"outcome\": null,\n        \"schedule\": null,\n        \"scheduledBy\": null,\n        \"scheduledVia\": null,\n        \"status\": \"draft\",\n        \"tagIds\": [\n          \"tagIds\"\n        ],\n        \"targets\": [\n          {\n            \"channelId\": \"channelId\",\n            \"failureReason\": null,\n            \"id\": \"id\",\n            \"options\": null,\n            \"parts\": {\n              \"count\": 1,\n              \"live\": [\n                {\n                  \"index\": 1,\n                  \"permalink\": null,\n                  \"platformPostId\": null,\n                  \"publishedAt\": \"publishedAt\"\n                }\n              ]\n            },\n            \"permalink\": null,\n            \"publishedAt\": null,\n            \"round\": 1,\n            \"status\": \"pending\",\n            \"unconfirmedReason\": null\n          }\n        ]\n      },\n      \"replayed\": true,\n      \"_tag\": \"created\"\n    }\n  ],\n  \"refused\": 1\n}",
+        "body": "{\n  \"created\": 1,\n  \"items\": [\n    {\n      \"index\": 1,\n      \"post\": {\n        \"authorId\": null,\n        \"content\": {\n          \"media\": [\n            {\n              \"altText\": \"altText\",\n              \"mediaId\": \"mediaId\"\n            }\n          ],\n          \"overrides\": [\n            {\n              \"channelId\": \"channelId\",\n              \"text\": \"text\"\n            }\n          ],\n          \"text\": \"text\"\n        },\n        \"createdVia\": null,\n        \"id\": \"id\",\n        \"outcome\": null,\n        \"queueId\": null,\n        \"schedule\": null,\n        \"scheduledBy\": null,\n        \"scheduledVia\": null,\n        \"status\": \"draft\",\n        \"tagIds\": [\n          \"tagIds\"\n        ],\n        \"targets\": [\n          {\n            \"channelId\": \"channelId\",\n            \"failureReason\": null,\n            \"id\": \"id\",\n            \"options\": null,\n            \"parts\": {\n              \"count\": 1,\n              \"live\": [\n                {\n                  \"index\": 1,\n                  \"permalink\": null,\n                  \"platformPostId\": null,\n                  \"publishedAt\": \"publishedAt\"\n                }\n              ]\n            },\n            \"permalink\": null,\n            \"publishedAt\": null,\n            \"round\": 1,\n            \"status\": \"pending\",\n            \"unconfirmedReason\": null\n          }\n        ]\n      },\n      \"replayed\": true,\n      \"_tag\": \"created\"\n    }\n  ],\n  \"refused\": 1\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -887,7 +887,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"created\": 1,\n  \"dryRun\": true,\n  \"rows\": [\n    {\n      \"post\": {\n        \"authorId\": null,\n        \"content\": {\n          \"media\": [\n            {\n              \"altText\": \"altText\",\n              \"mediaId\": \"mediaId\"\n            }\n          ],\n          \"overrides\": [\n            {\n              \"channelId\": \"channelId\",\n              \"text\": \"text\"\n            }\n          ],\n          \"text\": \"text\"\n        },\n        \"createdVia\": null,\n        \"id\": \"id\",\n        \"outcome\": null,\n        \"schedule\": null,\n        \"scheduledBy\": null,\n        \"scheduledVia\": null,\n        \"status\": \"draft\",\n        \"tagIds\": [\n          \"tagIds\"\n        ],\n        \"targets\": [\n          {\n            \"channelId\": \"channelId\",\n            \"failureReason\": null,\n            \"id\": \"id\",\n            \"options\": null,\n            \"parts\": {\n              \"count\": 1,\n              \"live\": [\n                {\n                  \"index\": 1,\n                  \"permalink\": null,\n                  \"platformPostId\": null,\n                  \"publishedAt\": \"publishedAt\"\n                }\n              ]\n            },\n            \"permalink\": null,\n            \"publishedAt\": null,\n            \"round\": 1,\n            \"status\": \"pending\",\n            \"unconfirmedReason\": null\n          }\n        ]\n      },\n      \"replayed\": true,\n      \"row\": 1,\n      \"_tag\": \"created\"\n    }\n  ]\n}",
+        "body": "{\n  \"created\": 1,\n  \"dryRun\": true,\n  \"rows\": [\n    {\n      \"post\": {\n        \"authorId\": null,\n        \"content\": {\n          \"media\": [\n            {\n              \"altText\": \"altText\",\n              \"mediaId\": \"mediaId\"\n            }\n          ],\n          \"overrides\": [\n            {\n              \"channelId\": \"channelId\",\n              \"text\": \"text\"\n            }\n          ],\n          \"text\": \"text\"\n        },\n        \"createdVia\": null,\n        \"id\": \"id\",\n        \"outcome\": null,\n        \"queueId\": null,\n        \"schedule\": null,\n        \"scheduledBy\": null,\n        \"scheduledVia\": null,\n        \"status\": \"draft\",\n        \"tagIds\": [\n          \"tagIds\"\n        ],\n        \"targets\": [\n          {\n            \"channelId\": \"channelId\",\n            \"failureReason\": null,\n            \"id\": \"id\",\n            \"options\": null,\n            \"parts\": {\n              \"count\": 1,\n              \"live\": [\n                {\n                  \"index\": 1,\n                  \"permalink\": null,\n                  \"platformPostId\": null,\n                  \"publishedAt\": \"publishedAt\"\n                }\n              ]\n            },\n            \"permalink\": null,\n            \"publishedAt\": null,\n            \"round\": 1,\n            \"status\": \"pending\",\n            \"unconfirmedReason\": null\n          }\n        ]\n      },\n      \"replayed\": true,\n      \"row\": 1,\n      \"_tag\": \"created\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -923,7 +923,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"awaitsApproval\": true,\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"hashtags\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"links\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"media\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"mentions\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"parts\": [\n        {\n          \"hashtags\": {\n            \"count\": 1,\n            \"maximum\": null\n          },\n          \"links\": {\n            \"count\": 1,\n            \"maximum\": null\n          },\n          \"media\": {\n            \"count\": 1,\n            \"maximum\": null\n          },\n          \"mentions\": {\n            \"count\": 1,\n            \"maximum\": null\n          },\n          \"part\": 1,\n          \"text\": \"text\",\n          \"textCounts\": [\n            {\n              \"length\": 1,\n              \"maximum\": 1,\n              \"unit\": \"graphemes\"\n            }\n          ]\n        }\n      ],\n      \"platform\": \"x\",\n      \"text\": \"text\",\n      \"textCounts\": [\n        {\n          \"length\": 1,\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"violations\": [\n        {\n          \"_tag\": \"noChannels\"\n        }\n      ]\n    }\n  ],\n  \"duplicates\": [\n    {\n      \"channelId\": \"channelId\",\n      \"postId\": \"postId\"\n    }\n  ],\n  \"planLimit\": {\n    \"allowed\": 1000000,\n    \"billingUrl\": \"billingUrl\",\n    \"limit\": \"channels\",\n    \"plan\": \"free\",\n    \"planWithRoom\": \"starter\",\n    \"used\": 1000000\n  },\n  \"schedule\": \"ok\",\n  \"unknownChannels\": [\n    \"unknownChannels\"\n  ],\n  \"unknownMedia\": [\n    \"unknownMedia\"\n  ],\n  \"valid\": true,\n  \"violations\": [\n    {\n      \"_tag\": \"noChannels\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"awaitsApproval\": true,\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"hashtags\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"links\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"media\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"mentions\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"parts\": [\n        {\n          \"hashtags\": {\n            \"count\": 1,\n            \"maximum\": null\n          },\n          \"links\": {\n            \"count\": 1,\n            \"maximum\": null\n          },\n          \"media\": {\n            \"count\": 1,\n            \"maximum\": null\n          },\n          \"mentions\": {\n            \"count\": 1,\n            \"maximum\": null\n          },\n          \"part\": 1,\n          \"text\": \"text\",\n          \"textCounts\": [\n            {\n              \"length\": 1,\n              \"maximum\": 1,\n              \"unit\": \"graphemes\"\n            }\n          ]\n        }\n      ],\n      \"platform\": \"x\",\n      \"text\": \"text\",\n      \"textCounts\": [\n        {\n          \"length\": 1,\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"violations\": [\n        {\n          \"_tag\": \"noChannels\"\n        }\n      ]\n    }\n  ],\n  \"duplicates\": [\n    {\n      \"channelId\": \"channelId\",\n      \"postId\": \"postId\"\n    }\n  ],\n  \"planLimit\": {\n    \"allowed\": 1000000,\n    \"billingUrl\": \"billingUrl\",\n    \"limit\": \"channels\",\n    \"plan\": \"free\",\n    \"planWithRoom\": \"starter\",\n    \"used\": 1000000\n  },\n  \"queueNoRoom\": \"noSlots\",\n  \"queueSlot\": \"queueSlot\",\n  \"schedule\": \"ok\",\n  \"unknownChannels\": [\n    \"unknownChannels\"\n  ],\n  \"unknownMedia\": [\n    \"unknownMedia\"\n  ],\n  \"valid\": true,\n  \"violations\": [\n    {\n      \"_tag\": \"noChannels\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -962,7 +962,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1001,7 +1001,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1079,7 +1079,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1157,7 +1157,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1196,7 +1196,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1235,7 +1235,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1274,12 +1274,51 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
       "uuid": "51b44d3f-2315-4020-b9c7-e2dd8cc1f8b4",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "04d87b11-b507-497c-bf3e-e7bbf043c372",
+      "name": "Add a post to a queue - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/{postId}/queue",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "postId": {
+            "equalTo": "postId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "04d87b11-b507-497c-bf3e-e7bbf043c372",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1313,7 +1352,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1355,7 +1394,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1397,7 +1436,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1436,7 +1475,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"followUps\": [\n      {\n        \"delaySeconds\": 1,\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      }\n    ],\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"queueId\": \"queueId\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"tagIds\": [\n    \"tagIds\"\n  ],\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"parts\": {\n        \"count\": 1,\n        \"live\": [\n          {\n            \"index\": 1,\n            \"permalink\": null,\n            \"platformPostId\": null,\n            \"publishedAt\": \"publishedAt\"\n          }\n        ]\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"channelSetName\": \"channelSetName\",\n      \"_tag\": \"channelsDropped\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2237,6 +2276,42 @@
       }
     },
     {
+      "id": "fe220155-576e-43cb-8e21-dd2ab69313ea",
+      "name": "Get the workspace's usage - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/usage",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"allowances\": {\n    \"assistantRequests\": 1000000,\n    \"channels\": 1000000,\n    \"mediaStorage\": 1000000,\n    \"members\": 1000000,\n    \"scheduledPosts\": 1000000\n  },\n  \"current\": {\n    \"assistantRequests\": {\n      \"resetsAt\": \"resetsAt\",\n      \"used\": 1\n    },\n    \"channels\": 1,\n    \"mediaStorage\": 1000000,\n    \"members\": 1,\n    \"scheduledPosts\": {\n      \"resetsAt\": \"resetsAt\",\n      \"used\": 1\n    }\n  },\n  \"days\": [\n    {\n      \"assistantRequests\": 1,\n      \"byPlatform\": [\n        {\n          \"platform\": \"x\",\n          \"posts\": 1\n        }\n      ],\n      \"channels\": 1,\n      \"day\": \"day\",\n      \"mediaStorage\": 1000000,\n      \"members\": 1,\n      \"publishedPosts\": 1\n    }\n  ],\n  \"period\": {\n    \"from\": \"from\",\n    \"to\": \"to\"\n  },\n  \"plan\": \"free\",\n  \"sharedWith\": {\n    \"partnerWorkspaceId\": \"partnerWorkspaceId\"\n  },\n  \"totals\": {\n    \"byPlatform\": [\n      {\n        \"platform\": \"x\",\n        \"posts\": 1\n      }\n    ],\n    \"channelDays\": 1000000,\n    \"daysCounted\": 1,\n    \"meteredPosts\": [\n      {\n        \"month\": \"month\",\n        \"platform\": \"x\",\n        \"posts\": 1,\n        \"postsWithLinks\": 1\n      }\n    ],\n    \"publishedPosts\": 1\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "fe220155-576e-43cb-8e21-dd2ab69313ea",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "cbe4dd54-6c2c-4847-a425-b5926a5249b4",
       "name": "Summarize the workspace's analytics - default",
       "request": {
@@ -2665,7 +2740,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  }\n]",
+        "body": "[\n  {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2701,12 +2776,84 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"endpoint\": {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"secret\": \"secret\"\n}",
+        "body": "{\n  \"endpoint\": {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  },\n  \"secret\": \"secret\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
       "uuid": "1c25b373-35d2-4196-8e77-915aee636398",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "78962a14-a1ea-4d25-bd6a-d12171c88cdd",
+      "name": "List deliveries across endpoints - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/deliveries",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"attempts\": 1,\n      \"completedAt\": \"completedAt\",\n      \"createdAt\": \"createdAt\",\n      \"durationMs\": 1,\n      \"endpointId\": \"endpointId\",\n      \"error\": \"timeout\",\n      \"eventId\": \"eventId\",\n      \"eventType\": \"post.scheduled\",\n      \"failureReason\": \"exhausted\",\n      \"id\": \"id\",\n      \"lastAttemptAt\": \"lastAttemptAt\",\n      \"nextAttemptAt\": \"nextAttemptAt\",\n      \"redeliveryOf\": \"redeliveryOf\",\n      \"responseExcerpt\": \"responseExcerpt\",\n      \"responseStatus\": 1,\n      \"status\": \"pending\",\n      \"workspaceExternalId\": \"workspaceExternalId\",\n      \"workspaceId\": \"workspaceId\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "78962a14-a1ea-4d25-bd6a-d12171c88cdd",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "9ea5de2a-f55f-4165-978d-f48e5e44a84a",
+      "name": "Send many deliveries again - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/deliveries/redeliver",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": "{\n  \"redelivered\": [\n    {\n      \"attempts\": 1,\n      \"completedAt\": \"completedAt\",\n      \"createdAt\": \"createdAt\",\n      \"durationMs\": 1,\n      \"endpointId\": \"endpointId\",\n      \"error\": \"timeout\",\n      \"eventId\": \"eventId\",\n      \"eventType\": \"post.scheduled\",\n      \"failureReason\": \"exhausted\",\n      \"id\": \"id\",\n      \"lastAttemptAt\": \"lastAttemptAt\",\n      \"nextAttemptAt\": \"nextAttemptAt\",\n      \"redeliveryOf\": \"redeliveryOf\",\n      \"responseExcerpt\": \"responseExcerpt\",\n      \"responseStatus\": 1,\n      \"status\": \"pending\",\n      \"workspaceExternalId\": \"workspaceExternalId\",\n      \"workspaceId\": \"workspaceId\"\n    }\n  ],\n  \"remaining\": 1,\n  \"skipped\": [\n    {\n      \"deliveryId\": \"deliveryId\",\n      \"reason\": \"alreadySent\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "9ea5de2a-f55f-4165-978d-f48e5e44a84a",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -2740,7 +2887,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\",\n  \"workspaceIds\": [\n    \"workspaceIds\"\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2818,7 +2965,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\",\n  \"workspaceIds\": [\n    \"workspaceIds\"\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2857,7 +3004,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"endpoint\": {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"secret\": \"secret\"\n}",
+        "body": "{\n  \"endpoint\": {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\",\n    \"workspaceIds\": [\n      \"workspaceIds\"\n    ]\n  },\n  \"secret\": \"secret\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2896,7 +3043,7 @@
       },
       "response": {
         "status": 202,
-        "body": "{\n  \"attempts\": 1,\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"durationMs\": 1,\n  \"error\": \"timeout\",\n  \"eventId\": \"eventId\",\n  \"eventType\": \"post.scheduled\",\n  \"failureReason\": \"exhausted\",\n  \"id\": \"id\",\n  \"lastAttemptAt\": \"lastAttemptAt\",\n  \"nextAttemptAt\": \"nextAttemptAt\",\n  \"responseExcerpt\": \"responseExcerpt\",\n  \"responseStatus\": 1,\n  \"status\": \"pending\"\n}",
+        "body": "{\n  \"attempts\": 1,\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"durationMs\": 1,\n  \"endpointId\": \"endpointId\",\n  \"error\": \"timeout\",\n  \"eventId\": \"eventId\",\n  \"eventType\": \"post.scheduled\",\n  \"failureReason\": \"exhausted\",\n  \"id\": \"id\",\n  \"lastAttemptAt\": \"lastAttemptAt\",\n  \"nextAttemptAt\": \"nextAttemptAt\",\n  \"redeliveryOf\": \"redeliveryOf\",\n  \"responseExcerpt\": \"responseExcerpt\",\n  \"responseStatus\": 1,\n  \"status\": \"pending\",\n  \"workspaceExternalId\": \"workspaceExternalId\",\n  \"workspaceId\": \"workspaceId\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2935,7 +3082,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"items\": [\n    {\n      \"attempts\": 1,\n      \"completedAt\": \"completedAt\",\n      \"createdAt\": \"createdAt\",\n      \"durationMs\": 1,\n      \"error\": \"timeout\",\n      \"eventId\": \"eventId\",\n      \"eventType\": \"post.scheduled\",\n      \"failureReason\": \"exhausted\",\n      \"id\": \"id\",\n      \"lastAttemptAt\": \"lastAttemptAt\",\n      \"nextAttemptAt\": \"nextAttemptAt\",\n      \"responseExcerpt\": \"responseExcerpt\",\n      \"responseStatus\": 1,\n      \"status\": \"pending\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "body": "{\n  \"items\": [\n    {\n      \"attempts\": 1,\n      \"completedAt\": \"completedAt\",\n      \"createdAt\": \"createdAt\",\n      \"durationMs\": 1,\n      \"endpointId\": \"endpointId\",\n      \"error\": \"timeout\",\n      \"eventId\": \"eventId\",\n      \"eventType\": \"post.scheduled\",\n      \"failureReason\": \"exhausted\",\n      \"id\": \"id\",\n      \"lastAttemptAt\": \"lastAttemptAt\",\n      \"nextAttemptAt\": \"nextAttemptAt\",\n      \"redeliveryOf\": \"redeliveryOf\",\n      \"responseExcerpt\": \"responseExcerpt\",\n      \"responseStatus\": 1,\n      \"status\": \"pending\",\n      \"workspaceExternalId\": \"workspaceExternalId\",\n      \"workspaceId\": \"workspaceId\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2977,7 +3124,7 @@
       },
       "response": {
         "status": 202,
-        "body": "{\n  \"attempts\": 1,\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"durationMs\": 1,\n  \"error\": \"timeout\",\n  \"eventId\": \"eventId\",\n  \"eventType\": \"post.scheduled\",\n  \"failureReason\": \"exhausted\",\n  \"id\": \"id\",\n  \"lastAttemptAt\": \"lastAttemptAt\",\n  \"nextAttemptAt\": \"nextAttemptAt\",\n  \"responseExcerpt\": \"responseExcerpt\",\n  \"responseStatus\": 1,\n  \"status\": \"pending\"\n}",
+        "body": "{\n  \"attempts\": 1,\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"durationMs\": 1,\n  \"endpointId\": \"endpointId\",\n  \"error\": \"timeout\",\n  \"eventId\": \"eventId\",\n  \"eventType\": \"post.scheduled\",\n  \"failureReason\": \"exhausted\",\n  \"id\": \"id\",\n  \"lastAttemptAt\": \"lastAttemptAt\",\n  \"nextAttemptAt\": \"nextAttemptAt\",\n  \"redeliveryOf\": \"redeliveryOf\",\n  \"responseExcerpt\": \"responseExcerpt\",\n  \"responseStatus\": 1,\n  \"status\": \"pending\",\n  \"workspaceExternalId\": \"workspaceExternalId\",\n  \"workspaceId\": \"workspaceId\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -5733,6 +5880,234 @@
       }
     },
     {
+      "id": "0647f9f1-24ff-499c-92a0-0e6597a9b6bb",
+      "name": "List queues - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/queues",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"channelSetId\": \"channelSetId\",\n    \"createdAt\": \"createdAt\",\n    \"id\": \"id\",\n    \"isDefault\": true,\n    \"name\": \"name\",\n    \"slots\": [\n      {\n        \"day\": \"monday\",\n        \"time\": \"time\"\n      }\n    ],\n    \"timeZone\": \"timeZone\",\n    \"unavailableChannelIds\": [\n      \"unavailableChannelIds\"\n    ]\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "0647f9f1-24ff-499c-92a0-0e6597a9b6bb",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "6227c7bd-25ac-4f38-bc4e-3f455909a954",
+      "name": "Create a queue - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/queues",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"channelSetId\": \"channelSetId\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"isDefault\": true,\n  \"name\": \"name\",\n  \"slots\": [\n    {\n      \"day\": \"monday\",\n      \"time\": \"time\"\n    }\n  ],\n  \"timeZone\": \"timeZone\",\n  \"unavailableChannelIds\": [\n    \"unavailableChannelIds\"\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6227c7bd-25ac-4f38-bc4e-3f455909a954",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "e2fbe6fd-9a58-4867-92d1-f1684d5d240c",
+      "name": "Get a queue - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/queues/{queueId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "queueId": {
+            "equalTo": "queueId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"channelSetId\": \"channelSetId\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"isDefault\": true,\n  \"name\": \"name\",\n  \"slots\": [\n    {\n      \"day\": \"monday\",\n      \"time\": \"time\"\n    }\n  ],\n  \"timeZone\": \"timeZone\",\n  \"unavailableChannelIds\": [\n    \"unavailableChannelIds\"\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e2fbe6fd-9a58-4867-92d1-f1684d5d240c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "4dc61a05-7090-4250-b9c7-a532ce7fc75c",
+      "name": "Update a queue - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/queues/{queueId}",
+        "method": "PUT",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "queueId": {
+            "equalTo": "queueId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"channelSetId\": \"channelSetId\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"isDefault\": true,\n  \"name\": \"name\",\n  \"slots\": [\n    {\n      \"day\": \"monday\",\n      \"time\": \"time\"\n    }\n  ],\n  \"timeZone\": \"timeZone\",\n  \"unavailableChannelIds\": [\n    \"unavailableChannelIds\"\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "4dc61a05-7090-4250-b9c7-a532ce7fc75c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "a1d3295e-c51b-4401-9dac-e2d3fc9e35ce",
+      "name": "Delete a queue - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/queues/{queueId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "queueId": {
+            "equalTo": "queueId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "a1d3295e-c51b-4401-9dac-e2d3fc9e35ce",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "ed5d3c33-4ea1-48c1-aa6c-63df9ec8ea27",
+      "name": "Preview a queue's slots - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/queues/{queueId}/slots",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "queueId": {
+            "equalTo": "queueId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"nextFree\": \"nextFree\",\n  \"noRoom\": \"noSlots\",\n  \"slots\": [\n    {\n      \"at\": \"at\",\n      \"postId\": \"postId\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ed5d3c33-4ea1-48c1-aa6c-63df9ec8ea27",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "37f6e4d3-92dc-407c-9664-73c853985cb7",
       "name": "Get a channel's default options - default",
       "request": {
@@ -5851,6 +6226,6 @@
     }
   ],
   "meta": {
-    "total": 156
+    "total": 166
   }
 }

@@ -56,6 +56,7 @@ import { BoostDialog } from "#components/ads/boost-dialog.tsx";
 import { PostPaid } from "#components/ads/post-paid.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
 import { PostTagsField } from "#components/posts/post-tags-field.tsx";
+import { PostQueueLine } from "#components/posts/queue-choice.tsx";
 import { useRefreshWhileVisible } from "#notices/use-refresh-while-visible.ts";
 import {
   confirmTarget,
@@ -505,6 +506,8 @@ interface PostDetailViewProps {
   readonly post: Post;
   /** What a member may do with the whole post, such as copying it. */
   readonly actions?: ReactNode;
+  /** The queue that placed the post, named, if one did. */
+  readonly queue?: ReactNode;
   /** The post's tags, with what changes them for a member who may. */
   readonly tags?: ReactNode;
   /** The signed-in user, named in how the post came to be. */
@@ -526,6 +529,7 @@ export const PostDetailView = ({
   onRequest,
   paid,
   post,
+  queue,
   tags,
   viewerId,
 }: PostDetailViewProps) => {
@@ -556,6 +560,7 @@ export const PostDetailView = ({
           )}
         </div>
         <PostOrigins post={post} viewerId={viewerId} />
+        {queue}
         {actions === undefined ? null : <CardAction>{actions}</CardAction>}
       </CardHeader>
       <CardContent>
@@ -812,6 +817,7 @@ export const PostDetail = ({
         ) : null
       }
       post={post}
+      queue={<PostQueueLine queueId={post.queueId} workspaceId={workspaceId} />}
       tags={
         <PostTagsField
           disabled={false}

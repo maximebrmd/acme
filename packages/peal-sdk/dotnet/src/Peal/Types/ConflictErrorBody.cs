@@ -19,20 +19,20 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.ChannelSetNameTaken"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.QueueNameTaken"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.ChannelSetNameTaken value)
+    public ConflictErrorBody(ConflictErrorBody.QueueNameTaken value)
     {
-        Type = "ChannelSetNameTaken";
+        Type = "QueueNameTaken";
         Value = value.Value;
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyChannelSets"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyQueues"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.TooManyChannelSets value)
+    public ConflictErrorBody(ConflictErrorBody.TooManyQueues value)
     {
-        Type = "TooManyChannelSets";
+        Type = "TooManyQueues";
         Value = value.Value;
     }
 
@@ -48,64 +48,60 @@ public record ConflictErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "ChannelSetNameTaken"
+    /// Returns true if <see cref="Type"/> is "QueueNameTaken"
     /// </summary>
-    public bool IsChannelSetNameTaken => Type == "ChannelSetNameTaken";
+    public bool IsQueueNameTaken => Type == "QueueNameTaken";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "TooManyChannelSets"
+    /// Returns true if <see cref="Type"/> is "TooManyQueues"
     /// </summary>
-    public bool IsTooManyChannelSets => Type == "TooManyChannelSets";
+    public bool IsTooManyQueues => Type == "TooManyQueues";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.ChannelSetNameTakenEncoded"/> if <see cref="Type"/> is 'ChannelSetNameTaken', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.QueueNameTakenEncoded"/> if <see cref="Type"/> is 'QueueNameTaken', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ChannelSetNameTaken'.</exception>
-    public Peal.ChannelSetNameTakenEncoded AsChannelSetNameTaken() =>
-        IsChannelSetNameTaken
-            ? (Peal.ChannelSetNameTakenEncoded)Value!
-            : throw new global::System.Exception(
-                "ConflictErrorBody.Type is not 'ChannelSetNameTaken'"
-            );
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'QueueNameTaken'.</exception>
+    public Peal.QueueNameTakenEncoded AsQueueNameTaken() =>
+        IsQueueNameTaken
+            ? (Peal.QueueNameTakenEncoded)Value!
+            : throw new global::System.Exception("ConflictErrorBody.Type is not 'QueueNameTaken'");
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.TooManyChannelSetsEncoded"/> if <see cref="Type"/> is 'TooManyChannelSets', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.TooManyQueuesEncoded"/> if <see cref="Type"/> is 'TooManyQueues', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyChannelSets'.</exception>
-    public Peal.TooManyChannelSetsEncoded AsTooManyChannelSets() =>
-        IsTooManyChannelSets
-            ? (Peal.TooManyChannelSetsEncoded)Value!
-            : throw new global::System.Exception(
-                "ConflictErrorBody.Type is not 'TooManyChannelSets'"
-            );
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyQueues'.</exception>
+    public Peal.TooManyQueuesEncoded AsTooManyQueues() =>
+        IsTooManyQueues
+            ? (Peal.TooManyQueuesEncoded)Value!
+            : throw new global::System.Exception("ConflictErrorBody.Type is not 'TooManyQueues'");
 
     public T Match<T>(
-        Func<Peal.ChannelSetNameTakenEncoded, T> onChannelSetNameTaken,
-        Func<Peal.TooManyChannelSetsEncoded, T> onTooManyChannelSets,
+        Func<Peal.QueueNameTakenEncoded, T> onQueueNameTaken,
+        Func<Peal.TooManyQueuesEncoded, T> onTooManyQueues,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "ChannelSetNameTaken" => onChannelSetNameTaken(AsChannelSetNameTaken()),
-            "TooManyChannelSets" => onTooManyChannelSets(AsTooManyChannelSets()),
+            "QueueNameTaken" => onQueueNameTaken(AsQueueNameTaken()),
+            "TooManyQueues" => onTooManyQueues(AsTooManyQueues()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.ChannelSetNameTakenEncoded> onChannelSetNameTaken,
-        Action<Peal.TooManyChannelSetsEncoded> onTooManyChannelSets,
+        Action<Peal.QueueNameTakenEncoded> onQueueNameTaken,
+        Action<Peal.TooManyQueuesEncoded> onTooManyQueues,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "ChannelSetNameTaken":
-                onChannelSetNameTaken(AsChannelSetNameTaken());
+            case "QueueNameTaken":
+                onQueueNameTaken(AsQueueNameTaken());
                 break;
-            case "TooManyChannelSets":
-                onTooManyChannelSets(AsTooManyChannelSets());
+            case "TooManyQueues":
+                onTooManyQueues(AsTooManyQueues());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -114,13 +110,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.ChannelSetNameTakenEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.QueueNameTakenEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsChannelSetNameTaken(out Peal.ChannelSetNameTakenEncoded? value)
+    public bool TryAsQueueNameTaken(out Peal.QueueNameTakenEncoded? value)
     {
-        if (Type == "ChannelSetNameTaken")
+        if (Type == "QueueNameTaken")
         {
-            value = (Peal.ChannelSetNameTakenEncoded)Value!;
+            value = (Peal.QueueNameTakenEncoded)Value!;
             return true;
         }
         value = null;
@@ -128,13 +124,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.TooManyChannelSetsEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.TooManyQueuesEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsTooManyChannelSets(out Peal.TooManyChannelSetsEncoded? value)
+    public bool TryAsTooManyQueues(out Peal.TooManyQueuesEncoded? value)
     {
-        if (Type == "TooManyChannelSets")
+        if (Type == "TooManyQueues")
         {
-            value = (Peal.TooManyChannelSetsEncoded)Value!;
+            value = (Peal.TooManyQueuesEncoded)Value!;
             return true;
         }
         value = null;
@@ -143,11 +139,10 @@ public record ConflictErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator ConflictErrorBody(
-        ConflictErrorBody.ChannelSetNameTaken value
-    ) => new(value);
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.QueueNameTaken value) =>
+        new(value);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.TooManyChannelSets value) =>
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.TooManyQueues value) =>
         new(value);
 
     [Serializable]
@@ -191,15 +186,11 @@ public record ConflictErrorBody
 
             var value = discriminator switch
             {
-                "ChannelSetNameTaken" => json.Deserialize<Peal.ChannelSetNameTakenEncoded?>(options)
-                    ?? throw new JsonException(
-                        "Failed to deserialize Peal.ChannelSetNameTakenEncoded"
-                    ),
-                "TooManyChannelSets" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyChannelSetsEncoded?>(options)
-                        ?? throw new JsonException(
-                            "Failed to deserialize Peal.TooManyChannelSetsEncoded"
-                        ),
+                "QueueNameTaken" => json.Deserialize<Peal.QueueNameTakenEncoded?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.QueueNameTakenEncoded"),
+                "TooManyQueues" => jsonWithoutDiscriminator.Deserialize<Peal.TooManyQueuesEncoded?>(
+                    options
+                ) ?? throw new JsonException("Failed to deserialize Peal.TooManyQueuesEncoded"),
                 _ => json.Deserialize<object?>(options),
             };
             return new ConflictErrorBody(discriminator, value);
@@ -214,8 +205,8 @@ public record ConflictErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "ChannelSetNameTaken" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "TooManyChannelSets" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "QueueNameTaken" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "TooManyQueues" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -245,42 +236,42 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for ChannelSetNameTaken
+    /// Discriminated union type for QueueNameTaken
     /// </summary>
     [Serializable]
-    public struct ChannelSetNameTaken
+    public struct QueueNameTaken
     {
-        public ChannelSetNameTaken(Peal.ChannelSetNameTakenEncoded value)
+        public QueueNameTaken(Peal.QueueNameTakenEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.ChannelSetNameTakenEncoded Value { get; set; }
+        internal Peal.QueueNameTakenEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.ChannelSetNameTaken(
-            Peal.ChannelSetNameTakenEncoded value
+        public static implicit operator ConflictErrorBody.QueueNameTaken(
+            Peal.QueueNameTakenEncoded value
         ) => new(value);
     }
 
     /// <summary>
-    /// Discriminated union type for TooManyChannelSets
+    /// Discriminated union type for TooManyQueues
     /// </summary>
     [Serializable]
-    public struct TooManyChannelSets
+    public struct TooManyQueues
     {
-        public TooManyChannelSets(Peal.TooManyChannelSetsEncoded value)
+        public TooManyQueues(Peal.TooManyQueuesEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.TooManyChannelSetsEncoded Value { get; set; }
+        internal Peal.TooManyQueuesEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.TooManyChannelSets(
-            Peal.TooManyChannelSetsEncoded value
+        public static implicit operator ConflictErrorBody.TooManyQueues(
+            Peal.TooManyQueuesEncoded value
         ) => new(value);
     }
 }

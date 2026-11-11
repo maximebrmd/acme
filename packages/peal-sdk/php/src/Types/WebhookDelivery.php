@@ -32,6 +32,12 @@ class WebhookDelivery extends JsonSerializableType
     public ?int $durationMs;
 
     /**
+     * @var string $endpointId
+     */
+    #[JsonProperty('endpointId')]
+    public string $endpointId;
+
+    /**
      * @var ?value-of<WebhookAttemptError> $error
      */
     #[JsonProperty('error')]
@@ -74,6 +80,12 @@ class WebhookDelivery extends JsonSerializableType
     public ?string $nextAttemptAt;
 
     /**
+     * @var ?string $redeliveryOf
+     */
+    #[JsonProperty('redeliveryOf')]
+    public ?string $redeliveryOf;
+
+    /**
      * @var ?string $responseExcerpt
      */
     #[JsonProperty('responseExcerpt')]
@@ -92,21 +104,37 @@ class WebhookDelivery extends JsonSerializableType
     public string $status;
 
     /**
+     * @var ?string $workspaceExternalId
+     */
+    #[JsonProperty('workspaceExternalId')]
+    public ?string $workspaceExternalId;
+
+    /**
+     * @var string $workspaceId
+     */
+    #[JsonProperty('workspaceId')]
+    public string $workspaceId;
+
+    /**
      * @param array{
      *   attempts: int,
      *   createdAt: string,
+     *   endpointId: string,
      *   eventId: string,
      *   eventType: value-of<WebhookEventType>,
      *   id: string,
      *   status: value-of<WebhookDeliveryStatus>,
+     *   workspaceId: string,
      *   completedAt?: ?string,
      *   durationMs?: ?int,
      *   error?: ?value-of<WebhookAttemptError>,
      *   failureReason?: ?value-of<WebhookDeliveryFailure>,
      *   lastAttemptAt?: ?string,
      *   nextAttemptAt?: ?string,
+     *   redeliveryOf?: ?string,
      *   responseExcerpt?: ?string,
      *   responseStatus?: ?int,
+     *   workspaceExternalId?: ?string,
      * } $values
      */
     public function __construct(
@@ -116,6 +144,7 @@ class WebhookDelivery extends JsonSerializableType
         $this->completedAt = $values['completedAt'] ?? null;
         $this->createdAt = $values['createdAt'];
         $this->durationMs = $values['durationMs'] ?? null;
+        $this->endpointId = $values['endpointId'];
         $this->error = $values['error'] ?? null;
         $this->eventId = $values['eventId'];
         $this->eventType = $values['eventType'];
@@ -123,9 +152,12 @@ class WebhookDelivery extends JsonSerializableType
         $this->id = $values['id'];
         $this->lastAttemptAt = $values['lastAttemptAt'] ?? null;
         $this->nextAttemptAt = $values['nextAttemptAt'] ?? null;
+        $this->redeliveryOf = $values['redeliveryOf'] ?? null;
         $this->responseExcerpt = $values['responseExcerpt'] ?? null;
         $this->responseStatus = $values['responseStatus'] ?? null;
         $this->status = $values['status'];
+        $this->workspaceExternalId = $values['workspaceExternalId'] ?? null;
+        $this->workspaceId = $values['workspaceId'];
     }
 
     /**

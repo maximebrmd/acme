@@ -50,6 +50,10 @@ const refusalOf = (refusal: PostRefusal): string =>
       violations.map(violationOf).join("; "),
     PostNotFound: () =>
       "the post its idempotency key made was deleted: give the row a new key to make it again",
+    QueueHasNoRoom: () =>
+      "its queue has no free slot: add slots with peal queues update --slot, or give the row a time",
+    QueueNotFound: () =>
+      "it names a queue the workspace does not have: peal queues list shows them",
     ScheduleInPast: () => "its time has passed: give it a later one, or now",
     SignatureNotFound: () =>
       "it names a signature the workspace does not have: peal signatures list shows them",

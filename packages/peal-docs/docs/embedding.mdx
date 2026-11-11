@@ -254,6 +254,10 @@ Every payload names its workspace twice: `data.workspaceId`, Peal's id, and `wor
 
 [Webhooks](/webhooks) tells how deliveries are signed, verified, retried and logged. An endpoint of one customer's workspace, with the default scope, hears that workspace alone.
 
+### Staging apart, with a workspace filter [#webhooks-staging]
+
+To keep your staging environment's customers apart from production's, give each environment a partner endpoint of its own and list, in `workspaceIds` (200 at most), the workspaces it should hear: your staging endpoint hears your test customers, and your production endpoint, with no list, every workspace. Your home workspace is heard only when it is listed. Change the list as you add test customers with `PATCH …/webhooks/{endpointId}`. The deliveries of every endpoint, with each one's workspace and your id for it, are in your home workspace's [log across endpoints](/webhooks#log), where the failed ones can be sent again together.
+
 ## Offboard a customer [#offboard]
 
 ```typescript

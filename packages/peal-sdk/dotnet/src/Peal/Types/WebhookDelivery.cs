@@ -23,6 +23,9 @@ public record WebhookDelivery : IJsonOnDeserialized
     [JsonPropertyName("durationMs")]
     public int? DurationMs { get; set; }
 
+    [JsonPropertyName("endpointId")]
+    public required string EndpointId { get; set; }
+
     [JsonPropertyName("error")]
     public WebhookAttemptError? Error { get; set; }
 
@@ -44,6 +47,9 @@ public record WebhookDelivery : IJsonOnDeserialized
     [JsonPropertyName("nextAttemptAt")]
     public string? NextAttemptAt { get; set; }
 
+    [JsonPropertyName("redeliveryOf")]
+    public string? RedeliveryOf { get; set; }
+
     [JsonPropertyName("responseExcerpt")]
     public string? ResponseExcerpt { get; set; }
 
@@ -52,6 +58,12 @@ public record WebhookDelivery : IJsonOnDeserialized
 
     [JsonPropertyName("status")]
     public required WebhookDeliveryStatus Status { get; set; }
+
+    [JsonPropertyName("workspaceExternalId")]
+    public string? WorkspaceExternalId { get; set; }
+
+    [JsonPropertyName("workspaceId")]
+    public required string WorkspaceId { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

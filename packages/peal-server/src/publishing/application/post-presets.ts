@@ -57,12 +57,24 @@ export interface PresetRequest extends PresetAsk {
   readonly options: readonly ChannelOptions[];
 }
 
-/** Channels of a set a post could not take: disconnected since. */
-export interface DroppedChannels {
-  readonly channelIds: readonly [ChannelId, ...ChannelId[]];
-  readonly setId: string;
-  readonly setName: string;
-}
+/**
+ * Channels a post could not take, disconnected since: those of a set it
+ * named, or of the queue it was added to, which it went to as it named
+ * none.
+ */
+export type DroppedChannels =
+  | {
+      readonly _tag: "set";
+      readonly channelIds: readonly [ChannelId, ...ChannelId[]];
+      readonly setId: string;
+      readonly setName: string;
+    }
+  | {
+      readonly _tag: "queue";
+      readonly channelIds: readonly [ChannelId, ...ChannelId[]];
+      readonly queueId: string;
+      readonly queueName: string;
+    };
 
 /** The post as it is once everything it named is filled in. */
 export interface PresetPost {
@@ -206,7 +218,14 @@ export class PostPresets extends Context.Service<
           );
 
           return Arr.isReadonlyArrayNonEmpty(gone)
-            ? [{ channelIds: gone, setId: set.id, setName: set.name }]
+            ? [
+                {
+                  _tag: "set",
+                  channelIds: gone,
+                  setId: set.id,
+                  setName: set.name,
+                },
+              ]
             : [];
         });
 

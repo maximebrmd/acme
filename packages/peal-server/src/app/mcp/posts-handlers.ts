@@ -1,4 +1,11 @@
-import { DateTime, Duration, Effect, Option, Result } from "effect";
+import {
+  Array as Arr,
+  DateTime,
+  Duration,
+  Effect,
+  Option,
+  Result,
+} from "effect";
 import {
   CurrentMember,
   defaultDraftPageSize,
@@ -7,17 +14,23 @@ import {
 import type {
   BulkPostResult,
   ChannelOptions as ChannelOptionsInput,
+  PostTiming,
 } from "peal-contract";
 
 import { PostTools } from "#app/mcp/posts-tools.ts";
+import type { ToolTiming } from "#app/mcp/posts-tools.ts";
+import { queueReferenced } from "#app/mcp/queue-reference.ts";
 import {
   notAllowed,
   planRefusal,
   presetRefusals,
+  queueHasNoRoom,
+  unknownQueue,
   refuse,
   unknownSignature,
   unknownTags,
 } from "#app/mcp/refusals.ts";
+import type { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { keyAt, readPost, sendRead } from "#publishing/api/post-batch.ts";
 import { checkRequestFrom } from "#publishing/api/post-check-input.ts";
 import { validationOf } from "#publishing/api/post-check-view.ts";
@@ -46,9 +59,11 @@ import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PostSearch } from "#publishing/application/post-search.ts";
+import { Queues } from "#publishing/application/queues.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
+import { queueKeyOf } from "#publishing/domain/queue.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 import type { Actor } from "#shared/domain/access.ts";
@@ -145,6 +160,62 @@ export const PostToolsLive = PostTools.toLayer(
     const tiktok = yield* TikTokCreatorInfo;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
+    const queues = yield* Queues;
+
+    // A post's time as the API takes it: a queue named by its id or its
+    // name, found among the workspace's, or a refusal saying which.
+    const timingOf = (
+      member: Actor,
+      given: ToolTiming
+    ): Effect.Effect<PostTiming, ToolRefused, CurrentMember> =>
+      given._tag === "queue"
+        ? queueReferenced(queues, member, given.queue).pipe(
+            Effect.map(({ queue }): PostTiming => ({
+              _tag: "queue",
+              queueId: queue.id,
+            }))
+          )
+        : Effect.succeed(given);
+
+    // The same for posts of one call, each refused on its own: a queue
+    // named by a name the workspace lacks is left for the API to refuse.
+    const timingsOf = Effect.fn("mcp.timingsOf")(function* timingsOf(
+      member: Actor,
+      given: readonly ToolTiming[]
+    ) {
+      const kept = given.some(({ _tag }) => _tag === "queue")
+        ? yield* queues.list(member).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read queues"),
+            })
+          )
+        : [];
+
+      return given.map((timing): PostTiming => {
+        if (timing._tag !== "queue") {
+          return timing;
+        }
+
+        const wanted = timing.queue?.trim() ?? "";
+
+        const found =
+          wanted === ""
+            ? kept.find(({ queue }) => queue.isDefault)
+            : (kept.find(({ queue }) => queue.id === wanted) ??
+              kept.find(
+                ({ queue }) => queueKeyOf(queue.name) === queueKeyOf(wanted)
+              ));
+
+        if (found !== undefined) {
+          return { _tag: "queue", queueId: found.queue.id };
+        }
+
+        return wanted === ""
+          ? { _tag: "queue" }
+          : { _tag: "queue", queueId: wanted };
+      });
+    });
 
     // The options a draft has on those of `channels` it is for already.
     const keptOptions = Effect.fn("keptOptions")(function* keptOptions(
@@ -313,7 +384,10 @@ export const PostToolsLive = PostTools.toLayer(
         ),
       create_post: ({ idempotencyKey, waitSeconds = 0, ...post }) =>
         Effect.gen(function* createPost() {
-          const request = yield* sendRequestFrom(post, idempotencyKey);
+          const request = yield* sendRequestFrom(
+            { ...post, when: yield* timingOf(yield* actor, post.when) },
+            idempotencyKey
+          );
 
           const sent = yield* scheduling.send(yield* actor, request).pipe(
             Effect.catchTags({
@@ -338,6 +412,8 @@ export const PostToolsLive = PostTools.toLayer(
                 refuse(
                   "The post this idempotencyKey made was deleted since: nothing was made. Use a new key to make it again."
                 ),
+              QueueHasNoRoom: queueHasNoRoom,
+              QueueNotFound: unknownQueue,
               UnknownTags: unknownTags,
             })
           );
@@ -352,15 +428,24 @@ export const PostToolsLive = PostTools.toLayer(
           Effect.catchTags({
             ...malformedContent,
             ...badZone,
+            QueueNotFound: unknownQueue,
             SignatureNotFound: unknownSignature,
             UnknownTags: unknownTags,
           })
         ),
       create_posts: ({ idempotencyKey, posts }) =>
         Effect.gen(function* createPosts() {
+          const timings = yield* timingsOf(
+            yield* actor,
+            posts.map(({ when }) => when)
+          );
+
           const read = yield* Effect.all(
             posts.map(({ idempotencyKey: own, ...post }, index) =>
-              readPost(post, keyAt(own, idempotencyKey, "bulk", index))
+              readPost(
+                { ...post, when: timings[index] ?? { _tag: "queue" } },
+                keyAt(own, idempotencyKey, "bulk", index)
+              )
             )
           );
 
@@ -552,6 +637,43 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(published);
         }).pipe(Effect.catchTags({ ...malformedPost, ...badZone })),
+      queue_post: ({ channelIds, postId, queue }) =>
+        Effect.gen(function* queuePost() {
+          const id = yield* postIdFrom(postId);
+          const member = yield* publisher;
+
+          const { queue: chosen } = yield* queueReferenced(
+            queues,
+            member,
+            queue
+          );
+
+          const named =
+            channelIds === undefined ? [] : yield* channelIdsFrom(channelIds);
+
+          const placed = yield* scheduling
+            .enqueue(member, id, {
+              channelIds: Arr.isReadonlyArrayNonEmpty(named)
+                ? Option.some(named)
+                : Option.none(),
+              queueId: Option.some(chosen.id),
+            })
+            .pipe(
+              Effect.catchTags({
+                ...schedulingFailures,
+                ChannelSetNotFound: presetRefusals.ChannelSetNotFound,
+                QueueHasNoRoom: queueHasNoRoom,
+                QueueNotFound: unknownQueue,
+              })
+            );
+
+          return postView(placed);
+        }).pipe(
+          Effect.catchTags({
+            ...malformedPost,
+            UnknownChannels: unknownChannels,
+          })
+        ),
       repost_target: ({ postId, targetId }) =>
         Effect.gen(function* repost() {
           const reposted = yield* followUp
@@ -694,20 +816,30 @@ export const PostToolsLive = PostTools.toLayer(
             UnknownTags: unknownTags,
           })
         ),
-      validate_post: (post) =>
+      validate_post: ({ when, ...post }) =>
         Effect.gen(function* validatePost() {
-          const read = yield* checkRequestFrom(post);
+          const read = yield* checkRequestFrom(
+            when === undefined
+              ? post
+              : { ...post, when: yield* timingOf(yield* actor, when) }
+          );
 
           const check = yield* checks.check(yield* actor, read.request).pipe(
             Effect.catchTags({
               ...presetRefusals,
               DatabaseError: Effect.die,
               MissingPermission: notAllowed("read posts"),
+              QueueNotFound: unknownQueue,
             })
           );
 
           return yield* toValidation(check, read);
-        }).pipe(Effect.catchTag("SignatureNotFound", unknownSignature)),
+        }).pipe(
+          Effect.catchTags({
+            QueueNotFound: unknownQueue,
+            SignatureNotFound: unknownSignature,
+          })
+        ),
     });
   })
 );

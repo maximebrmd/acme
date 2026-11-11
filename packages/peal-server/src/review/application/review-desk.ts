@@ -346,6 +346,7 @@ export class ReviewDesk extends Context.Service<
             yield* outcomes.approved({
               authorId: post.authorId,
               by,
+              channelIds: post.channels.map(({ channelId }) => channelId),
               key: `approval-decision:${request.id}`,
               late: released.value.late,
               postId: post.postId,
@@ -393,6 +394,7 @@ export class ReviewDesk extends Context.Service<
               yield* outcomes.changesRequested({
                 authorId: post.authorId,
                 by,
+                channelIds: post.channels.map(({ channelId }) => channelId),
                 key: `approval-decision:${request.id}`,
                 postId: post.postId,
                 requestedBy: request.requestedBy,

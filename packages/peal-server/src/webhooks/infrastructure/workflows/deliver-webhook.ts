@@ -8,7 +8,7 @@ import type { WebhookDeliveryId } from "#webhooks/domain/webhook-delivery-id.ts"
 
 // Persisted contract: the tag, the payload, the idempotency key, the
 // activity names `attempt/<n>` and `attempt/<n>/again/<k>`, the clock names
-// `retry/<n>` and `recover/<n>/<k>`, and every result schema. Add payload
+// `start`, `retry/<n>` and `recover/<n>/<k>`, and every result schema. Add payload
 // fields with a decoding default, never rename or remove one; for anything
 // else, add DeliverWebhookV2 beside this one.
 
@@ -30,7 +30,14 @@ export const AttemptResultSchema = Schema.Literals([
  */
 export const DeliverWebhookV1 = Workflow.make("DeliverWebhookV1", {
   idempotencyKey: ({ deliveryId }) => deliveryId,
-  payload: { deliveryId: WebhookDeliveryIdSchema },
+  payload: {
+    deliveryId: WebhookDeliveryIdSchema,
+    // How long to wait before the first attempt, to space out deliveries
+    // sent again together; none for those started before it was asked.
+    startAfterMillis: Schema.Int.pipe(
+      Schema.withDecodingDefault(Effect.succeed(0))
+    ),
+  },
 });
 
 // An activity's result is stored once and replayed. A database blip must
@@ -106,7 +113,16 @@ const recorded = Effect.fn("DeliverWebhookV1.recorded")(function* recorded(
 });
 
 export const DeliverWebhookV1Live = DeliverWebhookV1.toLayer(
-  Effect.fn("DeliverWebhookV1")(function* deliverWebhook({ deliveryId }) {
+  Effect.fn("DeliverWebhookV1")(function* deliverWebhook({
+    deliveryId,
+    startAfterMillis,
+  }) {
+    // A few seconds at most: slept in memory, and again after a restart.
+    yield* DurableClock.sleep({
+      duration: Duration.millis(startAfterMillis),
+      name: "start",
+    });
+
     let number = 1;
     let result = yield* recorded(deliveryId, number);
 

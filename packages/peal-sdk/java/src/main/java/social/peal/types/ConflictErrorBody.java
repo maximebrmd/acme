@@ -26,36 +26,36 @@ public final class ConflictErrorBody {
         return value.visit(visitor);
     }
 
-    public static ConflictErrorBody channelSetNameTaken(ChannelSetNameTakenEncoded value) {
-        return new ConflictErrorBody(new ChannelSetNameTakenValue(value));
+    public static ConflictErrorBody queueNameTaken(QueueNameTakenEncoded value) {
+        return new ConflictErrorBody(new QueueNameTakenValue(value));
     }
 
-    public static ConflictErrorBody tooManyChannelSets(TooManyChannelSetsEncoded value) {
-        return new ConflictErrorBody(new TooManyChannelSetsValue(value));
+    public static ConflictErrorBody tooManyQueues(TooManyQueuesEncoded value) {
+        return new ConflictErrorBody(new TooManyQueuesValue(value));
     }
 
-    public boolean isChannelSetNameTaken() {
-        return value instanceof ChannelSetNameTakenValue;
+    public boolean isQueueNameTaken() {
+        return value instanceof QueueNameTakenValue;
     }
 
-    public boolean isTooManyChannelSets() {
-        return value instanceof TooManyChannelSetsValue;
+    public boolean isTooManyQueues() {
+        return value instanceof TooManyQueuesValue;
     }
 
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<ChannelSetNameTakenEncoded> getChannelSetNameTaken() {
-        if (isChannelSetNameTaken()) {
-            return Optional.of(((ChannelSetNameTakenValue) value).value);
+    public Optional<QueueNameTakenEncoded> getQueueNameTaken() {
+        if (isQueueNameTaken()) {
+            return Optional.of(((QueueNameTakenValue) value).value);
         }
         return Optional.empty();
     }
 
-    public Optional<TooManyChannelSetsEncoded> getTooManyChannelSets() {
-        if (isTooManyChannelSets()) {
-            return Optional.of(((TooManyChannelSetsValue) value).value);
+    public Optional<TooManyQueuesEncoded> getTooManyQueues() {
+        if (isTooManyQueues()) {
+            return Optional.of(((TooManyQueuesValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,47 +89,46 @@ public final class ConflictErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitChannelSetNameTaken(ChannelSetNameTakenEncoded channelSetNameTaken);
+        T visitQueueNameTaken(QueueNameTakenEncoded queueNameTaken);
 
-        T visitTooManyChannelSets(TooManyChannelSetsEncoded tooManyChannelSets);
+        T visitTooManyQueues(TooManyQueuesEncoded tooManyQueues);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(ChannelSetNameTakenValue.class), @JsonSubTypes.Type(TooManyChannelSetsValue.class)
-    })
+    @JsonSubTypes({@JsonSubTypes.Type(QueueNameTakenValue.class), @JsonSubTypes.Type(TooManyQueuesValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("ChannelSetNameTaken")
+    @JsonTypeName("QueueNameTaken")
     @JsonIgnoreProperties("_tag")
-    private static final class ChannelSetNameTakenValue implements Value {
+    private static final class QueueNameTakenValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private ChannelSetNameTakenEncoded value;
+        private QueueNameTakenEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private ChannelSetNameTakenValue() {}
+        private QueueNameTakenValue() {}
 
-        private ChannelSetNameTakenValue(ChannelSetNameTakenEncoded value) {
+        private QueueNameTakenValue(QueueNameTakenEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitChannelSetNameTaken(value);
+            return visitor.visitQueueNameTaken(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof ChannelSetNameTakenValue && equalTo((ChannelSetNameTakenValue) other);
+            return other instanceof QueueNameTakenValue && equalTo((QueueNameTakenValue) other);
         }
 
-        private boolean equalTo(ChannelSetNameTakenValue other) {
+        private boolean equalTo(QueueNameTakenValue other) {
             return value.equals(other.value);
         }
 
@@ -144,32 +143,32 @@ public final class ConflictErrorBody {
         }
     }
 
-    @JsonTypeName("TooManyChannelSets")
+    @JsonTypeName("TooManyQueues")
     @JsonIgnoreProperties("_tag")
-    private static final class TooManyChannelSetsValue implements Value {
+    private static final class TooManyQueuesValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private TooManyChannelSetsEncoded value;
+        private TooManyQueuesEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private TooManyChannelSetsValue() {}
+        private TooManyQueuesValue() {}
 
-        private TooManyChannelSetsValue(TooManyChannelSetsEncoded value) {
+        private TooManyQueuesValue(TooManyQueuesEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitTooManyChannelSets(value);
+            return visitor.visitTooManyQueues(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof TooManyChannelSetsValue && equalTo((TooManyChannelSetsValue) other);
+            return other instanceof TooManyQueuesValue && equalTo((TooManyQueuesValue) other);
         }
 
-        private boolean equalTo(TooManyChannelSetsValue other) {
+        private boolean equalTo(TooManyQueuesValue other) {
             return value.equals(other.value);
         }
 

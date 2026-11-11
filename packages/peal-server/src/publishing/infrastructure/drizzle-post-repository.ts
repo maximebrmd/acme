@@ -99,6 +99,7 @@ const toStored = (row: PostRow) =>
         text: row.text,
       },
       id: row.id,
+      queueId: Option.fromNullOr(row.queueId),
       scheduleRevision: row.scheduleRevision,
       status: postStatusOf(row),
       tagIds: row.tagIds,
@@ -484,6 +485,7 @@ export const DrizzlePostRepository = Layer.effect(
             ...postColumns(post),
             authorId: Option.getOrNull(post.authorId),
             id: post.id,
+            queueId: Option.getOrNull(post.queueId),
             tagIds: [...post.tagIds],
             workspaceId: post.workspaceId,
           });
@@ -676,7 +678,16 @@ export const DrizzlePostRepository = Layer.effect(
       update: (next, current) =>
         db
           .update(posts)
-          .set(postColumns(next))
+          .set(
+            // The queue is written only when one placed it anew: a write
+            // that settles the post never names a queue deleted meanwhile.
+            Option.getOrNull(next.queueId) === Option.getOrNull(current.queueId)
+              ? postColumns(next)
+              : {
+                  ...postColumns(next),
+                  queueId: Option.getOrNull(next.queueId),
+                }
+          )
           .where(
             and(
               eq(posts.id, current.id),

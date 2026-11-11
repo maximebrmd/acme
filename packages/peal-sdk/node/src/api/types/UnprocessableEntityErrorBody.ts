@@ -4,14 +4,14 @@ import * as Peal from "../index.js";
 
 export type UnprocessableEntityErrorBody = 
     | Peal.UnprocessableEntityErrorBody.UnknownChannels
-    | Peal.UnprocessableEntityErrorBody.PostContentInvalid;
+    | Peal.UnprocessableEntityErrorBody.InvalidTimeZone;
 
 export namespace UnprocessableEntityErrorBody {
     export interface UnknownChannels extends Peal.UnknownChannelsEncoded {
         _tag: "UnknownChannels";
     }
 
-    export interface PostContentInvalid extends Peal.PostContentInvalidEncoded {
-        _tag: "PostContentInvalid";
+    export interface InvalidTimeZone extends Peal.InvalidTimeZoneEncoded {
+        _tag: "InvalidTimeZone";
     }
 }

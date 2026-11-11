@@ -122,6 +122,17 @@ const fromRow = (row: Row): Effect.Effect<MediaAsset> =>
 const byId = (workspaceId: WorkspaceId, assetId: MediaAssetId) =>
   and(eq(mediaAssets.workspaceId, workspaceId), eq(mediaAssets.id, assetId));
 
+// The files that take room: uploaded and ready ones, and uploads started
+// after `pendingSince`, which may still arrive.
+const takingRoom = (pendingSince: DateTime.Utc) =>
+  or(
+    inArray(mediaAssets.status, ["uploaded", "ready"]),
+    and(
+      eq(mediaAssets.status, "pending"),
+      gt(mediaAssets.createdAt, DateTime.toDate(pendingSince))
+    )
+  );
+
 /**
  * Media assets in Postgres, through Drizzle. A database failure is a defect
  * here: no caller can do better than report it.
@@ -145,18 +156,51 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           .where(
             and(
               eq(mediaAssets.workspaceId, workspaceId),
-              or(
-                inArray(mediaAssets.status, ["uploaded", "ready"]),
-                and(
-                  eq(mediaAssets.status, "pending"),
-                  gt(mediaAssets.createdAt, DateTime.toDate(pendingSince))
-                )
-              )
+              takingRoom(pendingSince)
             )
           )
           .pipe(Effect.orDie);
 
         return Number(row?.bytes ?? "0");
+      }
+    );
+
+    const storedBytesIn = Effect.fn("MediaAssets.storedBytesIn")(
+      function* storedBytesIn(
+        workspaceIds: readonly WorkspaceId[],
+        pendingSince: DateTime.Utc
+      ) {
+        if (workspaceIds.length === 0) {
+          return new Map<WorkspaceId, number>();
+        }
+
+        const rows = yield* db
+          .select({
+            bytes: sql<string>`sum(${mediaAssets.byteSize})::text`,
+            workspaceId: mediaAssets.workspaceId,
+          })
+          .from(mediaAssets)
+          .where(
+            and(
+              inArray(mediaAssets.workspaceId, [...workspaceIds]),
+              takingRoom(pendingSince)
+            )
+          )
+          .groupBy(mediaAssets.workspaceId)
+          .pipe(Effect.orDie);
+
+        const stored = new Map(
+          rows.map((row) => [row.workspaceId, Number(row.bytes)])
+        );
+
+        // Keyed by the ids asked for, which are the workspaces' own.
+        return new Map(
+          workspaceIds.flatMap((id) => {
+            const bytes = stored.get(id);
+
+            return bytes === undefined ? [] : [[id, bytes] as const];
+          })
+        );
       }
     );
 
@@ -333,6 +377,7 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           .pipe(Effect.orDie);
       }),
       storedBytes,
+      storedBytesIn,
       update,
       updateWithin,
     });

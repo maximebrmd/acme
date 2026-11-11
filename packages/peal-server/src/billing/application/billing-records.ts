@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Option, Schema } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { entitlementsOf } from "#billing/domain/entitlements.ts";
 import {
@@ -21,6 +21,7 @@ import { ContractReferences } from "./ports/contract-references.ts";
 import { ContractRequests } from "./ports/contract-requests.ts";
 import { MeteredPostLedger } from "./ports/metered-post-ledger.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
+import { UsageLedger } from "./ports/usage-ledger.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
 import { WorkspaceStillBilled } from "./workspace-still-billed.ts";
 import type { BilledSubscription } from "./workspace-still-billed.ts";
@@ -76,7 +77,8 @@ const refuseBilled: ErasureOptions = { cancelSubscriptions: false };
 /**
  * What billing keeps of a workspace as a whole, for the workspace context
  * when a workspace's data is exported or erased: its plan, the state of
- * its subscriptions and its counts of metered posts, never a card, an
+ * its subscriptions, its counts of metered posts and its usage ledger,
+ * never a card, an
  * invoice or Stripe's ids, which stay with Stripe.
  *
  * Erasing takes two steps. Stripe's side goes first, outside the erasure's
@@ -104,8 +106,9 @@ export class BillingRecords extends Context.Service<
   BillingRecords,
   {
     /**
-     * The workspace's plan, every subscription it has had, and how many
-     * posts it made each month on platforms that bill per post.
+     * The workspace's plan, every subscription it has had, how many posts
+     * it made each month on platforms that bill per post, and its usage
+     * ledger.
      */
     readonly exportWorkspace: (
       workspaceId: WorkspaceId
@@ -165,6 +168,7 @@ export class BillingRecords extends Context.Service<
       const subscriptions = yield* Subscriptions;
       const checkouts = yield* Checkouts;
       const metered = yield* MeteredPostLedger;
+      const usage = yield* UsageLedger;
       const contracts = yield* ContractRecords;
       const requests = yield* ContractRequests;
       const references = yield* ContractReferences;
@@ -213,6 +217,7 @@ export class BillingRecords extends Context.Service<
         function* exportWorkspace(workspaceId: WorkspaceId) {
           const held = yield* subscriptions.ofWorkspace(workspaceId);
           const counted = yield* metered.ofWorkspace(workspaceId);
+          const used = yield* usage.allOf(workspaceId);
 
           const record: BillingRecord = {
             meteredPosts: counted.map((count) => ({
@@ -227,6 +232,12 @@ export class BillingRecords extends Context.Service<
               currentPeriodEnd: Option.getOrNull(subscription.currentPeriodEnd),
               plan: subscription.plan,
               status: subscription.status,
+            })),
+            usage: used.map((entry) => ({
+              day: DateTime.formatIsoDateUtc(entry.day),
+              dimension: entry.dimension,
+              meter: entry.meter,
+              quantity: entry.quantity,
             })),
           };
 
@@ -331,6 +342,7 @@ export class BillingRecords extends Context.Service<
 
           yield* subscriptions.eraseWorkspace(workspaceId);
           yield* metered.eraseWorkspace(workspaceId);
+          yield* usage.eraseWorkspace(workspaceId);
           // Its requests stay without it, as its orders do; its contract
           // numbers find nothing more.
           yield* requests.eraseWorkspace(workspaceId);
