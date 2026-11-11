@@ -99,6 +99,7 @@ export const WorkspacePeopleLive = Layer.effect(
           joinedAt: member.createdAt,
           name: user.name,
           role: member.role,
+          twoStepEnabled: user.twoFactorEnabled,
           userId: user.id,
         })
         .from(member)
@@ -112,6 +113,7 @@ export const WorkspacePeopleLive = Layer.effect(
         joinedAt: utc(row.joinedAt),
         name: row.name,
         role: row.role,
+        twoStepEnabled: row.twoStepEnabled === true,
         userId: UserIdSchema.make(row.userId),
       }));
     });

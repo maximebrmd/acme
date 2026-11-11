@@ -49,6 +49,7 @@ const seated = [
     joinedAt: at,
     name: "User",
     role: "owner",
+    twoStepEnabled: true,
     userId,
   },
   {
@@ -56,6 +57,7 @@ const seated = [
     joinedAt: at,
     name: "Colleague",
     role: "editor",
+    twoStepEnabled: false,
     userId: colleagueId,
   },
   {
@@ -63,6 +65,7 @@ const seated = [
     joinedAt: at,
     name: "Guest",
     role: "viewer",
+    twoStepEnabled: false,
     userId: guestId,
   },
 ];
@@ -343,8 +346,26 @@ describe(WorkspaceMembers, () => {
         )
       );
 
+      const managed = yield* run("admin", () =>
+        WorkspaceMembers.use((members) =>
+          members.list(actor("admin", inPerson))
+        )
+      );
+
       assert.strictEqual(refused, "UserRequired");
-      assert.deepStrictEqual(listed, seated);
+      // Whether each has two-step verification on, only to who manages
+      // members.
+      assert.deepStrictEqual(
+        listed,
+        seated.map((seat) => ({ ...seat, twoStepEnabled: Option.none() }))
+      );
+      assert.deepStrictEqual(
+        managed,
+        seated.map((seat) => ({
+          ...seat,
+          twoStepEnabled: Option.some(seat.twoStepEnabled),
+        }))
+      );
     })
   );
 });

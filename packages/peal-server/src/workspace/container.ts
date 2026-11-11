@@ -39,6 +39,7 @@ import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
 import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";
 import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
+import { WorkspaceSecurity } from "#workspace/application/workspace-security.ts";
 import { AccountModerationLive } from "#workspace/infrastructure/auth/account-moderation.ts";
 import { ApiKeyIssuerLive } from "#workspace/infrastructure/auth/api-key-issuer.ts";
 import { BetterAuthLive } from "#workspace/infrastructure/auth/better-auth.ts";
@@ -114,7 +115,8 @@ const UseCasesLive = Layer.mergeAll(
   StaffStanding.layer,
   WorkspaceContacts.layer,
   WorkspaceMembers.layer,
-  WorkspaceSeats.layer
+  WorkspaceSeats.layer,
+  WorkspaceSecurity.layer
 );
 
 // What the staff console reads of accounts and workspaces, and does to

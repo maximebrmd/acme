@@ -234,7 +234,11 @@ const signedInGroupsLive = (
       })
     ),
     HttpApiBuilder.group(Api, "workspaces", (handlers) =>
-      handlers.handleAll({ delete: () => refusing })
+      handlers.handleAll({
+        delete: () => refusing,
+        secure: () => refusing,
+        security: () => refusing,
+      })
     ),
     HttpApiBuilder.group(Api, "partner", (handlers) =>
       handlers.handleAll({

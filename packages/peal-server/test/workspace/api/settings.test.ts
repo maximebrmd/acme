@@ -44,6 +44,7 @@ import { PasswordCheck } from "#workspace/application/password-check.ts";
 import { PrivacyDeclaration } from "#workspace/application/privacy-declaration.ts";
 import { TooManyPasswordAttempts } from "#workspace/application/too-many-password-attempts.ts";
 import { WorkspaceBusy } from "#workspace/application/workspace-busy.ts";
+import { WorkspaceSecurity } from "#workspace/application/workspace-security.ts";
 import { WorkspaceSubscribed } from "#workspace/application/workspace-subscribed.ts";
 import type { MembershipStanding } from "#workspace/domain/account-closure.ts";
 import { undeclared } from "#workspace/domain/operator-declaration.ts";
@@ -501,7 +502,15 @@ const UseCasesLive = Layer.mergeAll(
   AccountData.layer,
   CloseAccount.layer,
   ConnectedApps.layer,
-  DeleteWorkspace.layer
+  DeleteWorkspace.layer,
+  // Security policies are tested on the whole server.
+  Layer.succeed(
+    WorkspaceSecurity,
+    WorkspaceSecurity.of({
+      read: () => Effect.die("not used"),
+      require: () => Effect.die("not used"),
+    })
+  )
 ).pipe(Layer.provide(PortsLive));
 
 const HandlersLive = Layer.mergeAll(

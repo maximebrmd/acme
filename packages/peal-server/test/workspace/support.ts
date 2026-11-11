@@ -11,7 +11,9 @@ import { Effect, Option, Redacted, Schema } from "effect";
 import { lookupKeysOf } from "#shared/infrastructure/stripe-settings.ts";
 import {
   bodyOf,
+  origin,
   password,
+  signedUp,
   TestApp,
 } from "#test/workspace/integration/harness.ts";
 import type { Person, Reply } from "#test/workspace/integration/harness.ts";
@@ -272,3 +274,90 @@ export const servedRoutes = (
   Object.values(auth.api).flatMap(({ path }: { readonly path?: string }) =>
     path === undefined ? [] : [path]
   );
+
+const SentInvitationSchema = Schema.Struct({ id: Schema.String });
+
+/** Someone the owner invites, who signs up, confirms and joins as `role`. */
+export const joined = Effect.fn("joined")(function* joined(
+  owner: Person,
+  workspaceId: string,
+  label: string,
+  role: string
+) {
+  const app = yield* TestApp;
+  const person = yield* signedUp(label);
+
+  const sent = yield* bodyOf(
+    SentInvitationSchema,
+    yield* app.request(`/api/workspaces/${workspaceId}/invitations`, {
+      body: { email: person.email, role },
+      headers: { cookie: owner.cookies },
+    })
+  );
+
+  const accepted = yield* app.request(
+    "/api/auth/organization/accept-invitation",
+    { body: { invitationId: sent.id }, headers: { cookie: person.cookies } }
+  );
+
+  assert.strictEqual(accepted.status, 200, JSON.stringify(accepted.body));
+
+  return person;
+});
+
+const DeviceCodeSchema = Schema.Struct({
+  device_code: Schema.String,
+  user_code: Schema.String,
+});
+
+const TokensSchema = Schema.Struct({ access_token: Schema.String });
+
+/**
+ * An access token of Peal's command line, which the person signed in with
+ * the device grant from a browser holding these cookies.
+ */
+export const commandLineToken = Effect.fn("commandLineToken")(
+  function* commandLineToken(cookies: string) {
+    const app = yield* TestApp;
+
+    const device = yield* bodyOf(
+      DeviceCodeSchema,
+      yield* app.request("/api/auth/device/code", {
+        form: {
+          client_id: "peal-cli",
+          resource: `${origin}/api`,
+          scope:
+            "offline_access workspace:read workspace:write workspace:publish",
+        },
+      })
+    );
+
+    // The browser opens the device page, which claims the code.
+    const reviewed = yield* app.request(
+      `/api/auth/device?user_code=${device.user_code}`,
+      { headers: { cookie: cookies } }
+    );
+
+    assert.strictEqual(reviewed.status, 200, JSON.stringify(reviewed.body));
+
+    const approved = yield* app.request("/api/auth/device/approve", {
+      body: { userCode: device.user_code },
+      headers: { cookie: cookies },
+    });
+
+    assert.strictEqual(approved.status, 200, JSON.stringify(approved.body));
+
+    const tokens = yield* bodyOf(
+      TokensSchema,
+      yield* app.request("/api/auth/oauth2/token", {
+        form: {
+          client_id: "peal-cli",
+          device_code: device.device_code,
+          grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+        },
+      })
+    );
+
+    return tokens.access_token;
+  }
+);

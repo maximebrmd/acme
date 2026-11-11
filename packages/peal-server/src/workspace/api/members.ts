@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   AlreadyMember,
@@ -16,15 +16,19 @@ import { actorOf } from "#shared/api/actor.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";
-import type { PersonInWorkspace } from "#workspace/application/workspace-people.ts";
+import type { ListedMember } from "#workspace/application/workspace-members.ts";
 import type { Invitation } from "#workspace/domain/invitation.ts";
 
 /** What clients see of a member. */
-export const memberView = (person: PersonInWorkspace): MemberView => ({
+export const memberView = (person: ListedMember): MemberView => ({
   email: person.email,
   joinedAt: person.joinedAt,
   name: person.name,
   role: person.role,
+  ...Option.match(person.twoStepEnabled, {
+    onNone: () => ({}),
+    onSome: (twoStepEnabled) => ({ twoStepEnabled }),
+  }),
   userId: person.userId,
 });
 
