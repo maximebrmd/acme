@@ -101,11 +101,18 @@ const attached = (
     return attachment(media.id);
   });
 
+// Whether the post goes on a queue, named or the default one.
+const queued = (input: {
+  readonly defaultQueue: boolean;
+  readonly queue: Option.Option<string>;
+}) => input.defaultQueue || Option.isSome(input.queue);
+
 // What --dry-run and --wait ask for holds together with the other flags:
 // checked before any request, as a file or an address given as --media
 // would be stored by the time the server refused the rest.
 const checkModes = (input: {
   readonly at: Option.Option<string>;
+  readonly defaultQueue: boolean;
   readonly dryRun: boolean;
   readonly media: readonly string[];
   readonly queue: Option.Option<string>;
@@ -131,10 +138,10 @@ const checkModes = (input: {
 
     if (
       Option.isSome(input.wait) &&
-      (Option.isSome(input.at) || Option.isSome(input.queue))
+      (Option.isSome(input.at) || queued(input))
     ) {
       return yield* refuse(
-        "--wait goes with --now: a post scheduled with --at or --queue goes out later, and peal posts wait <post-id> waits for it then."
+        "--wait goes with --now: a post scheduled with --at, --queue or --default-queue goes out later, and peal posts wait <post-id> waits for it then."
       );
     }
 
@@ -208,6 +215,7 @@ const planned = (input: {
   readonly alt: readonly string[];
   readonly at: Option.Option<string>;
   readonly channels: readonly string[];
+  readonly defaultQueue: boolean;
   readonly idempotencyKey: Option.Option<string>;
   readonly media: readonly string[];
   readonly now: boolean;
@@ -223,24 +231,21 @@ const planned = (input: {
       Option.isSome(input.at),
       input.now,
       Option.isSome(input.queue),
+      input.defaultQueue,
     ].filter(Boolean).length;
 
     if (timings !== 1) {
       return yield* refuse(
         timings > 1
-          ? "Give one of --at, --now and --queue."
-          : "Say when it goes out: --at <instant> to schedule it, --queue to put it on a queue's next free slot, or --now to publish it now. Publishing is never the default."
+          ? "Give one of --at, --now, --queue and --default-queue."
+          : "Say when it goes out: --at <instant> to schedule it, --queue <name-or-id> or --default-queue to put it on a queue's next free slot, or --now to publish it now. Publishing is never the default."
       );
     }
 
     const channelIds = channelIdsOf(input.channels);
 
     // One channel at least, unless a channel set or a queue brings some.
-    if (
-      channelIds.length === 0 &&
-      input.sets.length === 0 &&
-      Option.isNone(input.queue)
-    ) {
+    if (channelIds.length === 0 && input.sets.length === 0 && !queued(input)) {
       return yield* refuse(
         "Name the channels it goes to with --channel, or a channel set with --set: peal channels list shows the channels' ids, and peal sets list the sets."
       );
@@ -273,7 +278,7 @@ const planned = (input: {
     const when: PostTiming = yield* Option.match(input.at, {
       onNone: () =>
         Effect.succeed<PostTiming>(
-          Option.isSome(input.queue)
+          queued(input)
             ? { _tag: "queue" }
             : { _tag: "now", timeZone: input.timeZone }
         ),
@@ -311,12 +316,18 @@ export const post = Command.make(
     at: Flag.String("at").pipe(
       Flag.withMetavar("<instant>"),
       Flag.withDescription(
-        "Schedule it for then: an instant with its offset, such as 2026-11-20T09:00:00Z, or a local time without one, such as 2026-11-20T10:00, read in --time-zone. One of --at and --now is required."
+        "Schedule it for then: an instant with its offset, such as 2026-11-20T09:00:00Z, or a local time without one, such as 2026-11-20T10:00, read in --time-zone. One of --at, --now, --queue and --default-queue is required."
       ),
       Flag.optional
     ),
     channels: channelsFlag(
       "A channel the post goes to, as peal channels list shows its id; repeat it, or separate ids with commas. At least one, unless --set names a channel set."
+    ),
+    defaultQueue: Flag.Boolean("default-queue").pipe(
+      Flag.withDescription(
+        "Put it on the next free slot of the workspace's default queue instead of a time, as peal queues list marks it; --queue <name-or-id> takes another. Without --channel or --set it goes to the queue's channels. The slot is decided when the post is made."
+      ),
+      Flag.withDefault(false)
     ),
     defaultSignatures: defaultSignaturesFlag(
       "Put each channel's default signature under its text, as peal signatures list shows them: the workspace's under the post's text, a platform's or a channel's own under the text that channel has instead. They are then text of the post, counted against each platform's limit; a text that already ends with its signature is left as it is."
@@ -344,7 +355,7 @@ export const post = Command.make(
     ),
     now: Flag.Boolean("now").pipe(
       Flag.withDescription(
-        "Publish it now. Publishing is never the default: one of --at and --now is required."
+        "Publish it now. Publishing is never the default: one of --at, --now, --queue and --default-queue is required."
       ),
       Flag.withDefault(false)
     ),
@@ -356,10 +367,9 @@ export const post = Command.make(
     ),
     partsDelay: thenDelayFlag,
     queue: Flag.String("queue").pipe(
-      Flag.withOptionalValue(""),
-      Flag.withMetavar("name-or-id"),
+      Flag.withMetavar("<name-or-id>"),
       Flag.withDescription(
-        "Put it on the next free slot of a queue instead of a time: --queue alone takes the workspace's default queue, --queue=<name-or-id> another, as peal queues list shows them. Without --channel or --set it goes to the queue's channels. The slot is decided when the post is made."
+        "Put it on the next free slot of that queue instead of a time, by its id or its name, as peal queues list shows them; --default-queue takes the workspace's default queue. Without --channel or --set it goes to the queue's channels. The slot is decided when the post is made."
       ),
       Flag.optional
     ),
@@ -424,10 +434,14 @@ export const post = Command.make(
     // So is a channel set or a signature it lacks, or a queue.
     const presets = yield* presetsOf(session, input);
 
-    const queue = yield* Option.match(input.queue, {
-      onNone: () => Effect.succeed(Option.none<Queue>()),
-      onSome: (given) => queueOf(session, given).pipe(Effect.map(Option.some)),
-    });
+    const queue = yield* Option.match(
+      input.defaultQueue ? Option.some("") : input.queue,
+      {
+        onNone: () => Effect.succeed(Option.none<Queue>()),
+        onSome: (given) =>
+          queueOf(session, given).pipe(Effect.map(Option.some)),
+      }
+    );
 
     const when: PostTiming = Option.match(queue, {
       onNone: () => asked,
@@ -499,6 +513,6 @@ export const post = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Write a post and send it in one command, to the public of the accounts its channels connect: scheduled with --at, put on a queue's next free slot with --queue, or published at once with --now. One of the three is required. --set names a channel set instead of listing its channels, and --signature or --default-signatures puts a signature under its text. Its media are uploaded or imported first, and its text, media and options must fit each platform's rules, or nothing is posted. --dry-run checks it and makes nothing; --wait, with --now, says how it went on each channel."
+    "Write a post and send it in one command, to the public of the accounts its channels connect: scheduled with --at, put on a queue's next free slot with --queue <name-or-id> or --default-queue, or published at once with --now. One of these is required. --set names a channel set instead of listing its channels, and --signature or --default-signatures puts a signature under its text. Its media are uploaded or imported first, and its text, media and options must fit each platform's rules, or nothing is posted. --dry-run checks it and makes nothing; --wait, with --now, says how it went on each channel."
   )
 );

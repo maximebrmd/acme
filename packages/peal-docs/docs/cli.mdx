@@ -225,7 +225,7 @@ peal post "Spring catalogue is out" --channel <channel-id> --now --wait 30
 
 `peal post` writes a post and sends it in one command, to the public of the accounts its channels connect. What goes out cannot be taken back from Peal.
 
-- **When.** `--at` schedules it, `--now` publishes it at once, `--queue` puts it on a [queue's](#queues) next free slot, and one of the three is required: publishing is never the default. `--at` takes an instant with its offset, such as `2026-11-20T09:00:00Z` or `2026-11-20T10:00:00+01:00`, or a local time without one, such as `2026-11-20T10:00`, read in `--time-zone` (or `--zone`), an IANA zone such as `Europe/Paris`. Without the flag, the zone is `TZ`, then your computer's. A local time the clocks skip or repeat in that zone is refused: give the instant with its offset.
+- **When.** `--at` schedules it, `--now` publishes it at once, `--queue <name-or-id>` or `--default-queue` puts it on a [queue's](#queues) next free slot, and one of these is required: publishing is never the default. `--at` takes an instant with its offset, such as `2026-11-20T09:00:00Z` or `2026-11-20T10:00:00+01:00`, or a local time without one, such as `2026-11-20T10:00`, read in `--time-zone` (or `--zone`), an IANA zone such as `Europe/Paris`. Without the flag, the zone is `TZ`, then your computer's. A local time the clocks skip or repeat in that zone is refused: give the instant with its offset.
 - **Where.** `--channel` (or `--channels`) names a channel by its id; repeat it, or separate ids with commas. `--set <id-or-name>` names a [channel set](#sets), and stands for its connected channels: at least one channel or one set. A channel of a set that is no longer connected is left out, and `peal` says which after the post; when none of them is left and no `--channel` is given, nothing is posted.
 - **Media.** Each `--media` is a file, uploaded first; an `https://` address, which the server imports; or the id of a media the workspace has, as `peal media list` shows it. They show in the order given, 20 at most. The first `--alt` describes the first `--media`, the second the second.
 - **Thread.** Each `--then <text>` adds a part after the post, in the order given, text alone: a reply to the part before it on the platforms with [threads](/scheduling#threads). `--then-delay <seconds>` makes each part wait that long after the part before it went out, a day (86400) at most; without it they follow one another. A platform that takes a post alone refuses the post.
@@ -339,8 +339,8 @@ peal queues update "Weekdays" --slot tue@12:00 --default
 peal queues show "Weekdays"
 peal queues preview "Weekdays" --count 5
 peal queues delete "Weekdays"
-peal post "An evergreen tip" --queue
-peal post "An evergreen tip" --queue=Weekdays --channel <channel-id> --dry-run
+peal post "An evergreen tip" --default-queue
+peal post "An evergreen tip" --queue Weekdays --channel <channel-id> --dry-run
 peal posts queue <post-id> --queue Weekdays
 peal posts list --queue Weekdays
 ```
@@ -348,7 +348,7 @@ peal posts list --queue Weekdays
 - A [queue](/scheduling#queues) is a weekly timetable of slots in a time zone, for some channels and at most one channel set (`--set`). `--slot` takes a day (`mon` or `monday`…) and a time of day on a 24-hour clock, such as `mon@09:30`; repeat it, 100 at most. `--zone` is the queue's IANA zone, `TZ` or your computer's without it. A workspace keeps 20 queues, and a queue is named by its id or its name, whatever its case.
 - `peal queues update` keeps what you leave out, but the channels that are no longer connected; `--slot` replaces the week, `--no-set` takes the channel set off, `--default` makes it the default queue. Posts the queue placed keep their times. `peal queues delete` leaves them scheduled.
 - `peal queues preview` lists the coming slots, free or taken, and where a post added now would go: nothing is held.
-- `peal post --queue` puts a post on the default queue's next free slot, and `--queue=<name-or-id>` on another's: give the value with `=`, as a bare `--queue` takes the default. It is one of `--at`, `--now` and `--queue`, and without `--channel` or `--set` the post goes to the queue's channels. With `--dry-run` it prints the slot it would take.
+- `peal post --queue <name-or-id>` puts a post on that queue's next free slot (`--queue=<name-or-id>` too), and `peal post --default-queue` on the default queue's. Each is one of `--at`, `--now`, `--queue` and `--default-queue`, and without `--channel` or `--set` the post goes to the queue's channels. With `--dry-run` it prints the slot it would take.
 - `peal posts queue` puts a draft, or a scheduled post, on a queue's next free slot (`--queue`, or the default). `peal posts list --queue` lists the posts a queue placed.
 
 ## Default options [#default-options]

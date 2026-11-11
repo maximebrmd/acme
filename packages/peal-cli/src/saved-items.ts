@@ -124,8 +124,8 @@ export const findQueue = (session: InWorkspace, given: string) =>
   queuesOf(session).pipe(Effect.flatMap((queues) => queueNamed(queues, given)));
 
 /**
- * The queue `--queue` names: by its id or its name, or, given bare, the
- * workspace's default queue.
+ * The queue `--queue` names: by its id or its name, or, given "" (as
+ * `--default-queue` and a missing `--queue` ask), the workspace's default.
  */
 export const queueOf = (session: InWorkspace, given: string) =>
   given.trim() === ""
@@ -139,7 +139,7 @@ export const queueOf = (session: InWorkspace, given: string) =>
                   new Refused({
                     code: "queue_unknown",
                     reason:
-                      "The workspace has no default queue: name one with --queue=<name-or-id>, or make one the default with peal queues update --default.",
+                      "The workspace has no default queue: name one with --queue <name-or-id>, or make one the default with peal queues update --default.",
                   })
                 ),
               onSome: Effect.succeed,

@@ -481,7 +481,7 @@ describe("peal post", () => {
           yield* session.refused(
             note("--channel", mastodonId, "--media", file)
           ),
-          "Say when it goes out: --at <instant> to schedule it, --queue to put it on a queue's next free slot, or --now to publish it now. Publishing is never the default."
+          "Say when it goes out: --at <instant> to schedule it, --queue <name-or-id> or --default-queue to put it on a queue's next free slot, or --now to publish it now. Publishing is never the default."
         );
         assert.include(
           yield* session.refused(
@@ -493,7 +493,7 @@ describe("peal post", () => {
               "2026-11-20T09:00:00Z"
             )
           ),
-          "Give one of --at, --now and --queue."
+          "Give one of --at, --now, --queue and --default-queue."
         );
         assert.include(
           yield* session.refused(note("--now")),

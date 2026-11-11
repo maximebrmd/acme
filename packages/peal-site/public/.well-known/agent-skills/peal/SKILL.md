@@ -220,7 +220,8 @@ peal post "Our spring catalogue is out." --channel <channel-id> --at 2026-11-20T
 ```
 
 When the user keeps a timetable rather than a time ("add this to the
-queue"), put the post on a queue's next free slot with `--queue` (see
+queue"), put the post on a queue's next free slot with `--queue <name>` or
+`--default-queue` (see
 [references/saved.md](references/saved.md#queues)) instead of `--at`.
 
 A thread is a post with parts after it: each `--then` adds one, in order,

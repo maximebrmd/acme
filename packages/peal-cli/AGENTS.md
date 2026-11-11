@@ -91,9 +91,10 @@
   workspace's queues (`--slot mon@09:00`, repeated; `--zone`; `--channel`;
   `--set`; `--default`), named by id or name (`saved-items.ts`:
   `findQueue`, `queueOf`, which takes "" for the default). `peal post
-  --queue` (bare for the default, `--queue=<name-or-id>` otherwise, as an
-  optional value is attached with `=`) is one of `--at`, `--now` and
-  `--queue`; `peal posts queue` and `peal posts list --queue` follow
+  --queue <name-or-id>` (an ordinary valued flag: effect/cli never takes
+  the next word as an optional value, which would read a name as the
+  post's text) or `--default-queue` is one of `--at`, `--now`, `--queue`
+  and `--default-queue`; `peal posts queue` and `peal posts list --queue` follow
   `posts.enqueue` and `search?queueId`. The studio's queues are in
   `test/studio-queues.ts`, built over what `studio.ts` hands them.
 - `peal channels rename`, `disable` and `enable`

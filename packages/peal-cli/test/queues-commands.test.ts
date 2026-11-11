@@ -227,7 +227,7 @@ describe("peal post --queue and peal posts queue", () => {
       const sent = yield* session.printed([
         "post",
         "An evergreen post.",
-        "--queue",
+        "--default-queue",
         ...inStudio,
       ]);
 
@@ -273,11 +273,13 @@ describe("peal post --queue and peal posts queue", () => {
 
       assert.include(listed, weekdaysQueueId);
 
+      // The name follows the flag as any flag's value does.
       assert.include(
         yield* session.refused([
           "post",
           "Nowhere to go.",
-          "--queue=Evergreen",
+          "--queue",
+          "Evergreen",
           "--channel",
           mastodonId,
           ...inStudio,
@@ -285,15 +287,27 @@ describe("peal post --queue and peal posts queue", () => {
         "The queue has no slot: add some with peal queues update --slot"
       );
 
-      assert.include(
-        yield* session.refused([
-          "post",
-          "Twice told.",
-          "--queue",
-          "--now",
-          ...inStudio,
-        ]),
-        "Give one of --at, --now and --queue."
+      for (const timings of [
+        ["--default-queue", "--now"],
+        ["--queue", "Weekdays", "--default-queue"],
+      ]) {
+        assert.include(
+          yield* session.refused([
+            "post",
+            "Twice told.",
+            ...timings,
+            ...inStudio,
+          ]),
+          "Give one of --at, --now, --queue and --default-queue."
+        );
+      }
+
+      // A queue's name is never taken for the post's text.
+      yield* session.refused(["post", "--queue", "Evergreen", ...inStudio]);
+      assert.isUndefined(
+        (yield* Ref.get(session.studio.state)).posts.find(
+          ({ content }) => content.text === "Evergreen"
+        )
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
@@ -305,7 +319,7 @@ describe("peal post --queue and peal posts queue", () => {
       const checked = yield* session.printed([
         "post",
         "An evergreen post.",
-        "--queue",
+        "--default-queue",
         "--dry-run",
         ...inStudio,
       ]);

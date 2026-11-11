@@ -312,7 +312,7 @@ const create = Command.make(
     ),
     isDefault: Flag.Boolean("default").pipe(
       Flag.withDescription(
-        "Make it the workspace's default queue, the one peal post --queue takes when it names none. The first queue of a workspace is its default anyway."
+        "Make it the workspace's default queue, the one peal post --default-queue and peal posts queue without --queue take. The first queue of a workspace is its default anyway."
       ),
       Flag.withDefault(false)
     ),

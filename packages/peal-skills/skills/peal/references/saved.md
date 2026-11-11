@@ -75,14 +75,14 @@ and say back the slot the post will take:
 ```sh
 peal queues list --json
 peal queues preview Weekdays --count 5 --json
-peal post "An evergreen tip." --queue --dry-run --json
-peal post "An evergreen tip." --queue=Weekdays --json
+peal post "An evergreen tip." --default-queue --dry-run --json
+peal post "An evergreen tip." --queue Weekdays --json
 peal posts queue <post-id> --queue Weekdays --json
 peal posts list --queue Weekdays --json
 ```
 
-- `--queue` alone takes the workspace's default queue; give another with
-  `=`, as `--queue=Weekdays`. It replaces `--at` and `--now`. Without
+- `--queue <name-or-id>` names the queue, `--default-queue` takes the
+  workspace's default one. Either replaces `--at` and `--now`. Without
   `--channel` or `--set`, the post goes to the queue's channels.
 - `queue_has_no_room` means the queue has no slot (`noSlots`) or every slot
   of the next 366 days is taken (`full`): tell the user, never pick a time
