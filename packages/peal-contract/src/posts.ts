@@ -413,7 +413,7 @@ export type PostTiming = typeof PostTimingSchema.Type;
 /**
  * A post to put on a queue's next free slot: the workspace's default queue
  * when `queueId` is left out. A draft goes to `channelIds` when given, its
- * own channels otherwise, or the queue's when it has none.
+ * own channels otherwise, or, when it has none, the queue's and its set's.
  */
 export const QueuePostSchema = Schema.Struct({
   channelIds: Schema.optionalKey(Schema.NonEmptyArray(Schema.String)),
@@ -1054,13 +1054,13 @@ export class PostsApi extends HttpApiGroup.make("posts")
       })
     ),
     HttpApiEndpoint.post("enqueue", "/:postId/queue", {
-      error: [...scheduling, QueueNotFound, QueueHasNoRoom],
+      error: [...scheduling, QueueNotFound, QueueHasNoRoom, ChannelSetNotFound],
       params: post,
       payload: QueuePostSchema,
       success: PostSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Puts a post on the next free slot of a queue (\`queueId\`, or the workspace's default queue), decided when the request is received so that posts added together never take the same slot. A draft is scheduled there as \`schedule\` schedules it, on \`channelIds\` when given, on the channels it has otherwise, or on the queue's when it has none; a scheduled post, or one awaiting approval, is moved there as \`reschedule\` moves it, on the channels it has. Every rule of scheduling applies at that time, the approval gate and the plan's room in the slot's month included (PlanLimitReached, never a later month). A queue without a free slot within ${queueHorizonDays} days is QueueHasNoRoom, and nothing is changed. Needs post:schedule and channel:read.`,
+        description: `Puts a post on the next free slot of a queue (\`queueId\`, or the workspace's default queue), decided when the request is received so that posts added together never take the same slot. A draft is scheduled there as \`schedule\` schedules it, on \`channelIds\` when given, on the channels it has otherwise, or, when it has none, where the same content sent with \`when: queue\` would go: the queue's connected channels and its channel set's, with the options the set keeps and the channels' default options; a channel of either that is no longer connected is left out and told in \`warnings\` (\`queueChannelsDropped\`, \`channelsDropped\`), and none left is UnknownChannels; a scheduled post, or one awaiting approval, is moved there as \`reschedule\` moves it, on the channels it has. Every rule of scheduling applies at that time, the approval gate and the plan's room in the slot's month included (PlanLimitReached, never a later month). A queue without a free slot within ${queueHorizonDays} days is QueueHasNoRoom, and nothing is changed. Needs post:schedule and channel:read.`,
         summary: "Add a post to a queue",
       })
     ),

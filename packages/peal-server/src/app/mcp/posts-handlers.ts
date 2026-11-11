@@ -661,6 +661,7 @@ export const PostToolsLive = PostTools.toLayer(
             .pipe(
               Effect.catchTags({
                 ...schedulingFailures,
+                ChannelSetNotFound: presetRefusals.ChannelSetNotFound,
                 QueueHasNoRoom: queueHasNoRoom,
                 QueueNotFound: unknownQueue,
               })

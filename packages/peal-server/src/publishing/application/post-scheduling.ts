@@ -322,7 +322,11 @@ export class PostScheduling extends Context.Service<
      * there as `scheduleDraft` schedules it, and a scheduled post or one
      * that waits for an approval is moved there as `reschedule` moves it.
      * The slot is decided under the queue's lock, the post's own slot
-     * apart, so a post added again to its queue stays where it is.
+     * apart, so a post added again to its queue stays where it is. A draft
+     * for no channel, given none, goes where the same content sent onto
+     * the queue would: its channels still connected and its channel set's,
+     * with the set's options and the channels' defaults, the channels gone
+     * since told in `dropped`.
      */
     readonly enqueue: (
       actor: Actor,
@@ -330,6 +334,7 @@ export class PostScheduling extends Context.Service<
       request: EnqueueRequest
     ) => Effect.Effect<
       PostWithTargets,
+      | ChannelSetNotFound
       | DatabaseError
       | InvalidPostTransition
       | MissingPermission
@@ -1045,7 +1050,8 @@ export class PostScheduling extends Context.Service<
           current: StoredPost,
           channelIds: readonly ChannelId[],
           placed: Placed,
-          received: DateTime.Utc
+          received: DateTime.Utc,
+          given: Option.Option<readonly ChannelOptions[]> = Option.none()
         ) {
           const postId = current.post.id;
 
@@ -1060,17 +1066,23 @@ export class PostScheduling extends Context.Service<
 
           const existing = yield* posts.lockTargets(postId);
 
-          // A channel it had keeps its options; a new one has none.
+          // A channel it had keeps its options, and a new one has none,
+          // unless they were filled in for it.
           const channels = yield* publishableOn(
             actor,
             current.post.content,
             channelIds,
-            optionsOfTargets(existing, channelIds)
+            Option.getOrElse(given, () =>
+              optionsOfTargets(existing, channelIds)
+            )
           );
 
-          const targets = yield* targetsOn(postId, channels, existing).pipe(
-            withPorts
-          );
+          const targets = yield* targetsOn(
+            postId,
+            channels,
+            existing,
+            given
+          ).pipe(withPorts);
 
           yield* posts.setTargets(postId, targets);
 
@@ -1170,9 +1182,6 @@ export class PostScheduling extends Context.Service<
           request.queueId
         ).pipe(withPorts);
 
-        // Its channels, for a draft that names none and has none.
-        const fromQueue = yield* queueChannels(actor, queue);
-
         return yield* transaction(
           Effect.gen(function* placeAndRestart() {
             // The queue before the post: deleting a queue holds it, then
@@ -1200,17 +1209,55 @@ export class PostScheduling extends Context.Service<
               ({ channelId }) => channelId
             );
 
-            const channelIds = Option.getOrElse(request.channelIds, () =>
-              own.length > 0 ? own : fromQueue.channelIds
+            if (Option.isSome(request.channelIds) || own.length > 0) {
+              return yield* draftScheduled(
+                actor,
+                current,
+                Option.getOrElse(request.channelIds, () => own),
+                placed,
+                received
+              );
+            }
+
+            // A draft for no channel goes where the same content sent onto
+            // the queue would: its channels still connected, and its set.
+            const fromQueue = yield* queueChannels(actor, queue);
+
+            const filled = yield* PostPresets.use((presets) =>
+              presets.fill(actor, {
+                ...nothingAsked,
+                channelIds: fromQueue.channelIds,
+                channelSets: Option.toArray(queue.channelSetId),
+                content: current.post.content,
+                defaultOptions: true,
+                options: [],
+              })
+            ).pipe(
+              withPorts,
+              // Nothing asks for a signature here.
+              Effect.catchTag("SignatureNotFound", Effect.die)
             );
 
-            return yield* draftScheduled(
+            const dropped = [...fromQueue.dropped, ...filled.dropped];
+            const gone = dropped.flatMap((left) => left.channelIds);
+
+            if (
+              !Arr.isReadonlyArrayNonEmpty(filled.channelIds) &&
+              Arr.isReadonlyArrayNonEmpty(gone)
+            ) {
+              return yield* new UnknownChannels({ channelIds: gone });
+            }
+
+            const scheduled = yield* draftScheduled(
               actor,
               current,
-              channelIds,
+              filled.channelIds,
               placed,
-              received
+              received,
+              Option.some(filled.options)
             );
+
+            return dropped.length === 0 ? scheduled : { ...scheduled, dropped };
           })
         );
       });

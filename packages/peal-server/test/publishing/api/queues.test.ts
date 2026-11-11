@@ -556,4 +556,115 @@ describe("posts added to a queue", () => {
       ),
     timeout
   );
+
+  it.effect(
+    "put a draft without channels on the queue's channels and its set's, with the set's options",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* fromTheQueue() {
+          const { bluesky, editor, mastodon, params, workspaceId } =
+            yield* studio;
+
+          const linkedin = yield* connect(workspaceId, "linkedin");
+
+          const set = yield* editor.channelSets.create({
+            params,
+            payload: {
+              channelIds: [linkedin],
+              name: "Professional",
+              options: [
+                {
+                  channelId: linkedin,
+                  options: { disableReshare: true, platform: "linkedin" },
+                },
+              ],
+            },
+          });
+
+          const queue = yield* editor.queues.create({
+            params,
+            payload: {
+              channelIds: [mastodon, bluesky],
+              channelSetId: set.id,
+              name: "Weekdays",
+              slots: weekdays,
+              timeZone: "Europe/Paris",
+            },
+          });
+
+          // A channel of the queue disconnected since is left out, and said.
+          yield* ChannelRepository.use((channels) =>
+            channels.remove(workspaceId, bluesky)
+          );
+
+          const content = { media: [], overrides: [], text: "Evergreen." };
+
+          const draft = yield* editor.posts.create({
+            params,
+            payload: { channelIds: [], content },
+          });
+
+          const enqueued = yield* editor.posts.enqueue({
+            params: { ...params, postId: draft.id },
+            payload: { queueId: queue.id },
+          });
+
+          // As the same content sent onto the queue would go.
+          assert.strictEqual(enqueued.status, "scheduled");
+          assert.deepStrictEqual(
+            enqueued.targets.map(({ channelId, options }) => ({
+              channelId,
+              options,
+            })),
+            [
+              { channelId: mastodon, options: null },
+              {
+                channelId: linkedin,
+                options: { disableReshare: true, platform: "linkedin" },
+              },
+            ]
+          );
+          assert.deepStrictEqual(enqueued.warnings, [
+            {
+              _tag: "queueChannelsDropped",
+              channelIds: [bluesky],
+              queueId: queue.id,
+              queueName: "Weekdays",
+            },
+          ]);
+
+          // A queue that names a set and no channel of its own.
+          const setOnly = yield* editor.queues.create({
+            params,
+            payload: {
+              channelSetId: set.id,
+              name: "Set only",
+              slots: weekdays,
+              timeZone: "Europe/Paris",
+            },
+          });
+
+          const other = yield* editor.posts.create({
+            params,
+            payload: {
+              channelIds: [],
+              content: { ...content, text: "Evergreen, again." },
+            },
+          });
+
+          const onSet = yield* editor.posts.enqueue({
+            params: { ...params, postId: other.id },
+            payload: { queueId: setOnly.id },
+          });
+
+          assert.deepStrictEqual(
+            onSet.targets.map(({ channelId }) => channelId),
+            [linkedin]
+          );
+          assert.isUndefined(onSet.warnings);
+        })
+      ),
+    timeout
+  );
 });

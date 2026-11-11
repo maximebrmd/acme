@@ -632,7 +632,7 @@ const queue = Command.make(
   "queue",
   {
     channels: channelsFlag(
-      "For a draft: a channel it goes to, as peal channels list shows its id; repeat it. Without it a draft goes to the channels it has, or to the queue's when it has none. A scheduled post keeps its channels."
+      "For a draft: a channel it goes to, as peal channels list shows its id; repeat it. Without it a draft goes to the channels it has, or, when it has none, to the queue's channels and its channel set's. A scheduled post keeps its channels."
     ),
     json: jsonFlag,
     postId: postArgument,

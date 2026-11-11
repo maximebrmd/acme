@@ -358,6 +358,7 @@ export const PostsHandlers = HttpApiBuilder.group(
             .enqueue(actor, postId, { channelIds, queueId })
             .pipe(
               Effect.catchTags({
+                ChannelSetNotFound: setNotFound,
                 DatabaseError: Effect.die,
                 InvalidPostTransition: conflict,
                 MissingPermission: forbidden,
