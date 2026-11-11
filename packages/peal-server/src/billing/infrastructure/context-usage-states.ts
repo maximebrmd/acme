@@ -55,6 +55,11 @@ export const ContextUsageStatesLive = Layer.effect(
           })
         );
       }),
+      workspaces: ({ after, createdBefore, limit }) =>
+        seats.page({ after, createdBefore, limit }).pipe(
+          Effect.map((found) => found.map(({ workspaceId }) => workspaceId)),
+          Effect.mapError(({ cause }) => new DatabaseError({ cause }))
+        ),
     });
   })
 );

@@ -50,8 +50,9 @@ const recordsOf = (
  * workspaces by id, a batch at a time, each batch's rows written in one
  * statement, and replaces what a run before wrote, so a second run, or a
  * second server, changes nothing. A day it never ran for keeps no state:
- * none is written for it later. Then it deletes the rows past their 400
- * days.
+ * none is written for it later. A workspace erased while its batch was
+ * written has those rows deleted again. Then, whether the snapshot went
+ * through or not, it deletes the rows past their 400 days.
  */
 export class SnapshotUsage extends Context.Service<
   SnapshotUsage,
@@ -65,29 +66,55 @@ export class SnapshotUsage extends Context.Service<
         const states = yield* UsageStates;
         const ledger = yield* UsageLedger;
 
-        const run = Effect.gen(function* run() {
-          const now = yield* DateTime.now;
-          const today = usageDayOf(now);
-          const day = DateTime.subtract(today, { days: 1 });
+        // Every workspace's states, batch by batch: how many it wrote.
+        const snapshot = Effect.fn("SnapshotUsage.snapshot")(function* snapshot(
+          today: DateTime.Utc,
+          day: DateTime.Utc
+        ) {
           let after = Option.none<WorkspaceDayState["workspaceId"]>();
           let workspaces = 0;
           let more = true;
 
           while (more) {
-            const page = yield* states.page({
+            const request = {
               after,
               createdBefore: today,
               day,
               limit: batchSize,
-            });
+            };
+
+            const page = yield* states.page(request);
 
             yield* ledger.set(page.flatMap((state) => recordsOf(day, state)));
+
+            // A workspace erased between the read and the write had its
+            // rows deleted before these came: they go again.
+            const still = new Set(yield* states.workspaces(request));
+
+            yield* Effect.forEach(
+              page.filter(({ workspaceId }) => !still.has(workspaceId)),
+              ({ workspaceId }) => ledger.eraseWorkspace(workspaceId),
+              { discard: true }
+            );
+
             workspaces += page.length;
             more = page.length === batchSize;
             after = Option.fromUndefinedOr(page.at(-1)?.workspaceId);
           }
 
+          return workspaces;
+        });
+
+        const run = Effect.gen(function* run() {
+          const now = yield* DateTime.now;
+          const today = usageDayOf(now);
+          const day = DateTime.subtract(today, { days: 1 });
+
+          // The purge runs whatever became of the snapshot, so rows past
+          // their days go even on a day the states cannot be read.
+          const taken = yield* snapshot(today, day).pipe(Effect.exit);
           const purged = yield* ledger.purgeBefore(usageCutoff(now));
+          const workspaces = yield* taken;
           const done: UsageSnapshotRun = { day, purged, workspaces };
 
           return done;

@@ -147,8 +147,10 @@
   `ChannelUsage.connectedIn`, `MediaStorageUsage.storedIn`,
   `AssistantRequests.onDay`), each batch one statement that replaces, so
   a second run or server changes nothing. A missed day keeps no state:
-  never backfill one. The same run purges the rows past
-  `usageRetentionDays` (400). `UsageReports` answers `GET …/usage`
+  never backfill one. Each batch, once written, reads its workspaces again
+  (`UsageStates.workspaces`) and erases the rows of those erased meanwhile.
+  The same run purges the rows past `usageRetentionDays` (400), whether the
+  snapshot went through or not. `UsageReports` answers `GET …/usage`
   (billing:read, on a server that bills or not; 92 days at most, 30 by
   default; `sharedWith` from `PlanHolders`), `get_usage` and `peal
   usage`; the contract copies its constants, which

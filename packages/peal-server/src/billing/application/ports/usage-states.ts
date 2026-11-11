@@ -38,5 +38,12 @@ export class UsageStates extends Context.Service<
     readonly page: (
       request: UsageStatesRequest
     ) => Effect.Effect<readonly WorkspaceDayState[], DatabaseError>;
+    /**
+     * The workspaces the same page holds now, counting nothing: read again
+     * once a page is written, those gone meanwhile were erased.
+     */
+    readonly workspaces: (
+      request: UsageStatesRequest
+    ) => Effect.Effect<readonly WorkspaceId[], DatabaseError>;
   }
 >()("peal-server/billing/application/UsageStates") {}

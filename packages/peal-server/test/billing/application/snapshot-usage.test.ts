@@ -49,7 +49,18 @@ const asked = Ref.makeUnsafe<readonly UsageStatesRequest[]>([]);
 
 const extra = Ref.makeUnsafe(0);
 
-// The workspaces as the contexts would page through them.
+// The workspaces of a page, as the contexts would page through them.
+const pageOf = (request: UsageStatesRequest) =>
+  ids
+    .filter(
+      (id) =>
+        Option.match(request.after, {
+          onNone: () => true,
+          onSome: (after) => id > after,
+        }) && DateTime.isLessThan(createdAt(id), request.createdBefore)
+    )
+    .slice(0, request.limit);
+
 const StatesTest = Layer.succeed(
   UsageStates,
   UsageStates.of({
@@ -58,17 +69,9 @@ const StatesTest = Layer.succeed(
         yield* Ref.update(asked, (all) => [...all, request]);
         const added = yield* Ref.get(extra);
 
-        return ids
-          .filter(
-            (id) =>
-              Option.match(request.after, {
-                onNone: () => true,
-                onSome: (after) => id > after,
-              }) && DateTime.isLessThan(createdAt(id), request.createdBefore)
-          )
-          .slice(0, request.limit)
-          .map((id) => stateOf(id, added));
+        return pageOf(request).map((id) => stateOf(id, added));
       }),
+    workspaces: (request) => Effect.succeed(pageOf(request)),
   })
 );
 
