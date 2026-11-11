@@ -2166,7 +2166,8 @@
       "tooMany": "L’espace de travail a déjà {allowed, number} points de terminaison, le maximum. Supprimez-en un d’abord.",
       "urlRefused": "{reason, select, malformed {Ce n’est pas une adresse.} notHttps {L’adresse doit être en HTTPS, sur le port par défaut.} credentials {L’adresse ne doit porter ni nom d’utilisateur ni mot de passe.} tooLong {L’adresse est trop longue.} notPublic {L’hôte de l’adresse n’est pas public, donc Peal ne lui envoie aucune requête.} unknownHost {L’hôte de l’adresse n’existe pas.} other {Peal ne livre pas à cette adresse.}}",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "filterRefused": "Seul un point de terminaison partenaire prend une liste d’espaces de travail, et chacun doit être un identifiant."
+      "filterRefused": "Seul un point de terminaison partenaire prend une liste d’espaces de travail, et chacun doit être un identifiant.",
+      "headersRefused": "Un en-tête enregistré garde sa valeur tant que son nom reste : saisissez de nouveau sa valeur, ou retirez-le."
     }
   },
   "AccountSettings": {

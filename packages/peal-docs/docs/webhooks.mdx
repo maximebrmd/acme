@@ -42,7 +42,7 @@ An endpoint may carry up to 5 headers of your choosing, sent with every delivery
 
 - **A name** is an HTTP token (letters, digits and ``!#$%&'*+.^_`|~-``), 64 characters at most, once per endpoint whatever its case. `Authorization` is allowed. Peal refuses the names it sets or that describe the request or its connection: any name starting with `webhook-`, `Host`, `Content-Type`, `Content-Length`, `User-Agent`, `Cookie`, `Connection`, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Transfer-Encoding` and `Upgrade`. None of yours ever replaces one of Peal's.
 - **A value** is visible ASCII on one line, spaces inside it but at neither end, 1,024 characters at most.
-- **Values are write-only.** Peal stores them encrypted, as it does the secret, and never shows them again: the endpoint lists their names (`headerNames`). To change one, send the endpoint's whole list again with `headers`, each value included; `[]` removes them all, and leaving the field out keeps them. Peal never writes them in its logs, nor in the delivery log.
+- **Values are write-only.** Peal stores them encrypted, as it does the secret, and never shows them again: the endpoint lists their names (`headerNames`). To change them, send the endpoint's whole list with `headers`: a header given with its `value` sets it, one given by its `name` alone keeps the value the endpoint has under that name (422 `WebhookHeadersRefused` when it has none), and those left out go. `[]` removes them all, and leaving the field out keeps them. Peal never writes them in its logs, nor in the delivery log.
 - **They are not signed.** The [signature](#verify) covers the event's id, timestamp and body, as the specification says: verify it whatever headers you get.
 
 ## The signing secret [#secret]
@@ -1367,6 +1367,7 @@ Errors come in the API's format, each with a `code` in snake case beside its nam
 | 409    | `TooManyWebhookEndpoints` | The workspace already has 10 endpoints.                                       |
 | 409    | `WebhookEndpointDisabled` | A test or a resend was asked of an endpoint that is off.                      |
 | 422    | `WebhookFilterRefused`    | `workspaceIds` on an endpoint of the `workspace` scope; `field` names it.     |
+| 422    | `WebhookHeadersRefused`   | A header given without `value` that the endpoint does not have.               |
 | 422    | `WebhookUrlRefused`       | Peal does not deliver to the address. `reason` says why, below.               |
 | 429    | `TooManyWebhookSends`     | The hour's test events and resends are spent: see [the delivery log](#log).   |
 | 503    | `WebhooksNotConfigured`   | The instance cannot keep a signing secret: see [Self-hosting](#self-hosting). |

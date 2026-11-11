@@ -68,7 +68,7 @@ const noSecrets = () =>
 
 const headersRefused = () =>
   refuse(
-    `An endpoint takes ${String(maxWebhookHeaders)} headers at most, each named once whatever its case, with a name that is an HTTP token and not one Peal sets (host, content-type, content-length, user-agent, cookie, a connection's own, or any webhook- name), and a value of visible ASCII on one line.`
+    `An endpoint takes ${String(maxWebhookHeaders)} headers at most, each named once whatever its case, with a name that is an HTTP token and not one Peal sets (host, content-type, content-length, user-agent, cookie, a connection's own, or any webhook- name), and a value of visible ASCII on one line; a header given without a value keeps the endpoint's, so it must be one the endpoint has.`
   );
 
 const offEndpoint = () =>

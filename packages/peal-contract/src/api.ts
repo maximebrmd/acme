@@ -1214,6 +1214,8 @@ export { WebhookEndpointNotFound } from "./webhook-endpoint-not-found.ts";
 
 export { WebhookFilterRefused } from "./webhook-filter-refused.ts";
 
+export { WebhookHeadersRefused } from "./webhook-headers-refused.ts";
+
 export {
   MediaFailureReasonSchema,
   WebhookReviewPartySchema,
@@ -1274,6 +1276,7 @@ export {
   WebhookEndpointScopeSchema,
   WebhookEndpointSecretSchema,
   webhookFailingDays,
+  WebhookHeaderChangeSchema,
   WebhookHeaderSchema,
   WebhookRedeliveryRequestSchema,
   WebhookRedeliverySkipSchema,
@@ -1294,6 +1297,7 @@ export type {
   WebhookEndpointChange,
   WebhookEndpointScope,
   WebhookHeader,
+  WebhookHeaderChange,
   WebhookEndpointSecret,
   WebhookRedeliveryRequest,
   WebhookRedeliverySkip,

@@ -91,6 +91,27 @@ export const EndpointHeadersSchema = Schema.Array(EndpointHeaderSchema).check(
 
 export type EndpointHeaders = typeof EndpointHeadersSchema.Type;
 
+/**
+ * A header in a change of the endpoint's list: with its value, or without
+ * one to keep the value the endpoint has under that name, whatever its case.
+ */
+export const HeaderChangeSchema = Schema.Struct({
+  name: HeaderNameSchema,
+  value: Schema.optionalKey(HeaderValueSchema),
+});
+
+export type HeaderChange = typeof HeaderChangeSchema.Type;
+
+/** A change's whole list: as `EndpointHeadersSchema`, values optional. */
+export const HeaderChangesSchema = Schema.Array(HeaderChangeSchema).check(
+  Schema.isMaxLength(maxEndpointHeaders),
+  Schema.makeFilter(
+    (headers) =>
+      namesOnce(headers.map(({ name }) => name)) ||
+      "Each header is named once, whatever its case"
+  )
+);
+
 /** The names of an endpoint's headers, as it shows them. */
 export const HeaderNamesSchema = Schema.Array(HeaderNameSchema).check(
   Schema.isMaxLength(maxEndpointHeaders)

@@ -72,7 +72,9 @@
   `notConfigured`, as a secret does), and never returned, logged or
   exported: the view, the export and the staff console name them only
   (`headerNames`). A change's `headers` replaces the whole list, left out
-  it keeps it. The contract's copy of the rules is kept equal by
+  it keeps it; a header named there without a value keeps the sealed value
+  the endpoint has under that name (bound to it in lowercase), and one it
+  has not is `HeadersRefused` (422 `WebhookHeadersRefused`). The contract's copy of the rules is kept equal by
   `test/webhooks/api/contract.test.ts`; `test/app/secrets-in-logs.test.ts`
   searches the logs, traces and delivery log for the values.
 - `WebhookTransport` sends through `publicHttpClient` only (HTTPS on 443,

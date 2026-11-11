@@ -11,6 +11,7 @@ import {
   WebhookEndpointDisabled,
   WebhookEndpointNotFound,
   WebhookFilterRefused,
+  WebhookHeadersRefused,
   WebhooksNotConfigured,
   WebhookUrlRefused,
 } from "peal-contract";
@@ -59,10 +60,13 @@ const filterRefused = ({
 
 const endpointNotFound = () => Effect.fail(new WebhookEndpointNotFound());
 
-// The contract's schema refuses these headers first, by the same rules
-// (test/webhooks/api/contract.test.ts): a refusal here is a bug.
+// The contract's schema refuses a new endpoint's headers first, by the same
+// rules (test/webhooks/api/contract.test.ts): a refusal there is a bug.
 const headersRefused = () =>
   Effect.die("The contract accepted headers the endpoint refuses");
+
+// A change's header without a value the endpoint does not have.
+const noHeaderToKeep = () => Effect.fail(new WebhookHeadersRefused());
 
 const endpointDisabled = () => Effect.fail(new WebhookEndpointDisabled());
 
@@ -317,7 +321,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
                 DatabaseError: Effect.die,
                 EndpointNotFound: endpointNotFound,
                 FilterRefused: filterRefused,
-                HeadersRefused: headersRefused,
+                HeadersRefused: noHeaderToKeep,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: forbidden,
                 SecretsNotConfigured: notConfigured,

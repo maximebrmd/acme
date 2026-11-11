@@ -10,12 +10,20 @@ import { authorize } from "#shared/domain/authorize.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { maxEndpointsPerWorkspace } from "#webhooks/domain/delivery-policy.ts";
-import { EndpointHeadersSchema } from "#webhooks/domain/endpoint-headers.ts";
-import type { EndpointHeaders } from "#webhooks/domain/endpoint-headers.ts";
+import {
+  EndpointHeadersSchema,
+  HeaderChangesSchema,
+} from "#webhooks/domain/endpoint-headers.ts";
+import type {
+  EndpointHeaders,
+  HeaderChange,
+  SealedHeader,
+} from "#webhooks/domain/endpoint-headers.ts";
 import type { InvalidWebhookUrl } from "#webhooks/domain/invalid-webhook-url.ts";
 import { RecordedEvent } from "#webhooks/domain/recorded-event.ts";
 import { sampleOf } from "#webhooks/domain/sample-events.ts";
 import type { WebhookDelivery } from "#webhooks/domain/webhook-delivery.ts";
+import type { WebhookEndpointId } from "#webhooks/domain/webhook-endpoint-id.ts";
 import { WebhookEndpointIdSchema } from "#webhooks/domain/webhook-endpoint-id.ts";
 import {
   changeEndpoint,
@@ -65,8 +73,7 @@ export interface NewEndpoint extends Omit<
   readonly channelIds?: readonly string[];
   /**
    * The headers its deliveries carry beside Peal's, values in the clear:
-   * none when left out. On a change, the whole list replaces the one it
-   * had, and leaving it out keeps it.
+   * none when left out.
    */
   readonly headers?: readonly {
     readonly name: string;
@@ -78,8 +85,17 @@ export interface NewEndpoint extends Omit<
   readonly workspaceIds?: readonly string[];
 }
 
-/** What to change of an endpoint: what is left out stays. */
-export type EndpointChange = Partial<Omit<NewEndpoint, "scope">>;
+/**
+ * What to change of an endpoint: what is left out stays. Its headers, when
+ * given, are the whole list that replaces the one it had: a header without
+ * a value keeps the value the endpoint has under that name.
+ */
+export type EndpointChange = Partial<Omit<NewEndpoint, "headers" | "scope">> & {
+  readonly headers?: readonly {
+    readonly name: string;
+    readonly value?: string;
+  }[];
+};
 
 /** An endpoint with its signing secret, as it is shown once. */
 export interface EndpointWithSecret {
@@ -114,6 +130,14 @@ const headersFrom = (
   asked: NonNullable<NewEndpoint["headers"]>
 ): Effect.Effect<EndpointHeaders, HeadersRefused> =>
   decodeHeaders(asked).pipe(Effect.mapError(() => new HeadersRefused()));
+
+const decodeHeaderChanges = Schema.decodeUnknownEffect(HeaderChangesSchema);
+
+// A change's headers, once they are headers an endpoint may carry.
+const headerChangesFrom = (
+  asked: NonNullable<EndpointChange["headers"]>
+): Effect.Effect<readonly HeaderChange[], HeadersRefused> =>
+  decodeHeaderChanges(asked).pipe(Effect.mapError(() => new HeadersRefused()));
 
 // The filters as an endpoint of the scope keeps them, once each is a list
 // of ids it may take: a list of workspaces only on one that hears more
@@ -370,6 +394,45 @@ export class WebhookEndpoints extends Context.Service<
         return created;
       }, Effect.provideContext(ports));
 
+      // Each header of a change sealed: its new value, or the one the
+      // endpoint has under that name, whatever its case, which is bound to
+      // the name in lowercase. One without a value it has not is refused.
+      const sealedChanges = Effect.fn("WebhookEndpoints.sealedChanges")(
+        function* sealedChanges(
+          endpointId: WebhookEndpointId,
+          changes: readonly HeaderChange[]
+        ) {
+          const kept = Option.match(yield* store.secrets(endpointId), {
+            onNone: () => [],
+            onSome: ({ headers }) => headers,
+          });
+
+          return yield* Effect.all(
+            changes.map(({ name, value }) => {
+              if (value !== undefined) {
+                return secrets
+                  .sealHeaders(endpointId, [{ name, value }])
+                  .pipe(
+                    Effect.flatMap(([one]) =>
+                      one === undefined
+                        ? Effect.die("Nothing sealed")
+                        : Effect.succeed(one)
+                    )
+                  );
+              }
+
+              const same = kept.find(
+                (header) => header.name.toLowerCase() === name.toLowerCase()
+              );
+
+              return same === undefined
+                ? Effect.fail(new HeadersRefused())
+                : Effect.succeed<SealedHeader>({ name, sealed: same.sealed });
+            })
+          );
+        }
+      );
+
       const update = Effect.fn("WebhookEndpoints.update")(function* update(
         actor: Actor,
         endpointId: string,
@@ -391,16 +454,17 @@ export class WebhookEndpoints extends Context.Service<
         });
 
         // Given, the headers replace those it had; left out, they stay.
-        const headers =
+        const sealed =
           askedHeaders === undefined
-            ? Option.none<EndpointHeaders>()
-            : Option.some(yield* headersFrom(askedHeaders));
+            ? Option.none<readonly SealedHeader[]>()
+            : Option.some(
+                yield* sealedChanges(
+                  current.id,
+                  yield* headerChangesFrom(askedHeaders)
+                )
+              );
 
-        const sealed = Option.isSome(headers)
-          ? Option.some(yield* secrets.sealHeaders(current.id, headers.value))
-          : Option.none();
-
-        const named = Option.match(headers, {
+        const named = Option.match(sealed, {
           onNone: () => ({}),
           onSome: (given) => ({ headerNames: given.map(({ name }) => name) }),
         });

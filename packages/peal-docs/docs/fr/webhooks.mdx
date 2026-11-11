@@ -42,7 +42,7 @@ Un point de terminaison peut porter jusqu’à 5 en-têtes de votre choix, envoy
 
 - **Un nom** est un jeton HTTP (lettres, chiffres et ``!#$%&'*+.^_`|~-``), de 64 caractères au plus, une seule fois par point de terminaison quelle que soit sa casse. `Authorization` est permis. Peal refuse les noms qu’il pose ou qui décrivent la requête ou sa connexion : tout nom qui commence par `webhook-`, `Host`, `Content-Type`, `Content-Length`, `User-Agent`, `Cookie`, `Connection`, `Keep-Alive`, `Proxy-Connection`, `TE`, `Trailer`, `Transfer-Encoding` et `Upgrade`. Aucun des vôtres ne remplace jamais un de ceux de Peal.
 - **Une valeur** est en ASCII visible sur une seule ligne, des espaces à l’intérieur mais à aucune extrémité, de 1 024 caractères au plus.
-- **Les valeurs ne se relisent pas.** Peal les garde chiffrées, comme le secret, et ne les montre plus jamais : le point de terminaison liste leurs noms (`headerNames`). Pour en changer une, renvoyez toute la liste du point de terminaison avec `headers`, chaque valeur comprise ; `[]` les retire toutes, et omettre le champ les garde. Peal ne les écrit jamais dans ses journaux, ni dans le journal des livraisons.
+- **Les valeurs ne se relisent pas.** Peal les garde chiffrées, comme le secret, et ne les montre plus jamais : le point de terminaison liste leurs noms (`headerNames`). Pour les changer, envoyez toute la liste du point de terminaison avec `headers` : un en-tête donné avec sa `value` la fixe, un en-tête donné par son seul `name` garde la valeur que le point de terminaison a sous ce nom (422 `WebhookHeadersRefused` s’il n’en a pas), et ceux qui manquent s’en vont. `[]` les retire tous, et omettre le champ les garde. Peal ne les écrit jamais dans ses journaux, ni dans le journal des livraisons.
 - **Elles ne sont pas signées.** La [signature](#verify) couvre l’identifiant, l’horodatage et le corps de l’événement, comme le dit la spécification : vérifiez-la quels que soient les en-têtes reçus.
 
 ## Le secret de signature [#secret]
@@ -1367,6 +1367,7 @@ Les erreurs suivent le format de l’API, chacune avec un `code` en snake case �
 | 409  | `TooManyWebhookEndpoints` | L’espace de travail a déjà 10 points de terminaison.                                              |
 | 409  | `WebhookEndpointDisabled` | Un test ou un renvoi a été demandé à un point de terminaison désactivé.                           |
 | 422  | `WebhookFilterRefused`    | `workspaceIds` sur un point de terminaison de portée `workspace` ; `field` le nomme.              |
+| 422  | `WebhookHeadersRefused`   | Un en-tête donné sans `value` que le point de terminaison n’a pas.                                |
 | 422  | `WebhookUrlRefused`       | Peal ne livre pas à cette adresse. `reason` dit pourquoi, ci-dessous.                             |
 | 429  | `TooManyWebhookSends`     | Les tests et renvois de l’heure sont épuisés : voir [le journal des livraisons](#log).            |
 | 503  | `WebhooksNotConfigured`   | L’instance ne peut pas garder de secret de signature : voir [Auto-hébergement](#self-hosting).    |

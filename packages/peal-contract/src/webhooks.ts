@@ -20,6 +20,7 @@ import {
   WebhookEventTypeSchema,
 } from "./webhook-events.ts";
 import { WebhookFilterRefused } from "./webhook-filter-refused.ts";
+import { WebhookHeadersRefused } from "./webhook-headers-refused.ts";
 import { WebhookUrlRefused } from "./webhook-url-refused.ts";
 import { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
@@ -208,13 +209,32 @@ export const WebhookHeaderSchema = Schema.Struct({
 
 export type WebhookHeader = typeof WebhookHeaderSchema.Type;
 
+// Each name once, whatever its case.
+const namedOnce = Schema.makeFilter(
+  (headers: readonly { readonly name: string }[]) =>
+    new Set(headers.map(({ name }) => name.toLowerCase())).size ===
+      headers.length || "Each header is named once, whatever its case"
+);
+
 const HeadersSchema = Schema.Array(WebhookHeaderSchema).check(
   Schema.isMaxLength(maxWebhookHeaders),
-  Schema.makeFilter(
-    (headers) =>
-      new Set(headers.map(({ name }) => name.toLowerCase())).size ===
-        headers.length || "Each header is named once, whatever its case"
-  )
+  namedOnce
+);
+
+/**
+ * A header in a change of an endpoint's list: without `value`, it keeps
+ * the value the endpoint has under that name, whatever its case.
+ */
+export const WebhookHeaderChangeSchema = Schema.Struct({
+  name: HeaderNameSchema,
+  value: Schema.optionalKey(HeaderValueSchema),
+}).annotate({ identifier: "WebhookHeaderChange" });
+
+export type WebhookHeaderChange = typeof WebhookHeaderChangeSchema.Type;
+
+const HeaderChangesSchema = Schema.Array(WebhookHeaderChangeSchema).check(
+  Schema.isMaxLength(maxWebhookHeaders),
+  namedOnce
 );
 
 export const NewWebhookEndpointSchema = Schema.Struct({
@@ -262,8 +282,9 @@ export const WebhookEndpointChangeSchema = Schema.Struct({
   enabled: Schema.optionalKey(Schema.Boolean),
   eventTypes: Schema.optionalKey(EventTypesSchema),
   // The whole list, in place of the headers it had: `[]` removes them,
-  // and leaving it out keeps them.
-  headers: Schema.optionalKey(HeadersSchema),
+  // and leaving it out keeps them. A header without `value` keeps the one
+  // the endpoint has under that name.
+  headers: Schema.optionalKey(HeaderChangesSchema),
   url: Schema.optionalKey(UrlSchema),
   // Only for an endpoint of the `partner` scope (422
   // `WebhookFilterRefused` on any other).
@@ -529,6 +550,7 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
         WebhookUrlRefused,
         WebhookFilterRefused,
         WebhooksNotConfigured,
+        WebhookHeadersRefused,
       ],
       params: endpoint,
       payload: WebhookEndpointChangeSchema,
@@ -536,7 +558,7 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Changes an endpoint's address, description, events, filters or headers, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). `headers` replaces every header it had, `[]` removing them all: send each value again to keep it, as none is ever shown. Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.",
+          "Changes an endpoint's address, description, events, filters or headers, or turns it off or back on: what is left out stays as it is, and an empty filter hears everything again; `workspaceIds` is for an endpoint of the `partner` scope only (422 `WebhookFilterRefused`). `headers` replaces every header it had, `[]` removing them all: a header given without `value` keeps the value it has under that name, as none is ever shown, and one it does not have needs a value. Filters apply to the events that happen after the change. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.",
         summary: "Update a webhook endpoint",
       })
     ),

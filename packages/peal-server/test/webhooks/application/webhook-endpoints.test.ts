@@ -16,6 +16,7 @@ import {
   WebhooksTest,
 } from "#test/webhooks/support.ts";
 import { DeliverWebhook } from "#webhooks/application/deliver-webhook.ts";
+import { EndpointSecrets } from "#webhooks/application/ports/endpoint-secrets.ts";
 import { EndpointStore } from "#webhooks/application/ports/endpoint-store.ts";
 import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
@@ -638,6 +639,42 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
         assert.lengthOf(
           Option.getOrThrow(yield* store.secrets(endpoint.id)).headers,
           2
+        );
+
+        // Named alone, whatever its case, a header keeps its value.
+        const kept = yield* endpoints.update(owner, endpoint.id, {
+          headers: [
+            { name: "x-gateway-key" },
+            { name: "X-Other", value: "synthetic-other" },
+          ],
+        });
+
+        const before = Option.getOrThrow(yield* store.secrets(endpoint.id));
+
+        assert.deepStrictEqual(kept.headerNames, ["x-gateway-key", "X-Other"]);
+        assert.strictEqual(
+          yield* tagOf(
+            endpoints.update(owner, endpoint.id, {
+              headers: [{ name: "X-Unknown" }],
+            })
+          ),
+          "HeadersRefused"
+        );
+        assert.deepStrictEqual(
+          Option.getOrThrow(yield* store.secrets(endpoint.id)).headers,
+          before.headers
+        );
+
+        const opened = yield* EndpointSecrets.use((secrets) =>
+          secrets.openHeaders(endpoint.id, before.headers)
+        );
+
+        assert.deepStrictEqual(
+          opened.map((header) => [header.name, Redacted.value(header.value)]),
+          [
+            ["x-gateway-key", "synthetic-key"],
+            ["X-Other", "synthetic-other"],
+          ]
         );
 
         const cleared = yield* endpoints.update(owner, endpoint.id, {

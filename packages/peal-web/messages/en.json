@@ -2166,7 +2166,8 @@
       "tooMany": "The workspace already has {allowed, number} endpoints, the most it may. Delete one first.",
       "urlRefused": "{reason, select, malformed {This is not an address.} notHttps {The address must be HTTPS, on the default port.} credentials {The address must not carry a user name or a password.} tooLong {The address is too long.} notPublic {The address’s host is not public, so Peal does not send requests to it.} unknownHost {The address’s host does not exist.} other {Peal does not deliver to this address.}}",
       "unknown": "Something went wrong. Try again.",
-      "filterRefused": "Only a partner endpoint takes a list of workspaces, and each must be an id."
+      "filterRefused": "Only a partner endpoint takes a list of workspaces, and each must be an id.",
+      "headersRefused": "A saved header keeps its value only while its name stays: type its value again, or remove it."
     }
   },
   "AccountSettings": {
