@@ -63,11 +63,11 @@ module Peal
       # only if listed. Ids are checked for their shape only: one that names nothing matches nothing, and a filter stays
       # as saved when what it names is gone. Filters apply when each event happens. `headers` (5 at most) go with every
       # delivery beside Peal's own, which they never replace, for a gateway in front of the receiver that wants a token:
-      # a name is an HTTP token, once whatever its case, neither `host`, `content-type`, `content-length`, `user-agent`,
-      # `cookie`, a connection's own nor any `webhook-` name; a value is visible ASCII on one line, 1024 characters at
-      # most. Values are write-only: the endpoint shows their names (`headerNames`), never them, and sends them only to
-      # the origin (scheme, host and port) of the `url` they were given with. The signature does not cover them. Needs
-      # webhook:manage.
+      # a name is an HTTP token, once whatever its case, neither `host`, `user-agent`, `cookie`, `expect`,
+      # `accept-encoding`, a connection's own, nor any `content-` or `webhook-` name; a value is visible ASCII on one
+      # line, 1024 characters at most. Values are write-only: the endpoint shows their names (`headerNames`), never
+      # them, and sends them only to the origin (scheme, host and port) of the `url` they were given with. The signature
+      # does not cover them. Needs webhook:manage.
       #
       # @param request_options [Hash]
       # @param params [Peal::Webhooks::Types::NewWebhookEndpoint]
