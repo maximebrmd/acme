@@ -35,6 +35,9 @@ public record PostTarget : IJsonOnDeserialized
     [JsonPropertyName("publishedAt")]
     public string? PublishedAt { get; set; }
 
+    [JsonPropertyName("removedAt")]
+    public string? RemovedAt { get; set; }
+
     [JsonPropertyName("round")]
     public required int Round { get; set; }
 

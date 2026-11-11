@@ -1486,7 +1486,7 @@ client.posts().create(
 <dl>
 <dd>
 
-Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 </dd>
 </dl>
 </dd>
@@ -1594,6 +1594,14 @@ client.posts().search(
 <dd>
 
 **queueId:** `Optional<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**removed:** `Optional<SearchPostsRequestRemoved>` 
     
 </dd>
 </dl>
@@ -3196,6 +3204,227 @@ client.posts().confirm(
 <dd>
 
 **request:** `TargetConfirmation` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.unpublishTarget(workspaceId, postId, targetId) -> LivePostChange</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes the post from one channel's platform, for everyone: every part of a thread, the last first, so a deletion that stops midway leaves a shorter thread that still reads from its start. It cannot be undone from Peal. The request is accepted (202) and a job deletes it, one call at a time with the channel's other calls; a part the platform no longer has counts as deleted (`alreadyGone`), and a call that fails is tried again (as long as the platform asks to wait, and five more times while it cannot be reached), after which the change is `failed` with its `code` and asking again deletes the parts left. `wait` waits up to that many seconds (60 at most) for the change to end, and answers it as it then stands. Once done, the target keeps the status `published` with its `removedAt` (the month's count and the usage stay, as the post did go out), analytics stops reading it and keeps what it read, and the inbox stops reading its comments and keeps those it has. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted already, Peal has no id for a part of it, the platform does not let Peal delete it (the capabilities' `livePost` say so beforehand), another change of it is pending, the channel cannot be used, or a boost that is not over shows it. Webhooks hear `post.unpublished` or `post.unpublish_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```java
+client.posts().unpublishTarget(
+    "workspaceId",
+    "postId",
+    "targetId",
+    UnpublishTargetPostsRequest
+        .builder()
+        .build()
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**postId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**targetId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**wait:** `Optional<String>` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.unpublish(workspaceId, postId) -> PostUnpublish</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (`changes`) and, beside them, why it could not be on the others (`refused`, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```java
+client.posts().unpublish(
+    "workspaceId",
+    "postId",
+    UnpublishPostsRequest
+        .builder()
+        .build()
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**postId:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.changes(workspaceId, postId) -> LivePostChanges</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```java
+client.posts().changes(
+    "workspaceId",
+    "postId",
+    ChangesPostsRequest
+        .builder()
+        .build()
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**postId:** `String` 
     
 </dd>
 </dl>

@@ -5620,6 +5620,20 @@ func TestEnumSubscribableWebhookEventType(t *testing.T) {
 		assert.Equal(t, SubscribableWebhookEventType("post.cancelled"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_post_unpublished", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("post.unpublished")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("post.unpublished"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_unpublish_failed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("post.unpublish_failed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("post.unpublish_failed"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_post_approval_requested", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewSubscribableWebhookEventTypeFromString("post.approval_requested")
@@ -5981,6 +5995,20 @@ func TestEnumWebhookEventType(t *testing.T) {
 		val, err := NewWebhookEventTypeFromString("post.cancelled")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, WebhookEventType("post.cancelled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_unpublished", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("post.unpublished")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("post.unpublished"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_unpublish_failed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("post.unpublish_failed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("post.unpublish_failed"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_post_approval_requested", func(t *testing.T) {

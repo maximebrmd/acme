@@ -10,6 +10,8 @@ enum WebhookEventType: string
     case PostFailed = "post.failed";
     case PostUnconfirmed = "post.unconfirmed";
     case PostCancelled = "post.cancelled";
+    case PostUnpublished = "post.unpublished";
+    case PostUnpublishFailed = "post.unpublish_failed";
     case PostApprovalRequested = "post.approval_requested";
     case PostApproved = "post.approved";
     case PostChangesRequested = "post.changes_requested";

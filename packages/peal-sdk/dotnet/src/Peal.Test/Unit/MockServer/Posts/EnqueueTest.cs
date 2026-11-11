@@ -153,6 +153,7 @@ public class EnqueueTest : BaseMockServerTest
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
+                  "removedAt": "removedAt",
                   "round": 1,
                   "status": "pending",
                   "unconfirmedReason": "noResponse"
@@ -194,6 +195,7 @@ public class EnqueueTest : BaseMockServerTest
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
+                  "removedAt": "removedAt",
                   "round": 1,
                   "status": "pending",
                   "unconfirmedReason": "noResponse"
@@ -335,6 +337,7 @@ public class EnqueueTest : BaseMockServerTest
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
+                  "removedAt": "removedAt",
                   "round": 1,
                   "status": "pending",
                   "unconfirmedReason": "noResponse"

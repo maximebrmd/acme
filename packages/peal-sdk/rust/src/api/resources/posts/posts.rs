@@ -193,7 +193,7 @@ impl PostsClient {
             .await
     }
 
-    /// Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+    /// Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
     ///
     /// # Arguments
     ///
@@ -248,6 +248,7 @@ impl PostsClient {
                     .serialize("outcome", request.outcome.clone())
                     .serialize("platform", request.platform.clone())
                     .string("queueId", request.queue_id.clone())
+                    .serialize("removed", request.removed.clone())
                     .serialize("sort", request.sort.clone())
                     .serialize("status", request.status.clone())
                     .string("tagId", request.tag_id.clone())
@@ -1276,6 +1277,169 @@ impl PostsClient {
                     workspace_id, post_id, target_id
                 ),
                 Some(serde_json::to_value(request).map_err(ApiError::Serialization)?),
+                None,
+                options,
+            )
+            .await
+    }
+
+    /// Deletes the post from one channel's platform, for everyone: every part of a thread, the last first, so a deletion that stops midway leaves a shorter thread that still reads from its start. It cannot be undone from Peal. The request is accepted (202) and a job deletes it, one call at a time with the channel's other calls; a part the platform no longer has counts as deleted (`alreadyGone`), and a call that fails is tried again (as long as the platform asks to wait, and five more times while it cannot be reached), after which the change is `failed` with its `code` and asking again deletes the parts left. `wait` waits up to that many seconds (60 at most) for the change to end, and answers it as it then stands. Once done, the target keeps the status `published` with its `removedAt` (the month's count and the usage stay, as the post did go out), analytics stops reading it and keeps what it read, and the inbox stops reading its comments and keeps those it has. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted already, Peal has no id for a part of it, the platform does not let Peal delete it (the capabilities' `livePost` say so beforehand), another change of it is pending, the channel cannot be used, or a boost that is not over shows it. Webhooks hear `post.unpublished` or `post.unpublish_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .posts
+    ///         .unpublish_target(
+    ///             &"workspaceId".to_string(),
+    ///             &"postId".to_string(),
+    ///             &"targetId".to_string(),
+    ///             &UnpublishTargetQueryRequest {
+    ///                 ..Default::default()
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn unpublish_target(
+        &self,
+        workspace_id: &str,
+        post_id: &str,
+        target_id: &str,
+        request: &UnpublishTargetQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<LivePostChange, ApiError> {
+        let options = {
+            let mut o = options.unwrap_or_default();
+            o.max_retries = Some(0);
+            Some(o)
+        };
+        self.http_client
+            .execute_request(
+                Method::POST,
+                &format!(
+                    "api/workspaces/{}/posts/{}/targets/{}/unpublish",
+                    workspace_id, post_id, target_id
+                ),
+                None,
+                QueryBuilder::new()
+                    .string("wait", request.wait.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
+
+    /// Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (`changes`) and, beside them, why it could not be on the others (`refused`, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .posts
+    ///         .unpublish(&"workspaceId".to_string(), &"postId".to_string(), None)
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn unpublish(
+        &self,
+        workspace_id: &str,
+        post_id: &str,
+        options: Option<RequestOptions>,
+    ) -> Result<PostUnpublish, ApiError> {
+        let options = {
+            let mut o = options.unwrap_or_default();
+            o.max_retries = Some(0);
+            Some(o)
+        };
+        self.http_client
+            .execute_request(
+                Method::POST,
+                &format!(
+                    "api/workspaces/{}/posts/{}/unpublish",
+                    workspace_id, post_id
+                ),
+                None,
+                None,
+                options,
+            )
+            .await
+    }
+
+    /// Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .posts
+    ///         .changes(&"workspaceId".to_string(), &"postId".to_string(), None)
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn changes(
+        &self,
+        workspace_id: &str,
+        post_id: &str,
+        options: Option<RequestOptions>,
+    ) -> Result<LivePostChanges, ApiError> {
+        self.http_client
+            .execute_request(
+                Method::GET,
+                &format!("api/workspaces/{}/posts/{}/changes", workspace_id, post_id),
+                None,
                 None,
                 options,
             )

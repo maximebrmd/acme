@@ -30,6 +30,12 @@ public class PlatformsTest : BaseMockServerTest
                   "kind": "thread",
                   "maxCount": 1
                 },
+                "livePost": {
+                  "edit": true,
+                  "editBlockedBy": "noApi",
+                  "unpublish": true,
+                  "unpublishBlockedBy": "noApi"
+                },
                 "lookups": [
                   {
                     "fills": [
@@ -267,6 +273,12 @@ public class PlatformsTest : BaseMockServerTest
                 "followUps": {
                   "kind": "thread",
                   "maxCount": 1
+                },
+                "livePost": {
+                  "edit": true,
+                  "editBlockedBy": "noApi",
+                  "unpublish": true,
+                  "unpublishBlockedBy": "noApi"
                 },
                 "lookups": [
                   {
@@ -531,6 +543,12 @@ public class PlatformsTest : BaseMockServerTest
                 "followUps": {
                   "kind": "thread",
                   "maxCount": 1
+                },
+                "livePost": {
+                  "edit": true,
+                  "editBlockedBy": "noApi",
+                  "unpublish": true,
+                  "unpublishBlockedBy": "noApi"
                 },
                 "lookups": [
                   {

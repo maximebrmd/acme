@@ -234,25 +234,25 @@ This SDK uses forward-compatible enums that can handle unknown values gracefully
 using Peal;
 
 // Using a built-in value
-var listThreadsInboxRequestUnanswered = ListThreadsInboxRequestUnanswered.True;
+var searchPostsRequestRemoved = SearchPostsRequestRemoved.True;
 
 // Using a custom value
-var customListThreadsInboxRequestUnanswered = ListThreadsInboxRequestUnanswered.FromCustom("custom-value");
+var customSearchPostsRequestRemoved = SearchPostsRequestRemoved.FromCustom("custom-value");
 
 // Using in a switch statement
-switch (listThreadsInboxRequestUnanswered.Value)
+switch (searchPostsRequestRemoved.Value)
 {
-    case ListThreadsInboxRequestUnanswered.Values.True:
+    case SearchPostsRequestRemoved.Values.True:
         Console.WriteLine("True");
         break;
     default:
-        Console.WriteLine($"Unknown value: {listThreadsInboxRequestUnanswered.Value}");
+        Console.WriteLine($"Unknown value: {searchPostsRequestRemoved.Value}");
         break;
 }
 
 // Explicit casting
-string listThreadsInboxRequestUnansweredString = (string)ListThreadsInboxRequestUnanswered.True;
-ListThreadsInboxRequestUnanswered listThreadsInboxRequestUnansweredFromString = (ListThreadsInboxRequestUnanswered)"true";
+string searchPostsRequestRemovedString = (string)SearchPostsRequestRemoved.True;
+SearchPostsRequestRemoved searchPostsRequestRemovedFromString = (SearchPostsRequestRemoved)"true";
 ```
 
 ## Contributing

@@ -369,6 +369,16 @@ if typing.TYPE_CHECKING:
     from .linked_in_organization import LinkedInOrganization
     from .linked_in_visibility import LinkedInVisibility
     from .live_part import LivePart
+    from .live_post_blocker import LivePostBlocker
+    from .live_post_capabilities import LivePostCapabilities
+    from .live_post_change import LivePostChange
+    from .live_post_change_kind import LivePostChangeKind
+    from .live_post_change_status import LivePostChangeStatus
+    from .live_post_changes import LivePostChanges
+    from .live_post_not_changeable_encoded import LivePostNotChangeableEncoded
+    from .live_post_not_changeable_encoded_tag import LivePostNotChangeableEncodedTag
+    from .live_post_refusal import LivePostRefusal
+    from .live_post_refused_target import LivePostRefusedTarget
     from .lookup_description import LookupDescription
     from .lookup_input_invalid_encoded import LookupInputInvalidEncoded
     from .lookup_input_invalid_encoded_tag import LookupInputInvalidEncodedTag
@@ -588,6 +598,7 @@ if typing.TYPE_CHECKING:
     from .post_timing_at import PostTimingAt
     from .post_timing_now import PostTimingNow
     from .post_timing_queue import PostTimingQueue
+    from .post_unpublish import PostUnpublish
     from .post_validation import PostValidation
     from .post_warning import PostWarning, PostWarning_ChannelsDropped, PostWarning_QueueChannelsDropped
     from .post_warning_channels_dropped import PostWarningChannelsDropped
@@ -1144,6 +1155,16 @@ _dynamic_imports: typing.Dict[str, str] = {
     "LinkedInOrganization": ".linked_in_organization",
     "LinkedInVisibility": ".linked_in_visibility",
     "LivePart": ".live_part",
+    "LivePostBlocker": ".live_post_blocker",
+    "LivePostCapabilities": ".live_post_capabilities",
+    "LivePostChange": ".live_post_change",
+    "LivePostChangeKind": ".live_post_change_kind",
+    "LivePostChangeStatus": ".live_post_change_status",
+    "LivePostChanges": ".live_post_changes",
+    "LivePostNotChangeableEncoded": ".live_post_not_changeable_encoded",
+    "LivePostNotChangeableEncodedTag": ".live_post_not_changeable_encoded_tag",
+    "LivePostRefusal": ".live_post_refusal",
+    "LivePostRefusedTarget": ".live_post_refused_target",
     "LookupDescription": ".lookup_description",
     "LookupInputInvalidEncoded": ".lookup_input_invalid_encoded",
     "LookupInputInvalidEncodedTag": ".lookup_input_invalid_encoded_tag",
@@ -1354,6 +1375,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostTiming_At": ".post_timing",
     "PostTiming_Now": ".post_timing",
     "PostTiming_Queue": ".post_timing",
+    "PostUnpublish": ".post_unpublish",
     "PostValidation": ".post_validation",
     "PostWarning": ".post_warning",
     "PostWarningChannelsDropped": ".post_warning_channels_dropped",
@@ -1934,6 +1956,16 @@ __all__ = [
     "LinkedInOrganization",
     "LinkedInVisibility",
     "LivePart",
+    "LivePostBlocker",
+    "LivePostCapabilities",
+    "LivePostChange",
+    "LivePostChangeKind",
+    "LivePostChangeStatus",
+    "LivePostChanges",
+    "LivePostNotChangeableEncoded",
+    "LivePostNotChangeableEncodedTag",
+    "LivePostRefusal",
+    "LivePostRefusedTarget",
     "LookupDescription",
     "LookupInputInvalidEncoded",
     "LookupInputInvalidEncodedTag",
@@ -2144,6 +2176,7 @@ __all__ = [
     "PostTiming_At",
     "PostTiming_Now",
     "PostTiming_Queue",
+    "PostUnpublish",
     "PostValidation",
     "PostWarning",
     "PostWarningChannelsDropped",

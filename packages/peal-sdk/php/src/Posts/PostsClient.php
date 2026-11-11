@@ -34,6 +34,10 @@ use Peal\Posts\Requests\SchedulePost;
 use Peal\Posts\Requests\ReschedulePostsRequest;
 use Peal\Posts\Requests\QueuePost;
 use Peal\Posts\Requests\ConfirmPostsRequest;
+use Peal\Posts\Requests\UnpublishTargetPostsRequest;
+use Peal\Types\LivePostChange;
+use Peal\Types\PostUnpublish;
+use Peal\Types\LivePostChanges;
 
 class PostsClient
 {
@@ -281,7 +285,7 @@ class PostsClient
     }
 
     /**
-     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `queueId` (posts that queue placed), `removed` (`true`: posts Peal deleted from at least one channel's platform; `false`: posts deleted from none), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
      *
      * Example:
      * ```php
@@ -335,6 +339,9 @@ class PostsClient
         }
         if ($request->queueId != null) {
             $query['queueId'] = $request->queueId;
+        }
+        if ($request->removed != null) {
+            $query['removed'] = $request->removed;
         }
         if ($request->sort != null) {
             $query['sort'] = $request->sort;
@@ -1496,6 +1503,188 @@ class PostsClient
                     return null;
                 }
                 return Post::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Deletes the post from one channel's platform, for everyone: every part of a thread, the last first, so a deletion that stops midway leaves a shorter thread that still reads from its start. It cannot be undone from Peal. The request is accepted (202) and a job deletes it, one call at a time with the channel's other calls; a part the platform no longer has counts as deleted (`alreadyGone`), and a call that fails is tried again (as long as the platform asks to wait, and five more times while it cannot be reached), after which the change is `failed` with its `code` and asking again deletes the parts left. `wait` waits up to that many seconds (60 at most) for the change to end, and answers it as it then stands. Once done, the target keeps the status `published` with its `removedAt` (the month's count and the usage stay, as the post did go out), analytics stops reading it and keeps what it read, and the inbox stops reading its comments and keeps those it has. Refused (LivePostNotChangeable) before anything is called where it is not live there, was deleted already, Peal has no id for a part of it, the platform does not let Peal delete it (the capabilities' `livePost` say so beforehand), another change of it is pending, the channel cannot be used, or a boost that is not over shows it. Webhooks hear `post.unpublished` or `post.unpublish_failed`. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     *
+     * Example:
+     * ```php
+     * $client->posts->unpublishTarget(
+     *     'workspaceId',
+     *     'postId',
+     *     'targetId',
+     *     new UnpublishTargetPostsRequest([]),
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param string $postId
+     * @param string $targetId
+     * @param UnpublishTargetPostsRequest $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?LivePostChange
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function unpublishTarget(string $workspaceId, string $postId, string $targetId, UnpublishTargetPostsRequest $request = new UnpublishTargetPostsRequest(), ?array $options = null): ?LivePostChange
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        $query = [];
+        if ($request->wait != null) {
+            $query['wait'] = $request->wait;
+        }
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/posts/{$postId}/targets/{$targetId}/unpublish",
+                    method: HttpMethod::POST,
+                    query: $query,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return LivePostChange::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Deletes the post from every channel's platform where it can be, as unpublishing it on each channel does, and answers the change made on each (`changes`) and, beside them, why it could not be on the others (`refused`, each with the target and the reason LivePostNotChangeable gives): one channel that cannot never fails the whole request. It cannot be undone from Peal. Needs post:publish; an OAuth client needs the scope workspace:publish.
+     *
+     * Example:
+     * ```php
+     * $client->posts->unpublish(
+     *     'workspaceId',
+     *     'postId',
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param string $postId
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?PostUnpublish
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function unpublish(string $workspaceId, string $postId, ?array $options = null): ?PostUnpublish
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/posts/{$postId}/unpublish",
+                    method: HttpMethod::POST,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return PostUnpublish::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Lists the changes asked of the post once it was live (deleting it from a channel's platform), newest first, each with where it stands: `pending`, `done` or `failed` with its `code`. Needs post:read.
+     *
+     * Example:
+     * ```php
+     * $client->posts->changes(
+     *     'workspaceId',
+     *     'postId',
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param string $postId
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?LivePostChanges
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function changes(string $workspaceId, string $postId, ?array $options = null): ?LivePostChanges
+    {
+        $options = array_merge($this->options, $options ?? []);
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/posts/{$postId}/changes",
+                    method: HttpMethod::GET,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return LivePostChanges::fromJson($json);
             }
         } catch (JsonException $e) {
             throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);

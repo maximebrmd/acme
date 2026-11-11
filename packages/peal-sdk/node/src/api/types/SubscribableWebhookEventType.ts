@@ -8,6 +8,8 @@ export const SubscribableWebhookEventType = {
         PostFailed: "post.failed",
         PostUnconfirmed: "post.unconfirmed",
         PostCancelled: "post.cancelled",
+        PostUnpublished: "post.unpublished",
+        PostUnpublishFailed: "post.unpublish_failed",
         PostApprovalRequested: "post.approval_requested",
         PostApproved: "post.approved",
         PostChangesRequested: "post.changes_requested",

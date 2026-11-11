@@ -558,6 +558,8 @@ const (
 	SubscribableWebhookEventTypePostFailed             SubscribableWebhookEventType = "post.failed"
 	SubscribableWebhookEventTypePostUnconfirmed        SubscribableWebhookEventType = "post.unconfirmed"
 	SubscribableWebhookEventTypePostCancelled          SubscribableWebhookEventType = "post.cancelled"
+	SubscribableWebhookEventTypePostUnpublished        SubscribableWebhookEventType = "post.unpublished"
+	SubscribableWebhookEventTypePostUnpublishFailed    SubscribableWebhookEventType = "post.unpublish_failed"
 	SubscribableWebhookEventTypePostApprovalRequested  SubscribableWebhookEventType = "post.approval_requested"
 	SubscribableWebhookEventTypePostApproved           SubscribableWebhookEventType = "post.approved"
 	SubscribableWebhookEventTypePostChangesRequested   SubscribableWebhookEventType = "post.changes_requested"
@@ -592,6 +594,10 @@ func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEve
 		return SubscribableWebhookEventTypePostUnconfirmed, nil
 	case "post.cancelled":
 		return SubscribableWebhookEventTypePostCancelled, nil
+	case "post.unpublished":
+		return SubscribableWebhookEventTypePostUnpublished, nil
+	case "post.unpublish_failed":
+		return SubscribableWebhookEventTypePostUnpublishFailed, nil
 	case "post.approval_requested":
 		return SubscribableWebhookEventTypePostApprovalRequested, nil
 	case "post.approved":
@@ -1794,6 +1800,8 @@ const (
 	WebhookEventTypePostFailed             WebhookEventType = "post.failed"
 	WebhookEventTypePostUnconfirmed        WebhookEventType = "post.unconfirmed"
 	WebhookEventTypePostCancelled          WebhookEventType = "post.cancelled"
+	WebhookEventTypePostUnpublished        WebhookEventType = "post.unpublished"
+	WebhookEventTypePostUnpublishFailed    WebhookEventType = "post.unpublish_failed"
 	WebhookEventTypePostApprovalRequested  WebhookEventType = "post.approval_requested"
 	WebhookEventTypePostApproved           WebhookEventType = "post.approved"
 	WebhookEventTypePostChangesRequested   WebhookEventType = "post.changes_requested"
@@ -1829,6 +1837,10 @@ func NewWebhookEventTypeFromString(s string) (WebhookEventType, error) {
 		return WebhookEventTypePostUnconfirmed, nil
 	case "post.cancelled":
 		return WebhookEventTypePostCancelled, nil
+	case "post.unpublished":
+		return WebhookEventTypePostUnpublished, nil
+	case "post.unpublish_failed":
+		return WebhookEventTypePostUnpublishFailed, nil
 	case "post.approval_requested":
 		return WebhookEventTypePostApprovalRequested, nil
 	case "post.approved":

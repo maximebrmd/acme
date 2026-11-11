@@ -4,6 +4,7 @@ export const InboxCollectionEnd = {
         Window: "window",
         Disconnected: "disconnected",
         Unsupported: "unsupported",
-        Missing: "missing"
+        Missing: "missing",
+        Removed: "removed"
     } as const;
 export type InboxCollectionEnd = typeof InboxCollectionEnd[keyof typeof InboxCollectionEnd];

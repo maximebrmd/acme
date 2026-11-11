@@ -13,6 +13,8 @@ module Peal
       POST_FAILED = "post.failed"
       POST_UNCONFIRMED = "post.unconfirmed"
       POST_CANCELLED = "post.cancelled"
+      POST_UNPUBLISHED = "post.unpublished"
+      POST_UNPUBLISH_FAILED = "post.unpublish_failed"
       POST_APPROVAL_REQUESTED = "post.approval_requested"
       POST_APPROVED = "post.approved"
       POST_CHANGES_REQUESTED = "post.changes_requested"

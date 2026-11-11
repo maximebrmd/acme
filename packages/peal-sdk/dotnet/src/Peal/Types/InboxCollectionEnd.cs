@@ -16,6 +16,8 @@ public readonly record struct InboxCollectionEnd : IStringEnum
 
     public static readonly InboxCollectionEnd Missing = new(Values.Missing);
 
+    public static readonly InboxCollectionEnd Removed = new(Values.Removed);
+
     public InboxCollectionEnd(string value)
     {
         Value = value;
@@ -119,5 +121,7 @@ public readonly record struct InboxCollectionEnd : IStringEnum
         public const string Unsupported = "unsupported";
 
         public const string Missing = "missing";
+
+        public const string Removed = "removed";
     }
 }

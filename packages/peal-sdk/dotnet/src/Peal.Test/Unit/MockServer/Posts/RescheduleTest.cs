@@ -156,6 +156,7 @@ public class RescheduleTest : BaseMockServerTest
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
+                  "removedAt": "removedAt",
                   "round": 1,
                   "status": "pending",
                   "unconfirmedReason": "noResponse"
@@ -197,6 +198,7 @@ public class RescheduleTest : BaseMockServerTest
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
+                  "removedAt": "removedAt",
                   "round": 1,
                   "status": "pending",
                   "unconfirmedReason": "noResponse"
@@ -340,6 +342,7 @@ public class RescheduleTest : BaseMockServerTest
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
+                  "removedAt": "removedAt",
                   "round": 1,
                   "status": "pending",
                   "unconfirmedReason": "noResponse"

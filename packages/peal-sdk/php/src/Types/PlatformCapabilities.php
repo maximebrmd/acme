@@ -21,6 +21,12 @@ class PlatformCapabilities extends JsonSerializableType
     public ?FollowUpCapabilities $followUps;
 
     /**
+     * @var LivePostCapabilities $livePost
+     */
+    #[JsonProperty('livePost')]
+    public LivePostCapabilities $livePost;
+
+    /**
      * @var array<LookupDescription> $lookups
      */
     #[JsonProperty('lookups'), ArrayType([LookupDescription::class])]
@@ -59,6 +65,7 @@ class PlatformCapabilities extends JsonSerializableType
     /**
      * @param array{
      *   analytics: PlatformCapabilitiesAnalytics,
+     *   livePost: LivePostCapabilities,
      *   lookups: array<LookupDescription>,
      *   media: MediaCapabilities,
      *   options: PlatformCapabilitiesOptions,
@@ -73,6 +80,7 @@ class PlatformCapabilities extends JsonSerializableType
     ) {
         $this->analytics = $values['analytics'];
         $this->followUps = $values['followUps'] ?? null;
+        $this->livePost = $values['livePost'];
         $this->lookups = $values['lookups'];
         $this->media = $values['media'];
         $this->options = $values['options'];

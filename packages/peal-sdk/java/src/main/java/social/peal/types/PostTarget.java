@@ -40,6 +40,8 @@ public final class PostTarget {
 
     private final Optional<String> publishedAt;
 
+    private final Optional<String> removedAt;
+
     private final int round;
 
     private final PostTargetStatus status;
@@ -57,6 +59,7 @@ public final class PostTarget {
             TargetParts parts,
             Optional<String> permalink,
             Optional<String> publishedAt,
+            Optional<String> removedAt,
             int round,
             PostTargetStatus status,
             Optional<UnconfirmedReason> unconfirmedReason,
@@ -69,6 +72,7 @@ public final class PostTarget {
         this.parts = parts;
         this.permalink = permalink;
         this.publishedAt = publishedAt;
+        this.removedAt = removedAt;
         this.round = round;
         this.status = status;
         this.unconfirmedReason = unconfirmedReason;
@@ -127,6 +131,14 @@ public final class PostTarget {
         return publishedAt;
     }
 
+    @JsonIgnore
+    public Optional<String> getRemovedAt() {
+        if (removedAt == null) {
+            return Optional.empty();
+        }
+        return removedAt;
+    }
+
     @JsonProperty("round")
     public int getRound() {
         return round;
@@ -170,6 +182,12 @@ public final class PostTarget {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("removedAt")
+    private Optional<String> _getRemovedAt() {
+        return removedAt;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("unconfirmedReason")
     private Optional<UnconfirmedReason> _getUnconfirmedReason() {
         return unconfirmedReason;
@@ -195,6 +213,7 @@ public final class PostTarget {
                 && parts.equals(other.parts)
                 && permalink.equals(other.permalink)
                 && publishedAt.equals(other.publishedAt)
+                && removedAt.equals(other.removedAt)
                 && round == other.round
                 && status.equals(other.status)
                 && unconfirmedReason.equals(other.unconfirmedReason);
@@ -211,6 +230,7 @@ public final class PostTarget {
                 this.parts,
                 this.permalink,
                 this.publishedAt,
+                this.removedAt,
                 this.round,
                 this.status,
                 this.unconfirmedReason);
@@ -282,6 +302,12 @@ public final class PostTarget {
 
         _FinalStage publishedAt(Nullable<String> publishedAt);
 
+        _FinalStage removedAt(Optional<String> removedAt);
+
+        _FinalStage removedAt(String removedAt);
+
+        _FinalStage removedAt(Nullable<String> removedAt);
+
         _FinalStage unconfirmedReason(Optional<UnconfirmedReason> unconfirmedReason);
 
         _FinalStage unconfirmedReason(UnconfirmedReason unconfirmedReason);
@@ -303,6 +329,8 @@ public final class PostTarget {
         private PostTargetStatus status;
 
         private Optional<UnconfirmedReason> unconfirmedReason = Optional.empty();
+
+        private Optional<String> removedAt = Optional.empty();
 
         private Optional<String> publishedAt = Optional.empty();
 
@@ -328,6 +356,7 @@ public final class PostTarget {
             parts(other.getParts());
             permalink(other.getPermalink());
             publishedAt(other.getPublishedAt());
+            removedAt(other.getRemovedAt());
             round(other.getRound());
             status(other.getStatus());
             unconfirmedReason(other.getUnconfirmedReason());
@@ -391,6 +420,31 @@ public final class PostTarget {
         @JsonSetter(value = "unconfirmedReason", nulls = Nulls.SKIP)
         public _FinalStage unconfirmedReason(Optional<UnconfirmedReason> unconfirmedReason) {
             this.unconfirmedReason = unconfirmedReason;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage removedAt(Nullable<String> removedAt) {
+            if (removedAt.isNull()) {
+                this.removedAt = null;
+            } else if (removedAt.isEmpty()) {
+                this.removedAt = Optional.empty();
+            } else {
+                this.removedAt = Optional.of(removedAt.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage removedAt(String removedAt) {
+            this.removedAt = Optional.ofNullable(removedAt);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "removedAt", nulls = Nulls.SKIP)
+        public _FinalStage removedAt(Optional<String> removedAt) {
+            this.removedAt = removedAt;
             return this;
         }
 
@@ -518,6 +572,7 @@ public final class PostTarget {
                     parts,
                     permalink,
                     publishedAt,
+                    removedAt,
                     round,
                     status,
                     unconfirmedReason,
@@ -534,6 +589,7 @@ public final class PostTarget {
                     || key.equalsIgnoreCase("parts")
                     || key.equalsIgnoreCase("permalink")
                     || key.equalsIgnoreCase("publishedAt")
+                    || key.equalsIgnoreCase("removedAt")
                     || key.equalsIgnoreCase("round")
                     || key.equalsIgnoreCase("status")
                     || key.equalsIgnoreCase("unconfirmedReason")) {

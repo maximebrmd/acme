@@ -150,6 +150,7 @@ public class ListTest : BaseMockServerTest
                     },
                     "permalink": "permalink",
                     "publishedAt": "publishedAt",
+                    "removedAt": "removedAt",
                     "round": 1,
                     "status": "pending",
                     "unconfirmedReason": "noResponse"
@@ -191,6 +192,7 @@ public class ListTest : BaseMockServerTest
                     },
                     "permalink": "permalink",
                     "publishedAt": "publishedAt",
+                    "removedAt": "removedAt",
                     "round": 1,
                     "status": "pending",
                     "unconfirmedReason": "noResponse"
@@ -353,6 +355,7 @@ public class ListTest : BaseMockServerTest
                     },
                     "permalink": "permalink",
                     "publishedAt": "publishedAt",
+                    "removedAt": "removedAt",
                     "round": 1,
                     "status": "pending",
                     "unconfirmedReason": "noResponse"
@@ -394,6 +397,7 @@ public class ListTest : BaseMockServerTest
                     },
                     "permalink": "permalink",
                     "publishedAt": "publishedAt",
+                    "removedAt": "removedAt",
                     "round": 1,
                     "status": "pending",
                     "unconfirmedReason": "noResponse"

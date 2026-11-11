@@ -831,8 +831,10 @@ export type {
 } from "./platform.ts";
 
 export {
+  LivePostChangeKindSchema,
   LivePostChangeSchema,
   LivePostChangesSchema,
+  LivePostChangeStatusSchema,
   LivePostRefusalSchema,
   LivePostRefusedTargetSchema,
   PostUnpublishSchema,
@@ -840,7 +842,9 @@ export {
 
 export type {
   LivePostChange,
+  LivePostChangeKind,
   LivePostChanges,
+  LivePostChangeStatus,
   LivePostRefusal,
   LivePostRefusedTarget,
   PostUnpublish,

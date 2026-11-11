@@ -30,6 +30,25 @@ export const LivePostRefusalSchema = Schema.Literals([
 export type LivePostRefusal = typeof LivePostRefusalSchema.Type;
 
 /**
+ * What a change of a live post does: `unpublish` deletes it. More kinds
+ * may come (a new value of this enum).
+ */
+export const LivePostChangeKindSchema = Schema.Literal("unpublish").annotate({
+  identifier: "LivePostChangeKind",
+});
+
+export type LivePostChangeKind = typeof LivePostChangeKindSchema.Type;
+
+/** Where a change of a live post stands. */
+export const LivePostChangeStatusSchema = Schema.Literals([
+  "pending",
+  "done",
+  "failed",
+]).annotate({ identifier: "LivePostChangeStatus" });
+
+export type LivePostChangeStatus = typeof LivePostChangeStatusSchema.Type;
+
+/**
  * A change asked of a post that is live on one channel: `unpublish`
  * deletes it from the platform, every part of it, the last part of a
  * thread first. `pending` while Peal deletes the parts left (`partsLeft`),
@@ -45,12 +64,12 @@ export const LivePostChangeSchema = Schema.Struct({
   code: Schema.NullOr(Schema.String),
   finishedAt: Schema.NullOr(Schema.DateTimeUtc),
   id: Schema.String,
-  kind: Schema.Literals(["unpublish"]),
+  kind: LivePostChangeKindSchema,
   // How many parts are still to delete: 0 once done.
   partsLeft: Schema.Int,
   postId: Schema.String,
   requestedAt: Schema.DateTimeUtc,
-  status: Schema.Literals(["pending", "done", "failed"]),
+  status: LivePostChangeStatusSchema,
   targetId: Schema.String,
 }).annotate({ identifier: "LivePostChange" });
 

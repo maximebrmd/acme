@@ -42,6 +42,9 @@ public final class WebhookEventType {
     public static final WebhookEventType POST_UNCONFIRMED =
             new WebhookEventType(Value.POST_UNCONFIRMED, "post.unconfirmed");
 
+    public static final WebhookEventType POST_UNPUBLISH_FAILED =
+            new WebhookEventType(Value.POST_UNPUBLISH_FAILED, "post.unpublish_failed");
+
     public static final WebhookEventType BOOST_STARTED = new WebhookEventType(Value.BOOST_STARTED, "boost.started");
 
     public static final WebhookEventType POST_PUBLISHED = new WebhookEventType(Value.POST_PUBLISHED, "post.published");
@@ -67,6 +70,9 @@ public final class WebhookEventType {
     public static final WebhookEventType BOOST_PAUSED = new WebhookEventType(Value.BOOST_PAUSED, "boost.paused");
 
     public static final WebhookEventType MEDIA_READY = new WebhookEventType(Value.MEDIA_READY, "media.ready");
+
+    public static final WebhookEventType POST_UNPUBLISHED =
+            new WebhookEventType(Value.POST_UNPUBLISHED, "post.unpublished");
 
     private final Value value;
 
@@ -128,6 +134,8 @@ public final class WebhookEventType {
                 return visitor.visitWebhookTest();
             case POST_UNCONFIRMED:
                 return visitor.visitPostUnconfirmed();
+            case POST_UNPUBLISH_FAILED:
+                return visitor.visitPostUnpublishFailed();
             case BOOST_STARTED:
                 return visitor.visitBoostStarted();
             case POST_PUBLISHED:
@@ -150,6 +158,8 @@ public final class WebhookEventType {
                 return visitor.visitBoostPaused();
             case MEDIA_READY:
                 return visitor.visitMediaReady();
+            case POST_UNPUBLISHED:
+                return visitor.visitPostUnpublished();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -187,6 +197,8 @@ public final class WebhookEventType {
                 return WEBHOOK_TEST;
             case "post.unconfirmed":
                 return POST_UNCONFIRMED;
+            case "post.unpublish_failed":
+                return POST_UNPUBLISH_FAILED;
             case "boost.started":
                 return BOOST_STARTED;
             case "post.published":
@@ -209,6 +221,8 @@ public final class WebhookEventType {
                 return BOOST_PAUSED;
             case "media.ready":
                 return MEDIA_READY;
+            case "post.unpublished":
+                return POST_UNPUBLISHED;
             default:
                 return new WebhookEventType(Value.UNKNOWN, value);
         }
@@ -226,6 +240,10 @@ public final class WebhookEventType {
         POST_UNCONFIRMED,
 
         POST_CANCELLED,
+
+        POST_UNPUBLISHED,
+
+        POST_UNPUBLISH_FAILED,
 
         POST_APPROVAL_REQUESTED,
 
@@ -280,6 +298,10 @@ public final class WebhookEventType {
         T visitPostUnconfirmed();
 
         T visitPostCancelled();
+
+        T visitPostUnpublished();
+
+        T visitPostUnpublishFailed();
 
         T visitPostApprovalRequested();
 

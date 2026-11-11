@@ -10,6 +10,8 @@ WebhookEventType = typing.Union[
         "post.failed",
         "post.unconfirmed",
         "post.cancelled",
+        "post.unpublished",
+        "post.unpublish_failed",
         "post.approval_requested",
         "post.approved",
         "post.changes_requested",

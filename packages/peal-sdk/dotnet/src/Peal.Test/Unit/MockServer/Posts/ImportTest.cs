@@ -161,6 +161,7 @@ public class ImportTest : BaseMockServerTest
                         },
                         "permalink": "permalink",
                         "publishedAt": "publishedAt",
+                        "removedAt": "removedAt",
                         "round": 1,
                         "status": "pending",
                         "unconfirmedReason": "noResponse"
@@ -202,6 +203,7 @@ public class ImportTest : BaseMockServerTest
                         },
                         "permalink": "permalink",
                         "publishedAt": "publishedAt",
+                        "removedAt": "removedAt",
                         "round": 1,
                         "status": "pending",
                         "unconfirmedReason": "noResponse"
@@ -369,6 +371,7 @@ public class ImportTest : BaseMockServerTest
                         },
                         "permalink": "permalink",
                         "publishedAt": "publishedAt",
+                        "removedAt": "removedAt",
                         "round": 1,
                         "status": "pending",
                         "unconfirmedReason": "noResponse"
@@ -410,6 +413,7 @@ public class ImportTest : BaseMockServerTest
                         },
                         "permalink": "permalink",
                         "publishedAt": "publishedAt",
+                        "removedAt": "removedAt",
                         "round": 1,
                         "status": "pending",
                         "unconfirmedReason": "noResponse"
