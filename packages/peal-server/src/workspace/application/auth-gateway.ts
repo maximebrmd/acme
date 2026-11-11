@@ -1,7 +1,7 @@
 import { Context } from "effect";
 import type { Effect, Option, Redacted } from "effect";
 
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { ApiKeyPrincipal } from "#workspace/domain/api-key-principal.ts";
 import type { PartnerKeyPrincipal } from "#workspace/domain/partner-key-principal.ts";
 import type { UserPrincipal } from "#workspace/domain/user-principal.ts";
@@ -48,6 +48,14 @@ export class AuthGateway extends Context.Service<
     readonly apiToken: (
       request: AccessTokenRequest
     ) => Effect.Effect<UserPrincipal, AuthUnavailable | InvalidAccessToken>;
+    /**
+     * How many recovery codes the user's two-step verification has left:
+     * none when it is not on. The codes themselves never leave the
+     * adapter.
+     */
+    readonly recoveryCodesLeft: (
+      userId: UserId
+    ) => Effect.Effect<Option.Option<number>, AuthUnavailable>;
     /** Whether cookie-authenticated requests may come from this origin. */
     readonly isTrustedOrigin: (origin: string) => boolean;
     /**

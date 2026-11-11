@@ -138,6 +138,7 @@ export const syntheticMe: Me = {
     image: null,
     locale: "en",
     name: "Synthetic User",
+    twoStepEnabled: false,
   },
   workspaces: [
     {
@@ -146,6 +147,7 @@ export const syntheticMe: Me = {
       permissions: ["post:read"],
       role: "owner",
       slug: "studio",
+      twoStepRequired: false,
     },
   ],
 };

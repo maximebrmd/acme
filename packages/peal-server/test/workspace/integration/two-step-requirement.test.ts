@@ -1,6 +1,7 @@
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
+import { MeSchema } from "peal-contract";
 
 import { authorize, registeredClient } from "#test/app/mcp-support.ts";
 import { commandLineToken, enrolled, joined } from "#test/workspace/support.ts";
@@ -305,6 +306,36 @@ layer(RequirementLive, { excludeTestServices: true, timeout: "180 seconds" })(
               reason: "twoStepRequired",
             });
           }
+
+          // Still listed, with the requirement, and the reason it is.
+          const me = yield* bodyOf(
+            MeSchema,
+            yield* app.request("/api/me", { headers: asPerson(member) })
+          );
+
+          assert.isFalse(me.user.twoStepEnabled);
+
+          const required = new Map(
+            me.workspaces.map(({ id, twoStepRequired }) => [
+              id,
+              twoStepRequired,
+            ])
+          );
+
+          assert.deepStrictEqual(
+            [required.get(workspaceId), required.get(ownWorkspace)],
+            [true, false]
+          );
+
+          const status = yield* app.request("/api/me/two-step", {
+            headers: asPerson(member),
+          });
+
+          assert.deepStrictEqual(status.body, {
+            enabled: false,
+            recoveryCodesLeft: null,
+            requiredBy: [{ name: "Locked", workspaceId }],
+          });
 
           const byMcp = yield* mcpCall(mcpToken);
 

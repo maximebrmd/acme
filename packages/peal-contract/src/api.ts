@@ -194,12 +194,14 @@ export {
   AccountClosureSchema,
   AccountExportSchema,
   DeleteAccountSchema,
+  TwoStepStatusSchema,
 } from "./account.ts";
 
 export type {
   AccountClosure,
   AccountExport,
   DeleteAccount,
+  TwoStepStatus,
 } from "./account.ts";
 
 export { ConnectedAppNotFound } from "./connected-app-not-found.ts";

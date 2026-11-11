@@ -7,6 +7,7 @@ import { deviceCodeGrantType, OAuthApi } from "peal-contract";
 import { registeredClient } from "#test/app/mcp-support.ts";
 import {
   codeOf,
+  commandLineToken,
   enable,
   enrolled,
   keyOf,
@@ -18,6 +19,7 @@ import {
 } from "#test/workspace/support.ts";
 
 import {
+  apiKeyOf,
   bodyOf,
   inProcessHttpClient,
   MigratedSqlLive,
@@ -86,6 +88,24 @@ const meStatus = (cookies: string) =>
   TestApp.use((app) =>
     app.request("/api/me", { headers: { cookie: cookies } })
   ).pipe(Effect.map(({ status }) => status));
+
+const TwoStepStatusSchema = Schema.Struct({
+  enabled: Schema.Boolean,
+  recoveryCodesLeft: Schema.NullOr(Schema.Int),
+  requiredBy: Schema.Array(
+    Schema.Struct({ name: Schema.String, workspaceId: Schema.String })
+  ),
+});
+
+const statusOf = (headers: Readonly<Record<string, string>>) =>
+  Effect.gen(function* readStatus() {
+    const app = yield* TestApp;
+
+    return yield* bodyOf(
+      TwoStepStatusSchema,
+      yield* app.request("/api/me/two-step", { headers })
+    );
+  });
 
 const now = (key: Uint8Array) => Effect.promise(async () => await codeOf(key));
 
@@ -318,6 +338,7 @@ layer(TwoStepLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
     it.effect("takes each recovery code once", () =>
       Effect.gen(function* recovery() {
+        const app = yield* TestApp;
         const person = yield* signedUp("recovery");
         const { backupCodes } = yield* enrolled(person);
         const [first = ""] = backupCodes;
@@ -343,6 +364,62 @@ layer(TwoStepLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
         assert.strictEqual(reused.status, 401);
         assert.strictEqual(codeOfReply(reused), "INVALID_BACKUP_CODE");
+
+        const session = withCookies(browser, used);
+
+        assert.deepStrictEqual(yield* statusOf({ cookie: session }), {
+          enabled: true,
+          recoveryCodesLeft: 9,
+          requiredBy: [],
+        });
+
+        // New codes replace them all, and need the password.
+        const renewed = yield* bodyOf(
+          Schema.Struct({ backupCodes: Schema.Array(Schema.String) }),
+          yield* app.request("/api/auth/two-factor/generate-backup-codes", {
+            body: { password },
+            headers: { cookie: session },
+          })
+        );
+
+        assert.lengthOf(renewed.backupCodes, 10);
+        assert.strictEqual(
+          (yield* statusOf({ cookie: session })).recoveryCodesLeft,
+          10
+        );
+
+        const old = yield* secondStep(
+          withCookies("", yield* passwordStep(person.email)),
+          { code: backupCodes[1] ?? "", route: "verify-backup-code" }
+        );
+
+        assert.strictEqual(codeOfReply(old), "INVALID_BACKUP_CODE");
+
+        // An application acting for the person reads whether it is on,
+        // not how many codes are left; an API key reads nothing.
+        const token = yield* commandLineToken(session);
+
+        assert.deepStrictEqual(
+          yield* statusOf({ authorization: `Bearer ${token}` }),
+          { enabled: true, recoveryCodesLeft: null, requiredBy: [] }
+        );
+
+        const workspaceId = yield* workspaceOf(
+          { ...person, cookies: session },
+          "Recovery"
+        );
+
+        const { key } = yield* apiKeyOf(
+          { ...person, cookies: session },
+          workspaceId,
+          ["post:read"]
+        );
+
+        const byKey = yield* app.request("/api/me/two-step", {
+          headers: { authorization: `Bearer ${key}` },
+        });
+
+        assert.strictEqual(byKey.status, 403);
       })
     );
 

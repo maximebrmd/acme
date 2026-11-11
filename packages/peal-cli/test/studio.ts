@@ -214,6 +214,7 @@ export const studioMe: Me = {
     image: null,
     locale: "en",
     name: "Synthetic User",
+    twoStepEnabled: false,
   },
   workspaces: [
     {
@@ -222,6 +223,7 @@ export const studioMe: Me = {
       permissions: everything,
       role: "owner",
       slug: "studio",
+      twoStepRequired: false,
     },
     {
       id: shopId,
@@ -229,6 +231,7 @@ export const studioMe: Me = {
       permissions: reading,
       role: "viewer",
       slug: "shop",
+      twoStepRequired: false,
     },
   ],
 };
@@ -773,6 +776,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     image: null,
     locale: "en",
     name: "Synthetic User",
+    twoStepEnabled: false,
     updatedAt: at("2026-10-01T08:00:00Z"),
   },
   workspaces: [],
@@ -4147,6 +4151,7 @@ export const studioGroupsLive = (studio: Studio) =>
               },
             });
           }),
+        twoStep: () => refusing,
       })
     ),
     HttpApiBuilder.group(Api, "connectedApps", (handlers) =>

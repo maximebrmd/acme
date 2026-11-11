@@ -40,6 +40,8 @@ const ExportedUserSchema = Schema.Struct({
   image: nullable(Schema.String),
   locale: Schema.Literals(["en", "fr"]),
   name: Schema.String,
+  // Whether two-step verification is on: never its key nor its codes.
+  twoStepEnabled: Schema.Boolean,
   updatedAt: instant,
 });
 
@@ -776,7 +778,34 @@ export type DeleteAccount = typeof DeleteAccountSchema.Type;
  * client, whose tokens are bound to no workspace): API keys, other OAuth
  * clients, MCP clients among them, and staff impersonating the user get 403.
  */
+/** The account's two-step verification. */
+export const TwoStepStatusSchema = Schema.Struct({
+  enabled: Schema.Boolean,
+  // How many recovery codes are left, to the person in their own session;
+  // null when it is off, or for an application acting for them.
+  recoveryCodesLeft: Schema.NullOr(Schema.Int),
+  // The workspaces they belong to that require it: it cannot be turned off
+  // while they are a member of one.
+  requiredBy: Schema.Array(
+    Schema.Struct({ name: Schema.String, workspaceId: Schema.String })
+  ),
+}).annotate({ identifier: "TwoStepStatus" });
+
+export type TwoStepStatus = typeof TwoStepStatusSchema.Type;
+
 export class AccountApi extends HttpApiGroup.make("account")
+  .add(
+    HttpApiEndpoint.get("twoStep", "/two-step", {
+      error: [Forbidden],
+      success: TwoStepStatusSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Answers whether the account has two-step verification on, how many recovery codes are left, and which of its workspaces require it. Turning it on and off, and new recovery codes, go through the sign-in service's routes, in the web app. An application acting for the user reads whether it is on, without the count. API keys get 403.",
+        summary: "Get my two-step verification",
+      })
+    )
+  )
   .add(
     HttpApiEndpoint.get("export", "/export", {
       error: [Forbidden],

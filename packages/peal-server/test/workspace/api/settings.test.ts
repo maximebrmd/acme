@@ -31,6 +31,7 @@ import { AccountData } from "#workspace/application/account-data.ts";
 import { AccountMail } from "#workspace/application/account-mail.ts";
 import { AccountStore } from "#workspace/application/account-store.ts";
 import type { AccountRecords } from "#workspace/application/account-store.ts";
+import { Accounts } from "#workspace/application/accounts.ts";
 import { ApiKeyIssuer } from "#workspace/application/api-key-issuer.ts";
 import { BillingUnavailable } from "#workspace/application/billing-unavailable.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
@@ -111,6 +112,7 @@ const records: AccountRecords = {
     image: null,
     locale: "fr",
     name: "Ana",
+    twoStepEnabled: true,
     updatedAt: at,
   },
 };
@@ -503,7 +505,14 @@ const UseCasesLive = Layer.mergeAll(
   CloseAccount.layer,
   ConnectedApps.layer,
   DeleteWorkspace.layer,
-  // Security policies are tested on the whole server.
+  // Accounts and security policies are tested on the whole server.
+  Layer.succeed(
+    Accounts,
+    Accounts.of({
+      current: () => Effect.die("not used"),
+      twoStep: () => Effect.die("not used"),
+    })
+  ),
   Layer.succeed(
     WorkspaceSecurity,
     WorkspaceSecurity.of({

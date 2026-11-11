@@ -179,6 +179,7 @@ export const DrizzleAccountStore = Layer.effect(
           image: found.image,
           locale: found.locale ?? defaultLocale,
           name: found.name,
+          twoStepEnabled: found.twoFactorEnabled === true,
           updatedAt: utc(found.updatedAt),
         },
       };

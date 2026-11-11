@@ -18,14 +18,18 @@ const toMe = ({ account, principal, workspaces }: CurrentAccount): Me => ({
     image: Option.getOrNull(account.image),
     locale: account.locale,
     name: account.name,
+    twoStepEnabled: account.twoStepEnabled,
   },
-  workspaces: workspaces.map(({ membership, permissions }) => ({
-    id: membership.id,
-    name: membership.name,
-    permissions,
-    role: membership.role,
-    slug: membership.slug,
-  })),
+  workspaces: workspaces.map(
+    ({ membership, permissions, twoStepRequired }) => ({
+      id: membership.id,
+      name: membership.name,
+      permissions,
+      role: membership.role,
+      slug: membership.slug,
+      twoStepRequired,
+    })
+  ),
 });
 
 export const SessionHandlers = HttpApiBuilder.group(
