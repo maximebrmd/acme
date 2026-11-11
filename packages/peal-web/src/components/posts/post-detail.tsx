@@ -362,6 +362,26 @@ const Check = ({
   );
 };
 
+/** What a published target says of how it went out, each when it holds. */
+const PublishedNotes = ({ target }: { readonly target: PostTarget }) => {
+  const t = useTranslations("PostDetail");
+
+  return (
+    <>
+      {target.keptPrivate === true ? (
+        <Alert>
+          <AlertDescription>{t("keptPrivate")}</AlertDescription>
+        </Alert>
+      ) : null}
+      {target.thumbnailNotSet === true ? (
+        <Alert>
+          <AlertDescription>{t("thumbnailNotSet")}</AlertDescription>
+        </Alert>
+      ) : null}
+    </>
+  );
+};
+
 /** How the post went on one channel: its status, why, its attempts. */
 export const TargetView = ({
   attempts,
@@ -420,16 +440,7 @@ export const TargetView = ({
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-2">
-            {target.keptPrivate === true ? (
-              <Alert>
-                <AlertDescription>{t("keptPrivate")}</AlertDescription>
-              </Alert>
-            ) : null}
-            {target.thumbnailNotSet === true ? (
-              <Alert>
-                <AlertDescription>{t("thumbnailNotSet")}</AlertDescription>
-              </Alert>
-            ) : null}
+            <PublishedNotes target={target} />
             {target.round > 1 ? (
               <p className="text-muted-foreground text-sm">
                 {t("rounds", { count: target.round })}
