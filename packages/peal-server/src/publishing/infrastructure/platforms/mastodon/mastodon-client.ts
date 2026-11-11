@@ -17,6 +17,11 @@ import type {
   Readiness,
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
+import { MastodonOptions } from "#publishing/domain/mastodon-options.ts";
+import type {
+  MastodonQuotePolicy,
+  MastodonVisibility,
+} from "#publishing/domain/mastodon-options.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import {
   commitUnanswered,
@@ -100,6 +105,56 @@ interface MastodonMedia {
   readonly mediaIds: readonly string[];
   readonly pending: readonly string[];
 }
+
+const isMastodon = Schema.is(MastodonOptions);
+
+/**
+ * The status's parameters the post's options give, each only when chosen,
+ * so a post without options is sent as it was before them. Every part of a
+ * thread takes them all: each is a status of its own.
+ */
+/** What POST /api/v1/statuses takes of a post's options. */
+interface StatusOptions {
+  language?: string;
+  quote_approval_policy?: MastodonQuotePolicy;
+  sensitive?: boolean;
+  spoiler_text?: string;
+  visibility?: MastodonVisibility;
+}
+
+const optionParams = (post: OutgoingPost): StatusOptions => {
+  const params: StatusOptions = {};
+  const chosen = post.options.pipe(Option.filter(isMastodon));
+
+  if (Option.isNone(chosen)) {
+    return params;
+  }
+
+  const { contentWarning, language, quotePolicy, sensitive, visibility } =
+    chosen.value;
+
+  if (language !== undefined) {
+    params.language = language;
+  }
+
+  if (quotePolicy !== undefined) {
+    params.quote_approval_policy = quotePolicy;
+  }
+
+  if (sensitive !== undefined) {
+    params.sensitive = sensitive;
+  }
+
+  if (contentWarning !== undefined) {
+    params.spoiler_text = contentWarning;
+  }
+
+  if (visibility !== undefined) {
+    params.visibility = visibility;
+  }
+
+  return params;
+};
 
 const readinessOf = (media: MastodonMedia): Readiness<MastodonMedia> =>
   media.pending.length === 0
@@ -399,11 +454,13 @@ export const mastodonClient = Effect.fn("MastodonClient.make")(
                 onNone: () => ({
                   media_ids: prepared.mediaIds,
                   status: post.text,
+                  ...optionParams(post),
                 }),
                 onSome: ({ parent }) => ({
                   in_reply_to_id: parent,
                   media_ids: prepared.mediaIds,
                   status: post.text,
+                  ...optionParams(post),
                 }),
               })
             )
