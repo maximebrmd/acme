@@ -15,7 +15,7 @@ import { LinkedInOptions, pageProblems } from "./linkedin-options.ts";
 import type { Dimensions, MediaFile } from "./media-file.ts";
 import { mediaNamedBy } from "./named-media.ts";
 import type { OptionProblem } from "./option-problem.ts";
-import { followUpsOn, platformRules } from "./platform-rules.ts";
+import { followUpsOn, rulesFor } from "./platform-rules.ts";
 import type { FormatLimits, MediaRules } from "./platform-rules.ts";
 import { PostContentRejected } from "./post-content-rejected.ts";
 import {
@@ -123,13 +123,18 @@ const tikTokMediaFields = (
 };
 
 // What Instagram refuses given the post's media: a reel's settings on
-// anything but a post of one video, or a cover frame past its end.
+// anything but a post of one video, or a cover frame past its end. A
+// story takes none of them, which its options' problems say already.
 const instagramMediaFields = (
   content: PostContent,
   options: InstagramOptions,
   shown: readonly MediaFile[]
 ): readonly string[] => {
   const [only] = shown;
+
+  if (options.format === "story") {
+    return [];
+  }
 
   const reel =
     content.media.length === 1 && only !== undefined && only.kind === "video";
@@ -186,8 +191,10 @@ const mediaRefusedFields = (
     return instagramMediaFields(content, options, shown);
   }
 
+  // A story's title is refused whatever its media, by the options alone.
   if (isFacebook(options)) {
     return options.videoTitle !== undefined &&
+      options.format !== "story" &&
       !shown.some((file) => file.kind === "video")
       ? ["videoTitle"]
       : [];
@@ -423,20 +430,24 @@ const atMost = (
 
 /**
  * What the channel's platform would refuse in the post, with the options
- * it has there, which some platforms count with the text (`countedText`).
+ * it has there, which some platforms count with the text (`countedText`)
+ * and which may choose a format with rules of its own (`rulesFor`): a
+ * format that sends no text (a story) checks none.
  */
 export const violationsOn = (
   content: PostContent,
   channel: ChannelOnPlatform,
   options: Option.Option<TargetOptions> = Option.none()
 ): readonly ContentViolation[] => {
-  const rules = platformRules[channel.platform];
-  const text = textOn(content, channel.channelId);
+  const rules = rulesFor(channel.platform, options);
+  const sent = textOn(content, channel.channelId);
   const media = content.media.length;
 
-  if (text.trim() === "" && media === 0) {
+  if (sent.trim() === "" && media === 0) {
     return [{ _tag: "empty", ...channel }];
   }
+
+  const text = rules.sendsText === false ? "" : sent;
 
   const counted = countedText(text, options);
 
@@ -637,15 +648,19 @@ const fileViolations = (
  * What the channel's platform would refuse in the post's images and videos,
  * whose files are `files`, in the post's order: each file's type, size,
  * duration, dimensions and alt text, whether a file that goes alone has
- * company, then how many videos there are and whether they come with images. A platform whose media rules are not known
- * refuses nothing here; how many it takes is in `violationsOn`.
+ * company, then how many videos there are and whether they come with
+ * images, by the rules of the format the options choose (`rulesFor`). A
+ * platform whose media rules are not known refuses nothing here; how many
+ * it takes is in `violationsOn`.
  */
 export const mediaViolationsOn = (
   content: PostContent,
   channel: ChannelOnPlatform,
-  files: readonly MediaFile[]
+  files: readonly MediaFile[],
+  options: Option.Option<TargetOptions> = Option.none()
 ): readonly ContentViolation[] => {
-  const rules = platformRules[channel.platform].media;
+  const inForce = rulesFor(channel.platform, options);
+  const rules = inForce.media;
 
   // A platform whose media rules are not known may take images and videos
   // Peal cannot check; a document goes only where the rules say so.
@@ -673,7 +688,7 @@ export const mediaViolationsOn = (
 
   // A file that takes fewer companions than the platform's own count, as
   // X's GIFs, which go alone. Past that count, `violationsOn` says so.
-  const { maxMedia } = platformRules[channel.platform];
+  const { maxMedia } = inForce;
 
   const fewest = Math.min(
     ...files.map(
@@ -729,7 +744,7 @@ export const partViolationsOn = (
     return [];
   }
 
-  const taken = followUpsOn(channel.platform)?.maximum ?? 0;
+  const taken = followUpsOn(channel.platform, options)?.maximum ?? 0;
 
   if (content.followUps.length > taken) {
     return [
@@ -748,7 +763,7 @@ export const partViolationsOn = (
     return inPart(
       [
         ...violationsOn(alone, channel, options),
-        ...mediaViolationsOn(alone, channel, filesOf(alone, files)),
+        ...mediaViolationsOn(alone, channel, filesOf(alone, files), options),
       ],
       position + 1
     );
@@ -780,7 +795,7 @@ export const checkPublishable = (
 
       return [
         ...violationsOn(content, channel, chosen),
-        ...mediaViolationsOn(content, channel, filesOf(content, files)),
+        ...mediaViolationsOn(content, channel, filesOf(content, files), chosen),
         ...partViolationsOn(content, channel, files, chosen),
         ...optionViolationsOn(channel, chosen),
         ...mediaOptionViolationsOn(content, channel, chosen, files),

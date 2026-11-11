@@ -16,7 +16,9 @@ import { measureText } from "./text-length.ts";
 // `cover_url`, `thumb_offset`, `audio_name` and `trial_params` are "For
 // Reels only"; `collaborators` is "For Feed image, Reels and Carousels
 // only", "A list of up to 3 instagram usernames". Which of them a post may
-// take depends on its media, which `content-rules.ts` checks.
+// take depends on its media, which `content-rules.ts` checks. A story is
+// `media_type=STORIES`: `collaborators` are "Not supported for Stories",
+// and the reel's fields are a reel's only.
 
 /** The most collaborators a post names: "up to 3". */
 export const maxInstagramCollaborators = 3;
@@ -47,6 +49,17 @@ export const InstagramTrialReelSchema = Schema.Literals([
 
 export type InstagramTrialReel = typeof InstagramTrialReelSchema.Type;
 
+/**
+ * What kind of post goes out: a `story`, or a `feed` post, as when left
+ * out (a post of one video being a reel).
+ */
+export const InstagramFormatSchema = Schema.Literals(["feed", "story"]);
+
+export type InstagramFormat = typeof InstagramFormatSchema.Type;
+
+/** The formats a feed post's own options are taken on. */
+const feedOnly: readonly InstagramFormat[] = ["feed"];
+
 // An Instagram username: letters, digits, periods and underscores, 30 at
 // most.
 const username = /^[A-Za-z0-9._]{1,30}$/u;
@@ -54,12 +67,34 @@ const username = /^[A-Za-z0-9._]{1,30}$/u;
 // A reel's audio is named on one line.
 const audioNameForbidden = ["\n", "\r"] as const;
 
+/** The options a story does not take: a feed post's, a reel's included. */
+const instagramFeedFields = [
+  "audioName",
+  "collaborators",
+  "coverMediaId",
+  "shareToFeed",
+  "thumbOffsetMs",
+  "trialReel",
+] as const satisfies readonly InstagramField[];
+
+// The options of `fields` that are set, in that order.
+const setOn = (
+  options: InstagramOptions,
+  fields: readonly InstagramField[]
+): readonly InstagramField[] =>
+  fields.filter((field) => options[field] !== undefined);
+
 // What Instagram would refuse in a target's options.
 const instagramProblems = (
   options: InstagramOptions
 ): readonly OptionProblem<InstagramField>[] => {
   const collaborators = options.collaborators ?? [];
   const audioLength = measureText(options.audioName ?? "", "codePoints");
+
+  // A story takes none of a feed post's options, whatever they hold.
+  if (options.format === "story") {
+    return setOn(options, instagramFeedFields).map((field) => invalid(field));
+  }
 
   return [
     ...(options.collaborators !== undefined &&
@@ -99,7 +134,8 @@ const instagramProblems = (
  * `audioName` names its audio, once, and `trialReel` shares it with
  * non-followers first. `collaborators` invites up to three other accounts,
  * by username, to be co-authors: each receives an invitation, so it is set
- * only for accounts the member named.
+ * only for accounts the member named. `format` makes it a `story`, which
+ * takes none of these.
  */
 export class InstagramOptions extends Schema.Class<InstagramOptions>(
   "peal-server/publishing/domain/InstagramOptions"
@@ -111,6 +147,7 @@ export class InstagramOptions extends Schema.Class<InstagramOptions>(
     )
   ),
   coverMediaId: Schema.optionalKey(MediaAssetIdSchema),
+  format: Schema.optionalKey(InstagramFormatSchema),
   platform: Schema.tag("instagram"),
   shareToFeed: Schema.optionalKey(Schema.Boolean),
   thumbOffsetMs: Schema.optionalKey(
@@ -137,13 +174,20 @@ export class InstagramOptions extends Schema.Class<InstagramOptions>(
       contentTypes: instagramCoverTypes,
       maxByteSize: maxInstagramCoverByteSize,
     },
+    format: { ifLeftOut: "feed" },
     shareToFeed: {},
     thumbOffsetMs: { ifLeftOut: 0, minimum: 0 },
     trialReel: {},
   };
 
-  /** No rule ties two of Instagram's options together. */
-  static readonly constraints: readonly OptionConstraint<InstagramField>[] = [];
+  /** A story takes none of a feed post's options. */
+  static readonly constraints: readonly OptionConstraint<InstagramField>[] =
+    instagramFeedFields.map((field) => ({
+      _tag: "onlyWith",
+      field,
+      other: "format",
+      values: feedOnly,
+    }));
 
   /** What Instagram would refuse in them. */
   problems(): readonly OptionProblem<InstagramField>[] {
