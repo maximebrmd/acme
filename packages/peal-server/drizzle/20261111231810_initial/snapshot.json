@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "0341807b-60ae-49e9-b26b-c126f006a3b7",
+  "id": "56515418-ce3b-4ac3-bef0-4b27db663f0c",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -1252,6 +1252,25 @@
         "n|rel|publishing.quota_usage",
         "n|type|publishing.quota_usage",
         "n|rel|publishing.quota_usage_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "recycling_rules"
+      ],
+      "writes": [
+        "s|tbl|publishing.recycling_rules",
+        "n|tbl|publishing.recycling_rules",
+        "e|tbl|publishing.recycling_rules",
+        "n|rel|publishing.recycling_rules",
+        "n|type|publishing.recycling_rules",
+        "n|rel|publishing.recycling_rules_pkey"
       ],
       "reads": [
         "n|sch|publishing"
@@ -4068,6 +4087,27 @@
       "statementTarget": [
         "index",
         "publishing",
+        "posts",
+        "posts_recycling_occurrence"
+      ],
+      "writes": [
+        "s|idx|publishing.posts_recycling_occurrence",
+        "n|idx|publishing.posts_recycling_occurrence",
+        "e|idx|publishing.posts_recycling_occurrence",
+        "n|rel|publishing.posts_recycling_occurrence"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
+        "n|col|publishing.posts.recycling_id",
+        "n|col|publishing.posts.occurrence"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
         "queues",
         "queues_workspace_default"
       ],
@@ -4102,6 +4142,88 @@
         "n|sch|publishing",
         "n|col|publishing.queues.workspace_id",
         "n|col|publishing.queues.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "recycling_rules",
+        "recycling_rules_source"
+      ],
+      "writes": [
+        "s|idx|publishing.recycling_rules_source",
+        "n|idx|publishing.recycling_rules_source",
+        "e|idx|publishing.recycling_rules_source",
+        "n|rel|publishing.recycling_rules_source"
+      ],
+      "reads": [
+        "n|tbl|publishing.recycling_rules",
+        "n|sch|publishing",
+        "n|col|publishing.recycling_rules.source_post_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "recycling_rules",
+        "recycling_rules_due"
+      ],
+      "writes": [
+        "s|idx|publishing.recycling_rules_due",
+        "n|idx|publishing.recycling_rules_due",
+        "e|idx|publishing.recycling_rules_due",
+        "n|rel|publishing.recycling_rules_due"
+      ],
+      "reads": [
+        "n|tbl|publishing.recycling_rules",
+        "n|sch|publishing",
+        "n|col|publishing.recycling_rules.last_due_at",
+        "n|col|publishing.recycling_rules.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "recycling_rules",
+        "recycling_rules_next_due"
+      ],
+      "writes": [
+        "s|idx|publishing.recycling_rules_next_due",
+        "n|idx|publishing.recycling_rules_next_due",
+        "e|idx|publishing.recycling_rules_next_due",
+        "n|rel|publishing.recycling_rules_next_due"
+      ],
+      "reads": [
+        "n|tbl|publishing.recycling_rules",
+        "n|sch|publishing",
+        "n|col|publishing.recycling_rules.next_due_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "recycling_rules",
+        "recycling_rules_workspace_id"
+      ],
+      "writes": [
+        "s|idx|publishing.recycling_rules_workspace_id",
+        "n|idx|publishing.recycling_rules_workspace_id",
+        "e|idx|publishing.recycling_rules_workspace_id",
+        "n|rel|publishing.recycling_rules_workspace_id"
+      ],
+      "reads": [
+        "n|tbl|publishing.recycling_rules",
+        "n|sch|publishing",
+        "n|col|publishing.recycling_rules.workspace_id",
+        "n|col|publishing.recycling_rules.id"
       ]
     },
     {
@@ -6531,6 +6653,12 @@
     {
       "schema": "publishing",
       "name": "quota_usage",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "recycling_rules",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -13734,6 +13862,19 @@
     {
       "schema": "publishing",
       "table": "posts",
+      "name": "occurrence",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
       "name": "outcome",
       "type": "text",
       "typeSchema": null,
@@ -13748,6 +13889,19 @@
       "schema": "publishing",
       "table": "posts",
       "name": "queue_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "recycling_id",
       "type": "uuid",
       "typeSchema": null,
       "notNull": false,
@@ -14321,6 +14475,266 @@
       "table": "quota_usage",
       "name": "units",
       "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "anchor_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "count",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "ended_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "interval",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "last_due_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "made",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "next_due_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "queue_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "resumptions",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "source_post_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "started_by",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "started_via",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "status_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "time_zone",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "until",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "variants",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "workspace_id",
+      "type": "uuid",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -21757,6 +22171,34 @@
     },
     {
       "schema": "publishing",
+      "table": "posts",
+      "name": "posts_recycling_occurrence",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "recycling_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "occurrence",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
       "table": "queues",
       "name": "queues_workspace_default",
       "nameExplicit": true,
@@ -21780,6 +22222,104 @@
       "schema": "publishing",
       "table": "queues",
       "name": "queues_workspace_id",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "recycling_rules_source",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "source_post_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"status\" <> 'ended'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "recycling_rules_due",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "last_due_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"status\" = 'active'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "recycling_rules_next_due",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "next_due_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"status\" = 'active'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "recycling_rules_workspace_id",
       "nameExplicit": true,
       "columns": [
         {
@@ -24338,6 +24878,16 @@
       "schema": "publishing",
       "table": "queues",
       "name": "queues_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "recycling_rules",
+      "name": "recycling_rules_pkey",
       "columns": [
         "id"
       ],

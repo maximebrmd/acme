@@ -103,6 +103,10 @@ const toStored = (row: PostRow) =>
         text: row.text,
       },
       id: row.id,
+      occurrence:
+        row.recyclingId === null || row.occurrence === null
+          ? Option.none()
+          : Option.some({ number: row.occurrence, ruleId: row.recyclingId }),
       queueId: Option.fromNullOr(row.queueId),
       scheduleRevision: row.scheduleRevision,
       status: postStatusOf(row),
@@ -528,6 +532,13 @@ export const DrizzlePostRepository = Layer.effect(
             ...postColumns(post),
             authorId: Option.getOrNull(post.authorId),
             id: post.id,
+            ...Option.match(post.occurrence, {
+              onNone: () => ({}),
+              onSome: ({ number, ruleId }) => ({
+                occurrence: number,
+                recyclingId: ruleId,
+              }),
+            }),
             queueId: Option.getOrNull(post.queueId),
             tagIds: [...post.tagIds],
             workspaceId: post.workspaceId,

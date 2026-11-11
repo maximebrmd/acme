@@ -769,8 +769,10 @@ CREATE TABLE "publishing"."posts" (
 	"follow_ups" jsonb DEFAULT '[]' NOT NULL,
 	"id" uuid PRIMARY KEY,
 	"media" jsonb DEFAULT '[]' NOT NULL,
+	"occurrence" integer,
 	"outcome" text,
 	"queue_id" uuid,
+	"recycling_id" uuid,
 	"schedule_revision" integer DEFAULT 0 NOT NULL,
 	"schedule_zone" text,
 	"scheduled_at" timestamp with time zone,
@@ -832,6 +834,29 @@ CREATE TABLE "publishing"."quota_usage" (
 	"units" integer NOT NULL,
 	CONSTRAINT "quota_usage_pkey" PRIMARY KEY("bucket","day"),
 	CONSTRAINT "quota_usage_units" CHECK ("units" >= 0)
+);
+--> statement-breakpoint
+CREATE TABLE "publishing"."recycling_rules" (
+	"anchor_at" timestamp with time zone NOT NULL,
+	"count" integer,
+	"created_at" timestamp with time zone NOT NULL,
+	"ended_reason" text,
+	"id" uuid PRIMARY KEY,
+	"interval" jsonb NOT NULL,
+	"last_due_at" timestamp with time zone NOT NULL,
+	"made" integer NOT NULL,
+	"next_due_at" timestamp with time zone,
+	"queue_id" uuid,
+	"resumptions" integer DEFAULT 0 NOT NULL,
+	"source_post_id" uuid NOT NULL,
+	"started_by" uuid,
+	"started_via" jsonb NOT NULL,
+	"status" text NOT NULL,
+	"status_at" timestamp with time zone,
+	"time_zone" text NOT NULL,
+	"until" date,
+	"variants" jsonb DEFAULT '[]' NOT NULL,
+	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "publishing"."signatures" (
@@ -1438,8 +1463,13 @@ CREATE INDEX "posts_scheduled" ON "publishing"."posts" ("scheduled_at") WHERE "s
 CREATE INDEX "posts_workspace_id" ON "publishing"."posts" ("workspace_id","id");--> statement-breakpoint
 CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint
 CREATE INDEX "posts_queue_scheduled_at" ON "publishing"."posts" ("queue_id","scheduled_at") WHERE "queue_id" is not null;--> statement-breakpoint
+CREATE UNIQUE INDEX "posts_recycling_occurrence" ON "publishing"."posts" ("recycling_id","occurrence");--> statement-breakpoint
 CREATE UNIQUE INDEX "queues_workspace_default" ON "publishing"."queues" ("workspace_id") WHERE "is_default";--> statement-breakpoint
 CREATE INDEX "queues_workspace_id" ON "publishing"."queues" ("workspace_id","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "recycling_rules_source" ON "publishing"."recycling_rules" ("source_post_id") WHERE "status" <> 'ended';--> statement-breakpoint
+CREATE INDEX "recycling_rules_due" ON "publishing"."recycling_rules" ("last_due_at","id") WHERE "status" = 'active';--> statement-breakpoint
+CREATE INDEX "recycling_rules_next_due" ON "publishing"."recycling_rules" ("next_due_at") WHERE "status" = 'active';--> statement-breakpoint
+CREATE INDEX "recycling_rules_workspace_id" ON "publishing"."recycling_rules" ("workspace_id","id");--> statement-breakpoint
 CREATE UNIQUE INDEX "approval_requests_pending" ON "review"."approval_requests" ("post_id") WHERE "status" = 'pending';--> statement-breakpoint
 CREATE INDEX "approval_requests_post" ON "review"."approval_requests" ("post_id","id");--> statement-breakpoint
 CREATE INDEX "approval_requests_workspace" ON "review"."approval_requests" ("workspace_id","status","id");--> statement-breakpoint
