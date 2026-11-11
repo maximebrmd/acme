@@ -39,6 +39,27 @@ describe("the options fields", () => {
     expect(Option.isNone(fieldOf("youtube", "privacyLevel"))).toBeTruthy();
   });
 
+  it("list each choice once, the one that chooses nothing included", () => {
+    const repeated = optionsPlatforms.flatMap((platform) =>
+      fieldsOf(platform).flatMap((field) => {
+        if (field.kind !== "choice") {
+          return [];
+        }
+
+        const labels = [
+          ...(field.none === undefined ? [] : [field.none]),
+          ...field.choices.map(({ label }) => label),
+        ];
+
+        return labels.length === new Set(labels).size
+          ? []
+          : [`${platform}.${field.name}`];
+      })
+    );
+
+    expect(repeated).toStrictEqual([]);
+  });
+
   it("have a field for every option the contract takes, and no other", () => {
     for (const platform of optionsPlatforms) {
       const member = TargetOptionsSchema.members.find(

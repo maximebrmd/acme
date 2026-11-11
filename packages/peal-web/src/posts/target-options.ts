@@ -194,8 +194,8 @@ export const optionFields = {
       none: "bluesky.labelNone",
     },
     {
+      // Everyone, left out, is the first choice (`none`).
       choices: [
-        { label: "bluesky.repliesEveryone", value: "everyone" },
         { label: "bluesky.repliesNobody", value: "nobody" },
         { label: "bluesky.repliesLimited", value: "limited" },
       ],
@@ -492,8 +492,8 @@ export const optionFields = {
   ],
   threads: [
     {
+      // Everyone, left out, is the first choice (`none`).
       choices: [
-        { label: "threads.replyEveryone", value: "everyone" },
         { label: "threads.replyFollowing", value: "accounts_you_follow" },
         { label: "threads.replyFollowers", value: "followers_only" },
         { label: "threads.replyMentioned", value: "mentioned_only" },
