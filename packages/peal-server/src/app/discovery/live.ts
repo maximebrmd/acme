@@ -1,8 +1,7 @@
 import { Config, Effect, Layer, Option } from "effect";
 import { Digest } from "effect/crypto";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
-import { OpenApi } from "effect/http-api";
-import { Api } from "peal-contract";
+import { openApiDocument } from "peal-contract/openapi-document";
 
 import { mcpProtocolVersions, mcpServerVersion } from "#app/mcp/server.ts";
 import { publicUrlConfig } from "#shared/infrastructure/environment.ts";
@@ -42,7 +41,9 @@ const cardHeaders = {
  *
  * - `/.well-known/api-catalog` (RFC 9727): the API catalogue, with the
  *   `Link` that names it, which a HEAD request answers alone.
- * - `/api/openapi.json`: the OpenAPI document the catalogue points to.
+ * - `/api/openapi.json`: the OpenAPI document the catalogue points to,
+ *   with the events webhooks send (`openApiDocument`), served at
+ *   `/openapi.json` too, which the web app does not forward.
  * - `/api/mcp/server-card` (SEP-2127): the MCP endpoint's server card.
  * - `/llms.txt` (llmstxt.org): the same places, for a language model.
  *
@@ -67,7 +68,9 @@ export const DiscoveryLive = HttpRouter.use(
       .pipe(Effect.orDie)}"`;
 
     const catalogue = JSON.stringify(apiCatalogue(places));
-    const openApi = JSON.stringify(OpenApi.fromApi(Api));
+    // The contract's document, the events webhooks send included: the one
+    // the docs render.
+    const openApi = JSON.stringify(openApiDocument());
     const llms = llmsText(places);
 
     const catalogueLink = {
@@ -86,6 +89,13 @@ export const DiscoveryLive = HttpRouter.use(
     yield* router.add(
       "GET",
       openApiPath,
+      HttpServerResponse.text(openApi, { contentType: "application/json" })
+    );
+
+    // The same, where the server alone answers it.
+    yield* router.add(
+      "GET",
+      "/openapi.json",
       HttpServerResponse.text(openApi, { contentType: "application/json" })
     );
 

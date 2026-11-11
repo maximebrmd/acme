@@ -15,6 +15,7 @@
     "./billing-plans": "./src/billing-plans.ts",
     "./data-processing": "./src/data-processing.ts",
     "./errors": "./src/error-catalogue.ts",
+    "./openapi-document": "./src/openapi-document.ts",
     "./post-text": "./src/post-text.ts"
   },
   "dependencies": {

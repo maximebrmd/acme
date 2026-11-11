@@ -94,6 +94,10 @@ The endpoint is a third party to the people who wrote the post: an address someo
 
 Event types and their fields are a public contract. Peal adds event types, and fields to an event, without changing `version`: ignore the fields and the types you do not know. Nothing is renamed or removed. A change your code could not read would come as a new version, sent beside this one.
 
+### In the OpenAPI document [#openapi]
+
+The API's OpenAPI document, at `/api/openapi.json`, describes every event in its `webhooks` section (OpenAPI 3.1): one entry per type, with the payload's schema and the three `webhook-` headers. The [API reference](/reference) shows each. The SDKs have no typed events: read a payload with your language's JSON, as the examples below show.
+
 ## Events [#events]
 
 | Event                                                   | When                                                                      |

@@ -1,13 +1,10 @@
-// Writes the OpenAPI document that peal-docs renders as the API reference.
+// Writes the OpenAPI document that peal-docs renders as the API reference:
+// the API and the events it sends to webhook endpoints.
 import path from "node:path";
 
-import { OpenApi } from "effect/http-api";
-
-import { Api } from "../src/api.ts";
-
-const document = OpenApi.fromApi(Api);
+import { openApiDocument } from "../src/openapi-document.ts";
 
 await Bun.write(
   path.join(import.meta.dirname, "..", "openapi.json"),
-  `${JSON.stringify(document, null, 2)}\n`
+  `${JSON.stringify(openApiDocument(), null, 2)}\n`
 );

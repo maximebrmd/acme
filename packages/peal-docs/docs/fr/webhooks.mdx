@@ -94,6 +94,10 @@ Le point de terminaison est un tiers pour les personnes qui ont écrit la public
 
 Les types d’événements et leurs champs sont un contrat public. Peal ajoute des types d’événements, et des champs à un événement, sans changer `version` : ignorez les champs et les types que vous ne connaissez pas. Rien n’est renommé ni supprimé. Un changement que votre code ne pourrait pas lire viendrait comme une nouvelle version, envoyée à côté de celle-ci.
 
+### Dans le document OpenAPI [#openapi]
+
+Le document OpenAPI de l’API, à `/api/openapi.json`, décrit chaque événement dans sa section `webhooks` (OpenAPI 3.1) : une entrée par type, avec le schéma du corps et les trois en-têtes `webhook-`. La [référence de l’API](/reference) les montre. Les SDK n’ont pas d’événements typés : lisez un corps avec le JSON de votre langage, comme le montrent les exemples ci-dessous.
+
 ## Événements [#events]
 
 | Événement                                               | Quand                                                                                                      |

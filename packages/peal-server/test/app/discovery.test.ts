@@ -3,6 +3,7 @@
 // OpenAPI document, the MCP server card (SEP-2127) and llms.txt.
 import { assert, layer } from "@effect/vitest";
 import { Effect, Schema } from "effect";
+import { openApiDocument } from "peal-contract/openapi-document";
 
 import {
   bodyOf,
@@ -169,6 +170,19 @@ layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
 
         assert.strictEqual(document.openapi, "3.1.0");
         assert.property(document.paths, "/api/workspaces/{workspaceId}/posts");
+
+        // The one the contract writes for the docs, events included, and
+        // the same where the server alone answers.
+        const served = Schema.decodeUnknownSync(Schema.Json)(reply.body);
+
+        const written = Schema.decodeUnknownSync(
+          Schema.fromJsonString(Schema.Json)
+        )(JSON.stringify(openApiDocument()));
+
+        const own = yield* app.request("/openapi.json");
+
+        assert.deepStrictEqual(served, written);
+        assert.deepStrictEqual(own.body, written);
       })
     );
 
