@@ -9,17 +9,16 @@ import type { CalendarDate } from "#posts/zoned-time.ts";
  * queue's clock, with the zone's name, as the queue's zone may not be the
  * reader's.
  */
-export const queuedSlotFormat = (
-  timeZone: string
-): Intl.DateTimeFormatOptions => ({
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-  month: "short",
-  timeZone,
-  timeZoneName: "short",
-  year: "numeric",
-});
+export const queuedSlotFormat = (timeZone: string) =>
+  ({
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    month: "short",
+    timeZone,
+    timeZoneName: "short",
+    year: "numeric",
+  }) as const;
 
 /**
  * The date the calendar opens on to show a post a queue placed: the slot's
