@@ -803,6 +803,7 @@ export const storeHost = "store.example.test";
 export const studioNow = at("2026-11-09T12:00:00Z");
 
 const image = (id: string, overrides: Partial<Media> = {}): Media => ({
+  aiGenerated: false,
   altText: null,
   byteSize: 2048,
   codec: null,

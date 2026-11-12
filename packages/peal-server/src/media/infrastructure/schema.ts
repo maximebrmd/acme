@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
   index,
   integer,
@@ -23,6 +24,9 @@ const instant = (name: string) =>
 export const mediaAssets = media.table(
   "media_assets",
   {
+    // True only for a file the writing assistant made, stored as the
+    // provider gave it.
+    aiGenerated: boolean("ai_generated").notNull().default(false),
     altText: text("alt_text"),
     byteSize: bigint("byte_size", { mode: "number" }).notNull(),
     codec: text("codec"),

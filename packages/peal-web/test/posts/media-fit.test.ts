@@ -27,6 +27,7 @@ const file = (
   const contentType = facts.contentType ?? "image/jpeg";
 
   return {
+    aiGenerated: false,
     altText: null,
     byteSize: facts.byteSize ?? 200_000,
     codec: null,

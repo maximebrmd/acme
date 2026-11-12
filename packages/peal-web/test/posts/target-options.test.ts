@@ -1047,6 +1047,7 @@ const created = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
 const libraryFile = (id: string, kind: MediaKind): AttachedMedia => ({
   altText: "",
   media: Option.some({
+    aiGenerated: false,
     altText: null,
     byteSize: 200_000,
     codec: null,

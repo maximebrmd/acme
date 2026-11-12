@@ -16,6 +16,7 @@ const created = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
 
 /** Ready synthetic media, with the library's description if given. */
 const media = (id: string, altText: string | null = null): Media => ({
+  aiGenerated: false,
   altText,
   byteSize: 200_000,
   codec: null,
