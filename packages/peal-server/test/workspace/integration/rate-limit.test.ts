@@ -16,6 +16,7 @@ import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { MemberDirectory } from "#workspace/application/member-directory.ts";
 import { SecurityPolicies } from "#workspace/application/security-policies.ts";
+import { SignUpGate } from "#workspace/application/sign-up-gate.ts";
 import { PartnerOwnershipLive } from "#workspace/container.ts";
 import {
   BetterAuth,
@@ -68,6 +69,7 @@ const authWith = (env: Record<string, string>) =>
     // Nor changes a workspace.
     Layer.provide(ActivityJournal.none),
     Layer.provide(SecurityPolicies.none),
+    Layer.provide(SignUpGate.anyone),
     // Nothing here changes two-step verification.
     Layer.provide(
       Layer.succeed(

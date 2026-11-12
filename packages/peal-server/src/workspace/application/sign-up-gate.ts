@@ -20,6 +20,12 @@ export class SignUpGate extends Context.Service<
     ) => Effect.Effect<boolean, DatabaseError>;
   }
 >()("peal-server/workspace/application/SignUpGate") {
+  /** For tests that sign nobody up, or on an open server: anyone. */
+  static readonly anyone = Layer.succeed(
+    SignUpGate,
+    SignUpGate.of({ mayRegister: () => Effect.succeed(true) })
+  );
+
   static readonly layer = Layer.effect(
     SignUpGate,
     Effect.gen(function* SignUpGateLive() {
