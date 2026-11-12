@@ -34,6 +34,7 @@
 //! - **queues**
 //! - **recycling**
 //! - **channelDefaults**
+//! - **shortLinks**
 
 use crate::{ApiError, ClientConfig};
 
@@ -63,6 +64,7 @@ pub mod queues;
 pub mod recycling;
 pub mod review;
 pub mod session;
+pub mod short_links;
 pub mod signatures;
 pub mod system;
 pub mod tags;
@@ -103,6 +105,7 @@ pub struct PealClient {
     pub queues: QueuesClient,
     pub recycling: RecyclingClient,
     pub channel_defaults: ChannelDefaultsClient,
+    pub short_links: ShortLinksClient,
 }
 
 impl PealClient {
@@ -141,6 +144,7 @@ impl PealClient {
             queues: QueuesClient::new(config.clone())?,
             recycling: RecyclingClient::new(config.clone())?,
             channel_defaults: ChannelDefaultsClient::new(config.clone())?,
+            short_links: ShortLinksClient::new(config.clone())?,
         })
     }
 }
@@ -171,6 +175,7 @@ pub use queues::QueuesClient;
 pub use recycling::RecyclingClient;
 pub use review::ReviewClient;
 pub use session::SessionClient;
+pub use short_links::ShortLinksClient;
 pub use signatures::SignaturesClient;
 pub use system::SystemClient;
 pub use tags::TagsClient;

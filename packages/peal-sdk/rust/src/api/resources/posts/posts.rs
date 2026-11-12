@@ -312,6 +312,7 @@ impl PostsClient {
     ///                 channel_sets: None,
     ///                 default_signatures: None,
     ///                 options: None,
+    ///                 shorten_links: None,
     ///                 signature_id: None,
     ///                 tag_ids: None,
     ///             },
@@ -391,6 +392,7 @@ impl PostsClient {
     ///                     },
     ///                     default_signatures: None,
     ///                     options: None,
+    ///                     shorten_links: None,
     ///                     signature_id: None,
     ///                     tag_ids: None,
     ///                     when: PostTiming::Now {
@@ -531,6 +533,7 @@ impl PostsClient {
     ///                 channel_sets: None,
     ///                 default_signatures: None,
     ///                 options: None,
+    ///                 shorten_links: None,
     ///                 signature_id: None,
     ///                 when: None,
     ///             },

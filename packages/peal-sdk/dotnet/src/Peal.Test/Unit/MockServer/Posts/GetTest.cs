@@ -108,6 +108,7 @@ public class GetTest : BaseMockServerTest
                 "name": "name",
                 "via": "web"
               },
+              "shortenLinks": true,
               "status": "draft",
               "tagIds": [
                 "tagIds",
@@ -317,6 +318,7 @@ public class GetTest : BaseMockServerTest
                 "name": "name",
                 "via": "web"
               },
+              "shortenLinks": true,
               "status": "draft",
               "tagIds": [
                 "tagIds"

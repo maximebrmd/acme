@@ -110,6 +110,7 @@ public class DraftsTest : BaseMockServerTest
                     "name": "name",
                     "via": "web"
                   },
+                  "shortenLinks": true,
                   "status": "draft",
                   "tagIds": [
                     "tagIds",
@@ -333,6 +334,7 @@ public class DraftsTest : BaseMockServerTest
                     "name": "name",
                     "via": "web"
                   },
+                  "shortenLinks": true,
                   "status": "draft",
                   "tagIds": [
                     "tagIds",
@@ -525,6 +527,7 @@ public class DraftsTest : BaseMockServerTest
                   "scheduledVia": {
                     "via": "web"
                   },
+                  "shortenLinks": true,
                   "status": "draft",
                   "tagIds": [
                     "tagIds"

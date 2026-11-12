@@ -5,7 +5,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum NotFoundErrorBody {
     #[non_exhaustive]
-    ChannelNotFound {
+    ShortLinkNotFound {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -34,8 +34,8 @@ pub enum NotFoundErrorBody {
 }
 
 impl NotFoundErrorBody {
-    pub fn channel_not_found() -> Self {
-        Self::ChannelNotFound {
+    pub fn short_link_not_found() -> Self {
+        Self::ShortLinkNotFound {
             code: None,
             message: None,
             request_id: None,
@@ -50,36 +50,36 @@ impl NotFoundErrorBody {
         }
     }
 
-    pub fn channel_not_found_with_code(
+    pub fn short_link_not_found_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
     ) -> Self {
-        Self::ChannelNotFound {
+        Self::ShortLinkNotFound {
             code: Some(code),
             message,
             request_id,
         }
     }
 
-    pub fn channel_not_found_with_message(
+    pub fn short_link_not_found_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
     ) -> Self {
-        Self::ChannelNotFound {
+        Self::ShortLinkNotFound {
             code,
             message: Some(message),
             request_id,
         }
     }
 
-    pub fn channel_not_found_with_request_id(
+    pub fn short_link_not_found_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
     ) -> Self {
-        Self::ChannelNotFound {
+        Self::ShortLinkNotFound {
             code,
             message,
             request_id: Some(request_id),

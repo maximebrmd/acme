@@ -14,6 +14,7 @@ export interface Post {
     schedule: Peal.PostSchedule | null;
     scheduledBy: string | null;
     scheduledVia: Peal.PostOrigin | null;
+    shortenLinks: boolean;
     status: Peal.PostStatus;
     tagIds: string[];
     targets: Peal.PostTarget[];

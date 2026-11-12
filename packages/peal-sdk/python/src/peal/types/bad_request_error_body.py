@@ -10,6 +10,21 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 
 
+class BadRequestErrorBody_BadRequest(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["BadRequest"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "BadRequest"
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class BadRequestErrorBody_InvalidDateRange(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["InvalidDateRange"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -30,22 +45,7 @@ class BadRequestErrorBody_InvalidDateRange(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class BadRequestErrorBody_BadRequest(UniversalBaseModel):
-    type: typing_extensions.Annotated[
-        typing.Literal["BadRequest"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "BadRequest"
-
-    if IS_PYDANTIC_V2:
-        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
-    else:
-
-        class Config:
-            frozen = True
-            smart_union = True
-            extra = pydantic.Extra.allow
-
-
 BadRequestErrorBody = typing_extensions.Annotated[
-    typing.Union[BadRequestErrorBody_InvalidDateRange, BadRequestErrorBody_BadRequest],
+    typing.Union[BadRequestErrorBody_BadRequest, BadRequestErrorBody_InvalidDateRange],
     pydantic.Field(discriminator="type"),
 ]

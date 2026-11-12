@@ -9,8 +9,8 @@ class BadRequestErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'InvalidDateRange'
-     *   |'BadRequest'
+     *    'BadRequest'
+     *   |'InvalidDateRange'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +18,8 @@ class BadRequestErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    InvalidDateRangeEncoded
-     *   |EffectHttpApiErrorBadRequestEncoded
+     *    EffectHttpApiErrorBadRequestEncoded
+     *   |InvalidDateRangeEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +28,13 @@ class BadRequestErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'InvalidDateRange'
-     *   |'BadRequest'
+     *    'BadRequest'
+     *   |'InvalidDateRange'
      *   |'_unknown'
      * ),
      *   value: (
-     *    InvalidDateRangeEncoded
-     *   |EffectHttpApiErrorBadRequestEncoded
+     *    EffectHttpApiErrorBadRequestEncoded
+     *   |InvalidDateRangeEncoded
      *   |mixed
      * ),
      * } $values
@@ -44,18 +44,6 @@ class BadRequestErrorBody extends JsonSerializableType
     ) {
         $this->type = $values['type'];
         $this->value = $values['value'];
-    }
-
-    /**
-     * @param InvalidDateRangeEncoded $invalidDateRange
-     * @return BadRequestErrorBody
-     */
-    public static function invalidDateRange(InvalidDateRangeEncoded $invalidDateRange): BadRequestErrorBody
-    {
-        return new BadRequestErrorBody([
-            'type' => 'InvalidDateRange',
-            'value' => $invalidDateRange,
-        ]);
     }
 
     /**
@@ -71,25 +59,15 @@ class BadRequestErrorBody extends JsonSerializableType
     }
 
     /**
-     * @return bool
+     * @param InvalidDateRangeEncoded $invalidDateRange
+     * @return BadRequestErrorBody
      */
-    public function isInvalidDateRange(): bool
+    public static function invalidDateRange(InvalidDateRangeEncoded $invalidDateRange): BadRequestErrorBody
     {
-        return $this->value instanceof InvalidDateRangeEncoded && $this->type === 'InvalidDateRange';
-    }
-
-    /**
-     * @return InvalidDateRangeEncoded
-     */
-    public function asInvalidDateRange(): InvalidDateRangeEncoded
-    {
-        if (!($this->value instanceof InvalidDateRangeEncoded && $this->type === 'InvalidDateRange')) {
-            throw new Exception(
-                "Expected InvalidDateRange; got " . $this->type . " with value of type " . get_debug_type($this->value),
-            );
-        }
-
-        return $this->value;
+        return new BadRequestErrorBody([
+            'type' => 'InvalidDateRange',
+            'value' => $invalidDateRange,
+        ]);
     }
 
     /**
@@ -108,6 +86,28 @@ class BadRequestErrorBody extends JsonSerializableType
         if (!($this->value instanceof EffectHttpApiErrorBadRequestEncoded && $this->type === 'BadRequest')) {
             throw new Exception(
                 "Expected BadRequest; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isInvalidDateRange(): bool
+    {
+        return $this->value instanceof InvalidDateRangeEncoded && $this->type === 'InvalidDateRange';
+    }
+
+    /**
+     * @return InvalidDateRangeEncoded
+     */
+    public function asInvalidDateRange(): InvalidDateRangeEncoded
+    {
+        if (!($this->value instanceof InvalidDateRangeEncoded && $this->type === 'InvalidDateRange')) {
+            throw new Exception(
+                "Expected InvalidDateRange; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +134,12 @@ class BadRequestErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'InvalidDateRange':
-                $value = $this->asInvalidDateRange()->jsonSerialize();
-                $result = array_merge($value, $result);
-                break;
             case 'BadRequest':
                 $value = $this->asBadRequest()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'InvalidDateRange':
+                $value = $this->asInvalidDateRange()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +178,11 @@ class BadRequestErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'InvalidDateRange':
-                $args['value'] = InvalidDateRangeEncoded::jsonDeserialize($data);
-                break;
             case 'BadRequest':
                 $args['value'] = EffectHttpApiErrorBadRequestEncoded::jsonDeserialize($data);
+                break;
+            case 'InvalidDateRange':
+                $args['value'] = InvalidDateRangeEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

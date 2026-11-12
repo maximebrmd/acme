@@ -26,16 +26,16 @@ public final class NotFoundErrorBody {
         return value.visit(visitor);
     }
 
-    public static NotFoundErrorBody channelNotFound(ChannelNotFoundEncoded value) {
-        return new NotFoundErrorBody(new ChannelNotFoundValue(value));
+    public static NotFoundErrorBody shortLinkNotFound(ShortLinkNotFoundEncoded value) {
+        return new NotFoundErrorBody(new ShortLinkNotFoundValue(value));
     }
 
     public static NotFoundErrorBody workspaceNotFound(WorkspaceNotFoundEncoded value) {
         return new NotFoundErrorBody(new WorkspaceNotFoundValue(value));
     }
 
-    public boolean isChannelNotFound() {
-        return value instanceof ChannelNotFoundValue;
+    public boolean isShortLinkNotFound() {
+        return value instanceof ShortLinkNotFoundValue;
     }
 
     public boolean isWorkspaceNotFound() {
@@ -46,9 +46,9 @@ public final class NotFoundErrorBody {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<ChannelNotFoundEncoded> getChannelNotFound() {
-        if (isChannelNotFound()) {
-            return Optional.of(((ChannelNotFoundValue) value).value);
+    public Optional<ShortLinkNotFoundEncoded> getShortLinkNotFound() {
+        if (isShortLinkNotFound()) {
+            return Optional.of(((ShortLinkNotFoundValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,7 +89,7 @@ public final class NotFoundErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitChannelNotFound(ChannelNotFoundEncoded channelNotFound);
+        T visitShortLinkNotFound(ShortLinkNotFoundEncoded shortLinkNotFound);
 
         T visitWorkspaceNotFound(WorkspaceNotFoundEncoded workspaceNotFound);
 
@@ -97,38 +97,38 @@ public final class NotFoundErrorBody {
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(ChannelNotFoundValue.class), @JsonSubTypes.Type(WorkspaceNotFoundValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(ShortLinkNotFoundValue.class), @JsonSubTypes.Type(WorkspaceNotFoundValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("ChannelNotFound")
+    @JsonTypeName("ShortLinkNotFound")
     @JsonIgnoreProperties("_tag")
-    private static final class ChannelNotFoundValue implements Value {
+    private static final class ShortLinkNotFoundValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private ChannelNotFoundEncoded value;
+        private ShortLinkNotFoundEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private ChannelNotFoundValue() {}
+        private ShortLinkNotFoundValue() {}
 
-        private ChannelNotFoundValue(ChannelNotFoundEncoded value) {
+        private ShortLinkNotFoundValue(ShortLinkNotFoundEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitChannelNotFound(value);
+            return visitor.visitShortLinkNotFound(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof ChannelNotFoundValue && equalTo((ChannelNotFoundValue) other);
+            return other instanceof ShortLinkNotFoundValue && equalTo((ShortLinkNotFoundValue) other);
         }
 
-        private boolean equalTo(ChannelNotFoundValue other) {
+        private boolean equalTo(ShortLinkNotFoundValue other) {
             return value.equals(other.value);
         }
 

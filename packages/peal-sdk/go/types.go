@@ -2883,8 +2883,8 @@ func (a AssistantUnavailableEncodedTag) Ptr() *AssistantUnavailableEncodedTag {
 
 type BadRequestErrorBody struct {
 	Type             string
-	InvalidDateRange *InvalidDateRangeEncoded
 	BadRequest       *EffectHttpApiErrorBadRequestEncoded
+	InvalidDateRange *InvalidDateRangeEncoded
 
 	rawJSON json.RawMessage
 }
@@ -2896,18 +2896,18 @@ func (b *BadRequestErrorBody) GetType() string {
 	return b.Type
 }
 
-func (b *BadRequestErrorBody) GetInvalidDateRange() *InvalidDateRangeEncoded {
-	if b == nil {
-		return nil
-	}
-	return b.InvalidDateRange
-}
-
 func (b *BadRequestErrorBody) GetBadRequest() *EffectHttpApiErrorBadRequestEncoded {
 	if b == nil {
 		return nil
 	}
 	return b.BadRequest
+}
+
+func (b *BadRequestErrorBody) GetInvalidDateRange() *InvalidDateRangeEncoded {
+	if b == nil {
+		return nil
+	}
+	return b.InvalidDateRange
 }
 
 func (b *BadRequestErrorBody) UnmarshalJSON(data []byte) error {
@@ -2922,18 +2922,18 @@ func (b *BadRequestErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", b)
 	}
 	switch unmarshaler.Type {
-	case "InvalidDateRange":
-		value := new(InvalidDateRangeEncoded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		b.InvalidDateRange = value
 	case "BadRequest":
 		value := new(EffectHttpApiErrorBadRequestEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
 		b.BadRequest = value
+	case "InvalidDateRange":
+		value := new(InvalidDateRangeEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		b.InvalidDateRange = value
 	}
 	b.rawJSON = json.RawMessage(data)
 	return nil
@@ -2943,11 +2943,11 @@ func (b BadRequestErrorBody) MarshalJSON() ([]byte, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
 	}
-	if b.InvalidDateRange != nil {
-		return internal.MarshalJSONWithExtraProperty(b.InvalidDateRange, "_tag", "InvalidDateRange")
-	}
 	if b.BadRequest != nil {
 		return internal.MarshalJSONWithExtraProperty(b.BadRequest, "_tag", "BadRequest")
+	}
+	if b.InvalidDateRange != nil {
+		return internal.MarshalJSONWithExtraProperty(b.InvalidDateRange, "_tag", "InvalidDateRange")
 	}
 	if len(b.rawJSON) > 0 {
 		return b.rawJSON, nil
@@ -2956,16 +2956,16 @@ func (b BadRequestErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type BadRequestErrorBodyVisitor interface {
-	VisitInvalidDateRange(*InvalidDateRangeEncoded) error
 	VisitBadRequest(*EffectHttpApiErrorBadRequestEncoded) error
+	VisitInvalidDateRange(*InvalidDateRangeEncoded) error
 }
 
 func (b *BadRequestErrorBody) Accept(visitor BadRequestErrorBodyVisitor) error {
-	if b.InvalidDateRange != nil {
-		return visitor.VisitInvalidDateRange(b.InvalidDateRange)
-	}
 	if b.BadRequest != nil {
 		return visitor.VisitBadRequest(b.BadRequest)
+	}
+	if b.InvalidDateRange != nil {
+		return visitor.VisitInvalidDateRange(b.InvalidDateRange)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", b)
 }
@@ -2975,11 +2975,11 @@ func (b *BadRequestErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", b)
 	}
 	var fields []string
-	if b.InvalidDateRange != nil {
-		fields = append(fields, "InvalidDateRange")
-	}
 	if b.BadRequest != nil {
 		fields = append(fields, "BadRequest")
+	}
+	if b.InvalidDateRange != nil {
+		fields = append(fields, "InvalidDateRange")
 	}
 	if len(fields) == 0 {
 		if b.Type != "" {
@@ -11676,7 +11676,7 @@ func (m *MeteredPosts) String() string {
 
 type NotFoundErrorBody struct {
 	Type              string
-	ChannelNotFound   *ChannelNotFoundEncoded
+	ShortLinkNotFound *ShortLinkNotFoundEncoded
 	WorkspaceNotFound *WorkspaceNotFoundEncoded
 
 	rawJSON json.RawMessage
@@ -11689,11 +11689,11 @@ func (n *NotFoundErrorBody) GetType() string {
 	return n.Type
 }
 
-func (n *NotFoundErrorBody) GetChannelNotFound() *ChannelNotFoundEncoded {
+func (n *NotFoundErrorBody) GetShortLinkNotFound() *ShortLinkNotFoundEncoded {
 	if n == nil {
 		return nil
 	}
-	return n.ChannelNotFound
+	return n.ShortLinkNotFound
 }
 
 func (n *NotFoundErrorBody) GetWorkspaceNotFound() *WorkspaceNotFoundEncoded {
@@ -11715,12 +11715,12 @@ func (n *NotFoundErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", n)
 	}
 	switch unmarshaler.Type {
-	case "ChannelNotFound":
-		value := new(ChannelNotFoundEncoded)
+	case "ShortLinkNotFound":
+		value := new(ShortLinkNotFoundEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		n.ChannelNotFound = value
+		n.ShortLinkNotFound = value
 	case "WorkspaceNotFound":
 		value := new(WorkspaceNotFoundEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -11736,8 +11736,8 @@ func (n NotFoundErrorBody) MarshalJSON() ([]byte, error) {
 	if err := n.validate(); err != nil {
 		return nil, err
 	}
-	if n.ChannelNotFound != nil {
-		return internal.MarshalJSONWithExtraProperty(n.ChannelNotFound, "_tag", "ChannelNotFound")
+	if n.ShortLinkNotFound != nil {
+		return internal.MarshalJSONWithExtraProperty(n.ShortLinkNotFound, "_tag", "ShortLinkNotFound")
 	}
 	if n.WorkspaceNotFound != nil {
 		return internal.MarshalJSONWithExtraProperty(n.WorkspaceNotFound, "_tag", "WorkspaceNotFound")
@@ -11749,13 +11749,13 @@ func (n NotFoundErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type NotFoundErrorBodyVisitor interface {
-	VisitChannelNotFound(*ChannelNotFoundEncoded) error
+	VisitShortLinkNotFound(*ShortLinkNotFoundEncoded) error
 	VisitWorkspaceNotFound(*WorkspaceNotFoundEncoded) error
 }
 
 func (n *NotFoundErrorBody) Accept(visitor NotFoundErrorBodyVisitor) error {
-	if n.ChannelNotFound != nil {
-		return visitor.VisitChannelNotFound(n.ChannelNotFound)
+	if n.ShortLinkNotFound != nil {
+		return visitor.VisitShortLinkNotFound(n.ShortLinkNotFound)
 	}
 	if n.WorkspaceNotFound != nil {
 		return visitor.VisitWorkspaceNotFound(n.WorkspaceNotFound)
@@ -11768,8 +11768,8 @@ func (n *NotFoundErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", n)
 	}
 	var fields []string
-	if n.ChannelNotFound != nil {
-		fields = append(fields, "ChannelNotFound")
+	if n.ShortLinkNotFound != nil {
+		fields = append(fields, "ShortLinkNotFound")
 	}
 	if n.WorkspaceNotFound != nil {
 		fields = append(fields, "WorkspaceNotFound")
@@ -17156,6 +17156,124 @@ func (s *ServiceUnavailableErrorBody) validate() error {
 		}
 	}
 	return nil
+}
+
+var (
+	shortLinkNotFoundEncodedFieldCode      = big.NewInt(1 << 0)
+	shortLinkNotFoundEncodedFieldMessage   = big.NewInt(1 << 1)
+	shortLinkNotFoundEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type ShortLinkNotFoundEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *ShortLinkNotFoundEncoded) GetCode() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Code
+}
+
+func (s *ShortLinkNotFoundEncoded) GetMessage() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Message
+}
+
+func (s *ShortLinkNotFoundEncoded) GetRequestID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.RequestID
+}
+
+func (s *ShortLinkNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *ShortLinkNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *ShortLinkNotFoundEncoded) SetCode(code *string) {
+	s.Code = code
+	s.require(shortLinkNotFoundEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *ShortLinkNotFoundEncoded) SetMessage(message *string) {
+	s.Message = message
+	s.require(shortLinkNotFoundEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *ShortLinkNotFoundEncoded) SetRequestID(requestID *string) {
+	s.RequestID = requestID
+	s.require(shortLinkNotFoundEncodedFieldRequestID)
+}
+
+func (s *ShortLinkNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ShortLinkNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = ShortLinkNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *ShortLinkNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed ShortLinkNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *ShortLinkNotFoundEncoded) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
 }
 
 var (

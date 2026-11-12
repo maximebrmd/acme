@@ -109,6 +109,7 @@ public class ListTest : BaseMockServerTest
                   "name": "name",
                   "via": "web"
                 },
+                "shortenLinks": true,
                 "status": "draft",
                 "tagIds": [
                   "tagIds",
@@ -332,6 +333,7 @@ public class ListTest : BaseMockServerTest
                   "name": "name",
                   "via": "web"
                 },
+                "shortenLinks": true,
                 "status": "draft",
                 "tagIds": [
                   "tagIds",
@@ -550,6 +552,7 @@ public class ListTest : BaseMockServerTest
                   "name": "name",
                   "via": "web"
                 },
+                "shortenLinks": true,
                 "status": "draft",
                 "tagIds": [
                   "tagIds"

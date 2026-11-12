@@ -34,6 +34,7 @@ use Peal\ChannelSets\ChannelSetsClient;
 use Peal\Queues\QueuesClient;
 use Peal\Recycling\RecyclingClient;
 use Peal\ChannelDefaults\ChannelDefaultsClient;
+use Peal\ShortLinks\ShortLinksClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
 
@@ -200,6 +201,11 @@ class PealClient
     public ChannelDefaultsClient $channelDefaults;
 
     /**
+     * @var ShortLinksClient $shortLinks
+     */
+    public ShortLinksClient $shortLinks;
+
+    /**
      * @var array{
      *   baseUrl?: string,
      *   client?: ClientInterface,
@@ -282,5 +288,6 @@ class PealClient
         $this->queues = new QueuesClient($this->client, $this->options);
         $this->recycling = new RecyclingClient($this->client, $this->options);
         $this->channelDefaults = new ChannelDefaultsClient($this->client, $this->options);
+        $this->shortLinks = new ShortLinksClient($this->client, $this->options);
     }
 }

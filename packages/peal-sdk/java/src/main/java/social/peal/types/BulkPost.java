@@ -35,6 +35,8 @@ public final class BulkPost {
 
     private final Optional<List<ChannelOptions>> options;
 
+    private final Optional<Boolean> shortenLinks;
+
     private final Optional<String> signatureId;
 
     private final Optional<List<String>> tagIds;
@@ -52,6 +54,7 @@ public final class BulkPost {
             PostContent content,
             Optional<Boolean> defaultSignatures,
             Optional<List<ChannelOptions>> options,
+            Optional<Boolean> shortenLinks,
             Optional<String> signatureId,
             Optional<List<String>> tagIds,
             PostTiming when,
@@ -63,6 +66,7 @@ public final class BulkPost {
         this.content = content;
         this.defaultSignatures = defaultSignatures;
         this.options = options;
+        this.shortenLinks = shortenLinks;
         this.signatureId = signatureId;
         this.tagIds = tagIds;
         this.when = when;
@@ -98,6 +102,11 @@ public final class BulkPost {
     @JsonProperty("options")
     public Optional<List<ChannelOptions>> getOptions() {
         return options;
+    }
+
+    @JsonProperty("shortenLinks")
+    public Optional<Boolean> getShortenLinks() {
+        return shortenLinks;
     }
 
     @JsonProperty("signatureId")
@@ -138,6 +147,7 @@ public final class BulkPost {
                 && content.equals(other.content)
                 && defaultSignatures.equals(other.defaultSignatures)
                 && options.equals(other.options)
+                && shortenLinks.equals(other.shortenLinks)
                 && signatureId.equals(other.signatureId)
                 && tagIds.equals(other.tagIds)
                 && when.equals(other.when)
@@ -153,6 +163,7 @@ public final class BulkPost {
                 this.content,
                 this.defaultSignatures,
                 this.options,
+                this.shortenLinks,
                 this.signatureId,
                 this.tagIds,
                 this.when,
@@ -207,6 +218,10 @@ public final class BulkPost {
 
         _FinalStage options(List<ChannelOptions> options);
 
+        _FinalStage shortenLinks(Optional<Boolean> shortenLinks);
+
+        _FinalStage shortenLinks(Boolean shortenLinks);
+
         _FinalStage signatureId(Optional<String> signatureId);
 
         _FinalStage signatureId(String signatureId);
@@ -232,6 +247,8 @@ public final class BulkPost {
 
         private Optional<String> signatureId = Optional.empty();
 
+        private Optional<Boolean> shortenLinks = Optional.empty();
+
         private Optional<List<ChannelOptions>> options = Optional.empty();
 
         private Optional<Boolean> defaultSignatures = Optional.empty();
@@ -254,6 +271,7 @@ public final class BulkPost {
             content(other.getContent());
             defaultSignatures(other.getDefaultSignatures());
             options(other.getOptions());
+            shortenLinks(other.getShortenLinks());
             signatureId(other.getSignatureId());
             tagIds(other.getTagIds());
             when(other.getWhen());
@@ -311,6 +329,19 @@ public final class BulkPost {
         @JsonSetter(value = "signatureId", nulls = Nulls.SKIP)
         public _FinalStage signatureId(Optional<String> signatureId) {
             this.signatureId = signatureId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage shortenLinks(Boolean shortenLinks) {
+            this.shortenLinks = Optional.ofNullable(shortenLinks);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "shortenLinks", nulls = Nulls.SKIP)
+        public _FinalStage shortenLinks(Optional<Boolean> shortenLinks) {
+            this.shortenLinks = shortenLinks;
             return this;
         }
 
@@ -399,6 +430,7 @@ public final class BulkPost {
                     content,
                     defaultSignatures,
                     options,
+                    shortenLinks,
                     signatureId,
                     tagIds,
                     when,
@@ -414,6 +446,7 @@ public final class BulkPost {
                     || key.equalsIgnoreCase("content")
                     || key.equalsIgnoreCase("defaultSignatures")
                     || key.equalsIgnoreCase("options")
+                    || key.equalsIgnoreCase("shortenLinks")
                     || key.equalsIgnoreCase("signatureId")
                     || key.equalsIgnoreCase("tagIds")
                     || key.equalsIgnoreCase("when")

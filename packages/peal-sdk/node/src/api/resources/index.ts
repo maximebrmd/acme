@@ -51,6 +51,8 @@ export * from "./recycling/client/requests/index.js";
 export * as review from "./review/index.js";
 export * from "./review/client/requests/index.js";
 export * as session from "./session/index.js";
+export * as shortLinks from "./shortLinks/index.js";
+export * from "./shortLinks/client/requests/index.js";
 export * as signatures from "./signatures/index.js";
 export * from "./signatures/client/requests/index.js";
 export * as system from "./system/index.js";

@@ -48,6 +48,12 @@ class PostToValidate extends JsonSerializableType
     public ?array $options;
 
     /**
+     * @var ?bool $shortenLinks
+     */
+    #[JsonProperty('shortenLinks')]
+    public ?bool $shortenLinks;
+
+    /**
      * @var ?string $signatureId
      */
     #[JsonProperty('signatureId')]
@@ -67,6 +73,7 @@ class PostToValidate extends JsonSerializableType
      *   channelSets?: ?array<string>,
      *   defaultSignatures?: ?bool,
      *   options?: ?array<ChannelOptions>,
+     *   shortenLinks?: ?bool,
      *   signatureId?: ?string,
      *   when?: ?PostTiming,
      * } $values
@@ -80,6 +87,7 @@ class PostToValidate extends JsonSerializableType
         $this->content = $values['content'];
         $this->defaultSignatures = $values['defaultSignatures'] ?? null;
         $this->options = $values['options'] ?? null;
+        $this->shortenLinks = $values['shortenLinks'] ?? null;
         $this->signatureId = $values['signatureId'] ?? null;
         $this->when = $values['when'] ?? null;
     }

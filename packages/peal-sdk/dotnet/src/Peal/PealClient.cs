@@ -65,6 +65,7 @@ public partial class PealClient : IPealClient
         Queues = new QueuesClient(_client);
         Recycling = new RecyclingClient(_client);
         ChannelDefaults = new ChannelDefaultsClient(_client);
+        ShortLinks = new ShortLinksClient(_client);
     }
 
     public ISystemClient System { get; }
@@ -130,4 +131,6 @@ public partial class PealClient : IPealClient
     public IRecyclingClient Recycling { get; }
 
     public IChannelDefaultsClient ChannelDefaults { get; }
+
+    public IShortLinksClient ShortLinks { get; }
 }

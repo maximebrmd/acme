@@ -3,12 +3,12 @@
 import * as Peal from "../index.js";
 
 export type NotFoundErrorBody = 
-    | Peal.NotFoundErrorBody.ChannelNotFound
+    | Peal.NotFoundErrorBody.ShortLinkNotFound
     | Peal.NotFoundErrorBody.WorkspaceNotFound;
 
 export namespace NotFoundErrorBody {
-    export interface ChannelNotFound extends Peal.ChannelNotFoundEncoded {
-        _tag: "ChannelNotFound";
+    export interface ShortLinkNotFound extends Peal.ShortLinkNotFoundEncoded {
+        _tag: "ShortLinkNotFound";
     }
 
     export interface WorkspaceNotFound extends Peal.WorkspaceNotFoundEncoded {

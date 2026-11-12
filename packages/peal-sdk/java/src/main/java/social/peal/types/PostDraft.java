@@ -33,6 +33,8 @@ public final class PostDraft {
 
     private final Optional<List<ChannelOptions>> options;
 
+    private final Optional<Boolean> shortenLinks;
+
     private final Optional<String> signatureId;
 
     private final Optional<List<String>> tagIds;
@@ -45,6 +47,7 @@ public final class PostDraft {
             PostContent content,
             Optional<Boolean> defaultSignatures,
             Optional<List<ChannelOptions>> options,
+            Optional<Boolean> shortenLinks,
             Optional<String> signatureId,
             Optional<List<String>> tagIds,
             Map<String, Object> additionalProperties) {
@@ -53,6 +56,7 @@ public final class PostDraft {
         this.content = content;
         this.defaultSignatures = defaultSignatures;
         this.options = options;
+        this.shortenLinks = shortenLinks;
         this.signatureId = signatureId;
         this.tagIds = tagIds;
         this.additionalProperties = additionalProperties;
@@ -83,6 +87,11 @@ public final class PostDraft {
         return options;
     }
 
+    @JsonProperty("shortenLinks")
+    public Optional<Boolean> getShortenLinks() {
+        return shortenLinks;
+    }
+
     @JsonProperty("signatureId")
     public Optional<String> getSignatureId() {
         return signatureId;
@@ -110,6 +119,7 @@ public final class PostDraft {
                 && content.equals(other.content)
                 && defaultSignatures.equals(other.defaultSignatures)
                 && options.equals(other.options)
+                && shortenLinks.equals(other.shortenLinks)
                 && signatureId.equals(other.signatureId)
                 && tagIds.equals(other.tagIds);
     }
@@ -122,6 +132,7 @@ public final class PostDraft {
                 this.content,
                 this.defaultSignatures,
                 this.options,
+                this.shortenLinks,
                 this.signatureId,
                 this.tagIds);
     }
@@ -166,6 +177,10 @@ public final class PostDraft {
 
         _FinalStage options(List<ChannelOptions> options);
 
+        _FinalStage shortenLinks(Optional<Boolean> shortenLinks);
+
+        _FinalStage shortenLinks(Boolean shortenLinks);
+
         _FinalStage signatureId(Optional<String> signatureId);
 
         _FinalStage signatureId(String signatureId);
@@ -182,6 +197,8 @@ public final class PostDraft {
         private Optional<List<String>> tagIds = Optional.empty();
 
         private Optional<String> signatureId = Optional.empty();
+
+        private Optional<Boolean> shortenLinks = Optional.empty();
 
         private Optional<List<ChannelOptions>> options = Optional.empty();
 
@@ -202,6 +219,7 @@ public final class PostDraft {
             content(other.getContent());
             defaultSignatures(other.getDefaultSignatures());
             options(other.getOptions());
+            shortenLinks(other.getShortenLinks());
             signatureId(other.getSignatureId());
             tagIds(other.getTagIds());
             return this;
@@ -237,6 +255,19 @@ public final class PostDraft {
         @JsonSetter(value = "signatureId", nulls = Nulls.SKIP)
         public _FinalStage signatureId(Optional<String> signatureId) {
             this.signatureId = signatureId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage shortenLinks(Boolean shortenLinks) {
+            this.shortenLinks = Optional.ofNullable(shortenLinks);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "shortenLinks", nulls = Nulls.SKIP)
+        public _FinalStage shortenLinks(Optional<Boolean> shortenLinks) {
+            this.shortenLinks = shortenLinks;
             return this;
         }
 
@@ -311,6 +342,7 @@ public final class PostDraft {
                     content,
                     defaultSignatures,
                     options,
+                    shortenLinks,
                     signatureId,
                     tagIds,
                     additionalProperties);
@@ -323,6 +355,7 @@ public final class PostDraft {
                     || key.equalsIgnoreCase("content")
                     || key.equalsIgnoreCase("defaultSignatures")
                     || key.equalsIgnoreCase("options")
+                    || key.equalsIgnoreCase("shortenLinks")
                     || key.equalsIgnoreCase("signatureId")
                     || key.equalsIgnoreCase("tagIds")) {
                 return;

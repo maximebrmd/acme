@@ -27,6 +27,8 @@ module Peal
 
       field :scheduled_via, -> { Peal::Types::PostOrigin }, optional: false, nullable: true, api_name: "scheduledVia"
 
+      field :shorten_links, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "shortenLinks"
+
       field :status, -> { Peal::Types::PostStatus }, optional: false, nullable: false
 
       field :tag_ids, -> { Internal::Types::Array[String] }, optional: false, nullable: false, api_name: "tagIds"

@@ -185,6 +185,7 @@ public class BulkTest : BaseMockServerTest
                       "name": "name",
                       "via": "web"
                     },
+                    "shortenLinks": true,
                     "status": "draft",
                     "tagIds": [
                       "tagIds",
@@ -413,6 +414,7 @@ public class BulkTest : BaseMockServerTest
                       "name": "name",
                       "via": "web"
                     },
+                    "shortenLinks": true,
                     "status": "draft",
                     "tagIds": [
                       "tagIds",
@@ -592,6 +594,7 @@ public class BulkTest : BaseMockServerTest
                         },
                         DefaultSignatures = null,
                         Options = null,
+                        ShortenLinks = null,
                         SignatureId = null,
                         TagIds = null,
                         When = new PostTiming(
@@ -621,6 +624,7 @@ public class BulkTest : BaseMockServerTest
                         },
                         DefaultSignatures = null,
                         Options = null,
+                        ShortenLinks = null,
                         SignatureId = null,
                         TagIds = null,
                         When = new PostTiming(
@@ -691,6 +695,7 @@ public class BulkTest : BaseMockServerTest
                       "text": "text"
                     },
                     "id": "id",
+                    "shortenLinks": true,
                     "status": "draft",
                     "tagIds": [
                       "tagIds"

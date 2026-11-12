@@ -75,6 +75,12 @@ class Post extends JsonSerializableType
     public ?PostOrigin $scheduledVia;
 
     /**
+     * @var bool $shortenLinks
+     */
+    #[JsonProperty('shortenLinks')]
+    public bool $shortenLinks;
+
+    /**
      * @var value-of<PostStatus> $status
      */
     #[JsonProperty('status')]
@@ -102,6 +108,7 @@ class Post extends JsonSerializableType
      * @param array{
      *   content: PostContent,
      *   id: string,
+     *   shortenLinks: bool,
      *   status: value-of<PostStatus>,
      *   tagIds: array<string>,
      *   targets: array<PostTarget>,
@@ -131,6 +138,7 @@ class Post extends JsonSerializableType
         $this->schedule = $values['schedule'] ?? null;
         $this->scheduledBy = $values['scheduledBy'] ?? null;
         $this->scheduledVia = $values['scheduledVia'] ?? null;
+        $this->shortenLinks = $values['shortenLinks'];
         $this->status = $values['status'];
         $this->tagIds = $values['tagIds'];
         $this->targets = $values['targets'];

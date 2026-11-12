@@ -370,6 +370,17 @@
       },
       "default": "./dist/cjs/api/resources/channelDefaults/exports.js"
     },
+    "./shortLinks": {
+      "import": {
+        "types": "./dist/esm/api/resources/shortLinks/exports.d.mts",
+        "default": "./dist/esm/api/resources/shortLinks/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/shortLinks/exports.d.ts",
+        "default": "./dist/cjs/api/resources/shortLinks/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/shortLinks/exports.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

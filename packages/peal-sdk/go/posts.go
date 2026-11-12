@@ -1120,9 +1120,10 @@ var (
 	newPostFieldContent           = big.NewInt(1 << 6)
 	newPostFieldDefaultSignatures = big.NewInt(1 << 7)
 	newPostFieldOptions           = big.NewInt(1 << 8)
-	newPostFieldSignatureID       = big.NewInt(1 << 9)
-	newPostFieldTagIDs            = big.NewInt(1 << 10)
-	newPostFieldWhen              = big.NewInt(1 << 11)
+	newPostFieldShortenLinks      = big.NewInt(1 << 9)
+	newPostFieldSignatureID       = big.NewInt(1 << 10)
+	newPostFieldTagIDs            = big.NewInt(1 << 11)
+	newPostFieldWhen              = big.NewInt(1 << 12)
 )
 
 type NewPost struct {
@@ -1135,6 +1136,7 @@ type NewPost struct {
 	Content           *PostContent      `json:"content" url:"-"`
 	DefaultSignatures *bool             `json:"defaultSignatures,omitempty" url:"-"`
 	Options           []*ChannelOptions `json:"options,omitempty" url:"-"`
+	ShortenLinks      *bool             `json:"shortenLinks,omitempty" url:"-"`
 	SignatureID       *string           `json:"signatureId,omitempty" url:"-"`
 	TagIDs            []string          `json:"tagIds,omitempty" url:"-"`
 	When              *PostTiming       `json:"when" url:"-"`
@@ -1213,6 +1215,13 @@ func (n *NewPost) SetDefaultSignatures(defaultSignatures *bool) {
 func (n *NewPost) SetOptions(options []*ChannelOptions) {
 	n.Options = options
 	n.require(newPostFieldOptions)
+}
+
+// SetShortenLinks sets the ShortenLinks field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetShortenLinks(shortenLinks *bool) {
+	n.ShortenLinks = shortenLinks
+	n.require(newPostFieldShortenLinks)
 }
 
 // SetSignatureID sets the SignatureID field and marks it as non-optional;
@@ -1394,10 +1403,11 @@ var (
 	bulkPostFieldContent           = big.NewInt(1 << 3)
 	bulkPostFieldDefaultSignatures = big.NewInt(1 << 4)
 	bulkPostFieldOptions           = big.NewInt(1 << 5)
-	bulkPostFieldSignatureID       = big.NewInt(1 << 6)
-	bulkPostFieldTagIDs            = big.NewInt(1 << 7)
-	bulkPostFieldWhen              = big.NewInt(1 << 8)
-	bulkPostFieldIdempotencyKey    = big.NewInt(1 << 9)
+	bulkPostFieldShortenLinks      = big.NewInt(1 << 6)
+	bulkPostFieldSignatureID       = big.NewInt(1 << 7)
+	bulkPostFieldTagIDs            = big.NewInt(1 << 8)
+	bulkPostFieldWhen              = big.NewInt(1 << 9)
+	bulkPostFieldIdempotencyKey    = big.NewInt(1 << 10)
 )
 
 type BulkPost struct {
@@ -1407,6 +1417,7 @@ type BulkPost struct {
 	Content           *PostContent      `json:"content" url:"content"`
 	DefaultSignatures *bool             `json:"defaultSignatures,omitempty" url:"defaultSignatures,omitempty"`
 	Options           []*ChannelOptions `json:"options,omitempty" url:"options,omitempty"`
+	ShortenLinks      *bool             `json:"shortenLinks,omitempty" url:"shortenLinks,omitempty"`
 	SignatureID       *string           `json:"signatureId,omitempty" url:"signatureId,omitempty"`
 	TagIDs            []string          `json:"tagIds,omitempty" url:"tagIds,omitempty"`
 	When              *PostTiming       `json:"when" url:"when"`
@@ -1459,6 +1470,13 @@ func (b *BulkPost) GetOptions() []*ChannelOptions {
 		return nil
 	}
 	return b.Options
+}
+
+func (b *BulkPost) GetShortenLinks() *bool {
+	if b == nil {
+		return nil
+	}
+	return b.ShortenLinks
 }
 
 func (b *BulkPost) GetSignatureID() *string {
@@ -1545,6 +1563,13 @@ func (b *BulkPost) SetDefaultSignatures(defaultSignatures *bool) {
 func (b *BulkPost) SetOptions(options []*ChannelOptions) {
 	b.Options = options
 	b.require(bulkPostFieldOptions)
+}
+
+// SetShortenLinks sets the ShortenLinks field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BulkPost) SetShortenLinks(shortenLinks *bool) {
+	b.ShortenLinks = shortenLinks
+	b.require(bulkPostFieldShortenLinks)
 }
 
 // SetSignatureID sets the SignatureID field and marks it as non-optional;
@@ -10636,10 +10661,11 @@ var (
 	postFieldSchedule     = big.NewInt(1 << 8)
 	postFieldScheduledBy  = big.NewInt(1 << 9)
 	postFieldScheduledVia = big.NewInt(1 << 10)
-	postFieldStatus       = big.NewInt(1 << 11)
-	postFieldTagIDs       = big.NewInt(1 << 12)
-	postFieldTargets      = big.NewInt(1 << 13)
-	postFieldWarnings     = big.NewInt(1 << 14)
+	postFieldShortenLinks = big.NewInt(1 << 11)
+	postFieldStatus       = big.NewInt(1 << 12)
+	postFieldTagIDs       = big.NewInt(1 << 13)
+	postFieldTargets      = big.NewInt(1 << 14)
+	postFieldWarnings     = big.NewInt(1 << 15)
 )
 
 // postNullableFields maps the wire names of Post's nullable fields (required or optional) to their field bits.
@@ -10667,6 +10693,7 @@ type Post struct {
 	Schedule     *PostSchedule  `json:"schedule,omitempty" url:"schedule,omitempty"`
 	ScheduledBy  *string        `json:"scheduledBy,omitempty" url:"scheduledBy,omitempty"`
 	ScheduledVia *PostOrigin    `json:"scheduledVia,omitempty" url:"scheduledVia,omitempty"`
+	ShortenLinks bool           `json:"shortenLinks" url:"shortenLinks"`
 	Status       PostStatus     `json:"status" url:"status"`
 	TagIDs       []string       `json:"tagIds" url:"tagIds"`
 	Targets      []*PostTarget  `json:"targets" url:"targets"`
@@ -10754,6 +10781,13 @@ func (p *Post) GetScheduledVia() *PostOrigin {
 		return nil
 	}
 	return p.ScheduledVia
+}
+
+func (p *Post) GetShortenLinks() bool {
+	if p == nil {
+		return false
+	}
+	return p.ShortenLinks
 }
 
 func (p *Post) GetStatus() PostStatus {
@@ -10875,6 +10909,13 @@ func (p *Post) SetScheduledBy(scheduledBy *string) {
 func (p *Post) SetScheduledVia(scheduledVia *PostOrigin) {
 	p.ScheduledVia = scheduledVia
 	p.require(postFieldScheduledVia)
+}
+
+// SetShortenLinks sets the ShortenLinks field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Post) SetShortenLinks(shortenLinks bool) {
+	p.ShortenLinks = shortenLinks
+	p.require(postFieldShortenLinks)
 }
 
 // SetStatus sets the Status field and marks it as non-optional;
@@ -11365,8 +11406,9 @@ var (
 	postDraftFieldContent           = big.NewInt(1 << 2)
 	postDraftFieldDefaultSignatures = big.NewInt(1 << 3)
 	postDraftFieldOptions           = big.NewInt(1 << 4)
-	postDraftFieldSignatureID       = big.NewInt(1 << 5)
-	postDraftFieldTagIDs            = big.NewInt(1 << 6)
+	postDraftFieldShortenLinks      = big.NewInt(1 << 5)
+	postDraftFieldSignatureID       = big.NewInt(1 << 6)
+	postDraftFieldTagIDs            = big.NewInt(1 << 7)
 )
 
 type PostDraft struct {
@@ -11375,6 +11417,7 @@ type PostDraft struct {
 	Content           *PostContent      `json:"content" url:"content"`
 	DefaultSignatures *bool             `json:"defaultSignatures,omitempty" url:"defaultSignatures,omitempty"`
 	Options           []*ChannelOptions `json:"options,omitempty" url:"options,omitempty"`
+	ShortenLinks      *bool             `json:"shortenLinks,omitempty" url:"shortenLinks,omitempty"`
 	SignatureID       *string           `json:"signatureId,omitempty" url:"signatureId,omitempty"`
 	TagIDs            []string          `json:"tagIds,omitempty" url:"tagIds,omitempty"`
 
@@ -11418,6 +11461,13 @@ func (p *PostDraft) GetOptions() []*ChannelOptions {
 		return nil
 	}
 	return p.Options
+}
+
+func (p *PostDraft) GetShortenLinks() *bool {
+	if p == nil {
+		return nil
+	}
+	return p.ShortenLinks
 }
 
 func (p *PostDraft) GetSignatureID() *string {
@@ -11483,6 +11533,13 @@ func (p *PostDraft) SetDefaultSignatures(defaultSignatures *bool) {
 func (p *PostDraft) SetOptions(options []*ChannelOptions) {
 	p.Options = options
 	p.require(postDraftFieldOptions)
+}
+
+// SetShortenLinks sets the ShortenLinks field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostDraft) SetShortenLinks(shortenLinks *bool) {
+	p.ShortenLinks = shortenLinks
+	p.require(postDraftFieldShortenLinks)
 }
 
 // SetSignatureID sets the SignatureID field and marks it as non-optional;
@@ -15974,8 +16031,9 @@ var (
 	postToValidateFieldContent           = big.NewInt(1 << 4)
 	postToValidateFieldDefaultSignatures = big.NewInt(1 << 5)
 	postToValidateFieldOptions           = big.NewInt(1 << 6)
-	postToValidateFieldSignatureID       = big.NewInt(1 << 7)
-	postToValidateFieldWhen              = big.NewInt(1 << 8)
+	postToValidateFieldShortenLinks      = big.NewInt(1 << 7)
+	postToValidateFieldSignatureID       = big.NewInt(1 << 8)
+	postToValidateFieldWhen              = big.NewInt(1 << 9)
 )
 
 type PostToValidate struct {
@@ -15986,6 +16044,7 @@ type PostToValidate struct {
 	Content           *PostContent      `json:"content" url:"-"`
 	DefaultSignatures *bool             `json:"defaultSignatures,omitempty" url:"-"`
 	Options           []*ChannelOptions `json:"options,omitempty" url:"-"`
+	ShortenLinks      *bool             `json:"shortenLinks,omitempty" url:"-"`
 	SignatureID       *string           `json:"signatureId,omitempty" url:"-"`
 	When              *PostTiming       `json:"when,omitempty" url:"-"`
 
@@ -16049,6 +16108,13 @@ func (p *PostToValidate) SetDefaultSignatures(defaultSignatures *bool) {
 func (p *PostToValidate) SetOptions(options []*ChannelOptions) {
 	p.Options = options
 	p.require(postToValidateFieldOptions)
+}
+
+// SetShortenLinks sets the ShortenLinks field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostToValidate) SetShortenLinks(shortenLinks *bool) {
+	p.ShortenLinks = shortenLinks
+	p.require(postToValidateFieldShortenLinks)
 }
 
 // SetSignatureID sets the SignatureID field and marks it as non-optional;

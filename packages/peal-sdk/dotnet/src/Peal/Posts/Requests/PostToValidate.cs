@@ -27,6 +27,9 @@ public record PostToValidate
     [JsonPropertyName("options")]
     public IEnumerable<ChannelOptions>? Options { get; set; }
 
+    [JsonPropertyName("shortenLinks")]
+    public bool? ShortenLinks { get; set; }
+
     [JsonPropertyName("signatureId")]
     public string? SignatureId { get; set; }
 

@@ -26,6 +26,7 @@ import { QueuesClient } from "./api/resources/queues/client/Client.js";
 import { RecyclingClient } from "./api/resources/recycling/client/Client.js";
 import { ReviewClient } from "./api/resources/review/client/Client.js";
 import { SessionClient } from "./api/resources/session/client/Client.js";
+import { ShortLinksClient } from "./api/resources/shortLinks/client/Client.js";
 import { SignaturesClient } from "./api/resources/signatures/client/Client.js";
 import { SystemClient } from "./api/resources/system/client/Client.js";
 import { TagsClient } from "./api/resources/tags/client/Client.js";
@@ -78,6 +79,7 @@ export class PealClient {
     protected _queues: QueuesClient | undefined;
     protected _recycling: RecyclingClient | undefined;
     protected _channelDefaults: ChannelDefaultsClient | undefined;
+    protected _shortLinks: ShortLinksClient | undefined;
 
     constructor(options: PealClient.Options = {}) {
 
@@ -210,6 +212,10 @@ export class PealClient {
 
     public get channelDefaults(): ChannelDefaultsClient {
         return (this._channelDefaults ??= new ChannelDefaultsClient(this._options));
+    }
+
+    public get shortLinks(): ShortLinksClient {
+        return (this._shortLinks ??= new ShortLinksClient(this._options));
     }
 
     /**

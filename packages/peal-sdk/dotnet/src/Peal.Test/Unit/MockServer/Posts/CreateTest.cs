@@ -140,6 +140,7 @@ public class CreateTest : BaseMockServerTest
                 "name": "name",
                 "via": "web"
               },
+              "shortenLinks": true,
               "status": "draft",
               "tagIds": [
                 "tagIds",
@@ -311,6 +312,7 @@ public class CreateTest : BaseMockServerTest
                     },
                     DefaultSignatures = null,
                     Options = null,
+                    ShortenLinks = null,
                     SignatureId = null,
                     TagIds = null,
                 },
@@ -401,6 +403,7 @@ public class CreateTest : BaseMockServerTest
                 "name": "name",
                 "via": "web"
               },
+              "shortenLinks": true,
               "status": "draft",
               "tagIds": [
                 "tagIds"

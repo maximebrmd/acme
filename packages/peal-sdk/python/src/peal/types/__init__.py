@@ -452,7 +452,7 @@ if typing.TYPE_CHECKING:
     from .non_finite_number import NonFiniteNumber
     from .not_found_error_body import (
         NotFoundErrorBody,
-        NotFoundErrorBody_ChannelNotFound,
+        NotFoundErrorBody_ShortLinkNotFound,
         NotFoundErrorBody_WorkspaceNotFound,
     )
     from .not_recyclable_reason import NotRecyclableReason
@@ -681,6 +681,13 @@ if typing.TYPE_CHECKING:
         ServiceUnavailableErrorBody_BillingUnavailable,
         ServiceUnavailableErrorBody_MediaStoreUnavailable,
     )
+    from .short_link import ShortLink
+    from .short_link_day import ShortLinkDay
+    from .short_link_not_found_encoded import ShortLinkNotFoundEncoded
+    from .short_link_page import ShortLinkPage
+    from .short_link_period import ShortLinkPeriod
+    from .short_link_report import ShortLinkReport
+    from .short_link_status import ShortLinkStatus
     from .signature import Signature
     from .signature_details import SignatureDetails
     from .signature_name_taken_encoded import SignatureNameTakenEncoded
@@ -1278,7 +1285,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NewBoost": ".new_boost",
     "NonFiniteNumber": ".non_finite_number",
     "NotFoundErrorBody": ".not_found_error_body",
-    "NotFoundErrorBody_ChannelNotFound": ".not_found_error_body",
+    "NotFoundErrorBody_ShortLinkNotFound": ".not_found_error_body",
     "NotFoundErrorBody_WorkspaceNotFound": ".not_found_error_body",
     "NotRecyclableReason": ".not_recyclable_reason",
     "Notice": ".notice",
@@ -1503,6 +1510,13 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ServiceUnavailableErrorBody": ".service_unavailable_error_body",
     "ServiceUnavailableErrorBody_BillingUnavailable": ".service_unavailable_error_body",
     "ServiceUnavailableErrorBody_MediaStoreUnavailable": ".service_unavailable_error_body",
+    "ShortLink": ".short_link",
+    "ShortLinkDay": ".short_link_day",
+    "ShortLinkNotFoundEncoded": ".short_link_not_found_encoded",
+    "ShortLinkPage": ".short_link_page",
+    "ShortLinkPeriod": ".short_link_period",
+    "ShortLinkReport": ".short_link_report",
+    "ShortLinkStatus": ".short_link_status",
     "Signature": ".signature",
     "SignatureDetails": ".signature_details",
     "SignatureNameTakenEncoded": ".signature_name_taken_encoded",
@@ -2124,7 +2138,7 @@ __all__ = [
     "NewBoost",
     "NonFiniteNumber",
     "NotFoundErrorBody",
-    "NotFoundErrorBody_ChannelNotFound",
+    "NotFoundErrorBody_ShortLinkNotFound",
     "NotFoundErrorBody_WorkspaceNotFound",
     "NotRecyclableReason",
     "Notice",
@@ -2349,6 +2363,13 @@ __all__ = [
     "ServiceUnavailableErrorBody",
     "ServiceUnavailableErrorBody_BillingUnavailable",
     "ServiceUnavailableErrorBody_MediaStoreUnavailable",
+    "ShortLink",
+    "ShortLinkDay",
+    "ShortLinkNotFoundEncoded",
+    "ShortLinkPage",
+    "ShortLinkPeriod",
+    "ShortLinkReport",
+    "ShortLinkStatus",
     "Signature",
     "SignatureDetails",
     "SignatureNameTakenEncoded",

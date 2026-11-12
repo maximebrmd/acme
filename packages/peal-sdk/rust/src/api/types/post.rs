@@ -30,6 +30,9 @@ pub struct Post {
     #[serde(rename = "scheduledVia")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scheduled_via: Option<PostOrigin>,
+    #[serde(rename = "shortenLinks")]
+    #[serde(default)]
+    pub shorten_links: bool,
     pub status: PostStatus,
     #[serde(rename = "tagIds")]
     #[serde(default)]
@@ -60,6 +63,7 @@ pub struct PostBuilder {
     schedule: Option<PostSchedule>,
     scheduled_by: Option<String>,
     scheduled_via: Option<PostOrigin>,
+    shorten_links: Option<bool>,
     status: Option<PostStatus>,
     tag_ids: Option<Vec<String>>,
     targets: Option<Vec<PostTarget>>,
@@ -122,6 +126,11 @@ impl PostBuilder {
         self
     }
 
+    pub fn shorten_links(mut self, value: bool) -> Self {
+        self.shorten_links = Some(value);
+        self
+    }
+
     pub fn status(mut self, value: PostStatus) -> Self {
         self.status = Some(value);
         self
@@ -146,6 +155,7 @@ impl PostBuilder {
     /// This method will fail if any of the following fields are not set:
     /// - [`content`](PostBuilder::content)
     /// - [`id`](PostBuilder::id)
+    /// - [`shorten_links`](PostBuilder::shorten_links)
     /// - [`status`](PostBuilder::status)
     /// - [`tag_ids`](PostBuilder::tag_ids)
     /// - [`targets`](PostBuilder::targets)
@@ -164,6 +174,9 @@ impl PostBuilder {
             schedule: self.schedule,
             scheduled_by: self.scheduled_by,
             scheduled_via: self.scheduled_via,
+            shorten_links: self
+                .shorten_links
+                .ok_or_else(|| BuildError::missing_field("shorten_links"))?,
             status: self
                 .status
                 .ok_or_else(|| BuildError::missing_field("status"))?,

@@ -276,6 +276,7 @@ class RawPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -296,6 +297,8 @@ class RawPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -325,6 +328,7 @@ class RawPostsClient:
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "shortenLinks": shorten_links,
                 "signatureId": signature_id,
                 "tagIds": tag_ids,
             },
@@ -583,6 +587,7 @@ class RawPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -611,6 +616,8 @@ class RawPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -644,6 +651,7 @@ class RawPostsClient:
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "shortenLinks": shorten_links,
                 "signatureId": signature_id,
                 "tagIds": tag_ids,
                 "when": convert_and_respect_annotation_metadata(object_=when, annotation=PostTiming, direction="write"),
@@ -990,6 +998,7 @@ class RawPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         when: typing.Optional[PostTiming] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -1012,6 +1021,8 @@ class RawPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -1042,6 +1053,7 @@ class RawPostsClient:
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "shortenLinks": shorten_links,
                 "signatureId": signature_id,
                 "when": convert_and_respect_annotation_metadata(object_=when, annotation=PostTiming, direction="write"),
             },
@@ -1212,6 +1224,7 @@ class RawPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -1234,6 +1247,8 @@ class RawPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -1260,6 +1275,7 @@ class RawPostsClient:
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "shortenLinks": shorten_links,
                 "signatureId": signature_id,
                 "tagIds": tag_ids,
             },
@@ -3371,6 +3387,7 @@ class AsyncRawPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -3391,6 +3408,8 @@ class AsyncRawPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -3420,6 +3439,7 @@ class AsyncRawPostsClient:
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "shortenLinks": shorten_links,
                 "signatureId": signature_id,
                 "tagIds": tag_ids,
             },
@@ -3678,6 +3698,7 @@ class AsyncRawPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -3706,6 +3727,8 @@ class AsyncRawPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -3739,6 +3762,7 @@ class AsyncRawPostsClient:
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "shortenLinks": shorten_links,
                 "signatureId": signature_id,
                 "tagIds": tag_ids,
                 "when": convert_and_respect_annotation_metadata(object_=when, annotation=PostTiming, direction="write"),
@@ -4085,6 +4109,7 @@ class AsyncRawPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         when: typing.Optional[PostTiming] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -4107,6 +4132,8 @@ class AsyncRawPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -4137,6 +4164,7 @@ class AsyncRawPostsClient:
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "shortenLinks": shorten_links,
                 "signatureId": signature_id,
                 "when": convert_and_respect_annotation_metadata(object_=when, annotation=PostTiming, direction="write"),
             },
@@ -4307,6 +4335,7 @@ class AsyncRawPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -4329,6 +4358,8 @@ class AsyncRawPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -4355,6 +4386,7 @@ class AsyncRawPostsClient:
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "shortenLinks": shorten_links,
                 "signatureId": signature_id,
                 "tagIds": tag_ids,
             },

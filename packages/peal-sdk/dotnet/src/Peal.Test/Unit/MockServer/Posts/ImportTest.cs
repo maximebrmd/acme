@@ -120,6 +120,7 @@ public class ImportTest : BaseMockServerTest
                       "name": "name",
                       "via": "web"
                     },
+                    "shortenLinks": true,
                     "status": "draft",
                     "tagIds": [
                       "tagIds",
@@ -348,6 +349,7 @@ public class ImportTest : BaseMockServerTest
                       "name": "name",
                       "via": "web"
                     },
+                    "shortenLinks": true,
                     "status": "draft",
                     "tagIds": [
                       "tagIds",
@@ -543,6 +545,7 @@ public class ImportTest : BaseMockServerTest
                       "text": "text"
                     },
                     "id": "id",
+                    "shortenLinks": true,
                     "status": "draft",
                     "tagIds": [
                       "tagIds"

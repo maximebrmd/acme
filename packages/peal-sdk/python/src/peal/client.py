@@ -36,6 +36,7 @@ if typing.TYPE_CHECKING:
     from .recycling.client import AsyncRecyclingClient, RecyclingClient
     from .review.client import AsyncReviewClient, ReviewClient
     from .session.client import AsyncSessionClient, SessionClient
+    from .short_links.client import AsyncShortLinksClient, ShortLinksClient
     from .signatures.client import AsyncSignaturesClient, SignaturesClient
     from .system.client import AsyncSystemClient, SystemClient
     from .tags.client import AsyncTagsClient, TagsClient
@@ -160,6 +161,7 @@ class Peal:
         self._queues: typing.Optional[QueuesClient] = None
         self._recycling: typing.Optional[RecyclingClient] = None
         self._channel_defaults: typing.Optional[ChannelDefaultsClient] = None
+        self._short_links: typing.Optional[ShortLinksClient] = None
 
     @property
     def system(self):
@@ -417,6 +419,14 @@ class Peal:
             self._channel_defaults = ChannelDefaultsClient(client_wrapper=self._client_wrapper)
         return self._channel_defaults
 
+    @property
+    def short_links(self):
+        if self._short_links is None:
+            from .short_links.client import ShortLinksClient  # noqa: E402
+
+            self._short_links = ShortLinksClient(client_wrapper=self._client_wrapper)
+        return self._short_links
+
 
 def _make_default_async_client(
     timeout: typing.Optional[float],
@@ -555,6 +565,7 @@ class AsyncPeal:
         self._queues: typing.Optional[AsyncQueuesClient] = None
         self._recycling: typing.Optional[AsyncRecyclingClient] = None
         self._channel_defaults: typing.Optional[AsyncChannelDefaultsClient] = None
+        self._short_links: typing.Optional[AsyncShortLinksClient] = None
 
     @property
     def system(self):
@@ -811,6 +822,14 @@ class AsyncPeal:
 
             self._channel_defaults = AsyncChannelDefaultsClient(client_wrapper=self._client_wrapper)
         return self._channel_defaults
+
+    @property
+    def short_links(self):
+        if self._short_links is None:
+            from .short_links.client import AsyncShortLinksClient  # noqa: E402
+
+            self._short_links = AsyncShortLinksClient(client_wrapper=self._client_wrapper)
+        return self._short_links
 
 
 def _get_base_url(*, base_url: typing.Optional[str] = None, environment: PealEnvironment) -> str:

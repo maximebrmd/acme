@@ -34,4 +34,5 @@ public partial interface IPealClient
     public IQueuesClient Queues { get; }
     public IRecyclingClient Recycling { get; }
     public IChannelDefaultsClient ChannelDefaults { get; }
+    public IShortLinksClient ShortLinks { get; }
 }

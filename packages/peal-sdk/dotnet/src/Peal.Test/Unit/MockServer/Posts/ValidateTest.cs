@@ -366,6 +366,7 @@ public class ValidateTest : BaseMockServerTest
                 },
                 DefaultSignatures = null,
                 Options = null,
+                ShortenLinks = null,
                 SignatureId = null,
                 When = null,
             }

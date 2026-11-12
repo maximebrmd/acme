@@ -33,6 +33,7 @@ export interface NewPost {
     content: Peal.PostContent;
     defaultSignatures?: boolean;
     options?: Peal.ChannelOptions[];
+    shortenLinks?: boolean;
     signatureId?: string;
     tagIds?: string[];
     when: Peal.PostTiming;

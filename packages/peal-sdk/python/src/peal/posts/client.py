@@ -134,6 +134,7 @@ class PostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -154,6 +155,8 @@ class PostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -201,6 +204,7 @@ class PostsClient:
             channel_sets=channel_sets,
             default_signatures=default_signatures,
             options=options,
+            shorten_links=shorten_links,
             signature_id=signature_id,
             tag_ids=tag_ids,
             request_options=request_options,
@@ -318,6 +322,7 @@ class PostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -346,6 +351,8 @@ class PostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -404,6 +411,7 @@ class PostsClient:
             channel_sets=channel_sets,
             default_signatures=default_signatures,
             options=options,
+            shorten_links=shorten_links,
             signature_id=signature_id,
             tag_ids=tag_ids,
             request_options=request_options,
@@ -538,6 +546,7 @@ class PostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         when: typing.Optional[PostTiming] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -560,6 +569,8 @@ class PostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -608,6 +619,7 @@ class PostsClient:
             channel_sets=channel_sets,
             default_signatures=default_signatures,
             options=options,
+            shorten_links=shorten_links,
             signature_id=signature_id,
             when=when,
             request_options=request_options,
@@ -657,6 +669,7 @@ class PostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -679,6 +692,8 @@ class PostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -728,6 +743,7 @@ class PostsClient:
             channel_sets=channel_sets,
             default_signatures=default_signatures,
             options=options,
+            shorten_links=shorten_links,
             signature_id=signature_id,
             tag_ids=tag_ids,
             request_options=request_options,
@@ -1529,6 +1545,7 @@ class AsyncPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -1549,6 +1566,8 @@ class AsyncPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -1604,6 +1623,7 @@ class AsyncPostsClient:
             channel_sets=channel_sets,
             default_signatures=default_signatures,
             options=options,
+            shorten_links=shorten_links,
             signature_id=signature_id,
             tag_ids=tag_ids,
             request_options=request_options,
@@ -1729,6 +1749,7 @@ class AsyncPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -1757,6 +1778,8 @@ class AsyncPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -1823,6 +1846,7 @@ class AsyncPostsClient:
             channel_sets=channel_sets,
             default_signatures=default_signatures,
             options=options,
+            shorten_links=shorten_links,
             signature_id=signature_id,
             tag_ids=tag_ids,
             request_options=request_options,
@@ -1973,6 +1997,7 @@ class AsyncPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         when: typing.Optional[PostTiming] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -1995,6 +2020,8 @@ class AsyncPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -2051,6 +2078,7 @@ class AsyncPostsClient:
             channel_sets=channel_sets,
             default_signatures=default_signatures,
             options=options,
+            shorten_links=shorten_links,
             signature_id=signature_id,
             when=when,
             request_options=request_options,
@@ -2110,6 +2138,7 @@ class AsyncPostsClient:
         channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
         default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        shorten_links: typing.Optional[bool] = OMIT,
         signature_id: typing.Optional[str] = OMIT,
         tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -2132,6 +2161,8 @@ class AsyncPostsClient:
         default_signatures : typing.Optional[bool]
 
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        shorten_links : typing.Optional[bool]
 
         signature_id : typing.Optional[str]
 
@@ -2189,6 +2220,7 @@ class AsyncPostsClient:
             channel_sets=channel_sets,
             default_signatures=default_signatures,
             options=options,
+            shorten_links=shorten_links,
             signature_id=signature_id,
             tag_ids=tag_ids,
             request_options=request_options,
