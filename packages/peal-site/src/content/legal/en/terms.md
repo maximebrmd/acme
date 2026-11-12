@@ -8,17 +8,19 @@ Effective date: [Date]
 
 ## About these terms
 
-These terms govern the use of the hosted Peal service at app.peal.social, provided by [Legal entity name] ("we"), [Registered address], [Company registration number]. [State how the terms are accepted, for example when an account is created.]
+These terms govern the use of the hosted Peal service at app.peal.social, provided by Maxime Bourmaud EI ("we"), 15 rue Paul Verlaine, 85710 La Garnache, France, SIREN 991 631 607. You accept these terms when you create an account, and again when you order a paid plan.
 
 They do not cover the Peal source code. The source code is licensed separately under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), which governs self-hosting, modifying and redistributing it, except for the SDKs and the API contract they are generated from, which are licensed under the Apache License, Version 2.0.
 
 ## The service
 
-Peal lets you write posts, schedule them on the social media platforms you connect, and see how they perform. [Describe the plans and features offered, or link to where they are described.]
+Peal lets you write posts, schedule them on the social media platforms you connect, and see how they perform. Every plan, the free one included, has every platform, the calendar, analytics, the API, the MCP server and the command line; plans differ in how many channels, members, posts, writing assistant requests and how much media storage they allow. The [pricing page](/pricing/) lists them, with their prices, and the free trial.
 
 ## Accounts and organisations
 
-[Who may create an account, including the minimum age; the accuracy of account details; keeping sign-in credentials secret; and what organisation owners and administrators can do on behalf of their members.]
+You must be at least 18, or of age where you live, to create an account. Give accurate details, keep them up to date, and keep your password and any second sign-in step to yourself: what is done with your account, its API keys and the applications you connect to it is done in your name. Tell us at once at hello@peal.social if you think someone else has used it.
+
+An organisation is the space a team shares. Its owners and administrators invite and remove members, set their roles, connect and disconnect channels, and, for the members who manage billing, choose and pay for its plan. What members create in an organisation belongs to that organisation: it stays there when a member leaves.
 
 ## Connected platforms
 
@@ -26,9 +28,9 @@ When you connect a social media account, you authorise Peal to act on that accou
 
 Your use of each platform stays subject to that platform's own terms. Platforms can change or restrict access to their services, which can change what Peal is able to do with them.
 
-[Confirm once built: when a platform does not confirm whether a post was published, Peal marks the post as unconfirmed instead of retrying it, so that it is not published twice. Check the platform before you publish such a post again.]
+When a platform does not confirm whether a post was published, Peal marks the post as unconfirmed instead of retrying it, so that it is not published twice. Check the platform before you publish such a post again.
 
-[Responsibilities and limits that apply to publishing through third-party platforms.]
+We do not control the platforms. A platform can refuse, delay, change or remove a post, limit an account, or be unavailable, and we are not responsible for what it decides or for its outages. Peal shows each post's outcome as the platform reported it: check that what matters to you went out as intended. You are responsible for respecting each platform's rules when you publish there.
 
 ## Ads and spending through Peal
 
@@ -56,15 +58,25 @@ Where an organisation connects an ad account, Peal can read that account's campa
 
 ## Your content
 
-[Who owns the content you add to Peal, the licence you grant us so that we can store it and publish it where you ask, and your responsibility for what you publish.]
+You keep every right you have in the content you add to Peal: posts, media, comments and replies. You grant us, for as long as it is stored in Peal, a worldwide, non-exclusive and free licence to host, copy, adapt (for example to resize an image or convert a video to the format a platform requires) and send that content where you ask, only to provide the service to you.
+
+You confirm that you hold the rights needed to publish what you add, and you are responsible for what you publish. As a host, we do not watch what is stored, but we act promptly on content reported to us as unlawful: report it to hello@peal.social, saying where it is and why it is unlawful.
 
 ## Acceptable use
 
-[What the service must not be used for, such as unlawful content, spam, or breaking a platform's rules, and what happens when these terms are breached.]
+You must not use Peal to:
+
+- publish or store unlawful content, such as content that incites hatred or violence, infringes others' rights or deceives people;
+- send spam, or publish in bulk on accounts you are not entitled to act for;
+- break the rules of a platform Peal connects to, or get around its limits;
+- attack, overload or probe the service, get around its limits, or reach data that is not yours;
+- resell access to the service without our agreement.
+
+If these terms are breached, we may turn off what is causing the harm, such as a short link, and suspend the account involved, for a day, a week, 30 days or until the breach ends, depending on its seriousness. We tell the account's holder why by email, beforehand unless the harm must be stopped at once. A serious or repeated breach can lead to the end of the contract, as set out under Suspension and termination.
 
 ## Plans, prices and payment
 
-Each organisation is on a plan. The plans, their prices and what each one allows (connected channels, members, posts a month, writing assistant requests a day and media storage) are listed on the [pricing page](/pricing/), and on the organisation's billing page before any order. Prices are in euros and include VAT at France's rate; a consumer in another EU country pays the VAT of their country, which checkout computes before payment, and a business with a valid EU VAT number pays the price excluding VAT, the VAT being reverse-charged. Payments are processed by Stripe. [Legal entity name], [VAT number].
+Each organisation is on a plan. The plans, their prices and what each one allows (connected channels, members, posts a month, writing assistant requests a day and media storage) are listed on the [pricing page](/pricing/), and on the organisation's billing page before any order. Prices are in euros and include VAT at France's rate; a consumer in another EU country pays the VAT of their country, which checkout computes before payment, and a business with a valid EU VAT number pays the price excluding VAT, the VAT being reverse-charged. Payments are processed by Stripe. Maxime Bourmaud EI, [VAT number].
 
 **Free plan.** An organisation without a subscription is on the free plan, with its limits. An account owns one organisation on the free plan at most.
 
@@ -78,13 +90,13 @@ Each organisation is on a plan. The plans, their prices and what each one allows
 
 To make sure a stranger who knows your address cannot end your contract, a request that gives the contract number, or is sent by a member who manages billing while signed in, is applied at once; one that gives neither is applied once you follow the link in the acknowledgement we email you, or once we have made sure it comes from the contract's holder.
 
-**Right of withdrawal.** A consumer has the right to withdraw from the contract within 14 days without giving any reason. The withdrawal period expires 14 days after the day of the conclusion of the contract. To exercise the right of withdrawal, you must inform us ([Legal entity name], [Registered address], [Contact email]) of your decision to withdraw from the contract by an unequivocal statement (for example a letter sent by post or an email). You may use the model withdrawal form below, but it is not obligatory. You can also exercise your right of withdrawal online with "Withdraw from contract here", at the foot of every page of the app and of this site and on the billing page, without signing in, then "Confirm withdrawal". If you use this online function, we will send you an acknowledgement of receipt of the withdrawal on a durable medium (by email), including its content and the date and time of its submission, without undue delay. To meet the withdrawal deadline, it is sufficient for you to send your communication before the withdrawal period has expired.
+**Right of withdrawal.** A consumer has the right to withdraw from the contract within 14 days without giving any reason. The withdrawal period expires 14 days after the day of the conclusion of the contract. To exercise the right of withdrawal, you must inform us (Maxime Bourmaud EI, 15 rue Paul Verlaine, 85710 La Garnache, France, hello@peal.social) of your decision to withdraw from the contract by an unequivocal statement (for example a letter sent by post or an email). You may use the model withdrawal form below, but it is not obligatory. You can also exercise your right of withdrawal online with "Withdraw from contract here", at the foot of every page of the app and of this site and on the billing page, without signing in, then "Confirm withdrawal". If you use this online function, we will send you an acknowledgement of receipt of the withdrawal on a durable medium (by email), including its content and the date and time of its submission, without undue delay. To meet the withdrawal deadline, it is sufficient for you to send your communication before the withdrawal period has expired.
 
 If you withdraw from the contract, we will reimburse all payments received from you, without undue delay and in any event not later than 14 days from the day on which we are informed of your decision to withdraw. We will carry out the reimbursement using the same means of payment as you used for the initial transaction, unless you have expressly agreed otherwise; in any event, you will not incur any fees as a result. As you asked for the service to begin during the withdrawal period, you pay us an amount in proportion to what was provided until you told us of your withdrawal, in comparison with the full coverage of the contract: we refund the rest of what you paid for the period. The right of withdrawal does not apply to a customer acting for business purposes.
 
 Model withdrawal form (complete and return this form only if you wish to withdraw from the contract):
 
-> To [Legal entity name], [Registered address], [Contact email]:
+> To Maxime Bourmaud EI, 15 rue Paul Verlaine, 85710 La Garnache, France, hello@peal.social:
 >
 > I/We (\*) hereby give notice that I/We (\*) withdraw from my/our (\*) contract for the provision of the following service: a Peal subscription.
 >
@@ -136,15 +148,21 @@ Articles L215-1 to L215-3 and L241-3 of the French Consumer Code are reproduced 
 
 ## Availability and changes to the service
 
-[Service availability, maintenance, and how changes to features are announced.]
+We work to keep Peal available at all times, without guaranteeing that it always will be. Maintenance and new releases can interrupt it briefly; we do them at quiet hours where we can. The status page at status.peal.social shows whether the service is up. We improve Peal over time and may change its features; we announce by email, at least 30 days ahead, any change that removes or substantially reduces a feature of a paid plan, and a customer who does not accept it may cancel before it takes effect, with a refund of the unused part of the period paid for.
 
 ## Suspension and termination
 
-[When you or we may end the contract or suspend an account, the notice given, and what happens to your data afterwards.] [Data deletion](/data-deletion/) explains how to delete your account and data.
+You can close your account at any time from its settings, and cancel a paid plan as set out under Cancelling. We may suspend an account that breaches these terms, as set out under Acceptable use. We may end the contract for a serious or repeated breach, after telling the account's holder by email why and giving them 15 days to remedy it, unless the breach makes that impossible, or, without fault, with 3 months' notice by email, refunding the unused part of any period paid for. While an account is suspended its data is kept; you can still ask for a copy of it at privacy@peal.social. Once the contract ends, the account and its data are deleted as the data deletion page describes. [Data deletion](/data-deletion/) explains how to delete your account and data.
 
 ## Warranties and liability
 
-[Warranties, disclaimers and limitations of liability, within what mandatory law allows. Consumers keep the rights that mandatory law gives them.]
+We provide the service with reasonable care and skill: our obligation is to use the appropriate means, not to reach a given result, in particular where a platform is involved.
+
+Towards a professional customer, we are liable only for direct damage caused by our fault, and our total liability over any 12 months is limited to the amounts the customer paid us for the service over those 12 months; we are not liable for indirect damage, such as lost profit, lost business or harm to reputation.
+
+Towards a consumer, we are liable for the foreseeable damage our breach of these terms causes. Consumers keep the legal guarantee of conformity for digital content and services (French Consumer Code, Articles L224-25-12 and following) and every other right mandatory law gives them.
+
+Nothing in these terms limits our liability for wilful misconduct or gross negligence, or for death or personal injury.
 
 ## Personal data
 
@@ -152,12 +170,16 @@ The [privacy policy](/privacy/) explains how we process personal data. [The data
 
 ## Governing law and disputes
 
-[The governing law, the competent courts, and the information on consumer dispute resolution that applies.]
+These terms are governed by French law. A consumer also keeps the protection of the mandatory rules of the country where they live.
+
+Before any claim, write to us at hello@peal.social so that we can try to settle the dispute. A consumer whose written complaint did not settle it may then refer it, free of charge, to the consumer mediator: [Name, address and website of the consumer mediator], within a year of the complaint (French Consumer Code, Articles L612-1 and following).
+
+A dispute with a professional customer goes to the courts with jurisdiction over our registered office. A consumer may bring a claim before the courts the law gives them, including those where they live.
 
 ## Changes to these terms
 
-[How changes are announced, the notice given, and when they take effect.]
+We email account holders at least 30 days before a change to these terms takes effect, and show its date at the top of this page. A customer who does not accept a change may close their account, or cancel a paid plan at no cost, before it takes effect, and is refunded the unused part of the period paid for. Changes a law or a court requires may take effect sooner, when it requires them.
 
 ## Contact
 
-[Contact email], [Registered address]
+hello@peal.social, 15 rue Paul Verlaine, 85710 La Garnache, France
