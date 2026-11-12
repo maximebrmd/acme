@@ -10,7 +10,7 @@ export type Paste<F> =
  * text is not pasted.
  */
 export const pasteOf = <F>(
-  clipboard: { readonly files: ArrayLike<F> } | null
+  clipboard: { readonly files: Iterable<F> } | null
 ): Paste<F> => {
   const files = [...(clipboard?.files ?? [])];
 
