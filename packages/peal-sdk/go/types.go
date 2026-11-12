@@ -14798,25 +14798,6 @@ func (n NotRecyclableReason) Ptr() *NotRecyclableReason {
 	return &n
 }
 
-type OverviewRefusal string
-
-const (
-	OverviewRefusalTwoStepRequired OverviewRefusal = "twoStepRequired"
-)
-
-func NewOverviewRefusalFromString(s string) (OverviewRefusal, error) {
-	switch s {
-	case "twoStepRequired":
-		return OverviewRefusalTwoStepRequired, nil
-	}
-	var t OverviewRefusal
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (o OverviewRefusal) Ptr() *OverviewRefusal {
-	return &o
-}
-
 var (
 	overviewChannelsFieldConnected   = big.NewInt(1 << 0)
 	overviewChannelsFieldOff         = big.NewInt(1 << 1)
@@ -15169,6 +15150,25 @@ func (o *OverviewPosts) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", o)
+}
+
+type OverviewRefusal string
+
+const (
+	OverviewRefusalTwoStepRequired OverviewRefusal = "twoStepRequired"
+)
+
+func NewOverviewRefusalFromString(s string) (OverviewRefusal, error) {
+	switch s {
+	case "twoStepRequired":
+		return OverviewRefusalTwoStepRequired, nil
+	}
+	var t OverviewRefusal
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (o OverviewRefusal) Ptr() *OverviewRefusal {
+	return &o
 }
 
 var (
