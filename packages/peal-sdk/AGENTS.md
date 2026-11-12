@@ -46,10 +46,13 @@
   the workspace's `fern-api` with `--local` and its telemetry, upgrade check
   and version redirection off. Fern copies the SDK's folder, builds included,
   into temporary folders it never deletes, so its `TMPDIR` is a folder of
-  its own, `peal-sdk-fern-<language>` in the system's temporary folder (on
-  macOS, Fern prefixes that path with `/private`, so it cannot live in the
-  workspace), which root deletes in the generator's image before and after
-  each run: on Linux, the generator writes there as root. `--generate-tests`
+  its own, new for each run (`withTemporaryFolder`,
+  `scripts/temporary-folder.ts`: `peal-sdk-fern-<language>-` and a random
+  suffix, from `mkdtemp`, in the system's temporary folder; on macOS, Fern
+  prefixes that path with `/private`, so it cannot live in the workspace),
+  so runs from other worktrees and languages in parallel never share one.
+  Root deletes it in the generator's image after the run, failed or
+  interrupted too: on Linux, the generator writes there as root. `--generate-tests`
   makes Fern write whole projects (manifests, build files, its own tests),
   not the source alone.
   Generation is deterministic: `sdk:check` compares two runs' output through

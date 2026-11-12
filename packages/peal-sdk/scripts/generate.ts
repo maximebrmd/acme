@@ -14,6 +14,7 @@ import { Schema } from "effect";
 import { cacheRoot, sdkRoot, workspaceRoot } from "./container.ts";
 import { finish } from "./finish.ts";
 import { languageNamed } from "./languages.ts";
+import { withTemporaryFolder } from "./temporary-folder.ts";
 
 const language = languageNamed(Bun.argv[2]);
 const { generator } = language;
@@ -88,28 +89,29 @@ await $`docker tag ${pinned} ${generator.image}:${generator.version}`;
 
 // Fern copies the SDK's folder, builds included (a Rust `target/` weighs
 // gigabytes), into temporary folders it never deletes: it gets a folder of
-// its own, emptied before and after each run, even one that failed or was
-// killed. The folder stays in the system's temporary folder: on macOS, Fern
-// prefixes that path with /private, the real path of /var and /tmp.
+// its own, new for each run (`withTemporaryFolder`), so runs from other
+// worktrees and the other languages never share it, removed afterwards,
+// the run failed, was interrupted or not. The folder stays in the system's
+// temporary folder: on macOS, Fern prefixes that path with /private, the
+// real path of /var and /tmp.
 const systemTemporaryFolder = tmpdir();
-const temporaryName = `peal-sdk-fern-${language.name}`;
-const temporaryFolder = path.join(systemTemporaryFolder, temporaryName);
 
 // The generator's container writes there as root on Linux, where the calling
 // user cannot delete what it wrote: root deletes it, in the generator's image.
-const removeTemporaryFolder = async () => {
-  await $`docker run --rm --volume ${systemTemporaryFolder}:/temporary --entrypoint rm ${pinned} -rf ${`/temporary/${temporaryName}`}`.quiet();
+const removeTemporaryFolder = async (folder: string) => {
+  await $`docker run --rm --volume ${systemTemporaryFolder}:/temporary --entrypoint rm ${pinned} -rf ${`/temporary/${path.basename(folder)}`}`.quiet();
 };
-
-await removeTemporaryFolder();
-
-await mkdir(temporaryFolder, { recursive: true });
 
 // --generate-tests makes Fern write the whole project (manifest, build
 // files, its unit tests) rather than the client's source alone.
-const result = await (async () => {
-  try {
-    return await $`node ${path.join(cliFolder, "cli.cjs")} generate --local --group ${language.name} --version ${language.version} --generate-tests --force --no-prompt --log-level warn`
+const result = await withTemporaryFolder(
+  {
+    name: `peal-sdk-fern-${language.name}`,
+    remove: removeTemporaryFolder,
+    root: systemTemporaryFolder,
+  },
+  async (temporaryFolder) =>
+    await $`node ${path.join(cliFolder, "cli.cjs")} generate --local --group ${language.name} --version ${language.version} --generate-tests --force --no-prompt --log-level warn`
       .cwd(path.dirname(fernFolder))
       .env({
         ...process.env,
@@ -121,11 +123,8 @@ const result = await (async () => {
         TMPDIR: temporaryFolder,
       })
       .quiet()
-      .nothrow();
-  } finally {
-    await removeTemporaryFolder();
-  }
-})();
+      .nothrow()
+);
 
 if (result.exitCode !== 0) {
   process.stderr.write(result.stdout);
