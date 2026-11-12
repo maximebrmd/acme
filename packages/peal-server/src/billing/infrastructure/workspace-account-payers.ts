@@ -28,6 +28,14 @@ export const WorkspaceAccountPayersLive = Layer.effect(
               Option.fromUndefinedOr(found.get(workspaceId))
             )
           ),
+      partnerPoolOf: (workspaceId) =>
+        ownership
+          .poolsIn([workspaceId])
+          .pipe(
+            Effect.map((pools) =>
+              Option.fromUndefinedOr(pools.get(workspaceId)?.others)
+            )
+          ),
       partnersIn: (workspaceIds) => ownership.partnersIn(workspaceIds),
     });
   })

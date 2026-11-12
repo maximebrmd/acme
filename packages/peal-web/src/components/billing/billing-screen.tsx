@@ -12,13 +12,22 @@ import { useState, useTransition } from "react";
 
 import { billingClient } from "#auth/billing-client.ts";
 import {
+  acceptTransfer,
   billingOf,
   cancelSubscription,
+  offerTransfer,
+  withdrawTransfer,
   previewWithdrawal,
   withdraw,
 } from "#billing/api.ts";
-import { billingErrorOf } from "#billing/errors.ts";
+import { accountErrorOf, billingErrorOf } from "#billing/errors.ts";
+import { membersOf } from "#billing/members.ts";
 import { leaveFor, useCheckout } from "#billing/use-checkout.ts";
+import { BillingAccountView } from "#components/billing/billing-account-view.tsx";
+import type {
+  AccountAction,
+  AccountError,
+} from "#components/billing/billing-account-view.tsx";
 import { BillingView } from "#components/billing/billing-view.tsx";
 import type {
   BillingAction,
@@ -28,10 +37,17 @@ import type {
 import { UsageHistoryScreen } from "#components/billing/usage-history-screen.tsx";
 import { useHydrated } from "#components/media/use-hydrated.ts";
 import { InTimeZone } from "#components/notices/in-time-zone.tsx";
-import { getPathname } from "#i18n/navigation.ts";
+import { getPathname, Link } from "#i18n/navigation.ts";
 import { browserTimeZone } from "#posts/zoned-time.ts";
 
 const idle: BillingStep = { _tag: "idle" };
+
+// Another workspace's billing page.
+const billingLink = (id: string, name: string) => (
+  <Link href={`/app/${id}/billing`} className="underline">
+    {name}
+  </Link>
+);
 
 const Loading = () => (
   <div className="flex flex-col gap-3" aria-busy>
@@ -62,16 +78,42 @@ interface BillingScreenProps {
   readonly checkedOut: boolean;
   /** The terms of service, where the operator publishes them. */
   readonly termsUrl: string | null;
+  /** The signed-in person. */
+  readonly userId: string;
   readonly workspaceId: string;
 }
+
+// The workspace's other owners, whom its payer may hand it to.
+const useOtherOwners = (workspaceId: string, userId: string) => {
+  const members = useAtomValue(membersOf(workspaceId));
+
+  return AsyncResult.isSuccess(members)
+    ? members.value.filter(
+        ({ role, userId: id }) =>
+          id !== userId &&
+          role.split(",").some((name) => name.trim() === "owner")
+      )
+    : [];
+};
 
 const LoadedBilling = ({
   canManage,
   checkedOut,
   termsUrl,
+  userId,
   workspaceId,
 }: BillingScreenProps) => {
   const locale = useLocale();
+  const owners = useOtherOwners(workspaceId, userId);
+  const offer = useAtomSet(offerTransfer, { mode: "promiseExit" });
+  const accept = useAtomSet(acceptTransfer, { mode: "promiseExit" });
+  const withdrawOffer = useAtomSet(withdrawTransfer, { mode: "promiseExit" });
+
+  const [accountPending, setAccountPending] = useState<AccountAction | null>(
+    null
+  );
+
+  const [accountError, setAccountError] = useState<AccountError | null>(null);
   const billing = useAtomValue(billingOf(workspaceId));
   const refresh = useAtomRefresh(billingOf(workspaceId));
   const checkout = useCheckout(workspaceId);
@@ -150,6 +192,23 @@ const LoadedBilling = ({
     );
   };
 
+  // Runs a request about the account, then reads the billing again.
+  const runOnAccount = (
+    action: AccountAction,
+    request: () => Promise<Exit.Exit<unknown, { readonly _tag: string }>>
+  ) => {
+    setAccountPending(action);
+    setAccountError(null);
+
+    startTransition(async () => {
+      const done = await request();
+
+      setAccountPending(null);
+      setAccountError(Option.getOrNull(accountErrorOf(done)));
+      refresh();
+    });
+  };
+
   const confirmCancel = () => {
     run({ _tag: "cancel" }, async () => {
       const done = await cancel({ params, payload: {} });
@@ -189,11 +248,39 @@ const LoadedBilling = ({
   };
 
   if (AsyncResult.isSuccess(billing)) {
+    const { account } = billing.value;
+    const billedHere = account.billingWorkspaceId === workspaceId;
+
     return (
       <div className="flex flex-col gap-8">
+        <BillingAccountView
+          account={account}
+          canManage={canManage}
+          error={accountError}
+          owners={owners}
+          pending={accountPending}
+          userId={userId}
+          workspaceId={workspaceId}
+          linkTo={billingLink}
+          onAccept={() => {
+            runOnAccount("accept", async () => await accept({ params }));
+          }}
+          onOffer={(toUserId) => {
+            runOnAccount(
+              "offer",
+              async () => await offer({ params, payload: { toUserId } })
+            );
+          }}
+          onWithdraw={() => {
+            runOnAccount(
+              "withdraw",
+              async () => await withdrawOffer({ params })
+            );
+          }}
+        />
         <BillingView
           billing={billing.value}
-          canManage={canManage}
+          canManage={canManage && billedHere}
           checkedOut={checkedOut}
           consented={consented}
           error={error}

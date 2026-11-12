@@ -49,12 +49,15 @@ import {
   UsageApiLive,
   ContractRequestsDeskApiLive,
   ContractRequestsLive as ContractRequestsUseCasesLive,
+  BillingAccountsDeskApiLive,
+  BillingAccountsDeskLive,
 } from "#billing/container.ts";
 import {
   ChannelOAuthApiLive,
   ChannelOverviewLive,
   ChannelsApiLive,
   ChannelsLive,
+  SharedPlatformAccountsLive,
   ConnectLinkJournalLive,
   ConnectLinksApiLive,
   DataDeletionApiLive,
@@ -119,6 +122,7 @@ import {
   ShortLinksLive,
 } from "#shortlinks/container.ts";
 import {
+  BillingAccountAuditLive,
   ContractRequestAuditLive,
   ImpersonationAuditLive,
   LegalDisclosureAuditLive,
@@ -174,6 +178,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   ActivityApiLive,
   InboxApiLive,
   ContractRequestsDeskApiLive,
+  BillingAccountsDeskApiLive,
   TagsApiLive,
   SignaturesApiLive,
   ChannelSetsApiLive,
@@ -443,7 +448,13 @@ const LegalRequestsContextLive = LegalRequestsLive.pipe(
 // notices; and a partner's usage per customer, from the workspaces the
 // workspace context says it holds.
 const BillingContextLive = BillingOverviewLive.pipe(
-  Layer.provide(Layer.merge(PartnerTenantsLive, WorkspaceOwnersLive)),
+  Layer.provide(
+    Layer.mergeAll(
+      PartnerTenantsLive,
+      WorkspaceOwnersLive,
+      SharedPlatformAccountsLive
+    )
+  ),
   Layer.provide(
     Layer.mergeAll(
       ChannelsWithNoticesLive,
@@ -486,6 +497,21 @@ const ContractRequestsContextLive = ContractRequestsUseCasesLive.pipe(
   )
 );
 
+// What staff do about one free tier per person, from the platform accounts
+// the channels context holds and the owners the workspace context knows,
+// recorded in the staff audit log.
+const BillingAccountsDeskContextLive = BillingAccountsDeskLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      SharedPlatformAccountsLive,
+      PartnerOwnershipLive,
+      WorkspaceOwnersLive,
+      BillingAccountAuditLive
+    )
+  )
+);
+
 // Durable jobs as AppLive runs them, for tests that write and read posts and
 // notices: the engine in memory has no workflow registered, so scheduling a
 // post, or emailing a notice, through AppLive fails. Tests that schedule use
@@ -521,6 +547,7 @@ const ServicesLive = Layer.mergeAll(
   ReviewGateContextLive,
   ReviewContextLive,
   ContractRequestsContextLive,
+  BillingAccountsDeskContextLive,
   AdsRoutesContextLive,
   ShortLinksContextLive,
   OverviewContextLive
@@ -594,6 +621,7 @@ const ContextsLive = Layer.mergeAll(
   ReviewGateContextLive,
   ReviewContextLive,
   ContractRequestsContextLive,
+  BillingAccountsDeskContextLive,
   // On the cluster, every call to an ad account goes through its gate.
   adsContext(GatedAds),
   ShortLinksContextLive,

@@ -1,10 +1,12 @@
 import { Option } from "effect";
 import type {
   Billing,
+  BillingAccount,
   PlanAllowances,
   Standing as StandingView,
 } from "peal-contract";
 
+import type { AccountView } from "#billing/application/account-views.ts";
 import type { Overview } from "#billing/application/billing-overview.ts";
 import type { Standing } from "#billing/application/workspace-standing.ts";
 import type { Allowances } from "#billing/domain/plans.ts";
@@ -21,8 +23,39 @@ export const allowancesView = (allowances: Allowances): PlanAllowances => ({
   scheduledPosts: Option.getOrNull(allowances.scheduledPosts),
 });
 
+/** What clients see of the billing account a workspace is on. */
+export const accountView = ({
+  account,
+  holderName,
+  others,
+  payer,
+  transfer,
+  workspaces,
+}: AccountView): BillingAccount => ({
+  billingWorkspaceId: account.holder,
+  billingWorkspaceName: Option.getOrNull(holderName),
+  id: account.id,
+  otherWorkspaces: others,
+  partner: Option.isSome(account.partnerId),
+  payer,
+  transfer: transfer.pipe(
+    Option.map(({ expiresAt, offeredAt, offeredBy, toUserId }) => ({
+      expiresAt,
+      offeredAt,
+      offeredBy,
+      toUserId,
+    })),
+    Option.getOrNull
+  ),
+  workspaces,
+});
+
 /** What clients see of where a workspace stands against its plan. */
-export const standingView = (standing: Standing): StandingView => ({
+export const standingView = (
+  standing: Standing,
+  account: AccountView
+): StandingView => ({
+  account: accountView(account),
   mustReduce: standing.mustReduce,
   over: standing.over,
   plan: Option.getOrNull(standing.plan),
@@ -31,13 +64,11 @@ export const standingView = (standing: Standing): StandingView => ({
 });
 
 /** What clients see of a workspace's billing. */
-export const billingView = ({
-  entitlements,
-  plans,
-  trial,
-  usage,
-  withdrawableUntil,
-}: Overview): Billing => ({
+export const billingView = (
+  { entitlements, plans, trial, usage, withdrawableUntil }: Overview,
+  account: AccountView
+): Billing => ({
+  account: accountView(account),
   allowances: allowancesView(entitlements.allowances),
   currency,
   enabled: Option.isSome(entitlements.plan),

@@ -12,6 +12,16 @@ const nothing = () => {
 };
 
 const standing: Standing = {
+  account: {
+    billingWorkspaceId: "studio",
+    billingWorkspaceName: "Studio Nord",
+    id: "0190f3a0-0000-7000-8000-00000000b001",
+    otherWorkspaces: [],
+    partner: false,
+    payer: true,
+    transfer: null,
+    workspaces: 1,
+  },
   mustReduce: true,
   over: [
     { allowed: 3, limit: "channels", used: 4 },
@@ -70,6 +80,25 @@ const render = async (
 };
 
 describe(OverPlanView, () => {
+  it("names the account's other workspaces, which count their channels with this one", async () => {
+    const shared = {
+      ...standing,
+      account: {
+        ...standing.account,
+        otherWorkspaces: [{ name: "Studio Sud", workspaceId: "south" }],
+        workspaces: 3,
+      },
+    };
+
+    await expect(render("en", { standing: shared })).resolves.toContain(
+      "Its channels count with those of the other workspaces of its billing account: Studio Sud."
+    );
+    await expect(render("fr", { standing: shared })).resolves.toContain(
+      "Ses canaux comptent avec ceux des autres espaces de travail de son compte de facturation : Studio Sud."
+    );
+    await expect(render("en")).resolves.not.toContain("billing account");
+  });
+
   it("says what the workspace holds beyond its plan, and that nothing was deleted", async () => {
     const html = await render("en");
 

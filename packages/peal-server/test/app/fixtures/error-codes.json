@@ -1,5 +1,10 @@
 [
   {
+    "code": "accounts_not_merged",
+    "status": 409,
+    "tag": "AccountsNotMerged"
+  },
+  {
     "code": "ad_account_busy",
     "status": 409,
     "tag": "AdAccountBusy"
@@ -103,6 +108,16 @@
     "code": "bad_request",
     "status": 400,
     "tag": "BadRequest"
+  },
+  {
+    "code": "billed_elsewhere",
+    "status": 409,
+    "tag": "BilledElsewhere"
+  },
+  {
+    "code": "billing_account_not_found",
+    "status": 404,
+    "tag": "BillingAccountNotFound"
   },
   {
     "code": "billing_not_enabled",
@@ -753,6 +768,16 @@
     "code": "too_many_webhook_sends",
     "status": 429,
     "tag": "TooManyWebhookSends"
+  },
+  {
+    "code": "transfer_not_found",
+    "status": 404,
+    "tag": "TransferNotFound"
+  },
+  {
+    "code": "transfer_refused",
+    "status": 409,
+    "tag": "TransferRefused"
   },
   {
     "code": "trial_unavailable",

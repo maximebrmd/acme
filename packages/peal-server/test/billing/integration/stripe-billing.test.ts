@@ -9,7 +9,8 @@ import path from "node:path";
 import { assert, layer } from "@effect/vitest";
 import { Config, DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
-import { BillingSchema } from "peal-contract";
+import { BillingSchema, ReductionSchema, StandingSchema } from "peal-contract";
+import type { Standing } from "peal-contract";
 import { Stripe } from "stripe";
 
 import { SqlLive } from "#shared/infrastructure/database.ts";
@@ -127,6 +128,9 @@ const deliver = Effect.fn("deliver")(function* deliver(
     return response.status;
   });
 });
+
+// A standing, but for the account, which each reader is told of.
+const withoutAccount = ({ account: _account, ...rest }: Standing) => rest;
 
 const billingOf = Effect.fn("billingOf")(function* billingOf(
   owner: Person,
@@ -1611,14 +1615,21 @@ layer(BillingIntegration, {
           assert.strictEqual(accepted.status, 200);
         }
 
-        const standing = (cookies: string) =>
+        const standingWithAccount = (cookies: string) =>
           app
             .request(`/api/workspaces/${workspaceId}/billing/standing`, {
               headers: { cookie: cookies },
             })
-            .pipe(Effect.map(({ body }) => body));
+            .pipe(
+              Effect.flatMap((reply) =>
+                bodyOf(Schema.toCodecJson(StandingSchema), reply)
+              )
+            );
 
-        const within = {
+        const standing = (cookies: string) =>
+          standingWithAccount(cookies).pipe(Effect.map(withoutAccount));
+
+        const within: Omit<Standing, "account"> = {
           mustReduce: false,
           over: [],
           plan: "pro",
@@ -1628,6 +1639,22 @@ layer(BillingIntegration, {
 
         assert.deepStrictEqual(yield* standing(owner.cookies), within);
 
+        // The owner who made the workspace pays for it, alone in its
+        // account; a guest is told whose account it is, not as its payer.
+        assert.deepStrictEqual(
+          (yield* standingWithAccount(owner.cookies)).account,
+          {
+            billingWorkspaceId: workspaceId,
+            billingWorkspaceName: "over-plan",
+            id: (yield* billingOf(owner, workspaceId)).account.id,
+            otherWorkspaces: [],
+            partner: false,
+            payer: true,
+            transfer: null,
+            workspaces: 1,
+          }
+        );
+
         // The subscription ends: the workspace is on the free plan, with
         // everything it had.
         assert.strictEqual(
@@ -1635,7 +1662,7 @@ layer(BillingIntegration, {
           200
         );
 
-        const over = {
+        const over: Omit<Standing, "account"> = {
           mustReduce: true,
           over: [
             { allowed: 3, limit: "channels", used: 5 },
@@ -1690,11 +1717,20 @@ layer(BillingIntegration, {
         const reduced = yield* reduce(owner, kept);
 
         assert.strictEqual(reduced.status, 200);
-        assert.deepStrictEqual(reduced.body, {
+
+        const { standing: after, ...done } = yield* bodyOf(
+          Schema.toCodecJson(ReductionSchema),
+          reduced
+        );
+
+        assert.deepStrictEqual(done, {
           disconnectedChannels: 2,
           removedMembers: 1,
           revokedInvitations: 0,
-          standing: { ...within, plan: "free" },
+        });
+        assert.deepStrictEqual(withoutAccount(after), {
+          ...within,
+          plan: "free",
         });
 
         const billing = yield* billingOf(owner, workspaceId);

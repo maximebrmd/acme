@@ -48,7 +48,11 @@ import { Ids } from "#shared/application/ids.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import { PlainPseudonymsTest, subscriptionOf } from "#test/billing/support.ts";
+import {
+  AloneInAccountsTest,
+  PlainPseudonymsTest,
+  subscriptionOf,
+} from "#test/billing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -359,6 +363,7 @@ const ActionsTest = Layer.mergeAll(
   Layer.provide(UsageTest),
   Layer.provide(AddressesTest),
   Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))),
+  Layer.provide(AloneInAccountsTest),
   Layer.provideMerge(LogLive)
 );
 

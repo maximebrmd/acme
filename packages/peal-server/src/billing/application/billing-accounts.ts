@@ -396,6 +396,31 @@ const make = Effect.gen(function* BillingAccountsLive() {
     }
   );
 
+  const moveTo = Effect.fn("BillingAccounts.moveTo")(function* moveTo(
+    workspaceId: WorkspaceId,
+    from: BillingAccount,
+    payer: UserId
+  ) {
+    yield* store.holdPayer(payer);
+    yield* leave(workspaceId, from);
+
+    const personal = yield* store.personalOf(payer);
+
+    if (Option.isNone(personal)) {
+      return yield* newAccount({
+        holder: workspaceId,
+        partnerId: Option.none(),
+        payer: Option.some(payer),
+        standalone: false,
+      });
+    }
+
+    yield* store.holdAccount(personal.value.id);
+    yield* store.attach(workspaceId, personal.value.id, yield* DateTime.now);
+
+    return personal.value;
+  });
+
   const eraseWorkspace = Effect.fn("BillingAccounts.eraseWorkspace")(
     function* eraseWorkspace(workspaceId: WorkspaceId) {
       const current = yield* store.accountOf(workspaceId);
@@ -431,6 +456,7 @@ const make = Effect.gen(function* BillingAccountsLive() {
     eraseWorkspace,
     forgetPayer,
     leave,
+    moveTo,
     of,
     poolOf,
     poolsIn,
@@ -481,6 +507,16 @@ export class BillingAccounts extends Context.Service<
       workspaceId: WorkspaceId,
       account: BillingAccount
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Moves the workspace from its account to the person's own, made with
+     * it as billing workspace if they have none, in the caller's
+     * transaction, under the person's hold and both accounts'.
+     */
+    readonly moveTo: (
+      workspaceId: WorkspaceId,
+      from: BillingAccount,
+      payer: UserId
+    ) => Effect.Effect<BillingAccount, DatabaseError>;
     /**
      * Follows a subscription the workspace's own: one that entitles keeps
      * it alone, and once it ends the workspace joins its payer's account.

@@ -5,7 +5,10 @@ import { randomUUID } from "node:crypto";
 import { DateTime, Effect, Layer, Option, Ref } from "effect";
 import { SqlClient } from "effect/sql";
 
+import { AccountViews } from "#billing/application/account-views.ts";
 import { BillingAccounts } from "#billing/application/billing-accounts.ts";
+import { AccountPayers } from "#billing/application/ports/account-payers.ts";
+import { BillingAccountStore } from "#billing/application/ports/billing-account-store.ts";
 import { ContractRecords } from "#billing/application/ports/contract-records.ts";
 import { ContractReferences } from "#billing/application/ports/contract-references.ts";
 import { ContractRequests } from "#billing/application/ports/contract-requests.ts";
@@ -72,25 +75,51 @@ export const UnmeteredTest = Layer.succeed(
  * Every workspace in a billing account of its own, shared with no other,
  * which nothing changes: for tests where no account pools anything.
  */
+/** The id of every account `AloneInAccountsTest` answers. */
+export const aloneAccountId = BillingAccountIdSchema.make(
+  "00000000-0000-7000-8000-00000000a11e"
+);
+
+const aloneAccountOf = (workspaceId: WorkspaceId) =>
+  new BillingAccount({
+    createdAt: DateTime.makeUnsafe("2026-11-01T00:00:00Z"),
+    freeTier: true,
+    holder: workspaceId,
+    id: aloneAccountId,
+    partnerId: Option.none(),
+    payer: Option.none(),
+    standalone: false,
+  });
+
 export const AloneInAccountsTest = Layer.mock(BillingAccounts, {
   eraseWorkspace: () => Effect.void,
   forgetPayer: () => Effect.void,
+  of: (workspaceId) => Effect.succeed(aloneAccountOf(workspaceId)),
   poolOf: (workspaceId) =>
-    Effect.succeed({
-      account: new BillingAccount({
-        createdAt: DateTime.makeUnsafe("2026-11-01T00:00:00Z"),
-        freeTier: true,
-        holder: workspaceId,
-        id: BillingAccountIdSchema.make("00000000-0000-7000-8000-00000000a11e"),
-        partnerId: Option.none(),
-        payer: Option.none(),
-        standalone: false,
-      }),
-      others: [],
-    }),
+    Effect.succeed({ account: aloneAccountOf(workspaceId), others: [] }),
   poolsIn: () => Effect.succeed(new Map()),
   subscriptionChanged: () => Effect.void,
 });
+
+/**
+ * What the billing page says of each workspace's account, alone in its
+ * own: paid by nobody, its own billing workspace, named to nobody, with
+ * no offer open.
+ */
+export const AloneAccountViewsTest = AccountViews.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      AloneInAccountsTest,
+      Layer.mock(AccountPayers, {
+        namesShownTo: () => Effect.succeed(new Map()),
+      }),
+      Layer.mock(BillingAccountStore, {
+        transferOf: () => Effect.succeedNone,
+      })
+    )
+  ),
+  Layer.provideMerge(AloneInAccountsTest)
+);
 
 /** What a subscription needs, the rest left to defaults. */
 export type SubscriptionFields = Pick<

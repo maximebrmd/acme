@@ -1,24 +1,36 @@
 import { Schema } from "effect";
-import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api";
+import {
+  HttpApiEndpoint,
+  HttpApiGroup,
+  HttpApiSchema,
+  OpenApi,
+} from "effect/http-api";
 
 import { Authentication } from "./authentication.ts";
+import { BilledElsewhere } from "./billed-elsewhere.ts";
 import { BillingNotEnabled } from "./billing-not-enabled.ts";
 import { BillingUnavailable } from "./billing-unavailable.ts";
 import {
+  BillingAccountSchema,
+  BillingTransferSchema,
   CancellationSchema,
   CancelPayloadSchema,
   OrderPayloadSchema,
   OrderSchema,
   ReductionPayloadSchema,
   ReductionSchema,
+  TransferPayloadSchema,
   WithdrawalPreviewSchema,
   WithdrawalSchema,
 } from "./billing.ts";
 import { DesiredDayTooFar } from "./desired-day-too-far.ts";
 import { Forbidden } from "./forbidden.ts";
 import { NothingToCancel } from "./nothing-to-cancel.ts";
+import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlanTooSmall } from "./plan-too-small.ts";
 import { ReductionRefused } from "./reduction-refused.ts";
+import { TransferNotFound } from "./transfer-not-found.ts";
+import { TransferRefused } from "./transfer-refused.ts";
 import { TrialUnavailable } from "./trial-unavailable.ts";
 import { WithdrawalUnavailable } from "./withdrawal-unavailable.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
@@ -36,6 +48,7 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
   .add(
     HttpApiEndpoint.post("order", "/orders", {
       error: [
+        BilledElsewhere,
         BillingNotEnabled,
         BillingUnavailable,
         Forbidden,
@@ -48,7 +61,7 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Records the order a checkout then needs: the plan and interval, or the trial, and the member's request to start now, knowing their right to withdraw. Ordering a paid plan during the trial ends the trial once the plan is paid for, without charge for the trial. A plan too small for what the workspace holds, as when moving down, is refused with what to remove first (PlanTooSmall).",
+          "Records the order a checkout then needs: the plan and interval, or the trial, and the member's request to start now, knowing their right to withdraw. Ordering a paid plan during the trial ends the trial once the plan is paid for, without charge for the trial. A plan too small for what the workspace holds, as when moving down, is refused with what to remove first (PlanTooSmall). A workspace whose billing account another of its workspaces bills orders nothing: the plan is ordered there (BilledElsewhere).",
         summary: "Order a plan",
       })
     )
@@ -120,6 +133,52 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
         description:
           "Brings a workspace over its plan back within it by keeping what the member chose: the other channels are disconnected, as each would be one at a time (the platforms that take it are asked to forget Peal), the other members are removed, and the pending invitations revoked. Only what is over the plan is touched. The whole choice is checked first: refused, it changes nothing. Posts scheduled on a channel disconnected fail when due. Needs billing:manage, channel:disconnect, member:delete and invitation:cancel.",
         summary: "Choose what stays in a workspace over its plan",
+      })
+    )
+  )
+  .add(
+    HttpApiEndpoint.post("offerTransfer", "/transfer", {
+      error: [BillingNotEnabled, Forbidden, TransferRefused],
+      params: workspaceParams,
+      payload: TransferPayloadSchema,
+      success: BillingTransferSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Offers the workspace to another of its owners, who becomes its payer by accepting within 7 days: the workspace then moves to their billing account, made if they have none. Only the workspace's payer offers it; an offer made again replaces the one before.",
+        summary: "Offer the workspace to another payer",
+      })
+    )
+  )
+  .add(
+    HttpApiEndpoint.post("acceptTransfer", "/transfer/acceptance", {
+      error: [
+        BillingNotEnabled,
+        Forbidden,
+        PlanLimitReached,
+        TransferNotFound,
+        TransferRefused,
+      ],
+      params: workspaceParams,
+      success: BillingAccountSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Takes over the workspace's billing, as the owner it was offered to: the workspace moves to your billing account, made if you have none, and counts its channels with your other workspaces'. Refused when your account's plan has no room for its channels (PlanLimitReached), and while the workspace bills its account with a subscription Stripe may still charge (TransferRefused `subscribed`).",
+        summary: "Take over the workspace's billing",
+      })
+    )
+  )
+  .add(
+    HttpApiEndpoint.delete("withdrawTransfer", "/transfer", {
+      error: [BillingNotEnabled, Forbidden, TransferNotFound],
+      params: workspaceParams,
+      success: HttpApiSchema.NoContent,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Withdraws the open offer, as the payer who made it, or declines it, as the owner it was made to.",
+        summary: "Withdraw the offer of the workspace",
       })
     )
   )

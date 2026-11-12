@@ -48,3 +48,15 @@ export const closeContractRequest = PealApi.mutation(
   "contractRequestsDesk",
   "close"
 );
+
+// Merges one billing account into another, and requires a payment method
+// of one or gives its free tier back.
+export const mergeBillingAccounts = PealApi.mutation(
+  "billingAccountsDesk",
+  "merge"
+);
+
+export const requirePaymentMethod = PealApi.mutation(
+  "billingAccountsDesk",
+  "requirePaymentMethod"
+);

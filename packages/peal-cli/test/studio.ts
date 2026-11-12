@@ -83,6 +83,7 @@ import type {
   ApprovalPolicy,
   ApprovalRequest,
   Billing,
+  BillingAccount,
   WorkspaceUsageReport,
   Channel,
   ChannelOptions,
@@ -642,7 +643,20 @@ const invitation: Invitation = {
   role: "editor",
 };
 
+// The studio's billing account: its own, which its user pays for.
+const account: BillingAccount = {
+  billingWorkspaceId: studioId,
+  billingWorkspaceName: "Studio",
+  id: "0190f3a0-0000-7000-8000-00000000b001",
+  otherWorkspaces: [],
+  partner: false,
+  payer: true,
+  transfer: null,
+  workspaces: 1,
+};
+
 const within: Standing = {
+  account,
   mustReduce: false,
   over: [],
   plan: "free",
@@ -652,6 +666,7 @@ const within: Standing = {
 
 // The studio after a trial: more channels and members than the free plan.
 const over: Standing = {
+  account,
   mustReduce: true,
   over: [
     { allowed: 3, limit: "channels", used: 8 },
@@ -664,6 +679,7 @@ const over: Standing = {
 };
 
 const billing: Billing = {
+  account,
   allowances: {
     assistantRequests: 3,
     channels: 3,

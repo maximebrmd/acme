@@ -18,6 +18,7 @@ import { authorize } from "#shared/domain/authorize.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
 
+import { BillingAccounts } from "./billing-accounts.ts";
 import { trialOffered } from "./place-order.ts";
 import type { MemberAddresses } from "./ports/member-addresses.ts";
 import type { Subscriptions } from "./ports/subscriptions.ts";
@@ -80,6 +81,7 @@ export class BillingOverview extends Context.Service<
     Effect.gen(function* BillingOverviewLive() {
       const entitlements = yield* WorkspaceEntitlements;
       const usage = yield* WorkspaceUsage;
+      const accounts = yield* BillingAccounts;
 
       const context = yield* Effect.context<
         MemberAddresses | Pseudonyms | Subscriptions | Trials
@@ -98,6 +100,13 @@ export class BillingOverview extends Context.Service<
           Option.isSome(subject.impersonatedBy) ||
           Result.isFailure(authorize(actor, "billing:manage"))
         ) {
+          return false;
+        }
+
+        // Ordered on the account's billing workspace only.
+        const { holder } = yield* accounts.of(actor.workspaceId);
+
+        if (holder !== actor.workspaceId) {
           return false;
         }
 

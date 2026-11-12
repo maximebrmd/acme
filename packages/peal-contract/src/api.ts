@@ -6,6 +6,7 @@ import { AdsApi } from "./ads.ts";
 import { AnalyticsApi } from "./analytics.ts";
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
+import { BillingAccountsDeskApi } from "./billing-accounts-desk.ts";
 import { BillingActionsApi } from "./billing-actions.ts";
 import { BillingApi } from "./billing.ts";
 import { CapabilitiesApi } from "./capabilities.ts";
@@ -420,6 +421,36 @@ export { DeletionIncomplete } from "./deletion-incomplete.ts";
 
 export { BillingNotEnabled } from "./billing-not-enabled.ts";
 
+export { BilledElsewhere } from "./billed-elsewhere.ts";
+
+export { TransferNotFound } from "./transfer-not-found.ts";
+
+export { TransferRefusalSchema, TransferRefused } from "./transfer-refused.ts";
+
+export type { TransferRefusal } from "./transfer-refused.ts";
+
+export { BillingAccountNotFound } from "./billing-account-not-found.ts";
+
+export {
+  AccountsNotMerged,
+  MergeRefusalSchema,
+} from "./accounts-not-merged.ts";
+
+export type { MergeRefusal } from "./accounts-not-merged.ts";
+
+export {
+  BillingAccountsDeskApi,
+  SharedPlatformAccountPageSchema,
+  SharedPlatformAccountSchema,
+  StaffBillingAccountSchema,
+} from "./billing-accounts-desk.ts";
+
+export type {
+  SharedPlatformAccount,
+  SharedPlatformAccountPage,
+  StaffBillingAccount,
+} from "./billing-accounts-desk.ts";
+
 export {
   DesiredDayTooFar,
   desiredDayHorizonDays,
@@ -609,8 +640,12 @@ export type {
 export { TooManyContractRequests } from "./too-many-contract-requests.ts";
 
 export {
+  AccountWorkspaceSchema,
+  BillingAccountSchema,
   BillingApi,
   BillingSchema,
+  BillingTransferSchema,
+  TransferPayloadSchema,
   BillingSubscriptionSchema,
   CancellationSchema,
   CancelPayloadSchema,
@@ -633,8 +668,12 @@ export {
 } from "./billing.ts";
 
 export type {
+  AccountWorkspace,
   Billing,
+  BillingAccount,
   BillingSubscription,
+  BillingTransfer,
+  TransferPayload,
   Cancellation,
   Excess,
   HeldLimit,
@@ -2112,6 +2151,7 @@ export class Api extends HttpApi.make("peal")
   .add(ReviewLinkApi)
   .add(ContractRequestsApi)
   .add(ContractRequestsDeskApi)
+  .add(BillingAccountsDeskApi)
   .add(TagsApi)
   .add(SignaturesApi)
   .add(ChannelSetsApi)

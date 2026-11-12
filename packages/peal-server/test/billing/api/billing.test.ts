@@ -15,6 +15,9 @@ import { BillingApiLive } from "#billing/container.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import {
+  aloneAccountId,
+  AloneAccountViewsTest,
+  AloneInAccountsTest,
   NoAddressesTest,
   NoTrialsTest,
   PlainPseudonymsTest,
@@ -75,7 +78,8 @@ const overviewOn = (enabled: boolean) =>
     Layer.provide(SubscriptionsTest),
     Layer.provide(NoTrialsTest),
     Layer.provide(Layer.mergeAll(NoAddressesTest, PlainPseudonymsTest)),
-    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
+    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled }))),
+    Layer.provide(AloneInAccountsTest)
   );
 
 const clientWith = <E, R>(
@@ -84,7 +88,10 @@ const clientWith = <E, R>(
   HttpApiTest.groups(Api, ["billing"]).pipe(
     Effect.provide(
       Layer.mergeAll(
-        BillingApiLive.pipe(Layer.provideMerge(security)),
+        BillingApiLive.pipe(
+          Layer.provideMerge(security),
+          Layer.provide(AloneAccountViewsTest)
+        ),
         HttpServer.layerServices
       )
     )
@@ -175,6 +182,16 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
       const client = yield* as(permissionsFor("viewer"));
 
       assert.deepStrictEqual(yield* client.billing.standing({ params }), {
+        account: {
+          billingWorkspaceId: workspaceId,
+          billingWorkspaceName: null,
+          id: aloneAccountId,
+          otherWorkspaces: [],
+          partner: false,
+          payer: false,
+          transfer: null,
+          workspaces: 1,
+        },
         mustReduce: false,
         over: [],
         plan: "pro",

@@ -28,6 +28,13 @@ export class AccountPayers extends Context.Service<
     readonly partnerOf: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<Option.Option<PartnerPool>, DatabaseError>;
+    /**
+     * The other workspaces of the partner pool the workspace is in, as the
+     * workspace context holds it now, holding nothing; none outside one.
+     */
+    readonly partnerPoolOf: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<Option.Option<readonly WorkspaceId[]>, DatabaseError>;
     /** The partner pool of each of these workspaces in one; others left out. */
     readonly partnersIn: (
       workspaceIds: readonly WorkspaceId[]

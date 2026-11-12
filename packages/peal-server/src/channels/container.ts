@@ -134,6 +134,12 @@ export const ChannelOverviewLive = ChannelOverview.layer.pipe(
   Layer.provide(DrizzleChannelOverviewReads)
 );
 
+/**
+ * The platform accounts connected in several workspaces, for the staff
+ * tools of the billing context. Needs the database (Drizzle).
+ */
+export { DrizzleSharedPlatformAccounts as SharedPlatformAccountsLive } from "#channels/infrastructure/drizzle-shared-platform-accounts.ts";
+
 // The channels endpoints. They need the use cases ChannelsLive provides, and
 // the Authentication and WorkspaceAccess middleware of the workspace context,
 // which the composition root brings.
