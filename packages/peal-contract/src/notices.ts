@@ -57,6 +57,7 @@ export const RecyclingNoticeReasonSchema = Schema.Literals([
   "planLimit",
   "queueGone",
   "queueFull",
+  "sourceWithdrawn",
 ]).annotate({ identifier: "RecyclingNoticeReason" });
 
 export type RecyclingNoticeReason = typeof RecyclingNoticeReasonSchema.Type;
@@ -207,7 +208,8 @@ export const NoticeEventSchema = Schema.Union([
   // can no longer schedule (`starterGone`), none of its channels is left
   // (`noChannels`), the platforms refuse what it would say
   // (`contentRejected`), the month has no room in the plan (`planLimit`),
-  // its queue was deleted (`queueGone`) or has no free slot (`queueFull`).
+  // its queue was deleted (`queueGone`) or has no free slot (`queueFull`),
+  // or the source was cancelled or taken back to draft (`sourceWithdrawn`).
   Schema.TaggedStruct("RecyclingEnded", {
     reason: RecyclingNoticeReasonSchema,
     ruleId: Schema.String,

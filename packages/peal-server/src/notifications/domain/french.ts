@@ -301,6 +301,8 @@ export const french: EmailCatalog = {
     queueFull: "sa file d’attente n’a plus de créneau libre.",
     queueGone: "sa file d’attente a été supprimée.",
     sourceGone: "la publication qu’elle répète a été supprimée.",
+    sourceWithdrawn:
+      "la publication qu’elle répète a été annulée ou remise en brouillon : programmez-la de nouveau, puis reprenez la répétition.",
     starterGone:
       "la personne qui l’a lancée ne peut plus y programmer de publications.",
   },

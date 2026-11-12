@@ -204,10 +204,14 @@ export const RecyclingHandlers = HttpApiBuilder.group(
               DatabaseError: Effect.die,
               MissingPermission: forbidden,
               PostNotFound: () => Effect.fail(new PostNotFound()),
+              PostNotRecyclable: ({ postId, reason }) =>
+                Effect.fail(new PostNotRecyclable({ postId, reason })),
               RecyclingEndsTooSoon: endsTooSoon,
               RecyclingRuleEnded: ended,
               RecyclingRuleNotFound: notFound,
               RecyclingVariantsRejected: variantsInvalid,
+              TooManyRecyclingRules: ({ allowed }) =>
+                Effect.fail(new TooManyRecyclingRules({ allowed })),
             })
           );
         }),

@@ -885,9 +885,13 @@ export const PostToolsLive = PostTools.toLayer(
               ? Option.none()
               : Option.some(yield* variantsFrom(variants));
 
-          const listed = yield* recycling
-            .resume(member, id, given)
-            .pipe(Effect.catchTags(changeRefusals));
+          const listed = yield* recycling.resume(member, id, given).pipe(
+            Effect.catchTags({
+              ...changeRefusals,
+              PostNotRecyclable: startRefusals.PostNotRecyclable,
+              TooManyRecyclingRules: startRefusals.TooManyRecyclingRules,
+            })
+          );
 
           return ruleView(listed);
         }),

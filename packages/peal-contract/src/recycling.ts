@@ -123,7 +123,8 @@ export type RecyclingStatus = typeof RecyclingStatusSchema.Type;
  * started it can no longer schedule (`starterGone`), none of its channels
  * is left (`noChannels`), the platforms refuse what it would say
  * (`contentRejected`), the month has no room in the plan (`planLimit`),
- * its queue was deleted (`queueGone`) or has no free slot (`queueFull`).
+ * its queue was deleted (`queueGone`) or has no free slot (`queueFull`),
+ * or its source was cancelled or taken back to draft (`sourceWithdrawn`).
  */
 export const RecyclingEndReasonSchema = Schema.Literals([
   "completed",
@@ -135,6 +136,7 @@ export const RecyclingEndReasonSchema = Schema.Literals([
   "planLimit",
   "queueGone",
   "queueFull",
+  "sourceWithdrawn",
 ]).annotate({ identifier: "RecyclingEndReason" });
 
 export type RecyclingEndReason = typeof RecyclingEndReasonSchema.Type;
@@ -324,10 +326,12 @@ export class RecyclingApi extends HttpApiGroup.make("recycling")
       error: [
         Forbidden,
         PostNotFound,
+        PostNotRecyclable,
         RecyclingEndsTooSoon,
         RecyclingRuleEnded,
         RecyclingRuleNotFound,
         RecyclingVariantsInvalid,
+        TooManyRecyclingRules,
       ],
       params: rule,
       payload: RecyclingResumeSchema,
@@ -335,7 +339,7 @@ export class RecyclingApi extends HttpApiGroup.make("recycling")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Sets a paused rule going again, or one that ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`), with other `variants` if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.",
+          "Sets a paused rule going again, or one that ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`, `sourceWithdrawn`), with other `variants` if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Its source must be scheduled, publishing or out (PostNotRecyclable `draft`, `awaitingApproval` or `cancelled` otherwise); an ended rule whose source another rule repeats now is PostNotRecyclable `repeating`, and one the workspace has no room for is TooManyRecyclingRules. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.",
         summary: "Resume a recycling rule",
       })
     ),

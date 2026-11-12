@@ -293,6 +293,8 @@ export const english: EmailCatalog = {
     queueFull: "its queue has no free slot.",
     queueGone: "its queue was deleted.",
     sourceGone: "the post it repeats was deleted.",
+    sourceWithdrawn:
+      "the post it repeats was cancelled or taken back to draft: schedule it again, then resume the repeat.",
     starterGone: "whoever started it can no longer schedule posts there.",
   },
   recyclingEnded: {

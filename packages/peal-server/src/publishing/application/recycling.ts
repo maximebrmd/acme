@@ -270,10 +270,12 @@ export class Recycling extends Context.Service<
       | DatabaseError
       | MissingPermission
       | PostNotFound
+      | PostNotRecyclable
       | RecyclingEndsTooSoon
       | RecyclingRuleEnded
       | RecyclingRuleNotFound
       | RecyclingVariantsRejected
+      | TooManyRecyclingRules
     >;
     /** Ends the rule: the occurrences it made stay as they are. */
     readonly stop: (
@@ -609,19 +611,90 @@ export class Recycling extends Context.Service<
         );
       });
 
+      // Sets a rule going again. Its source must repeat again (scheduled,
+      // going out or out); an ended rule comes back to life only when its
+      // source has no other rule going on and the workspace has room for
+      // one more, as a new rule would, under the same lock.
       const resume = Effect.fn("Recycling.resume")(function* resume(
         actor: Actor,
         ruleId: RecyclingRuleId,
         variants: Option.Option<readonly RecyclingVariant[]>
       ) {
-        return yield* changed(actor, ruleId, variants, (rule, now) =>
-          Effect.fromResult(
-            resumeRule(
-              rule,
-              now,
-              Option.getOrElse(variants, () => rule.variants)
-            )
-          )
+        const current = yield* found(actor, ruleId);
+
+        yield* mayChange(actor, current);
+
+        const { post } = yield* findInWorkspace(
+          actor.workspaceId,
+          current.sourcePostId
+        ).pipe(withPorts);
+
+        const { status } = post;
+
+        if (
+          status._tag === "draft" ||
+          status._tag === "awaitingApproval" ||
+          status._tag === "cancelled"
+        ) {
+          return yield* new PostNotRecyclable({
+            postId: post.id,
+            reason: status._tag,
+          });
+        }
+
+        if (Option.isSome(variants)) {
+          yield* variantsChecked(actor, current.sourcePostId, variants.value);
+        }
+
+        return yield* transaction(
+          Effect.gen(function* save() {
+            yield* store.claim(actor.workspaceId);
+
+            const locked = yield* store.lock(actor.workspaceId, ruleId);
+
+            if (Option.isNone(locked)) {
+              return yield* new RecyclingRuleNotFound({ ruleId });
+            }
+
+            const rule = locked.value;
+
+            if (rule.status._tag === "ended") {
+              const other = yield* store.ofSource(
+                actor.workspaceId,
+                rule.sourcePostId
+              );
+
+              if (Option.isSome(other) && other.value.id !== rule.id) {
+                return yield* new PostNotRecyclable({
+                  postId: rule.sourcePostId,
+                  reason: "repeating",
+                });
+              }
+
+              if (
+                (yield* store.countLive(actor.workspaceId)) >=
+                maxRecyclingRulesPerWorkspace
+              ) {
+                return yield* new TooManyRecyclingRules({
+                  allowed: maxRecyclingRulesPerWorkspace,
+                });
+              }
+            }
+
+            const now = yield* DateTime.now;
+
+            const resumed = yield* Effect.fromResult(
+              resumeRule(
+                rule,
+                now,
+                Option.getOrElse(variants, () => rule.variants)
+              )
+            );
+
+            yield* store.update(resumed);
+
+            return listed(resumed, now);
+          })
         );
       });
 
@@ -688,6 +761,19 @@ export class Recycling extends Context.Service<
           source.value.post.workspaceId !== planned.workspaceId
         ) {
           return yield* ended(planned, "sourceGone");
+        }
+
+        // Made only while the source is scheduled, going out or went out:
+        // one cancelled or taken back to draft ends the rule, to resume
+        // once it is scheduled again; one waiting for an approval waits.
+        const sourceStatus = source.value.post.status._tag;
+
+        if (sourceStatus === "draft" || sourceStatus === "cancelled") {
+          return yield* ended(planned, "sourceWithdrawn");
+        }
+
+        if (sourceStatus === "awaitingApproval") {
+          return "left" as const;
         }
 
         const starter = yield* actors.of(planned);

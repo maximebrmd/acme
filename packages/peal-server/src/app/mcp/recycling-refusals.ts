@@ -68,7 +68,7 @@ const variantsRejected = ({
 
 const ended = ({ reason }: { readonly reason: string }) =>
   refuse(
-    `The rule ended (${reason}) and changes no more: resume_recycling_rule sets it going again when it ended for planLimit, contentRejected, noChannels or queueFull; recycle_post starts a new one otherwise.`
+    `The rule ended (${reason}) and changes no more: resume_recycling_rule sets it going again when it ended for planLimit, contentRejected, noChannels, queueFull or sourceWithdrawn (once its post is scheduled again); recycle_post starts a new one otherwise.`
   );
 
 /** How changing a rule is refused. */

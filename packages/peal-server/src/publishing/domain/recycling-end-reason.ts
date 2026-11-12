@@ -7,7 +7,8 @@ import { Schema } from "effect";
  * it can no longer schedule (`starterGone`), none of its channels is left
  * (`noChannels`), the platforms refuse what it would say
  * (`contentRejected`), the month has no room in the plan (`planLimit`),
- * its queue was deleted (`queueGone`) or has no free slot (`queueFull`).
+ * its queue was deleted (`queueGone`) or has no free slot (`queueFull`),
+ * or its source was cancelled or taken back to draft (`sourceWithdrawn`).
  * Stored: add a member, never rename or remove one.
  */
 export const RecyclingEndReasonSchema = Schema.Literals([
@@ -20,6 +21,7 @@ export const RecyclingEndReasonSchema = Schema.Literals([
   "planLimit",
   "queueGone",
   "queueFull",
+  "sourceWithdrawn",
 ]);
 
 export type RecyclingEndReason = typeof RecyclingEndReasonSchema.Type;

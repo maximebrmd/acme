@@ -692,7 +692,7 @@ export const UpdateRecyclingRule = Tool.make("update_recycling_rule", {
 
 export const ResumeRecyclingRule = Tool.make("resume_recycling_rule", {
   dependencies: [CurrentMember],
-  description: `Sets a paused recycling rule going again, or one that ended for a reason that can be put right (\`planLimit\`, \`contentRejected\` with other \`variants\`, \`noChannels\`, \`queueFull\`): its next post is due at the first due time from now. ${repeatsInPublic} ${needsPublishing}`,
+  description: `Sets a paused recycling rule going again, or one that ended for a reason that can be put right (\`planLimit\`, \`contentRejected\` with other \`variants\`, \`noChannels\`, \`queueFull\`, \`sourceWithdrawn\` once its post is scheduled again): its next post is due at the first due time from now, unless another rule repeats the post or the workspace has its limit of rules going. ${repeatsInPublic} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     ruleId: recyclingRuleId,

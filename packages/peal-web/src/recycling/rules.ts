@@ -113,7 +113,8 @@ export const isResumable = ({ endedReason, status }: RecyclingRule): boolean =>
     (endedReason === "planLimit" ||
       endedReason === "contentRejected" ||
       endedReason === "noChannels" ||
-      endedReason === "queueFull"));
+      endedReason === "queueFull" ||
+      endedReason === "sourceWithdrawn"));
 
 /** A key no variant of the draft has yet. */
 export const nextVariantKey = ({ variants }: RepeatDraft): number => {

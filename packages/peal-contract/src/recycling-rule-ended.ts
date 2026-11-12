@@ -8,7 +8,7 @@ export class RecyclingRuleEnded extends Schema.TaggedError<RecyclingRuleEnded>()
   { ...errorEnvelope, reason: Schema.String },
   {
     description:
-      "The rule ended (`reason`) and changes no more. Resume it when it ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`); start a new rule from the post otherwise.",
+      "The rule ended (`reason`) and changes no more. Resume it when it ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`, `sourceWithdrawn`); start a new rule from the post otherwise.",
     httpApiStatus: 409,
   }
 ) {}

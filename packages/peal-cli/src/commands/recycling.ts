@@ -355,7 +355,7 @@ const pausing = (name: "pause" | "resume") =>
     Command.withDescription(
       name === "pause"
         ? "Pause a rule: it makes no post until it is resumed. A post it made already stays scheduled."
-        : "Set a paused rule going again, or one that ended for a reason that can be put right (the plan's room, a refused text, its channels, its queue's slots): the next post is due at the first due time from now."
+        : "Set a paused rule going again, or one that ended for a reason that can be put right (the plan's room, a refused text, its channels, its queue's slots, its post scheduled again): the next post is due at the first due time from now."
     )
   );
 

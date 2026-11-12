@@ -126,6 +126,7 @@ peal posts list --recycling <rule-id> --json
 - `post_not_recyclable` names why (`draft`, `repeating`…);
   `recycling_variants_invalid` gives each variant's violations, fix them
   and start again; `recycling_rule_ended` means resume it (`planLimit`,
-  `contentRejected`, `noChannels`, `queueFull`) or start a new one.
+  `contentRejected`, `noChannels`, `queueFull`, `sourceWithdrawn` once its
+  post is scheduled again) or start a new one.
 - A rule that ended on its own is told to the user as a notification: read
   `peal recycling show` for `endedReason` before resuming it.

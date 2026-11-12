@@ -65,6 +65,7 @@ export const resumableReasons: ReadonlySet<RecyclingEndReason> = new Set([
   "noChannels",
   "planLimit",
   "queueFull",
+  "sourceWithdrawn",
 ]);
 
 /** Where a rule is: making occurrences, paused by a member, or ended. */

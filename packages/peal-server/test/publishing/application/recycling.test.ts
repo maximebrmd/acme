@@ -568,6 +568,106 @@ describe("making a rule's occurrences", () => {
   );
 
   it.effect(
+    "ends, to resume once it is scheduled again, when its source was cancelled or taken back to draft",
+    () =>
+      onServer(
+        Effect.gen(function* withdrawn() {
+          const scheduling = yield* PostScheduling;
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const editor = actorIn(workspaceId);
+
+          // Two posts scheduled an hour from now, each repeating weekly.
+          const scheduled = (text: string) =>
+            scheduling
+              .send(editor, {
+                channelIds: [channel],
+                content: contentOf(text),
+                idempotency: Option.none(),
+                placement: { _tag: "at", at: utc("2026-06-15T08:00:00Z") },
+                timeZone: paris,
+              })
+              .pipe(Effect.map(({ post }) => post.id));
+
+          const cancelledSource = yield* scheduled("A post called off.");
+          const draftSource = yield* scheduled("A post to rewrite.");
+          const cancelled = yield* started(
+            workspaceId,
+            weekly(cancelledSource)
+          );
+          const drafted = yield* started(workspaceId, weekly(draftSource));
+
+          yield* scheduling.cancel(editor, cancelledSource);
+          yield* scheduling.unschedule(editor, draftSource);
+
+          yield* setTime("2026-06-15T09:00:00Z");
+          yield* makeDue;
+
+          assert.lengthOf(yield* occurrencesOf(cancelled.id), 0);
+          assert.lengthOf(yield* occurrencesOf(drafted.id), 0);
+          assert.sameMembers(
+            (yield* toldOf([cancelled.id, drafted.id])).map(
+              ({ reason, ruleId }) => `${ruleId}:${reason}`
+            ),
+            [`${cancelled.id}:sourceWithdrawn`, `${drafted.id}:sourceWithdrawn`]
+          );
+
+          // Resumed while its source is still a draft: refused.
+          const refused = yield* Recycling.use((recycling) =>
+            recycling.resume(editor, drafted.id, Option.none())
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "PostNotRecyclable");
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "resumes an ended rule only while no other rule repeats its source and the workspace has room",
+    () =>
+      onServer(
+        Effect.gen(function* resumes() {
+          const sql = yield* SqlClient.SqlClient;
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const editor = actorIn(workspaceId);
+          const source = yield* published(workspaceId, channel);
+          const first = yield* started(workspaceId, weekly(source));
+
+          const endedAs = (ruleId: RecyclingRuleId) =>
+            sql`UPDATE publishing.recycling_rules SET status = 'ended', ended_reason = 'planLimit', next_due_at = NULL, status_at = now() WHERE id = ${ruleId}`;
+
+          yield* endedAs(first.id);
+
+          const second = yield* started(workspaceId, weekly(source));
+
+          const resumeFirst = Recycling.use((recycling) =>
+            recycling.resume(editor, first.id, Option.none())
+          ).pipe(Effect.flip);
+
+          const repeating = yield* resumeFirst;
+
+          assert.deepInclude(repeating, {
+            _tag: "PostNotRecyclable",
+            reason: "repeating",
+          });
+
+          // The second ended too, and the workspace at its limit.
+          yield* endedAs(second.id);
+          yield* sql`INSERT INTO publishing.recycling_rules (id, workspace_id, source_post_id, anchor_at, created_at, interval, last_due_at, made, next_due_at, started_via, status, time_zone, variants)
+            SELECT gen_random_uuid(), ${workspaceId}, gen_random_uuid(), now(), now(), '{"count":1,"unit":"weeks"}'::jsonb, now() + interval '1 day', 1, now() + interval '8 days', '{"_tag":"web"}'::jsonb, 'paused', 'Europe/Paris', '[]'::jsonb
+            FROM generate_series(1, 100)`;
+
+          const full = yield* resumeFirst;
+
+          assert.strictEqual(full._tag, "TooManyRecyclingRules");
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "ends when its queue is gone, whether the deletion comes before or meets the run",
     () =>
       onServer(

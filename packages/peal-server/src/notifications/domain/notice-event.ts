@@ -69,6 +69,7 @@ export const RecyclingEndReasonSchema = Schema.Literals([
   "planLimit",
   "queueGone",
   "queueFull",
+  "sourceWithdrawn",
 ]);
 
 export type RecyclingEndReason = typeof RecyclingEndReasonSchema.Type;
