@@ -268,12 +268,13 @@ export const reconcile = (
 
   if (read.complete) {
     for (const comment of kept) {
-      if (!seen.has(comment.platformCommentId)) {
-        // Forgotten for its age, and now gone from the platform too: it
-        // is no longer said to be kept for a limited time.
-        if (isOnPlatform(comment) || Option.isSome(comment.expiredAt)) {
-          next.set(comment.platformCommentId, forgetComment(comment));
-        }
+      // Forgotten for its age, and now gone from the platform too: it is
+      // no longer said to be kept for a limited time.
+      if (
+        !seen.has(comment.platformCommentId) &&
+        (isOnPlatform(comment) || Option.isSome(comment.expiredAt))
+      ) {
+        next.set(comment.platformCommentId, forgetComment(comment));
       }
     }
   }
