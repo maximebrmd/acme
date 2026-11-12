@@ -1,4 +1,7 @@
-import { assert, describe, it } from "@effect/vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+import { assert, describe, expect, it } from "@effect/vitest";
 import { Effect, Ref } from "effect";
 
 import { filesLayer, signedIn } from "./signed-in.ts";
@@ -111,4 +114,39 @@ describe("peal feeds", () => {
         );
       }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
+
+  it.effect("refuses a template whose line breaks the shell left as \\n", () =>
+    Effect.gen(function* backslashes() {
+      const session = yield* signedIn();
+
+      assert.include(
+        yield* session.refused([
+          "feeds",
+          "add",
+          blog,
+          "--template",
+          "{title}\\n\\n{link}",
+          ...inStudio,
+        ]),
+        "$'{title}\\n\\n{link}'"
+      );
+      assert.lengthOf((yield* Ref.get(session.studio.state)).feeds, 0);
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
+describe("the feeds' examples", () => {
+  it("never write a line break a shell would pass as \\n", () => {
+    const files = [
+      "../peal-docs/docs/cli.mdx",
+      "../peal-docs/docs/fr/cli.mdx",
+      "../peal-skills/skills/peal/references/saved.md",
+    ].map((file) =>
+      readFileSync(path.join(import.meta.dirname, "..", file), "utf-8")
+    );
+
+    for (const text of files) {
+      expect(text).not.toMatch(/--template "[^"]*\\n/u);
+    }
+  });
 });

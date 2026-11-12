@@ -382,7 +382,7 @@ peal posts list --recycling <rule-id>
 
 ```sh
 peal feeds preview https://blog.example/feed.xml --template "New on the blog: {title}"
-peal feeds add https://blog.example/feed.xml --channel <channel-id> --template "{title}\n\n{link}"
+peal feeds add https://blog.example/feed.xml --channel <channel-id> --template $'{title}\n\n{link}'
 peal feeds add https://blog.example/feed.xml --mode queue --queue Weekdays
 peal feeds list
 peal feeds show <feed-id>

@@ -138,7 +138,7 @@ appears in it afterwards becomes a draft, or a post on a queue. Preview it
 first, and show the user what it would post.
 
 ```sh
-peal feeds preview https://blog.example/feed.xml --template "{title}\n\n{link}" --json
+peal feeds preview https://blog.example/feed.xml --template $'{title}\n\n{link}' --json
 peal feeds add https://blog.example/feed.xml --channel <channel-id> --json
 peal feeds add https://blog.example/feed.xml --mode queue --queue <queue> --json
 peal feeds list --json

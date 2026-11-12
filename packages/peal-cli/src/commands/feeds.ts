@@ -71,6 +71,22 @@ const pictureFlag = Flag.Boolean("picture").pipe(
   Flag.optional
 );
 
+// A template as typed: a shell passes `\n` inside double quotes as two
+// characters, which a post would then show; such a template is refused
+// with the way to write a line break.
+const templateOf = (given: Option.Option<string>) =>
+  Option.match(given, {
+    onNone: () => Effect.succeed(Option.none<string>()),
+    onSome: (template) =>
+      template.includes("\\n")
+        ? Effect.fail(
+            new Refused({
+              reason: `--template holds \\n, which a post would show as written: write a line break with $'…', such as --template $'${template.replaceAll("\n", "\\n")}'.`,
+            })
+          )
+        : Effect.succeed(Option.some(template)),
+  });
+
 // Where a feed is, in a few words.
 const summary = (feed: Feed): string =>
   [
@@ -227,6 +243,7 @@ const add = Command.make(
       yield* new Refused({ reason: "--queue goes with --mode queue." });
     }
 
+    const template = yield* templateOf(input.template);
     const session = yield* inWorkspace(input.workspace);
     const { client, url, workspace } = session;
     const { queueId, setId } = yield* savedIdsOf(session, input);
@@ -253,9 +270,9 @@ const add = Command.make(
             onNone: () => ({}),
             onSome: (id) => ({ channelSetId: id }),
           }),
-          ...Option.match(input.template, {
+          ...Option.match(template, {
             onNone: () => ({}),
-            onSome: (template) => ({ template }),
+            onSome: (written) => ({ template: written }),
           }),
         },
       })
@@ -305,6 +322,7 @@ const update = Command.make(
     workspace: workspaceFlag,
   },
   Effect.fn("feeds.update")(function* update(input) {
+    const template = yield* templateOf(input.template);
     const session = yield* inWorkspace(input.workspace);
     const { client, url, workspace } = session;
     const { queueId, setId } = yield* savedIdsOf(session, input);
@@ -332,8 +350,8 @@ const update = Command.make(
       payload.channelSetId = Option.getOrNull(setId);
     }
 
-    if (Option.isSome(input.template)) {
-      payload.template = input.template.value;
+    if (Option.isSome(template)) {
+      payload.template = template.value;
     }
 
     if (Option.isSome(input.url)) {
@@ -433,6 +451,7 @@ const preview = Command.make(
     workspace: workspaceFlag,
   },
   Effect.fn("feeds.preview")(function* preview(input) {
+    const template = yield* templateOf(input.template);
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
 
     const read = yield* client.feeds
@@ -440,9 +459,9 @@ const preview = Command.make(
         params: { workspaceId: workspace.id },
         payload: {
           url: input.url,
-          ...Option.match(input.template, {
+          ...Option.match(template, {
             onNone: () => ({}),
-            onSome: (template) => ({ template }),
+            onSome: (written) => ({ template: written }),
           }),
         },
       })
