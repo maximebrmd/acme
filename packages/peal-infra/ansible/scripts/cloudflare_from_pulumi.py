@@ -6,10 +6,11 @@ inventory, so they live in one place, Pulumi's (packages/peal-infra/pulumi):
 
 or production@…. It writes group_vars/<group>/cloudflare.yml, which is
 committed and never edited by hand: the audience tags of the environment's
-Access applications, its buckets and their endpoints. Then, once the stack has made them, it
-writes the tunnel's token and the buckets' keys into the group's vault, as
-Ansible encrypts it, and names the entries it changed, never their values.
-Run it after each `pulumi up` of the environment, then site.yml.
+Access applications, its buckets and their endpoints. Then, once the stack
+has made them, it writes the tunnel's token and the buckets' keys into the
+group's vault, as Ansible encrypts it, and names the entries it changed,
+never their values. Run it after each `pulumi up` of the environment, then
+site.yml.
 """
 
 from __future__ import annotations

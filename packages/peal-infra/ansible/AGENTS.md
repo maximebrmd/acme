@@ -41,9 +41,9 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   stops on one), and `PEAL_SHORT_LINK_BASE` in `peal_settings`; a test ties
   the tunnel's code pattern to the server's `codeLength` and alphabet, and
   Gatus follows an unknown code on each short-link host (`short_links` in
-  `uptime_environments`). Make production's record in the peal.link zone
-  by the dashboard or Pulumi, never `cloudflared tunnel route dns`, which
-  can put it in peal.social's.
+  `uptime_environments`). Each environment's Pulumi stack makes its record
+  in the peal.link zone; never `cloudflared tunnel route dns`, which can
+  put it in peal.social's.
 - Containers publish ports on 127.0.0.1 only, and the tunnel reaches them
   there; Docker's own rules would otherwise bypass ufw.
 - A separate server checks uptime (`uptime.yml`, inventory group
@@ -83,8 +83,12 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   endpoints, or another store's host listed in `peal_storage_eu_hosts` once
   the owner checked it; hosts are compared without case or port. A ledger
   bucket that is the media bucket is not one of its own.
-- An environment with a Pulumi stack (the sandbox) takes its Cloudflare
-  values from it: `scripts/cloudflare_from_pulumi.py` writes
+- An environment with a Pulumi stack (the sandbox and production) takes
+  its Cloudflare values from it: `scripts/cloudflare_from_pulumi.py` writes
   `group_vars/<environment>/cloudflare.yml` (generated, committed, never
   edited by hand) and the tunnel's token and buckets' keys into the vault.
-  Change them in `packages/peal-infra/pulumi`, then run the script.
+  Change them in `packages/peal-infra/pulumi`, then run the script. The
+  script maps each stack's audience tags onto the inventory's
+  (`AUD_NAMES`): production's `admin` application covers
+  `peal_access_paths`, so a path added there is added to the Pulumi
+  project's `adminPaths` too.
