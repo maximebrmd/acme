@@ -103,6 +103,7 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
+import { ShortLinksLive } from "#shortlinks/container.ts";
 import {
   ContractRequestAuditLive,
   ImpersonationAuditLive,
@@ -446,7 +447,8 @@ const ServicesLive = Layer.mergeAll(
   ReviewGateContextLive,
   ReviewContextLive,
   ContractRequestsContextLive,
-  AdsRoutesContextLive
+  AdsRoutesContextLive,
+  ShortLinksLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -518,7 +520,8 @@ const ContextsLive = Layer.mergeAll(
   ReviewContextLive,
   ContractRequestsContextLive,
   // On the cluster, every call to an ad account goes through its gate.
-  adsContext(GatedAds)
+  adsContext(GatedAds),
+  ShortLinksLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

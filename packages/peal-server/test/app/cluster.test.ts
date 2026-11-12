@@ -65,6 +65,7 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
+import { PurgeClicks } from "#shortlinks/application/purge-clicks.ts";
 import { PurgeAuditLog } from "#staff/application/purge-audit-log.ts";
 import { RecordingPublicationOutcomes } from "#test/publishing/infrastructure/recorded-outcomes.ts";
 import {
@@ -139,6 +140,7 @@ const ChannelJobsTest = Layer.mergeAll(
     PurgeLegalRecords,
     PurgeLegalRecords.of({ purge: Effect.succeed(0) })
   ),
+  Layer.succeed(PurgeClicks, PurgeClicks.of({ purge: Effect.succeed(0) })),
   Layer.succeed(
     PurgeConnectLinks,
     PurgeConnectLinks.of({ run: Effect.succeed(0) })

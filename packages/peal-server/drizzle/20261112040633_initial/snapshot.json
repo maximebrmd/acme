@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "695348bd-ab1e-43d2-ab8a-ef5e75f6a51f",
+  "id": "03f8eb58-93e6-4194-b23e-5aa647fbcda7",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -149,6 +149,18 @@
         "s|sch|review",
         "n|sch|review",
         "e|sch|review"
+      ]
+    },
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "shortlinks"
+      ],
+      "writes": [
+        "s|sch|shortlinks",
+        "n|sch|shortlinks",
+        "e|sch|shortlinks"
       ]
     },
     {
@@ -1409,6 +1421,63 @@
       ],
       "reads": [
         "n|sch|review"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "shortlinks",
+        "clicks"
+      ],
+      "writes": [
+        "s|tbl|shortlinks.clicks",
+        "n|tbl|shortlinks.clicks",
+        "e|tbl|shortlinks.clicks",
+        "n|rel|shortlinks.clicks",
+        "n|type|shortlinks.clicks",
+        "n|rel|shortlinks.clicks_pkey"
+      ],
+      "reads": [
+        "n|sch|shortlinks"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "shortlinks",
+        "links"
+      ],
+      "writes": [
+        "s|tbl|shortlinks.links",
+        "n|tbl|shortlinks.links",
+        "e|tbl|shortlinks.links",
+        "n|rel|shortlinks.links",
+        "n|type|shortlinks.links",
+        "n|rel|shortlinks.links_pkey"
+      ],
+      "reads": [
+        "n|sch|shortlinks"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "shortlinks",
+        "settings"
+      ],
+      "writes": [
+        "s|tbl|shortlinks.settings",
+        "n|tbl|shortlinks.settings",
+        "e|tbl|shortlinks.settings",
+        "n|rel|shortlinks.settings",
+        "n|type|shortlinks.settings",
+        "n|rel|shortlinks.settings_pkey"
+      ],
+      "reads": [
+        "n|sch|shortlinks"
       ]
     },
     {
@@ -4472,6 +4541,109 @@
       "statementType": "create_index",
       "statementTarget": [
         "index",
+        "shortlinks",
+        "clicks",
+        "clicks_day"
+      ],
+      "writes": [
+        "s|idx|shortlinks.clicks_day",
+        "n|idx|shortlinks.clicks_day",
+        "e|idx|shortlinks.clicks_day",
+        "n|rel|shortlinks.clicks_day"
+      ],
+      "reads": [
+        "n|tbl|shortlinks.clicks",
+        "n|sch|shortlinks",
+        "n|col|shortlinks.clicks.day"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "shortlinks",
+        "links",
+        "links_code"
+      ],
+      "writes": [
+        "s|idx|shortlinks.links_code",
+        "n|idx|shortlinks.links_code",
+        "e|idx|shortlinks.links_code",
+        "n|rel|shortlinks.links_code"
+      ],
+      "reads": [
+        "n|tbl|shortlinks.links",
+        "n|sch|shortlinks",
+        "n|col|shortlinks.links.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "shortlinks",
+        "links",
+        "links_target_part_destination"
+      ],
+      "writes": [
+        "s|idx|shortlinks.links_target_part_destination",
+        "n|idx|shortlinks.links_target_part_destination",
+        "e|idx|shortlinks.links_target_part_destination",
+        "n|rel|shortlinks.links_target_part_destination"
+      ],
+      "reads": [
+        "n|tbl|shortlinks.links",
+        "n|sch|shortlinks",
+        "n|col|shortlinks.links.target_id",
+        "n|col|shortlinks.links.part",
+        "n|col|shortlinks.links.destination"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "shortlinks",
+        "links",
+        "links_workspace_id"
+      ],
+      "writes": [
+        "s|idx|shortlinks.links_workspace_id",
+        "n|idx|shortlinks.links_workspace_id",
+        "e|idx|shortlinks.links_workspace_id",
+        "n|rel|shortlinks.links_workspace_id"
+      ],
+      "reads": [
+        "n|tbl|shortlinks.links",
+        "n|sch|shortlinks",
+        "n|col|shortlinks.links.workspace_id",
+        "n|col|shortlinks.links.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "shortlinks",
+        "links",
+        "links_post_id"
+      ],
+      "writes": [
+        "s|idx|shortlinks.links_post_id",
+        "n|idx|shortlinks.links_post_id",
+        "e|idx|shortlinks.links_post_id",
+        "n|rel|shortlinks.links_post_id"
+      ],
+      "reads": [
+        "n|tbl|shortlinks.links",
+        "n|sch|shortlinks",
+        "n|col|shortlinks.links.post_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
         "staff",
         "audit_events",
         "audit_events_pseudonym"
@@ -5790,6 +5962,29 @@
       "statementType": "create_fk",
       "statementTarget": [
         "table",
+        "shortlinks",
+        "clicks"
+      ],
+      "writes": [
+        "s|fk|shortlinks.clicks.clicks_link_id_links_id_fkey",
+        "n|fk|shortlinks.clicks.clicks_link_id_links_id_fkey",
+        "e|fk|shortlinks.clicks.clicks_link_id_links_id_fkey",
+        "n|con|shortlinks.clicks.clicks_link_id_links_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|shortlinks.clicks",
+        "n|sch|shortlinks",
+        "n|tbl|shortlinks.links",
+        "n|sch|shortlinks",
+        "n|col|shortlinks.clicks.link_id",
+        "n|col|shortlinks.links.id",
+        "e|uniqueness|shortlinks.links.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
         "webhooks",
         "deliveries"
       ],
@@ -6412,6 +6607,10 @@
       "entityType": "schemas"
     },
     {
+      "name": "shortlinks",
+      "entityType": "schemas"
+    },
+    {
       "name": "staff",
       "entityType": "schemas"
     },
@@ -6801,6 +7000,24 @@
     },
     {
       "schema": "review",
+      "name": "settings",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "shortlinks",
+      "name": "clicks",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "shortlinks",
+      "name": "links",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "shortlinks",
       "name": "settings",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -15767,6 +15984,201 @@
       "entityType": "columns"
     },
     {
+      "schema": "shortlinks",
+      "table": "clicks",
+      "name": "clicks",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "clicks",
+      "name": "day",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "clicks",
+      "name": "link_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "code",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "destination",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "disabled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "part",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "post_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "settings",
+      "name": "by_default",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "settings",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
       "schema": "staff",
       "table": "audit_events",
       "name": "action",
@@ -22878,6 +23290,132 @@
       "entityType": "indexes"
     },
     {
+      "schema": "shortlinks",
+      "table": "clicks",
+      "name": "clicks_day",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "day",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "links_code",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "code",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "links_target_part_destination",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "target_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "part",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "destination",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "links_workspace_id",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "links_post_id",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "post_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "staff",
       "table": "audit_events",
       "name": "audit_events_pseudonym",
@@ -24207,6 +24745,23 @@
       "entityType": "fks"
     },
     {
+      "schema": "shortlinks",
+      "table": "clicks",
+      "name": "clicks_link_id_links_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "link_id"
+      ],
+      "schemaTo": "shortlinks",
+      "tableTo": "links",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
       "schema": "webhooks",
       "table": "deliveries",
       "name": "deliveries_endpoint_id_endpoints_id_fkey",
@@ -24805,6 +25360,17 @@
       "entityType": "pks"
     },
     {
+      "schema": "shortlinks",
+      "table": "clicks",
+      "name": "clicks_pkey",
+      "columns": [
+        "link_id",
+        "day"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "webhooks",
       "table": "manual_sends",
       "name": "manual_sends_pkey",
@@ -25310,6 +25876,26 @@
     },
     {
       "schema": "review",
+      "table": "settings",
+      "name": "settings_pkey",
+      "columns": [
+        "workspace_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "links",
+      "name": "links_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "shortlinks",
       "table": "settings",
       "name": "settings_pkey",
       "columns": [
@@ -26134,6 +26720,13 @@
       "table": "quota_usage",
       "name": "quota_usage_units",
       "value": "\"units\" >= 0",
+      "entityType": "checks"
+    },
+    {
+      "schema": "shortlinks",
+      "table": "clicks",
+      "name": "clicks_clicks",
+      "value": "\"clicks\" > 0",
       "entityType": "checks"
     },
     {

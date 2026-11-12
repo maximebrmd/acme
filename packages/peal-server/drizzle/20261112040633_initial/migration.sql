@@ -22,6 +22,8 @@ CREATE SCHEMA "publishing";
 --> statement-breakpoint
 CREATE SCHEMA "review";
 --> statement-breakpoint
+CREATE SCHEMA "shortlinks";
+--> statement-breakpoint
 CREATE SCHEMA "staff";
 --> statement-breakpoint
 CREATE SCHEMA "webhooks";
@@ -952,6 +954,32 @@ CREATE TABLE "review"."settings" (
 	"workspace_id" uuid PRIMARY KEY
 );
 --> statement-breakpoint
+CREATE TABLE "shortlinks"."clicks" (
+	"clicks" integer NOT NULL,
+	"day" date,
+	"link_id" uuid,
+	CONSTRAINT "clicks_pkey" PRIMARY KEY("link_id","day"),
+	CONSTRAINT "clicks_clicks" CHECK ("clicks" > 0)
+);
+--> statement-breakpoint
+CREATE TABLE "shortlinks"."links" (
+	"channel_id" uuid NOT NULL,
+	"code" text NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"destination" text NOT NULL,
+	"disabled_at" timestamp with time zone,
+	"id" uuid PRIMARY KEY,
+	"part" integer NOT NULL,
+	"post_id" uuid NOT NULL,
+	"target_id" uuid NOT NULL,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "shortlinks"."settings" (
+	"by_default" boolean NOT NULL,
+	"workspace_id" uuid PRIMARY KEY
+);
+--> statement-breakpoint
 CREATE TABLE "staff"."audit_events" (
 	"action" text NOT NULL,
 	"at" timestamp with time zone NOT NULL,
@@ -1500,6 +1528,11 @@ CREATE INDEX "comments_link" ON "review"."comments" ("author_link_id");--> state
 CREATE UNIQUE INDEX "links_token_hash" ON "review"."links" ("token_hash");--> statement-breakpoint
 CREATE INDEX "links_post" ON "review"."links" ("post_id");--> statement-breakpoint
 CREATE INDEX "links_workspace" ON "review"."links" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "clicks_day" ON "shortlinks"."clicks" ("day");--> statement-breakpoint
+CREATE UNIQUE INDEX "links_code" ON "shortlinks"."links" ("code");--> statement-breakpoint
+CREATE UNIQUE INDEX "links_target_part_destination" ON "shortlinks"."links" ("target_id","part","destination");--> statement-breakpoint
+CREATE INDEX "links_workspace_id" ON "shortlinks"."links" ("workspace_id","id");--> statement-breakpoint
+CREATE INDEX "links_post_id" ON "shortlinks"."links" ("post_id");--> statement-breakpoint
 CREATE INDEX "audit_events_pseudonym" ON "staff"."audit_events" ("target_pseudonym");--> statement-breakpoint
 CREATE INDEX "audit_events_at" ON "staff"."audit_events" ("at","id");--> statement-breakpoint
 CREATE INDEX "audit_events_target" ON "staff"."audit_events" ("target_id","at");--> statement-breakpoint
@@ -1563,6 +1596,7 @@ ALTER TABLE "publishing"."post_targets" ADD CONSTRAINT "post_targets_post_id_pos
 ALTER TABLE "publishing"."publication_attempts" ADD CONSTRAINT "publication_attempts_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_calls" ADD CONSTRAINT "publication_calls_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."upload_sessions" ADD CONSTRAINT "upload_sessions_72ct0kRYe5re_fkey" FOREIGN KEY ("idempotency_key") REFERENCES "publishing"."publication_calls"("idempotency_key") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "shortlinks"."clicks" ADD CONSTRAINT "clicks_link_id_links_id_fkey" FOREIGN KEY ("link_id") REFERENCES "shortlinks"."links"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "webhooks"."deliveries" ADD CONSTRAINT "deliveries_endpoint_id_endpoints_id_fkey" FOREIGN KEY ("endpoint_id") REFERENCES "webhooks"."endpoints"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "webhooks"."deliveries" ADD CONSTRAINT "deliveries_event_id_events_id_fkey" FOREIGN KEY ("event_id") REFERENCES "webhooks"."events"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "workspace"."partner_idempotency_keys" ADD CONSTRAINT "partner_idempotency_keys_partner_id_partners_id_fkey" FOREIGN KEY ("partner_id") REFERENCES "workspace"."partners"("id") ON DELETE CASCADE;--> statement-breakpoint
