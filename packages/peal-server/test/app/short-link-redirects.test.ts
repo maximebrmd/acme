@@ -22,7 +22,7 @@ import {
   unconfirmedEmails,
 } from "#test/workspace/integration/harness.ts";
 
-const base = "http://localhost:3001/api/l/";
+const base = "http://links.example.com/api/l/";
 
 const settings = { ...unconfirmedEmails, PEAL_SHORT_LINK_BASE: base };
 

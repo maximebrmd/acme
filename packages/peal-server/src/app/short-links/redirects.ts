@@ -1,5 +1,10 @@
 import { Effect, Layer, Match, Metric } from "effect";
-import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
+import {
+  HttpMiddleware,
+  HttpRouter,
+  HttpServerRequest,
+  HttpServerResponse,
+} from "effect/http";
 import { RateLimiter } from "effect/persistence";
 
 import {
@@ -109,3 +114,13 @@ export const ShortLinkRedirectsLive = HttpRouter.use(
     yield* router.add("GET", shortLinkPath, follow);
   })
 ).pipe(Layer.provide(RateLimiter.layerStoreMemory));
+
+/**
+ * No server span for a short link followed: the HTTP tracer would record
+ * the visitor's browser (`user_agent.original`) and address
+ * (`client.address`), which the privacy register says Peal never keeps.
+ * The redirects are counted in `peal.shortlinks.redirects` instead.
+ */
+export const ShortLinkRedirectsUntraced = Layer.succeed(
+  HttpMiddleware.TracerDisabledWhen
+)((request) => request.url.startsWith("/api/l/"));

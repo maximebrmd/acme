@@ -394,7 +394,7 @@ layer(Layer.mergeAll(capture, Layer.succeed(Tracer.Tracer, tracer)), {
   );
 });
 
-const shortBase = "http://localhost:3001/api/l/";
+const shortBase = "http://links.example.com/api/l/";
 
 const shortLinkSettings = {
   ...unconfirmedEmails,
@@ -420,9 +420,9 @@ const ShortLinksTest = Layer.mergeAll(
 layer(ShortLinksTest, { excludeTestServices: true, timeout: "120 seconds" })(
   "what the server writes about a short link followed",
   (it) => {
-    // The request's own log line is every request's, as production writes
-    // it; what the short link adds says nothing of where it leads.
-    it.effect("holds its path, never where it leads", () =>
+    // Nothing of the visitor either: no span holds their browser or
+    // address, as the privacy register says.
+    it.effect("holds its path, never where it leads nor who followed it", () =>
       Effect.gen(function* followed() {
         const app = yield* TestApp;
         const links = yield* ShortLinks;
@@ -443,12 +443,14 @@ layer(ShortLinksTest, { excludeTestServices: true, timeout: "120 seconds" })(
         const agent = "Mozilla/5.0 (synthetic visitor agent)";
 
         const reply = yield* app.request(pathname, {
-          headers: { "user-agent": agent },
+          headers: { "user-agent": agent, "x-forwarded-for": "203.0.113.77" },
         });
 
         assert.strictEqual(reply.status, 302);
         assert.include(written(), pathname);
         assert.notInclude(written(), "synthetic-destination-never-logged");
+        assert.notInclude(written(), "synthetic visitor agent");
+        assert.notInclude(written(), "203.0.113.77");
       })
     );
   }
