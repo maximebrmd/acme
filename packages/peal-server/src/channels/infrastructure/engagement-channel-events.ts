@@ -28,7 +28,9 @@ export const engagementChannelEvents = <E, R>(
         disconnected: (channel, cause) =>
           events.disconnected(channel, cause).pipe(
             Effect.andThen(DateTime.now),
-            Effect.flatMap((at) => engagement.channelGone(channel.id, at))
+            Effect.flatMap((at) =>
+              engagement.channelGone(channel.id, channel.platform, at)
+            )
           ),
         enabled: events.enabled,
       });

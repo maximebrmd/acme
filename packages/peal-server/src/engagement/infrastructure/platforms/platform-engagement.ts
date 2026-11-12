@@ -1,5 +1,5 @@
 import { DateTime, Effect, Layer, Option } from "effect";
-import type { Duration, Redacted } from "effect";
+import type { Redacted } from "effect";
 import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
@@ -33,11 +33,11 @@ import type {
 import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodon/mastodon-engagement.ts";
 import { facebookEngagement } from "#engagement/infrastructure/platforms/meta/facebook-engagement.ts";
 import { instagramEngagement } from "#engagement/infrastructure/platforms/meta/instagram-engagement.ts";
+import { keptWithoutRefresh } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { maxThreadBytes } from "#engagement/infrastructure/platforms/thread-body.ts";
 import {
   youtubeCommentUnitsConfig,
   youtubeEngagement,
-  youtubeRefreshWithin,
 } from "#engagement/infrastructure/platforms/youtube/youtube-engagement.ts";
 import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
@@ -70,24 +70,6 @@ export interface EngagementSettings {
   /** The units comment reads may spend a day (`YOUTUBE_DAILY_COMMENT_UNITS`). */
   readonly youtubeCommentUnits: number;
 }
-
-/**
- * How long each platform lets Peal keep what a read gave without reading
- * it again, where that is shorter than the thread's own retention: none on
- * Mastodon and Bluesky (public posts, kept as the inbox keeps them), nor
- * on Facebook Pages and Instagram (Meta's Platform Terms bound what Peal
- * keeps by the purpose, which the retention serves); 29 days on YouTube
- * (`youtubeRefreshWithin`). Every read's batch carries its platform's.
- */
-const keptWithoutRefresh: Readonly<
-  Record<EngagedPlatform, Option.Option<Duration.Duration>>
-> = {
-  bluesky: Option.none(),
-  facebook: Option.none(),
-  instagram: Option.none(),
-  mastodon: Option.none(),
-  youtube: Option.some(youtubeRefreshWithin),
-};
 
 const failedWith = (reason: ReplyFailure): SendOutcome => ({
   _tag: "failed",

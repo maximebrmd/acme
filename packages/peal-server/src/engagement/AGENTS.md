@@ -37,8 +37,9 @@
   `peal-comments-forget-failing`) and the others go on (`expireComment`: the
   `deleted` shape, with `expired_at`, shown as `forgotten: "expired"`); a
   later read writes them back. A channel gone (`ChannelEvents.disconnected`,
-  through `engagementChannelEvents`) forgets at once its threads' comments
-  that carry a bound and ends those threads (`EngagementRecords.channelGone`,
+  through `engagementChannelEvents`) on a platform that bounds keeping
+  (`boundsKeeping`, `refresh-bounds.ts`) ends every thread of the channel,
+  read or not, and forgets their comments (`EngagementRecords.channelGone`,
   so a read on its way finds its thread ended under the lock and keeps
   nothing); the others end at
   their next read and keep their retention. Erasing a workspace deletes its threads and records it in

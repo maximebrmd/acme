@@ -36,10 +36,10 @@ describe("a channel gone, as engagement hears it", () => {
       const records = Layer.succeed(
         EngagementRecords,
         EngagementRecords.of({
-          channelGone: (channelId, at) =>
+          channelGone: (channelId, platform, at) =>
             Ref.update(heard, (all) => [
               ...all,
-              `gone:${channelId}:${DateTime.formatIso(at)}`,
+              `gone:${channelId}:${platform}:${DateTime.formatIso(at)}`,
             ]),
           eraseWorkspace: () => Effect.void,
           exportUser: () => Effect.succeed([]),
@@ -61,7 +61,7 @@ describe("a channel gone, as engagement hears it", () => {
       assert.deepStrictEqual(all[0], `member:${channel.id}`);
       assert.isTrue(
         Option.exists(Option.fromUndefinedOr(all[1]), (line) =>
-          line.startsWith(`gone:${channel.id}:`)
+          line.startsWith(`gone:${channel.id}:youtube:`)
         )
       );
     })

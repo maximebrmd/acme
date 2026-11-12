@@ -310,7 +310,7 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
   );
 
   it.effect(
-    "forgets at once what a disconnected channel's bounded threads hold, and nothing else",
+    "forgets at once what a disconnected channel of a bounding platform holds, its threads not read yet included, and nothing else",
     () =>
       Effect.gen(function* disconnected() {
         yield* TestClock.setTime(
@@ -329,7 +329,7 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
           "1923-04-01T10:00:00.000Z"
         );
 
-        const unbounded = yield* threadOn(
+        const unread = yield* threadOn(
           workspaceId,
           channelId,
           "1923-04-01T10:00:00.000Z"
@@ -342,19 +342,18 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
         );
 
         yield* Effect.gen(function* checks() {
-          yield* store.follow([bounded, unbounded, elsewhere]);
+          yield* store.follow([bounded, unread, elsewhere]);
 
           const first = yield* commentOn(bounded, 1);
 
           yield* store.saveComments([
             first,
-            yield* commentOn(unbounded, 2),
+            yield* commentOn(unread, 2),
             yield* commentOn(elsewhere, 3),
           ]);
           yield* store.saveCollections([
             readAt(bounded, "1923-04-01T10:10:00.000Z", Option.some(day)),
-            readAt(unbounded, "1923-04-01T10:10:00.000Z", Option.none()),
-            readAt(elsewhere, "1923-04-01T10:10:00.000Z", Option.some(day)),
+            readAt(elsewhere, "1923-04-01T10:10:00.000Z", Option.none()),
           ]);
 
           const reply = writeReply(
@@ -368,6 +367,13 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
           yield* store.journalReply(reply, Option.none());
           yield* records.channelGone(
             channelId,
+            "youtube",
+            utc("1923-04-01T11:00:00.000Z")
+          );
+          // A platform that bounds nothing keeps its threads as they are.
+          yield* records.channelGone(
+            otherChannel,
+            "mastodon",
             utc("1923-04-01T11:00:00.000Z")
           );
 
@@ -404,14 +410,31 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
             "Thank you, synthetic reader!"
           );
 
-          // A thread its platform does not bound, and another channel's,
-          // keep theirs for their retention.
-          for (const kept of [unbounded, elsewhere]) {
-            assert.deepStrictEqual(
-              (yield* store.commentsOf(kept.id)).map(({ state }) => state),
-              ["new"]
-            );
-          }
+          // A thread not read yet, whose first read may be on its way,
+          // ends too, with nothing kept.
+          const notRead = Option.getOrUndefined(yield* store.thread(unread.id));
+
+          assert.deepStrictEqual(notRead?.thread.collection, {
+            _tag: "ended",
+            at: utc("1923-04-01T11:00:00.000Z"),
+            reason: "disconnected",
+          });
+          assert.deepStrictEqual(
+            (yield* store.commentsOf(unread.id)).map(({ state }) => state),
+            ["deleted"]
+          );
+
+          // Another channel's, on a platform that bounds nothing, keeps
+          // its comments for their retention, and is read on.
+          const other = Option.getOrUndefined(
+            yield* store.thread(elsewhere.id)
+          );
+
+          assert.strictEqual(other?.thread.collection._tag, "collecting");
+          assert.deepStrictEqual(
+            (yield* store.commentsOf(elsewhere.id)).map(({ state }) => state),
+            ["new"]
+          );
         }).pipe(Effect.ensuring(forget(workspaceId)));
       }),
     { timeout: 20_000 }
