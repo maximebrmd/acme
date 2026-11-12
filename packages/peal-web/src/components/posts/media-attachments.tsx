@@ -174,6 +174,7 @@ const AttachmentRow = ({
         </div>
         <Label htmlFor={altId}>{t("altTextLabel", named)}</Label>
         <Textarea
+          dir="auto"
           id={altId}
           value={item.altText}
           maxLength={maxAltTextLength}

@@ -133,6 +133,7 @@ const EditDialog = ({
               {t("editText", { channel: channelName })}
             </Label>
             <Textarea
+              dir="auto"
               id={`${id}-text`}
               rows={6}
               aria-describedby={`${id}-count`}

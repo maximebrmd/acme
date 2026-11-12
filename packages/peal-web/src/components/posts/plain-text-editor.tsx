@@ -13,7 +13,9 @@ import { useEffect } from "react";
 
 // A Tiptap editor that holds plain text only: paragraphs of text, no marks,
 // no nodes for mentions or tags. Each line is a paragraph, so the text reads
-// back with one line break between paragraphs.
+// back with one line break between paragraphs. Each paragraph takes the
+// direction of its first strong character (`dir="auto"`), so text written
+// right to left reads so.
 
 /** The editor's document for a plain text. */
 export const documentOf = (text: string): JSONContent => ({
@@ -114,6 +116,7 @@ export const PlainTextEditor = ({
     onUpdate: ({ editor: current }) => {
       onChange(current.getText({ blockSeparator: lineBreak }));
     },
+    textDirection: "auto",
   });
 
   useEffect(() => {

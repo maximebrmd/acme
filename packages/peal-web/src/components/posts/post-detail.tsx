@@ -640,7 +640,7 @@ export const PostDetailView = ({
             <h2 id="post-text" className="text-sm font-medium">
               {t("text")}
             </h2>
-            <p className="text-sm whitespace-pre-wrap">
+            <p dir="auto" className="text-sm whitespace-pre-wrap">
               {post.content.text.trim() === ""
                 ? t("noText")
                 : post.content.text}
@@ -659,7 +659,7 @@ export const PostDetailView = ({
                     <p className="text-sm font-medium">
                       {t("partText", { position: index + 2 })}
                     </p>
-                    <p className="text-sm whitespace-pre-wrap">
+                    <p dir="auto" className="text-sm whitespace-pre-wrap">
                       {part.text.trim() === "" ? t("noText") : part.text}
                     </p>
                     <p className="text-muted-foreground text-xs">

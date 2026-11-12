@@ -130,7 +130,7 @@ const OptionsView = ({ options }: { readonly options: TargetOptions }) => {
             <dt className="text-muted-foreground">
               {option.label === null ? option.name : name(option.label)}
             </dt>
-            <dd className="break-words whitespace-pre-wrap">
+            <dd dir="auto" className="break-words whitespace-pre-wrap">
               {written(option)}
             </dd>
           </div>
@@ -170,7 +170,9 @@ const PartsView = ({ parts }: { readonly parts: readonly PreviewedPart[] }) => {
                   {t("preview.noText")}
                 </p>
               ) : (
-                <p className="break-words whitespace-pre-wrap">{part.text}</p>
+                <p dir="auto" className="break-words whitespace-pre-wrap">
+                  {part.text}
+                </p>
               )}
               {part.media.length === 0 ? null : (
                 <section
@@ -230,6 +232,7 @@ export const ChannelPreviewsView = ({
               </p>
             ) : (
               <p
+                dir="auto"
                 className="break-words whitespace-pre-wrap"
                 {...channelText(channel.channelId)}
               >
