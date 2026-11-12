@@ -125,6 +125,9 @@ peal_settings:
   # with r_organization_social_feed and w_organization_social_feed (a
   # pages sign-in fails without them), the privacy policy names LinkedIn,
   # and one comment was read, answered and withdrawn on a test page.
+  # Comment reads share the pages app's calls with posting: on the
+  # Development tier they take 200 of its 500 and 40 of a page's 100
+  # (LINKEDIN_DAILY_COMMENT_CALLS, LINKEDIN_DAILY_COMMENT_CALLS_PER_PAGE).
   # PEAL_INBOX_PLATFORMS: facebook,instagram,youtube,linkedin
   # Refuses the staff console to staff whose own account does not have
   # two-step verification on: set once every staff account has it on.
