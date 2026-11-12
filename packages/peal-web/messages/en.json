@@ -845,7 +845,8 @@
       "calendar": "Calendar",
       "newPost": "New post",
       "drafts": "Drafts",
-      "workspaceLinks": "Posts of {workspace}"
+      "workspaceLinks": "Posts of {workspace}",
+      "allPosts": "All posts"
     },
     "Duplicate": {
       "open": "Duplicate",
@@ -978,7 +979,27 @@
       "nextFreeSlot": "Next free slot: {at} ({zone}). The slot is decided when the post is added.",
       "queueNoRoom": "{reason, select, noSlots {The queue has no slot: add some in its settings.} other {Every slot of the next {days, number} days is taken.}}",
       "queued": "Added to the queue: it goes out {at}.",
-      "queuedForApproval": "Added to the queue for {at}: it waits for an approval."
+      "queuedForApproval": "Added to the queue for {at}: it waits for an approval.",
+      "selectAllChannels": "Select all",
+      "clearChannels": "Clear",
+      "publishNow": "Publish now",
+      "publishingNow": "Publishing…",
+      "publishNowTitle": "Publish this post now?",
+      "publishNowDescription": "It goes out at once and is public on {count, plural, one {this channel} other {these # channels}}. Once it is out, it cannot be taken back from here.",
+      "publishNowChannels": "Where it goes",
+      "keepForLater": "Not now",
+      "confirmPublishNow": "Publish now",
+      "publishedNow": "The post is going out now.",
+      "emoji": {
+        "open": "Insert an emoji",
+        "search": "Search emoji",
+        "searchPlaceholder": "Search…",
+        "empty": "No emoji found.",
+        "loading": "Loading the emoji…",
+        "footer": "Choose an emoji…",
+        "category": "{group, select, smileysEmotion {Smileys and emotion} peopleBody {People and body} component {Components} animalsNature {Animals and nature} foodDrink {Food and drink} travelPlaces {Travel and places} activities {Activities} objects {Objects} symbols {Symbols} flags {Flags} other {{group}}}"
+      },
+      "publishNowSkipped": "Not on {channels}, turned off or to be reconnected."
     },
     "Parts": {
       "legend": "Thread",
@@ -1347,7 +1368,54 @@
     "Links": {
       "suspicious": "This does not look like a working link: {link}"
     },
-    "queueOf": "Queue: {name}"
+    "queueOf": "Queue: {name}",
+    "List": {
+      "title": "All posts",
+      "description": "Every post of {workspace}, whatever its state.",
+      "newPost": "New post",
+      "loading": "Loading the posts…",
+      "loadFailed": "The posts could not be loaded.",
+      "reload": "Try again",
+      "empty": "No post yet.",
+      "filteredEmpty": "No post matches these filters.",
+      "clearFilters": "Clear the filters",
+      "loadMore": "Show more",
+      "filters": "Filters",
+      "status": "Status",
+      "anyStatus": "Every status",
+      "outcome": "Outcome",
+      "anyOutcome": "Every outcome",
+      "channel": "Channel",
+      "anyChannel": "Every channel",
+      "tag": "Tag",
+      "anyTag": "Every tag",
+      "sort": "Order",
+      "sortOption": "{sort, select, createdDesc {Newest first} createdAsc {Oldest first} scheduledDesc {By time, latest first} scheduledAsc {By time, soonest first} other {{sort}}}",
+      "byTimeNote": "Ordered by time, the list holds only the posts that have one: drafts without a time are left out.",
+      "noText": "No text yet",
+      "noTime": "No time yet",
+      "channels": "Channels",
+      "noChannel": "No channel yet",
+      "tags": "Tags",
+      "unknownChannel": "A channel no longer connected",
+      "unknownTag": "A tag since deleted"
+    },
+    "Preview": {
+      "title": "Previews",
+      "description": "What each channel will receive, as plain text. Each platform lays the post out its own way.",
+      "nothingSelected": "Pick a channel to see what it will receive.",
+      "updating": "Updating the previews…",
+      "failed": "The previews could not be updated. Writing and saving still work.",
+      "retry": "Try again",
+      "refused": "Would be refused as it is: see the lengths and options below.",
+      "noText": "No text on this channel.",
+      "textNotSent": "This format goes out without the text.",
+      "part": "Part {position}",
+      "media": "Images and videos on {channel}",
+      "partMedia": "Images and videos of part {position}",
+      "shortLinks": "Links show as written: they are shortened when the post goes out.",
+      "waitingForOptions": "The previews wait until the options below are fixed."
+    }
   },
   "Drafts": {
     "title": "Drafts",
@@ -2143,7 +2211,12 @@
       "revokeFor": "Revoke the invitation to {email}",
       "revokeTitle": "Revoke the invitation to {email}?",
       "revokeDescription": "Its link stops working. You can invite them again later.",
-      "revoked": "The invitation to {email} is revoked."
+      "revoked": "The invitation to {email} is revoked.",
+      "copyLink": "Copy link",
+      "copyLinkFor": "Copy the invitation link for {email}",
+      "linkCopied": "Link copied. Only {email} can accept it.",
+      "copyFailed": "The link could not be copied.",
+      "linkNote": "A copied link is the one the email holds: only the person invited can accept it, signed in with the invited address once it is verified, until the invitation expires, 7 days after it was last sent."
     },
     "apiKeys": {
       "description": "Keys let scripts and integrations use the workspace through the API. A key may do only what you chose, never more than you may yourself.",

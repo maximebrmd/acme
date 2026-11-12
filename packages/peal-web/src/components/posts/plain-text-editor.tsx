@@ -1,7 +1,7 @@
 "use client";
 
 import { Extension } from "@tiptap/core";
-import type { JSONContent } from "@tiptap/core";
+import type { Editor, JSONContent } from "@tiptap/core";
 import { Document } from "@tiptap/extension-document";
 import { Paragraph } from "@tiptap/extension-paragraph";
 import { Text } from "@tiptap/extension-text";
@@ -9,11 +9,15 @@ import { UndoRedo } from "@tiptap/extensions";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+
+import { pasteOf } from "#posts/paste.ts";
 
 // A Tiptap editor that holds plain text only: paragraphs of text, no marks,
 // no nodes for mentions or tags. Each line is a paragraph, so the text reads
-// back with one line break between paragraphs.
+// back with one line break between paragraphs. Each paragraph takes the
+// direction of its first strong character (`dir="auto"`), so text written
+// right to left reads so.
 
 /** The editor's document for a plain text. */
 export const documentOf = (text: string): JSONContent => ({
@@ -75,6 +79,15 @@ interface PlainTextEditorProps {
   readonly id: string;
   readonly labelledBy: string;
   readonly onChange: (text: string) => void;
+  /** Hears that the editor was made, which the composer may write into. */
+  readonly onEditorReady?: ((editor: Editor) => void) | undefined;
+  /** Hears the editor take the focus: where an emoji chosen goes. */
+  readonly onEditorFocus?: ((editor: Editor) => void) | undefined;
+  /**
+   * Takes files pasted into the editor, and says whether it did: then no
+   * text is pasted. A paste without files is the editor's.
+   */
+  readonly onPasteFiles?: ((files: readonly File[]) => boolean) | undefined;
   readonly placeholder: string;
   readonly readOnly?: boolean;
   /** The text the editor starts with; later changes come from the user. */
@@ -86,6 +99,9 @@ export const PlainTextEditor = ({
   id,
   labelledBy,
   onChange,
+  onEditorFocus,
+  onEditorReady,
+  onPasteFiles,
   placeholder,
   readOnly = false,
   value,
@@ -104,16 +120,43 @@ export const PlainTextEditor = ({
     role: "textbox",
   };
 
+  // The editor keeps the handlers it was made with: this one reads the
+  // latest props.
+  const pasted = useRef({ onPasteFiles, readOnly });
+
+  useEffect(() => {
+    pasted.current = { onPasteFiles, readOnly };
+  }, [onPasteFiles, readOnly]);
+
   const editor = useEditor({
     content: documentOf(value),
     editable: !readOnly,
-    editorProps: { attributes },
+    editorProps: {
+      attributes,
+      handlePaste: (_view, event) => {
+        const paste = pasteOf(event.clipboardData);
+        const { current } = pasted;
+
+        return (
+          paste._tag === "files" &&
+          !current.readOnly &&
+          (current.onPasteFiles?.(paste.files) ?? false)
+        );
+      },
+    },
     extensions,
     // Rendered on the server too: the editor mounts in the browser.
     immediatelyRender: false,
+    onCreate: ({ editor: created }) => {
+      onEditorReady?.(created);
+    },
+    onFocus: ({ editor: focused }) => {
+      onEditorFocus?.(focused);
+    },
     onUpdate: ({ editor: current }) => {
       onChange(current.getText({ blockSeparator: lineBreak }));
     },
+    textDirection: "auto",
   });
 
   useEffect(() => {

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import type { TargetOptions } from "peal-contract";
 
+import { PreviewedText } from "#components/review/previewed-text.tsx";
 import { shownOptionsOf } from "#review/shown-options.ts";
 import type { ShownOption } from "#review/shown-options.ts";
 import { channelText } from "#review/use-chosen-words.ts";
@@ -130,7 +131,7 @@ const OptionsView = ({ options }: { readonly options: TargetOptions }) => {
             <dt className="text-muted-foreground">
               {option.label === null ? option.name : name(option.label)}
             </dt>
-            <dd className="break-words whitespace-pre-wrap">
+            <dd dir="auto" className="break-words whitespace-pre-wrap">
               {written(option)}
             </dd>
           </div>
@@ -165,13 +166,7 @@ const PartsView = ({ parts }: { readonly parts: readonly PreviewedPart[] }) => {
                   </span>
                 )}
               </p>
-              {part.text === "" ? (
-                <p className="text-muted-foreground text-sm">
-                  {t("preview.noText")}
-                </p>
-              ) : (
-                <p className="break-words whitespace-pre-wrap">{part.text}</p>
-              )}
+              <PreviewedText empty={t("preview.noText")} text={part.text} />
               {part.media.length === 0 ? null : (
                 <section
                   aria-label={t("preview.partMediaLabel", { position })}
@@ -224,18 +219,11 @@ export const ChannelPreviewsView = ({
                 </span>
               )}
             </p>
-            {channel.text === "" ? (
-              <p className="text-muted-foreground text-sm">
-                {t("preview.noText")}
-              </p>
-            ) : (
-              <p
-                className="break-words whitespace-pre-wrap"
-                {...channelText(channel.channelId)}
-              >
-                {channel.text}
-              </p>
-            )}
+            <PreviewedText
+              empty={t("preview.noText")}
+              text={channel.text}
+              {...channelText(channel.channelId)}
+            />
             {channel.options === null ? null : (
               <OptionsView options={channel.options} />
             )}

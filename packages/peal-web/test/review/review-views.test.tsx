@@ -211,6 +211,14 @@ describe(ChannelPreviewsView, () => {
     expect(html).toContain(`data-review-channel="${channelId}"`);
   });
 
+  it("lets each text take the direction it is written in", async () => {
+    const html = await render("en", previews);
+
+    expect(html).toContain('dir="auto"');
+    expect(html).toMatch(/<p dir="auto"[^>]*>Launch &lt;day&gt;/u);
+    expect(html).toMatch(/<p dir="auto"[^>]*>And &lt;more&gt; on Friday./u);
+  });
+
   it("shows the parts that follow the post on a channel, in order", async () => {
     const html = await render("en", previews);
 

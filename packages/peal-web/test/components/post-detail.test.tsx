@@ -222,6 +222,12 @@ describe(PostDetailView, () => {
     expect(french).toContain("Partie 3 : non envoyée");
   });
 
+  it("lets the post's text and its parts take their own direction", async () => {
+    const html = await renderPost("en", thread);
+
+    expect(html).toMatch(/<p dir="auto"[^>]*>A third part./u);
+  });
+
   it("says nothing of parts for a post alone", async () => {
     const html = await render("en", true);
 

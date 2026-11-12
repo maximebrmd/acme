@@ -4,10 +4,12 @@ import { useTranslations } from "next-intl";
 import type { Channel } from "peal-contract";
 import { Avatar, AvatarFallback, AvatarImage } from "peal-ui/components/avatar";
 import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Label } from "peal-ui/components/label";
 
 import { channelInitial, channelTitle } from "#channels/channel-name.ts";
+import { everyChannel, offersEveryChannel } from "#posts/channel-selection.ts";
 
 interface ChannelPickerProps {
   readonly channels: readonly Channel[];
@@ -17,7 +19,8 @@ interface ChannelPickerProps {
 }
 
 // The workspace's channels, to pick where the post goes. The order of the
-// list is kept, whatever order they are picked in.
+// list is kept, whatever order they are picked in. From three channels up,
+// "Select all" picks every channel that publishes, and "Clear" none.
 export const ChannelPicker = ({
   channels,
   disabled,
@@ -42,7 +45,9 @@ export const ChannelPicker = ({
     );
   }
 
-  return (
+  const all = everyChannel(channels, selected);
+
+  const list = (
     <ul className="grid gap-2 sm:grid-cols-2">
       {channels.map((channel) => {
         const id = `channel-${channel.id}`;
@@ -90,5 +95,41 @@ export const ChannelPicker = ({
         );
       })}
     </ul>
+  );
+
+  if (!offersEveryChannel(channels)) {
+    return list;
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={
+            disabled || all.every((channelId) => selected.includes(channelId))
+          }
+          focusableWhenDisabled
+          onClick={() => {
+            onChange(all);
+          }}
+        >
+          {t("Composer.selectAllChannels")}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled || selected.length === 0}
+          focusableWhenDisabled
+          onClick={() => {
+            onChange([]);
+          }}
+        >
+          {t("Composer.clearChannels")}
+        </Button>
+      </div>
+      {list}
+    </div>
   );
 };

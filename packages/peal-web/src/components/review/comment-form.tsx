@@ -59,6 +59,7 @@ export const CommentForm = ({
       <div className="flex flex-col gap-2">
         <Label htmlFor={id}>{label}</Label>
         <Textarea
+          dir="auto"
           id={id}
           value={text}
           aria-invalid={tooLong}

@@ -845,7 +845,8 @@
       "calendar": "Calendrier",
       "newPost": "Nouvelle publication",
       "drafts": "Brouillons",
-      "workspaceLinks": "Publications de {workspace}"
+      "workspaceLinks": "Publications de {workspace}",
+      "allPosts": "Toutes les publications"
     },
     "Duplicate": {
       "open": "Dupliquer",
@@ -978,7 +979,27 @@
       "nextFreeSlot": "Prochain créneau libre : {at} ({zone}). Le créneau est décidé à l’ajout de la publication.",
       "queueNoRoom": "{reason, select, noSlots {La file n’a aucun créneau : ajoutez-en dans ses réglages.} other {Tous les créneaux des {days, number} prochains jours sont pris.}}",
       "queued": "Ajoutée à la file : elle part {at}.",
-      "queuedForApproval": "Ajoutée à la file pour {at} : elle attend une approbation."
+      "queuedForApproval": "Ajoutée à la file pour {at} : elle attend une approbation.",
+      "selectAllChannels": "Tout sélectionner",
+      "clearChannels": "Effacer",
+      "publishNow": "Publier maintenant",
+      "publishingNow": "Publication…",
+      "publishNowTitle": "Publier maintenant ?",
+      "publishNowDescription": "Elle part tout de suite et devient publique sur {count, plural, one {ce canal} other {ces # canaux}}. Une fois partie, elle ne peut pas être reprise d’ici.",
+      "publishNowChannels": "Où elle part",
+      "keepForLater": "Pas maintenant",
+      "confirmPublishNow": "Publier maintenant",
+      "publishedNow": "La publication part maintenant.",
+      "emoji": {
+        "open": "Insérer un emoji",
+        "search": "Rechercher un emoji",
+        "searchPlaceholder": "Rechercher…",
+        "empty": "Aucun emoji trouvé.",
+        "loading": "Chargement des emoji…",
+        "footer": "Choisissez un emoji…",
+        "category": "{group, select, smileysEmotion {Smileys et émotions} peopleBody {Personnes et corps} component {Composants} animalsNature {Animaux et nature} foodDrink {Nourriture et boissons} travelPlaces {Voyages et lieux} activities {Activités} objects {Objets} symbols {Symboles} flags {Drapeaux} other {{group}}}"
+      },
+      "publishNowSkipped": "Pas sur {channels}, {count, plural, one {désactivé ou à reconnecter} other {désactivés ou à reconnecter}}."
     },
     "Parts": {
       "legend": "Fil",
@@ -1347,7 +1368,54 @@
     "Links": {
       "suspicious": "Ceci ne ressemble pas à un lien qui fonctionne : {link}"
     },
-    "queueOf": "File d’attente : {name}"
+    "queueOf": "File d’attente : {name}",
+    "List": {
+      "title": "Toutes les publications",
+      "description": "Chaque publication de {workspace}, quel que soit son état.",
+      "newPost": "Nouvelle publication",
+      "loading": "Chargement des publications…",
+      "loadFailed": "Les publications n’ont pas pu être chargées.",
+      "reload": "Réessayer",
+      "empty": "Aucune publication pour l’instant.",
+      "filteredEmpty": "Aucune publication ne correspond à ces filtres.",
+      "clearFilters": "Effacer les filtres",
+      "loadMore": "Afficher plus",
+      "filters": "Filtres",
+      "status": "État",
+      "anyStatus": "Tous les états",
+      "outcome": "Résultat",
+      "anyOutcome": "Tous les résultats",
+      "channel": "Canal",
+      "anyChannel": "Tous les canaux",
+      "tag": "Étiquette",
+      "anyTag": "Toutes les étiquettes",
+      "sort": "Ordre",
+      "sortOption": "{sort, select, createdDesc {Les plus récentes d’abord} createdAsc {Les plus anciennes d’abord} scheduledDesc {Par heure, la plus tardive d’abord} scheduledAsc {Par heure, la plus proche d’abord} other {{sort}}}",
+      "byTimeNote": "Triée par heure, la liste ne contient que les publications qui en ont une : les brouillons sans heure n’y sont pas.",
+      "noText": "Pas encore de texte",
+      "noTime": "Pas encore d’heure",
+      "channels": "Canaux",
+      "noChannel": "Aucun canal pour l’instant",
+      "tags": "Étiquettes",
+      "unknownChannel": "Un canal qui n’est plus connecté",
+      "unknownTag": "Une étiquette supprimée depuis"
+    },
+    "Preview": {
+      "title": "Aperçus",
+      "description": "Ce que chaque canal recevra, en texte brut. Chaque plateforme met la publication en page à sa façon.",
+      "nothingSelected": "Choisissez un canal pour voir ce qu’il recevra.",
+      "updating": "Mise à jour des aperçus…",
+      "failed": "Les aperçus n’ont pas pu être mis à jour. Rédiger et enregistrer fonctionnent toujours.",
+      "retry": "Réessayer",
+      "refused": "Serait refusée en l’état : voyez les longueurs et les options plus bas.",
+      "noText": "Pas de texte sur ce canal.",
+      "textNotSent": "Ce format part sans le texte.",
+      "part": "Partie {position}",
+      "media": "Images et vidéos sur {channel}",
+      "partMedia": "Images et vidéos de la partie {position}",
+      "shortLinks": "Les liens apparaissent tels qu’écrits : ils sont raccourcis quand la publication part.",
+      "waitingForOptions": "Les aperçus attendent que les options plus bas soient corrigées."
+    }
   },
   "Drafts": {
     "title": "Brouillons",
@@ -2143,7 +2211,12 @@
       "revokeFor": "Révoquer l’invitation à {email}",
       "revokeTitle": "Révoquer l’invitation à {email} ?",
       "revokeDescription": "Son lien ne fonctionne plus. Vous pourrez inviter cette personne à nouveau.",
-      "revoked": "L’invitation à {email} est révoquée."
+      "revoked": "L’invitation à {email} est révoquée.",
+      "copyLink": "Copier le lien",
+      "copyLinkFor": "Copier le lien de l’invitation de {email}",
+      "linkCopied": "Lien copié. Seule la personne invitée, {email}, peut l’accepter.",
+      "copyFailed": "Le lien n’a pas pu être copié.",
+      "linkNote": "Un lien copié est celui de l’e-mail : seule la personne invitée peut l’accepter, connectée avec l’adresse invitée une fois celle-ci vérifiée, jusqu’à l’expiration de l’invitation, 7 jours après son dernier envoi."
     },
     "apiKeys": {
       "description": "Les clés permettent à des scripts et des intégrations d’utiliser l’espace de travail par l’API. Une clé ne fait que ce que vous avez choisi, jamais plus que vous ne le pouvez vous-même.",

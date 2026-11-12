@@ -383,7 +383,9 @@ export const ReplyView = ({
           {t("status", { status: reply.status })}
         </Badge>
       </div>
-      <p className="text-sm break-words whitespace-pre-wrap">{reply.text}</p>
+      <p dir="auto" className="text-sm break-words whitespace-pre-wrap">
+        {reply.text}
+      </p>
       {reply.status === "failed" ? (
         <p className="text-sm">{t("failed", { reason })}</p>
       ) : null}
@@ -442,7 +444,9 @@ export const CommentView = ({
       {deleted ? (
         <p className="text-muted-foreground text-sm italic">{t("deleted")}</p>
       ) : (
-        <p className="break-words whitespace-pre-wrap">{comment.text}</p>
+        <p dir="auto" className="break-words whitespace-pre-wrap">
+          {comment.text}
+        </p>
       )}
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
         <span>{t("writtenAt", { at: instant(comment.writtenAt) })}</span>
@@ -520,6 +524,7 @@ export const ReplyBoxView = ({
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
       <Label htmlFor={id}>{t("label", { author })}</Label>
       <Textarea
+        dir="auto"
         id={id}
         value={text}
         disabled={blocked || sending}

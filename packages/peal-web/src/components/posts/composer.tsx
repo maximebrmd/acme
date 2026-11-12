@@ -10,6 +10,7 @@ import type {
   Permission,
   Post,
   PostContent,
+  PostDraft,
   PostSchedule,
   PostStatus,
 } from "peal-contract";
@@ -23,12 +24,13 @@ import {
   CardTitle,
 } from "peal-ui/components/card";
 import { Separator } from "peal-ui/components/separator";
-import { useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { canGenerateImages } from "#assistant/permissions.ts";
 import { PostMetrics } from "#components/analytics/post-metrics.tsx";
 import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
+import type { MediaUploaderHandle } from "#components/media/media-uploader.tsx";
 import { AiLabelsNotice } from "#components/posts/ai-labels-notice.tsx";
 import { AssistantMenu } from "#components/posts/assistant-menu.tsx";
 import { ChannelPicker } from "#components/posts/channel-picker.tsx";
@@ -42,10 +44,12 @@ import {
   useDefaultSigning,
 } from "#components/posts/default-signatures.tsx";
 import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
+import { EmojiMenu, useEmojiTarget } from "#components/posts/emoji-menu.tsx";
 import { FollowUpParts } from "#components/posts/follow-up-parts.tsx";
 import { LinkWarnings } from "#components/posts/link-warnings.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
+import { PostPreviews } from "#components/posts/post-previews.tsx";
 import { PostTagsField } from "#components/posts/post-tags-field.tsx";
 import {
   PostQueueLine,
@@ -74,8 +78,10 @@ import { connectedTargets } from "#posts/channel-selection.ts";
 import { fitOn, fits } from "#posts/character-count.ts";
 import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits, showsAltText } from "#posts/media-fit.ts";
+import { oneAtATime } from "#posts/one-at-a-time.ts";
 import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
+import { publishNowOf, whereItGoes } from "#posts/publish-now.ts";
 import { queuedSlotFormat, queuedSlotWeek } from "#posts/queued-slot.ts";
 import { startChoiceOf } from "#posts/start-time.ts";
 import {
@@ -227,8 +233,8 @@ const startOf = (post: Post | undefined) => ({
 });
 
 interface ComposerProps {
-  /** Which of the workspace's posts wait for an approval. */
-  readonly approvalPolicy: ApprovalPolicy;
+  /** Which of the workspace's posts wait for an approval; none while unknown. */
+  readonly approvalPolicy: ApprovalPolicy | undefined;
   readonly channels: readonly Channel[];
   readonly permissions: readonly Permission[];
   /** None for a new post. */
@@ -266,6 +272,7 @@ export const Composer = ({
   const requests = usePostRequests(workspaceId);
   const [isPending, startTransition] = useTransition();
   const [action, setAction] = useState<ComposerAction | null>(null);
+  const guard = useMemo(() => oneAtATime(), []);
 
   const start = startOf(post);
   const [text, setText] = useState(start.text);
@@ -341,6 +348,9 @@ export const Composer = ({
   const content = contentOf(text, overrides, channelIds, media, parts);
 
   const attached = useAttachedMedia(workspaceId, media);
+  // Files pasted into the post's texts are uploaded and attached to it.
+  const uploader = useRef<MediaUploaderHandle>(null);
+  const emoji = useEmojiTarget();
 
   // The kinds of the attached media, which some options follow; unknown,
   // so every option shows, while one is still being read.
@@ -376,6 +386,16 @@ export const Composer = ({
   // Nothing is saved before the server says whether it shortens links, so
   // a new post takes the workspace's default.
   const optionsTaken = savableWith(linking, optionProblems.length === 0);
+
+  // What a save sends, which the previews check too.
+  const draft: PostDraft = {
+    channelIds,
+    content,
+    options,
+    tagIds,
+    ...signing.payload,
+    ...linking.payload,
+  };
 
   const optionsOfChannel = (channelId: string) =>
     options.find((chosen) => chosen.channelId === channelId)?.options;
@@ -500,19 +520,23 @@ export const Composer = ({
     }
   };
 
+  // A post sent out now, or held for an approval after all: its page shows
+  // how it goes.
+  const wentOut = (sent: Post, at: DateTime.Utc) => {
+    toast.success(
+      sent.status === "awaitingApproval"
+        ? t("sentForApproval", { at: formatted(at, browserTimeZone()) })
+        : t("publishedNow")
+    );
+    router.push(`/app/${workspaceId}/posts/${sent.id}`);
+  };
+
   const saveDraft = async () => {
     if (!optionsTaken) {
       return;
     }
 
-    const saved = await requests.save(postId, {
-      channelIds,
-      content,
-      options,
-      tagIds,
-      ...signing.payload,
-      ...linking.payload,
-    });
+    const saved = await requests.save(postId, draft);
 
     if (Option.isSome(saved)) {
       toast.success(t("saved"));
@@ -520,10 +544,15 @@ export const Composer = ({
     }
   };
 
-  const scheduleDraft = async () => {
-    const at = instantOfChoice(choice);
+  // Schedules the draft at the time chosen, on the queue chosen, or, for
+  // "Publish now", at `now` on the viewer's clock: the same save, signature
+  // pause and request either way.
+  const scheduleDraft = async (now?: DateTime.Utc) => {
+    const at = now === undefined ? instantOfChoice(choice) : Option.some(now);
+    const timeZone = now === undefined ? choice.timeZone : browserTimeZone();
+    const queued = now === undefined && placement._tag === "queue";
 
-    if (placement._tag === "time" && Option.isNone(at)) {
+    if (!queued && Option.isNone(at)) {
       requests.fail({ _tag: "InvalidTime" });
 
       return;
@@ -533,14 +562,7 @@ export const Composer = ({
       return;
     }
 
-    const saved = await requests.save(postId, {
-      channelIds,
-      content,
-      options,
-      tagIds,
-      ...signing.payload,
-      ...linking.payload,
-    });
+    const saved = await requests.save(postId, draft);
 
     const [first, ...rest] = channelIds;
 
@@ -565,9 +587,9 @@ export const Composer = ({
     }
 
     // On a queue, a draft for no channel takes the queue's.
-    if (placement._tag === "queue") {
+    if (queued) {
       // No queue read yet: the server takes the default.
-      const queued = await requests.enqueue(
+      const enqueued = await requests.enqueue(
         saved.value.id,
         Option.match(queueId, {
           onNone: () => ({}),
@@ -575,14 +597,14 @@ export const Composer = ({
         })
       );
 
-      if (Option.isNone(queued)) {
+      if (Option.isNone(enqueued)) {
         opened(saved.value);
 
         return;
       }
 
-      placed(queued.value);
-      toSlotWeek(queued.value);
+      placed(enqueued.value);
+      toSlotWeek(enqueued.value);
 
       return;
     }
@@ -599,11 +621,17 @@ export const Composer = ({
     const scheduled = await requests.schedule(saved.value.id, {
       at: at.value,
       channelIds: [first, ...rest],
-      timeZone: choice.timeZone,
+      timeZone,
     });
 
     if (Option.isNone(scheduled)) {
       opened(saved.value);
+
+      return;
+    }
+
+    if (now !== undefined) {
+      wentOut(scheduled.value, now);
 
       return;
     }
@@ -619,7 +647,22 @@ export const Composer = ({
     router.push(calendarOf(workspaceId, choice.date));
   };
 
-  const move = async (id: string) => {
+  // Moves the post to the time chosen, to its queue's next free slot, or,
+  // for "Publish now", to `now` on the viewer's clock.
+  const move = async (id: string, now?: DateTime.Utc) => {
+    if (now !== undefined) {
+      const moved = await requests.reschedule(id, {
+        at: now,
+        timeZone: browserTimeZone(),
+      });
+
+      if (Option.isSome(moved)) {
+        wentOut(moved.value, now);
+      }
+
+      return;
+    }
+
     if (placement._tag === "queue") {
       const queued = await requests.enqueue(
         id,
@@ -665,9 +708,9 @@ export const Composer = ({
   };
 
   const unschedule = async (id: string) => {
-    const draft = await requests.unschedule(id);
+    const unscheduled = await requests.unschedule(id);
 
-    if (Option.isSome(draft)) {
+    if (Option.isSome(unscheduled)) {
       toast.success(t("unscheduled"));
     }
   };
@@ -690,13 +733,25 @@ export const Composer = ({
         await discard(postId);
       }
     },
+    // "Now" is when the person confirmed, before the save.
+    publishNow: async () => {
+      const now = DateTime.nowUnsafe();
+
+      if (status === "draft") {
+        await scheduleDraft(now);
+      } else if (post !== undefined) {
+        await move(post.id, now);
+      }
+    },
     reschedule: async () => {
       if (post !== undefined) {
         await move(post.id);
       }
     },
     save: saveDraft,
-    schedule: scheduleDraft,
+    schedule: async () => {
+      await scheduleDraft();
+    },
     unschedule: async () => {
       if (post !== undefined) {
         await unschedule(post.id);
@@ -704,13 +759,28 @@ export const Composer = ({
     },
   };
 
+  // One action at a time, refused synchronously: a double click on a
+  // dialog's confirm button, still clickable while it closes, sends nothing
+  // twice.
   const perform = (next: ComposerAction) => {
-    setAction(next);
-    setSignedPause(false);
-    startTransition(work[next]);
+    startTransition(async () => {
+      await guard.run(async () => {
+        setAction(next);
+        setSignedPause(false);
+        await work[next]();
+      });
+    });
   };
 
   const notice = noticeOf(t, status, { canSchedule, canWrite, willWait });
+  const schedulable = canWrite && canSchedule;
+
+  const publishable =
+    channelFits.every(
+      ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)
+    ) &&
+    partsFit &&
+    optionsTaken;
 
   return (
     <Card>
@@ -772,63 +842,77 @@ export const Composer = ({
             />
           </fieldset>
           <Separator />
-          <fieldset className="flex flex-col gap-3">
-            <legend className="mb-3 text-sm font-medium">
-              {t("textLegend")}
-            </legend>
-            <AssistantMenu
-              disabled={locked}
-              permissions={permissions}
-              platforms={selected.map(({ platform }) => platform)}
-              text={text}
-              workspaceId={workspaceId}
-              onAccept={(suggested) => {
-                setText(suggested);
-                setAccepted((count) => count + 1);
-              }}
-            />
-            <SignatureMenu
-              channels={selected}
-              disabled={locked}
-              workspaceId={workspaceId}
-              onInsert={(channelId, signature) => {
-                // A post of several parts is signed under its last.
-                const signed = withSignatureUnderLastPart(
-                  { overrides, parts, text },
-                  channelId,
-                  signature
-                );
+          <PostPreviews
+            channels={channels}
+            draft={draft}
+            media={media}
+            optionsTaken={optionsTaken}
+            parts={parts}
+            workspaceId={workspaceId}
+            writable={canWrite}
+          >
+            <fieldset className="flex min-w-0 flex-col gap-3">
+              <legend className="mb-3 text-sm font-medium">
+                {t("textLegend")}
+              </legend>
+              <AssistantMenu
+                disabled={locked}
+                permissions={permissions}
+                platforms={selected.map(({ platform }) => platform)}
+                text={text}
+                workspaceId={workspaceId}
+                onAccept={(suggested) => {
+                  setText(suggested);
+                  setAccepted((count) => count + 1);
+                }}
+              />
+              <EmojiMenu disabled={locked} target={emoji.target} />
+              <SignatureMenu
+                channels={selected}
+                disabled={locked}
+                workspaceId={workspaceId}
+                onInsert={(channelId, signature) => {
+                  // A post of several parts is signed under its last.
+                  const signed = withSignatureUnderLastPart(
+                    { overrides, parts, text },
+                    channelId,
+                    signature
+                  );
 
-                setText(signed.text);
-                setOverrides(signed.overrides);
-                setParts(signed.parts);
-                setAccepted((count) => count + 1);
-              }}
-            />
-            <TextTabs
-              key={accepted}
-              selected={selected}
-              text={text}
-              overrides={overrides}
-              readOnly={locked}
-              onText={setText}
-              onOverride={(channelId, own) => {
-                setOverrides((current) =>
-                  withOverride(current, channelId, own)
-                );
-              }}
-            />
-            <LinkWarnings
-              texts={[text, ...content.overrides.map((own) => own.text)]}
-            />
-            <DefaultSignatures disabled={locked} signing={signing} />
-            <ShortenLinks
-              disabled={locked}
-              linking={linking}
-              platforms={selected.map(({ platform }) => platform)}
-              texts={textsOf(content)}
-            />
-          </fieldset>
+                  setText(signed.text);
+                  setOverrides(signed.overrides);
+                  setParts(signed.parts);
+                  setAccepted((count) => count + 1);
+                }}
+              />
+              <TextTabs
+                key={accepted}
+                selected={selected}
+                text={text}
+                overrides={overrides}
+                readOnly={locked}
+                onEditorFocus={emoji.handleFocus}
+                onMainEditor={emoji.handleMain}
+                onPasteFiles={(files) => uploader.current?.add(files) ?? false}
+                onText={setText}
+                onOverride={(channelId, own) => {
+                  setOverrides((current) =>
+                    withOverride(current, channelId, own)
+                  );
+                }}
+              />
+              <LinkWarnings
+                texts={[text, ...content.overrides.map((own) => own.text)]}
+              />
+              <DefaultSignatures disabled={locked} signing={signing} />
+              <ShortenLinks
+                disabled={locked}
+                linking={linking}
+                platforms={selected.map(({ platform }) => platform)}
+                texts={textsOf(content)}
+              />
+            </fieldset>
+          </PostPreviews>
           <section
             aria-labelledby="counters-title"
             className="flex flex-col gap-3"
@@ -874,6 +958,7 @@ export const Composer = ({
               platforms={selected.flatMap(({ id, platform }) =>
                 showsAltText(platform, optionsOfChannel(id)) ? [platform] : []
               )}
+              uploader={uploader}
               workspaceId={workspaceId}
               onChange={setMedia}
             />
@@ -889,6 +974,7 @@ export const Composer = ({
             selected={selected}
             workspaceId={workspaceId}
             onChange={setParts}
+            onEditorFocus={emoji.handleFocus}
           />
           <Separator />
           <fieldset className="flex flex-col gap-3">
@@ -938,19 +1024,24 @@ export const Composer = ({
           busy={busy}
           canSave={canWrite}
           savable={optionsTaken}
-          canSchedule={canWrite && canSchedule}
+          canSchedule={schedulable}
           canReschedule={canReschedule}
           canUnschedule={canUnschedule}
           willWait={willWait}
           canDiscard={canDiscard}
           canCancel={canCancel}
-          publishable={
-            channelFits.every(
-              ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)
-            ) &&
-            partsFit &&
-            optionsTaken
-          }
+          channels={selected}
+          publishable={publishable}
+          publishNow={publishNowOf({
+            canReschedule,
+            canSchedule: schedulable,
+            channels: whereItGoes(selected).publishing.length,
+            policyKnown: approvalPolicy !== undefined,
+            publishable,
+            running: busy !== null,
+            status,
+            willWait,
+          })}
           onAction={perform}
           extra={
             <DuplicatePost

@@ -488,7 +488,7 @@ export const BoostSummaryView = ({
       <AdsErrorAlert error={error} digits={digits} />
       <dl className="flex flex-col gap-3">
         <Line label={t("post")}>
-          <span className="whitespace-pre-wrap">
+          <span dir="auto" className="whitespace-pre-wrap">
             {written === ""
               ? t("noText")
               : t("excerpt", {

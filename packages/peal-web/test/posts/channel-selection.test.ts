@@ -1,9 +1,15 @@
 import { describe, expect, it } from "@effect/vitest";
 import type { Channel, Post } from "peal-contract";
 
-import { connectedTargets } from "#posts/channel-selection.ts";
+import {
+  connectedTargets,
+  everyChannel,
+  offersEveryChannel,
+} from "#posts/channel-selection.ts";
 
-const channel = (id: string): Channel => ({
+const active: Channel["status"] = { _tag: "active" };
+
+const channel = (id: string, status: Channel["status"] = active): Channel => ({
   avatarUrl: null,
   connection: null,
   displayName: null,
@@ -11,7 +17,7 @@ const channel = (id: string): Channel => ({
   id,
   label: null,
   platform: "mastodon",
-  status: { _tag: "active" },
+  status,
   tokenExpiresAt: null,
 });
 
@@ -61,5 +67,48 @@ describe(connectedTargets, () => {
 
   it("starts a new post on no channel", () => {
     expect(connectedTargets(undefined, [channel("a")])).toStrictEqual([]);
+  });
+});
+
+describe(everyChannel, () => {
+  it("selects every channel the picker offers, in the list's order", () => {
+    expect(
+      everyChannel([channel("a"), channel("b"), channel("c")], ["c"])
+    ).toStrictEqual(["a", "b", "c"]);
+  });
+
+  it("leaves out a channel that is off or must be reconnected", () => {
+    expect(
+      everyChannel(
+        [
+          channel("a"),
+          channel("off", { _tag: "disabled", refreshNeeded: false }),
+          channel("b"),
+          channel("stale", { _tag: "refreshNeeded" }),
+        ],
+        []
+      )
+    ).toStrictEqual(["a", "b"]);
+  });
+
+  it("keeps such a channel when the post already goes to it", () => {
+    expect(
+      everyChannel(
+        [
+          channel("off", { _tag: "disabled", refreshNeeded: false }),
+          channel("a"),
+        ],
+        ["off"]
+      )
+    ).toStrictEqual(["off", "a"]);
+  });
+});
+
+describe(offersEveryChannel, () => {
+  it("offers to select them all from three channels up", () => {
+    expect(offersEveryChannel([channel("a"), channel("b")])).toBeFalsy();
+    expect(
+      offersEveryChannel([channel("a"), channel("b"), channel("c")])
+    ).toBeTruthy();
   });
 });

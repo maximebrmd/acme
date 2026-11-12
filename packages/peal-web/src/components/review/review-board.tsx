@@ -202,7 +202,10 @@ export const ReviewBoard = ({
                       t("thread.aChannel"),
                   })}
                 </p>
-                <blockquote className="border-l-2 pl-3 text-sm whitespace-pre-wrap">
+                <blockquote
+                  dir="auto"
+                  className="border-l-2 pl-3 text-sm whitespace-pre-wrap"
+                >
                   {chosen.quote}
                 </blockquote>
                 <div>

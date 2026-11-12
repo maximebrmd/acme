@@ -23,11 +23,12 @@ import {
   useEffect,
   useEffectEvent,
   useId,
+  useImperativeHandle,
   useRef,
   useState,
   useTransition,
 } from "react";
-import type { ChangeEvent, Dispatch, SetStateAction } from "react";
+import type { ChangeEvent, Dispatch, Ref, SetStateAction } from "react";
 
 import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
 import {
@@ -348,8 +349,18 @@ const UploadItem = ({
   );
 };
 
+/** What the composer gives the uploader: files pasted into a text. */
+export interface MediaUploaderHandle {
+  /**
+   * Uploads the files as if dropped on the uploader, and says whether it
+   * took them: not while it is disabled.
+   */
+  readonly add: (files: readonly File[]) => boolean;
+}
+
 /**
- * Uploads images and videos into a workspace: dropped on it or picked, each
+ * Uploads images and videos into a workspace: dropped on it, picked, or
+ * pasted where the page hands them over through `ref`, each
  * file goes at once, with its progress, a description to write meanwhile,
  * and a way to cancel it, try it again or take it off the list. Large
  * videos go in parts, several at once, each tried again on its own.
@@ -364,10 +375,13 @@ const UploadItem = ({
 export const MediaUploader = ({
   disabled = false,
   onUploaded,
+  ref,
   workspaceId,
 }: {
   readonly disabled?: boolean;
   readonly onUploaded?: (media: Media) => void;
+  /** Takes files from outside, such as a paste, as a drop does. */
+  readonly ref?: Ref<MediaUploaderHandle> | undefined;
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Media.uploader");
@@ -391,7 +405,7 @@ export const MediaUploader = ({
     registry.set(upload(entry.id), { altText, file: entry.file, workspaceId });
   };
 
-  const add = (files: FileList | null) => {
+  const add = (files: Iterable<File> | null) => {
     const added = [...(files ?? [])].map((file): Entry => {
       const id = crypto.randomUUID();
 
@@ -420,6 +434,18 @@ export const MediaUploader = ({
     live.current = [...added, ...live.current];
     setEntries(live.current);
   };
+
+  useImperativeHandle(ref, () => ({
+    add: (files) => {
+      if (disabled || files.length === 0) {
+        return false;
+      }
+
+      add(files);
+
+      return true;
+    },
+  }));
 
   const handleCancel = (entry: Entry) => {
     registry.set(upload(entry.id), Atom.Interrupt);

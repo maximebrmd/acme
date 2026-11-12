@@ -307,7 +307,9 @@ export const SignatureItemView = ({
           <div className="flex flex-wrap gap-2">{actions}</div>
         )}
       </div>
-      <p className="text-sm whitespace-pre-wrap">{signature.text}</p>
+      <p dir="auto" className="text-sm whitespace-pre-wrap">
+        {signature.text}
+      </p>
       {children}
     </li>
   );
