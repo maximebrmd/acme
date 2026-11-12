@@ -283,6 +283,28 @@ describe("RSS's dates", () => {
     ]);
   });
 
+  it("read the zone names European feeds write", () => {
+    expect(
+      [
+        "Mon, 15 Jun 2026 09:00:00 CEST",
+        "Mon, 15 Dec 2026 09:00:00 CET",
+        "Mon, 15 Jun 2026 09:00:00 BST",
+        "Mon, 15 Jun 2026 09:00:00 EEST",
+        "Mon, 15 Dec 2026 09:00:00 EET",
+        "Mon, 15 Jun 2026 09:00:00 WEST",
+        "Mon, 15 Dec 2026 09:00:00 WET",
+      ].map((text) => iso(rfc822Date(text)))
+    ).toStrictEqual([
+      "2026-06-15T07:00:00.000Z",
+      "2026-12-15T08:00:00.000Z",
+      "2026-06-15T08:00:00.000Z",
+      "2026-06-15T06:00:00.000Z",
+      "2026-12-15T07:00:00.000Z",
+      "2026-06-15T08:00:00.000Z",
+      "2026-12-15T09:00:00.000Z",
+    ]);
+  });
+
   it("read nothing else", () => {
     expect(
       [

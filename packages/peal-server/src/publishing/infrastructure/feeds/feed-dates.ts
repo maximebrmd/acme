@@ -30,6 +30,14 @@ const zones = new Map([
   ["mdt", -360],
   ["pst", -480],
   ["pdt", -420],
+  // The European names many feeds write, though RFC 822 lists none.
+  ["wet", 0],
+  ["west", 60],
+  ["bst", 60],
+  ["cet", 60],
+  ["cest", 120],
+  ["eet", 120],
+  ["eest", 180],
 ]);
 
 // [day-of-week ","] day month year hour ":" minute [":" second] zone
