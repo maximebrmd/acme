@@ -34,7 +34,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   deletion status `data-deletion/[code]`, the page behind a review link
   `review` (no sign-in, noindex; the token is the address's fragment, read
   in the browser), and the signed-in
-  app: `app` (workspaces), `app/agenda`, `app/notices`, `app/notices/preferences`,
+  app: `app` (workspaces), `app/agenda`, `app/report`, `app/notices`, `app/notices/preferences`,
   `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
   `…/analytics`, `…/inbox` and `…/inbox/[threadId]` (for `engagement:read`:
   not-found otherwise, as for staff acting as a member), `…/ads`,
@@ -81,7 +81,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   workspaces (`AgendaScreen`, after hydration: the visitor's cookies, the
   current time and their zone), grouped by day, a filter by workspace and
   **Load more**: a list, never the week's grid, as nothing is moved across
-  workspaces. Strings in `Overview`.
+  workspaces. `app/report` (`ReportScreen`, in the reader's zone) is the
+  report across workspaces as a table only, never a chart, as counts of
+  different platforms are not alike, which it says in one line: each
+  total with its change (`reportRowOf`, `#overview/report.ts`), a dash
+  where a count is not given or the range before is not all kept, the
+  range switch and **Download CSV** (`/api/me/report/export`). Strings in
+  `Overview`.
 - Pages fetch through the client derived from `peal-contract`, with
   `@effect/atom-react`: query atoms come from `PealApi` in `src/api/client.ts`.
   Browsers call `/api`; server code calls `PEAL_API_URL`.

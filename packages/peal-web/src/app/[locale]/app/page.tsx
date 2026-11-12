@@ -77,12 +77,20 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
         </h1>
         <p className="text-muted-foreground">{t("description")}</p>
         {workspaces.length > 1 ? (
-          <Link
-            href="/app/agenda"
-            className="text-sm underline-offset-4 hover:underline"
-          >
-            {tOverview("agenda")}
-          </Link>
+          <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <Link
+              href="/app/agenda"
+              className="underline-offset-4 hover:underline"
+            >
+              {tOverview("agenda")}
+            </Link>
+            <Link
+              href="/app/report"
+              className="underline-offset-4 hover:underline"
+            >
+              {tOverview("report")}
+            </Link>
+          </nav>
         ) : null}
       </div>
       {workspaces.length === 0 ? (

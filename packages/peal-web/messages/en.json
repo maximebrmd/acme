@@ -3592,7 +3592,8 @@
       "channelsOff": "{count, plural, one {# channel is} other {# channels are}} off",
       "unanswered": "{count, plural, one {# thread} other {# threads}} with a comment waiting for an answer",
       "scheduled": "{count, plural, =0 {Nothing goes out in the next 7 days} one {# post goes out in the next 7 days} other {# posts go out in the next 7 days}}",
-      "agenda": "Agenda across workspaces"
+      "agenda": "Agenda across workspaces",
+      "report": "Report across workspaces"
     },
     "agenda": {
       "title": "Agenda",
@@ -3610,6 +3611,27 @@
       "status": "{status, select, awaitingApproval {Waiting for approval} scheduled {Scheduled} publishing {Publishing} finished {Finished} other {{status}}}",
       "time": "{at, time, short}",
       "day": "{at, date, full}"
+    },
+    "report": {
+      "title": "Report across workspaces",
+      "description": "What went out in each of your workspaces and how it did, beside the days before. Days run in your time zone, {zone}.",
+      "notComparable": "A table, not a chart: each platform gives different counts, so compare a workspace with itself, not with another.",
+      "rangeLabel": "Range",
+      "range": "{days, plural, other {Last # days}}",
+      "download": "Download CSV",
+      "loading": "Loading the report…",
+      "loadFailed": "The report could not be loaded.",
+      "reload": "Try again",
+      "loadMore": "Load more",
+      "empty": "You do not belong to any workspace yet.",
+      "workspace": "Workspace",
+      "followers": "Followers",
+      "notRead": "Your role here does not read analytics.",
+      "refused": "Requires two-step verification.",
+      "noFigure": "Not given",
+      "change": "{change, number, ::+!}",
+      "previous": "Beside {from} to {to}.",
+      "caption": "Totals of the posts published from {from} to {to}, with their change against the days before; a dash where no platform gives a count, or the days before are no longer all kept."
     }
   }
 }
