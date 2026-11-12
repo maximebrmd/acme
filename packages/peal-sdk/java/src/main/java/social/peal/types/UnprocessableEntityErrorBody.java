@@ -26,36 +26,66 @@ public final class UnprocessableEntityErrorBody {
         return value.visit(visitor);
     }
 
-    public static UnprocessableEntityErrorBody recyclingEndsTooSoon(RecyclingEndsTooSoonEncoded value) {
-        return new UnprocessableEntityErrorBody(new RecyclingEndsTooSoonValue(value));
+    public static UnprocessableEntityErrorBody feedAddressRefused(FeedAddressRefusedEncoded value) {
+        return new UnprocessableEntityErrorBody(new FeedAddressRefusedValue(value));
     }
 
-    public static UnprocessableEntityErrorBody recyclingVariantsInvalid(RecyclingVariantsInvalidEncoded value) {
-        return new UnprocessableEntityErrorBody(new RecyclingVariantsInvalidValue(value));
+    public static UnprocessableEntityErrorBody feedTemplateInvalid(FeedTemplateInvalidEncoded value) {
+        return new UnprocessableEntityErrorBody(new FeedTemplateInvalidValue(value));
     }
 
-    public boolean isRecyclingEndsTooSoon() {
-        return value instanceof RecyclingEndsTooSoonValue;
+    public static UnprocessableEntityErrorBody feedUnreadable(FeedUnreadableEncoded value) {
+        return new UnprocessableEntityErrorBody(new FeedUnreadableValue(value));
     }
 
-    public boolean isRecyclingVariantsInvalid() {
-        return value instanceof RecyclingVariantsInvalidValue;
+    public static UnprocessableEntityErrorBody unknownChannels(UnknownChannelsEncoded value) {
+        return new UnprocessableEntityErrorBody(new UnknownChannelsValue(value));
+    }
+
+    public boolean isFeedAddressRefused() {
+        return value instanceof FeedAddressRefusedValue;
+    }
+
+    public boolean isFeedTemplateInvalid() {
+        return value instanceof FeedTemplateInvalidValue;
+    }
+
+    public boolean isFeedUnreadable() {
+        return value instanceof FeedUnreadableValue;
+    }
+
+    public boolean isUnknownChannels() {
+        return value instanceof UnknownChannelsValue;
     }
 
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<RecyclingEndsTooSoonEncoded> getRecyclingEndsTooSoon() {
-        if (isRecyclingEndsTooSoon()) {
-            return Optional.of(((RecyclingEndsTooSoonValue) value).value);
+    public Optional<FeedAddressRefusedEncoded> getFeedAddressRefused() {
+        if (isFeedAddressRefused()) {
+            return Optional.of(((FeedAddressRefusedValue) value).value);
         }
         return Optional.empty();
     }
 
-    public Optional<RecyclingVariantsInvalidEncoded> getRecyclingVariantsInvalid() {
-        if (isRecyclingVariantsInvalid()) {
-            return Optional.of(((RecyclingVariantsInvalidValue) value).value);
+    public Optional<FeedTemplateInvalidEncoded> getFeedTemplateInvalid() {
+        if (isFeedTemplateInvalid()) {
+            return Optional.of(((FeedTemplateInvalidValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<FeedUnreadableEncoded> getFeedUnreadable() {
+        if (isFeedUnreadable()) {
+            return Optional.of(((FeedUnreadableValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<UnknownChannelsEncoded> getUnknownChannels() {
+        if (isUnknownChannels()) {
+            return Optional.of(((UnknownChannelsValue) value).value);
         }
         return Optional.empty();
     }
@@ -90,49 +120,55 @@ public final class UnprocessableEntityErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitRecyclingEndsTooSoon(RecyclingEndsTooSoonEncoded recyclingEndsTooSoon);
+        T visitFeedAddressRefused(FeedAddressRefusedEncoded feedAddressRefused);
 
-        T visitRecyclingVariantsInvalid(RecyclingVariantsInvalidEncoded recyclingVariantsInvalid);
+        T visitFeedTemplateInvalid(FeedTemplateInvalidEncoded feedTemplateInvalid);
+
+        T visitFeedUnreadable(FeedUnreadableEncoded feedUnreadable);
+
+        T visitUnknownChannels(UnknownChannelsEncoded unknownChannels);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
     @JsonSubTypes({
-        @JsonSubTypes.Type(RecyclingEndsTooSoonValue.class),
-        @JsonSubTypes.Type(RecyclingVariantsInvalidValue.class)
+        @JsonSubTypes.Type(FeedAddressRefusedValue.class),
+        @JsonSubTypes.Type(FeedTemplateInvalidValue.class),
+        @JsonSubTypes.Type(FeedUnreadableValue.class),
+        @JsonSubTypes.Type(UnknownChannelsValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("RecyclingEndsTooSoon")
+    @JsonTypeName("FeedAddressRefused")
     @JsonIgnoreProperties("_tag")
-    private static final class RecyclingEndsTooSoonValue implements Value {
+    private static final class FeedAddressRefusedValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private RecyclingEndsTooSoonEncoded value;
+        private FeedAddressRefusedEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private RecyclingEndsTooSoonValue() {}
+        private FeedAddressRefusedValue() {}
 
-        private RecyclingEndsTooSoonValue(RecyclingEndsTooSoonEncoded value) {
+        private FeedAddressRefusedValue(FeedAddressRefusedEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitRecyclingEndsTooSoon(value);
+            return visitor.visitFeedAddressRefused(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof RecyclingEndsTooSoonValue && equalTo((RecyclingEndsTooSoonValue) other);
+            return other instanceof FeedAddressRefusedValue && equalTo((FeedAddressRefusedValue) other);
         }
 
-        private boolean equalTo(RecyclingEndsTooSoonValue other) {
+        private boolean equalTo(FeedAddressRefusedValue other) {
             return value.equals(other.value);
         }
 
@@ -147,32 +183,112 @@ public final class UnprocessableEntityErrorBody {
         }
     }
 
-    @JsonTypeName("RecyclingVariantsInvalid")
+    @JsonTypeName("FeedTemplateInvalid")
     @JsonIgnoreProperties("_tag")
-    private static final class RecyclingVariantsInvalidValue implements Value {
+    private static final class FeedTemplateInvalidValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private RecyclingVariantsInvalidEncoded value;
+        private FeedTemplateInvalidEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private RecyclingVariantsInvalidValue() {}
+        private FeedTemplateInvalidValue() {}
 
-        private RecyclingVariantsInvalidValue(RecyclingVariantsInvalidEncoded value) {
+        private FeedTemplateInvalidValue(FeedTemplateInvalidEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitRecyclingVariantsInvalid(value);
+            return visitor.visitFeedTemplateInvalid(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof RecyclingVariantsInvalidValue && equalTo((RecyclingVariantsInvalidValue) other);
+            return other instanceof FeedTemplateInvalidValue && equalTo((FeedTemplateInvalidValue) other);
         }
 
-        private boolean equalTo(RecyclingVariantsInvalidValue other) {
+        private boolean equalTo(FeedTemplateInvalidValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "UnprocessableEntityErrorBody{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("FeedUnreadable")
+    @JsonIgnoreProperties("_tag")
+    private static final class FeedUnreadableValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private FeedUnreadableEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private FeedUnreadableValue() {}
+
+        private FeedUnreadableValue(FeedUnreadableEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitFeedUnreadable(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof FeedUnreadableValue && equalTo((FeedUnreadableValue) other);
+        }
+
+        private boolean equalTo(FeedUnreadableValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "UnprocessableEntityErrorBody{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("UnknownChannels")
+    @JsonIgnoreProperties("_tag")
+    private static final class UnknownChannelsValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private UnknownChannelsEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private UnknownChannelsValue() {}
+
+        private UnknownChannelsValue(UnknownChannelsEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitUnknownChannels(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof UnknownChannelsValue && equalTo((UnknownChannelsValue) other);
+        }
+
+        private boolean equalTo(UnknownChannelsValue other) {
             return value.equals(other.value);
         }
 

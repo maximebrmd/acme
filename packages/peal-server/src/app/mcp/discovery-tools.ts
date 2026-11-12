@@ -23,9 +23,10 @@ export const ToolAreaSchema = Schema.Literals([
   "review",
   "inbox",
   "ads",
+  "feeds",
 ]).annotate({
   description:
-    "An area of Peal: `account` (who the connection is, its workspace and channels, with naming a channel and turning it off or on, the server), `posts` (drafts, scheduling, publishing, outcomes), `tags` (the labels a workspace files its posts under, and tagging a post), `saved` (what a workspace saves to write its posts with: signatures, channel sets and a channel's default options), `media` (images and videos), `reports` (analytics, the plan and the activity log), `people` (members and invitations), `webhooks` (endpoints and their deliveries), `connect` (connect links, and the workspace's partner account), `channels` (what each channel's platform takes, and its lookups), `review` (the posts that wait for an approval, and deciding them), `inbox` (the comments under published posts, and answering them), `ads` (ad accounts, campaigns and their numbers, and boosting a published post, which spends money).",
+    "An area of Peal: `account` (who the connection is, its workspace and channels, with naming a channel and turning it off or on, the server), `posts` (drafts, scheduling, publishing, outcomes), `tags` (the labels a workspace files its posts under, and tagging a post), `saved` (what a workspace saves to write its posts with: signatures, channel sets and a channel's default options), `media` (images and videos), `reports` (analytics, the plan and the activity log), `people` (members and invitations), `webhooks` (endpoints and their deliveries), `connect` (connect links, and the workspace's partner account), `channels` (what each channel's platform takes, and its lookups), `review` (the posts that wait for an approval, and deciding them), `inbox` (the comments under published posts, and answering them), `ads` (ad accounts, campaigns and their numbers, and boosting a published post, which spends money), `feeds` (the web feeds a workspace follows, whose new items become drafts or posts on a queue).",
 });
 
 export type ToolArea = typeof ToolAreaSchema.Type;

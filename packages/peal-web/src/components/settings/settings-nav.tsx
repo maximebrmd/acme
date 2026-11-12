@@ -10,6 +10,7 @@ export type SettingsSection =
   | "general"
   | "invitations"
   | "members"
+  | "feeds"
   | "partner"
   | "queues"
   | "recycling"
@@ -21,6 +22,7 @@ export type SettingsSection =
 const paths: Readonly<Record<SettingsSection, string>> = {
   apiKeys: "/api-keys",
   channelSets: "/channel-sets",
+  feeds: "/feeds",
   general: "",
   invitations: "/invitations",
   members: "/members",

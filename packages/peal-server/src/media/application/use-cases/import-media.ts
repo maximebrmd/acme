@@ -12,6 +12,8 @@ import {
 } from "#media/application/use-cases/arrived-file.ts";
 import { altTextOf } from "#media/domain/alt-text.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
+import { kindOf } from "#media/domain/media-format.ts";
+import type { MediaKind } from "#media/domain/media-format.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 
@@ -19,6 +21,11 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 export interface ImportMediaRequest {
   /** Its description, as the person typed it, if they did. */
   readonly altText: Option.Option<string>;
+  /**
+   * The kinds of file taken, when only some are: another is refused
+   * (UnsupportedMediaType) from its first bytes, before it is stored.
+   */
+  readonly kinds?: readonly MediaKind[];
   readonly url: string;
   readonly workspaceId: WorkspaceId;
 }
@@ -35,7 +42,12 @@ export interface ImportMediaRequest {
  * upload's is. The whole import has `importTimeout`.
  */
 export const importMedia = Effect.fn("Media.importMedia")(
-  function* importMedia({ altText, url, workspaceId }: ImportMediaRequest) {
+  function* importMedia({
+    altText,
+    kinds,
+    url,
+    workspaceId,
+  }: ImportMediaRequest) {
     const description = yield* Effect.fromResult(
       altTextOf(Option.getOrElse(altText, () => ""))
     );
@@ -53,7 +65,15 @@ export const importMedia = Effect.fn("Media.importMedia")(
     const id = yield* newId(MediaAssetIdSchema);
 
     const stored = yield* RemoteMedia.use((remote) => remote.open(url)).pipe(
-      Effect.flatMap((file) => storeArriving(file, { id, room, workspaceId })),
+      Effect.flatMap((file) =>
+        storeArriving(file, {
+          accepts: (contentType) =>
+            kinds === undefined || kinds.includes(kindOf(contentType)),
+          id,
+          room,
+          workspaceId,
+        })
+      ),
       Effect.scoped,
       Effect.timeoutOrElse({
         duration: policy.importTimeout,

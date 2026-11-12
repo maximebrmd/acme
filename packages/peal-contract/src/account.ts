@@ -572,6 +572,26 @@ const ExportedSavedItemsSchema = Schema.Struct({
       options: Schema.Unknown,
     })
   ),
+  // The web feeds it follows: the address, the channels and the queue
+  // their posts go to, the template, and where each is. Never what a feed
+  // read, nor who added one.
+  feeds: Schema.Array(
+    Schema.Struct({
+      attachPicture: Schema.Boolean,
+      channelIds: Schema.Array(Schema.String),
+      channelSetId: nullable(Schema.String),
+      createdAt: instant,
+      id: Schema.String,
+      // `draft` or `queue`.
+      mode: Schema.String,
+      queueId: nullable(Schema.String),
+      // `active`, `paused` or `stopped`.
+      status: Schema.String,
+      stopReason: nullable(Schema.String),
+      template: Schema.String,
+      url: Schema.String,
+    })
+  ),
   // Weekly timetables posts are put on: their slots in their time zone,
   // for some channels and at most one channel set.
   queues: Schema.Array(

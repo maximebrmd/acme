@@ -552,6 +552,125 @@ export const recyclingRules = publishing.table(
 );
 
 /**
+ * The web feeds a workspace follows (the domain's `Feed`): the address it
+ * reads (`url`, HTTPS, which may hold a token of the site's: logged by its
+ * host only) and the title it last gave; the channels and the channel set
+ * its posts go to (a set deleted since is cleared in the transaction that
+ * deletes it); `mode`, `draft` or `queue`, with the queue it puts posts on
+ * (`queue_id`, null for the workspace's default; a queue deleted since is
+ * left, and the next run stops the feed); the `template` its posts are
+ * written from, and whether they take the item's picture. `status` is
+ * `active`, `paused` or `stopped`, with `status_at` and `stop_reason`.
+ * `started_by` is the member who started it (null for a key, or once they
+ * closed their account) and `started_via` how they reached Peal (JSON the
+ * domain's `PostOriginSchema` decodes): its posts act as them. `etag` and
+ * `last_modified` are the validators of its last read; `since` is when it
+ * was added or its address last changed, before which no item is made;
+ * `next_check_at` when it is read next; `failing_since` and
+ * `last_failure` (a code) while its reads fail. Workspace content; rows go
+ * with their workspace.
+ */
+export const feeds = publishing.table(
+  "feeds",
+  {
+    attachPicture: boolean("attach_picture").notNull().default(false),
+    channelIds: uuid("channel_ids")
+      .array()
+      .notNull()
+      .default(sql`'{}'::uuid[]`),
+    channelSetId: uuid("channel_set_id"),
+    createdAt: instant("created_at").notNull(),
+    etag: text("etag"),
+    failingSince: instant("failing_since"),
+    id: uuid("id").primaryKey(),
+    lastCheckedAt: instant("last_checked_at"),
+    lastFailure: text("last_failure"),
+    lastModified: text("last_modified"),
+    mode: text("mode").notNull(),
+    nextCheckAt: instant("next_check_at").notNull(),
+    queueId: uuid("queue_id"),
+    since: instant("since").notNull(),
+    startedBy: uuid("started_by"),
+    startedVia: jsonb("started_via").notNull(),
+    status: text("status").notNull(),
+    statusAt: instant("status_at"),
+    stopReason: text("stop_reason"),
+    template: text("template").notNull(),
+    title: text("title"),
+    updatedAt: instant("updated_at").notNull(),
+    url: text("url").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    // The feeds the cron reads, by when they are due.
+    index("feeds_due")
+      .on(table.nextCheckAt, table.id)
+      .where(sql`${table.status} = 'active'`),
+    // A workspace's feeds, oldest first: ids are UUIDv7s.
+    index("feeds_workspace_id").on(table.workspaceId, table.id),
+    check("feeds_mode", sql`${table.mode} IN ('draft', 'queue')`),
+    check(
+      "feeds_status",
+      sql`${table.status} IN ('active', 'paused', 'stopped')`
+    ),
+  ]
+);
+
+/**
+ * The items a feed read (the identity of each as its SHA-256, never its
+ * text): when it was first seen, the date it gave, if one, and what was
+ * made of it (`outcome`, with `reason`), with the post's id (no foreign
+ * key: a draft discarded since leaves the item, which is never made
+ * again). It keeps the 500 a read listed last, and every one the latest
+ * read listed, so an item still listed is never made again; rows go with
+ * their feed.
+ */
+export const feedItems = publishing.table(
+  "feed_items",
+  {
+    feedId: uuid("feed_id")
+      .notNull()
+      .references(() => feeds.id, { onDelete: "cascade" }),
+    itemAt: instant("item_at"),
+    itemDigest: text("item_digest").notNull(),
+    // When a read last listed it: retention keeps what the latest still lists.
+    lastSeenAt: instant("last_seen_at").notNull(),
+    outcome: text("outcome").notNull(),
+    // Why the item's picture was not attached, when it was asked for.
+    pictureSkipped: text("picture_skipped"),
+    postId: uuid("post_id"),
+    reason: text("reason"),
+    seenAt: instant("seen_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.feedId, table.itemDigest] }),
+    // A feed's items, newest first, for its page and its retention.
+    index("feed_items_seen").on(table.feedId, table.seenAt),
+  ]
+);
+
+/**
+ * How many times a workspace's members had Peal read an address they
+ * gave (a feed added, its address changed or resumed, a preview), by
+ * hour on the hour (UTC): one statement adds to the hour's row, so reads
+ * from every server take turns on it. Rows older than a day go with the
+ * idempotency keys' retention.
+ */
+export const feedReads = publishing.table(
+  "feed_reads",
+  {
+    reads: integer("reads").notNull(),
+    windowStart: instant("window_start").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.windowStart] }),
+    index("feed_reads_window_start").on(table.windowStart),
+    check("feed_reads_reads", sql`${table.reads} > 0`),
+  ]
+);
+
+/**
  * The options a workspace's new posts take on a channel when they give
  * none there (JSON the domain's `TargetOptionsSchema` decodes, tagged by
  * platform). Rows go with their workspace; one whose channel was

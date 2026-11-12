@@ -50,6 +50,9 @@
   in parts (`MediaStorage.store`, one part in memory), records the asset
   under the workspace's lock, then completes and probes it as an upload.
   The whole import has `importTimeout` (90 seconds, under the proxy's 120).
+  A caller that takes only some kinds names them (`kinds`, as a feed's
+  pictures take images): another is refused from its first bytes
+  (`UnsupportedMediaType`), before anything is stored.
   Tests reach a loopback host with `mediaWith` and an open guard.
 - An image the writing assistant made is the third way a file arrives
   (`storeGenerated`, media:upload): the import and it share the second half

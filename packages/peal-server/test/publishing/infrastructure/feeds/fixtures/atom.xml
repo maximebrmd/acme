@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+  <title type="html">A &lt;em&gt;synthetic&lt;/em&gt; journal</title>
+  <id>urn:uuid:7a2b1c3d-0000-4000-8000-000000000001</id>
+  <updated>2026-06-15T10:00:00Z</updated>
+  <entry>
+    <title>Entry with a summary</title>
+    <id>urn:uuid:7a2b1c3d-0000-4000-8000-000000000002</id>
+    <link rel="self" href="https://journal.example/self"/>
+    <link href="/entries/2"/>
+    <link rel="enclosure" type="image/png" href="https://journal.example/2.png"/>
+    <published>2026-06-15T09:00:00+02:00</published>
+    <updated>2026-06-15T12:00:00Z</updated>
+    <summary>Plain &lt;text&gt; summary</summary>
+    <content type="html">&lt;p&gt;Not used&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>Entry with xhtml content</title>
+    <id>urn:uuid:7a2b1c3d-0000-4000-8000-000000000003</id>
+    <link rel="alternate" href="https://journal.example/entries/3"/>
+    <updated>2026-06-14T09:00:00Z</updated>
+    <content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">Some <b>bold</b> text</div></content>
+    <media:thumbnail url="https://journal.example/3-thumb.jpg"/>
+  </entry>
+</feed>

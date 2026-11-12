@@ -9,7 +9,7 @@ class TooManyRequestsErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'TooManyConnectLinks'
+     *    'FeedReadsLimited'
      *   |'TooManyRequests'
      *   |'_unknown'
      * ) $type
@@ -18,7 +18,7 @@ class TooManyRequestsErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    TooManyConnectLinksEncoded
+     *    FeedReadsLimitedEncoded
      *   |TooManyRequestsEncoded
      *   |mixed
      * ) $value
@@ -28,12 +28,12 @@ class TooManyRequestsErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'TooManyConnectLinks'
+     *    'FeedReadsLimited'
      *   |'TooManyRequests'
      *   |'_unknown'
      * ),
      *   value: (
-     *    TooManyConnectLinksEncoded
+     *    FeedReadsLimitedEncoded
      *   |TooManyRequestsEncoded
      *   |mixed
      * ),
@@ -47,14 +47,14 @@ class TooManyRequestsErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param TooManyConnectLinksEncoded $tooManyConnectLinks
+     * @param FeedReadsLimitedEncoded $feedReadsLimited
      * @return TooManyRequestsErrorBody
      */
-    public static function tooManyConnectLinks(TooManyConnectLinksEncoded $tooManyConnectLinks): TooManyRequestsErrorBody
+    public static function feedReadsLimited(FeedReadsLimitedEncoded $feedReadsLimited): TooManyRequestsErrorBody
     {
         return new TooManyRequestsErrorBody([
-            'type' => 'TooManyConnectLinks',
-            'value' => $tooManyConnectLinks,
+            'type' => 'FeedReadsLimited',
+            'value' => $feedReadsLimited,
         ]);
     }
 
@@ -73,19 +73,19 @@ class TooManyRequestsErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isTooManyConnectLinks(): bool
+    public function isFeedReadsLimited(): bool
     {
-        return $this->value instanceof TooManyConnectLinksEncoded && $this->type === 'TooManyConnectLinks';
+        return $this->value instanceof FeedReadsLimitedEncoded && $this->type === 'FeedReadsLimited';
     }
 
     /**
-     * @return TooManyConnectLinksEncoded
+     * @return FeedReadsLimitedEncoded
      */
-    public function asTooManyConnectLinks(): TooManyConnectLinksEncoded
+    public function asFeedReadsLimited(): FeedReadsLimitedEncoded
     {
-        if (!($this->value instanceof TooManyConnectLinksEncoded && $this->type === 'TooManyConnectLinks')) {
+        if (!($this->value instanceof FeedReadsLimitedEncoded && $this->type === 'FeedReadsLimited')) {
             throw new Exception(
-                "Expected TooManyConnectLinks; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected FeedReadsLimited; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,8 +134,8 @@ class TooManyRequestsErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'TooManyConnectLinks':
-                $value = $this->asTooManyConnectLinks()->jsonSerialize();
+            case 'FeedReadsLimited':
+                $value = $this->asFeedReadsLimited()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case 'TooManyRequests':
@@ -178,8 +178,8 @@ class TooManyRequestsErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'TooManyConnectLinks':
-                $args['value'] = TooManyConnectLinksEncoded::jsonDeserialize($data);
+            case 'FeedReadsLimited':
+                $args['value'] = FeedReadsLimitedEncoded::jsonDeserialize($data);
                 break;
             case 'TooManyRequests':
                 $args['value'] = TooManyRequestsEncoded::jsonDeserialize($data);

@@ -9,6 +9,8 @@ module Peal
 
       field :comments, -> { Internal::Types::Boolean }, optional: false, nullable: false
 
+      field :feed_stopped, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "feedStopped"
+
       field :post_failed, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "postFailed"
 
       field :post_published, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "postPublished"

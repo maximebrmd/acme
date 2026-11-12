@@ -43,7 +43,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
   wait), `…/settings` (with `members`, `invitations`, `tags`, `signatures`,
-  `channel-sets`, `queues`, `recycling`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
+  `channel-sets`, `queues`, `recycling`, `feeds`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]`,
   `admin/contract-requests` (through `deskRead`), `admin/audit` and
@@ -188,6 +188,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Repeat to a member with post:schedule; a new post repeats once it is
   scheduled, from its page. Refusals are explained from the
   `Recycling.errors` catalogue (`#recycling/rule-error.ts`).
+- Feeds have a settings page (`…/settings/feeds`, read with post:read,
+  added, paused, resumed and deleted with post:create, a queue's mode with
+  post:schedule; `?feed=` marks the feed a `FeedStopped` notice opened it
+  for, its items shown), views in `components/feeds/feed-views.tsx`, state
+  in `feeds-settings.tsx`, atoms in `#feeds/atoms.ts`. Preview reads the
+  address before it is added; a feed's items list what became of each,
+  never what it said. A template's placeholders are written in the
+  catalogues escaped (`'{title}'`), as ICU reads braces. Refusals are
+  explained from the `Feeds.errors` catalogue (`#feeds/feed-error.ts`).
 - The composer takes them through components of their own, each wired
   with a few lines: `ChannelSetPicker` (applies a set with `appliedSet`,
   which leaves out and counts the channels disconnected since),

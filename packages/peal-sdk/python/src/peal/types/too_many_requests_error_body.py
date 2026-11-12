@@ -10,16 +10,18 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 
 
-class TooManyRequestsErrorBody_TooManyConnectLinks(UniversalBaseModel):
+class TooManyRequestsErrorBody_FeedReadsLimited(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["TooManyConnectLinks"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "TooManyConnectLinks"
+        typing.Literal["FeedReadsLimited"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "FeedReadsLimited"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
-    allowed: int
+    retry_after_seconds: typing_extensions.Annotated[
+        int, FieldMetadata(alias="retryAfterSeconds"), pydantic.Field(alias="retryAfterSeconds")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -59,6 +61,6 @@ class TooManyRequestsErrorBody_TooManyRequests(UniversalBaseModel):
 
 
 TooManyRequestsErrorBody = typing_extensions.Annotated[
-    typing.Union[TooManyRequestsErrorBody_TooManyConnectLinks, TooManyRequestsErrorBody_TooManyRequests],
+    typing.Union[TooManyRequestsErrorBody_FeedReadsLimited, TooManyRequestsErrorBody_TooManyRequests],
     pydantic.Field(discriminator="type"),
 ]

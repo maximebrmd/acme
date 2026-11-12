@@ -19,16 +19,8 @@ pub enum PostRefusal {
 
     #[non_exhaustive]
     UnknownChannels {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        code: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        message: Option<String>,
-        #[serde(rename = "requestId")]
-        #[serde(skip_serializing_if = "Option::is_none")]
-        request_id: Option<String>,
-        #[serde(rename = "channelIds")]
-        #[serde(default)]
-        channel_ids: Vec<String>,
+        #[serde(flatten)]
+        data: UnknownChannelsEncoded,
     },
 
     #[non_exhaustive]
@@ -196,13 +188,8 @@ impl PostRefusal {
         }
     }
 
-    pub fn unknown_channels(channel_ids: Vec<String>) -> Self {
-        Self::UnknownChannels {
-            code: None,
-            message: None,
-            request_id: None,
-            channel_ids,
-        }
+    pub fn unknown_channels(data: UnknownChannelsEncoded) -> Self {
+        Self::UnknownChannels { data }
     }
 
     pub fn unknown_media(media_ids: Vec<String>) -> Self {
@@ -346,48 +333,6 @@ impl PostRefusal {
             message,
             request_id: Some(request_id),
             violations,
-        }
-    }
-
-    pub fn unknown_channels_with_code(
-        code: String,
-        message: Option<String>,
-        request_id: Option<String>,
-        channel_ids: Vec<String>,
-    ) -> Self {
-        Self::UnknownChannels {
-            code: Some(code),
-            message,
-            request_id,
-            channel_ids,
-        }
-    }
-
-    pub fn unknown_channels_with_message(
-        code: Option<String>,
-        message: String,
-        request_id: Option<String>,
-        channel_ids: Vec<String>,
-    ) -> Self {
-        Self::UnknownChannels {
-            code,
-            message: Some(message),
-            request_id,
-            channel_ids,
-        }
-    }
-
-    pub fn unknown_channels_with_request_id(
-        code: Option<String>,
-        message: Option<String>,
-        request_id: String,
-        channel_ids: Vec<String>,
-    ) -> Self {
-        Self::UnknownChannels {
-            code,
-            message,
-            request_id: Some(request_id),
-            channel_ids,
         }
     }
 

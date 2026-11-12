@@ -15,6 +15,7 @@ import (
 	channelsets "github.com/peal-social/peal/packages/peal-sdk/go/channelsets"
 	connectlinks "github.com/peal-social/peal/packages/peal-sdk/go/connectlinks"
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
+	feeds "github.com/peal-social/peal/packages/peal-sdk/go/feeds"
 	inbox "github.com/peal-social/peal/packages/peal-sdk/go/inbox"
 	internal "github.com/peal-social/peal/packages/peal-sdk/go/internal"
 	invitations "github.com/peal-social/peal/packages/peal-sdk/go/invitations"
@@ -72,6 +73,7 @@ type Client struct {
 	ChannelSets             *channelsets.Client
 	Queues                  *queues.Client
 	Recycling               *recycling.Client
+	Feeds                   *feeds.Client
 	ChannelDefaults         *channeldefaults.Client
 
 	options *core.RequestOptions
@@ -113,6 +115,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		ChannelSets:             channelsets.NewClient(options),
 		Queues:                  queues.NewClient(options),
 		Recycling:               recycling.NewClient(options),
+		Feeds:                   feeds.NewClient(options),
 		ChannelDefaults:         channeldefaults.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,

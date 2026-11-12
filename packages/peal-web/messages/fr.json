@@ -1666,10 +1666,11 @@
       "TrialEndingOver": "L’essai {plan} de {workspace} prend fin le {endsAt, date, long}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement. Il dépasse ce que permet l’offre gratuite ({over}) : à partir de ce jour, rien n’est programmé ni publié tant qu’il n’y est pas revenu.",
       "AdBoostChanged": "{change, select, started {Une mise en avant a démarré dans {workspace} : elle peut dépenser jusqu’à son budget de {budget}, sur le moyen de paiement du compte publicitaire, jusqu’au {endsAt, date, long}. Mettez-la en pause ou arrêtez-la à tout moment depuis la page de la publication.} ended {Une mise en avant dans {workspace}, d’un budget de {budget}, a atteint sa date de fin ({endsAt, date, long}) et n’est plus diffusée. Ce qu’elle a dépensé figure sur la page de la publication.} failed {Une mise en avant dans {workspace}, d’un budget de {budget}, n’a pas pu être créée : {reason} Rien n’a été diffusé, et rien n’a été dépensé.} budgetReached {Une mise en avant dans {workspace} a dépensé tout son budget de {budget}. Le réseau publicitaire cesse de la diffuser ; plus rien n’est dépensé pour elle.} unconfirmed {Peal a demandé au réseau publicitaire de diffuser une mise en avant dans {workspace}, d’un budget de {budget}, et n’a pas pu savoir si elle est diffusée. Elle dépense peut-être. Vérifiez-la sur la page de la publication, et arrêtez-la si elle ne doit pas être diffusée.} other {Une mise en avant de {workspace} a changé.}}",
       "AdConnectionReconnectRequired": "{network} a refusé la connexion qui relie des comptes publicitaires à {workspace}. Leurs campagnes et leurs chiffres ne sont plus lus, et aucune mise en avant ne peut y être créée, tant que la personne qui s’était connectée ne le refait pas. Les mises en avant en cours continuent d’être diffusées par le réseau.",
-      "RecyclingEnded": "Une publication de {workspace} ne se répète plus : {reason, select, sourceGone {la publication qu’elle répète a été supprimée.} sourceWithdrawn {la publication qu’elle répète a été annulée ou remise en brouillon : programmez-la de nouveau, puis reprenez.} starterGone {la personne qui l’a lancée ne peut plus y programmer de publications.} noChannels {aucun de ses canaux n’est plus connecté.} contentRejected {une plateforme refuse ce que dirait la prochaine publication.} planLimit {l’offre n’a plus de place pour des publications ce mois-là.} queueGone {sa file d’attente a été supprimée.} other {sa file d’attente n’a plus de créneau libre.}}"
+      "RecyclingEnded": "Une publication de {workspace} ne se répète plus : {reason, select, sourceGone {la publication qu’elle répète a été supprimée.} sourceWithdrawn {la publication qu’elle répète a été annulée ou remise en brouillon : programmez-la de nouveau, puis reprenez.} starterGone {la personne qui l’a lancée ne peut plus y programmer de publications.} noChannels {aucun de ses canaux n’est plus connecté.} contentRejected {une plateforme refuse ce que dirait la prochaine publication.} planLimit {l’offre n’a plus de place pour des publications ce mois-là.} queueGone {sa file d’attente a été supprimée.} other {sa file d’attente n’a plus de créneau libre.}}",
+      "FeedStopped": "Un flux de {workspace} ne crée plus de publications : {reason, select, gone {son site indique qu’il n’existe plus.} notAFeed {depuis sept jours, son adresse donne autre chose qu’un flux.} queueGone {la file d’attente où il programme ses publications a été supprimée.} starterGone {la personne qui l’a ajouté ne peut plus y créer de publications. La personne qui le reprend en devient responsable.} other {il n’a pas pu être lu pendant sept jours.}}"
     },
     "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Réactivez le canal, sur la page Canaux, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} partsNotSent {ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.} repliesNotAllowed {sa première partie est en ligne, et X n’a pas laissé l’application de ce serveur publier les suivantes en réponse : en accès libre-service, une application ne peut répondre qu’à une publication dont l’auteur a mentionné ou cité le compte. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur X, en réponse à la dernière partie en ligne.} other {{reason}}}",
-    "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} webhooks {Ouvrir les webhooks} inbox {Ouvrir les commentaires} ads {Ouvrir la publicité} recycling {Ouvrir les répétitions} other {Ouvrir les canaux}}",
+    "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} webhooks {Ouvrir les webhooks} inbox {Ouvrir les commentaires} ads {Ouvrir la publicité} recycling {Ouvrir les répétitions} feeds {Ouvrir les flux} other {Ouvrir les canaux}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # non lue} other {Notifications, # non lues}}",
       "many": "99+",
@@ -1713,7 +1714,8 @@
       "loading": "Chargement de vos préférences…",
       "loadFailed": "Vos préférences n’ont pas pu être chargées.",
       "reload": "Réessayer",
-      "recyclingEnded": "Une publication cesse de se répéter"
+      "recyclingEnded": "Une publication cesse de se répéter",
+      "feedStopped": "Un flux cesse de créer des publications"
     },
     "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
     "excess": "{limit, select, channels {{used, number} canaux, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
@@ -2062,7 +2064,8 @@
       "channelSets": "Groupes de canaux",
       "queues": "Files d’attente",
       "security": "Sécurité",
-      "recycling": "Répétitions"
+      "recycling": "Répétitions",
+      "feeds": "Flux"
     },
     "general": {
       "title": "Nom",
@@ -3451,5 +3454,68 @@
       "start": "Répéter",
       "cancel": "Annuler"
     }
+  },
+  "Feeds": {
+    "description": "Les flux web que suit l’espace de travail (RSS, Atom, JSON Feed), celui d’un blog par exemple : chaque élément qui y paraît après son ajout devient un brouillon qu’une personne termine, ou une publication sur le prochain créneau libre d’une file d’attente, écrite à partir d’un modèle. Ce que contient un flux à son ajout n’est jamais publié.",
+    "readOnly": "Vous pouvez lire les flux : les ajouter ou les modifier demande un rôle qui écrit des publications.",
+    "listTitle": "Flux",
+    "createTitle": "Ajouter un flux",
+    "empty": "L’espace de travail ne suit encore aucun flux.",
+    "status": "{status, select, active {Actif} paused {En pause} other {Arrêté}}",
+    "mode": "{mode, select, queue {Publications sur une file} other {Brouillons}}",
+    "stoppedBecause": "Arrêté : {reason, select, gone {son site indique qu’il n’existe plus.} notAFeed {depuis sept jours, son adresse donne autre chose qu’un flux.} queueGone {sa file d’attente a été supprimée.} starterGone {la personne qui l’a ajouté ne peut plus y créer de publications : le reprendre fait de ses publications les vôtres.} other {il n’a pas pu être lu pendant sept jours.}} Reprenez-le une fois le problème réglé.",
+    "failing": "La dernière lecture a échoué : {failure, select, timeout {pas de réponse à temps.} rateLimited {son site a demandé d’attendre.} serverError {son site a échoué.} notFound {l’adresse est introuvable.} gone {son site indique qu’il n’existe plus.} notAFeed {ce n’est pas un flux.} tooLarge {il est plus gros que ce que Peal lit.} refused {son hôte n’est pas public.} other {il n’a pas pu être lu.}} Peal réessaie plus tard.",
+    "nextRead": "Prochaine lecture : {at}",
+    "items": "Ses éléments les plus récents",
+    "noItems": "Rien de lu pour l’instant.",
+    "item": "{at} : {outcome, select, made {une publication a été créée} heldBack {un brouillon a été créé à la place} skipped {rien n’a été créé} claimed {sa publication est en cours d’envoi} other {sa publication n’a jamais été confirmée}}{reason, select, existing {, car le flux le contenait à son ajout} tooMany {, car il en est venu plus qu’un passage ou une journée n’en crée} empty {, car le modèle n’a rien écrit} contentRejected {, car une plateforme l’a refusé} planLimit {, car l’offre n’avait plus de place} queueFull {, car la file n’avait plus de créneau libre} noChannels {, car un canal a disparu} duplicate {, car la même publication part déjà} queueGone {, car sa file a été supprimée} other {}}",
+    "showItems": "Éléments",
+    "pause": "Mettre en pause",
+    "resume": "Reprendre",
+    "delete": "Supprimer",
+    "deleteConfirm": "Ne plus suivre ce flux ? Les brouillons et publications qu’il a créés restent tels quels.",
+    "cancel": "Annuler",
+    "paused": "Le flux est en pause.",
+    "resumed": "Le flux reprend : il a été lu, et ce qu’il contient maintenant n’est pas publié.",
+    "deleted": "Le flux est supprimé.",
+    "added": "Le flux est ajouté : ce qu’il contient maintenant n’est pas publié, seulement ce qui paraîtra désormais.",
+    "failed": "Cela n’a pas fonctionné. Réessayez.",
+    "url": "Adresse",
+    "urlHint": "Une adresse HTTPS publique d’un flux RSS, Atom ou JSON.",
+    "template": "Modèle",
+    "templateHint": "Ce que dit chaque publication : '{title}', '{link}' et '{summary}' sont remplacés par ceux de l’élément.",
+    "modeLabel": "Chaque nouvel élément devient",
+    "modeHint": "Les brouillons attendent une personne. Sur une file, les publications partent aux créneaux de la file sans que personne ne les lise avant.",
+    "modeDraftsOnly": "Programmer des publications sur une file demande un rôle qui programme.",
+    "queue": "File d’attente",
+    "defaultQueue": "La file par défaut",
+    "queueWarning": "Chaque nouvel élément partira aux créneaux de la file, en public, sans que personne ne le lise avant, sauf si l’espace de travail demande des approbations.",
+    "channels": "Canaux",
+    "noChannels": "Aucun canal n’est encore connecté.",
+    "channelsHint": "Où vont ses publications. Sur une file, aucun signifie les canaux de la file.",
+    "preview": "Aperçu",
+    "add": "Ajouter le flux",
+    "previewTitle": "Aperçu",
+    "previewOf": "Les éléments les plus récents de {title}, en publications :",
+    "othersText": "Ce que dit un flux est le texte de son site : relisez-le avant qu’il parte.",
+    "nothingToPost": "(Le modèle n’écrit rien à partir de cet élément.)",
+    "errors": {
+      "address": "Peal ne lit pas cette adresse : {reason, select, credentials {elle contient un nom d’utilisateur ou un mot de passe.} malformed {ce n’est pas une adresse valide.} notHttps {seules les adresses HTTPS sur le port par défaut sont lues.} other {son hôte n’est pas sur l’internet public.}}",
+      "unreadable": "L’adresse n’a pas pu être lue comme un flux : {reason, select, notAFeed {ce n’est ni du RSS, ni de l’Atom, ni du JSON Feed.} tooLarge {elle dépasse les 2 Mio que lit Peal.} other {elle n’a donné aucune réponse utilisable.}}",
+      "template": "{reason, select, unknownPlaceholder {Le modèle nomme {placeholder} : seuls title, link et summary sont remplacés.} tooLong {Le modèle dépasse 1 000 caractères, ou nomme ses champs si souvent qu’une publication ne pourrait pas les contenir.} other {Le modèle est vide.}}",
+      "readsLimited": "L’espace de travail a lu 30 adresses cette heure : réessayez dans {minutes, plural, one {une minute} other {# minutes}}.",
+      "tooMany": "L’espace de travail suit {allowed} flux, le maximum permis : supprimez-en un d’abord.",
+      "forbidden": "Votre rôle ne le permet pas.",
+      "noChannelSet": "Ce groupe de canaux n’existe plus.",
+      "noQueue": "La file d’attente du flux, ou la file par défaut de l’espace de travail, n’existe plus : modifiez le flux pour choisir une autre file, ou faire de ses publications des brouillons.",
+      "notFound": "Ce flux n’existe plus.",
+      "unknownChannels": "Un canal du flux n’est plus connecté : modifiez le flux pour choisir de nouveau ses canaux."
+    },
+    "pictureSkipped": "Son image a été laissée de côté : {reason, select, notPublic {son adresse n’est pas publique.} unreachable {elle n’a pas pu être récupérée.} tooLarge {elle est trop lourde.} notAnImage {ce n’est pas une image.} storageFull {le stockage de l’offre est plein.} busy {trop d’imports avaient lieu à la fois.} notAllowed {la personne qui a ajouté le flux ne peut pas importer de médias.} other {elle n’a pas pu être importée.}}",
+    "picture": "Joindre l’image de chaque élément",
+    "pictureHint": "Importée dans la médiathèque, décrite par le titre de l’élément. Une publication part sans elle quand elle ne peut pas être récupérée.",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saved": "Le flux est enregistré."
   }
 }

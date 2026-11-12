@@ -183,6 +183,10 @@ const contentOf = (
       messages: catalog.commentsReceived,
       values: [["count", String(count)]],
     }),
+    FeedStopped: ({ reason }): Content => ({
+      messages: catalog.feedStopped,
+      values: [["reason", catalog.feedStopReasons[reason]]],
+    }),
     PostApprovalRequested: ({ scheduledAt }): Content => ({
       messages: catalog.postApprovalRequested,
       values: [["scheduledAt", instantIn(scheduledAt, locale)]],

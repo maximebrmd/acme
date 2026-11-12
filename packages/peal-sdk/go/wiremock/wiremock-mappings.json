@@ -2097,7 +2097,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"comments\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true,\n    \"recyclingEnded\": true,\n    \"webhookFailing\": true\n  },\n  \"everyPost\": true\n}",
+        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"comments\": true,\n    \"feedStopped\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true,\n    \"recyclingEnded\": true,\n    \"webhookFailing\": true\n  },\n  \"everyPost\": true\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2129,7 +2129,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"comments\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true,\n    \"recyclingEnded\": true,\n    \"webhookFailing\": true\n  },\n  \"everyPost\": true\n}",
+        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"comments\": true,\n    \"feedStopped\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true,\n    \"recyclingEnded\": true,\n    \"webhookFailing\": true\n  },\n  \"everyPost\": true\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -6641,6 +6641,270 @@
       }
     },
     {
+      "id": "606830d7-59e7-48bc-9274-d20a907e1610",
+      "name": "List feeds - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/feeds",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"attachPicture\": true,\n      \"channelIds\": [\n        \"channelIds\"\n      ],\n      \"channelSetId\": \"channelSetId\",\n      \"createdAt\": \"createdAt\",\n      \"failingSince\": \"failingSince\",\n      \"id\": \"id\",\n      \"lastCheckedAt\": \"lastCheckedAt\",\n      \"lastFailure\": \"timeout\",\n      \"mode\": \"draft\",\n      \"nextCheckAt\": \"nextCheckAt\",\n      \"queueId\": \"queueId\",\n      \"since\": \"since\",\n      \"startedBy\": \"startedBy\",\n      \"startedVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"status\": \"active\",\n      \"statusAt\": \"statusAt\",\n      \"stopReason\": \"unreachable\",\n      \"template\": \"template\",\n      \"title\": \"title\",\n      \"updatedAt\": \"updatedAt\",\n      \"url\": \"url\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "606830d7-59e7-48bc-9274-d20a907e1610",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "92371f52-61b7-412f-9f3d-cf5fb90fb286",
+      "name": "Add a feed - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/feeds",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"feed\": {\n    \"attachPicture\": true,\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"channelSetId\": \"channelSetId\",\n    \"createdAt\": \"createdAt\",\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"lastCheckedAt\": \"lastCheckedAt\",\n    \"lastFailure\": \"timeout\",\n    \"mode\": \"draft\",\n    \"nextCheckAt\": \"nextCheckAt\",\n    \"queueId\": \"queueId\",\n    \"since\": \"since\",\n    \"startedBy\": \"startedBy\",\n    \"startedVia\": {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"via\": \"web\"\n    },\n    \"status\": \"active\",\n    \"statusAt\": \"statusAt\",\n    \"stopReason\": \"unreachable\",\n    \"template\": \"template\",\n    \"title\": \"title\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"seen\": 1\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "92371f52-61b7-412f-9f3d-cf5fb90fb286",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "d683bc2c-d077-4737-9df0-ad8792685f84",
+      "name": "Preview a feed - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/feeds/preview",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"link\": \"link\",\n      \"picture\": \"picture\",\n      \"publishedAt\": \"publishedAt\",\n      \"summary\": \"summary\",\n      \"text\": \"text\",\n      \"title\": \"title\"\n    }\n  ],\n  \"title\": \"title\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "d683bc2c-d077-4737-9df0-ad8792685f84",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "5bde302e-fe3d-48d1-9df8-d62641d73729",
+      "name": "Get a feed - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/feeds/{feedId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "feedId": {
+            "equalTo": "feedId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"attachPicture\": true,\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"channelSetId\": \"channelSetId\",\n  \"createdAt\": \"createdAt\",\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"lastCheckedAt\": \"lastCheckedAt\",\n  \"lastFailure\": \"timeout\",\n  \"mode\": \"draft\",\n  \"nextCheckAt\": \"nextCheckAt\",\n  \"queueId\": \"queueId\",\n  \"since\": \"since\",\n  \"startedBy\": \"startedBy\",\n  \"startedVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"active\",\n  \"statusAt\": \"statusAt\",\n  \"stopReason\": \"unreachable\",\n  \"template\": \"template\",\n  \"title\": \"title\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "5bde302e-fe3d-48d1-9df8-d62641d73729",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "0c598f0b-d985-4bd6-9edb-a1d8e7f47578",
+      "name": "Delete a feed - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/feeds/{feedId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "feedId": {
+            "equalTo": "feedId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "0c598f0b-d985-4bd6-9edb-a1d8e7f47578",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "846bf327-b8ff-4392-b2d6-829ee090214e",
+      "name": "Update a feed - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/feeds/{feedId}",
+        "method": "PATCH",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "feedId": {
+            "equalTo": "feedId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"attachPicture\": true,\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"channelSetId\": \"channelSetId\",\n  \"createdAt\": \"createdAt\",\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"lastCheckedAt\": \"lastCheckedAt\",\n  \"lastFailure\": \"timeout\",\n  \"mode\": \"draft\",\n  \"nextCheckAt\": \"nextCheckAt\",\n  \"queueId\": \"queueId\",\n  \"since\": \"since\",\n  \"startedBy\": \"startedBy\",\n  \"startedVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"active\",\n  \"statusAt\": \"statusAt\",\n  \"stopReason\": \"unreachable\",\n  \"template\": \"template\",\n  \"title\": \"title\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "846bf327-b8ff-4392-b2d6-829ee090214e",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "a86ea9c9-557f-4a66-b60e-414e61706d14",
+      "name": "List a feed's items - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/feeds/{feedId}/items",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "feedId": {
+            "equalTo": "feedId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"digest\": \"digest\",\n      \"itemAt\": \"itemAt\",\n      \"outcome\": \"made\",\n      \"pictureSkipped\": \"notPublic\",\n      \"postId\": \"postId\",\n      \"reason\": \"existing\",\n      \"seenAt\": \"seenAt\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "a86ea9c9-557f-4a66-b60e-414e61706d14",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "37f6e4d3-92dc-407c-9664-73c853985cb7",
       "name": "Get a channel's default options - default",
       "request": {
@@ -6759,6 +7023,6 @@
     }
   ],
   "meta": {
-    "total": 180
+    "total": 187
   }
 }

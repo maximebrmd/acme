@@ -3,15 +3,25 @@
 import * as Peal from "../index.js";
 
 export type UnprocessableEntityErrorBody = 
-    | Peal.UnprocessableEntityErrorBody.RecyclingEndsTooSoon
-    | Peal.UnprocessableEntityErrorBody.RecyclingVariantsInvalid;
+    | Peal.UnprocessableEntityErrorBody.FeedAddressRefused
+    | Peal.UnprocessableEntityErrorBody.FeedTemplateInvalid
+    | Peal.UnprocessableEntityErrorBody.FeedUnreadable
+    | Peal.UnprocessableEntityErrorBody.UnknownChannels;
 
 export namespace UnprocessableEntityErrorBody {
-    export interface RecyclingEndsTooSoon extends Peal.RecyclingEndsTooSoonEncoded {
-        _tag: "RecyclingEndsTooSoon";
+    export interface FeedAddressRefused extends Peal.FeedAddressRefusedEncoded {
+        _tag: "FeedAddressRefused";
     }
 
-    export interface RecyclingVariantsInvalid extends Peal.RecyclingVariantsInvalidEncoded {
-        _tag: "RecyclingVariantsInvalid";
+    export interface FeedTemplateInvalid extends Peal.FeedTemplateInvalidEncoded {
+        _tag: "FeedTemplateInvalid";
+    }
+
+    export interface FeedUnreadable extends Peal.FeedUnreadableEncoded {
+        _tag: "FeedUnreadable";
+    }
+
+    export interface UnknownChannels extends Peal.UnknownChannelsEncoded {
+        _tag: "UnknownChannels";
     }
 }

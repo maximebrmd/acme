@@ -93,6 +93,37 @@ func (m *MarkNoticesRead) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
+type FeedStopReason string
+
+const (
+	FeedStopReasonUnreachable FeedStopReason = "unreachable"
+	FeedStopReasonNotAFeed    FeedStopReason = "notAFeed"
+	FeedStopReasonGone        FeedStopReason = "gone"
+	FeedStopReasonStarterGone FeedStopReason = "starterGone"
+	FeedStopReasonQueueGone   FeedStopReason = "queueGone"
+)
+
+func NewFeedStopReasonFromString(s string) (FeedStopReason, error) {
+	switch s {
+	case "unreachable":
+		return FeedStopReasonUnreachable, nil
+	case "notAFeed":
+		return FeedStopReasonNotAFeed, nil
+	case "gone":
+		return FeedStopReasonGone, nil
+	case "starterGone":
+		return FeedStopReasonStarterGone, nil
+	case "queueGone":
+		return FeedStopReasonQueueGone, nil
+	}
+	var t FeedStopReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FeedStopReason) Ptr() *FeedStopReason {
+	return &f
+}
+
 var (
 	moneyFieldAmount   = big.NewInt(1 << 0)
 	moneyFieldCurrency = big.NewInt(1 << 1)
@@ -481,6 +512,7 @@ type NoticeEvent struct {
 	AdBoostChanged                *NoticeEventAdBoostChanged
 	AdConnectionReconnectRequired *NoticeEventAdConnectionReconnectRequired
 	RecyclingEnded                *NoticeEventRecyclingEnded
+	FeedStopped                   *NoticeEventFeedStopped
 
 	rawJSON json.RawMessage
 }
@@ -632,6 +664,13 @@ func (n *NoticeEvent) GetRecyclingEnded() *NoticeEventRecyclingEnded {
 	return n.RecyclingEnded
 }
 
+func (n *NoticeEvent) GetFeedStopped() *NoticeEventFeedStopped {
+	if n == nil {
+		return nil
+	}
+	return n.FeedStopped
+}
+
 func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -764,6 +803,12 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.RecyclingEnded = value
+	case "FeedStopped":
+		value := new(NoticeEventFeedStopped)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.FeedStopped = value
 	}
 	n.rawJSON = json.RawMessage(data)
 	return nil
@@ -833,6 +878,9 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.RecyclingEnded != nil {
 		return internal.MarshalJSONWithExtraProperty(n.RecyclingEnded, "_tag", "RecyclingEnded")
 	}
+	if n.FeedStopped != nil {
+		return internal.MarshalJSONWithExtraProperty(n.FeedStopped, "_tag", "FeedStopped")
+	}
 	if len(n.rawJSON) > 0 {
 		return n.rawJSON, nil
 	}
@@ -860,6 +908,7 @@ type NoticeEventVisitor interface {
 	VisitAdBoostChanged(*NoticeEventAdBoostChanged) error
 	VisitAdConnectionReconnectRequired(*NoticeEventAdConnectionReconnectRequired) error
 	VisitRecyclingEnded(*NoticeEventRecyclingEnded) error
+	VisitFeedStopped(*NoticeEventFeedStopped) error
 }
 
 func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
@@ -922,6 +971,9 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.RecyclingEnded != nil {
 		return visitor.VisitRecyclingEnded(n.RecyclingEnded)
+	}
+	if n.FeedStopped != nil {
+		return visitor.VisitFeedStopped(n.FeedStopped)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", n)
 }
@@ -990,6 +1042,9 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.RecyclingEnded != nil {
 		fields = append(fields, "RecyclingEnded")
+	}
+	if n.FeedStopped != nil {
+		fields = append(fields, "FeedStopped")
 	}
 	if len(fields) == 0 {
 		if n.Type != "" {
@@ -1620,6 +1675,108 @@ func (n *NoticeEventCommentsReceived) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NoticeEventCommentsReceived) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventFeedStoppedFieldFeedID = big.NewInt(1 << 0)
+	noticeEventFeedStoppedFieldReason = big.NewInt(1 << 1)
+)
+
+type NoticeEventFeedStopped struct {
+	FeedID string         `json:"feedId" url:"feedId"`
+	Reason FeedStopReason `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventFeedStopped) GetFeedID() string {
+	if n == nil {
+		return ""
+	}
+	return n.FeedID
+}
+
+func (n *NoticeEventFeedStopped) GetReason() FeedStopReason {
+	if n == nil {
+		return ""
+	}
+	return n.Reason
+}
+
+func (n *NoticeEventFeedStopped) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventFeedStopped) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetFeedID sets the FeedID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventFeedStopped) SetFeedID(feedID string) {
+	n.FeedID = feedID
+	n.require(noticeEventFeedStoppedFieldFeedID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventFeedStopped) SetReason(reason FeedStopReason) {
+	n.Reason = reason
+	n.require(noticeEventFeedStoppedFieldReason)
+}
+
+func (n *NoticeEventFeedStopped) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventFeedStopped
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventFeedStopped(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventFeedStopped) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventFeedStopped
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventFeedStopped) String() string {
 	if n == nil {
 		return "<nil>"
 	}

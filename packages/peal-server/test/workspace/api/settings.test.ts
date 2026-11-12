@@ -240,6 +240,7 @@ const PortsLive = Layer.mergeAll(
               email: {
                 channelReconnect: true,
                 comments: false,
+                feedStopped: true,
                 postFailed: true,
                 postPublished: false,
                 postReview: true,
@@ -298,6 +299,7 @@ const PortsLive = Layer.mergeAll(
             saved: {
               channelDefaults: [],
               channelSets: [],
+              feeds: [],
               queues: [
                 {
                   channelIds: ["019a6f10-0000-7000-8000-0000000000c1"],

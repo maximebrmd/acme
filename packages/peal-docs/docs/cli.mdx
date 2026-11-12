@@ -378,6 +378,25 @@ peal posts list --recycling <rule-id>
 - `peal recycling list` prints 50 rules a page (`--limit`, 100 at most) and a `More:` line with the `--cursor` of the next.
 - `peal posts list --recycling` lists the posts a rule made.
 
+## Feeds [#feeds]
+
+```sh
+peal feeds preview https://blog.example/feed.xml --template "New on the blog: {title}"
+peal feeds add https://blog.example/feed.xml --channel <channel-id> --template $'{title}\n\n{link}'
+peal feeds add https://blog.example/feed.xml --mode queue --queue Weekdays
+peal feeds list
+peal feeds show <feed-id>
+peal feeds items <feed-id>
+peal feeds update <feed-id> --template "{title}: {link}"
+peal feeds pause <feed-id>
+peal feeds resume <feed-id>
+peal feeds remove <feed-id>
+```
+
+- `peal feeds add` follows a [feed](/scheduling#feeds): what it holds then is never posted, and each item that appears afterwards becomes a draft, or with `--mode queue` a post on the queue's next free slot (`--queue`, by name or id; the default queue otherwise), without anyone reading it first. `--channel` (repeated, or ids separated by commas) and `--set` say where its posts go, `--template` what they say (`{title}`, `{link}`, `{summary}`), and `--picture` attaches each item's picture, imported into the media library.
+- `peal feeds preview` reads an address and prints its three newest items as the template would write them, keeping nothing. `peal feeds items` prints what became of its 50 newest items, never what they said.
+- `peal feeds update` changes the channels, mode, queue (`--default-queue` takes the workspace's default, and either goes with `--mode queue` or a feed already on a queue), set (`--no-set` takes it away), template or address (read at once); `pause` and `resume` stop and restart it, `resume` reading it at once. `remove` stops following it; its drafts and posts stay.
+
 ## Default options [#default-options]
 
 ```sh
