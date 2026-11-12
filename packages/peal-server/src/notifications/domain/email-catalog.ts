@@ -1,9 +1,6 @@
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
-import type {
-  PostFailureReason,
-  RecyclingEndReason,
-} from "./notice-event.ts";
+import type { PostFailureReason, RecyclingEndReason } from "./notice-event.ts";
 
 /**
  * The words of each email in one language. `{name}` stands for a value the

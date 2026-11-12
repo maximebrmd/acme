@@ -164,6 +164,8 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
         post(postId, t("event.PostPublished", { channel, workspace })),
       PostUnconfirmed: ({ postId }) =>
         post(postId, t("event.PostUnconfirmed", { channel, workspace })),
+      RecyclingEnded: ({ reason, ruleId }) =>
+        recycling(ruleId, t("event.RecyclingEnded", { reason, workspace })),
       SubscriptionCancelled: ({ endsAt, plan: name }) =>
         billing(
           t("event.SubscriptionCancelled", {
@@ -203,8 +205,6 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
                 workspace,
               })
         ),
-      RecyclingEnded: ({ reason, ruleId }) =>
-        recycling(ruleId, t("event.RecyclingEnded", { reason, workspace })),
       SubscriptionWithdrawn: ({ plan: name, refunded, withdrawnAt }) =>
         billing(
           t("event.SubscriptionWithdrawn", {

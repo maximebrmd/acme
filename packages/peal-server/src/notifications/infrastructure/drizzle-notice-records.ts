@@ -98,6 +98,12 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       channel: Option.getOrNull(channel),
       postId,
     }),
+    RecyclingEnded: ({ reason, ruleId, sourcePostId }): NoticeEventRecord => ({
+      _tag: "RecyclingEnded",
+      reason,
+      ruleId,
+      sourcePostId,
+    }),
     SubscriptionCancelled: ({ endsAt, plan }): NoticeEventRecord => ({
       _tag: "SubscriptionCancelled",
       endsAt,
@@ -132,16 +138,6 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       plan,
       refunded,
       withdrawnAt,
-    }),
-    RecyclingEnded: ({
-      reason,
-      ruleId,
-      sourcePostId,
-    }): NoticeEventRecord => ({
-      _tag: "RecyclingEnded",
-      reason,
-      ruleId,
-      sourcePostId,
     }),
     TrialEnding: ({ endsAt, over, plan }): NoticeEventRecord => ({
       _tag: "TrialEnding",
