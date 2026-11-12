@@ -2143,7 +2143,30 @@
       "closeTitle": "Close the partner account",
       "closeHint": "Its keys stop working at once. An account closes only once it owns no workspace: delete each through the API first.",
       "close": "Close the partner account",
-      "closing": "Closing…"
+      "closing": "Closing…",
+      "usageReport": {
+        "title": "Usage per customer",
+        "description": "What the account and its customers' workspaces used each UTC day, and per workspace over the period. Counts only: nothing here is priced.",
+        "period": "Period",
+        "range": "Last {days, number} days",
+        "loading": "Loading the usage…",
+        "loadFailed": "The usage could not be loaded.",
+        "retry": "Try again",
+        "now": "{workspaces, plural, =0 {No workspace} one {# workspace} other {# workspaces}}, {channels, plural, =0 {no channel connected} one {# channel connected} other {# channels connected}} now",
+        "daysCaption": "What the account held at the end of each UTC day",
+        "day": "Day (UTC)",
+        "workspaces": "Workspaces",
+        "posts": "Published posts",
+        "tenantsCaption": "Usage per workspace over the period",
+        "externalId": "External id",
+        "name": "Name",
+        "home": "{name} (this workspace)",
+        "channels": "Channels",
+        "channelDays": "Channel-days",
+        "publishedPosts": "Published posts",
+        "loadMore": "Load more",
+        "deleted": "Customers deleted since are not listed."
+      }
     }
   },
   "Webhooks": {

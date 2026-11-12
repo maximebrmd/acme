@@ -122,7 +122,7 @@ if typing.TYPE_CHECKING:
     from .bad_request_error_body import (
         BadRequestErrorBody,
         BadRequestErrorBody_BadRequest,
-        BadRequestErrorBody_InvalidTimeRange,
+        BadRequestErrorBody_InvalidDateRange,
     )
     from .billing import Billing
     from .billing_interval import BillingInterval
@@ -550,6 +550,7 @@ if typing.TYPE_CHECKING:
     from .partner_detail_field import PartnerDetailField
     from .partner_details_invalid_encoded import PartnerDetailsInvalidEncoded
     from .partner_details_invalid_encoded_tag import PartnerDetailsInvalidEncodedTag
+    from .partner_holdings import PartnerHoldings
     from .partner_key import PartnerKey
     from .partner_key_not_found_encoded import PartnerKeyNotFoundEncoded
     from .partner_not_found_encoded import PartnerNotFoundEncoded
@@ -560,6 +561,8 @@ if typing.TYPE_CHECKING:
     from .partner_standing import PartnerStanding
     from .partner_usage import PartnerUsage
     from .partner_usage_day import PartnerUsageDay
+    from .partner_usage_report import PartnerUsageReport
+    from .partner_usage_report_day import PartnerUsageReportDay
     from .period_usage import PeriodUsage
     from .permission import Permission
     from .pinterest_board import PinterestBoard
@@ -754,6 +757,8 @@ if typing.TYPE_CHECKING:
     )
     from .target_parts import TargetParts
     from .target_status_conflict_encoded import TargetStatusConflictEncoded
+    from .tenant_usage import TenantUsage
+    from .tenant_usage_page import TenantUsagePage
     from .text_capabilities import TextCapabilities
     from .text_count import TextCount
     from .text_limit import TextLimit
@@ -979,7 +984,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Authorization": ".authorization",
     "BadRequestErrorBody": ".bad_request_error_body",
     "BadRequestErrorBody_BadRequest": ".bad_request_error_body",
-    "BadRequestErrorBody_InvalidTimeRange": ".bad_request_error_body",
+    "BadRequestErrorBody_InvalidDateRange": ".bad_request_error_body",
     "Billing": ".billing",
     "BillingInterval": ".billing_interval",
     "BillingSubscription": ".billing_subscription",
@@ -1395,6 +1400,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PartnerDetailField": ".partner_detail_field",
     "PartnerDetailsInvalidEncoded": ".partner_details_invalid_encoded",
     "PartnerDetailsInvalidEncodedTag": ".partner_details_invalid_encoded_tag",
+    "PartnerHoldings": ".partner_holdings",
     "PartnerKey": ".partner_key",
     "PartnerKeyNotFoundEncoded": ".partner_key_not_found_encoded",
     "PartnerNotFoundEncoded": ".partner_not_found_encoded",
@@ -1405,6 +1411,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PartnerStanding": ".partner_standing",
     "PartnerUsage": ".partner_usage",
     "PartnerUsageDay": ".partner_usage_day",
+    "PartnerUsageReport": ".partner_usage_report",
+    "PartnerUsageReportDay": ".partner_usage_report_day",
     "PeriodUsage": ".period_usage",
     "Permission": ".permission",
     "PinterestBoard": ".pinterest_board",
@@ -1600,6 +1608,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TargetOptions_Youtube": ".target_options",
     "TargetParts": ".target_parts",
     "TargetStatusConflictEncoded": ".target_status_conflict_encoded",
+    "TenantUsage": ".tenant_usage",
+    "TenantUsagePage": ".tenant_usage_page",
     "TextCapabilities": ".text_capabilities",
     "TextCount": ".text_count",
     "TextLimit": ".text_limit",
@@ -1849,7 +1859,7 @@ __all__ = [
     "Authorization",
     "BadRequestErrorBody",
     "BadRequestErrorBody_BadRequest",
-    "BadRequestErrorBody_InvalidTimeRange",
+    "BadRequestErrorBody_InvalidDateRange",
     "Billing",
     "BillingInterval",
     "BillingSubscription",
@@ -2265,6 +2275,7 @@ __all__ = [
     "PartnerDetailField",
     "PartnerDetailsInvalidEncoded",
     "PartnerDetailsInvalidEncodedTag",
+    "PartnerHoldings",
     "PartnerKey",
     "PartnerKeyNotFoundEncoded",
     "PartnerNotFoundEncoded",
@@ -2275,6 +2286,8 @@ __all__ = [
     "PartnerStanding",
     "PartnerUsage",
     "PartnerUsageDay",
+    "PartnerUsageReport",
+    "PartnerUsageReportDay",
     "PeriodUsage",
     "Permission",
     "PinterestBoard",
@@ -2470,6 +2483,8 @@ __all__ = [
     "TargetOptions_Youtube",
     "TargetParts",
     "TargetStatusConflictEncoded",
+    "TenantUsage",
+    "TenantUsagePage",
     "TextCapabilities",
     "TextCount",
     "TextLimit",

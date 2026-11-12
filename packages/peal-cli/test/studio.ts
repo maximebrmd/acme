@@ -37,6 +37,7 @@ import {
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
+  PartnerNotFound,
   QueueHasNoRoom,
   ReturnUrlNotAllowed,
   ReviewLinkNotFound,
@@ -93,6 +94,7 @@ import type {
   MediaContentType,
   NewPost,
   Partner,
+  PartnerUsageReport,
   Permission,
   Post,
   RecyclingRule,
@@ -113,6 +115,7 @@ import type {
   Standing,
   Tag,
   TargetOptions,
+  TenantUsage,
   TikTokAccount,
   WebhookDelivery,
   WebhookEndpoint,
@@ -1064,6 +1067,111 @@ const customers: readonly CustomerWorkspace[] = [
     name: "Boulangerie Martin",
   },
 ];
+
+// What one of the partner's workspaces used over the period.
+const tenantUsage = (
+  workspaceId: string,
+  name: string,
+  externalId: string | null,
+  connected: number,
+  publishedPosts: number
+): TenantUsage => ({
+  assistantRequests: 0,
+  byPlatform: [{ platform: "x", posts: publishedPosts }],
+  channelDays: connected * 2,
+  channels: connected,
+  daysCounted: 2,
+  externalId,
+  home: workspaceId === studioId,
+  mediaStorage: null,
+  meteredPosts: [],
+  name,
+  publishedPosts,
+  workspaceId,
+});
+
+/**
+ * The studio's partner account's usage: its home and the newest customer
+ * on the first page, the other on the next, which `before` names.
+ */
+const partnerUsageReport = (
+  period: { readonly from: string; readonly to: string },
+  before: string | undefined
+): PartnerUsageReport => {
+  const later = before === "studio-next-page";
+
+  return {
+    allowances: billing.allowances,
+    current: later ? null : { channels: 5, workspaces: 2 },
+    days: later
+      ? null
+      : [
+          {
+            byPlatform: [{ platform: "x", posts: 4 }],
+            channels: 7,
+            day: "2026-11-01",
+            publishedPosts: 4,
+            workspaces: 2,
+          },
+          {
+            byPlatform: [{ platform: "bluesky", posts: 3 }],
+            channels: 7,
+            day: "2026-11-02",
+            publishedPosts: 3,
+            workspaces: 2,
+          },
+          {
+            byPlatform: [],
+            channels: null,
+            day: "2026-11-03",
+            publishedPosts: 0,
+            workspaces: null,
+          },
+        ],
+    period,
+    plan: billing.plan,
+    totals: later
+      ? null
+      : {
+          byPlatform: [
+            { platform: "bluesky", posts: 3 },
+            { platform: "x", posts: 4 },
+          ],
+          channelDays: 14,
+          daysCounted: 2,
+          meteredPosts: [],
+          publishedPosts: 7,
+        },
+    workspaces: later
+      ? {
+          next: null,
+          total: 2,
+          workspaces: [
+            tenantUsage(
+              customers[1]?.id ?? "",
+              "Boulangerie Martin",
+              "cus_001",
+              1,
+              2
+            ),
+          ],
+        }
+      : {
+          next: "studio-next-page",
+          total: 2,
+          workspaces: [
+            tenantUsage(studioId, "Studio", null, 2, 1),
+            tenantUsage(
+              customers[0]?.id ?? "",
+              "Garage Dupont",
+              "cus_002",
+              2,
+              4
+            ),
+          ],
+        },
+  };
+};
 
 /** What the instance holds, and what the commands changed. */
 export interface StudioState {
@@ -4202,6 +4310,22 @@ export const studioGroupsLive = (studio: Studio) =>
                 from: query.from ?? "2026-11-01",
                 to: query.to ?? "2026-11-03",
               })
+            )
+          ),
+        partner: ({ params, query }) =>
+          allowed("partner:read").pipe(
+            Effect.andThen(
+              params.workspaceId === studioId
+                ? Effect.succeed(
+                    partnerUsageReport(
+                      {
+                        from: query.from ?? "2026-11-01",
+                        to: query.to ?? "2026-11-03",
+                      },
+                      query.before
+                    )
+                  )
+                : Effect.fail(new PartnerNotFound())
             )
           ),
       })

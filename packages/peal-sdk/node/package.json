@@ -260,6 +260,17 @@
       },
       "default": "./dist/cjs/api/resources/partner/exports.js"
     },
+    "./partnerUsage": {
+      "import": {
+        "types": "./dist/esm/api/resources/partnerUsage/exports.d.mts",
+        "default": "./dist/esm/api/resources/partnerUsage/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/partnerUsage/exports.d.ts",
+        "default": "./dist/cjs/api/resources/partnerUsage/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/partnerUsage/exports.js"
+    },
     "./partnerAccount": {
       "import": {
         "types": "./dist/esm/api/resources/partnerAccount/exports.d.mts",

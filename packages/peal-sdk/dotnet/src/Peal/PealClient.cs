@@ -55,6 +55,7 @@ public partial class PealClient : IPealClient
         Ads = new AdsClient(_client);
         Activity = new ActivityClient(_client);
         Partner = new PartnerClient(_client);
+        PartnerUsage = new PartnerUsageClient(_client);
         PartnerAccount = new PartnerAccountClient(_client);
         ConnectLinks = new ConnectLinksClient(_client);
         Review = new ReviewClient(_client);
@@ -110,6 +111,8 @@ public partial class PealClient : IPealClient
     public IActivityClient Activity { get; }
 
     public IPartnerClient Partner { get; }
+
+    public IPartnerUsageClient PartnerUsage { get; }
 
     public IPartnerAccountClient PartnerAccount { get; }
 

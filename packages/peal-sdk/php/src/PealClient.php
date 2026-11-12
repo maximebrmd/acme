@@ -24,6 +24,7 @@ use Peal\Inbox\InboxClient;
 use Peal\Ads\AdsClient;
 use Peal\Activity\ActivityClient;
 use Peal\Partner\PartnerClient;
+use Peal\PartnerUsage\PartnerUsageClient;
 use Peal\PartnerAccount\PartnerAccountClient;
 use Peal\ConnectLinks\ConnectLinksClient;
 use Peal\Review\ReviewClient;
@@ -150,6 +151,11 @@ class PealClient
     public PartnerClient $partner;
 
     /**
+     * @var PartnerUsageClient $partnerUsage
+     */
+    public PartnerUsageClient $partnerUsage;
+
+    /**
      * @var PartnerAccountClient $partnerAccount
      */
     public PartnerAccountClient $partnerAccount;
@@ -272,6 +278,7 @@ class PealClient
         $this->ads = new AdsClient($this->client, $this->options);
         $this->activity = new ActivityClient($this->client, $this->options);
         $this->partner = new PartnerClient($this->client, $this->options);
+        $this->partnerUsage = new PartnerUsageClient($this->client, $this->options);
         $this->partnerAccount = new PartnerAccountClient($this->client, $this->options);
         $this->connectLinks = new ConnectLinksClient($this->client, $this->options);
         $this->review = new ReviewClient($this->client, $this->options);

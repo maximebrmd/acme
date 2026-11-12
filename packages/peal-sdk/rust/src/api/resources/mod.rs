@@ -24,6 +24,7 @@
 //! - **ads**
 //! - **activity**
 //! - **partner**
+//! - **partnerUsage**
 //! - **partnerAccount**
 //! - **connectLinks**
 //! - **review**
@@ -58,6 +59,7 @@ pub mod notices;
 pub mod notification_preferences;
 pub mod partner;
 pub mod partner_account;
+pub mod partner_usage;
 pub mod posts;
 pub mod queues;
 pub mod recycling;
@@ -93,6 +95,7 @@ pub struct PealClient {
     pub ads: AdsClient,
     pub activity: ActivityClient,
     pub partner: PartnerClient,
+    pub partner_usage: PartnerUsageClient,
     pub partner_account: PartnerAccountClient,
     pub connect_links: ConnectLinksClient,
     pub review: ReviewClient,
@@ -131,6 +134,7 @@ impl PealClient {
             ads: AdsClient::new(config.clone())?,
             activity: ActivityClient::new(config.clone())?,
             partner: PartnerClient::new(config.clone())?,
+            partner_usage: PartnerUsageClient::new(config.clone())?,
             partner_account: PartnerAccountClient::new(config.clone())?,
             connect_links: ConnectLinksClient::new(config.clone())?,
             review: ReviewClient::new(config.clone())?,
@@ -166,6 +170,7 @@ pub use notices::NoticesClient;
 pub use notification_preferences::NotificationPreferencesClient;
 pub use partner::PartnerClient;
 pub use partner_account::PartnerAccountClient;
+pub use partner_usage::PartnerUsageClient;
 pub use posts::PostsClient;
 pub use queues::QueuesClient;
 pub use recycling::RecyclingClient;

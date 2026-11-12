@@ -3,12 +3,12 @@
 import * as Peal from "../index.js";
 
 export type BadRequestErrorBody = 
-    | Peal.BadRequestErrorBody.InvalidTimeRange
+    | Peal.BadRequestErrorBody.InvalidDateRange
     | Peal.BadRequestErrorBody.BadRequest;
 
 export namespace BadRequestErrorBody {
-    export interface InvalidTimeRange extends Peal.InvalidTimeRangeEncoded {
-        _tag: "InvalidTimeRange";
+    export interface InvalidDateRange extends Peal.InvalidDateRangeEncoded {
+        _tag: "InvalidDateRange";
     }
 
     export interface BadRequest extends Peal.EffectHttpApiErrorBadRequestEncoded {

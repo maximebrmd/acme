@@ -34,20 +34,23 @@ export const ErasureLedgerRetentionCron = ClusterCron.make({
  * Every day at 23:41 UTC: counts what each partner account holds, its
  * workspaces and the channels connected across them, and keeps it for the
  * day, so a price by the workspace or by the connected channel has its
- * figures; and forgets the idempotency keys of workspace creations past
- * their day. A failed run is logged: the day keeps no count, or the
- * count of an earlier run.
+ * figures; forgets the idempotency keys of workspace creations past
+ * their day; and deletes the daily counts past their 400 days, whether the
+ * count went through or not, saying how many. A failed run is logged,
+ * each failing step on its own line: the day keeps no count, or the count
+ * of an earlier run.
  */
 export const PartnerUsageCron = ClusterCron.make({
   cron: Cron.parseUnsafe("41 23 * * *", "UTC"),
   execute: MeterPartnerUsage.use((meter) => meter.run).pipe(
-    Effect.tap(({ keys, partners }) =>
+    Effect.tap(({ days, keys, partners }) =>
       Effect.logInfo("Counted what partner accounts hold").pipe(
-        Effect.annotateLogs({ keys, partners })
+        Effect.annotateLogs({ days, keys, partners })
       )
     ),
+    // The step that failed logged its own line first.
     Effect.catchCause((cause) =>
-      Effect.logWarning("Counting what partner accounts hold failed", cause)
+      Effect.logWarning("The daily run of partner accounts failed", cause)
     )
   ),
   name: "workspace.partner-usage",

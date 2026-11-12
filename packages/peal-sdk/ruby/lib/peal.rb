@@ -112,6 +112,7 @@ require_relative "peal/billing/types/get_billing_request"
 require_relative "peal/billing/types/standing_billing_request"
 require_relative "peal/usage/client"
 require_relative "peal/usage/types/get_usage_request"
+require_relative "peal/usage/types/partner_usage_request"
 require_relative "peal/analytics/client"
 require_relative "peal/analytics/types/summary_analytics_request"
 require_relative "peal/analytics/types/dashboard_analytics_request"
@@ -179,6 +180,8 @@ require_relative "peal/partner/types/new_customer_workspace"
 require_relative "peal/partner/types/get_workspace_partner_request"
 require_relative "peal/partner/types/delete_workspace_partner_request"
 require_relative "peal/partner/types/customer_workspace_change"
+require_relative "peal/partner_usage/client"
+require_relative "peal/partner_usage/types/get_partner_usage_request"
 require_relative "peal/partner_account/client"
 require_relative "peal/partner_account/types/get_partner_account_request"
 require_relative "peal/partner_account/types/open_partner"
@@ -295,8 +298,8 @@ module Peal
     autoload :UnknownChannelsEncodedTag, ::File.join(__dir__, "peal/types/unknown_channels_encoded_tag")
     autoload :UnknownChannelsEncoded, ::File.join(__dir__, "peal/types/unknown_channels_encoded")
     autoload :UnprocessableEntityErrorBody, ::File.join(__dir__, "peal/types/unprocessable_entity_error_body")
-    autoload :InvalidTimeRangeEncodedTag, ::File.join(__dir__, "peal/types/invalid_time_range_encoded_tag")
-    autoload :InvalidTimeRangeEncoded, ::File.join(__dir__, "peal/types/invalid_time_range_encoded")
+    autoload :InvalidDateRangeEncodedTag, ::File.join(__dir__, "peal/types/invalid_date_range_encoded_tag")
+    autoload :InvalidDateRangeEncoded, ::File.join(__dir__, "peal/types/invalid_date_range_encoded")
     autoload :EffectHttpApiErrorBadRequestEncodedTag, ::File.join(__dir__, "peal/types/effect_http_api_error_bad_request_encoded_tag")
     autoload :EffectHttpApiErrorBadRequestEncoded, ::File.join(__dir__, "peal/types/effect_http_api_error_bad_request_encoded")
     autoload :BadRequestErrorBody, ::File.join(__dir__, "peal/types/bad_request_error_body")
@@ -726,8 +729,8 @@ module Peal
     autoload :InboxThreadDetail, ::File.join(__dir__, "peal/types/inbox_thread_detail")
     autoload :InboxThreadNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_thread_not_found_encoded")
     autoload :InboxThreadPage, ::File.join(__dir__, "peal/types/inbox_thread_page")
-    autoload :InvalidDateRangeEncodedTag, ::File.join(__dir__, "peal/types/invalid_date_range_encoded_tag")
-    autoload :InvalidDateRangeEncoded, ::File.join(__dir__, "peal/types/invalid_date_range_encoded")
+    autoload :InvalidTimeRangeEncodedTag, ::File.join(__dir__, "peal/types/invalid_time_range_encoded_tag")
+    autoload :InvalidTimeRangeEncoded, ::File.join(__dir__, "peal/types/invalid_time_range_encoded")
     autoload :Invitation, ::File.join(__dir__, "peal/types/invitation")
     autoload :InvitationNotFoundEncoded, ::File.join(__dir__, "peal/types/invitation_not_found_encoded")
     autoload :LinkedInOrganization, ::File.join(__dir__, "peal/types/linked_in_organization")
@@ -823,6 +826,7 @@ module Peal
     autoload :PartnerDetailField, ::File.join(__dir__, "peal/types/partner_detail_field")
     autoload :PartnerDetailsInvalidEncodedTag, ::File.join(__dir__, "peal/types/partner_details_invalid_encoded_tag")
     autoload :PartnerDetailsInvalidEncoded, ::File.join(__dir__, "peal/types/partner_details_invalid_encoded")
+    autoload :PartnerHoldings, ::File.join(__dir__, "peal/types/partner_holdings")
     autoload :PartnerKeyNotFoundEncoded, ::File.join(__dir__, "peal/types/partner_key_not_found_encoded")
     autoload :PartnerNotFoundEncoded, ::File.join(__dir__, "peal/types/partner_not_found_encoded")
     autoload :PartnerUsageDay, ::File.join(__dir__, "peal/types/partner_usage_day")
@@ -831,8 +835,14 @@ module Peal
     autoload :PartnerOwnsWorkspacesEncodedTag, ::File.join(__dir__, "peal/types/partner_owns_workspaces_encoded_tag")
     autoload :PartnerOwnsWorkspacesEncoded, ::File.join(__dir__, "peal/types/partner_owns_workspaces_encoded")
     autoload :PartnerStanding, ::File.join(__dir__, "peal/types/partner_standing")
-    autoload :PlanShortfall, ::File.join(__dir__, "peal/types/plan_shortfall")
     autoload :PlatformPosts, ::File.join(__dir__, "peal/types/platform_posts")
+    autoload :PartnerUsageReportDay, ::File.join(__dir__, "peal/types/partner_usage_report_day")
+    autoload :TenantUsage, ::File.join(__dir__, "peal/types/tenant_usage")
+    autoload :TenantUsagePage, ::File.join(__dir__, "peal/types/tenant_usage_page")
+    autoload :UsagePeriod, ::File.join(__dir__, "peal/types/usage_period")
+    autoload :UsageTotals, ::File.join(__dir__, "peal/types/usage_totals")
+    autoload :PartnerUsageReport, ::File.join(__dir__, "peal/types/partner_usage_report")
+    autoload :PlanShortfall, ::File.join(__dir__, "peal/types/plan_shortfall")
     autoload :PlatformRateLimitedEncoded, ::File.join(__dir__, "peal/types/platform_rate_limited_encoded")
     autoload :PlatformUnreachableEncodedTag, ::File.join(__dir__, "peal/types/platform_unreachable_encoded_tag")
     autoload :PlatformUnreachableEncoded, ::File.join(__dir__, "peal/types/platform_unreachable_encoded")
@@ -944,9 +954,7 @@ module Peal
     autoload :UploadRejectedEncodedTag, ::File.join(__dir__, "peal/types/upload_rejected_encoded_tag")
     autoload :UploadRejectedEncoded, ::File.join(__dir__, "peal/types/upload_rejected_encoded")
     autoload :UsageDay, ::File.join(__dir__, "peal/types/usage_day")
-    autoload :UsagePeriod, ::File.join(__dir__, "peal/types/usage_period")
     autoload :UsageSharing, ::File.join(__dir__, "peal/types/usage_sharing")
-    autoload :UsageTotals, ::File.join(__dir__, "peal/types/usage_totals")
     autoload :WebhookAttemptError, ::File.join(__dir__, "peal/types/webhook_attempt_error")
     autoload :WebhookDeliveryFailure, ::File.join(__dir__, "peal/types/webhook_delivery_failure")
     autoload :WebhookDeliveryStatus, ::File.join(__dir__, "peal/types/webhook_delivery_status")

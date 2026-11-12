@@ -422,6 +422,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           get_connect_link: [true, false, true, false],
           get_feed: [true, false, true, true],
           get_partner_account: [true, false, true, false],
+          get_partner_usage: [true, false, true, false],
           get_post: [true, false, true, false],
           get_post_ad_performance: [true, false, true, false],
           get_post_review: [true, false, true, false],
@@ -637,6 +638,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               ["revoke_connect_link", "workspace:write"],
               ["get_partner_account", "workspace:read"],
               ["list_partner_workspaces", "workspace:read"],
+              ["get_partner_usage", "workspace:read"],
             ]
           );
 
@@ -3204,6 +3206,10 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           );
           assert.include(
             yield* reader.refused("list_partner_workspaces", {}),
+            "The workspace has no partner account"
+          );
+          assert.include(
+            yield* reader.refused("get_partner_usage", {}),
             "The workspace has no partner account"
           );
         })

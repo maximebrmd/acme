@@ -27,6 +27,7 @@ import social.peal.resources.notices.AsyncNoticesClient;
 import social.peal.resources.notificationpreferences.AsyncNotificationPreferencesClient;
 import social.peal.resources.partner.AsyncPartnerClient;
 import social.peal.resources.partneraccount.AsyncPartnerAccountClient;
+import social.peal.resources.partnerusage.AsyncPartnerUsageClient;
 import social.peal.resources.posts.AsyncPostsClient;
 import social.peal.resources.queues.AsyncQueuesClient;
 import social.peal.resources.recycling.AsyncRecyclingClient;
@@ -86,6 +87,8 @@ public class AsyncPealClient implements AutoCloseable {
 
     protected final Supplier<AsyncPartnerClient> partnerClient;
 
+    protected final Supplier<AsyncPartnerUsageClient> partnerUsageClient;
+
     protected final Supplier<AsyncPartnerAccountClient> partnerAccountClient;
 
     protected final Supplier<AsyncConnectLinksClient> connectLinksClient;
@@ -131,6 +134,7 @@ public class AsyncPealClient implements AutoCloseable {
         this.adsClient = Suppliers.memoize(() -> new AsyncAdsClient(clientOptions));
         this.activityClient = Suppliers.memoize(() -> new AsyncActivityClient(clientOptions));
         this.partnerClient = Suppliers.memoize(() -> new AsyncPartnerClient(clientOptions));
+        this.partnerUsageClient = Suppliers.memoize(() -> new AsyncPartnerUsageClient(clientOptions));
         this.partnerAccountClient = Suppliers.memoize(() -> new AsyncPartnerAccountClient(clientOptions));
         this.connectLinksClient = Suppliers.memoize(() -> new AsyncConnectLinksClient(clientOptions));
         this.reviewClient = Suppliers.memoize(() -> new AsyncReviewClient(clientOptions));
@@ -229,6 +233,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncPartnerClient partner() {
         return this.partnerClient.get();
+    }
+
+    public AsyncPartnerUsageClient partnerUsage() {
+        return this.partnerUsageClient.get();
     }
 
     public AsyncPartnerAccountClient partnerAccount() {
