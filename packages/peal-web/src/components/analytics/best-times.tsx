@@ -17,6 +17,7 @@ import { Skeleton } from "peal-ui/components/skeleton";
 import { useId, useState } from "react";
 
 import { bestTimes } from "#analytics/api.ts";
+import { notFollowed } from "#analytics/not-followed.ts";
 import { channelName } from "#channels/channel-name.ts";
 
 import { BestTimesView } from "./best-times-view.tsx";
@@ -47,14 +48,17 @@ const Found = ({
   const retry = useAtomRefresh(query);
 
   return AsyncResult.match(result, {
-    onFailure: () => (
-      <div className="flex flex-col items-start gap-3" role="alert">
-        <p className="text-sm">{t("loadFailed")}</p>
-        <Button variant="outline" size="sm" onClick={retry}>
-          {t("retry")}
-        </Button>
-      </div>
-    ),
+    onFailure: ({ cause }) =>
+      notFollowed(cause) ? (
+        <p className="text-muted-foreground text-sm">{t("notFollowed")}</p>
+      ) : (
+        <div className="flex flex-col items-start gap-3" role="alert">
+          <p className="text-sm">{t("loadFailed")}</p>
+          <Button variant="outline" size="sm" onClick={retry}>
+            {t("retry")}
+          </Button>
+        </div>
+      ),
     onInitial: () => (
       <div aria-busy="true">
         <span className="sr-only">{t("loading")}</span>

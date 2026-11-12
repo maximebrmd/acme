@@ -139,9 +139,12 @@ export const AgendaItemView = ({
   // None where the person may not read the workspace's channels; said
   // where the post has no channel left.
   const listed = item.platforms ?? [];
+  const channels = useTranslations("ChannelsPage");
 
   const platforms =
-    item.platforms !== null && listed.length === 0 ? [t("noPlatform")] : listed;
+    item.platforms !== null && listed.length === 0
+      ? [t("noPlatform")]
+      : listed.map((platform) => channels("platform", { platform }));
 
   return (
     <li className="flex flex-col gap-1 rounded-lg border p-3 sm:flex-row sm:items-start sm:gap-4">

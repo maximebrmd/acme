@@ -33,12 +33,6 @@ export interface ReportRow {
   readonly followers: ReportCell;
 }
 
-/** A workspace's row of the report: its totals, then its followers. */
-export interface ReportRow {
-  readonly cells: readonly ReportCell[];
-  readonly followers: ReportCell;
-}
-
 /**
  * A workspace's row of the report: each total with its change, and its
  * followers with what they gained over the range. No change is shown

@@ -106,7 +106,8 @@
       "posts": "Posts",
       "median": "Median",
       "bestMark": "Best",
-      "footnote": "{recent, plural, =0 {} one {# post less than 48 hours old is left out, as its counts still move. } other {# posts less than 48 hours old are left out, as their counts still move. }}Days covered: {from} to {to}."
+      "footnote": "{recent, plural, =0 {} one {# post less than 48 hours old is left out, as its counts still move. } other {# posts less than 48 hours old are left out, as their counts still move. }}Days covered: {from} to {to}.",
+      "notFollowed": "Peal does not read this channel's counts yet: it starts within the hour after a channel is connected."
     }
   },
   "Ads": {
@@ -3726,7 +3727,7 @@
       "noFigure": "Not given",
       "change": "{change, number, ::+!}",
       "previous": "Beside {from} to {to}.",
-      "caption": "Totals of the posts published from {from} to {to}, with their change against the days before; a dash where no platform gives a count, or the days before are no longer all kept."
+      "caption": "Totals of the posts published from {from} to {to}, each with its change against the days before: a dash where no platform gives a count, and no change where the days before are no longer all kept."
     }
   }
 }

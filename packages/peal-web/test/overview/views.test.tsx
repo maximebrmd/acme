@@ -199,4 +199,31 @@ describe(AgendaDaysView, () => {
     );
     expect(html).not.toContain("mastodon");
   });
+
+  it("names each platform in words", async () => {
+    const html = await render(
+      "en",
+      <AgendaDaysView
+        days={[
+          {
+            day: "Friday, November 13, 2026",
+            items: [
+              item(
+                "0190f3a0-0000-7000-8000-000000000002",
+                "2026-11-13T09:00:00Z",
+                {
+                  platforms: ["googleBusiness", "x"],
+                }
+              ),
+            ],
+          },
+        ]}
+        linkTo={link}
+        workspaceNames={new Map([[workspace.id, "Studio"]])}
+      />
+    );
+
+    expect(html).toContain("Google Business Profile");
+    expect(html).not.toContain("googleBusiness");
+  });
 });

@@ -106,7 +106,8 @@
       "posts": "Publications",
       "median": "Médiane",
       "bestMark": "Meilleure",
-      "footnote": "{recent, plural, =0 {} one {# publication de moins de 48 heures est laissée de côté, ses comptes bougent encore. } other {# publications de moins de 48 heures sont laissées de côté, leurs comptes bougent encore. }}Jours couverts : du {from} au {to}."
+      "footnote": "{recent, plural, =0 {} one {# publication de moins de 48 heures est laissée de côté, ses comptes bougent encore. } other {# publications de moins de 48 heures sont laissées de côté, leurs comptes bougent encore. }}Jours couverts : du {from} au {to}.",
+      "notFollowed": "Peal ne relève pas encore les comptes de ce canal : il commence dans l’heure qui suit sa connexion."
     }
   },
   "Ads": {
@@ -3726,7 +3727,7 @@
       "noFigure": "Non donné",
       "change": "{change, number, ::+!}",
       "previous": "À côté du {from} au {to}.",
-      "caption": "Totaux des publications publiées du {from} au {to}, avec leur évolution par rapport aux jours d’avant ; un tiret quand aucune plateforme ne donne un compte, ou quand les jours d’avant ne sont plus tous conservés."
+      "caption": "Totaux des publications parues du {from} au {to}, chacun avec son évolution par rapport aux jours d’avant : un tiret quand aucune plateforme ne donne un compte, et aucune évolution quand les jours d’avant ne sont plus tous conservés."
     }
   }
 }
