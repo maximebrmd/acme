@@ -199,12 +199,12 @@ module Peal
       # `followersGained`, `previousKept`, `previousPosts`, `previousLikes`, `previousReposts`, `previousReplies`,
       # `previousQuotes`, `previousImpressions`, `previousClicks`, `previousReach`, `previousSaves`,
       # `previousEngagement`, `previousFollowers`, `previousFollowersGained`. A count no platform gives, a workspace
-      # whose analytics the user may not read, and the range before where `previousKept` is false, are empty cells; a
-      # cell that would start a formula in a spreadsheet starts with an apostrophe. The range is `days` (7, 30 or 90, 30
-      # unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range
-      # before, of the same length. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound
-      # to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow
-      # there.
+      # whose analytics the user may not read, and the range before where `previousKept` is false, are empty cells;
+      # every text cell is in quotes, and one a spreadsheet would take for a formula, at its start or after a semicolon,
+      # starts with an apostrophe. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in
+      # `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. API keys belong to
+      # a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token,
+      # bound to none, reads every workspace with what its scopes allow there.
       #
       # @param request_options [Hash]
       # @param params [Hash]
