@@ -1489,6 +1489,7 @@
       "done": "{made, plural, =0 {No new post was made.} one {# post was made.} other {# posts were made.}} {before, plural, =0 {} one {# other was made before, under this import’s key, and not twice.} other {# others were made before, under this import’s key, and not twice.}}",
       "meanwhile": "{created, plural, one {# post was made} other {# posts were made}}, and {refused, plural, one {# row was refused} other {# rows were refused}} since the check. Correct those rows, then import them in a file of their own: importing this file again would make the others twice.",
       "noneMade": "Nothing was made: {refused, plural, one {# row was refused} other {# rows were refused}} since the check. Correct the file, then choose it again.",
+      "noneMadeOnRetry": "This try made nothing: {refused, plural, one {# row was refused} other {# rows were refused}} since the check. The first try’s answer was lost, and it may have made posts: look at All posts before you import the file again.",
       "chooseCorrected": "Choose the corrected file",
       "failed": "{reason, select, forbidden {Your role no longer allows importing posts in this workspace.} other {The request did not go through. Nothing was made twice: trying again is safe.}}",
       "retry": "Try again",

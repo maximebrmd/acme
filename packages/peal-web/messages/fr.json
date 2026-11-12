@@ -1489,6 +1489,7 @@
       "done": "{made, plural, =0 {Aucune nouvelle publication n’a été créée.} one {# publication a été créée.} other {# publications ont été créées.}} {before, plural, =0 {} one {# autre avait été créée avant, sous la clé de cet import, et pas deux fois.} other {# autres avaient été créées avant, sous la clé de cet import, et pas deux fois.}}",
       "meanwhile": "{created, plural, one {# publication a été créée} other {# publications ont été créées}}, et {refused, plural, one {# ligne a été refusée} other {# lignes ont été refusées}} depuis la vérification. Corrigez ces lignes, puis importez-les dans un fichier à part : importer ce fichier à nouveau créerait les autres deux fois.",
       "noneMade": "Rien n’a été créé : {refused, plural, one {# ligne a été refusée} other {# lignes ont été refusées}} depuis la vérification. Corrigez le fichier, puis choisissez-le à nouveau.",
+      "noneMadeOnRetry": "Cet essai n’a rien créé : {refused, plural, one {# ligne a été refusée} other {# lignes ont été refusées}} depuis la vérification. La réponse du premier essai a été perdue, et il a pu créer des publications : regardez Toutes les publications avant d’importer à nouveau le fichier.",
       "chooseCorrected": "Choisir le fichier corrigé",
       "failed": "{reason, select, forbidden {Votre rôle ne permet plus d’importer des publications dans cet espace de travail.} other {La demande n’a pas abouti. Rien n’a été créé deux fois : vous pouvez réessayer sans risque.}}",
       "retry": "Réessayer",

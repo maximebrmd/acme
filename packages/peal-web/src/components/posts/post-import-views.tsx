@@ -344,12 +344,16 @@ interface ImportStateViewProps {
 }
 
 // What a finished import came to: every row made, or some refused since
-// the check, with what to do about the others.
+// the check, with what to do about the others. After a retry, a row the
+// lost attempt made may answer `valid` when the server refuses another:
+// nothing made by this try does not mean nothing made.
 const ImportedSummary = ({
   onChooseAgain,
+  retried,
   rows,
 }: {
   readonly onChooseAgain: () => void;
+  readonly retried: boolean;
   readonly rows: readonly ImportRowResult[];
 }) => {
   const t = useTranslations("Posts.Import");
@@ -375,7 +379,7 @@ const ImportedSummary = ({
     <Alert variant="destructive">
       <AlertTitle>
         {made + before === 0
-          ? t("noneMade", { refused })
+          ? t(retried ? "noneMadeOnRetry" : "noneMade", { refused })
           : t("meanwhile", { created: made + before, refused })}
       </AlertTitle>
       <AlertDescription>
@@ -480,7 +484,11 @@ export const ImportStateView = ({
     case "imported": {
       return (
         <section className="flex flex-col gap-4" aria-label={t("rows")}>
-          <ImportedSummary rows={state.rows} onChooseAgain={onChooseAgain} />
+          <ImportedSummary
+            retried={state.retried}
+            rows={state.rows}
+            onChooseAgain={onChooseAgain}
+          />
           <ImportRowsTable
             channels={channels}
             postLinks={postLinks}

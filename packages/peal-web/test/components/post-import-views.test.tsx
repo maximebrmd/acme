@@ -344,6 +344,7 @@ describe(ImportStateView, () => {
         _tag: "importing",
         csv: "text",
         key: "key-1",
+        retried: false,
         rows: [{ _tag: "valid", row: 1 }],
       })
     );
@@ -364,6 +365,7 @@ describe(ImportStateView, () => {
         {
           _tag: "imported",
           created: 1,
+          retried: false,
           rows: [{ _tag: "created", post: post(id), replayed: false, row: 1 }],
         },
         new Map([
@@ -388,6 +390,7 @@ describe(ImportStateView, () => {
       view({
         _tag: "imported",
         created: 2,
+        retried: false,
         rows: [
           {
             _tag: "created",
@@ -422,6 +425,7 @@ describe(ImportStateView, () => {
         view({
           _tag: "imported",
           created: 1,
+          retried: false,
           rows: [
             {
               _tag: "created",
@@ -450,6 +454,7 @@ describe(ImportStateView, () => {
         view({
           _tag: "imported",
           created: 0,
+          retried: false,
           rows: [{ _tag: "valid", row: 1 }, refusedRow],
         })
       )
@@ -473,6 +478,28 @@ describe(ImportStateView, () => {
       expect(html).toContain(locale === "en" ? "Try again" : "Réessayer");
     }
   );
+});
+
+describe("a retried import the server then refused", () => {
+  it.each([
+    ["en", "The first try’s answer was lost, and it may have made posts"],
+    ["fr", "La réponse du premier essai a été perdue"],
+  ] as const)("never says nothing was made, in %s", async (locale, text) => {
+    const html = await render(
+      locale,
+      view({
+        _tag: "imported",
+        created: 0,
+        retried: true,
+        rows: [{ _tag: "valid", row: 1 }, refusedRow],
+      })
+    );
+
+    expect(html).toContain(text);
+    expect(html).not.toContain(
+      locale === "en" ? "Nothing was made" : "Rien n’a été créé"
+    );
+  });
 });
 
 describe(ImportHelpView, () => {

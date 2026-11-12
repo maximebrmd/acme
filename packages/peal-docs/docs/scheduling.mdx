@@ -295,7 +295,7 @@ From **All posts**, **Import from a file** schedules up to 100 posts at once fro
 
 It goes in two steps. Choosing a file checks it, every row, and makes nothing: each row shows as valid, refused with the reason, or unreadable with the cells at fault. It is all or nothing: **Import** is offered only once every row is valid; correct the file and choose it again otherwise. **Import** asks once, saying how many posts will be scheduled, then makes them in order and links each one. A row dated `now` goes out as soon as it is made, in public; the others wait for their time.
 
-A row can still be refused while the file is imported, when something changed since the check, such as the month's room on the plan. The posts made before it stay made, and the page says which rows were not: correct those and import them in a file of their own, as importing the same file again would make the others twice. [Import posts from a CSV file](/posting-api#import) describes each column and every answer.
+A row can still be refused while the file is imported, when something changed since the check, such as the month's room on the plan. The other rows' posts are still made, before it and after it, and the page says which rows were not: correct those and import them in a file of their own, as importing the same file again would make the others twice. [Import posts from a CSV file](/posting-api#import) describes each column and every answer.
 
 ## Move, unschedule or cancel it [#move-cancel]
 
