@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "5cbbd3d0-2081-4ad7-ae79-690f37424087",
+  "id": "03e73592-0b1f-4335-8e88-b821ea219d53",
   "prevIds": [
     "14284c97-14fd-4225-91f9-d64018ce11df"
   ],
@@ -62,6 +62,26 @@
         "n|sch|engagement",
         "n|col|engagement.threads.refresh_by"
       ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "threads",
+        "threads_channel_refresh"
+      ],
+      "writes": [
+        "s|idx|engagement.threads_channel_refresh",
+        "n|idx|engagement.threads_channel_refresh",
+        "e|idx|engagement.threads_channel_refresh",
+        "n|rel|engagement.threads_channel_refresh"
+      ],
+      "reads": [
+        "n|tbl|engagement.threads",
+        "n|sch|engagement",
+        "n|col|engagement.threads.channel_id"
+      ]
     }
   ],
   "deltas": [
@@ -107,6 +127,30 @@
         "columns": [
           {
             "value": "refresh_by",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"refresh_by\" IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "engagement",
+        "table": "threads",
+        "name": "threads_channel_refresh",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "channel_id",
             "isExpression": false,
             "asc": true,
             "nullsFirst": false,

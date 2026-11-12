@@ -11,9 +11,10 @@ import {
   forgetFailures,
   PurgeEngagement,
 } from "#engagement/application/purge-engagement.ts";
+import { expireComment } from "#engagement/domain/comment.ts";
 import type { CommentReading } from "#engagement/domain/comment.ts";
 import { writeReply } from "#engagement/domain/reply.ts";
-import { endCollection } from "#engagement/domain/thread.ts";
+import { endCollection, withoutRefresh } from "#engagement/domain/thread.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
 import type { World } from "#test/engagement/fakes/world.ts";
@@ -329,6 +330,56 @@ describe("the refresh bound", () => {
           1
         );
         assert.isFalse(world.state.threads.has(failingThread.id));
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "writes nothing back for a thread whose channel left while it was read",
+    () => {
+      const world = makeWorld();
+      const day = Option.some(Duration.hours(24));
+
+      world.state.posts.push(followedPost(1));
+      world.state.read = showing([reading(1)], day);
+
+      return Effect.gen(function* gone() {
+        yield* runAt(after("10 minutes"));
+
+        // The channel is disconnected while the next read is on its way:
+        // its comments are forgotten and its thread ended at once.
+        world.state.read = (request) => {
+          const thread = onlyThread(world);
+
+          world.state.threads.set(
+            thread.id,
+            withoutRefresh(
+              endCollection(thread, "disconnected", after("15 minutes"))
+            )
+          );
+
+          for (const kept of world.state.comments.values()) {
+            world.state.comments.set(
+              kept.id,
+              expireComment(kept, after("15 minutes"))
+            );
+          }
+
+          return showing([reading(1), reading(2)], day)(request);
+        };
+
+        yield* runAt(after("20 minutes"));
+
+        assert.deepStrictEqual(
+          comments(world).map(({ author, state, text }) => ({
+            author,
+            state,
+            text,
+          })),
+          [{ author: false, state: "deleted", text: "" }]
+        );
+        assert.strictEqual(onlyThread(world).collection._tag, "ended");
+        assert.deepStrictEqual(onlyThread(world).refreshBy, Option.none());
       }).pipe(Effect.provide(world.layer));
     }
   );

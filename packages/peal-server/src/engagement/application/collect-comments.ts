@@ -485,6 +485,24 @@ export class CollectComments extends Context.Service<
           Effect.gen(function* saving() {
             yield* store.lockThread(thread.id);
 
+            // The channel left while its comments were on their way (its
+            // thread ended `disconnected` under the same lock): what the
+            // read found is not kept.
+            const current = yield* store.thread(thread.id);
+
+            if (
+              Option.match(current, {
+                onNone: () => true,
+                onSome: ({ thread: now }) =>
+                  now.collection._tag === "ended" &&
+                  now.collection.reason === "disconnected",
+              })
+            ) {
+              const dropped: Reconciled = { changed: [], received: [] };
+
+              return dropped;
+            }
+
             const kept = yield* store.commentsOf(thread.id);
 
             const reconciled = reconcile(

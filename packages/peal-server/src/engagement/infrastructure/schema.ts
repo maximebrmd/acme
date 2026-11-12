@@ -81,6 +81,10 @@ export const threads = engagement.table(
     index("threads_refresh_by")
       .on(table.refreshBy)
       .where(sql`${table.refreshBy} IS NOT NULL`),
+    // A channel gone forgets its bounded threads' comments at once.
+    index("threads_channel_refresh")
+      .on(table.channelId)
+      .where(sql`${table.refreshBy} IS NOT NULL`),
     check(
       "threads_collection",
       sql`(${table.nextCollectionAt} IS NULL) <> (${table.endedAt} IS NULL)`
