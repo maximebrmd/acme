@@ -114,9 +114,11 @@ layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
       () =>
         Effect.gen(function* international() {
           const app = yield* TestApp;
+
           const cyrillic = yield* issued(
             "https://example.test/путь/к/странице"
           );
+
           const host = yield* issued("https://пример.рф/page");
 
           const onPath = yield* app.request(cyrillic.path, {
