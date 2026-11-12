@@ -9,19 +9,6 @@ import { DraftRejected } from "./draft-rejected.ts";
 export const maxImagePromptLength = 1000;
 
 /**
- * How many of the day's assistant requests an image costs: an image costs
- * a provider far more than a suggestion, and the workspace's daily
- * allowance is the one both draw on.
- */
-export const imageRequestCost = 5;
-
-/**
- * The largest image the assistant takes from a provider: the largest image
- * the media library stores (a test keeps the two equal).
- */
-export const maxImageBytes = 16 * 1024 * 1024;
-
-/**
  * What the image should show, as the person described it: not blank, and
  * at most `maxImagePromptLength` long. It is sent to the provider as it is.
  */

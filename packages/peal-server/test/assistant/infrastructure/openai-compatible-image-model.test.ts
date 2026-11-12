@@ -21,10 +21,8 @@ import { FetchHttpClient } from "effect/http";
 import { ImageModel } from "#assistant/application/ports/image-model.ts";
 import type { ImageRequest } from "#assistant/application/ports/image-model.ts";
 import type { ImageAspect } from "#assistant/domain/image-aspect.ts";
-import {
-  ImagePromptSchema,
-  maxImageBytes,
-} from "#assistant/domain/image-prompt.ts";
+import { maxImageBytes } from "#assistant/domain/image-limits.ts";
+import { ImagePromptSchema } from "#assistant/domain/image-prompt.ts";
 import { openAiCompatibleImageModel } from "#assistant/infrastructure/openai-compatible-image-model.ts";
 import { maxByteSize } from "#media/domain/media-format.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";

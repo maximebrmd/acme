@@ -20,7 +20,7 @@ import type {
   MadeImage,
 } from "#assistant/application/ports/image-model.ts";
 import type { ImageAspect } from "#assistant/domain/image-aspect.ts";
-import { maxImageBytes } from "#assistant/domain/image-prompt.ts";
+import { maxImageBytes } from "#assistant/domain/image-limits.ts";
 import { publicHttpClientWith } from "#shared/infrastructure/platforms/public-http.ts";
 
 /**
