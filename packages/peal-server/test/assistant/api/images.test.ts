@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer, Option } from "effect";
+import { Effect, Fiber, Layer, Option } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import {
@@ -228,28 +228,29 @@ layer(StoreTest, { timeout: "60 seconds" })("the image endpoint", (it) => {
       const client = yield* as(workspaceId);
       const params = { workspaceId };
 
-      yield* replying({ _tag: "silence" });
+      const model = yield* FakeImageModel;
 
-      yield* Effect.forkChild(
-        client.assistant.generateImage({ params, payload: lighthouse })
+      // The provider holds both until the test releases them.
+      yield* model.replyWith({ _tag: "held" });
+
+      const waiting = yield* Effect.forEach([1, 2], () =>
+        client.assistant
+          .generateImage({ params, payload: lighthouse })
+          .pipe(Effect.flip, Effect.forkChild)
       );
-      yield* Effect.forkChild(
-        client.assistant.generateImage({ params, payload: lighthouse })
-      );
 
-      for (let round = 0; round < 500; round += 1) {
-        if (
-          (yield* FakeImageModel.use((model) => model.requests)).length === 2
-        ) {
-          break;
-        }
+      yield* model.arrived(2);
 
-        yield* Effect.yieldNow;
-      }
+      // Were the third let through, the provider would refuse it at once
+      // rather than leave the test waiting.
+      yield* model.replyWith({ _tag: "failure", reason: "refused" });
 
       const refused = yield* client.assistant
         .generateImage({ params, payload: lighthouse })
         .pipe(Effect.flip);
+
+      yield* model.release({ _tag: "failure", reason: "refused" });
+      yield* Effect.all(waiting.map(Fiber.join));
 
       assert.instanceOf(refused, MediaImportBusy);
     }).pipe(Effect.provide(imagesTest({ dailyRequests: 100 })))
