@@ -14,7 +14,11 @@ export const PlanSchema = Schema.Literals([
   "business",
   "agency",
   "payAsYouGo",
-]).annotate({ identifier: "Plan" });
+]).annotate({
+  description:
+    "The plan a workspace is on: `free` without a subscription; `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, which no workspace holds yet.",
+  identifier: "Plan",
+});
 
 export type Plan = typeof PlanSchema.Type;
 
@@ -25,7 +29,11 @@ export const PaidPlanSchema = Schema.Literals([
   "business",
   "agency",
   "payAsYouGo",
-]).annotate({ identifier: "PaidPlan" });
+]).annotate({
+  description:
+    "The plan a subscription buys: `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, which no subscription holds yet.",
+  identifier: "PaidPlan",
+});
 
 export type PaidPlan = typeof PaidPlanSchema.Type;
 

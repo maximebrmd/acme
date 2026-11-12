@@ -1,5 +1,7 @@
 import { DateTime, Schema } from "effect";
 
+import { displayVatRate } from "./prices.ts";
+
 /**
  * What a billing account pays for by use, each with a monthly allowance
  * across every workspace it pays for: writing assistant requests and images
@@ -140,7 +142,7 @@ export const rateCard: RateCard = {
   apiRequestsPerMinute: awaitingDecision.apiRequestsPerMinute,
   assistant: { margin: awaitingDecision.assistantMargin },
   daysPerMonth: 30,
-  displayVatRate: 20,
+  displayVatRate,
   meters: {
     // Peal's own provider needs a payment method, and stops at the
     // allowance unless the account sets a ceiling.
@@ -209,6 +211,18 @@ export const rateCard: RateCard = {
   },
 };
 
+/**
+ * `count` when it is a whole number, zero or more. Anything else is a bug
+ * in the caller, never a price: it is refused, the same way everywhere.
+ */
+const counted = (count: number): number => {
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new RangeError(`Expected a count, got ${count}`);
+  }
+
+  return count;
+};
+
 /** `numerator / denominator`, rounded half up, for whole numbers. */
 const roundedHalfUp = (numerator: number, denominator: number): number =>
   Math.floor((2 * numerator + denominator) / (2 * denominator));
@@ -232,16 +246,19 @@ export const accountsMonthly = (
   currency: PriceCurrency = "usd",
   card: RateCard = rateCard
 ): number =>
-  unitsByBand(card.prices[currency].accounts.bands, accounts, 1).reduce(
-    (sum, { band, units }) => sum + units * band.monthly,
-    0
-  );
+  unitsByBand(
+    card.prices[currency].accounts.bands,
+    counted(accounts),
+    1
+  ).reduce((sum, { band, units }) => sum + units * band.monthly, 0);
 
 /**
  * What `accountDays` cost, in cents: each band's rate divided by
  * `daysPerMonth` per account-day, the band's bounds multiplied by it, and
- * each band's amount rounded half up to the cent, as Stripe rounds a
- * graduated price.
+ * each band's amount rounded half up to the cent, as Stripe is assumed to
+ * round a graduated price (not confirmed; for this ladder half up, half
+ * even and rounding the total give the same amounts, as a band's
+ * fractions are thirds).
  */
 export const accountsCharge = (
   accountDays: number,
@@ -250,7 +267,7 @@ export const accountsCharge = (
 ): number =>
   unitsByBand(
     card.prices[currency].accounts.bands,
-    accountDays,
+    counted(accountDays),
     card.daysPerMonth
   ).reduce(
     (sum, { band, units }) =>
@@ -264,7 +281,7 @@ export const accountsCharge = (
  * `daysPerMonth` days.
  */
 export const billableAccountDays = (day: DateTime.Utc, peak: number): number =>
-  DateTime.getPartUtc(day, "day") === 31 ? 0 : peak;
+  DateTime.getPartUtc(day, "day") === 31 ? 0 : counted(peak);
 
 /** The units of `meter` a billing account has included in a month. */
 export const meterAllowance = (
@@ -282,9 +299,13 @@ export const billableUnits = (
   meter: Meter,
   used: number,
   card: RateCard = rateCard
-): number => Math.max(0, used - card.meters[meter].allowance);
+): number => Math.max(0, counted(used) - card.meters[meter].allowance);
 
-/** What `billable` units of `meter` cost, in cents, rounded half up. */
+/**
+ * What `billable` units of `meter` cost, in cents, rounded half up. The
+ * rule Stripe uses for a half cent (50 messages, 5 X units) is assumed,
+ * not confirmed: a sandbox invoice is to settle it.
+ */
 export const meterCharge = (
   meter: Meter,
   billable: number,
@@ -293,7 +314,7 @@ export const meterCharge = (
 ): number => {
   const { cents, per } = card.prices[currency].meters[meter];
 
-  return roundedHalfUp(billable * cents, per);
+  return roundedHalfUp(counted(billable) * cents, per);
 };
 
 /**
@@ -307,7 +328,10 @@ export const storageAllowance = (
   card: RateCard = rateCard
 ): number =>
   paying
-    ? Math.max(card.storage.minimum, card.storage.perAccount * accounts)
+    ? Math.max(
+        card.storage.minimum,
+        card.storage.perAccount * counted(accounts)
+      )
     : card.storage.withoutPaymentMethod;
 
 /** A graduated tier of Stripe's account-day price. */

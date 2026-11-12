@@ -1,5 +1,8 @@
 import { Schema } from "effect";
 
+import { displayVatRate } from "./billing-plans.ts";
+import { ByteCountSchema } from "./int64.ts";
+
 export { withDisplayVat } from "./billing-plans.ts";
 
 /**
@@ -105,9 +108,9 @@ export const RateCardSchema = Schema.Struct({
   prices: Schema.Struct({ usd: PricesSchema }),
   // Media stored across the billing account, in decimal bytes (fair use).
   storage: Schema.Struct({
-    minimum: Schema.Int,
-    perAccount: Schema.Int,
-    withoutPaymentMethod: Schema.Int,
+    minimum: ByteCountSchema,
+    perAccount: ByteCountSchema,
+    withoutPaymentMethod: ByteCountSchema,
   }),
   // The most accounts a billing account connects until it paid an invoice.
   unverifiedCeiling: Schema.Int,
@@ -159,7 +162,7 @@ export const rateCard: RateCard = {
   apiRequestsPerMinute: awaitingDecision.apiRequestsPerMinute,
   assistant: { margin: awaitingDecision.assistantMargin },
   daysPerMonth: 30,
-  displayVatRate: 20,
+  displayVatRate,
   meters: {
     // Peal's own provider needs a payment method, and stops at the
     // allowance unless the account sets a ceiling.
@@ -228,6 +231,18 @@ export const rateCard: RateCard = {
   },
 };
 
+/**
+ * `count` when it is a whole number, zero or more. Anything else is a bug
+ * in the caller, never a price: it is refused, the same way everywhere.
+ */
+const counted = (count: number): number => {
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new RangeError(`Expected a count, got ${count}`);
+  }
+
+  return count;
+};
+
 /** `numerator / denominator`, rounded half up, for whole numbers. */
 const roundedHalfUp = (numerator: number, denominator: number): number =>
   Math.floor((2 * numerator + denominator) / (2 * denominator));
@@ -251,14 +266,19 @@ export const accountsMonthly = (
   currency: PriceCurrency = "usd",
   card: RateCard = rateCard
 ): number =>
-  unitsByBand(card.prices[currency].accounts.bands, accounts, 1).reduce(
-    (sum, { band, units }) => sum + units * band.monthly,
-    0
-  );
+  unitsByBand(
+    card.prices[currency].accounts.bands,
+    counted(accounts),
+    1
+  ).reduce((sum, { band, units }) => sum + units * band.monthly, 0);
 
 /**
- * What `accountDays` cost, in cents: one `daysPerMonth`th of a band's rate
- * per account-day, each band's amount rounded half up to the cent.
+ * What `accountDays` cost, in cents: each band's rate divided by
+ * `daysPerMonth` per account-day, the band's bounds multiplied by it, and
+ * each band's amount rounded half up to the cent, as Stripe is assumed to
+ * round a graduated price (not confirmed; for this ladder half up, half
+ * even and rounding the total give the same amounts, as a band's
+ * fractions are thirds).
  */
 export const accountsCharge = (
   accountDays: number,
@@ -267,7 +287,7 @@ export const accountsCharge = (
 ): number =>
   unitsByBand(
     card.prices[currency].accounts.bands,
-    accountDays,
+    counted(accountDays),
     card.daysPerMonth
   ).reduce(
     (sum, { band, units }) =>
@@ -275,7 +295,11 @@ export const accountsCharge = (
     0
   );
 
-/** What `billable` units of `meter` cost, in cents, rounded half up. */
+/**
+ * What `billable` units of `meter` cost, in cents, rounded half up. The
+ * rule Stripe uses for a half cent (50 messages, 5 X units) is assumed,
+ * not confirmed: a sandbox invoice is to settle it.
+ */
 export const meterCharge = (
   meter: Meter,
   billable: number,
@@ -284,5 +308,5 @@ export const meterCharge = (
 ): number => {
   const { cents, per } = card.prices[currency].meters[meter];
 
-  return roundedHalfUp(billable * cents, per);
+  return roundedHalfUp(counted(billable) * cents, per);
 };

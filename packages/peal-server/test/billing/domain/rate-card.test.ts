@@ -175,6 +175,27 @@ describe(meterCharge, () => {
   });
 });
 
+// A count is a whole number, zero or more: anything else is a bug in the
+// caller, refused the same way by every function, never priced.
+describe("counts the rate card refuses", () => {
+  const refused = [-1, -50, 2.5, Number.NaN, Number.POSITIVE_INFINITY];
+
+  it.each(refused)("refuses %s accounts and account-days", (count) => {
+    expect(() => accountsMonthly(count)).toThrow(RangeError);
+    expect(() => accountsCharge(count)).toThrow(RangeError);
+    expect(() => billableAccountDays(day("2026-01-02"), count)).toThrow(
+      RangeError
+    );
+    expect(() => storageAllowance(true, count)).toThrow(RangeError);
+  });
+
+  it.each(refused)("refuses %s units of a meter", (count) => {
+    expect(() => billableUnits("managedAds", count)).toThrow(RangeError);
+    expect(() => meterCharge("managedAds", count)).toThrow(RangeError);
+    expect(() => meterCharge("outboundMessages", count)).toThrow(RangeError);
+  });
+});
+
 describe(storageAllowance, () => {
   it("keeps a workspace without a payment method to 1 GB", () => {
     expect(storageAllowance(false, 2)).toBe(gigabytes(1));

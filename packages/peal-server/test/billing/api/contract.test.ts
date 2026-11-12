@@ -59,6 +59,24 @@ import {
   PlanSchema,
 } from "#shared/domain/plan.ts";
 
+const decodeObjectSchema = Schema.decodeUnknownSync(
+  Schema.Struct({
+    properties: Schema.Record(
+      Schema.String,
+      Schema.Struct({ format: Schema.optional(Schema.String) })
+    ),
+  })
+);
+
+const decodeDocument = Schema.decodeUnknownSync(
+  Schema.Struct({
+    definitions: Schema.Record(
+      Schema.String,
+      Schema.Struct({ description: Schema.optional(Schema.String) })
+    ),
+  })
+);
+
 describe("the contract", () => {
   it("states the usage reports' ranges and retention the server keeps", () => {
     expect(contractMaxRange).toBe(maxUsageRangeDays);
@@ -125,6 +143,43 @@ describe("the contract", () => {
     expect(Schema.decodeUnknownSync(RateCardSchema)(rateCard)).toStrictEqual(
       rateCard
     );
+  });
+
+  // Clients generated from the API read a plain integer into 32 bits.
+  it("states the rate card's storage sizes as 64-bit integers", () => {
+    const { properties } = decodeObjectSchema(
+      Schema.toJsonSchemaDocument(RateCardSchema.fields.storage).schema
+    );
+
+    expect(Object.values(properties).map(({ format }) => format)).toStrictEqual(
+      ["int64", "int64", "int64"]
+    );
+  });
+
+  it("shows prices with VAT at the rate card's rate", () => {
+    expect(rateCard.displayVatRate).toBe(displayVatRate);
+    expect(contractRateCard.displayVatRate).toBe(contractVatRate);
+  });
+
+  it.each([-1, 2.5, Number.NaN])(
+    "refuses %s in the contract's prices, as the server does",
+    (count) => {
+      expect(() => contractAccountsMonthly(count)).toThrow(RangeError);
+      expect(() => contractAccountsCharge(count)).toThrow(RangeError);
+      expect(() => contractMeterCharge("managedAds", count)).toThrow(
+        RangeError
+      );
+    }
+  );
+
+  // The API reference reads the plans' descriptions.
+  it.each([
+    ["Plan", ContractPlanSchema],
+    ["PaidPlan", ContractPaidPlanSchema],
+  ] as const)("describes per-account pricing in %s", (name, schema) => {
+    const { definitions } = decodeDocument(Schema.toJsonSchemaDocument(schema));
+
+    expect(definitions[name]?.description).toContain("payAsYouGo");
   });
 
   it("prices the rate card as the server does", () => {
