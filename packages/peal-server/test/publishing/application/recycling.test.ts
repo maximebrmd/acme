@@ -24,6 +24,7 @@ import {
   resetRecycling,
   startersAre,
   toldEnds,
+  whileRunning,
 } from "#test/publishing/fakes/fake-recycling.ts";
 import {
   eventually,
@@ -233,6 +234,60 @@ describe("making a rule's occurrences", () => {
           // The third says the source's text again.
           assert.strictEqual(made[1]?.text, "Our opening hours, all summer.");
           assert.strictEqual((yield* ruleNow(workspaceId, rule.id)).made, 3);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "leaves a rule a member changed while the run went for the next run, keeping the change",
+    () =>
+      onServer(
+        Effect.gen(function* changedMeanwhile() {
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const source = yield* published(workspaceId, channel);
+
+          const rule = yield* started(
+            workspaceId,
+            weekly(source, {
+              variants: [
+                new RecyclingVariant({ overrides: [], text: "Teh sale." }),
+              ],
+            })
+          );
+
+          const corrected = [
+            new RecyclingVariant({ overrides: [], text: "The sale." }),
+          ];
+
+          const context = yield* Effect.context<Recycling>();
+
+          yield* whileRunning(
+            Recycling.use((recycling) =>
+              recycling.change(actorIn(workspaceId), rule.id, {
+                count: Option.some(5),
+                variants: corrected,
+              })
+            ).pipe(Effect.asVoid, Effect.orDie, Effect.provideContext(context))
+          );
+
+          yield* makeDue;
+
+          const kept = yield* ruleNow(workspaceId, rule.id);
+
+          assert.deepStrictEqual(kept.count, Option.some(5));
+          assert.strictEqual(kept.variants[0]?.text, "The sale.");
+
+          yield* makeDue;
+
+          const [second] = yield* occurrencesOf(rule.id);
+
+          assert.strictEqual(second?.text, "The sale.");
+          assert.deepStrictEqual(
+            (yield* ruleNow(workspaceId, rule.id)).count,
+            Option.some(5)
+          );
         })
       ),
     timeout

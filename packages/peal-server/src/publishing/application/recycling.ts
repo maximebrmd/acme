@@ -1,4 +1,12 @@
-import { Array as Arr, Context, DateTime, Effect, Layer, Option } from "effect";
+import {
+  Array as Arr,
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Option,
+  Schema,
+} from "effect";
 
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { PostContent as Content } from "#publishing/domain/post-content.ts";
@@ -20,13 +28,13 @@ import {
   occurrenceMade,
   pauseRule,
   plannedAt,
+  RecyclingRule,
   resumeRule,
   startRule,
   variantFor,
 } from "#publishing/domain/recycling-rule.ts";
 import type {
   RecyclingChange,
-  RecyclingRule,
   RecyclingStatus,
 } from "#publishing/domain/recycling-rule.ts";
 import type { RecyclingVariant } from "#publishing/domain/recycling-variant.ts";
@@ -69,6 +77,12 @@ import { findInWorkspace } from "./workspace-posts.ts";
 
 /** How many due instants a rule's page shows. */
 export const comingShown = 3;
+
+const encodeRule = Schema.encodeSync(RecyclingRule);
+
+// Whether two reads of a rule hold the same rule, field for field.
+const isSameRule = (left: RecyclingRule, right: RecyclingRule): boolean =>
+  JSON.stringify(encodeRule(left)) === JSON.stringify(encodeRule(right));
 
 /** How many due rules a run reads at once. */
 export const duePageSize = 100;
@@ -714,14 +728,14 @@ export class Recycling extends Context.Service<
         const outcome = yield* scheduling
           .sendOccurrence(actor, {
             channelIds: copy.value.channelIds,
+            // The rule as the run read it, still: one held, made, ended,
+            // or changed by a member since (its variants, its ending) is
+            // left for the next run, which reads it anew, so a change is
+            // never written over.
             claimed: Effect.gen(function* claimed() {
               const locked = yield* store.lockUnlessHeld(planned.id);
 
-              if (
-                Option.isNone(locked) ||
-                locked.value.status._tag !== "active" ||
-                locked.value.made !== planned.made
-              ) {
+              if (Option.isNone(locked) || !isSameRule(locked.value, planned)) {
                 yield* new LeftForNextRun({ ruleId: planned.id });
               }
             }),

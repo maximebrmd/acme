@@ -28,11 +28,20 @@ const starters = Ref.makeUnsafe<(rule: RecyclingRule) => RuleStarter>(editorOf);
 
 const told = Ref.makeUnsafe<readonly ToldEnd[]>([]);
 
+// What happens, once, when a run next asks for a starter: a member's change
+// made while the run goes.
+const meanwhile = Ref.makeUnsafe<Effect.Effect<void>>(Effect.void);
+
 /** Each rule's starter is an editor of its workspace, and nothing was told. */
 export const resetRecycling = Effect.all([
   Ref.set(starters, editorOf),
   Ref.set(told, []),
+  Ref.set(meanwhile, Effect.void),
 ]);
+
+/** Runs `effect` once, when a run next asks for a rule's starter. */
+export const whileRunning = (effect: Effect.Effect<void>) =>
+  Ref.set(meanwhile, effect);
 
 /** Who every rule's starter is from now on. */
 export const startersAre = (starter: (rule: RecyclingRule) => RuleStarter) =>
@@ -46,7 +55,12 @@ export const FakeRecycling = Layer.merge(
   Layer.succeed(
     RecyclingActors,
     RecyclingActors.of({
-      of: (rule) => Ref.get(starters).pipe(Effect.map((of) => of(rule))),
+      of: (rule) =>
+        Ref.getAndSet(meanwhile, Effect.void).pipe(
+          Effect.flatten,
+          Effect.andThen(Ref.get(starters)),
+          Effect.map((of) => of(rule))
+        ),
     })
   ),
   Layer.succeed(
