@@ -2,7 +2,7 @@
 title: Embedding Peal
 description: Use Peal inside your own product. Give each of your customers a workspace through the API, let them connect their social accounts on a hosted page without a Peal account, post for them, and hear what happened.
 sidebar:
-  order: 19
+  order: 20
 ---
 
 A product of yours can publish to social platforms for its own customers through Peal, without any of them having a Peal account or seeing Peal's app. You hold a **partner account**; each of your customers is a **workspace** it owns; your backend acts in those workspaces with a **partner key**; your customers connect their social accounts on a **hosted page** you send them to; and Peal tells your server what happens through [webhooks](/webhooks).
@@ -317,7 +317,7 @@ const usage = await peal.partnerUsage.get({
 | Read the usage per customer                     | `GET /api/partner/usage`, with the key; `partnerUsage` in the SDKs; `peal partner usage`, the MCP tool `get_partner_usage` and **Settings**, then **Partner**, as a person |
 | Make a link by hand for a workspace of yours    | `peal links create` ([command line](/cli#links)), or the MCP tool `create_connect_link` ([MCP](/mcp#tools))                                                                |
 
-The [API reference](/reference) lists every endpoint with its errors. The SDKs are generated from the same contract, in eight languages.
+The [API reference](/reference) lists every endpoint with its errors. The [SDKs](/sdks) are generated from the same contract, in eight languages; a partner key checks itself with `GET /api/credential` (`credential.get`), which names its partner, scopes and permissions, never its workspaces.
 
 ### Without a partner account [#agencies]
 

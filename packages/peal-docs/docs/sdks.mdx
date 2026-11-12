@@ -1,0 +1,262 @@
+---
+title: SDKs
+description: The Peal API's clients in eight languages, how to install each, check the credential, publish a post from start to finish, handle errors, retries and pages, and verify a webhook.
+sidebar:
+  order: 17
+---
+
+Peal's SDKs are clients of the [API](/api-overview) in eight languages. Each one is generated from the same contract as the server, so its methods are named after the API's operations (`posts.send`, `media.importFromUrl`) and its types after the API's schemas. They are free software, under the Apache License 2.0, unlike the rest of Peal.
+
+## Install [#install]
+
+| Language              | Registry                                                                          | Install                                                   |
+| --------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| TypeScript/JavaScript | [npm](https://www.npmjs.com/package/peal-sdk)                                     | `npm install peal-sdk`                                    |
+| Python                | [PyPI](https://pypi.org/project/peal-sdk/)                                        | `pip install peal-sdk` (imported as `peal`)               |
+| Go                    | [Go modules](https://pkg.go.dev/github.com/peal-social/peal/packages/peal-sdk/go) | `go get github.com/peal-social/peal/packages/peal-sdk/go` |
+| Ruby                  | [RubyGems](https://rubygems.org/gems/peal)                                        | `gem install peal`                                        |
+| Java                  | [Maven Central](https://central.sonatype.com/artifact/social.peal/peal)           | `social.peal:peal`                                        |
+| PHP                   | [Packagist](https://packagist.org/packages/peal-social/peal)                      | `composer require peal-social/peal`                       |
+| .NET                  | [NuGet](https://www.nuget.org/packages/Peal)                                      | `dotnet add package Peal`                                 |
+| Rust                  | [crates.io](https://crates.io/crates/peal-sdk)                                    | `cargo add peal-sdk`                                      |
+
+Each package's README shows how to use it, and its `reference.md` lists every method, in [the repository](https://github.com/peal-social/peal/tree/main/packages/peal-sdk). The SDKs call every endpoint a bearer token can call: an [API key](/settings#api-keys) (`peal_…`), a [partner key](/embedding) (`peal_partner_…`) or an OAuth access token. What only a person does in their own session (exporting or deleting an account, connected applications) is left out.
+
+They send requests to `https://app.peal.social`. On a server of your own, give the client its address ([Base URL](/api-overview#base-url)): `baseUrl` in TypeScript and PHP's options, `base_url` in Python, Ruby and Rust, `option.WithBaseURL` in Go, `.url(…)` on Java's builder, `BaseUrl` in .NET's `ClientOptions`.
+
+## Check the credential first [#credential]
+
+Start with `GET /api/credential`: it answers who the key or token you send is and what it may do, and reads no data. An API key answers `apiKey`, with its name, its workspace, its permissions and when it expires; a partner key `partnerKey`, with its partner, scopes and permissions; a person's token `user`. A key that was revoked or has expired answers 401, so a program finds out at once whether its key works, before it acts.
+
+<CodeGroup>
+
+```ts TypeScript
+import { PealClient } from "peal-sdk";
+
+const peal = new PealClient({ token: process.env.PEAL_API_KEY });
+
+const credential = await peal.credential.get();
+
+if (credential._tag === "apiKey") {
+  console.log(credential.workspace.id, credential.permissions);
+}
+```
+
+```python Python
+import os
+
+from peal import Peal
+
+peal = Peal(token=os.environ["PEAL_API_KEY"])
+
+credential = peal.credential.get()
+```
+
+```go Go
+import (
+	"context"
+	"os"
+
+	"github.com/peal-social/peal/packages/peal-sdk/go/client"
+	"github.com/peal-social/peal/packages/peal-sdk/go/option"
+)
+
+peal := client.NewClient(option.WithToken(os.Getenv("PEAL_API_KEY")))
+
+credential, err := peal.Credential.Get(context.TODO())
+```
+
+```ruby Ruby
+require "peal"
+
+peal = Peal::Client.new(token: ENV.fetch("PEAL_API_KEY"))
+
+credential = peal.credential.get
+```
+
+```java Java
+import social.peal.PealClient;
+import social.peal.types.Credential;
+
+PealClient peal = PealClient.builder()
+    .token(System.getenv("PEAL_API_KEY"))
+    .build();
+
+Credential credential = peal.credential().get();
+```
+
+```php PHP
+<?php
+use Peal\PealClient;
+
+$peal = new PealClient(token: getenv('PEAL_API_KEY'));
+
+$credential = $peal->credential->get();
+```
+
+```csharp .NET
+using Peal;
+
+var peal = new PealClient(Environment.GetEnvironmentVariable("PEAL_API_KEY"));
+
+var credential = await peal.Credential.GetAsync();
+```
+
+```rust Rust
+use peal_sdk::prelude::*;
+
+let peal = PealClient::new(ClientConfig {
+    token: std::env::var("PEAL_API_KEY").ok(),
+    ..Default::default()
+})?;
+
+let credential = peal.credential.get(None).await?;
+```
+
+</CodeGroup>
+
+The answer never holds the key itself, nor any workspace a partner key reaches: `GET /api/partner/workspaces` lists those.
+
+## Publish a post, start to finish [#journey]
+
+The steps of the [Posting API](/posting-api), in TypeScript: find the channels, bring an image in from its address, check the post, send it with an `Idempotency-Key`, then read how it went. The workspace's id is the one the credential check answered.
+
+```ts publish.ts
+import { randomUUID } from "node:crypto";
+
+import { PealClient } from "peal-sdk";
+
+const peal = new PealClient({ token: process.env.PEAL_API_KEY });
+const workspaceId = process.env.PEAL_WORKSPACE_ID ?? "";
+
+// 1. Where it can go: the channels that post.
+const channels = await peal.channels.list({ workspaceId });
+const channelIds = channels
+  .filter(({ status }) => status._tag === "active")
+  .map(({ id }) => id);
+
+// 2. An image already online, which the server fetches itself.
+const image = await peal.media.importFromUrl({
+  workspaceId,
+  url: "https://media.example.com/synthetic/launch.png",
+  altText: "A synthetic launch picture",
+});
+
+const post = {
+  workspaceId,
+  channelIds,
+  content: {
+    text: "A synthetic post, sent with the SDK.",
+    media: [{ mediaId: image.id, altText: "A synthetic launch picture" }],
+    overrides: [],
+  },
+  when: { _tag: "now" as const },
+};
+
+// 3. Checked without being made: every violation at once.
+const check = await peal.posts.validate(post);
+
+if (!check.valid) {
+  throw new Error(JSON.stringify(check.violations));
+}
+
+// 4. Sent once, however many times this line runs within 24 hours.
+const sent = await peal.posts.send({
+  ...post,
+  "idempotency-key": randomUUID(),
+  wait: "30",
+});
+
+// 5. How it went on each channel, once every channel has its result.
+const outcome = await peal.posts.outcome({ workspaceId, postId: sent.id });
+
+for (const target of outcome.targets) {
+  console.log(target.channelId, target.status, target.permalink);
+}
+```
+
+The same steps in the other SDKs:
+
+| Step                 | Python                          | Go                              | Ruby                              | Java                              | PHP                              | .NET                                 | Rust                                                            |
+| -------------------- | ------------------------------- | ------------------------------- | --------------------------------- | --------------------------------- | -------------------------------- | ------------------------------------ | --------------------------------------------------------------- |
+| Check the credential | `credential.get`                | `Credential.Get`                | `credential.get`                  | `credential().get`                | `credential->get`                | `Credential.GetAsync`                | `credential.get`                                                |
+| List the channels    | `channels.list`                 | `Channels.List`                 | `channels.list`                   | `channels().list`                 | `channels->list`                 | `Channels.ListAsync`                 | `channels.list`                                                 |
+| Import a media       | `media.import_from_url`         | `Media.ImportFromURL`           | `media.import_from_url`           | `media().importFromUrl`           | `media->importFromUrl`           | `Media.ImportFromUrlAsync`           | `media.import_from_url`                                         |
+| Validate             | `posts.validate`                | `Posts.Validate`                | `posts.validate`                  | `posts().validate`                | `posts->validate`                | `Posts.ValidateAsync`                | `posts.validate`                                                |
+| Send, with a key     | `posts.send(idempotency_key=…)` | `Posts.Send` (`IdempotencyKey`) | `posts.send_(idempotency_key: …)` | `posts().send` (`idempotencyKey`) | `posts->send` (`idempotencyKey`) | `Posts.SendAsync` (`IdempotencyKey`) | `posts.send`, the header in `RequestOptions::additional_header` |
+| Read the outcome     | `posts.outcome`                 | `Posts.Outcome`                 | `posts.outcome`                   | `posts().outcome`                 | `posts->outcome`                 | `Posts.OutcomeAsync`                 | `posts.outcome`                                                 |
+
+Ruby names `send` `send_`, as `send` is a method of every Ruby object. Rust's `NewPost` has no field for the key: send the `Idempotency-Key` header through the request's options.
+
+## Errors and retries [#errors]
+
+Each SDK raises (or returns, in Go and Rust) a typed error for each error status: a refused key is the SDK's 401 error, a missing permission its 403. The error carries the [envelope](/api-conventions#errors) the API answered, with its `code`, `message` and `requestId`: log the request's id, and quote it when you ask for help.
+
+Every SDK retries, with backoff, a GET, a PUT or a DELETE the API answers with 408, 429 or a 5xx; each request's options set how many times (`maxRetries`, `max_retries`, `option.WithMaxAttempts`, `MaxRetries`: each README says). It never sends a POST or a PATCH twice: the first may have made the post before its answer was lost. To send one again safely, give it an `Idempotency-Key` ([Idempotency](/api-conventions#idempotency)): the API then answers the same post, and makes no other. A key sends 600 requests a minute at most ([Rate limits](/api-conventions#rate-limits)).
+
+## Pages [#paging]
+
+Lists that grow without end are read a page at a time: pass `limit` and `cursor`, then the answer's `nextCursor` as the next `cursor`, until it is `null` ([Paging](/api-conventions#paging)). The partner API's lists (`/api/partner/workspaces`, `/api/partner/usage`) take `before` instead, and answer `next`. The SDKs pass both as they are: they have no helper that reads every page for you.
+
+```ts
+let cursor: string | undefined;
+
+do {
+  const page = await peal.media.list({ workspaceId, limit: "100", cursor });
+
+  for (const media of page.items) {
+    console.log(media.id);
+  }
+
+  cursor = page.nextCursor ?? undefined;
+} while (cursor !== undefined);
+```
+
+## Verify a webhook [#webhooks]
+
+The SDKs call the API: they do not receive [webhooks](/webhooks). Verify each delivery with the [Standard Webhooks](https://www.standardwebhooks.com) library of your language, before you act on it. [Verify a delivery](/webhooks#verify) says what is signed; in short:
+
+- the endpoint's secret is `whsec_` followed by base64, shown once when the endpoint is made ([The signing secret](/webhooks#secret));
+- each delivery carries `webhook-id`, `webhook-timestamp` and `webhook-signature` ([What Peal sends](/webhooks#request));
+- the libraries refuse a timestamp more than five minutes from the present;
+- for 24 hours after a rotation, `webhook-signature` holds two signatures, one per secret: the libraries accept either.
+
+Verify the body as it arrived, byte for byte, before parsing it. The samples for JavaScript, Python, Go, Ruby and PHP are on [the webhooks page](/webhooks#verify). For .NET and Rust:
+
+<CodeGroup>
+
+```csharp .NET
+// dotnet add package StandardWebhooks.StandardWebhooks
+using System.Net;
+using StandardWebhooks;
+
+var webhook = new Webhook(Environment.GetEnvironmentVariable("PEAL_WEBHOOK_SECRET"));
+
+// `rawBody` is the request body as received; `headers` carries the three
+// webhook- headers. Throws WebhookVerificationException when the
+// signature or the timestamp is wrong.
+var headers = new WebHeaderCollection
+{
+    { "webhook-id", request.Headers["webhook-id"] },
+    { "webhook-timestamp", request.Headers["webhook-timestamp"] },
+    { "webhook-signature", request.Headers["webhook-signature"] },
+};
+
+webhook.Verify(rawBody, headers);
+```
+
+```rust Rust
+// cargo add standardwebhooks http
+use standardwebhooks::Webhook;
+
+let webhook = Webhook::new(&std::env::var("PEAL_WEBHOOK_SECRET")?)?;
+
+// `raw_body` is the request body as received, as bytes, and `headers` the
+// request's http::HeaderMap. Fails when the signature or the timestamp is
+// wrong.
+webhook.verify(&raw_body, &headers)?;
+```
+
+</CodeGroup>
+
+The Standard Webhooks library for Java is not on Maven Central: in Java, check the signature as [Verify a delivery](/webhooks#verify) shows, with `javax.crypto.Mac` and `MessageDigest.isEqual`.
