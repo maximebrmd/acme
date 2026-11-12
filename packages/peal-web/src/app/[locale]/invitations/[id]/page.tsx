@@ -8,7 +8,9 @@ import { AuthCard } from "#components/auth/auth-card.tsx";
 import { Link } from "#i18n/navigation.ts";
 
 // Where an invitation email's link lands. The invitee accepts while signed
-// in with the address the invitation went to.
+// in with the address the invitation went to. The way to sign up names the
+// invitation, so a server where accounts are made by invitation shows its
+// form.
 const InvitationPage = async ({
   params,
 }: PageProps<"/[locale]/invitations/[id]">) => {
@@ -29,7 +31,11 @@ const InvitationPage = async ({
             </Button>
             <Button
               variant="outline"
-              render={<Link href="/sign-up" />}
+              render={
+                <Link
+                  href={{ pathname: "/sign-up", query: { invitation: id } }}
+                />
+              }
               nativeButton={false}
             >
               {t("signUp")}

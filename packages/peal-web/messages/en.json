@@ -553,7 +553,8 @@
       "INVALID_PASSWORD": "The password is incorrect.",
       "EMAIL_NOT_VERIFIED_FOR_TWO_STEP": "Confirm your email address before turning on two-step verification.",
       "TWO_STEP_REQUIRED_BY_WORKSPACE": "A workspace you belong to requires two-step verification: it stays on while you are a member.",
-      "TWO_STEP_REQUIRED": "This workspace requires two-step verification. Turn it on in your account settings, then try again."
+      "TWO_STEP_REQUIRED": "This workspace requires two-step verification. Turn it on in your account settings, then try again.",
+      "SIGN_UP_BY_INVITATION": "This server makes accounts by invitation only: open the link in the email that invited you, with the address it was sent to."
     }
   },
   "SignInPage": {
@@ -575,7 +576,9 @@
     "haveAccount": "Already have an account?",
     "signIn": "Sign in",
     "checkInbox": "Check your inbox",
-    "sent": "We sent a link to {email}. Open it to confirm your address: it signs you in."
+    "sent": "We sent a link to {email}. Open it to confirm your address: it signs you in.",
+    "byInvitation": "Accounts here are made by invitation",
+    "byInvitationDescription": "Open the link in the email that invited you to a workspace, then create your account from there."
   },
   "VerifyEmailPage": {
     "title": "Email confirmed",
