@@ -17,6 +17,16 @@ const zoneSettings = {
 } as const;
 
 /**
+ * The paths the rewrite turns into /api/l/<path>: all but the bare domain,
+ * Cloudflare's own under /cdn-cgi/ (Access's sign-in callback, the
+ * challenge platform's scripts), which the rules see as any other path, and
+ * a path that is /api/l/ already, so the rule never applies twice (Access
+ * may send a tester back from its sign-in to the rewritten path).
+ */
+export const linkRewriteExpression =
+  '(http.request.uri.path ne "/" and not starts_with(http.request.uri.path, "/cdn-cgi/") and not starts_with(http.request.uri.path, "/api/l/"))';
+
+/**
  * The short-link domain (peal.link): a zone of its own, so a platform that
  * frowns on a host that redirects marks it and never the host people sign
  * in at. Every environment's short-link host name is on it (each
@@ -27,7 +37,10 @@ const zoneSettings = {
  *   again (README.md, "Adopting what exists"), and kept when its resource
  *   goes;
  * - DNSSEC, whose DS record Cloudflare Registrar publishes by itself;
- * - the zone settings above;
+ * - the zone settings above, and the normalisation of incoming URLs,
+ *   Cloudflare's default, kept in code: the rewrite reads the path with its
+ *   dot segments, repeated slashes and backslashes resolved, so the server
+ *   gets /api/l/ and whatever follows, never a path that climbs out of it;
  * - mail: the domain sends and receives none, which a null MX (RFC 7505),
  *   an SPF record that allows no sender and a DMARC policy that rejects
  *   everything say, so no one can send mail in its name;
@@ -42,6 +55,7 @@ const zoneSettings = {
 export class PealLinkDomain extends pulumi.ComponentResource {
   readonly dnssec: cloudflare.ZoneDnssec;
   readonly mail: readonly cloudflare.DnsRecord[];
+  readonly normalization: cloudflare.UrlNormalizationSettings;
   readonly redirect: cloudflare.Ruleset;
   readonly rewrite: cloudflare.Ruleset;
   readonly settings: readonly cloudflare.ZoneSetting[];
@@ -83,6 +97,12 @@ export class PealLinkDomain extends pulumi.ComponentResource {
           { settingId, value, zoneId },
           child(false)
         )
+    );
+
+    this.normalization = new cloudflare.UrlNormalizationSettings(
+      "link-url-normalization",
+      { scope: "incoming", type: "cloudflare", zoneId },
+      child(true)
     );
 
     const record = (
@@ -158,7 +178,7 @@ export class PealLinkDomain extends pulumi.ComponentResource {
               },
             },
             description: "/<code> to /api/l/<code>",
-            expression: '(http.request.uri.path ne "/")',
+            expression: linkRewriteExpression,
           },
         ],
         zoneId,

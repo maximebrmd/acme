@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { PealLinkDomain } from "../src/link-domain.ts";
+import { linkRewriteExpression, PealLinkDomain } from "../src/link-domain.ts";
 import { input, recordResources, valueOf } from "./support.ts";
 
 const made = await recordResources();
@@ -24,6 +24,13 @@ const RulesSchema = Schema.Array(
     expression: Schema.String,
   })
 );
+
+// What linkRewriteExpression says, in plain code. Access's sign-in callback
+// and the challenge platform live under /cdn-cgi/; a path that is
+// /api/l/<code> already, as Access may send a signed-in tester back to, is
+// not rewritten twice.
+const rewrites = (path: string) =>
+  path !== "/" && !path.startsWith("/cdn-cgi/") && !path.startsWith("/api/l/");
 
 describe("the short-link domain", () => {
   it("adopts the zone the registrar made, and keeps it", async () => {
@@ -138,8 +145,35 @@ describe("the short-link domain", () => {
             path: { expression: 'concat("/api/l", http.request.uri.path)' },
           },
         },
-        expression: '(http.request.uri.path ne "/")',
+        expression:
+          '(http.request.uri.path ne "/" and not starts_with(http.request.uri.path, "/cdn-cgi/") and not starts_with(http.request.uri.path, "/api/l/"))',
       },
     ]);
+  });
+
+  it("leaves Cloudflare's own paths and paths already rewritten alone", () => {
+    expect(linkRewriteExpression).toBe(
+      '(http.request.uri.path ne "/" and not starts_with(http.request.uri.path, "/cdn-cgi/") and not starts_with(http.request.uri.path, "/api/l/"))'
+    );
+    expect(
+      [
+        "/",
+        "/Ab3dE9z",
+        "/cdn-cgi/access/authorized",
+        "/cdn-cgi/challenge-platform/x",
+        "/api/l/Ab3dE9z",
+        "/api/admin",
+      ].map(rewrites)
+    ).toStrictEqual([false, true, false, false, false, true]);
+  });
+
+  it("normalises incoming paths at the edge, so the rewrite reads a resolved one", async () => {
+    await valueOf(result.zoneId);
+
+    expect(named("link-url-normalization")?.inputs).toMatchObject({
+      scope: "incoming",
+      type: "cloudflare",
+      zoneId: "link-zone-id",
+    });
   });
 });
