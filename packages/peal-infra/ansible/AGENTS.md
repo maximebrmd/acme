@@ -36,7 +36,14 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   project's `src/link-domain.ts`), cloudflared sends that path alone to the
   server and answers 404 to anything else on the host, and `peal_runtime`
   sets `PEAL_SHORT_LINK_BASE` from it, so the base and the route never
-  disagree. Changing the host name breaks the links already sent.
+  disagree. Changing the host name breaks the links already sent. The
+  preflight refuses a host name that is not plain lower case (the server
+  stops on one), and `PEAL_SHORT_LINK_BASE` in `peal_settings`; a test ties
+  the tunnel's code pattern to the server's `codeLength` and alphabet, and
+  Gatus follows an unknown code on each short-link host (`short_links` in
+  `uptime_environments`). Make production's record in the peal.link zone
+  by the dashboard or Pulumi, never `cloudflared tunnel route dns`, which
+  can put it in peal.social's.
 - Containers publish ports on 127.0.0.1 only, and the tunnel reaches them
   there; Docker's own rules would otherwise bypass ufw.
 - A separate server checks uptime (`uptime.yml`, inventory group

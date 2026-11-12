@@ -42,24 +42,34 @@ in at. The account project holds its zone and what applies to the whole of
 it (`src/link-domain.ts`): a zone has one ruleset per phase, which the
 environments share.
 
-| What              | How                                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| The zone          | `link-zone`, which Cloudflare Registrar made: imported (below), protected, kept at Cloudflare if its resource goes       |
-| DNSSEC            | On; Cloudflare Registrar publishes the DS record itself                                                                  |
-| Zone settings     | Always Use HTTPS, TLS 1.2 at least, SSL Full (strict)                                                                    |
-| Mail              | None: a null MX (`0 .`), `v=spf1 -all`, and DMARC `p=reject` for the domain and its subdomains                           |
-| `peal.link/`      | A 302 to `https://peal.social/`, so browsers keep nothing should the domain get a page of its own                        |
-| `peal.link/<any>` | Rewritten to `/api/l/<any>`, which the tunnel sends to the server when it is a code (seven letters and digits), 404 else |
+| What              | How                                                                                                                                                                                               |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The zone          | `link-zone`, which Cloudflare Registrar made: imported (below), protected, kept at Cloudflare if its resource goes                                                                                |
+| DNSSEC            | On; Cloudflare Registrar publishes the DS record itself, in a day or two: until then the API says `pending`, and a preview may show `link-dnssec` as a change, which is not drift                 |
+| Zone settings     | Always Use HTTPS, TLS 1.2 at least, SSL Full (strict), and incoming URLs normalised (`link-url-normalization`)                                                                                    |
+| Mail              | None: a null MX (`0 .`), `v=spf1 -all`, and DMARC `p=reject` for the domain and its subdomains                                                                                                    |
+| `peal.link/`      | A 302 to `https://peal.social/`, so browsers keep nothing should the domain get a page of its own                                                                                                 |
+| `peal.link/<any>` | Rewritten to `/api/l/<any>`, but for `/cdn-cgi/*` (Cloudflare's own) and a path under `/api/l/` already; the tunnel sends it to the server when it is a code (seven letters and digits), 404 else |
 
 Each environment's stack points its own host name on the zone
 (`shortLinkHost`) at its tunnel, from the zone id the account's stack
 outputs (`linkZoneId`): `sandbox.peal.link` for the sandbox, behind its
 Access application like the rest of it; `peal.link` for production, public,
-once production has its stack (until then, its record is made by hand with
-its tunnel, as its other names are: the Ansible project's README, "Before
-the first run"). An unknown code answers the server's 404, and a path that
+once production has its stack (until then, its record is made in the
+dashboard, never with `cloudflared tunnel route dns`: the Ansible project's
+README, "Before the first run"). An unknown code answers the server's 404, and a path that
 is no code cloudflared's: neither leads to the site, so a mistyped or
 erased link says it is not one.
+
+That no path on the host reaches anything but the redirect rests on two
+things: the tunnel's route takes `/api/l/` and a code alone, and the edge
+normalises incoming URLs before the rewrite reads the path, so dot
+segments, repeated slashes and backslashes are resolved and the server gets
+`/api/l/` followed by the rest. cloudflared matches a cleaned path but
+forwards the one it was sent: with normalisation off, a path such as
+`/api/l/../admin/…%2F..%2Fl/x` could match the route and reach another of
+the server's routes, with no Access on this host. So the normalisation is
+in code (`link-url-normalization`): never turn it off in the dashboard.
 
 ## What stays manual
 
@@ -78,11 +88,11 @@ it needs, unless already set in the environment, read from one item of the
 owner's login keychain, `peal-pulumi`, and handed to Pulumi in its
 environment alone, never a file:
 
-| Variable                                     | What it is                                                                                                                                                                                                                                                                        |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`                       | An account API token: Access Edit, Cloudflare One Connector: cloudflared Edit, R2 Edit, Account API Tokens Edit; on peal.social, DNS Edit, Zone Read, Email Routing Rules Edit; on peal.link, DNS Edit, Zone Read, Zone Settings Edit, Single Redirect Edit, Transform Rules Edit |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | An R2 key with Object Read & Write on `peal-infra-state` alone                                                                                                                                                                                                                    |
-| `PULUMI_CONFIG_PASSPHRASE`                   | The passphrase of the stacks' secrets                                                                                                                                                                                                                                             |
+| Variable                                     | What it is                                                                                                                                                                                                                                                                                                                          |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`                       | An account API token: Access Edit, Cloudflare One Connector: cloudflared Edit, R2 Edit, Account API Tokens Edit; on peal.social, DNS Edit, Zone Read, Email Routing Rules Edit; on peal.link, DNS Edit (DNSSEC too), Zone Read, Zone Settings Edit (the settings and URL normalisation), Single Redirect Edit, Transform Rules Edit |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | An R2 key with Object Read & Write on `peal-infra-state` alone                                                                                                                                                                                                                                                                      |
+| `PULUMI_CONFIG_PASSPHRASE`                   | The passphrase of the stacks' secrets                                                                                                                                                                                                                                                                                               |
 
 The password manager holds them; the keychain item is a copy for the
 scripts, which a password manager's own keychain does not let them read.

@@ -24,7 +24,9 @@ credentials and how to adopt what exists.
   on it; each environment's stack makes its own record, to its tunnel.
   Short links in production are public, with no Access application; the
   tunnel lets `/api/l/` and a code alone through (the Ansible project's
-  cloudflared role): keep the rewrite and that route in step.
+  cloudflared role): keep the rewrite and that route in step. The rewrite
+  leaves `/cdn-cgi/` and `/api/l/` paths alone, and relies on the zone's
+  URL normalisation, which stays on, in code.
 - Resource names (the first argument) are what the state knows a resource
   by: renaming one makes Pulumi delete it and make it again. Use an alias.
 - Pin `@pulumi/pulumi` and `@pulumi/cloudflare` exactly, as everything else.
