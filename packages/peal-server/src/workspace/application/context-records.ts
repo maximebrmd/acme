@@ -12,6 +12,8 @@ import type {
   ChannelRecord,
   ContractsRecord,
   IdentificationRecord,
+  ImageProviderRecord,
+  OwnImagesRecord,
   LegalHoldRecord,
   LegalRemainsRecord,
   MediaRecord,
@@ -56,6 +58,10 @@ export interface WorkspaceContent {
   /** Its ad accounts, sign-ins without their tokens, boosts and audit trail. */
   readonly ads: AdsRecord;
   readonly analytics: readonly AnalyticsRecord[];
+  /** The image provider it brought, without its key; null when none. */
+  readonly assistantImageProvider: ImageProviderRecord | null;
+  /** How many images it asked that provider for, by day. */
+  readonly assistantOwnImages: readonly OwnImagesRecord[];
   readonly assistantUsage: readonly UsageRecord[];
   readonly billing: BillingRecord;
   readonly channels: readonly ChannelRecord[];

@@ -17,6 +17,7 @@ export const PermissionSchema = Schema.Literals([
   "apiKey:update",
   "apiKey:delete",
   "assistant:use",
+  "assistant:configure",
   "billing:read",
   "billing:manage",
   "channel:read",

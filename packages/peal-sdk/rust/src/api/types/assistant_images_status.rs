@@ -15,6 +15,8 @@ pub struct AssistantImagesStatus {
     #[serde(rename = "requestCost")]
     #[serde(default)]
     pub request_cost: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<AssistantImageSource>,
 }
 
 impl AssistantImagesStatus {
@@ -31,6 +33,7 @@ pub struct AssistantImagesStatusBuilder {
     daily_limit: Option<i64>,
     max_prompt_length: Option<i64>,
     request_cost: Option<i64>,
+    source: Option<AssistantImageSource>,
 }
 
 impl AssistantImagesStatusBuilder {
@@ -59,6 +62,11 @@ impl AssistantImagesStatusBuilder {
         self
     }
 
+    pub fn source(mut self, value: AssistantImageSource) -> Self {
+        self.source = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`AssistantImagesStatus`].
     /// This method will fail if any of the following fields are not set:
     /// - [`aspects`](AssistantImagesStatusBuilder::aspects)
@@ -83,6 +91,7 @@ impl AssistantImagesStatusBuilder {
             request_cost: self
                 .request_cost
                 .ok_or_else(|| BuildError::missing_field("request_cost"))?,
+            source: self.source,
         })
     }
 }

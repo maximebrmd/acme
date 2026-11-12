@@ -52,6 +52,17 @@ const days = (duration: Duration.Duration) => ({
 const kept = (id: string) => categoryOf(id)?.retention.en ?? "";
 
 describe("the data processing registry", () => {
+  it("says a workspace's own image provider gets its prompts and key, kept encrypted", () => {
+    const assistant = categoryOf("assistant");
+
+    expect(assistant?.data.en).toContain(
+      "or to the image provider the workspace set, under that provider’s terms, with the workspace’s key, which this server keeps encrypted and deletes with the workspace"
+    );
+    expect(assistant?.data.fr).toContain(
+      "ou au fournisseur d’images que l’espace de travail a réglé, selon les conditions de ce fournisseur, avec la clé de l’espace de travail, que ce serveur garde chiffrée et supprime avec l’espace de travail"
+    );
+  });
+
   it("keeps what French law has a host keep as long as the purge does", () => {
     expect({
       account: retentionPeriods.legalAccount,

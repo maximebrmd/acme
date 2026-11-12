@@ -3,7 +3,12 @@ import {
   AssistantActionSchema as ContractActionSchema,
   AssistantToneSchema,
   ImageAspectSchema as ContractAspectSchema,
+  imageProviderKeyPattern,
+  imageProviderModelPattern,
   imageRequestCost as contractImageCost,
+  maxImageProviderAddressLength,
+  maxImageProviderKeyLength,
+  maxImageProviderModelLength,
   maxImagePromptLength as contractPromptLength,
   TranslationLanguageSchema,
 } from "peal-contract";
@@ -12,6 +17,13 @@ import { AssistantActionSchema } from "#assistant/domain/assistant-action.ts";
 import { ImageAspectSchema } from "#assistant/domain/image-aspect.ts";
 import { imageRequestCost } from "#assistant/domain/image-limits.ts";
 import { maxImagePromptLength } from "#assistant/domain/image-prompt.ts";
+import {
+  maxProviderAddressLength,
+  maxProviderKeyLength,
+  maxProviderModelLength,
+  providerKeyPattern,
+  providerModelPattern,
+} from "#assistant/domain/image-provider.ts";
 import { ToneSchema } from "#assistant/domain/tone.ts";
 import { TranslationLanguageSchema as DomainLanguageSchema } from "#assistant/domain/translation-language.ts";
 
@@ -46,5 +58,21 @@ describe("the contract", () => {
       imageRequestCost,
       maxImagePromptLength,
     ]);
+  });
+
+  it("takes a workspace's image provider by the domain's rules", () => {
+    expect([
+      maxImageProviderAddressLength,
+      maxImageProviderModelLength,
+      maxImageProviderKeyLength,
+    ]).toStrictEqual([
+      maxProviderAddressLength,
+      maxProviderModelLength,
+      maxProviderKeyLength,
+    ]);
+    expect([
+      imageProviderModelPattern.source,
+      imageProviderKeyPattern.source,
+    ]).toStrictEqual([providerModelPattern.source, providerKeyPattern.source]);
   });
 });

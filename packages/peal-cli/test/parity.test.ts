@@ -81,6 +81,9 @@ const coverage = {
     "Keys are managed where they are created and revoked, in the web app's settings."
   ),
   "assistant.generateImage": by("media generate"),
+  "assistant.imageProvider": by("assistant image-provider show"),
+  "assistant.removeImageProvider": by("assistant image-provider clear"),
+  "assistant.setImageProvider": by("assistant image-provider set"),
   "assistant.status": exempt(
     "The writing assistant serves the web app's composer; an agent writes its own text."
   ),
@@ -139,18 +142,12 @@ const coverage = {
   "lookups.run": by("channels lookup"),
   "media.complete": by("media upload"),
   "media.create": by("media upload"),
-  "media.delete": exempt(
-    "Deleting takes media out of drafts for good: a person does it in the web app, which shows the posts that use it first."
-  ),
-  "media.describe": exempt(
-    "A description is given when the file is stored (--alt), or per post; changing the library's later is for the web app."
-  ),
+  "media.delete": by("media delete"),
+  "media.describe": by("media describe"),
   "media.get": by("media show"),
   "media.importFromUrl": by("media import"),
   "media.list": by("media list"),
-  "media.usage": exempt(
-    "It is read before deleting a media, which the command line does not do."
-  ),
+  "media.usage": by("media delete"),
   "members.list": by("members list"),
   "notices.list": exempt(inbox),
   "notices.markAllRead": exempt(inbox),

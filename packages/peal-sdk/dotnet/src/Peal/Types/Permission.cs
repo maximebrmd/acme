@@ -30,6 +30,8 @@ public readonly record struct Permission : IStringEnum
 
     public static readonly Permission AssistantUse = new(Values.AssistantUse);
 
+    public static readonly Permission AssistantConfigure = new(Values.AssistantConfigure);
+
     public static readonly Permission BillingRead = new(Values.BillingRead);
 
     public static readonly Permission BillingManage = new(Values.BillingManage);
@@ -204,6 +206,8 @@ public readonly record struct Permission : IStringEnum
         public const string ApiKeyDelete = "apiKey:delete";
 
         public const string AssistantUse = "assistant:use";
+
+        public const string AssistantConfigure = "assistant:configure";
 
         public const string BillingRead = "billing:read";
 

@@ -112,6 +112,7 @@ export const partnerKeyPermissions = [
   "activity:read",
   "analytics:read",
   "assistant:use",
+  "assistant:configure",
   "billing:read",
   "channel:read",
   "channel:connect",

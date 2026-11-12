@@ -26,6 +26,7 @@ import {
   InboxThreadDetailSchema,
   InboxThreadPageSchema,
   InvitationSchema,
+  MediaUsageSchema,
   PostChannelSchema,
   PostReviewSchema,
   PostSchema,
@@ -51,14 +52,22 @@ import {
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { followPost } from "#engagement/domain/thread.ts";
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
+import { PostRepository } from "#publishing/application/post-repository.ts";
+import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { createDraft, schedulePost } from "#publishing/domain/post.ts";
+import { Schedule } from "#publishing/domain/schedule.ts";
+import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { newId } from "#shared/application/ids.ts";
 import {
   ChannelIdSchema,
+  MediaAssetIdSchema,
   PostIdSchema,
   PostTargetIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
+import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { freshChannel, syntheticCredentials } from "#test/channels/support.ts";
@@ -389,6 +398,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           create_post: [false, false, false, true],
           create_posts: [false, false, false, true],
           create_queue: [false, false, false, false],
+          // Its address is for someone outside the workspace.
+          create_review_link: [false, false, false, true],
           // As a default, it takes the place of the one its scope had.
           create_signature: [false, true, false, false],
           create_tag: [false, false, false, false],
@@ -397,10 +408,14 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           create_webhook: [false, false, false, true],
           delete_channel_set: [false, true, true, false],
           delete_feed: [false, true, true, false],
+          // The file is gone for good; drafts lose it.
+          delete_media: [false, true, true, false],
           delete_queue: [false, true, true, false],
           delete_signature: [false, true, true, false],
           // Its posts lose it, and stay.
           delete_tag: [false, true, true, false],
+          // The same description again changes nothing more.
+          describe_media: [false, false, true, false],
           // Nothing is deleted: the channel keeps its connection and its
           // history, and enable_channel turns it back on.
           disable_channel: [false, false, true, false],
@@ -422,6 +437,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           get_comment_thread: [true, false, true, false],
           get_connect_link: [true, false, true, false],
           get_feed: [true, false, true, true],
+          get_media: [true, false, true, false],
+          get_media_usage: [true, false, true, false],
           get_partner_account: [true, false, true, false],
           get_partner_usage: [true, false, true, false],
           get_post: [true, false, true, false],
@@ -453,6 +470,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_posts: [true, false, true, false],
           list_queues: [true, false, true, false],
           list_recycling_rules: [true, false, true, false],
+          list_review_links: [true, false, true, false],
           list_short_links: [true, false, true, false],
           list_signatures: [true, false, true, false],
           list_tags: [true, false, true, false],
@@ -484,6 +502,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           resume_recycling_rule: [false, false, true, true],
           revoke_connect_link: [false, true, true, false],
           revoke_invitation: [false, true, true, false],
+          revoke_review_link: [false, true, true, false],
           run_channel_lookup: [true, false, true, true],
           schedule_post: [false, false, false, true],
           // Peal calls the receiver, a server outside it.
@@ -596,8 +615,35 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           });
 
           assert.deepStrictEqual(
-            media.tools.map(({ name }) => name),
-            ["list_media", "import_media", "generate_image"]
+            media.tools.map(({ name, scope }) => [name, scope]),
+            [
+              ["list_media", "workspace:read"],
+              ["get_media", "workspace:read"],
+              ["get_media_usage", "workspace:read"],
+              ["import_media", "workspace:write"],
+              ["generate_image", "workspace:write"],
+              ["describe_media", "workspace:write"],
+              ["delete_media", "workspace:write"],
+            ]
+          );
+
+          // Review links are made and ended with the scope that publishes,
+          // as their use case checks post:approve.
+          const reviewing = yield* reader.call("find_tools", FoundSchema, {
+            area: "review",
+          });
+
+          assert.deepStrictEqual(
+            reviewing.tools.map(({ name, scope }) => [name, scope]),
+            [
+              ["list_approvals", "workspace:read"],
+              ["get_post_review", "workspace:read"],
+              ["approve_post", "workspace:publish"],
+              ["request_changes", "workspace:publish"],
+              ["list_review_links", "workspace:read"],
+              ["create_review_link", "workspace:publish"],
+              ["revoke_review_link", "workspace:publish"],
+            ]
           );
 
           // So is what a workspace saves to write its posts with.
@@ -739,6 +785,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
                 },
               ],
             },
+            create_review_link: { access: "comment", postId },
             edit_published_post: {
               postId,
               targetId: postId,
@@ -759,6 +806,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             },
             reshuffle_queue: { queue: postId },
             resume_recycling_rule: { ruleId: postId },
+            revoke_review_link: { linkId: postId },
             schedule_post: {
               at: "2030-01-01T10:00:00Z",
               postId,
@@ -3253,6 +3301,221 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           );
         }
       })
+    );
+
+    it.effect(
+      "read, describe and delete one media, and refuse what a scheduled post shows",
+      () =>
+        Effect.gen(function* oneMedia() {
+          const fixture = yield* ToolsFixture;
+          const reader = yield* connected(fixture.reading);
+          const writer = yield* connected(fixture.writing);
+          const sql = yield* SqlClient.SqlClient;
+          const workspaceId = WorkspaceIdSchema.make(fixture.workspaceId);
+          const mediaId = yield* newId(MediaAssetIdSchema);
+
+          yield* sql`INSERT INTO media.media_assets (id, workspace_id, storage_key, content_type, byte_size, status, created_at, updated_at)
+            VALUES (${mediaId}, ${workspaceId}, ${`media/${workspaceId}/${mediaId}.png`}, 'image/png', 128, 'pending', now(), now())`;
+
+          const MediaIdSchema = Schema.Struct({
+            altText: Schema.NullOr(Schema.String),
+            id: Schema.String,
+          });
+
+          assert.deepStrictEqual(
+            yield* reader.call("get_media", MediaIdSchema, { mediaId }),
+            { altText: null, id: mediaId }
+          );
+          assert.include(
+            yield* reader.refused("get_media", { mediaId: "not-a-media" }),
+            "The workspace has no media with this id"
+          );
+          assert.include(
+            yield* reader.refused("describe_media", {
+              altText: "A synthetic harbour",
+              mediaId,
+            }),
+            "scope workspace:write"
+          );
+
+          assert.deepStrictEqual(
+            yield* writer.call("describe_media", MediaIdSchema, {
+              altText: "A synthetic harbour at dawn",
+              mediaId,
+            }),
+            { altText: "A synthetic harbour at dawn", id: mediaId }
+          );
+          assert.include(
+            yield* writer.refused("describe_media", {
+              altText: "a".repeat(2001),
+              mediaId,
+            }),
+            "longer than the 2000 characters"
+          );
+
+          // A draft and a scheduled post show it.
+          const showing = (scheduled: boolean) =>
+            Effect.gen(function* post() {
+              const now = yield* DateTime.now;
+
+              const draft = createDraft(
+                yield* newId(PostIdSchema),
+                workspaceId,
+                new PostContent({
+                  media: [
+                    new MediaAttachment({
+                      altText: "A synthetic harbour",
+                      mediaId,
+                    }),
+                  ],
+                  overrides: [],
+                  text: "A synthetic post",
+                }),
+                Option.none()
+              );
+
+              const made = scheduled
+                ? yield* Effect.fromResult(
+                    schedulePost(
+                      draft,
+                      new Schedule({
+                        at: DateTime.add(now, { days: 1 }),
+                        timeZone: TimeZoneIdSchema.make("UTC"),
+                      }),
+                      now
+                    )
+                  ).pipe(Effect.orDie)
+                : draft;
+
+              yield* PostRepository.use((posts) => posts.insert(made, []));
+              yield* Effect.addFinalizer(() =>
+                sql`DELETE FROM publishing.posts WHERE id = ${made.id}`.pipe(
+                  Effect.ignore
+                )
+              );
+
+              return made.id;
+            }).pipe(Effect.provide(DrizzlePostRepository));
+
+          const draftId = yield* showing(false);
+          const scheduledId = yield* showing(true);
+
+          assert.deepStrictEqual(
+            yield* reader.call("get_media_usage", MediaUsageSchema, {
+              mediaId,
+            }),
+            { drafts: [draftId], scheduled: [scheduledId] }
+          );
+
+          const refused = yield* writer.refused("delete_media", { mediaId });
+
+          assert.include(
+            refused,
+            "The media was not deleted: posts that are scheduled or being published show it"
+          );
+          assert.include(refused, scheduledId);
+
+          yield* sql`DELETE FROM publishing.posts WHERE id = ${scheduledId}`;
+
+          assert.deepStrictEqual(
+            yield* writer.call(
+              "delete_media",
+              Schema.Struct({
+                draftsThatLostIt: Schema.Array(Schema.String),
+                mediaId: Schema.String,
+              }),
+              { mediaId }
+            ),
+            { draftsThatLostIt: [draftId], mediaId }
+          );
+
+          // Again: nothing more changes.
+          assert.include(
+            yield* writer.refused("delete_media", { mediaId }),
+            "The workspace has no media with this id"
+          );
+        }).pipe(Effect.scoped)
+    );
+
+    it.effect(
+      "make review links that view or comment, list them without their address, and revoke them",
+      () =>
+        Effect.gen(function* reviewLinks() {
+          const fixture = yield* ToolsFixture;
+          const reader = yield* connected(fixture.reading);
+          const publisher = yield* connected(fixture.publishing);
+          const sql = yield* SqlClient.SqlClient;
+          const workspaceId = WorkspaceIdSchema.make(fixture.workspaceId);
+
+          const draft = createDraft(
+            yield* newId(PostIdSchema),
+            workspaceId,
+            new PostContent({
+              media: [],
+              overrides: [],
+              text: "A synthetic draft",
+            }),
+            Option.none()
+          );
+
+          yield* PostRepository.use((posts) => posts.insert(draft, [])).pipe(
+            Effect.provide(DrizzlePostRepository)
+          );
+          yield* Effect.addFinalizer(() =>
+            sql`DELETE FROM review.links WHERE post_id = ${draft.id}`.pipe(
+              Effect.andThen(
+                sql`DELETE FROM publishing.posts WHERE id = ${draft.id}`
+              ),
+              Effect.ignore
+            )
+          );
+
+          const created = yield* publisher.call(
+            "create_review_link",
+            Schema.Struct({
+              link: Schema.Struct({ access: Schema.String, id: Schema.String }),
+              token: Schema.String,
+              url: Schema.String,
+            }),
+            { access: "comment", expiresInHours: 24, postId: draft.id }
+          );
+
+          assert.strictEqual(created.link.access, "comment");
+          assert.isTrue(created.url.endsWith(created.token));
+
+          const listed = yield* reader.call(
+            "list_review_links",
+            Schema.Struct({ links: Schema.Array(Schema.Unknown) }),
+            { postId: draft.id }
+          );
+
+          assert.lengthOf(listed.links, 1);
+          // The address is told once, when the link is made.
+          assert.notInclude(JSON.stringify(listed), created.token);
+
+          // A link that approves cannot even be asked for here.
+          assert.include(
+            yield* publisher.refused("create_review_link", {
+              access: "approve",
+              postId: draft.id,
+            }),
+            "Invalid parameters"
+          );
+
+          const revoked = yield* publisher.call(
+            "revoke_review_link",
+            Schema.Struct({ status: Schema.String }),
+            { linkId: created.link.id }
+          );
+
+          assert.strictEqual(revoked.status, "revoked");
+          assert.include(
+            yield* publisher.refused("revoke_review_link", {
+              linkId: "not-a-link",
+            }),
+            "The workspace has no review link with this id"
+          );
+        }).pipe(Effect.scoped)
     );
 
     it.effect("make no image on a server without an image model", () =>

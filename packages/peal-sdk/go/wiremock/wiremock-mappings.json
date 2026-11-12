@@ -2165,7 +2165,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"available\": true,\n  \"dailyLimit\": 1,\n  \"images\": {\n    \"aspects\": [\n      \"square\"\n    ],\n    \"available\": true,\n    \"dailyLimit\": 1,\n    \"maxPromptLength\": 1,\n    \"requestCost\": 1\n  },\n  \"maxTextLength\": 1,\n  \"remaining\": 1,\n  \"resetsAt\": \"resetsAt\"\n}",
+        "body": "{\n  \"available\": true,\n  \"dailyLimit\": 1,\n  \"images\": {\n    \"aspects\": [\n      \"square\"\n    ],\n    \"available\": true,\n    \"dailyLimit\": 1,\n    \"maxPromptLength\": 1,\n    \"requestCost\": 1,\n    \"source\": \"workspace\"\n  },\n  \"maxTextLength\": 1,\n  \"remaining\": 1,\n  \"resetsAt\": \"resetsAt\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2243,6 +2243,114 @@
         }
       },
       "uuid": "15ef68f1-3829-40d4-beda-15cc10681dc9",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "f9112b73-bb45-4b23-b204-2c746bc7fce1",
+      "name": "Get the workspace's image provider - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/assistant/image-provider",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"provider\": {\n    \"baseUrl\": \"baseUrl\",\n    \"keySet\": true,\n    \"keyUnreadable\": true,\n    \"model\": \"model\",\n    \"updatedAt\": \"updatedAt\"\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "f9112b73-bb45-4b23-b204-2c746bc7fce1",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "cd9cd26c-04c8-4695-b876-20fffa1506cb",
+      "name": "Set the workspace's image provider - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/assistant/image-provider",
+        "method": "PUT",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"baseUrl\": \"baseUrl\",\n  \"keySet\": true,\n  \"keyUnreadable\": true,\n  \"model\": \"model\",\n  \"updatedAt\": \"updatedAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "cd9cd26c-04c8-4695-b876-20fffa1506cb",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c916cec5-7b48-436e-8490-68e997ffb9b7",
+      "name": "Remove the workspace's image provider - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/assistant/image-provider",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c916cec5-7b48-436e-8490-68e997ffb9b7",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -7170,6 +7278,6 @@
     }
   ],
   "meta": {
-    "total": 191
+    "total": 194
   }
 }

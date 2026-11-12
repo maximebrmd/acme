@@ -75,6 +75,9 @@ public final class Permission {
 
     public static final Permission MEDIA_READ = new Permission(Value.MEDIA_READ, "media:read");
 
+    public static final Permission ASSISTANT_CONFIGURE =
+            new Permission(Value.ASSISTANT_CONFIGURE, "assistant:configure");
+
     public static final Permission WEBHOOK_MANAGE = new Permission(Value.WEBHOOK_MANAGE, "webhook:manage");
 
     public static final Permission ADS_MANAGE = new Permission(Value.ADS_MANAGE, "ads:manage");
@@ -187,6 +190,8 @@ public final class Permission {
                 return visitor.visitOrganizationSecure();
             case MEDIA_READ:
                 return visitor.visitMediaRead();
+            case ASSISTANT_CONFIGURE:
+                return visitor.visitAssistantConfigure();
             case WEBHOOK_MANAGE:
                 return visitor.visitWebhookManage();
             case ADS_MANAGE:
@@ -276,6 +281,8 @@ public final class Permission {
                 return ORGANIZATION_SECURE;
             case "media:read":
                 return MEDIA_READ;
+            case "assistant:configure":
+                return ASSISTANT_CONFIGURE;
             case "webhook:manage":
                 return WEBHOOK_MANAGE;
             case "ads:manage":
@@ -317,6 +324,8 @@ public final class Permission {
         API_KEY_DELETE,
 
         ASSISTANT_USE,
+
+        ASSISTANT_CONFIGURE,
 
         BILLING_READ,
 
@@ -401,6 +410,8 @@ public final class Permission {
         T visitApiKeyDelete();
 
         T visitAssistantUse();
+
+        T visitAssistantConfigure();
 
         T visitBillingRead();
 

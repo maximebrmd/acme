@@ -14,6 +14,8 @@ module Peal
       field :max_prompt_length, -> { Integer }, optional: false, nullable: false, api_name: "maxPromptLength"
 
       field :request_cost, -> { Integer }, optional: false, nullable: false, api_name: "requestCost"
+
+      field :source, -> { Peal::Types::AssistantImageSource }, optional: false, nullable: true
     end
   end
 end

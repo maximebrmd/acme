@@ -2,6 +2,8 @@ import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
+import { syntheticKeyring } from "#test/channels/support.ts";
+
 import {
   MigratedSqlLive,
   apiKeyOf,
@@ -1432,6 +1434,130 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
         assert.strictEqual(after.status, 401);
       })
+    );
+  }
+);
+
+// A server that keeps keys, for the image providers partners set.
+const KeepsKeysLive = Layer.mergeAll(
+  TestApp.layerWith({
+    ...unconfirmedEmails,
+    PEAL_PARTNER_SELF_SERVICE: "true",
+    PEAL_TOKEN_KEYS: syntheticKeyring,
+  }),
+  MigratedSqlLive
+);
+
+const AssistantDaySchema = Schema.Struct({
+  dailyLimit: Schema.Number,
+  images: Schema.Struct({ source: Schema.NullOr(Schema.String) }),
+  remaining: Schema.Number,
+});
+
+const ProviderSettingSchema = Schema.Struct({
+  provider: Schema.NullOr(Schema.Struct({ baseUrl: Schema.String })),
+});
+
+layer(KeepsKeysLive, { excludeTestServices: true, timeout: "180 seconds" })(
+  "the assistant in a partner's customer workspaces",
+  (it) => {
+    it.effect(
+      "counts each workspace's requests on its own, and sets one customer's image provider alone",
+      () =>
+        Effect.gen(function* perWorkspace() {
+          const app = yield* TestApp;
+          const sql = yield* SqlClient.SqlClient;
+          const { home, owner } = yield* partnerOf("assistant-partner");
+          const { key } = yield* keyOf(owner, home);
+          const first = yield* customerOf(key, "First customer");
+          const second = yield* customerOf(key, "Second customer");
+
+          const dayOf = (workspaceId: string) =>
+            app
+              .request(`/api/workspaces/${workspaceId}/assistant`, {
+                headers: bearer(key),
+              })
+              .pipe(
+                Effect.flatMap((reply) => bodyOf(AssistantDaySchema, reply))
+              );
+
+          const { dailyLimit } = yield* dayOf(first.id);
+
+          // The first customer used its whole day, as the quota counts it.
+          yield* sql`INSERT INTO assistant.daily_usage (workspace_id, day, requests)
+            VALUES (${first.id}, (now() AT TIME ZONE 'UTC')::date, ${dailyLimit})`;
+
+          const [atLimit, untouched] = yield* Effect.all([
+            dayOf(first.id),
+            dayOf(second.id),
+          ]);
+
+          assert.strictEqual(atLimit.remaining, 0);
+          assert.strictEqual(untouched.remaining, untouched.dailyLimit);
+
+          // The partner key holds assistant:configure: it sets the first
+          // customer's provider, and the second has none.
+          const set = yield* app.request(
+            `/api/workspaces/${first.id}/assistant/image-provider`,
+            {
+              body: {
+                apiKey: "synthetic-workspace-image-key",
+                baseUrl: "https://1.1.1.1/v1",
+                model: "synthetic-image-model",
+              },
+              headers: bearer(key),
+              method: "PUT",
+            }
+          );
+
+          assert.strictEqual(set.status, 200);
+
+          const providerOf = (workspaceId: string) =>
+            app
+              .request(
+                `/api/workspaces/${workspaceId}/assistant/image-provider`,
+                {
+                  headers: bearer(key),
+                }
+              )
+              .pipe(
+                Effect.flatMap((reply) => bodyOf(ProviderSettingSchema, reply))
+              );
+
+          assert.strictEqual(
+            (yield* providerOf(first.id)).provider?.baseUrl,
+            "https://1.1.1.1/v1"
+          );
+          assert.isNull((yield* providerOf(second.id)).provider);
+          assert.deepStrictEqual(
+            [
+              (yield* dayOf(first.id)).images.source,
+              (yield* dayOf(second.id)).images.source,
+            ],
+            ["workspace", null]
+          );
+
+          // The partner's home workspace is not the key's: it reads as one
+          // that does not exist, and keeps no provider.
+          const homeProvider = yield* app.request(
+            `/api/workspaces/${home}/assistant/image-provider`,
+            { headers: bearer(key) }
+          );
+
+          assert.strictEqual(homeProvider.status, 404);
+
+          const [kept] = yield* sql<{
+            readonly count: number;
+          }>`SELECT count(*)::int AS count FROM assistant.image_providers WHERE workspace_id = ${home}`;
+
+          assert.strictEqual(kept?.count, 0);
+
+          yield* app.request(
+            `/api/workspaces/${first.id}/assistant/image-provider`,
+            { headers: bearer(key), method: "DELETE" }
+          );
+          yield* sql`DELETE FROM assistant.daily_usage WHERE workspace_id IN (${first.id}, ${second.id})`;
+        })
     );
   }
 );

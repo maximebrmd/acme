@@ -36,7 +36,7 @@ A partner key starts with `peal_partner_`, and is sent as `Authorization: Bearer
 | `workspaces:write`  | Create them, rename them, change their external id    |
 | `workspaces:delete` | Delete one, with everything in it                     |
 
-Inside each workspace it owns, a partner key holds the [permissions](/scheduling#roles) you ticked, among those a product needs for its customers: `channel:*`, `media:*`, `post:*`, `analytics:read`, `engagement:read` and `engagement:reply` (the [comments](/inbox) under a customer's posts, and answering them in public as its account: other people wrote those comments, so give a key these only if your product shows or answers them), `assistant:use`, `webhook:*`, `billing:read` and `activity:read`, which reads the workspace's [activity log](/settings#activity): what your key asked to change there, and the accounts connected through connect links. It never holds what belongs to people: members, invitations, API keys, billing changes.
+Inside each workspace it owns, a partner key holds the [permissions](/scheduling#roles) you ticked, among those a product needs for its customers: `channel:*`, `media:*`, `post:*`, `analytics:read`, `engagement:read` and `engagement:reply` (the [comments](/inbox) under a customer's posts, and answering them in public as its account: other people wrote those comments, so give a key these only if your product shows or answers them), `assistant:use`, `assistant:configure` (to set each customer's own [image provider](/settings#image-provider): `PUT /api/workspaces/{workspaceId}/assistant/image-provider`, with the customer's key, one workspace at a time), `webhook:*`, `billing:read` and `activity:read`, which reads the workspace's [activity log](/settings#activity): what your key asked to change there, and the accounts connected through connect links. It never holds what belongs to people: members, invitations, API keys, billing changes.
 
 ### What a partner key reaches [#isolation]
 
@@ -277,7 +277,7 @@ Your partner account closes, and your home workspace is deleted, only once the a
 On an instance that bills, the workspaces your partner account owns have no subscription of their own: they are on **your home workspace's plan**.
 
 - **Channels are counted together.** The plan's channels cover those of your home workspace and of every workspace you own. Connecting one more when they are all taken answers 402 `PlanLimitReached`, and a hosted page says no more accounts can be connected for now.
-- **The other limits apply to each workspace**, as the plan gives them: posts scheduled in a month, media stored, the writing assistant's requests a day.
+- **The other limits apply to each workspace**, as the plan gives them: posts scheduled in a month, media stored, the writing assistant's requests a day. Each customer's workspace counts its own requests: one that spent its day does not stop another. Images from a customer's own image provider count against none of them.
 - **Over the plan.** If your plan shrinks under what you hold, nothing is deleted, but until the channels held are back within it, by disconnecting some or taking a larger plan, your workspaces schedule and publish nothing ([A workspace over its plan](/billing#over)).
 
 A self-hosted Peal without billing limits nothing. `GET /api/partner` answers what the account holds each day, and [its usage per customer](#usage) what each workspace used, which is what a price by the workspace or by the connected channel would count.

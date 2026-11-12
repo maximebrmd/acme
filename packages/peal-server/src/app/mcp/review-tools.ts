@@ -6,8 +6,11 @@ import {
   ChangesOutcomeSchema,
   ApprovalDecisionSchema,
   ChangesRequestSchema,
+  CreatedReviewLinkSchema,
   CurrentMember,
+  maxReviewLinkHours,
   PostReviewSchema,
+  ReviewLinkSchema,
 } from "peal-contract";
 
 import { changing, reading } from "#app/mcp/annotations.ts";
@@ -67,10 +70,65 @@ export const RequestChanges = Tool.make("request_changes", {
   )
   .annotate(Tool.Title, "Request changes to a post");
 
-/** The tools that read posts' reviews, and decide on their approval. */
+export const ListReviewLinks = Tool.make("list_review_links", {
+  dependencies: [CurrentMember],
+  description:
+    "Lists a post's review links, newest first, ended ones included: what each lets its holder do (`view`, `comment` or `approve`), who made it, when it ends and whether it still works (`status`). A link's address is never shown again after it is made: none is here.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ postId }),
+  success: Schema.Struct({ links: Schema.Array(ReviewLinkSchema) }),
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "List a post's review links");
+
+export const CreateReviewLink = Tool.make("create_review_link", {
+  dependencies: [CurrentMember],
+  description: `Makes a review link for a draft, a post that waits for an approval or a scheduled one: an address that shows the post to someone without a Peal account, who may \`view\` it, or \`comment\` on it too. A link that approves is made by a person in the web app, never here. Whoever has the address sees the post: give it to the user, who sends it to whom they choose, and never post it anywhere. The answer holds the address (\`url\`) this once; Peal keeps only a hash of it. It works \`expiresInHours\` (1 to ${String(maxReviewLinkHours)}; 14 days when left out), until revoked with revoke_review_link. Needs the scope workspace:publish and a role that approves posts (owner, admin or editor).`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    access: Schema.Literals(["view", "comment"]),
+    expiresInHours: Schema.optionalKey(
+      Schema.Int.check(
+        Schema.isBetween({ maximum: maxReviewLinkHours, minimum: 1 })
+      )
+    ),
+    postId,
+  }),
+  success: CreatedReviewLinkSchema,
+})
+  // The address is for someone outside the workspace.
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Make a review link");
+
+export const RevokeReviewLink = Tool.make("revoke_review_link", {
+  dependencies: [CurrentMember],
+  description:
+    "Ends a review link for good: its address stops working at once, for whoever has it, and cannot be made to work again (make a new link instead). One already ended stays as it is. Needs the scope workspace:publish and a role that approves posts, as making one does.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    linkId: Schema.String.annotate({
+      description: "The link's id, as list_review_links answers it.",
+    }),
+  }),
+  success: ReviewLinkSchema,
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Revoke a review link");
+
+/**
+ * The tools that read posts' reviews, decide on their approval, and make
+ * and end their review links.
+ */
 export const ReviewTools = Toolkit.make(
   ListApprovals,
   GetPostReview,
   ApprovePost,
-  RequestChanges
+  RequestChanges,
+  ListReviewLinks,
+  CreateReviewLink,
+  RevokeReviewLink
 );

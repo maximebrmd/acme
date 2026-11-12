@@ -2729,6 +2729,159 @@ func (a *AssistantQuotaExceededEncoded) String() string {
 }
 
 var (
+	assistantSecretsNotConfiguredEncodedFieldTag       = big.NewInt(1 << 0)
+	assistantSecretsNotConfiguredEncodedFieldCode      = big.NewInt(1 << 1)
+	assistantSecretsNotConfiguredEncodedFieldMessage   = big.NewInt(1 << 2)
+	assistantSecretsNotConfiguredEncodedFieldRequestID = big.NewInt(1 << 3)
+)
+
+type AssistantSecretsNotConfiguredEncoded struct {
+	Tag       AssistantSecretsNotConfiguredEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                                 `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                                 `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                                 `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantSecretsNotConfiguredEncoded) GetTag() AssistantSecretsNotConfiguredEncodedTag {
+	if a == nil {
+		return ""
+	}
+	return a.Tag
+}
+
+func (a *AssistantSecretsNotConfiguredEncoded) GetCode() *string {
+	if a == nil {
+		return nil
+	}
+	return a.Code
+}
+
+func (a *AssistantSecretsNotConfiguredEncoded) GetMessage() *string {
+	if a == nil {
+		return nil
+	}
+	return a.Message
+}
+
+func (a *AssistantSecretsNotConfiguredEncoded) GetRequestID() *string {
+	if a == nil {
+		return nil
+	}
+	return a.RequestID
+}
+
+func (a *AssistantSecretsNotConfiguredEncoded) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *AssistantSecretsNotConfiguredEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantSecretsNotConfiguredEncoded) SetTag(tag AssistantSecretsNotConfiguredEncodedTag) {
+	a.Tag = tag
+	a.require(assistantSecretsNotConfiguredEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantSecretsNotConfiguredEncoded) SetCode(code *string) {
+	a.Code = code
+	a.require(assistantSecretsNotConfiguredEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantSecretsNotConfiguredEncoded) SetMessage(message *string) {
+	a.Message = message
+	a.require(assistantSecretsNotConfiguredEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantSecretsNotConfiguredEncoded) SetRequestID(requestID *string) {
+	a.RequestID = requestID
+	a.require(assistantSecretsNotConfiguredEncodedFieldRequestID)
+}
+
+func (a *AssistantSecretsNotConfiguredEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler AssistantSecretsNotConfiguredEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AssistantSecretsNotConfiguredEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantSecretsNotConfiguredEncoded) MarshalJSON() ([]byte, error) {
+	type embed AssistantSecretsNotConfiguredEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *AssistantSecretsNotConfiguredEncoded) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type AssistantSecretsNotConfiguredEncodedTag string
+
+const (
+	AssistantSecretsNotConfiguredEncodedTagAssistantSecretsNotConfigured AssistantSecretsNotConfiguredEncodedTag = "AssistantSecretsNotConfigured"
+)
+
+func NewAssistantSecretsNotConfiguredEncodedTagFromString(s string) (AssistantSecretsNotConfiguredEncodedTag, error) {
+	switch s {
+	case "AssistantSecretsNotConfigured":
+		return AssistantSecretsNotConfiguredEncodedTagAssistantSecretsNotConfigured, nil
+	}
+	var t AssistantSecretsNotConfiguredEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AssistantSecretsNotConfiguredEncodedTag) Ptr() *AssistantSecretsNotConfiguredEncodedTag {
+	return &a
+}
+
+var (
 	assistantUnavailableEncodedFieldTag       = big.NewInt(1 << 0)
 	assistantUnavailableEncodedFieldCode      = big.NewInt(1 << 1)
 	assistantUnavailableEncodedFieldMessage   = big.NewInt(1 << 2)
@@ -2879,6 +3032,132 @@ func NewAssistantUnavailableEncodedTagFromString(s string) (AssistantUnavailable
 
 func (a AssistantUnavailableEncodedTag) Ptr() *AssistantUnavailableEncodedTag {
 	return &a
+}
+
+type BadGatewayErrorBody struct {
+	Type                 string
+	AssistantFailed      *AssistantFailedEncoded
+	ImageProviderRefused *ImageProviderRefusedEncoded
+
+	rawJSON json.RawMessage
+}
+
+func (b *BadGatewayErrorBody) GetType() string {
+	if b == nil {
+		return ""
+	}
+	return b.Type
+}
+
+func (b *BadGatewayErrorBody) GetAssistantFailed() *AssistantFailedEncoded {
+	if b == nil {
+		return nil
+	}
+	return b.AssistantFailed
+}
+
+func (b *BadGatewayErrorBody) GetImageProviderRefused() *ImageProviderRefusedEncoded {
+	if b == nil {
+		return nil
+	}
+	return b.ImageProviderRefused
+}
+
+func (b *BadGatewayErrorBody) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"_tag"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	b.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant _tag", b)
+	}
+	switch unmarshaler.Type {
+	case "AssistantFailed":
+		value := new(AssistantFailedEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		b.AssistantFailed = value
+	case "ImageProviderRefused":
+		value := new(ImageProviderRefusedEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		b.ImageProviderRefused = value
+	}
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b BadGatewayErrorBody) MarshalJSON() ([]byte, error) {
+	if err := b.validate(); err != nil {
+		return nil, err
+	}
+	if b.AssistantFailed != nil {
+		return internal.MarshalJSONWithExtraProperty(b.AssistantFailed, "_tag", "AssistantFailed")
+	}
+	if b.ImageProviderRefused != nil {
+		return internal.MarshalJSONWithExtraProperty(b.ImageProviderRefused, "_tag", "ImageProviderRefused")
+	}
+	if len(b.rawJSON) > 0 {
+		return b.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", b)
+}
+
+type BadGatewayErrorBodyVisitor interface {
+	VisitAssistantFailed(*AssistantFailedEncoded) error
+	VisitImageProviderRefused(*ImageProviderRefusedEncoded) error
+}
+
+func (b *BadGatewayErrorBody) Accept(visitor BadGatewayErrorBodyVisitor) error {
+	if b.AssistantFailed != nil {
+		return visitor.VisitAssistantFailed(b.AssistantFailed)
+	}
+	if b.ImageProviderRefused != nil {
+		return visitor.VisitImageProviderRefused(b.ImageProviderRefused)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", b)
+}
+
+func (b *BadGatewayErrorBody) validate() error {
+	if b == nil {
+		return fmt.Errorf("type %T is nil", b)
+	}
+	var fields []string
+	if b.AssistantFailed != nil {
+		fields = append(fields, "AssistantFailed")
+	}
+	if b.ImageProviderRefused != nil {
+		fields = append(fields, "ImageProviderRefused")
+	}
+	if len(fields) == 0 {
+		if b.Type != "" {
+			if len(b.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", b, b.Type)
+		}
+		return fmt.Errorf("type %T is empty", b)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", b, fields)
+	}
+	if b.Type != "" {
+		field := fields[0]
+		if b.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				b,
+				b.Type,
+				b,
+			)
+		}
+	}
+	return nil
 }
 
 type BadRequestErrorBody struct {
@@ -8298,6 +8577,485 @@ func (h HeldLimit) Ptr() *HeldLimit {
 	return &h
 }
 
+type ImageProviderAddressRefusal string
+
+const (
+	ImageProviderAddressRefusalMalformed       ImageProviderAddressRefusal = "malformed"
+	ImageProviderAddressRefusalNotHTTPS        ImageProviderAddressRefusal = "notHttps"
+	ImageProviderAddressRefusalCredentials     ImageProviderAddressRefusal = "credentials"
+	ImageProviderAddressRefusalQueryOrFragment ImageProviderAddressRefusal = "queryOrFragment"
+	ImageProviderAddressRefusalTooLong         ImageProviderAddressRefusal = "tooLong"
+	ImageProviderAddressRefusalNotPublic       ImageProviderAddressRefusal = "notPublic"
+	ImageProviderAddressRefusalUnknownHost     ImageProviderAddressRefusal = "unknownHost"
+)
+
+func NewImageProviderAddressRefusalFromString(s string) (ImageProviderAddressRefusal, error) {
+	switch s {
+	case "malformed":
+		return ImageProviderAddressRefusalMalformed, nil
+	case "notHttps":
+		return ImageProviderAddressRefusalNotHTTPS, nil
+	case "credentials":
+		return ImageProviderAddressRefusalCredentials, nil
+	case "queryOrFragment":
+		return ImageProviderAddressRefusalQueryOrFragment, nil
+	case "tooLong":
+		return ImageProviderAddressRefusalTooLong, nil
+	case "notPublic":
+		return ImageProviderAddressRefusalNotPublic, nil
+	case "unknownHost":
+		return ImageProviderAddressRefusalUnknownHost, nil
+	}
+	var t ImageProviderAddressRefusal
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i ImageProviderAddressRefusal) Ptr() *ImageProviderAddressRefusal {
+	return &i
+}
+
+var (
+	imageProviderAddressRefusedEncodedFieldCode      = big.NewInt(1 << 0)
+	imageProviderAddressRefusedEncodedFieldMessage   = big.NewInt(1 << 1)
+	imageProviderAddressRefusedEncodedFieldRequestID = big.NewInt(1 << 2)
+	imageProviderAddressRefusedEncodedFieldReason    = big.NewInt(1 << 3)
+)
+
+type ImageProviderAddressRefusedEncoded struct {
+	Code      *string                     `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                     `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                     `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Reason    ImageProviderAddressRefusal `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImageProviderAddressRefusedEncoded) GetCode() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Code
+}
+
+func (i *ImageProviderAddressRefusedEncoded) GetMessage() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Message
+}
+
+func (i *ImageProviderAddressRefusedEncoded) GetRequestID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.RequestID
+}
+
+func (i *ImageProviderAddressRefusedEncoded) GetReason() ImageProviderAddressRefusal {
+	if i == nil {
+		return ""
+	}
+	return i.Reason
+}
+
+func (i *ImageProviderAddressRefusedEncoded) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *ImageProviderAddressRefusedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderAddressRefusedEncoded) SetCode(code *string) {
+	i.Code = code
+	i.require(imageProviderAddressRefusedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderAddressRefusedEncoded) SetMessage(message *string) {
+	i.Message = message
+	i.require(imageProviderAddressRefusedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderAddressRefusedEncoded) SetRequestID(requestID *string) {
+	i.RequestID = requestID
+	i.require(imageProviderAddressRefusedEncodedFieldRequestID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderAddressRefusedEncoded) SetReason(reason ImageProviderAddressRefusal) {
+	i.Reason = reason
+	i.require(imageProviderAddressRefusedEncodedFieldReason)
+}
+
+func (i *ImageProviderAddressRefusedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImageProviderAddressRefusedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImageProviderAddressRefusedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImageProviderAddressRefusedEncoded) MarshalJSON() ([]byte, error) {
+	type embed ImageProviderAddressRefusedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImageProviderAddressRefusedEncoded) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	imageProviderKeyRequiredEncodedFieldCode      = big.NewInt(1 << 0)
+	imageProviderKeyRequiredEncodedFieldMessage   = big.NewInt(1 << 1)
+	imageProviderKeyRequiredEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type ImageProviderKeyRequiredEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImageProviderKeyRequiredEncoded) GetCode() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Code
+}
+
+func (i *ImageProviderKeyRequiredEncoded) GetMessage() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Message
+}
+
+func (i *ImageProviderKeyRequiredEncoded) GetRequestID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.RequestID
+}
+
+func (i *ImageProviderKeyRequiredEncoded) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *ImageProviderKeyRequiredEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderKeyRequiredEncoded) SetCode(code *string) {
+	i.Code = code
+	i.require(imageProviderKeyRequiredEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderKeyRequiredEncoded) SetMessage(message *string) {
+	i.Message = message
+	i.require(imageProviderKeyRequiredEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderKeyRequiredEncoded) SetRequestID(requestID *string) {
+	i.RequestID = requestID
+	i.require(imageProviderKeyRequiredEncodedFieldRequestID)
+}
+
+func (i *ImageProviderKeyRequiredEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImageProviderKeyRequiredEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImageProviderKeyRequiredEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImageProviderKeyRequiredEncoded) MarshalJSON() ([]byte, error) {
+	type embed ImageProviderKeyRequiredEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImageProviderKeyRequiredEncoded) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	imageProviderRefusedEncodedFieldCode      = big.NewInt(1 << 0)
+	imageProviderRefusedEncodedFieldMessage   = big.NewInt(1 << 1)
+	imageProviderRefusedEncodedFieldRequestID = big.NewInt(1 << 2)
+	imageProviderRefusedEncodedFieldReason    = big.NewInt(1 << 3)
+	imageProviderRefusedEncodedFieldStatus    = big.NewInt(1 << 4)
+)
+
+// imageProviderRefusedEncodedNullableFields maps the wire names of ImageProviderRefusedEncoded's nullable fields (required or optional) to their field bits.
+var imageProviderRefusedEncodedNullableFields = map[string]*big.Int{
+	"status": imageProviderRefusedEncodedFieldStatus,
+}
+
+type ImageProviderRefusedEncoded struct {
+	Code      *string                           `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                           `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                           `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Reason    ImageProviderRefusedEncodedReason `json:"reason" url:"reason"`
+	Status    *int                              `json:"status,omitempty" url:"status,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImageProviderRefusedEncoded) GetCode() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Code
+}
+
+func (i *ImageProviderRefusedEncoded) GetMessage() *string {
+	if i == nil {
+		return nil
+	}
+	return i.Message
+}
+
+func (i *ImageProviderRefusedEncoded) GetRequestID() *string {
+	if i == nil {
+		return nil
+	}
+	return i.RequestID
+}
+
+func (i *ImageProviderRefusedEncoded) GetReason() ImageProviderRefusedEncodedReason {
+	if i == nil {
+		return ""
+	}
+	return i.Reason
+}
+
+func (i *ImageProviderRefusedEncoded) GetStatus() *int {
+	if i == nil {
+		return nil
+	}
+	return i.Status
+}
+
+func (i *ImageProviderRefusedEncoded) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *ImageProviderRefusedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderRefusedEncoded) SetCode(code *string) {
+	i.Code = code
+	i.require(imageProviderRefusedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderRefusedEncoded) SetMessage(message *string) {
+	i.Message = message
+	i.require(imageProviderRefusedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderRefusedEncoded) SetRequestID(requestID *string) {
+	i.RequestID = requestID
+	i.require(imageProviderRefusedEncodedFieldRequestID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderRefusedEncoded) SetReason(reason ImageProviderRefusedEncodedReason) {
+	i.Reason = reason
+	i.require(imageProviderRefusedEncodedFieldReason)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageProviderRefusedEncoded) SetStatus(status *int) {
+	i.Status = status
+	i.require(imageProviderRefusedEncodedFieldStatus)
+}
+
+func (i *ImageProviderRefusedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImageProviderRefusedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImageProviderRefusedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, imageProviderRefusedEncodedNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		i.require(presentFields)
+	}
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImageProviderRefusedEncoded) MarshalJSON() ([]byte, error) {
+	type embed ImageProviderRefusedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImageProviderRefusedEncoded) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+type ImageProviderRefusedEncodedReason string
+
+const (
+	ImageProviderRefusedEncodedReasonSettingsRefused ImageProviderRefusedEncodedReason = "settingsRefused"
+	ImageProviderRefusedEncodedReasonRedirected      ImageProviderRefusedEncodedReason = "redirected"
+	ImageProviderRefusedEncodedReasonAddressRefused  ImageProviderRefusedEncodedReason = "addressRefused"
+	ImageProviderRefusedEncodedReasonKeyUnreadable   ImageProviderRefusedEncodedReason = "keyUnreadable"
+)
+
+func NewImageProviderRefusedEncodedReasonFromString(s string) (ImageProviderRefusedEncodedReason, error) {
+	switch s {
+	case "settingsRefused":
+		return ImageProviderRefusedEncodedReasonSettingsRefused, nil
+	case "redirected":
+		return ImageProviderRefusedEncodedReasonRedirected, nil
+	case "addressRefused":
+		return ImageProviderRefusedEncodedReasonAddressRefused, nil
+	case "keyUnreadable":
+		return ImageProviderRefusedEncodedReasonKeyUnreadable, nil
+	}
+	var t ImageProviderRefusedEncodedReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i ImageProviderRefusedEncodedReason) Ptr() *ImageProviderRefusedEncodedReason {
+	return &i
+}
+
 type ImportProblem string
 
 const (
@@ -13475,6 +14233,156 @@ func (n NotRecyclableReason) Ptr() *NotRecyclableReason {
 	return &n
 }
 
+var (
+	ownImageLimitReachedEncodedFieldCode       = big.NewInt(1 << 0)
+	ownImageLimitReachedEncodedFieldMessage    = big.NewInt(1 << 1)
+	ownImageLimitReachedEncodedFieldRequestID  = big.NewInt(1 << 2)
+	ownImageLimitReachedEncodedFieldDailyLimit = big.NewInt(1 << 3)
+	ownImageLimitReachedEncodedFieldResetsAt   = big.NewInt(1 << 4)
+)
+
+type OwnImageLimitReachedEncoded struct {
+	Code       *string `json:"code,omitempty" url:"code,omitempty"`
+	Message    *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID  *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+	DailyLimit int     `json:"dailyLimit" url:"dailyLimit"`
+	ResetsAt   string  `json:"resetsAt" url:"resetsAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (o *OwnImageLimitReachedEncoded) GetCode() *string {
+	if o == nil {
+		return nil
+	}
+	return o.Code
+}
+
+func (o *OwnImageLimitReachedEncoded) GetMessage() *string {
+	if o == nil {
+		return nil
+	}
+	return o.Message
+}
+
+func (o *OwnImageLimitReachedEncoded) GetRequestID() *string {
+	if o == nil {
+		return nil
+	}
+	return o.RequestID
+}
+
+func (o *OwnImageLimitReachedEncoded) GetDailyLimit() int {
+	if o == nil {
+		return 0
+	}
+	return o.DailyLimit
+}
+
+func (o *OwnImageLimitReachedEncoded) GetResetsAt() string {
+	if o == nil {
+		return ""
+	}
+	return o.ResetsAt
+}
+
+func (o *OwnImageLimitReachedEncoded) GetExtraProperties() map[string]interface{} {
+	if o == nil {
+		return nil
+	}
+	return o.extraProperties
+}
+
+func (o *OwnImageLimitReachedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if o.explicitFields != nil {
+		next.Set(o.explicitFields)
+	}
+	next.Or(next, field)
+	o.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OwnImageLimitReachedEncoded) SetCode(code *string) {
+	o.Code = code
+	o.require(ownImageLimitReachedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OwnImageLimitReachedEncoded) SetMessage(message *string) {
+	o.Message = message
+	o.require(ownImageLimitReachedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OwnImageLimitReachedEncoded) SetRequestID(requestID *string) {
+	o.RequestID = requestID
+	o.require(ownImageLimitReachedEncodedFieldRequestID)
+}
+
+// SetDailyLimit sets the DailyLimit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OwnImageLimitReachedEncoded) SetDailyLimit(dailyLimit int) {
+	o.DailyLimit = dailyLimit
+	o.require(ownImageLimitReachedEncodedFieldDailyLimit)
+}
+
+// SetResetsAt sets the ResetsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OwnImageLimitReachedEncoded) SetResetsAt(resetsAt string) {
+	o.ResetsAt = resetsAt
+	o.require(ownImageLimitReachedEncodedFieldResetsAt)
+}
+
+func (o *OwnImageLimitReachedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler OwnImageLimitReachedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*o = OwnImageLimitReachedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *o)
+	if err != nil {
+		return err
+	}
+	o.extraProperties = extraProperties
+	o.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (o *OwnImageLimitReachedEncoded) MarshalJSON() ([]byte, error) {
+	type embed OwnImageLimitReachedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*o),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, o.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (o *OwnImageLimitReachedEncoded) String() string {
+	if o == nil {
+		return "<nil>"
+	}
+	if len(o.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(o.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(o); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", o)
+}
+
 type PaidPlan string
 
 const (
@@ -15220,6 +16128,7 @@ const (
 	PermissionAPIKeyUpdate       Permission = "apiKey:update"
 	PermissionAPIKeyDelete       Permission = "apiKey:delete"
 	PermissionAssistantUse       Permission = "assistant:use"
+	PermissionAssistantConfigure Permission = "assistant:configure"
 	PermissionBillingRead        Permission = "billing:read"
 	PermissionBillingManage      Permission = "billing:manage"
 	PermissionChannelRead        Permission = "channel:read"
@@ -15275,6 +16184,8 @@ func NewPermissionFromString(s string) (Permission, error) {
 		return PermissionAPIKeyDelete, nil
 	case "assistant:use":
 		return PermissionAssistantUse, nil
+	case "assistant:configure":
+		return PermissionAssistantConfigure, nil
 	case "billing:read":
 		return PermissionBillingRead, nil
 	case "billing:manage":

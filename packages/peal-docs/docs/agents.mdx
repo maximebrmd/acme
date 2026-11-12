@@ -9,24 +9,26 @@ An AI agent can post through Peal the way a member does: it reads the workspace'
 
 ## What an agent can do [#what]
 
-| It can                                                                                  | With                                                                                          |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| See who it acts for, in which workspace, and what it may do there                       | `whoami`                                                                                      |
-| Find the tool for a task, and learn which tools the connection may call                 | `find_tools`                                                                                  |
-| List the channels a post can go to, the media it can show, drafts and posts             | `list_channels`, `list_media`, `list_drafts`, `list_posts`                                    |
-| Bring an image or a video in from a public address                                      | `import_media`                                                                                |
-| Write a draft, change it or discard it                                                  | `create_draft`, `update_draft`, `discard_draft`                                               |
-| Write a new draft from a post the workspace has                                         | `duplicate_post`                                                                              |
-| Give a channel the workspace's own name, turn it off or back on                         | `rename_channel`, `disable_channel`, `enable_channel`                                         |
-| File posts under the workspace's tags, and list a tag's posts                           | `list_tags`, `create_tag`, `tag_post`, `list_posts`                                           |
-| Post to a saved set of channels, with a saved signature and a channel's default options | `list_channel_sets`, `list_signatures`, `get_channel_defaults`, `create_draft`, `create_post` |
-| Schedule a draft, publish a post now, or create and send one in a single call           | `schedule_post`, `publish_post`, `create_post`                                                |
-| Check a post before sending it, and see what each channel would receive                 | `validate_post`                                                                               |
-| Create and send up to 50 posts in one call                                              | `create_posts`                                                                                |
-| Move a scheduled post, take it back to draft or cancel it                               | `reschedule_post`, `unschedule_post`, `cancel_post`                                           |
-| Read how a post went on each channel, and every attempt Peal made                       | `get_post`, `list_post_attempts`                                                              |
-| Wait until a post that goes out now has its result on every channel                     | `await_post`                                                                                  |
-| Post again where a post failed, or record what you found on the platform                | `repost_target`, `confirm_target`                                                             |
+| It can                                                                                         | With                                                                                          |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| See who it acts for, in which workspace, and what it may do there                              | `whoami`                                                                                      |
+| Find the tool for a task, and learn which tools the connection may call                        | `find_tools`                                                                                  |
+| List the channels a post can go to, the media it can show, drafts and posts                    | `list_channels`, `list_media`, `list_drafts`, `list_posts`                                    |
+| Bring an image or a video in from a public address                                             | `import_media`                                                                                |
+| Read one media, see which posts show it, describe it, or delete it when the user asks          | `get_media`, `get_media_usage`, `describe_media`, `delete_media`                              |
+| Make a link that shows a post to a reviewer without an account, to view or comment, and end it | `list_review_links`, `create_review_link`, `revoke_review_link`                               |
+| Write a draft, change it or discard it                                                         | `create_draft`, `update_draft`, `discard_draft`                                               |
+| Write a new draft from a post the workspace has                                                | `duplicate_post`                                                                              |
+| Give a channel the workspace's own name, turn it off or back on                                | `rename_channel`, `disable_channel`, `enable_channel`                                         |
+| File posts under the workspace's tags, and list a tag's posts                                  | `list_tags`, `create_tag`, `tag_post`, `list_posts`                                           |
+| Post to a saved set of channels, with a saved signature and a channel's default options        | `list_channel_sets`, `list_signatures`, `get_channel_defaults`, `create_draft`, `create_post` |
+| Schedule a draft, publish a post now, or create and send one in a single call                  | `schedule_post`, `publish_post`, `create_post`                                                |
+| Check a post before sending it, and see what each channel would receive                        | `validate_post`                                                                               |
+| Create and send up to 50 posts in one call                                                     | `create_posts`                                                                                |
+| Move a scheduled post, take it back to draft or cancel it                                      | `reschedule_post`, `unschedule_post`, `cancel_post`                                           |
+| Read how a post went on each channel, and every attempt Peal made                              | `get_post`, `list_post_attempts`                                                              |
+| Wait until a post that goes out now has its result on every channel                            | `await_post`                                                                                  |
+| Post again where a post failed, or record what you found on the platform                       | `repost_target`, `confirm_target`                                                             |
 
 [Connect an MCP client](/mcp#tools) lists every tool with what it changes. An agent connects no channel: you connect accounts in the web app, where you sign in on each platform ([Connect channels](/channels)). It acts in one workspace, as you, with no more than your [role](/scheduling#roles) allows: owners, admins and editors schedule and publish; contributors write drafts.
 

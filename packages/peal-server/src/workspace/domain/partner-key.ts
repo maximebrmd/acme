@@ -37,6 +37,7 @@ export const partnerKeyPermissions: readonly Permission[] = [
   "activity:read",
   "analytics:read",
   "assistant:use",
+  "assistant:configure",
   "billing:read",
   "channel:read",
   "channel:connect",

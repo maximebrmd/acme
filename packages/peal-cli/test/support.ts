@@ -8,6 +8,7 @@ import {
   Redacted,
   Schema,
   Stdio,
+  Stream,
   Terminal,
 } from "effect";
 import { CliOutput } from "effect/cli";
@@ -52,12 +53,19 @@ import type { Studio } from "./studio.ts";
 const unused = Effect.die("not used by the CLI tests");
 
 // A terminal nobody sits at, or one where someone types `answers`, a line
-// for each question, and leaves once they are spent.
-const terminalOf = (answers: readonly string[] | undefined) => {
+// for each question, and leaves once they are spent; without a terminal,
+// standard input holds `stdin`, if a test pipes it.
+const terminalOf = (answers: readonly string[] | undefined, stdin?: string) => {
   const left = [...(answers ?? [])];
 
   return Layer.mergeAll(
-    Stdio.layerTest({ stdinIsTerminal: Effect.succeed(answers !== undefined) }),
+    Stdio.layerTest({
+      stdin:
+        stdin === undefined
+          ? Stream.empty
+          : Stream.make(new TextEncoder().encode(stdin)),
+      stdinIsTerminal: Effect.succeed(answers !== undefined),
+    }),
     Layer.succeed(
       Terminal.Terminal,
       Terminal.make({
@@ -88,12 +96,13 @@ const terminalOf = (answers: readonly string[] | undefined) => {
 export const cliEnvironment = (
   env: Record<string, string> = {},
   fileSystem: Layer.Layer<FileSystem.FileSystem> = FileSystem.layerNoop({}),
-  answers?: readonly string[]
+  answers?: readonly string[],
+  stdin?: string
 ) =>
   Layer.mergeAll(
     fileSystem,
     Path.layer,
-    terminalOf(answers),
+    terminalOf(answers, stdin),
     Layer.succeed(
       ChildProcessSpawner.ChildProcessSpawner,
       ChildProcessSpawner.make(() => unused)

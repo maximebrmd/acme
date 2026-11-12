@@ -27,6 +27,7 @@ const WorkspaceSettingsLayout = async ({
 
   const allowed: Readonly<Record<SettingsSection, boolean>> = {
     apiKeys: may.has("apiKey:read"),
+    assistant: may.has("assistant:configure"),
     channelSets: may.has("post:read") && may.has("channel:read"),
     feeds: may.has("post:read"),
     general: true,
@@ -56,6 +57,7 @@ const WorkspaceSettingsLayout = async ({
       "feeds",
       "apiKeys",
       "webhooks",
+      "assistant",
       "partner",
     ] satisfies SettingsSection[]
   ).filter((section) => allowed[section]);

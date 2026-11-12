@@ -35,7 +35,7 @@ export const tokenKeyIdOf = (encrypted: EncryptedToken): string => {
  * data: a copy moved under another context does not decrypt.
  */
 export const SecretContextSchema = Schema.String.check(
-  Schema.isPattern(/^(?:ads|app|choice|connect|webhook):\S+$/u)
+  Schema.isPattern(/^(?:ads|app|assistant|choice|connect|webhook):\S+$/u)
 ).pipe(Schema.brand("SecretContext"));
 
 export type SecretContext = typeof SecretContextSchema.Type;
@@ -60,6 +60,19 @@ export const webhookSecretContext = (endpointId: string): SecretContext =>
 export const adGrantContext = (grantId: string): SecretContext =>
   SecretContextSchema.make(`ads:${grantId}`);
 
+/**
+ * The context of the key a workspace gave for its own image provider,
+ * named by the workspace and the provider's whole address: a key copied to
+ * another workspace, or left behind an address changed in any way (its
+ * host or its path), does not decrypt, so it never reaches an address it
+ * was not typed for.
+ */
+export const imageProviderContext = (
+  workspaceId: string,
+  address: string
+): SecretContext =>
+  SecretContextSchema.make(`assistant:${workspaceId}:${address}`);
+
 export type TokenDecryptionError =
   | MalformedEncryptedToken
   | TokenAuthenticationFailed
@@ -73,8 +86,8 @@ export type TokenDecryptionError =
  * Secrets that belong to no channel, such as a connection's PKCE verifier or
  * an app's client secret on a Mastodon instance, are encrypted the same way,
  * bound to a context of their own (`connect:<state>`, `choice:<selection>`,
- * `app:<origin>`, `webhook:<endpoint id>`, `ads:<grant id>`), which never
- * reads as a channel id.
+ * `app:<origin>`, `webhook:<endpoint id>`, `ads:<grant id>`,
+ * `assistant:<workspace id>:<address>`), which never reads as a channel id.
  *
  * A server may run without keys, as long as it stores no channel: encrypting
  * then fails with MissingTokenKey, and decrypting with UnknownTokenKey.

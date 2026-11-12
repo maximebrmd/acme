@@ -8,6 +8,8 @@ import {
   ApprovalNotPending,
   AssistantQuotaExceeded,
   AssistantUnavailable,
+  ImageProviderAddressRefused,
+  ImageProviderKeyRequired,
   ChannelNotFound,
   ChannelSetNameTaken,
   ChannelSetNotFound,
@@ -70,6 +72,7 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 import type {
+  ImageProvider,
   Feed,
   LivePostChange,
   LivePostRefusal,
@@ -182,6 +185,7 @@ const everything: readonly Permission[] = [
   "ads:manage",
   "ads:spend",
   "ads:authorize",
+  "assistant:configure",
   "assistant:use",
   "analytics:read",
   "billing:read",
@@ -1227,6 +1231,11 @@ export interface StudioState {
   /** Whether the server has the keys that encrypt signing secrets. */
   readonly signingKeys: boolean;
   readonly webhooks: readonly WebhookEndpoint[];
+  /** The image provider the studio brought, and the key it was given. */
+  readonly imageProvider: {
+    readonly apiKey: string;
+    readonly provider: ImageProvider;
+  } | null;
 }
 
 /** A synthetic API key of a workspace, with what it may do there. */
@@ -1302,6 +1311,7 @@ export const makeStudio = (
       defaults: {},
       deliveries,
       feeds: [],
+      imageProvider: null,
       invitations: [invitation],
       links: [],
       media: [image(readyMediaId, { altText: "A synthetic catalogue cover" })],
@@ -3985,6 +3995,88 @@ export const studioGroupsLive = (studio: Studio) =>
               })
             );
           }),
+        // The studio's own image provider. An address on a host named
+        // `internal` stands for one that is not public.
+        imageProvider: ({ params }) =>
+          Effect.gen(function* imageProvider() {
+            yield* allowed("assistant:configure");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const { imageProvider: brought } = yield* Ref.get(studio.state);
+
+            return { provider: brought?.provider ?? null };
+          }),
+        removeImageProvider: ({ params }) =>
+          Effect.gen(function* removeImageProvider() {
+            yield* allowed("assistant:configure");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              imageProvider: null,
+            }));
+
+            return yield* record(studio, "image-provider:remove");
+          }),
+        setImageProvider: ({ params, payload }) =>
+          Effect.gen(function* setImageProvider() {
+            yield* allowed("assistant:configure");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const url = URL.parse(payload.baseUrl);
+
+            if (url === null || url.protocol !== "https:") {
+              return yield* new ImageProviderAddressRefused({
+                reason: url === null ? "malformed" : "notHttps",
+              });
+            }
+
+            if (url.hostname.includes("internal")) {
+              return yield* new ImageProviderAddressRefused({
+                reason: "notPublic",
+              });
+            }
+
+            const { imageProvider: brought } = yield* Ref.get(studio.state);
+
+            const address = url.href.replace(/\/+$/u, "");
+
+            const kept =
+              brought !== null && brought.provider.baseUrl === address
+                ? brought.apiKey
+                : null;
+
+            const apiKey = payload.apiKey ?? kept;
+
+            if (apiKey === null) {
+              return yield* new ImageProviderKeyRequired();
+            }
+
+            const provider: ImageProvider = {
+              baseUrl: address,
+              keySet: true,
+              keyUnreadable: false,
+              model: payload.model,
+              updatedAt: studioNow,
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              imageProvider: { apiKey, provider },
+            }));
+            yield* record(studio, `image-provider:set:${address}`);
+
+            return provider;
+          }),
         status: () => Effect.fail(new Forbidden()),
         suggest: () => Effect.fail(new Forbidden()),
       })
@@ -4106,7 +4198,19 @@ export const studioGroupsLive = (studio: Studio) =>
             }));
             yield* record(studio, `delete-media:${found.id}`);
           }),
-        describe: () => refusing,
+        describe: ({ params, payload }) =>
+          Effect.gen(function* describe() {
+            yield* allowed("media:upload");
+
+            const found = yield* findMedia(studio, params.mediaId);
+
+            yield* record(studio, `describe-media:${found.id}`);
+
+            return yield* saveMedia(studio, {
+              ...found,
+              altText: payload.altText,
+            });
+          }),
         get: ({ params }) =>
           allowed("media:read").pipe(
             Effect.andThen(findMedia(studio, params.mediaId))
@@ -4189,7 +4293,28 @@ export const studioGroupsLive = (studio: Studio) =>
                   : null,
             };
           }),
-        usage: () => refusing,
+        // The drafts and the scheduled posts that show it, as the server
+        // reads them from each post's content.
+        usage: ({ params }) =>
+          Effect.gen(function* usage() {
+            yield* allowed("media:read");
+
+            const found = yield* findMedia(studio, params.mediaId);
+            const { posts: all } = yield* Ref.get(studio.state);
+
+            const showing = all.filter((post) =>
+              post.content.media.some(({ mediaId }) => mediaId === found.id)
+            );
+
+            return {
+              drafts: showing
+                .filter(({ status }) => status === "draft")
+                .map(({ id }) => id),
+              scheduled: showing
+                .filter(({ status }) => status !== "draft")
+                .map(({ id }) => id),
+            };
+          }),
       })
     ),
     HttpApiBuilder.group(Api, "analytics", (handlers) =>

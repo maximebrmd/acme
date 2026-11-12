@@ -309,8 +309,14 @@ and no socket, for tests.
   `cluster_*` tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
   run `nx run peal-server:db:generate`, which writes a migration folder under
-  `packages/peal-server/drizzle/`. Commit the folder as drizzle-kit wrote it;
-  never edit a migration that has shipped.
+  `packages/peal-server/drizzle/`. Commit the folder as drizzle-kit wrote it.
+- Production runs these migrations, so the one combined migration of the
+  first releases has ended: a change to a table is a new folder on top of
+  the others, and a folder on `main` is never edited, deleted or generated
+  again (`20261112074616_initial` included). A second `db:generate` must
+  report no change. Until a branch merges, its folder is its own: after
+  merging a `main` that gained a migration, delete the branch's folder and
+  generate it again.
 - A query on a hot path (the calendar, a job that scans every workspace)
   gets its plan read on a database of the size it will meet:
   `packages/peal-server/scripts/seed-scale.ts` fills an empty, migrated

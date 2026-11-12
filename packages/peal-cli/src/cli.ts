@@ -7,6 +7,7 @@ import { activity } from "#commands/activity.ts";
 import { ads } from "#commands/ads.ts";
 import { analytics } from "#commands/analytics.ts";
 import { approvals } from "#commands/approvals.ts";
+import { assistant } from "#commands/assistant.ts";
 import { billing } from "#commands/billing.ts";
 import { channels } from "#commands/channels.ts";
 import { doctor } from "#commands/doctor.ts";
@@ -65,6 +66,7 @@ export const cli = peal.pipe(
     approvals,
     review,
     media,
+    assistant,
     analytics,
     ads,
     billing,

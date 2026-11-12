@@ -373,7 +373,8 @@ The staff context follows these rules too. What the law has a host keep is in
   an owner's decision in person). `engagement:read` and `engagement:reply` are among
   them, as publishing is: a product that posts for its customers reads
   and answers what is said under those posts, in a workspace that has no
-  member to do it. `Authentication` answers it as a
+  member to do it; so is `assistant:configure`, so a product sets each
+  customer's own image provider, which no member could. `Authentication` answers it as a
   `PartnerKeyPrincipal`; `WorkspaceAccess` lets it into a workspace its
   partner owns and answers 404 for every other, the home workspace
   included (`PartnerOwnership.ownerOf`). `/api/me` and the groups for

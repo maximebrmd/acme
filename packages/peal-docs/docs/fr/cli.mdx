@@ -419,16 +419,33 @@ peal media import https://files.example/printemps/couverture.jpg --alt "Un catal
 peal media generate --prompt "Un catalogue papier ouvert sur une table en bois, lumière du matin" --aspect landscape
 peal media list                   # du plus récent au plus ancien ; --limit et --cursor les parcourent
 peal media show <media-id>
+peal media describe <media-id> --text "Un catalogue papier ouvert sur une table en bois"
+peal media delete <media-id>
 ```
 
 - `peal media upload` envoie un fichier dans les médias de l’espace de travail : JPEG, PNG, GIF ou WebP jusqu’à 16 Mio, MP4 ou QuickTime jusqu’à 1 Gio, ou un document PDF jusqu’à 100 Mio et 300 pages, reconnu à son extension. Le fichier va directement au stockage des médias, puis Peal le vérifie et le lit.
 - `peal media import` fait récupérer au serveur une image, une vidéo ou un document PDF à une adresse `https://` publique, sans identifiants, en 90 secondes au plus ([Images et vidéos](/media#import)). Pour les fichiers plus lourds ou plus lents, utilisez `peal media upload`.
-- `peal media generate` fait créer au modèle d’images de l’instance une image d’après `--prompt` (de 1 à 1 000 caractères, envoyés tels quels à son fournisseur) dans les médias de l’espace de travail, au format `--aspect` `square` (par défaut), `landscape` ou `portrait` ([Générer une image](/media#generate)). Elle coûte 5 des demandes à l’assistant du jour de l’espace de travail, et l’image est marquée comme créée par IA : réglez la mention IA de la plateforme dans les options de la publication, et décrivez-la avec `--alt` quand vous la joignez. Les instances sans modèle d’images la refusent.
+- `peal media generate` fait créer au [fournisseur d’images](/settings#image-provider) de l’espace de travail, ou sinon au modèle d’images de l’instance, une image d’après `--prompt` (de 1 à 1 000 caractères, envoyés tels quels à ce fournisseur) dans les médias de l’espace de travail, au format `--aspect` `square` (par défaut), `landscape` ou `portrait` ([Générer une image](/media#generate)). Avec le modèle de l’instance, elle coûte 5 des demandes à l’assistant du jour de l’espace de travail, avec le fournisseur de l’espace de travail aucune ; l’image est marquée comme créée par IA : réglez la mention IA de la plateforme dans les options de la publication, et décrivez-la avec `--alt` quand vous la joignez. Un espace de travail sans fournisseur à lui, sur une instance sans modèle d’images, est refusé.
 - `peal media list` liste les images et vidéos de l’espace de travail, de la plus récente à la plus ancienne, avec les identifiants que les publications prennent et si chacune est prête. `--limit` prend 100 au plus.
 - `peal media show` affiche un média : son type, sa taille, quand il a été stocké, s’il est prêt à être joint, et sa description. Après un envoi ou une récupération, il dit quand une vidéo que Peal lit encore devient `ready`.
+- `peal media describe` règle la description d’un média dans la médiathèque avec `--text`, ou la retire avec `--clear`. Les publications qui l’ont déjà joint gardent leur texte alternatif.
+- `peal media delete` supprime un média définitivement. Il dit d’abord quels brouillons le montrent et le perdent, puis demande (`--yes` sinon, et avec `--json`) ; un média qu’une publication programmée montre est refusé, avec ces publications.
 - `--alt` dit ce que montre le fichier, pour les personnes qui ne peuvent pas le voir.
 
 Chaque commande affiche l’identifiant du média. Seul un média `ready` va dans une publication.
+
+## Le fournisseur d’images de l’assistant [#assistant]
+
+```sh
+peal assistant image-provider show
+peal assistant image-provider set --base-url https://images.example.com/v1 --model <le-modèle-de-votre-fournisseur> < cle.txt
+peal assistant image-provider set --base-url https://images.example.com/v2 --model <le-modèle-de-votre-fournisseur> --keep-key
+peal assistant image-provider clear
+```
+
+- Ces commandes gèrent le [fournisseur d’images](/settings#image-provider) de l’espace de travail, et demandent `assistant:configure` (propriétaires, administrateurs, et les clés à qui il a été donné).
+- `set` ne prend jamais la clé en argument, que l’historique du shell et la liste des processus garderaient : dans un terminal, il la demande sans afficher ce que vous tapez ; sinon, il la lit sur l’entrée standard, jusqu’à sa fin, sans son dernier saut de ligne. `--keep-key` garde la clé déjà enregistrée, que le serveur accepte seulement tant que `--base-url` reste exactement le même (pour changer le modèle seul) ; toute autre adresse redemande la clé.
+- `show` affiche l’adresse, le modèle et si la clé peut encore être lue, jamais la clé. `clear` retire le fournisseur et supprime sa clé, après avoir demandé (`--yes` sinon).
 
 ## Relectures et approbations [#review]
 

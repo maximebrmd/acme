@@ -35,6 +35,8 @@ export interface Runs {
 export interface SignedIn extends Runs {
   /** The same command line at a terminal, where someone types these lines. */
   readonly answering: (answers: readonly string[]) => Runs;
+  /** The same command line with this text piped on standard input. */
+  readonly piping: (stdin: string) => Runs;
   /** The folder the test may write in. */
   readonly directory: string;
   readonly studio: Studio;
@@ -90,7 +92,8 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
 
   const runs = (
     extra: Readonly<Record<string, string>>,
-    answers?: readonly string[]
+    answers?: readonly string[],
+    stdin?: string
   ): Runs => {
     const environment = Layer.mergeAll(
       cliEnvironment(
@@ -101,7 +104,8 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
           ...extra,
         },
         NodeFileSystem.layer,
-        answers
+        answers,
+        stdin
       ),
       server
     );
@@ -162,6 +166,7 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
   return {
     answering: (answers) => runs({}, answers),
     directory,
+    piping: (stdin) => runs({}, undefined, stdin),
     printed,
     refused,
     refusedAfter,

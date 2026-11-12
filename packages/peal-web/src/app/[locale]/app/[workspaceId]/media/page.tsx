@@ -49,6 +49,7 @@ const MediaPage = async ({
         canGenerate={canGenerateImages(workspace.permissions)}
         canUpload={workspace.permissions.includes("media:upload")}
         canDelete={workspace.permissions.includes("media:delete")}
+        mayConfigure={workspace.permissions.includes("assistant:configure")}
       />
     </div>
   );
