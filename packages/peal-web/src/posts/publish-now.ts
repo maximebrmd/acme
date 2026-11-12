@@ -7,6 +7,8 @@ export interface PublishNowState {
   readonly canReschedule: boolean;
   /** Whether the member may schedule the draft. */
   readonly canSchedule: boolean;
+  /** How many channels the post goes to. */
+  readonly channels: number;
   /** Whether every channel's platform takes the post as it is. */
   readonly publishable: boolean;
   /** Whether another action of the composer runs. */
@@ -30,17 +32,18 @@ export type PublishNow =
  * not offered where the post would wait for an approval: held with its
  * time, it would go back to draft once approved after it (`scheduleGrace`),
  * so the button could not do what it says. It waits, as Schedule does,
- * until every channel takes the post.
+ * until every channel takes the post, and for a channel to go to.
  */
 export const publishNowOf = ({
   canReschedule,
   canSchedule,
+  channels,
   publishable,
   running,
   status,
   willWait,
 }: PublishNowState): PublishNow => {
-  const enabled = publishable && !running;
+  const enabled = publishable && !running && channels > 0;
 
   if (willWait) {
     return { _tag: "none" };

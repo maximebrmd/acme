@@ -8,6 +8,7 @@ import type { PublishNowState } from "#posts/publish-now.ts";
 const draft: PublishNowState = {
   canReschedule: false,
   canSchedule: true,
+  channels: 2,
   publishable: true,
   running: false,
   status: "draft",
@@ -56,6 +57,14 @@ describe(publishNowOf, () => {
   it("is not offered to a member who may not schedule the draft", () => {
     expect(publishNowOf({ ...draft, canSchedule: false })).toStrictEqual({
       _tag: "none",
+    });
+  });
+
+  it("waits for a channel to go to, so it says where the post goes", () => {
+    expect(publishNowOf({ ...draft, channels: 0 })).toStrictEqual({
+      _tag: "offered",
+      enabled: false,
+      from: "draft",
     });
   });
 
