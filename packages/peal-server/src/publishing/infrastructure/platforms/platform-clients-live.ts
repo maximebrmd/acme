@@ -80,7 +80,8 @@ const uploadTimeout = Duration.minutes(10);
  * the public HTTP client, so the outbound guard checks the servers users
  * chose. Needs an HttpClient, the OutboundGuard, SecureRandom and Digest
  * (for DPoP proofs), Mac (for Meta's proofs), PlatformCredentials,
- * MediaForPublishing, PublicationProgress (for TikTok's steps), and
+ * MediaForPublishing, PublicationProgress (for TikTok's steps and
+ * Facebook's reels and stories), and
  * UploadSessions and PlatformQuota (YouTube's uploads are journaled and
  * counted against the day's quota). Reads LINKEDIN_API_VERSION when it is
  * built.
