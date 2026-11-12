@@ -1019,6 +1019,7 @@ describe("a feed whose starter is gone", () => {
       onServer(
         Effect.gen(function* takenOver() {
           const workspaceId = yield* freshWorkspace;
+
           const newcomer = UserIdSchema.make(
             "6c1d5a2b-7e3f-4a9b-8c0d-1e2f3a4b5c6d"
           );
