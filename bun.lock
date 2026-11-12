@@ -8,7 +8,7 @@
         "@types/bun": "1.4.4",
         "@types/node": "26.6.6",
         "effect": "4.1.4",
-        "fern-api": "5.201.0",
+        "fern-api": "5.210.3",
         "nx": "24.0.6",
         "oxfmt": "0.78.0",
         "oxlint": "1.93.0",
@@ -1935,7 +1935,7 @@
 
     "fdir": ["fdir@6.5.0", "", { "peerDependencies": { "picomatch": "^3 || ^4" }, "optionalPeers": ["picomatch"] }, "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg=="],
 
-    "fern-api": ["fern-api@5.201.0", "", { "optionalDependencies": { "@boundaryml/baml": "^0.219.0" }, "bin": { "fern": "cli.cjs" } }, "sha512-moWJKMkk4EoOZ7gfgGL9rMimgXvRFEXpjNQpqm5l2/qHZrJuTZ3kuF6DUQkglkmW2WoW/RVDPM6IMdj7Hqm9Tw=="],
+    "fern-api": ["fern-api@5.210.3", "", { "optionalDependencies": { "@boundaryml/baml": "^0.219.0" }, "bin": { "fern": "cli.cjs" } }, "sha512-F5BH+PDovKAoSQXLoSElfZRciQaJIkrseEQQ510kv+Cosf3PoKDej+gRPNPGi/ekdS59PBg11U6LQjPECfKYdQ=="],
 
     "fflate": ["fflate@0.8.3", "", {}, "sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA=="],
 
