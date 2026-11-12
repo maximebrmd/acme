@@ -724,7 +724,9 @@ export class Recycling extends Context.Service<
 
       // Ends the rule for `reason`, telling whoever it concerns, in one
       // transaction under its lock: a rule another run or a member holds,
-      // or that changed since it was read, is left as it is.
+      // or that changed in any way since it was read (the reason was judged
+      // on what was read: a member may have moved its ending or corrected a
+      // variant), is left for the next run, which judges it anew.
       const ended = Effect.fn("Recycling.ended")(function* ended(
         planned: RecyclingRule,
         reason: RecyclingEndReason
@@ -733,11 +735,7 @@ export class Recycling extends Context.Service<
           Effect.gen(function* end() {
             const locked = yield* store.lockUnlessHeld(planned.id);
 
-            if (
-              Option.isNone(locked) ||
-              locked.value.status._tag !== "active" ||
-              locked.value.made !== planned.made
-            ) {
+            if (Option.isNone(locked) || !isSameRule(locked.value, planned)) {
               return "left" as const;
             }
 

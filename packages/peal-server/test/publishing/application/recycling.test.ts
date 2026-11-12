@@ -294,6 +294,49 @@ describe("making a rule's occurrences", () => {
   );
 
   it.effect(
+    "ends no rule on an ending a member changed while the run went",
+    () =>
+      onServer(
+        Effect.gen(function* extendedMeanwhile() {
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const source = yield* published(workspaceId, channel);
+
+          const rule = yield* started(
+            workspaceId,
+            weekly(source, {
+              until: Option.some({ day: 25, month: 6, year: 2026 }),
+            })
+          );
+
+          const context = yield* Effect.context<Recycling>();
+
+          // Missed until past its last day, which a member moves on while
+          // the run goes.
+          yield* setTime("2026-06-26T08:00:00Z");
+          yield* whileRunning(
+            Recycling.use((recycling) =>
+              recycling.change(actorIn(workspaceId), rule.id, {
+                until: Option.some({ day: 31, month: 7, year: 2026 }),
+              })
+            ).pipe(Effect.asVoid, Effect.orDie, Effect.provideContext(context))
+          );
+
+          yield* makeDue;
+
+          const kept = yield* ruleNow(workspaceId, rule.id);
+
+          assert.strictEqual(kept.status._tag, "active");
+
+          yield* makeDue;
+
+          assert.lengthOf(yield* occurrencesOf(rule.id), 1);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "makes one occurrence when two runs meet",
     () =>
       onServer(
