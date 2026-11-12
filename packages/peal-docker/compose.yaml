@@ -109,19 +109,28 @@ services:
       <<: *healthcheck
       test: [CMD, nc, -z, 127.0.0.1, "12111"]
 
+  # busybox's static wget, copied into a volume for the collector's health
+  # check, as in compose.production.yaml, which says why it is not an image
+  # mount.
+  collector-wget:
+    image: busybox:1.38.0-musl
+    command: [sh, -c, "cp /bin/busybox /tools/.wget && mv -f /tools/.wget /tools/wget"]
+    network_mode: none
+    volumes:
+      - collector-wget:/tools
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.165.0
     volumes:
       - ./config/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
-      # The collector image has no shell or HTTP client, so the health check
-      # borrows busybox's static wget from an image mount.
-      - type: image
-        source: busybox:1.38.0-musl
-        target: /busybox
+      # busybox's wget, for the health check (collector-wget).
+      - collector-wget:/busybox:ro
     ports:
       - 127.0.0.1:${PEAL_OTLP_GRPC_PORT:-14317}:4317
       - 127.0.0.1:${PEAL_OTLP_HTTP_PORT:-14318}:4318
     depends_on:
+      collector-wget:
+        condition: service_completed_successfully
       loki:
         condition: service_healthy
       tempo:
@@ -130,7 +139,7 @@ services:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck
-      test: [CMD, /busybox/bin/wget, -q, -O, /dev/null, http://127.0.0.1:13133/]
+      test: [CMD, /busybox/wget, -q, -O, /dev/null, http://127.0.0.1:13133/]
 
   loki:
     image: grafana/loki:3.7.9
@@ -204,6 +213,7 @@ services:
 volumes:
   postgres:
   seaweedfs:
+  collector-wget:
   mailpit:
   loki:
   tempo:

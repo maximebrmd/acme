@@ -25,15 +25,22 @@
   together. A platform may bound how long what it gives is kept without
   being read again: the gate puts its bound on every batch
   (`refreshWithin`, from `keptWithoutRefresh` in
-  `platform-engagement.ts`; YouTube's 29 days), `recordCollection` stamps
-  the thread's `refresh_by` at each read, and `PurgeEngagement.forgetExpired`
-  (hourly, `engagement.refresh-bound`, and before each daily purge)
-  forgets, under the thread's lock and while the bound is still past, the
-  comments of a thread no read reached in time (`expireComment`: the
+  `platform-engagement.ts`; YouTube's 29 days), `recordCollection` moves
+  the thread's `refresh_by` on a complete read only (an incomplete one sets
+  it only where none is), so a comment an incomplete read missed is
+  forgotten at the bound, and `PurgeEngagement.forgetExpired`
+  (hourly, `engagement.refresh-bound`, and before each daily purge, whose
+  deletion runs whatever it met) forgets, under the thread's lock and while
+  the bound is still past, the comments of a thread no complete read
+  reached in time; a thread that fails is counted
+  (`peal.engagement.retention.forget_failures`, alert
+  `peal-comments-forget-failing`) and the others go on (`expireComment`: the
   `deleted` shape, with `expired_at`, shown as `forgotten: "expired"`); a
   later read writes them back. A channel gone (`ChannelEvents.disconnected`,
   through `engagementChannelEvents`) forgets at once its threads' comments
-  that carry a bound (`EngagementRecords.channelGone`); the others end at
+  that carry a bound and ends those threads (`EngagementRecords.channelGone`,
+  so a read on its way finds its thread ended under the lock and keeps
+  nothing); the others end at
   their next read and keep their retention. Erasing a workspace deletes its threads and records it in
   `engagement.erased_workspaces` under the following lock, as analytics
   does; a closed account leaves its replies without an author
@@ -202,11 +209,13 @@
   (one level), hide rejects (never `banAuthor`), show publishes (the
   reference and the guide disagree whether YouTube allows it: a refusal
   changes nothing), and a rejected comment is no longer listed, so the
-  next read forgets it. 403 `commentsDisabled` reads nothing and is not
+  next read forgets it (the implementation guide: the API "does not provide a way to list or otherwise discover rejected comments"), which leaves `unhide` reachable only until then. 403 `commentsDisabled` reads nothing and is not
   complete; 404 `videoNotFound` is `missing`; `insufficientPermissions`
   pauses the channel on a batch's first thread and fails a later one.
-  Each read call spends a unit of `youtubeCommentsDailyUnits` (5,000, half
-  the project's 10,000, by Pacific day) in publishing's `PlatformQuota`
+  Each read call spends a unit of `youtubeCommentsDailyUnits` (3,000 of
+  the project's 10,000 by Pacific day, `YOUTUBE_DAILY_COMMENT_UNITS`;
+  with thumbnails' 4,000 it leaves 3,000, `youtubeReservedUnits` at
+  least, for what Peal does not count) in publishing's `PlatformQuota`
   ledger (`comments:youtube`, shared by every process); past it, or on
   `quotaExceeded`, which exhausts the bucket, the read halts until the
   next day. Replies, hides and withdrawals are a person's acts and are

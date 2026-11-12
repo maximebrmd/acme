@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Duration, Effect, Option } from "effect";
+import { DateTime, Duration, Effect, Metric, Option } from "effect";
 import { TestClock } from "effect/testing";
 
 import { CollectComments } from "#engagement/application/collect-comments.ts";
@@ -7,9 +7,15 @@ import type {
   CommentsBatch,
   CommentsRequest,
 } from "#engagement/application/ports/comment-source.ts";
-import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
+import {
+  forgetFailures,
+  PurgeEngagement,
+} from "#engagement/application/purge-engagement.ts";
+import { expireComment } from "#engagement/domain/comment.ts";
 import type { CommentReading } from "#engagement/domain/comment.ts";
 import { writeReply } from "#engagement/domain/reply.ts";
+import { endCollection, withoutRefresh } from "#engagement/domain/thread.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
 import type { World } from "#test/engagement/fakes/world.ts";
 import {
@@ -44,7 +50,8 @@ const forgetAt = (instant: DateTime.Utc) =>
 const showing =
   (
     comments: readonly CommentReading[],
-    refreshWithin: Option.Option<Duration.Duration>
+    refreshWithin: Option.Option<Duration.Duration>,
+    complete = true
   ) =>
   (request: CommentsRequest): Effect.Effect<CommentsBatch> =>
     Effect.succeed({
@@ -52,7 +59,7 @@ const showing =
       readings: request.threads.map(({ threadId }) => ({
         _tag: "read" as const,
         comments,
-        complete: true,
+        complete,
         threadId,
       })),
       ...Option.match(refreshWithin, {
@@ -201,4 +208,211 @@ describe("the refresh bound", () => {
       );
     }).pipe(Effect.provide(world.layer));
   });
+
+  it.effect(
+    "is moved by a complete read only: a comment an incomplete read did not return is forgotten at the bound",
+    () => {
+      const world = makeWorld();
+      const day = Option.some(Duration.hours(24));
+
+      world.state.posts.push(followedPost(1));
+      world.state.read = showing([reading(1), reading(2)], day);
+
+      return Effect.gen(function* incomplete() {
+        yield* runAt(after("10 minutes"));
+
+        const stamped = onlyThread(world).refreshBy;
+
+        // Comments turned off, a cap, a deadline: a read that returns
+        // only some of them, or none, never extends the bound.
+        world.state.read = showing([reading(2)], day, false);
+        yield* runAt(after("1 hour"));
+
+        assert.deepStrictEqual(onlyThread(world).refreshBy, stamped);
+
+        world.state.read = showing([], day, false);
+        yield* runAt(after("2 hours"));
+
+        assert.deepStrictEqual(onlyThread(world).refreshBy, stamped);
+        assert.strictEqual(yield* forgetAt(after("1450 minutes")), 1);
+        assert.isTrue(
+          comments(world).every(
+            ({ author, expired, text }) => !author && expired && text === ""
+          )
+        );
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect("is first stamped by an incomplete read when none was", () => {
+    const world = makeWorld();
+
+    world.state.posts.push(followedPost(1));
+    world.state.read = showing(
+      [reading(1)],
+      Option.some(Duration.hours(24)),
+      false
+    );
+
+    return Effect.gen(function* first() {
+      yield* runAt(after("10 minutes"));
+
+      assert.deepStrictEqual(
+        onlyThread(world).refreshBy,
+        Option.some(
+          after(Duration.sum(Duration.hours(24), Duration.minutes(10)))
+        )
+      );
+    }).pipe(Effect.provide(world.layer));
+  });
+
+  it.effect(
+    "goes on past a thread it cannot forget, counts it, and still purges what is past its retention",
+    () => {
+      const world = makeWorld();
+      world.state.posts.push(followedPost(1), followedPost(2));
+      world.state.read = (request) =>
+        Effect.succeed({
+          halted: false,
+          readings: request.threads.map(({ threadId }, index) => ({
+            _tag: "read" as const,
+            comments: [reading(10 + index)],
+            complete: true,
+            threadId,
+          })),
+          refreshWithin: Duration.hours(24),
+        });
+
+      return Effect.gen(function* failing() {
+        yield* runAt(after("10 minutes"));
+
+        const [failingThread] = [...world.state.threads.values()];
+
+        assert.isDefined(failingThread);
+
+        // The database refuses what the first thread's forgetting writes.
+        world.state.saving = (saved) =>
+          saved.some(({ threadId }) => threadId === failingThread.id)
+            ? Effect.fail(new DatabaseError({ cause: "synthetic refusal" }))
+            : Effect.void;
+
+        const before = (yield* Metric.value(forgetFailures)).count;
+
+        assert.strictEqual(yield* forgetAt(after("1450 minutes")), 1);
+        assert.strictEqual(
+          (yield* Metric.value(forgetFailures)).count,
+          before + 1
+        );
+
+        const kept = [...world.state.comments.values()];
+
+        assert.deepStrictEqual(
+          kept.map(({ state, threadId }) => [
+            threadId === failingThread.id,
+            state,
+          ]),
+          [
+            [true, "new"],
+            [false, "deleted"],
+          ]
+        );
+
+        // The daily purge still deletes what is past its retention.
+        world.state.threads.set(
+          failingThread.id,
+          endCollection(failingThread, "window", after("1 day"))
+        );
+
+        yield* at(after("40 days"));
+
+        assert.strictEqual(
+          yield* PurgeEngagement.use((purging) => purging.purge),
+          1
+        );
+        assert.isFalse(world.state.threads.has(failingThread.id));
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "writes nothing back for a thread whose channel left while it was read",
+    () => {
+      const world = makeWorld();
+      const day = Option.some(Duration.hours(24));
+
+      world.state.posts.push(followedPost(1));
+      world.state.read = showing([reading(1)], day);
+
+      return Effect.gen(function* gone() {
+        yield* runAt(after("10 minutes"));
+
+        // The channel is disconnected while the next read is on its way:
+        // its comments are forgotten and its thread ended at once.
+        world.state.read = (request) => {
+          const thread = onlyThread(world);
+
+          world.state.threads.set(
+            thread.id,
+            withoutRefresh(
+              endCollection(thread, "disconnected", after("15 minutes"))
+            )
+          );
+
+          for (const kept of world.state.comments.values()) {
+            world.state.comments.set(
+              kept.id,
+              expireComment(kept, after("15 minutes"))
+            );
+          }
+
+          return showing([reading(1), reading(2)], day)(request);
+        };
+
+        yield* runAt(after("20 minutes"));
+
+        assert.deepStrictEqual(
+          comments(world).map(({ author, state, text }) => ({
+            author,
+            state,
+            text,
+          })),
+          [{ author: false, state: "deleted", text: "" }]
+        );
+        assert.strictEqual(onlyThread(world).collection._tag, "ended");
+        assert.deepStrictEqual(onlyThread(world).refreshBy, Option.none());
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "stops calling a forgotten comment expired once a complete read shows it deleted",
+    () => {
+      const world = makeWorld();
+      const day = Option.some(Duration.hours(24));
+
+      world.state.posts.push(followedPost(1));
+      world.state.read = showing([reading(1), reading(2)], day);
+
+      return Effect.gen(function* deleted() {
+        yield* runAt(after("10 minutes"));
+        yield* forgetAt(after("1450 minutes"));
+
+        // Its author deleted comment 1; comment 2 is read again.
+        world.state.read = showing([reading(2)], day);
+        yield* runAt(after("1460 minutes"));
+
+        assert.deepStrictEqual(
+          comments(world).map(({ expired, platformCommentId, state }) => ({
+            expired,
+            platformCommentId,
+            state,
+          })),
+          [
+            { expired: false, platformCommentId: "2001", state: "deleted" },
+            { expired: false, platformCommentId: "2002", state: "new" },
+          ]
+        );
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
 });

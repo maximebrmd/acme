@@ -139,21 +139,32 @@ const scheduled = (
 /**
  * The thread once the run scheduled at `at` read its comments, at
  * `collectedAt`: its next read follows the schedule, or it ends with the
- * window, and what it read must be read again within `refreshWithin`, the
- * bound its platform sets, if any.
+ * window. On a platform that bounds how long Peal keeps a comment without
+ * reading it again (`refreshWithin`), only a `complete` read, which saw
+ * every comment the thread keeps, moves the bound: an incomplete one (a
+ * cap, a deadline, comments turned off) never extends it, so a comment it
+ * did not return is forgotten at the bound. An incomplete read sets one
+ * only where the thread had none.
  */
 export const recordCollection = (
   thread: Thread,
   collectedAt: DateTime.Utc,
   at: DateTime.Utc,
   window: Duration.Duration,
-  refreshWithin: Option.Option<Duration.Duration>
-): Thread =>
-  withFields(thread, {
+  refreshWithin: Option.Option<Duration.Duration>,
+  complete: boolean
+): Thread => {
+  const deadline = refreshDeadline(collectedAt, refreshWithin);
+
+  return withFields(thread, {
     collection: scheduled(thread, at, window),
     lastCollectedAt: Option.some(collectedAt),
-    refreshBy: refreshDeadline(collectedAt, refreshWithin),
+    refreshBy:
+      complete || Option.isNone(refreshWithin)
+        ? deadline
+        : Option.orElse(thread.refreshBy, () => deadline),
   });
+};
 
 /**
  * The thread once the run scheduled at `at` could not read it for now (its

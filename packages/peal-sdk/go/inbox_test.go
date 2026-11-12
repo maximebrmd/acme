@@ -5131,6 +5131,13 @@ func TestEnumInboxReplyReason(t *testing.T) {
 		assert.Equal(t, InboxReplyReason("notSent"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_tooLong", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewInboxReplyReasonFromString("tooLong")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, InboxReplyReason("tooLong"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_noResponse", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewInboxReplyReasonFromString("noResponse")

@@ -264,6 +264,8 @@ An `Idempotency-Key` header makes the whole request safe to send again within 24
 
 ## Import posts from a CSV file [#import]
 
+In the web app, [Import from a file](/scheduling#import-screen) checks a file and imports it through this endpoint.
+
 `POST …/posts/import` creates and sends the posts a CSV file lists, one per row. The file's first line names the columns, in any order:
 
 | Column            | Required | What it holds                                                                                                                                             |

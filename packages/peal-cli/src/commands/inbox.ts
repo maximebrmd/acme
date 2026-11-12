@@ -42,6 +42,8 @@ const reasons: Readonly<Record<InboxReplyReason, string>> = {
   rateLimited: "the platform asked the account to slow down",
   reconnectNeeded: "the platform refuses the channel's token: reconnect it",
   refused: "the platform refused the reply",
+  tooLong:
+    "the platform found the reply too long: shorten it and send it again",
 };
 
 const replyLine = (reply: InboxReply): string => {

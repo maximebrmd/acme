@@ -132,7 +132,8 @@ layer(StoreTest)("the engagement store", (it) => {
           utc("2043-03-02T10:30:01.500Z"),
           at,
           Duration.days(30),
-          Option.none()
+          Option.none(),
+          true
         );
 
         yield* store.saveCollections([read]);
@@ -179,7 +180,8 @@ layer(StoreTest)("the engagement store", (it) => {
                 utc("2043-03-05T10:31:30.000Z"),
                 at,
                 Duration.days(30),
-                Option.none()
+                Option.none(),
+                true
               ),
             ]);
           }

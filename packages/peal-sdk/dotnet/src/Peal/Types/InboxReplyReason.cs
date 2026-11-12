@@ -22,6 +22,8 @@ public readonly record struct InboxReplyReason : IStringEnum
 
     public static readonly InboxReplyReason NotSent = new(Values.NotSent);
 
+    public static readonly InboxReplyReason TooLong = new(Values.TooLong);
+
     public static readonly InboxReplyReason NoResponse = new(Values.NoResponse);
 
     public static readonly InboxReplyReason Interrupted = new(Values.Interrupted);
@@ -137,6 +139,8 @@ public readonly record struct InboxReplyReason : IStringEnum
         public const string Refused = "refused";
 
         public const string NotSent = "notSent";
+
+        public const string TooLong = "tooLong";
 
         public const string NoResponse = "noResponse";
 

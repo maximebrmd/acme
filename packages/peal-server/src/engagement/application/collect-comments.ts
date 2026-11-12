@@ -268,7 +268,12 @@ export const reconcile = (
 
   if (read.complete) {
     for (const comment of kept) {
-      if (!seen.has(comment.platformCommentId) && isOnPlatform(comment)) {
+      // Forgotten for its age, and now gone from the platform too: it is
+      // no longer said to be kept for a limited time.
+      if (
+        !seen.has(comment.platformCommentId) &&
+        (isOnPlatform(comment) || Option.isSome(comment.expiredAt))
+      ) {
         next.set(comment.platformCommentId, forgetComment(comment));
       }
     }
@@ -290,6 +295,7 @@ export const reconcile = (
       before.state !== comment.state ||
       before.text !== comment.text ||
       before.liked !== comment.liked ||
+      Option.isSome(before.expiredAt) !== Option.isSome(comment.expiredAt) ||
       Option.getOrNull(before.permalink) !==
         Option.getOrNull(comment.permalink) ||
       JSON.stringify(before.author) !== JSON.stringify(comment.author)
@@ -460,7 +466,12 @@ export class CollectComments extends Context.Service<
               const kept = yield* store.commentsOf(thread.id);
 
               yield* store.saveComments(
-                kept.filter(isOnPlatform).map(forgetComment)
+                kept
+                  .filter(
+                    (comment) =>
+                      isOnPlatform(comment) || Option.isSome(comment.expiredAt)
+                  )
+                  .map(forgetComment)
               );
 
               return yield* ending([thread], "missing", at);
@@ -468,14 +479,15 @@ export class CollectComments extends Context.Service<
           );
         }
 
-        // Read, whole or not: what it found may be kept as long as its
-        // platform allows from now.
+        // Read: a complete read starts its platform's bound again from
+        // now; an incomplete one leaves it where it was.
         const read = recordCollection(
           thread,
           now,
           at,
           pace.window,
-          refreshWithin
+          refreshWithin,
+          reading.complete
         );
 
         // The comments are read under the thread's lock, which a member's
@@ -483,6 +495,24 @@ export class CollectComments extends Context.Service<
         const { received } = yield* transaction(
           Effect.gen(function* saving() {
             yield* store.lockThread(thread.id);
+
+            // The channel left while its comments were on their way (its
+            // thread ended `disconnected` under the same lock): what the
+            // read found is not kept.
+            const current = yield* store.thread(thread.id);
+
+            if (
+              Option.match(current, {
+                onNone: () => true,
+                onSome: ({ thread: stored }) =>
+                  stored.collection._tag === "ended" &&
+                  stored.collection.reason === "disconnected",
+              })
+            ) {
+              const dropped: Reconciled = { changed: [], received: [] };
+
+              return dropped;
+            }
 
             const kept = yield* store.commentsOf(thread.id);
 

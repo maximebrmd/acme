@@ -149,7 +149,13 @@ export const DrizzleEngagementRecords = Layer.effect(
                 SET comment_count = 0,
                     unanswered_count = 0,
                     last_comment_at = NULL,
-                    refresh_by = NULL
+                    refresh_by = NULL,
+                    -- Ended at once: a read on its way when the channel
+                    -- left finds it ended under its lock, and keeps
+                    -- nothing (CollectComments' record).
+                    next_collection_at = NULL,
+                    ended_at = COALESCE(ended_at, ${instant}::timestamptz),
+                    end_reason = COALESCE(end_reason, 'disconnected')
                 WHERE id = ANY(string_to_array(${ids}, ',')::uuid[])
               `;
             })

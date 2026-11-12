@@ -1,7 +1,6 @@
 ---
 # Docker Engine and Compose from Docker's repository, at the versions
-# docker_packages names: the stack needs Engine 28 or later for image mounts,
-# and Compose 2.35 or later.
+# docker_packages names: the stack needs Engine 28 and Compose 2.35 or later.
 #
 # In check mode, a task that needs what an earlier one would make skips when
 # that one reports a change: on a new server, the repository waits for

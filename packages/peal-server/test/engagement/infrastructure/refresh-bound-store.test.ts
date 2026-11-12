@@ -114,7 +114,7 @@ const readAt = (
   thread: Thread,
   at: string,
   bound: Option.Option<Duration.Duration>
-) => recordCollection(thread, utc(at), utc(at), Duration.days(30), bound);
+) => recordCollection(thread, utc(at), utc(at), Duration.days(30), bound, true);
 
 const forgetAt = (at: string) =>
   TestClock.setTime(DateTime.toEpochMillis(utc(at))).pipe(
@@ -389,10 +389,16 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
               },
             ]
           );
-          assert.strictEqual(
-            Option.getOrUndefined(yield* store.thread(bounded.id))?.comments,
-            0
-          );
+          const after = Option.getOrUndefined(yield* store.thread(bounded.id));
+
+          assert.strictEqual(after?.comments, 0);
+          // Ended at once, so a read on its way keeps nothing it found.
+          assert.deepStrictEqual(after?.thread.collection, {
+            _tag: "ended",
+            at: utc("1923-04-01T11:00:00.000Z"),
+            reason: "disconnected",
+          });
+          assert.deepStrictEqual(after?.thread.refreshBy, Option.none());
           assert.strictEqual(
             Option.getOrUndefined(yield* store.reply(reply.id))?.text,
             "Thank you, synthetic reader!"

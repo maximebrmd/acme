@@ -243,6 +243,12 @@ export const updatePost = PealApi.mutation("posts", "update");
 /** Checks a post without making it: the composer's previews. */
 export const validatePost = PealApi.mutation("posts", "validate");
 
+/**
+ * A CSV file's posts: checked with `dryRun`, then made under the
+ * idempotency key made when the check passed (`#posts/import-state.ts`).
+ */
+export const importPosts = PealApi.mutation("posts", "import");
+
 export const schedulePost = PealApi.mutation("posts", "schedule");
 
 export const reschedulePost = PealApi.mutation("posts", "reschedule");

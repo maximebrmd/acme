@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Option, Schema } from "effect";
+import { Config, DateTime, Duration, Effect, Option, Schema } from "effect";
 import type { Redacted } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 
@@ -95,11 +95,23 @@ export const youtubeRefreshWithin = Duration.days(29);
 
 /**
  * The quota units comment reads may spend a Pacific day, across every
- * channel of the server: half of the project's 10,000, so publishing's
- * calls and analytics' keep the rest. Replies, hides and withdrawals are
- * a person's acts and are never held by it.
+ * channel of the server, unless `YOUTUBE_DAILY_COMMENT_UNITS` says
+ * otherwise: 3,000 of the project's 10,000, beside custom thumbnails'
+ * 4,000, which leaves 3,000 for what Peal does not count (a person's
+ * replies, hides and withdrawals, publishing's status reads and lookups,
+ * analytics). Replies, hides and withdrawals are never held by it.
  */
-export const youtubeCommentsDailyUnits = 5000;
+export const youtubeCommentsDailyUnits = 3000;
+
+/**
+ * `YOUTUBE_DAILY_COMMENT_UNITS`: the units comment reads may spend a day,
+ * across the server; 0 reads none. A value that is not a whole number
+ * stops the server.
+ */
+export const youtubeCommentUnitsConfig = Config.schema(
+  Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  "YOUTUBE_DAILY_COMMENT_UNITS"
+).pipe(Config.withDefault(youtubeCommentsDailyUnits));
 
 /** The ledger bucket comment reads are counted in, one unit a call. */
 export const youtubeCommentsBucket = "comments:youtube";
@@ -189,7 +201,10 @@ const isSuccess = (response: HttpClientResponse.HttpClientResponse) =>
  * - `rateLimited`: 429, `rateLimitExceeded`, `userRateLimitExceeded`.
  * - `unavailable`: 5xx.
  * - `disabled`: `commentsDisabled`, the video's comments are off.
- * - `gone`: 404, the video or the comment no longer exists.
+ * - `gone`: `videoNotFound`, `commentNotFound` or `parentCommentNotFound`,
+ *   the video or the comment no longer exists.
+ * - `tooLong`: `commentTextTooLong`, a reply past a length YouTube does
+ *   not state.
  * - `refused`: anything else.
  */
 type YouTubeRefusal =
@@ -199,12 +214,22 @@ type YouTubeRefusal =
   | "quota"
   | "rateLimited"
   | "refused"
+  | "tooLong"
   | "token"
   | "unavailable";
 
 const rateReasons: ReadonlySet<string> = new Set([
   "rateLimitExceeded",
   "userRateLimitExceeded",
+]);
+
+// What YouTube answers when the video, a comment or its parent is gone
+// (commentThreads.list, comments.list, comments.insert, comments.delete,
+// comments.setModerationStatus, each read 2026-11-12).
+const goneReasons: ReadonlySet<string> = new Set([
+  "commentNotFound",
+  "parentCommentNotFound",
+  "videoNotFound",
 ]);
 
 const refusalOf = (
@@ -242,7 +267,13 @@ const refusalOf = (
       return "disabled" as const;
     }
 
-    return status === 404 ? ("gone" as const) : ("refused" as const);
+    if (reason === "commentTextTooLong") {
+      return "tooLong" as const;
+    }
+
+    // Only the documented reasons say the video, or the comment, is gone:
+    // any other 404, or one without Google's error, proves nothing.
+    return goneReasons.has(reason) ? ("gone" as const) : ("refused" as const);
   });
 
 /** Why an act was not done, from YouTube's refusal of it. */
@@ -253,6 +284,10 @@ const actionFailure = (refusal: YouTubeRefusal): ReplyFailure => {
 
   if (refusal === "unavailable") {
     return "platformUnavailable";
+  }
+
+  if (refusal === "tooLong") {
+    return "tooLong";
   }
 
   return refusal === "gone" ? "commentGone" : "refused";

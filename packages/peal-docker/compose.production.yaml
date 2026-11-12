@@ -49,7 +49,7 @@ services:
   # write-ahead log to the bucket the PGBACKREST_REPO1_* settings name;
   # backups run from the host (peal-infra's peal_backup role). Its image has
   # a tag of its own, which changes only with postgres.Dockerfile, so a
-  # release restarts Postgres only when its image changes.
+  # release restarts Postgres only when its image or its settings change.
   postgres:
     <<: *service
     image: peal-postgres:${PEAL_POSTGRES_VERSION:-local}
@@ -66,6 +66,18 @@ services:
       # bounds what a restore can lose.
       - -c
       - archive_timeout=300
+      # Memory, each defaulting to PostgreSQL 18's own value; the docs'
+      # environment variables page says how to size them. Given here, they
+      # override ALTER SYSTEM and postgresql.conf for these four.
+      # shared_buffers is read only at start, and is not in /dev/shm.
+      - -c
+      - shared_buffers=${PEAL_POSTGRES_SHARED_BUFFERS:-128MB}
+      - -c
+      - effective_cache_size=${PEAL_POSTGRES_EFFECTIVE_CACHE_SIZE:-4GB}
+      - -c
+      - maintenance_work_mem=${PEAL_POSTGRES_MAINTENANCE_WORK_MEM:-64MB}
+      - -c
+      - random_page_cost=${PEAL_POSTGRES_RANDOM_PAGE_COST:-4}
     environment:
       POSTGRES_USER: peal
       POSTGRES_DB: peal
@@ -95,7 +107,9 @@ services:
       PGBACKREST_START_FAST: "y"
       PGBACKREST_LOG_LEVEL_CONSOLE: info
       PGBACKREST_LOG_LEVEL_FILE: "off"
-    shm_size: 256m
+    # /dev/shm: the dynamic shared memory of parallel queries, and of a
+    # parallel vacuum, up to maintenance_work_mem. Keep it above that.
+    shm_size: 1g
     # The socket folder, and /tmp, where pgBackRest keeps its locks.
     tmpfs: [/tmp:size=64m, /var/run/postgresql:size=1m]
     volumes:
@@ -162,6 +176,7 @@ services:
       YOUTUBE_CLIENT_SECRET:
       YOUTUBE_DAILY_UPLOADS:
       YOUTUBE_DAILY_THUMBNAILS:
+      YOUTUBE_DAILY_COMMENT_UNITS:
       RESEND_API_KEY:
       SMTP_URL:
       TRUSTED_ORIGINS:
@@ -293,6 +308,21 @@ services:
       <<: *healthcheck
       test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/, http://127.0.0.1:8081/]
 
+  # The collector's image has no shell or HTTP client, so its health check
+  # runs busybox's static wget, which this service copies into a volume at
+  # each `up`, then exits. An image mount would be simpler, but Docker does
+  # not mount the image again when its daemon restarts, and the collector
+  # then restarts on an empty folder. The copy is renamed into place, so a
+  # health check running the old one never sees a partial file.
+  collector-wget:
+    <<: *service
+    image: busybox:1.38.0-musl@sha256:80e38f9a1b39188b8bdb28879178edb322a4402b081a9aedda1924609decd6f6
+    command: [sh, -c, "cp /bin/busybox /tools/.wget && mv -f /tools/.wget /tools/wget"]
+    restart: "no"
+    network_mode: none
+    volumes:
+      - collector-wget:/tools
+
   otel-collector:
     <<: *service
     image: otel/opentelemetry-collector-contrib:0.165.0@sha256:e40d61f10c9a617cca1ffd1be4d7e2b3a4b0f0001798ff07e58cabe82e618cea
@@ -300,14 +330,13 @@ services:
       - ./config/production/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
       # The host's filesystem, read-only, for its disk, memory and load.
       - /:/hostfs:ro,rslave
-      # The collector image has no shell or HTTP client, so the health check
-      # borrows busybox's static wget from an image mount.
-      - type: image
-        source: busybox:1.38.0-musl@sha256:80e38f9a1b39188b8bdb28879178edb322a4402b081a9aedda1924609decd6f6
-        target: /busybox
+      # busybox's wget, for the health check (collector-wget).
+      - collector-wget:/busybox:ro
     ports:
       - 127.0.0.1:${PEAL_OTLP_HTTP_PORT:-14318}:4318
     depends_on:
+      collector-wget:
+        condition: service_completed_successfully
       loki:
         condition: service_healthy
       tempo:
@@ -316,7 +345,7 @@ services:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck
-      test: [CMD, /busybox/bin/wget, -q, -O, /dev/null, http://127.0.0.1:13133/]
+      test: [CMD, /busybox/wget, -q, -O, /dev/null, http://127.0.0.1:13133/]
 
   loki:
     <<: *service
@@ -419,6 +448,7 @@ services:
 
 volumes:
   postgres:
+  collector-wget:
   loki:
   tempo:
   prometheus:

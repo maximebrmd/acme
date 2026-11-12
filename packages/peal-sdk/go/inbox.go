@@ -1371,6 +1371,7 @@ const (
 	InboxReplyReasonCommentGone         InboxReplyReason = "commentGone"
 	InboxReplyReasonRefused             InboxReplyReason = "refused"
 	InboxReplyReasonNotSent             InboxReplyReason = "notSent"
+	InboxReplyReasonTooLong             InboxReplyReason = "tooLong"
 	InboxReplyReasonNoResponse          InboxReplyReason = "noResponse"
 	InboxReplyReasonInterrupted         InboxReplyReason = "interrupted"
 	InboxReplyReasonAdapterFailure      InboxReplyReason = "adapterFailure"
@@ -1392,6 +1393,8 @@ func NewInboxReplyReasonFromString(s string) (InboxReplyReason, error) {
 		return InboxReplyReasonRefused, nil
 	case "notSent":
 		return InboxReplyReasonNotSent, nil
+	case "tooLong":
+		return InboxReplyReasonTooLong, nil
 	case "noResponse":
 		return InboxReplyReasonNoResponse, nil
 	case "interrupted":

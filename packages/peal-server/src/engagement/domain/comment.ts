@@ -276,6 +276,7 @@ export const refreshComment = (
 export const forgetComment = (comment: Comment): Comment =>
   withFields(comment, {
     author: Option.none(),
+    expiredAt: Option.none(),
     liked: false,
     permalink: Option.none(),
     state: "deleted",

@@ -26,6 +26,8 @@ import { ThreadIdSchema } from "./thread-id.ts";
  * - `commentGone`: the comment is no longer on the platform.
  * - `refused`: the platform refused the reply: its author limited who may
  *   answer, or the text is not allowed there.
+ * - `tooLong`: the platform refused the reply as too long (YouTube's
+ *   `commentTextTooLong`, whose limit it does not state).
  * - `notSent`: its outcome was unknown, and a member found it never went
  *   out.
  */
@@ -37,6 +39,7 @@ export const ReplyFailureSchema = Schema.Literals([
   "commentGone",
   "refused",
   "notSent",
+  "tooLong",
 ]);
 
 export type ReplyFailure = typeof ReplyFailureSchema.Type;

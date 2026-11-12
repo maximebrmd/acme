@@ -214,6 +214,45 @@ groups:
                     type: gt
                     params: [108000]
 
+      # peal-backup reports each failure: the last one is newer than the
+      # last success until a backup succeeds again. pgBackRest refuses the
+      # write-ahead log archive for the same reasons, so this alert is the
+      # first sign the archive stopped too.
+      - uid: peal-backup-failed
+        title: The last database backup failed
+        condition: B
+        for: 0s
+        # A server whose backups never failed has no failure to read; the
+        # rule above covers one that never backed up.
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The last database backup failed. Read `journalctl --unit 'peal-backup@*'` on the server; pgBackRest's error 028 means the database was started over (packages/peal-infra/ansible/runbooks/restore-database.md, "Starting a server's database over").
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Seconds from the last success to the last failure, both
+              # searched for over 8 days: positive while the failure is newer.
+              expr: max(max_over_time(peal_backup_last_failure_timestamp_seconds[8d])) - (max(max_over_time(peal_backup_last_success_timestamp_seconds[8d])) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
       - uid: peal-disk-almost-full
         title: The server's disk is almost full
         condition: B
@@ -505,6 +544,38 @@ groups:
                 - evaluator:
                     type: gt
                     params: [5.5]
+
+      - uid: peal-comments-forget-failing
+        title: Comments past their platform's bound are not forgotten
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The retention failed three times or more in three hours to forget a thread's comments at their platform's bound (peal.engagement.retention.forget_failures), as one thread that fails at every hourly run would. Peal then keeps those comments past what the platform allows (YouTube's 30 days, LinkedIn's day); the other threads are forgotten. The server's warnings name the thread by id.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The retention runs every hour.
+              expr: sum(increase(peal_engagement_retention_forget_failures_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [2.5]
 
       - uid: peal-uploads-waiting
         title: Uploads to platforms wait for a slot

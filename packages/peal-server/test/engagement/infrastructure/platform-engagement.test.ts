@@ -24,6 +24,7 @@ import {
 } from "#engagement/domain/reply.ts";
 import type { Reply } from "#engagement/domain/reply.ts";
 import { platformEngagementWith } from "#engagement/infrastructure/platforms/platform-engagement.ts";
+import { youtubeCommentsDailyUnits } from "#engagement/infrastructure/platforms/youtube/youtube-engagement.ts";
 import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import { youtubeCommentScope } from "#shared/domain/inbox-platform.ts";
 import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
@@ -164,6 +165,7 @@ const onServer = Effect.fnUntraced(function* onServer(
     metaAppSecret: Option.some(Redacted.make("synthetic-meta-secret")),
     metaHosts: { ...metaHosts, facebookGraph: url, instagramGraph: url },
     youtubeApi: url,
+    youtubeCommentUnits: youtubeCommentsDailyUnits,
   }).pipe(
     Layer.provide(Layer.succeed(CurrentInboxPlatforms, on.inbox ?? new Set())),
     Layer.provide(memoryQuota().layer)

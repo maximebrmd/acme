@@ -216,7 +216,9 @@ export type InboxReplyStatus = typeof InboxReplyStatusSchema.Type;
  * channel was disconnected or turned off), `reconnectNeeded` (the platform
  * refuses its token), `rateLimited`, `platformUnavailable`, `commentGone`
  * (the comment is no longer there), `refused` (the platform refused the
- * reply), `notSent` (a member found an unconfirmed reply never went out).
+ * reply), `notSent` (a member found an unconfirmed reply never went out),
+ * `tooLong` (the platform refused the reply as too long, past a limit it
+ * does not state).
  *
  * Unconfirmed: `noResponse` (the request left and no answer came),
  * `interrupted` (the server stopped during the call, and the platform
@@ -231,6 +233,7 @@ export const InboxReplyReasonSchema = Schema.Literals([
   "commentGone",
   "refused",
   "notSent",
+  "tooLong",
   "noResponse",
   "interrupted",
   "adapterFailure",
