@@ -4,6 +4,7 @@ namespace Peal;
 
 use Peal\System\SystemClient;
 use Peal\Session\SessionClient;
+use Peal\Credential\CredentialClient;
 use Peal\ApiKeys\ApiKeysClient;
 use Peal\Channels\ChannelsClient;
 use Peal\Posts\PostsClient;
@@ -51,6 +52,11 @@ class PealClient
      * @var SessionClient $session
      */
     public SessionClient $session;
+
+    /**
+     * @var CredentialClient $credential
+     */
+    public CredentialClient $credential;
 
     /**
      * @var ApiKeysClient $apiKeys
@@ -270,6 +276,7 @@ class PealClient
 
         $this->system = new SystemClient($this->client, $this->options);
         $this->session = new SessionClient($this->client, $this->options);
+        $this->credential = new CredentialClient($this->client, $this->options);
         $this->apiKeys = new ApiKeysClient($this->client, $this->options);
         $this->channels = new ChannelsClient($this->client, $this->options);
         $this->posts = new PostsClient($this->client, $this->options);

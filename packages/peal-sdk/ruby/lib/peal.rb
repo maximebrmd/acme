@@ -41,6 +41,7 @@ require_relative "peal/errors/connection_error"
 require_relative "peal/client"
 require_relative "peal/system/client"
 require_relative "peal/session/client"
+require_relative "peal/credential/client"
 require_relative "peal/api_keys/client"
 require_relative "peal/api_keys/types/list_api_keys_request"
 require_relative "peal/api_keys/types/new_api_key"
@@ -704,6 +705,15 @@ module Peal
     autoload :ReviewLinkStatus, ::File.join(__dir__, "peal/types/review_link_status")
     autoload :ReviewLink, ::File.join(__dir__, "peal/types/review_link")
     autoload :CreatedReviewLink, ::File.join(__dir__, "peal/types/created_review_link")
+    autoload :CredentialWorkspace, ::File.join(__dir__, "peal/types/credential_workspace")
+    autoload :CredentialAPIKey, ::File.join(__dir__, "peal/types/credential_api_key")
+    autoload :OverviewRefusal, ::File.join(__dir__, "peal/types/overview_refusal")
+    autoload :CredentialBoundWorkspace, ::File.join(__dir__, "peal/types/credential_bound_workspace")
+    autoload :CredentialApplication, ::File.join(__dir__, "peal/types/credential_application")
+    autoload :CredentialPartner, ::File.join(__dir__, "peal/types/credential_partner")
+    autoload :CredentialPartnerKey, ::File.join(__dir__, "peal/types/credential_partner_key")
+    autoload :CredentialUser, ::File.join(__dir__, "peal/types/credential_user")
+    autoload :Credential, ::File.join(__dir__, "peal/types/credential")
     autoload :CustomerWorkspace, ::File.join(__dir__, "peal/types/customer_workspace")
     autoload :CustomerWorkspacePage, ::File.join(__dir__, "peal/types/customer_workspace_page")
     autoload :DatabaseUnavailableEncodedTag, ::File.join(__dir__, "peal/types/database_unavailable_encoded_tag")
@@ -861,7 +871,6 @@ module Peal
     autoload :OverviewChannels, ::File.join(__dir__, "peal/types/overview_channels")
     autoload :OverviewInbox, ::File.join(__dir__, "peal/types/overview_inbox")
     autoload :OverviewPosts, ::File.join(__dir__, "peal/types/overview_posts")
-    autoload :OverviewRefusal, ::File.join(__dir__, "peal/types/overview_refusal")
     autoload :WorkspaceOverview, ::File.join(__dir__, "peal/types/workspace_overview")
     autoload :Overview, ::File.join(__dir__, "peal/types/overview")
     autoload :OwnImageLimitReachedEncoded, ::File.join(__dir__, "peal/types/own_image_limit_reached_encoded")

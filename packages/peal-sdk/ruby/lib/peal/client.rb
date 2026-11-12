@@ -30,6 +30,11 @@ module Peal
       @session ||= Peal::Session::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Credential::Client]
+    def credential
+      @credential ||= Peal::Credential::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::APIKeys::Client]
     def api_keys
       @api_keys ||= Peal::APIKeys::Client.new(client: @raw_client)

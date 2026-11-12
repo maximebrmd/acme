@@ -292,6 +292,14 @@ if typing.TYPE_CHECKING:
     from .created_feed import CreatedFeed
     from .created_partner_key import CreatedPartnerKey
     from .created_review_link import CreatedReviewLink
+    from .credential import Credential, Credential_ApiKey, Credential_PartnerKey, Credential_User
+    from .credential_api_key import CredentialApiKey
+    from .credential_application import CredentialApplication
+    from .credential_bound_workspace import CredentialBoundWorkspace
+    from .credential_partner import CredentialPartner
+    from .credential_partner_key import CredentialPartnerKey
+    from .credential_user import CredentialUser
+    from .credential_workspace import CredentialWorkspace
     from .customer_workspace import CustomerWorkspace
     from .customer_workspace_page import CustomerWorkspacePage
     from .dashboard_day import DashboardDay
@@ -1196,6 +1204,17 @@ _dynamic_imports: typing.Dict[str, str] = {
     "CreatedFeed": ".created_feed",
     "CreatedPartnerKey": ".created_partner_key",
     "CreatedReviewLink": ".created_review_link",
+    "Credential": ".credential",
+    "CredentialApiKey": ".credential_api_key",
+    "CredentialApplication": ".credential_application",
+    "CredentialBoundWorkspace": ".credential_bound_workspace",
+    "CredentialPartner": ".credential_partner",
+    "CredentialPartnerKey": ".credential_partner_key",
+    "CredentialUser": ".credential_user",
+    "CredentialWorkspace": ".credential_workspace",
+    "Credential_ApiKey": ".credential",
+    "Credential_PartnerKey": ".credential",
+    "Credential_User": ".credential",
     "CustomerWorkspace": ".customer_workspace",
     "CustomerWorkspacePage": ".customer_workspace_page",
     "DashboardDay": ".dashboard_day",
@@ -2111,6 +2130,17 @@ __all__ = [
     "CreatedFeed",
     "CreatedPartnerKey",
     "CreatedReviewLink",
+    "Credential",
+    "CredentialApiKey",
+    "CredentialApplication",
+    "CredentialBoundWorkspace",
+    "CredentialPartner",
+    "CredentialPartnerKey",
+    "CredentialUser",
+    "CredentialWorkspace",
+    "Credential_ApiKey",
+    "Credential_PartnerKey",
+    "Credential_User",
     "CustomerWorkspace",
     "CustomerWorkspacePage",
     "DashboardDay",

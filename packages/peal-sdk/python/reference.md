@@ -253,6 +253,70 @@ client.session.me()
 </dl>
 </details>
 
+## credential
+<details><summary><code>client.credential.<a href="src/peal/credential/client.py#L26-L50">get</a>() -> Credential</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers who the credential this request sends is and what it may do, whatever its kind: a person's session or an OAuth client's token (`user`, with the client's scopes and the workspace its token is bound to, if any), a workspace's API key (`apiKey`: its name, its start, its workspace, its permissions and when it expires) or a partner key (`partnerKey`: its partner, its scopes and the permissions it holds in each workspace the partner owns). Never the key or the token itself. A revoked or expired key answers 401, a suspended account 403, as on every endpoint; a workspace that requires two-step verification does not refuse this answer, which reads none of its data. It counts toward the rate limit as any request does.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.credential.get()
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## apiKeys
 <details><summary><code>client.api_keys.<a href="src/peal/api_keys/client.py#L31-L61">list</a>(...) -> typing.List[ApiKey]</code></summary>
 <dl>

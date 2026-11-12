@@ -17,6 +17,7 @@ import social.peal.resources.channeldefaults.ChannelDefaultsClient;
 import social.peal.resources.channels.ChannelsClient;
 import social.peal.resources.channelsets.ChannelSetsClient;
 import social.peal.resources.connectlinks.ConnectLinksClient;
+import social.peal.resources.credential.CredentialClient;
 import social.peal.resources.feeds.FeedsClient;
 import social.peal.resources.inbox.InboxClient;
 import social.peal.resources.invitations.InvitationsClient;
@@ -48,6 +49,8 @@ public class PealClient implements AutoCloseable {
     protected final Supplier<SystemClient> systemClient;
 
     protected final Supplier<SessionClient> sessionClient;
+
+    protected final Supplier<CredentialClient> credentialClient;
 
     protected final Supplier<ApiKeysClient> apiKeysClient;
 
@@ -119,6 +122,7 @@ public class PealClient implements AutoCloseable {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new SystemClient(clientOptions));
         this.sessionClient = Suppliers.memoize(() -> new SessionClient(clientOptions));
+        this.credentialClient = Suppliers.memoize(() -> new CredentialClient(clientOptions));
         this.apiKeysClient = Suppliers.memoize(() -> new ApiKeysClient(clientOptions));
         this.channelsClient = Suppliers.memoize(() -> new ChannelsClient(clientOptions));
         this.postsClient = Suppliers.memoize(() -> new PostsClient(clientOptions));
@@ -160,6 +164,10 @@ public class PealClient implements AutoCloseable {
 
     public SessionClient session() {
         return this.sessionClient.get();
+    }
+
+    public CredentialClient credential() {
+        return this.credentialClient.get();
     }
 
     public ApiKeysClient apiKeys() {

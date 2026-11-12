@@ -157,6 +157,46 @@ await client.Session.MeAsync();
 </dl>
 </details>
 
+## credential
+<details><summary><code>client.Credential.<a href="/src/Peal/Credential/CredentialClient.cs">GetAsync</a>() -> WithRawResponseTask&lt;Credential&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers who the credential this request sends is and what it may do, whatever its kind: a person's session or an OAuth client's token (`user`, with the client's scopes and the workspace its token is bound to, if any), a workspace's API key (`apiKey`: its name, its start, its workspace, its permissions and when it expires) or a partner key (`partnerKey`: its partner, its scopes and the permissions it holds in each workspace the partner owns). Never the key or the token itself. A revoked or expired key answers 401, a suspended account 403, as on every endpoint; a workspace that requires two-step verification does not refuse this answer, which reads none of its data. It counts toward the rate limit as any request does.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Credential.GetAsync();
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## apiKeys
 <details><summary><code>client.ApiKeys.<a href="/src/Peal/ApiKeys/ApiKeysClient.cs">ListAsync</a>(ListApiKeysRequest { ... }) -> WithRawResponseTask&lt;IEnumerable&lt;ApiKey&gt;&gt;</code></summary>
 <dl>
