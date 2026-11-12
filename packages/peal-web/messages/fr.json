@@ -823,7 +823,8 @@
       "calendar": "Calendrier",
       "newPost": "Nouvelle publication",
       "drafts": "Brouillons",
-      "workspaceLinks": "Publications de {workspace}"
+      "workspaceLinks": "Publications de {workspace}",
+      "allPosts": "Toutes les publications"
     },
     "Duplicate": {
       "open": "Dupliquer",
@@ -1344,7 +1345,36 @@
     "Links": {
       "suspicious": "Ceci ne ressemble pas à un lien qui fonctionne : {link}"
     },
-    "queueOf": "File d’attente : {name}"
+    "queueOf": "File d’attente : {name}",
+    "List": {
+      "title": "Toutes les publications",
+      "description": "Chaque publication de {workspace}, quel que soit son état.",
+      "newPost": "Nouvelle publication",
+      "loading": "Chargement des publications…",
+      "loadFailed": "Les publications n’ont pas pu être chargées.",
+      "reload": "Réessayer",
+      "empty": "Aucune publication pour l’instant.",
+      "filteredEmpty": "Aucune publication ne correspond à ces filtres.",
+      "clearFilters": "Effacer les filtres",
+      "loadMore": "Afficher plus",
+      "filters": "Filtres",
+      "status": "État",
+      "anyStatus": "Tous les états",
+      "outcome": "Résultat",
+      "anyOutcome": "Tous les résultats",
+      "channel": "Canal",
+      "anyChannel": "Tous les canaux",
+      "tag": "Étiquette",
+      "anyTag": "Toutes les étiquettes",
+      "sort": "Ordre",
+      "sortOption": "{sort, select, createdDesc {Les plus récentes d’abord} createdAsc {Les plus anciennes d’abord} scheduledDesc {Par heure, la plus tardive d’abord} scheduledAsc {Par heure, la plus proche d’abord} other {{sort}}}",
+      "byTimeNote": "Triée par heure, la liste ne contient que les publications qui en ont une : les brouillons sans heure n’y sont pas.",
+      "noText": "Pas encore de texte",
+      "noTime": "Pas encore d’heure",
+      "channels": "Canaux",
+      "noChannel": "Aucun canal pour l’instant",
+      "tags": "Étiquettes"
+    }
   },
   "Drafts": {
     "title": "Brouillons",

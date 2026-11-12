@@ -823,7 +823,8 @@
       "calendar": "Calendar",
       "newPost": "New post",
       "drafts": "Drafts",
-      "workspaceLinks": "Posts of {workspace}"
+      "workspaceLinks": "Posts of {workspace}",
+      "allPosts": "All posts"
     },
     "Duplicate": {
       "open": "Duplicate",
@@ -1344,7 +1345,36 @@
     "Links": {
       "suspicious": "This does not look like a working link: {link}"
     },
-    "queueOf": "Queue: {name}"
+    "queueOf": "Queue: {name}",
+    "List": {
+      "title": "All posts",
+      "description": "Every post of {workspace}, whatever its state.",
+      "newPost": "New post",
+      "loading": "Loading the posts…",
+      "loadFailed": "The posts could not be loaded.",
+      "reload": "Try again",
+      "empty": "No post yet.",
+      "filteredEmpty": "No post matches these filters.",
+      "clearFilters": "Clear the filters",
+      "loadMore": "Show more",
+      "filters": "Filters",
+      "status": "Status",
+      "anyStatus": "Every status",
+      "outcome": "Outcome",
+      "anyOutcome": "Every outcome",
+      "channel": "Channel",
+      "anyChannel": "Every channel",
+      "tag": "Tag",
+      "anyTag": "Every tag",
+      "sort": "Order",
+      "sortOption": "{sort, select, createdDesc {Newest first} createdAsc {Oldest first} scheduledDesc {By time, latest first} scheduledAsc {By time, soonest first} other {{sort}}}",
+      "byTimeNote": "Ordered by time, the list holds only the posts that have one: drafts without a time are left out.",
+      "noText": "No text yet",
+      "noTime": "No time yet",
+      "channels": "Channels",
+      "noChannel": "No channel yet",
+      "tags": "Tags"
+    }
   },
   "Drafts": {
     "title": "Drafts",

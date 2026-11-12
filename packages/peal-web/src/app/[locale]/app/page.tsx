@@ -105,6 +105,12 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                       {tPosts("drafts")}
                     </Link>
                     <Link
+                      href={`/app/${workspace.id}/posts`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {tPosts("allPosts")}
+                    </Link>
+                    <Link
                       href={`/app/${workspace.id}/approvals`}
                       className="underline-offset-4 hover:underline"
                     >
