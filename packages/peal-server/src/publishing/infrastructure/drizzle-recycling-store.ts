@@ -266,7 +266,7 @@ export const DrizzleRecyclingStore = Layer.effect(
           .where(
             and(
               eq(recyclingRules.status, "active"),
-              lt(recyclingRules.nextDueAt, date(before))
+              lt(recyclingRules.lastDueAt, date(before))
             )
           )
           .pipe(

@@ -477,7 +477,7 @@ groups:
         noDataState: OK
         execErrState: Error
         annotations:
-          summary: Recycling rules whose next occurrence was due more than 30 minutes ago (peal.publishing.recycling.overdue) stayed above 0 for 30 minutes, so repeating posts are not made on time. Look at the publishing.recycling cron's logs, which say how many occurrences each run made, left and ended.
+          summary: Recycling rules a run should have made more than 30 minutes ago and did not, those waiting on purpose (a starter locked out, a source awaiting approval) left out (peal.publishing.recycling.overdue), stayed above 0 for 30 minutes, so repeating posts are not made on time. Look at the publishing.recycling cron's logs, which say how many occurrences each run made, left and ended.
         labels:
           severity: warning
         data:

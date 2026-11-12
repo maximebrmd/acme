@@ -444,7 +444,14 @@ describe("making a rule's occurrences", () => {
 
           yield* startersAre(() => ({ _tag: "lockedOut" }));
 
-          yield* makeDue;
+          // Waiting on purpose: no run is late on it.
+          const run = yield* makeDue;
+
+          assert.isTrue(
+            run.waitingSince.some((at) =>
+              DateTime.isLessThanOrEqualTo(at, rule.lastDueAt)
+            )
+          );
 
           assert.lengthOf(yield* occurrencesOf(rule.id), 0);
           assert.strictEqual(
@@ -591,10 +598,12 @@ describe("making a rule's occurrences", () => {
 
           const cancelledSource = yield* scheduled("A post called off.");
           const draftSource = yield* scheduled("A post to rewrite.");
+
           const cancelled = yield* started(
             workspaceId,
             weekly(cancelledSource)
           );
+
           const drafted = yield* started(workspaceId, weekly(draftSource));
 
           yield* scheduling.cancel(editor, cancelledSource);

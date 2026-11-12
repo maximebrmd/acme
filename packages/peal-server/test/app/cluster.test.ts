@@ -306,7 +306,12 @@ const PublishingCronWorkTest = Layer.mergeAll(
       Effect.succeed(
         Recycling.of({
           ...rules,
-          makeDue: Effect.succeed({ ended: 0, left: 0, made: 0 }),
+          makeDue: Effect.succeed({
+            ended: 0,
+            left: 0,
+            made: 0,
+            waitingSince: [],
+          }),
           overdue: () => Effect.succeed(0),
         })
       )

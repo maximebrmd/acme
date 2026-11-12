@@ -257,4 +257,42 @@ layer(StorageTest)("a recycling rule's storage", (it) => {
       }).pipe(Effect.ensuring(cleared(workspaceId)));
     })
   );
+
+  it.effect(
+    "counts as overdue a rule whose latest time has long passed, never one whose queue slot is still ahead",
+    () =>
+      Effect.gen(function* overdue() {
+        const sql = yield* SqlClient.SqlClient;
+        const store = yield* RecyclingStore;
+        const workspaceId = yield* freshWorkspace;
+
+        const late = yield* ruleOf(
+          workspaceId,
+          yield* newId(PostIdSchema),
+          web
+        );
+
+        const queued = yield* ruleOf(
+          workspaceId,
+          yield* newId(PostIdSchema),
+          web
+        );
+
+        yield* Effect.gen(function* checks() {
+          yield* store.insert(late);
+          yield* store.insert(queued);
+
+          // Dates no other test uses, so only these two can count. The
+          // queued rule's slot (its latest time) is after the instant its
+          // next is counted from.
+          yield* sql`UPDATE publishing.recycling_rules SET last_due_at = '1990-01-01T00:00:00Z', next_due_at = '1990-01-15T00:00:00Z' WHERE id = ${late.id}`;
+          yield* sql`UPDATE publishing.recycling_rules SET last_due_at = '1990-12-01T00:00:00Z', next_due_at = '1990-01-15T00:00:00Z' WHERE id = ${queued.id}`;
+
+          assert.strictEqual(
+            yield* store.overdue(DateTime.makeUnsafe("1990-06-01T00:00:00Z")),
+            1
+          );
+        }).pipe(Effect.ensuring(cleared(workspaceId)));
+      })
+  );
 });

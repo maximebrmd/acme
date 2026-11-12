@@ -28,12 +28,15 @@ export const IdempotencyRetentionCron = ClusterCron.make({
   skipIfOlderThan: Duration.hours(12),
 });
 
-/** How late a rule's next occurrence may be before it counts as overdue. */
+/**
+ * How long after a rule's latest time (a queue's slot included) it may stay
+ * unmade before it counts as overdue.
+ */
 export const recyclingOverdueAfter = Duration.minutes(30);
 
 const overdue = Metric.gauge("peal.publishing.recycling.overdue", {
   description:
-    "Active recycling rules whose next occurrence was due more than 30 minutes ago",
+    "Active recycling rules a run should have made more than 30 minutes ago, but those it left to wait",
 });
 
 /**
@@ -56,7 +59,8 @@ export const RecyclingCron = ClusterCron.make({
     );
 
     const late = yield* rules.overdue(
-      DateTime.subtractDuration(yield* DateTime.now, recyclingOverdueAfter)
+      DateTime.subtractDuration(yield* DateTime.now, recyclingOverdueAfter),
+      run
     );
 
     yield* Metric.update(overdue, late);

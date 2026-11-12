@@ -84,7 +84,11 @@ export class RecyclingStore extends Context.Service<
       after: Option.Option<DuePosition>,
       limit: number
     ) => Effect.Effect<readonly RecyclingRule[], DatabaseError>;
-    /** How many active rules' next occurrence was due before `before`. */
+    /**
+     * How many active rules' latest occurrence's time (a queue's slot
+     * included) passed before `before`: those a run makes, unless it
+     * leaves them.
+     */
     readonly overdue: (
       before: DateTime.Utc
     ) => Effect.Effect<number, DatabaseError>;

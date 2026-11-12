@@ -134,6 +134,11 @@ export interface DueRun {
   readonly left: number;
   /** Rules that ended, completed or for a reason they were told. */
   readonly ended: number;
+  /**
+   * The latest times of the rules left on purpose, to wait (a starter
+   * locked out, a source awaiting approval): no run is late on them.
+   */
+  readonly waitingSince: readonly DateTime.Utc[];
 }
 
 type Ports =
@@ -287,9 +292,13 @@ export class Recycling extends Context.Service<
     >;
     /** Makes the occurrences due: the recycling cron's run. */
     readonly makeDue: Effect.Effect<DueRun, DatabaseError>;
-    /** How many active rules' next occurrence was due before `before`. */
+    /**
+     * How many active rules a run should have made by `before` and did not:
+     * their latest time passed before it, but for those `run` left to wait.
+     */
     readonly overdue: (
-      before: DateTime.Utc
+      before: DateTime.Utc,
+      run: DueRun
     ) => Effect.Effect<number, DatabaseError>;
   }
 >()("peal-server/publishing/application/Recycling") {
@@ -742,7 +751,7 @@ export class Recycling extends Context.Service<
         );
       });
 
-      type Outcome = "ended" | "left" | "made";
+      type Outcome = "ended" | "left" | "made" | "waiting";
 
       // The rule's next occurrence, made, or why the rule ends or waits.
       const makeOne = Effect.fn("Recycling.makeOne")(function* makeOne(
@@ -773,7 +782,7 @@ export class Recycling extends Context.Service<
         }
 
         if (sourceStatus === "awaitingApproval") {
-          return "left" as const;
+          return "waiting" as const;
         }
 
         const starter = yield* actors.of(planned);
@@ -781,7 +790,7 @@ export class Recycling extends Context.Service<
         // Locked out for now, as by a two-step requirement: the rule
         // waits for them, and is made once they are back.
         if (starter._tag === "lockedOut") {
-          return "left" as const;
+          return "waiting" as const;
         }
 
         if (starter._tag === "gone") {
@@ -897,6 +906,7 @@ export class Recycling extends Context.Service<
         let made = 0;
         let left = 0;
         let endedCount = 0;
+        const waitingSince: DateTime.Utc[] = [];
 
         for (;;) {
           const page = yield* store.due(now, after, duePageSize);
@@ -918,6 +928,9 @@ export class Recycling extends Context.Service<
 
             if (outcome === "made") {
               made += 1;
+            } else if (outcome === "waiting") {
+              left += 1;
+              waitingSince.push(rule.lastDueAt);
             } else if (outcome === "left") {
               left += 1;
             } else {
@@ -928,7 +941,12 @@ export class Recycling extends Context.Service<
           const last = page.at(-1);
 
           if (last === undefined || page.length < duePageSize) {
-            const run: DueRun = { ended: endedCount, left, made };
+            const run: DueRun = {
+              ended: endedCount,
+              left,
+              made,
+              waitingSince,
+            };
 
             return run;
           }
@@ -942,7 +960,20 @@ export class Recycling extends Context.Service<
         get,
         list,
         makeDue,
-        overdue: (before) => store.overdue(before),
+        overdue: (before, run) =>
+          store
+            .overdue(before)
+            .pipe(
+              Effect.map((late) =>
+                Math.max(
+                  0,
+                  late -
+                    run.waitingSince.filter((at) =>
+                      DateTime.isLessThan(at, before)
+                    ).length
+                )
+              )
+            ),
         resume,
         start,
         stop,

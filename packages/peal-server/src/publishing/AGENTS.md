@@ -889,8 +889,10 @@ publishing's schema, naming nobody: each goes with its workspace
   `makeDue` (cron `publishing.recycling`, every ten minutes from 4) pages
   by `(last_due_at, id)`, makes one occurrence a rule a run, skips a rule
   another run holds (`FOR UPDATE SKIP LOCKED`), and the cron sets
-  `peal.publishing.recycling.overdue` (rules due over 30 minutes ago),
-  which an alert watches. Lock order: the rule's row, then the queue, the
+  `peal.publishing.recycling.overdue` (active rules whose latest time, a
+  queue's slot included, passed over 30 minutes ago, less those the run
+  left to wait: a starter locked out, a source awaiting approval), which
+  an alert watches. Lock order: the rule's row, then the queue, the
   post's row, the gate, the month and the duplicate guard's advisory lock;
   nothing locks a rule after those. Deleting a queue leaves its rules
   alone: the next run ends them `queueGone`. Erasure deletes rules before
