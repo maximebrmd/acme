@@ -26,6 +26,13 @@ export class PartnerStore extends Context.Service<
     readonly ofWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<Option.Option<Partner>, DatabaseError>;
+    /**
+     * The partner account of each of these workspaces that is a home
+     * workspace, in one read; any other is left out.
+     */
+    readonly ofWorkspaces: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, Partner>, DatabaseError>;
     readonly get: (
       partnerId: PartnerId
     ) => Effect.Effect<Option.Option<Partner>, DatabaseError>;

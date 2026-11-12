@@ -4,6 +4,7 @@ import { SqlClient } from "effect/sql";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { PermissionSchema } from "#shared/domain/access.ts";
+import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { PartnerStore } from "#workspace/application/partner-store.ts";
 import {
@@ -178,6 +179,23 @@ export const DrizzlePartnerStore = Layer.effect(
           .where(eq(partners.workspaceId, workspaceId))
           .limit(1)
           .pipe(Effect.mapError(failed), Effect.flatMap(first)),
+      ofWorkspaces: (workspaceIds) =>
+        workspaceIds.length === 0
+          ? Effect.succeed(new Map())
+          : db
+              .select()
+              .from(partners)
+              .where(anyUuid(partners.workspaceId, workspaceIds))
+              .pipe(
+                Effect.mapError(failed),
+                Effect.flatMap(Effect.forEach(toPartner)),
+                Effect.map(
+                  (found) =>
+                    new Map(
+                      found.map((partner) => [partner.workspaceId, partner])
+                    )
+                )
+              ),
       // In one transaction, under the workspace's row lock: the account is
       // written only for a workspace that exists, has none, and is not one
       // a partner owns.

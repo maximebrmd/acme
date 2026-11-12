@@ -103,6 +103,7 @@ const StoresTest = Layer.mergeAll(
       keys: fail("keys"),
       ofWorkspace: (id) =>
         Effect.succeed(id === home ? Option.some(partner) : Option.none()),
+      ofWorkspaces: fail("ofWorkspaces"),
       open: fail("open"),
       purgeUsageBefore: (before) =>
         Ref.set(purgedBefore, Option.some(before)).pipe(Effect.as(4)),
