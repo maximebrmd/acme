@@ -1,7 +1,9 @@
 import { Schema } from "effect";
 import type { SignUpMode } from "peal-contract";
 
-const isInvitationId = Schema.is(Schema.NonEmptyString);
+// An invitation's id is a UUID, as the server checks it: anything else (a link
+// a mail client mangled) shows no form and goes in no header.
+const isInvitationId = Schema.is(Schema.String.check(Schema.isUUID()));
 
 // What the auth pages show of signing up, by the server's mode
 // (`PEAL_SIGN_UP`, which `GET /api/captcha` tells). The server decides who
