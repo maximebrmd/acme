@@ -22,6 +22,7 @@ public class StatusTest : BaseMockServerTest
                   "square"
                 ],
                 "available": true,
+                "dailyLimit": 1,
                 "maxPromptLength": 1,
                 "requestCost": 1
               },
@@ -63,6 +64,7 @@ public class StatusTest : BaseMockServerTest
                   "square"
                 ],
                 "available": true,
+                "dailyLimit": 1,
                 "maxPromptLength": 1,
                 "requestCost": 1
               },

@@ -812,13 +812,15 @@ func (a *AssistantActionWrite) String() string {
 var (
 	assistantImagesStatusFieldAspects         = big.NewInt(1 << 0)
 	assistantImagesStatusFieldAvailable       = big.NewInt(1 << 1)
-	assistantImagesStatusFieldMaxPromptLength = big.NewInt(1 << 2)
-	assistantImagesStatusFieldRequestCost     = big.NewInt(1 << 3)
+	assistantImagesStatusFieldDailyLimit      = big.NewInt(1 << 2)
+	assistantImagesStatusFieldMaxPromptLength = big.NewInt(1 << 3)
+	assistantImagesStatusFieldRequestCost     = big.NewInt(1 << 4)
 )
 
 type AssistantImagesStatus struct {
 	Aspects         []ImageAspect `json:"aspects" url:"aspects"`
 	Available       bool          `json:"available" url:"available"`
+	DailyLimit      int           `json:"dailyLimit" url:"dailyLimit"`
 	MaxPromptLength int           `json:"maxPromptLength" url:"maxPromptLength"`
 	RequestCost     int           `json:"requestCost" url:"requestCost"`
 
@@ -841,6 +843,13 @@ func (a *AssistantImagesStatus) GetAvailable() bool {
 		return false
 	}
 	return a.Available
+}
+
+func (a *AssistantImagesStatus) GetDailyLimit() int {
+	if a == nil {
+		return 0
+	}
+	return a.DailyLimit
 }
 
 func (a *AssistantImagesStatus) GetMaxPromptLength() int {
@@ -885,6 +894,13 @@ func (a *AssistantImagesStatus) SetAspects(aspects []ImageAspect) {
 func (a *AssistantImagesStatus) SetAvailable(available bool) {
 	a.Available = available
 	a.require(assistantImagesStatusFieldAvailable)
+}
+
+// SetDailyLimit sets the DailyLimit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantImagesStatus) SetDailyLimit(dailyLimit int) {
+	a.DailyLimit = dailyLimit
+	a.require(assistantImagesStatusFieldDailyLimit)
 }
 
 // SetMaxPromptLength sets the MaxPromptLength field and marks it as non-optional;

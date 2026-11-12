@@ -946,6 +946,14 @@ func TestSettersAssistantImagesStatus(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetDailyLimit", func(t *testing.T) {
+		obj := &AssistantImagesStatus{}
+		var fernTestValueDailyLimit int
+		obj.SetDailyLimit(fernTestValueDailyLimit)
+		assert.Equal(t, fernTestValueDailyLimit, obj.DailyLimit)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetMaxPromptLength", func(t *testing.T) {
 		obj := &AssistantImagesStatus{}
 		var fernTestValueMaxPromptLength int
@@ -1019,6 +1027,29 @@ func TestGettersAssistantImagesStatus(t *testing.T) {
 			}
 		}()
 		_ = obj.GetAvailable() // Should return zero value
+	})
+
+	t.Run("GetDailyLimit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &AssistantImagesStatus{}
+		var expected int
+		obj.DailyLimit = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetDailyLimit(), "getter should return the property value")
+	})
+
+	t.Run("GetDailyLimit_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *AssistantImagesStatus
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetDailyLimit() // Should return zero value
 	})
 
 	t.Run("GetMaxPromptLength", func(t *testing.T) {
@@ -1109,6 +1140,37 @@ func TestSettersMarkExplicitAssistantImagesStatus(t *testing.T) {
 
 		// Act
 		obj.SetAvailable(fernTestValueAvailable)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetDailyLimit_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &AssistantImagesStatus{}
+		var fernTestValueDailyLimit int
+
+		// Act
+		obj.SetDailyLimit(fernTestValueDailyLimit)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)

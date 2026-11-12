@@ -21,6 +21,12 @@ class AssistantImagesStatus extends JsonSerializableType
     public bool $available;
 
     /**
+     * @var int $dailyLimit
+     */
+    #[JsonProperty('dailyLimit')]
+    public int $dailyLimit;
+
+    /**
      * @var int $maxPromptLength
      */
     #[JsonProperty('maxPromptLength')]
@@ -36,6 +42,7 @@ class AssistantImagesStatus extends JsonSerializableType
      * @param array{
      *   aspects: array<value-of<ImageAspect>>,
      *   available: bool,
+     *   dailyLimit: int,
      *   maxPromptLength: int,
      *   requestCost: int,
      * } $values
@@ -45,6 +52,7 @@ class AssistantImagesStatus extends JsonSerializableType
     ) {
         $this->aspects = $values['aspects'];
         $this->available = $values['available'];
+        $this->dailyLimit = $values['dailyLimit'];
         $this->maxPromptLength = $values['maxPromptLength'];
         $this->requestCost = $values['requestCost'];
     }

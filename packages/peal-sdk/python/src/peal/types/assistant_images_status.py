@@ -12,6 +12,7 @@ from .image_aspect import ImageAspect
 class AssistantImagesStatus(UniversalBaseModel):
     aspects: typing.List[ImageAspect]
     available: bool
+    daily_limit: typing_extensions.Annotated[int, FieldMetadata(alias="dailyLimit"), pydantic.Field(alias="dailyLimit")]
     max_prompt_length: typing_extensions.Annotated[
         int, FieldMetadata(alias="maxPromptLength"), pydantic.Field(alias="maxPromptLength")
     ]

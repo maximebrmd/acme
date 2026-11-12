@@ -6,6 +6,9 @@ pub struct AssistantImagesStatus {
     pub aspects: Vec<ImageAspect>,
     #[serde(default)]
     pub available: bool,
+    #[serde(rename = "dailyLimit")]
+    #[serde(default)]
+    pub daily_limit: i64,
     #[serde(rename = "maxPromptLength")]
     #[serde(default)]
     pub max_prompt_length: i64,
@@ -25,6 +28,7 @@ impl AssistantImagesStatus {
 pub struct AssistantImagesStatusBuilder {
     aspects: Option<Vec<ImageAspect>>,
     available: Option<bool>,
+    daily_limit: Option<i64>,
     max_prompt_length: Option<i64>,
     request_cost: Option<i64>,
 }
@@ -37,6 +41,11 @@ impl AssistantImagesStatusBuilder {
 
     pub fn available(mut self, value: bool) -> Self {
         self.available = Some(value);
+        self
+    }
+
+    pub fn daily_limit(mut self, value: i64) -> Self {
+        self.daily_limit = Some(value);
         self
     }
 
@@ -54,6 +63,7 @@ impl AssistantImagesStatusBuilder {
     /// This method will fail if any of the following fields are not set:
     /// - [`aspects`](AssistantImagesStatusBuilder::aspects)
     /// - [`available`](AssistantImagesStatusBuilder::available)
+    /// - [`daily_limit`](AssistantImagesStatusBuilder::daily_limit)
     /// - [`max_prompt_length`](AssistantImagesStatusBuilder::max_prompt_length)
     /// - [`request_cost`](AssistantImagesStatusBuilder::request_cost)
     pub fn build(self) -> Result<AssistantImagesStatus, BuildError> {
@@ -64,6 +74,9 @@ impl AssistantImagesStatusBuilder {
             available: self
                 .available
                 .ok_or_else(|| BuildError::missing_field("available"))?,
+            daily_limit: self
+                .daily_limit
+                .ok_or_else(|| BuildError::missing_field("daily_limit"))?,
             max_prompt_length: self
                 .max_prompt_length
                 .ok_or_else(|| BuildError::missing_field("max_prompt_length"))?,

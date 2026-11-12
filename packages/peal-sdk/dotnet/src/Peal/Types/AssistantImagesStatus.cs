@@ -17,6 +17,9 @@ public record AssistantImagesStatus : IJsonOnDeserialized
     [JsonPropertyName("available")]
     public required bool Available { get; set; }
 
+    [JsonPropertyName("dailyLimit")]
+    public required int DailyLimit { get; set; }
+
     [JsonPropertyName("maxPromptLength")]
     public required int MaxPromptLength { get; set; }
 

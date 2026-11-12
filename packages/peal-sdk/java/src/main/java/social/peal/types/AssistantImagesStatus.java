@@ -25,6 +25,8 @@ public final class AssistantImagesStatus {
 
     private final boolean available;
 
+    private final int dailyLimit;
+
     private final int maxPromptLength;
 
     private final int requestCost;
@@ -34,11 +36,13 @@ public final class AssistantImagesStatus {
     private AssistantImagesStatus(
             List<ImageAspect> aspects,
             boolean available,
+            int dailyLimit,
             int maxPromptLength,
             int requestCost,
             Map<String, Object> additionalProperties) {
         this.aspects = aspects;
         this.available = available;
+        this.dailyLimit = dailyLimit;
         this.maxPromptLength = maxPromptLength;
         this.requestCost = requestCost;
         this.additionalProperties = additionalProperties;
@@ -52,6 +56,11 @@ public final class AssistantImagesStatus {
     @JsonProperty("available")
     public boolean getAvailable() {
         return available;
+    }
+
+    @JsonProperty("dailyLimit")
+    public int getDailyLimit() {
+        return dailyLimit;
     }
 
     @JsonProperty("maxPromptLength")
@@ -78,13 +87,14 @@ public final class AssistantImagesStatus {
     private boolean equalTo(AssistantImagesStatus other) {
         return aspects.equals(other.aspects)
                 && available == other.available
+                && dailyLimit == other.dailyLimit
                 && maxPromptLength == other.maxPromptLength
                 && requestCost == other.requestCost;
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.aspects, this.available, this.maxPromptLength, this.requestCost);
+        return Objects.hash(this.aspects, this.available, this.dailyLimit, this.maxPromptLength, this.requestCost);
     }
 
     @java.lang.Override
@@ -97,9 +107,13 @@ public final class AssistantImagesStatus {
     }
 
     public interface AvailableStage {
-        MaxPromptLengthStage available(boolean available);
+        DailyLimitStage available(boolean available);
 
         Builder from(AssistantImagesStatus other);
+    }
+
+    public interface DailyLimitStage {
+        MaxPromptLengthStage dailyLimit(int dailyLimit);
     }
 
     public interface MaxPromptLengthStage {
@@ -125,8 +139,11 @@ public final class AssistantImagesStatus {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements AvailableStage, MaxPromptLengthStage, RequestCostStage, _FinalStage {
+    public static final class Builder
+            implements AvailableStage, DailyLimitStage, MaxPromptLengthStage, RequestCostStage, _FinalStage {
         private boolean available;
+
+        private int dailyLimit;
 
         private int maxPromptLength;
 
@@ -142,6 +159,7 @@ public final class AssistantImagesStatus {
         public Builder from(AssistantImagesStatus other) {
             aspects(other.getAspects());
             available(other.getAvailable());
+            dailyLimit(other.getDailyLimit());
             maxPromptLength(other.getMaxPromptLength());
             requestCost(other.getRequestCost());
             return this;
@@ -149,8 +167,15 @@ public final class AssistantImagesStatus {
 
         @java.lang.Override
         @JsonSetter("available")
-        public MaxPromptLengthStage available(boolean available) {
+        public DailyLimitStage available(boolean available) {
             this.available = available;
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("dailyLimit")
+        public MaxPromptLengthStage dailyLimit(int dailyLimit) {
+            this.dailyLimit = dailyLimit;
             return this;
         }
 
@@ -194,13 +219,15 @@ public final class AssistantImagesStatus {
 
         @java.lang.Override
         public AssistantImagesStatus build() {
-            return new AssistantImagesStatus(aspects, available, maxPromptLength, requestCost, additionalProperties);
+            return new AssistantImagesStatus(
+                    aspects, available, dailyLimit, maxPromptLength, requestCost, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("aspects")
                     || key.equalsIgnoreCase("available")
+                    || key.equalsIgnoreCase("dailyLimit")
                     || key.equalsIgnoreCase("maxPromptLength")
                     || key.equalsIgnoreCase("requestCost")) {
                 return;

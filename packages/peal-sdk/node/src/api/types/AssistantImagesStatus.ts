@@ -5,6 +5,7 @@ import * as Peal from "../index.js";
 export interface AssistantImagesStatus {
     aspects: Peal.ImageAspect[];
     available: boolean;
+    dailyLimit: number;
     maxPromptLength: number;
     requestCost: number;
 }

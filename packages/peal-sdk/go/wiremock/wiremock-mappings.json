@@ -2165,7 +2165,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"available\": true,\n  \"dailyLimit\": 1,\n  \"images\": {\n    \"aspects\": [\n      \"square\"\n    ],\n    \"available\": true,\n    \"maxPromptLength\": 1,\n    \"requestCost\": 1\n  },\n  \"maxTextLength\": 1,\n  \"remaining\": 1,\n  \"resetsAt\": \"resetsAt\"\n}",
+        "body": "{\n  \"available\": true,\n  \"dailyLimit\": 1,\n  \"images\": {\n    \"aspects\": [\n      \"square\"\n    ],\n    \"available\": true,\n    \"dailyLimit\": 1,\n    \"maxPromptLength\": 1,\n    \"requestCost\": 1\n  },\n  \"maxTextLength\": 1,\n  \"remaining\": 1,\n  \"resetsAt\": \"resetsAt\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
