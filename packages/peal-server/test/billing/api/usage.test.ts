@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Ref } from "effect";
+import { DateTime, Effect, Layer } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import { TestClock } from "effect/testing";
@@ -7,18 +7,21 @@ import { Api } from "peal-contract";
 import type { Member } from "peal-contract";
 
 import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
+import { PartnerTenancy } from "#billing/application/ports/partner-tenancy.ts";
 import { PlanHolders } from "#billing/application/ports/plan-holders.ts";
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
-import type { WorkspaceUsageRecord } from "#billing/application/ports/usage-ledger.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { RecordedUsage } from "#billing/application/recorded-usage.ts";
 import { UsageReports } from "#billing/application/usage-reports.ts";
 import { UsageApiLive } from "#billing/container.ts";
-import type { UsageRecord } from "#billing/domain/usage-meter.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
-import { everyWorkspaceOn, UnmeteredTest } from "#test/billing/support.ts";
+import {
+  everyWorkspaceOn,
+  UnmeteredTest,
+  UsageLedgerInMemory,
+} from "#test/billing/support.ts";
 import { securityTest } from "#workspace/api/security.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
@@ -51,104 +54,6 @@ const current = {
   },
 };
 
-// Whether two records count the same meter of a workspace on a day.
-const same = (entry: WorkspaceUsageRecord) => (other: WorkspaceUsageRecord) =>
-  other.workspaceId === entry.workspaceId &&
-  other.record.meter === entry.record.meter &&
-  other.record.dimension === entry.record.dimension &&
-  DateTime.Equivalence(other.record.day, entry.record.day);
-
-// Whether a record's day is one of the period's.
-const within =
-  (period: { readonly from: DateTime.Utc; readonly to: DateTime.Utc }) =>
-  (record: UsageRecord) =>
-    !DateTime.isLessThan(record.day, period.from) &&
-    !DateTime.isGreaterThan(record.day, period.to);
-
-// Every workspace's ledger in memory.
-const LedgerInMemory = Layer.effect(
-  UsageLedger,
-  Effect.gen(function* inMemory() {
-    const kept = yield* Ref.make<readonly WorkspaceUsageRecord[]>([]);
-
-    return UsageLedger.of({
-      add: (entry) =>
-        Ref.update(kept, (all) => {
-          const found = all.find(same(entry));
-
-          return [
-            ...all.filter((other) => !same(entry)(other)),
-            found === undefined
-              ? entry
-              : {
-                  record: {
-                    ...found.record,
-                    quantity: found.record.quantity + entry.record.quantity,
-                  },
-                  workspaceId: entry.workspaceId,
-                },
-          ];
-        }),
-      allOf: () => Effect.succeed([]),
-      eraseWorkspace: () => Effect.void,
-      ofWorkspace: (id, period) =>
-        Ref.get(kept).pipe(
-          Effect.map((all) =>
-            all
-              .filter(
-                ({ record, workspaceId: of }) =>
-                  of === id && within(period)(record)
-              )
-              .map(({ record }) => record)
-          )
-        ),
-      ofWorkspaces: (ids, period) =>
-        Ref.get(kept).pipe(
-          Effect.map((all) =>
-            all.filter(
-              ({ record, workspaceId: of }) =>
-                ids.includes(of) && within(period)(record)
-            )
-          )
-        ),
-      postsAcross: (ids, period) =>
-        Ref.get(kept).pipe(
-          Effect.map((all) => {
-            const summed = new Map<string, UsageRecord>();
-
-            for (const { record, workspaceId: of } of all) {
-              if (
-                ids.includes(of) &&
-                within(period)(record) &&
-                record.meter === "publishedPosts"
-              ) {
-                const key = `${DateTime.formatIso(record.day)} ${record.dimension}`;
-                const found = summed.get(key);
-
-                summed.set(
-                  key,
-                  found === undefined
-                    ? record
-                    : { ...found, quantity: found.quantity + record.quantity }
-                );
-              }
-            }
-
-            return [...summed.values()];
-          })
-        ),
-      purgeBefore: () => Effect.succeed(0),
-      set: (entries) =>
-        Ref.update(kept, (all) => [
-          ...all.filter(
-            (other) => !entries.some((entry) => same(entry)(other))
-          ),
-          ...entries,
-        ]),
-    });
-  })
-);
-
 const MeteredTest = Layer.mock(MeteredPostLedger, {
   ofWorkspace: () =>
     Effect.succeed([
@@ -161,11 +66,12 @@ const MeteredTest = Layer.mock(MeteredPostLedger, {
 
 const reportsOn = (entitlements: typeof UnmeteredTest) =>
   Layer.mergeAll(UsageReports.layer, RecordedUsage.layer).pipe(
-    Layer.provideMerge(LedgerInMemory),
+    Layer.provideMerge(UsageLedgerInMemory),
     Layer.provide(
       Layer.mergeAll(
         entitlements,
         MeteredTest,
+        PartnerTenancy.layerNone,
         Layer.succeed(
           WorkspaceUsage,
           WorkspaceUsage.of({ of: () => Effect.succeed(current) })

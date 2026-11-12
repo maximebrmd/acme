@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { CurrentPrincipal, Forbidden } from "peal-contract";
-import type { PartnerScope, Principal } from "peal-contract";
+import type { Principal } from "peal-contract";
 
 // What the partner API's endpoints answer about the key they take, in the
 // same words whichever context serves the endpoint: the workspace
@@ -35,7 +35,7 @@ export const partnerKeyOnly: Effect.Effect<
 export const withoutPartnerScope = ({
   scope,
 }: {
-  readonly scope: PartnerScope;
+  readonly scope: string;
 }): Effect.Effect<never, Forbidden> =>
   Effect.fail(
     new Forbidden({

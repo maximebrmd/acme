@@ -33,6 +33,7 @@ import { OffboardWorkspace } from "#workspace/application/offboard-workspace.ts"
 import { PartnerAccounts } from "#workspace/application/partner-accounts.ts";
 import { PartnerKeys } from "#workspace/application/partner-keys.ts";
 import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
+import { PartnerTenants } from "#workspace/application/partner-tenants.ts";
 import { PartnerWorkspaces } from "#workspace/application/partner-workspaces.ts";
 import { ReplayErasures } from "#workspace/application/replay-erasures.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
@@ -230,6 +231,17 @@ export const WorkspaceSettingsLive = Layer.mergeAll(
       S3ErasureLedger
     )
   )
+);
+
+/**
+ * What a partner holds, by workspace and by day, for billing's report of
+ * its usage per customer (PartnerTenants). Needs the database and the
+ * channels context's ChannelUsage, which counts each workspace's channels,
+ * and a TransactionRunner.
+ */
+export const PartnerTenantsLive = PartnerTenants.layer.pipe(
+  Layer.provide(PartnerWorkspaces.layer),
+  Layer.provide(Layer.mergeAll(PartnerStoresLive, ContextChannelCountsLive))
 );
 
 /**

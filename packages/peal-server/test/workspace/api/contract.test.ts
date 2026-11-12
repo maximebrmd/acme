@@ -51,12 +51,12 @@ import {
   partnerKeyPermissions as domainKeyPermissions,
   PartnerScopeSchema as DomainPartnerScopeSchema,
 } from "#workspace/domain/partner-key.ts";
+import { partnerUsageRetentionDays } from "#workspace/domain/partner-usage-retention.ts";
 import {
   maxPartnerLogoUrlLength as domainMaxLogoUrlLength,
   maxPartnerNameLength as domainMaxPartnerNameLength,
 } from "#workspace/domain/partner.ts";
 import { maxReturnOrigins as domainMaxReturnOrigins } from "#workspace/domain/return-origin.ts";
-import { partnerUsageRetentionDays } from "#workspace/domain/partner-usage-retention.ts";
 import { RoleSchema as DomainRoleSchema } from "#workspace/domain/roles.ts";
 
 describe("the contract", () => {
