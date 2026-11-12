@@ -29,6 +29,9 @@ export type LookUp =
   | { readonly _tag: "absent" }
   // No answer settled it.
   | { readonly _tag: "unknown" }
+  // The platform holds the post and has not finished making it live (a
+  // video it still processes after its finish): read it again later.
+  | { readonly _tag: "pending" }
   // The platform said it refused the post, which never goes live (a video
   // its processing refused after it was sent): the attempt fails.
   | { readonly _tag: "refused"; readonly failure: PublishFailure };
@@ -51,6 +54,10 @@ export type LookUp =
  *
  * A `lookUp` that can only search, never prove a post absent (X's recent
  * posts), answers `found` or `unknown`: the post is then never sent again.
+ * One that knows the platform holds the post, still being made live,
+ * answers `pending`: a resumed run then reads it again over the timing's
+ * `confirmDelays`, as after an unknown outcome, where `unknown` ends it at
+ * once.
  */
 export type Confirmation<P = never> =
   | {
@@ -234,6 +241,7 @@ export const sequenced = <P>(
               return Effect.succeed(settled(Result.fail(found.failure)));
             }
 
+            // `unknown` and `pending` settle nothing yet.
             return found._tag === "absent"
               ? resend(post, prepared)
               : Effect.succeed(unsettled);
@@ -329,32 +337,72 @@ export const sequenced = <P>(
       })
     );
 
+  type ResumedLookUp = (
+    post: OutgoingPost,
+    prepared: Option.Option<P>
+  ) => Effect.Effect<LookUp, PublishFailure>;
+
+  const lookUpResumed = (post: OutgoingPost, lookUp: ResumedLookUp) =>
+    lookUp(post, Option.none()).pipe(
+      Effect.orElseSucceed((): LookUp => ({ _tag: "unknown" }))
+    );
+
+  // What a look of a resumed run settles: the post found or refused, or,
+  // not there, published by this run: the earlier run never made it, and
+  // the key keeps this one from making it twice.
+  const settledResumed = (
+    post: OutgoingPost,
+    found: LookUp
+  ): Option.Option<Effect.Effect<PublishResult, PublishFailure>> => {
+    if (found._tag === "found") {
+      return Option.some(Effect.succeed(found.published));
+    }
+
+    if (found._tag === "refused") {
+      return Option.some(Effect.fail(found.failure));
+    }
+
+    return found._tag === "absent" ? Option.some(publish(post)) : Option.none();
+  };
+
+  // The platform holds the resumed post, not live yet: read it again after
+  // each of the timing's waits, then leave it unconfirmed, never sent again.
+  const awaitPending = Effect.fn(`Publishing.${platform}.awaitPending`)(
+    function* awaitPending(post: OutgoingPost, lookUp: ResumedLookUp) {
+      for (const delay of timing.confirmDelays) {
+        yield* Effect.sleep(delay);
+
+        const found = yield* lookUpResumed(post, lookUp);
+        const done = settledResumed(post, found);
+
+        if (Option.isSome(done)) {
+          return yield* done.value;
+        }
+      }
+
+      yield* Effect.logWarning(
+        "A resumed post was still being processed when the looks ran out"
+      ).pipe(logged(post));
+
+      return unconfirmed("stillProcessing");
+    }
+  );
+
   // Reads the earlier run's post back, and publishes only when it is not
-  // there. A resumed run has nothing `prepare` made: the lookUp searches.
+  // there. A resumed run has nothing `prepare` made: the lookUp searches,
+  // or reads what the adapter journaled.
   const resumeLookingUp = (
     post: OutgoingPost,
-    lookUp: (
-      post: OutgoingPost,
-      prepared: Option.Option<P>
-    ) => Effect.Effect<LookUp, PublishFailure>
+    lookUp: ResumedLookUp
   ): Effect.Effect<PublishResult, PublishFailure> =>
-    lookUp(post, Option.none()).pipe(
-      Effect.orElseSucceed((): LookUp => ({ _tag: "unknown" })),
-      Effect.flatMap((found): Effect.Effect<PublishResult, PublishFailure> => {
-        if (found._tag === "found") {
-          return Effect.succeed(found.published);
-        }
-
-        if (found._tag === "refused") {
-          return Effect.fail(found.failure);
-        }
-
-        // Not there: the earlier run never made it, and the key keeps this
-        // one from making it twice.
-        return found._tag === "absent"
-          ? publish(post)
-          : Effect.succeed(interrupted);
-      })
+    lookUpResumed(post, lookUp).pipe(
+      Effect.flatMap((found) =>
+        Option.getOrElse(settledResumed(post, found), () =>
+          found._tag === "pending"
+            ? awaitPending(post, lookUp)
+            : Effect.succeed(interrupted)
+        )
+      )
     );
 
   const resumed = (
