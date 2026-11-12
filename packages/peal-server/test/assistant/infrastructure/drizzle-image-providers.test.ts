@@ -165,9 +165,9 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
             Option.some(by)
           );
 
-          // The key was typed for images.example.com: it never goes to
-          // another origin, whoever changed the row.
-          yield* sql`UPDATE assistant.image_providers SET base_url = 'https://elsewhere.example.com/v1' WHERE workspace_id = ${workspaceId}`;
+          // The key was typed for images.example.com/v1: it never goes to
+          // another address, even on the same host, whoever changed the row.
+          yield* sql`UPDATE assistant.image_providers SET base_url = 'https://images.example.com/other-account/v1' WHERE workspace_id = ${workspaceId}`;
 
           assert.isTrue(
             Option.isNone(keyOf(yield* providers.open(workspaceId)))
@@ -184,7 +184,7 @@ layer(providersOn(TokenCipherTest), { timeout: "60 seconds" })(
             ),
             Option.some({
               baseUrl: ProviderAddressSchema.make(
-                "https://elsewhere.example.com/v1"
+                "https://images.example.com/other-account/v1"
               ),
               keyUnreadable: true,
             })

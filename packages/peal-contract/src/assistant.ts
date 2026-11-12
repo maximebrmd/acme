@@ -236,8 +236,8 @@ export const imageProviderKeyPattern = /^[!-~]+$/u;
 
 export const ImageProviderChangeSchema = Schema.Struct({
   // The provider's key, visible ASCII without spaces: required unless the
-  // workspace has one stored and `baseUrl` stays on its origin, when it is
-  // kept.
+  // workspace has one stored and `baseUrl` stays exactly the same, when it
+  // is kept.
   apiKey: Schema.optionalKey(
     Schema.String.check(
       Schema.isMinLength(1),
@@ -348,7 +348,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
       success: ImageProviderSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Sets the image provider the workspace brings, ${imageProviderDescription}. The workspace's image prompts then go to \`baseUrl\` with \`apiKey\` as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address's origin, never shows it again, and never sends it to another origin: \`apiKey\` may be left out to keep the stored one while the origin stays the same. The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.`,
+        description: `Sets the image provider the workspace brings, ${imageProviderDescription}. The workspace's image prompts then go to \`baseUrl\` with \`apiKey\` as a bearer token; the images still take room in the plan's media storage. Peal keeps the key encrypted for this workspace and this address, never shows it again, and never sends it to another address: \`apiKey\` may be left out to keep the stored one only while \`baseUrl\` stays exactly the same (to change the model alone). The address must be public HTTPS; it is checked now, and before every call. The provider is not called: the first image tells whether the settings work. Needs assistant:configure.`,
         summary: "Set the workspace's image provider",
       })
     ),

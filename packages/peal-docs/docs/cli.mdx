@@ -444,7 +444,7 @@ peal assistant image-provider clear
 ```
 
 - These keep the workspace's own [image provider](/settings#image-provider), and need `assistant:configure` (owners, admins, and the keys given it).
-- `set` never takes the key as an argument, which the shell's history and the list of processes would keep: at a terminal it asks for it, without showing what you type; otherwise it reads it from standard input, to its end, without its last line break. `--keep-key` keeps the key already saved, which the server takes while the address stays on the same origin; on another origin it asks for the key again.
+- `set` never takes the key as an argument, which the shell's history and the list of processes would keep: at a terminal it asks for it, without showing what you type; otherwise it reads it from standard input, to its end, without its last line break. `--keep-key` keeps the key already saved, which the server takes only while `--base-url` stays exactly the same (to change the model alone); any other address asks for the key again.
 - `show` prints the address, the model and whether the key can still be read, never the key. `clear` removes the provider and deletes its key, after asking (`--yes` otherwise).
 
 ## Reviews and approvals [#review]

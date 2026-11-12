@@ -15,7 +15,7 @@ const isEncryptedToken = Schema.is(EncryptedTokenSchema);
 /**
  * Workspaces' provider keys on the channels context's token cipher:
  * encrypted with the server's keyring (`PEAL_TOKEN_KEYS`), bound to
- * `assistant:<workspace id>:<origin>`. Peal keeps one cipher, so a
+ * `assistant:<workspace id>:<address>`. Peal keeps one cipher, so a
  * rotation reaches these keys too: nothing here encrypts on its own. A
  * key that does not decrypt opens as none, and is never logged.
  */
@@ -25,18 +25,18 @@ export const CipherProviderSecrets = Layer.effect(
     const cipher = yield* TokenCipher;
 
     return ProviderSecrets.of({
-      open: (sealed, workspaceId, origin) =>
+      open: (sealed, workspaceId, address) =>
         isEncryptedToken(sealed)
           ? cipher
-              .decryptSecret(sealed, imageProviderContext(workspaceId, origin))
+              .decryptSecret(sealed, imageProviderContext(workspaceId, address))
               .pipe(
                 Effect.map(Option.some),
                 Effect.catch(() => Effect.succeedNone)
               )
           : Effect.succeedNone,
-      seal: (key, workspaceId, origin) =>
+      seal: (key, workspaceId, address) =>
         cipher
-          .encryptSecret(key, imageProviderContext(workspaceId, origin))
+          .encryptSecret(key, imageProviderContext(workspaceId, address))
           .pipe(
             Effect.map((sealed): SealedProviderKey => ({
               keyId: tokenKeyIdOf(sealed),

@@ -91,13 +91,6 @@ export const checkProviderAddress = (
 };
 
 /**
- * Where a key is sent, as a browser compares origins: scheme, host and
- * port. A workspace's key is sealed for one, so it never reaches another.
- */
-export const originOfProvider = (address: ProviderAddress): string =>
-  new URL(address).origin;
-
-/**
  * What a model name may hold: one line, without control or format
  * characters (the marks that reorder text among them), lone surrogates or
  * line separators, and not blank: what `storableLine` would not change but

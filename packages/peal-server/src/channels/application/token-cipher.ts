@@ -62,16 +62,16 @@ export const adGrantContext = (grantId: string): SecretContext =>
 
 /**
  * The context of the key a workspace gave for its own image provider,
- * named by the workspace and the origin of the provider's address: a key
- * copied to another workspace, or left behind an address moved to another
- * origin, does not decrypt, so it never reaches a host it was not typed
- * for.
+ * named by the workspace and the provider's whole address: a key copied to
+ * another workspace, or left behind an address changed in any way (its
+ * host or its path), does not decrypt, so it never reaches an address it
+ * was not typed for.
  */
 export const imageProviderContext = (
   workspaceId: string,
-  origin: string
+  address: string
 ): SecretContext =>
-  SecretContextSchema.make(`assistant:${workspaceId}:${origin}`);
+  SecretContextSchema.make(`assistant:${workspaceId}:${address}`);
 
 export type TokenDecryptionError =
   | MalformedEncryptedToken
@@ -87,7 +87,7 @@ export type TokenDecryptionError =
  * an app's client secret on a Mastodon instance, are encrypted the same way,
  * bound to a context of their own (`connect:<state>`, `choice:<selection>`,
  * `app:<origin>`, `webhook:<endpoint id>`, `ads:<grant id>`,
- * `assistant:<workspace id>:<origin>`), which never reads as a channel id.
+ * `assistant:<workspace id>:<address>`), which never reads as a channel id.
  *
  * A server may run without keys, as long as it stores no channel: encrypting
  * then fails with MissingTokenKey, and decrypting with UnknownTokenKey.

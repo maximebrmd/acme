@@ -8,7 +8,6 @@ import {
   checkProviderKey,
   checkProviderModel,
   ImageProviderSettings,
-  originOfProvider,
 } from "#assistant/domain/image-provider.ts";
 import type {
   ProviderAddress,
@@ -30,7 +29,7 @@ export interface ImageProviderView {
 
 /** What a member saves: the address and the model, and the key if typed. */
 export interface ImageProviderChange {
-  /** Left out, the stored key is kept, when its origin stays the same. */
+  /** Left out, the stored key is kept, when the address stays the same. */
   readonly apiKey?: string;
   readonly baseUrl: string;
   readonly model: string;
@@ -66,8 +65,8 @@ export const viewImageProvider = Effect.fn("ImageProviderSettings.view")(
  * Saves the workspace's provider: the address checked (the domain's rules,
  * then the outbound guard, once now), the model one line, and the key,
  * required unless the workspace has one stored that opens and the address
- * keeps its origin, in which case it is kept, sealed again for the same
- * origin. The provider is not called: the first image tells whether the
+ * stays exactly the same, in which case it is kept, sealed again for that
+ * address: a key never follows a changed path or host. The provider is not called: the first image tells whether the
  * settings work.
  */
 export const saveImageProvider = Effect.fn("ImageProviderSettings.save")(
@@ -86,11 +85,7 @@ export const saveImageProvider = Effect.fn("ImageProviderSettings.save")(
         ? yield* providers.open(workspaceId).pipe(
             Effect.map((stored) =>
               stored.pipe(
-                Option.filter(
-                  ({ settings }) =>
-                    originOfProvider(settings.baseUrl) ===
-                    originOfProvider(baseUrl)
-                ),
+                Option.filter(({ settings }) => settings.baseUrl === baseUrl),
                 Option.flatMap(({ apiKey }) => apiKey)
               )
             ),

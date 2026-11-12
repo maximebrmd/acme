@@ -34,9 +34,8 @@ export const dailyUsage = assistant.table(
  * The image provider a workspace brought, one at most: its address and
  * model, and its key, encrypted with the server's keyring as
  * `<keyId>.<iv>.<ciphertext>` and bound to
- * `assistant:<workspace id>:<origin of the address>`, so a row whose
- * address moved to another origin, or that was copied to another
- * workspace, does not decrypt. `key_id` names the key that encrypted it,
+ * `assistant:<workspace id>:<address>`, so a row whose address changed
+ * in any way, or that was copied to another workspace, does not decrypt. `key_id` names the key that encrypted it,
  * for a rotation; `set_by` the member who saved it, null for a key or
  * once their account closed.
  */

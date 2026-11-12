@@ -415,7 +415,7 @@
       "apiKeySaved": "Enregistrée",
       "apiKeySet": "Une clé est enregistrée : laissez ce champ vide pour la garder. Peal ne la montre plus jamais.",
       "keyUnreadable": "La clé enregistrée ne peut plus être lue. Saisissez-la à nouveau.",
-      "keyAgain": "L’adresse est sur un autre hôte : saisissez la clé à nouveau, car Peal n’envoie une clé qu’à l’adresse pour laquelle elle a été donnée.",
+      "keyAgain": "L’adresse a changé : saisissez la clé à nouveau, car Peal n’envoie une clé qu’à l’adresse exacte pour laquelle elle a été donnée.",
       "notice": "Les descriptions d’images de cet espace de travail partent à cette adresse, avec cette clé. Ses images ne comptent pas dans les demandes à l’assistant de l’abonnement, et occupent toujours le stockage de l’abonnement. Peal garde la clé chiffrée et ne la montre plus jamais.",
       "updatedAt": "Enregistré le {updatedAt}",
       "save": "Enregistrer",

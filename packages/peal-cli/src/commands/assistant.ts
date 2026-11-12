@@ -71,7 +71,7 @@ const set = Command.make(
     json: jsonFlag,
     keepKey: Flag.Boolean("keep-key").pipe(
       Flag.withDescription(
-        "Keep the key already saved, which works while --base-url stays on the same origin: nothing is read for it."
+        "Keep the key already saved, which works only while --base-url stays exactly the address it was given for (to change the model alone): nothing is read for it."
       ),
       Flag.withDefault(false)
     ),

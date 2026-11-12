@@ -25,15 +25,16 @@ export const draftOf = (saved: ImageProvider | null): ImageProviderDraft => ({
   model: saved?.model ?? "",
 });
 
-// Where a key is sent, as a browser compares origins; none for what is not
-// an address yet.
-const originOf = (address: string): string | null =>
-  URL.parse(address.trim())?.origin ?? null;
+// The address as the server keeps it: written by URL, without the slashes
+// that end it; none for what is not an address yet.
+const addressOf = (text: string): string | null =>
+  URL.parse(text.trim())?.href.replace(/\/+$/u, "") ?? null;
 
 /**
  * Why the key must be typed now, or null when the saved one is kept: none
- * is saved, the saved one can no longer be read, or the address moved to
- * another origin, where Peal never sends a key given for the first.
+ * is saved, the saved one can no longer be read, or the address changed
+ * (its host or its path), where Peal never sends a key given for the
+ * first.
  */
 export const keyNeeded = (
   draft: ImageProviderDraft,
@@ -47,7 +48,7 @@ export const keyNeeded = (
     return "keyUnreadable";
   }
 
-  return originOf(draft.baseUrl) === originOf(saved.baseUrl)
+  return addressOf(draft.baseUrl) === addressOf(saved.baseUrl)
     ? null
     : "keyAgain";
 };

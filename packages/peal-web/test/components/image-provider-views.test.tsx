@@ -89,18 +89,16 @@ describe(ImageProviderFormView, () => {
     expect(html).not.toContain('placeholder="Saved"');
   });
 
-  it("asks for the key again when the address moves to another host", async () => {
+  it("asks for the key again when the address changes, its path included", async () => {
     const html = await render({
       draft: {
         ...draftOf(saved),
-        baseUrl: "https://other-images.example.com/v1",
+        baseUrl: "https://images.example.com/other-account/v1",
       },
       provider: saved,
     });
 
-    expect(html).toContain(
-      "The address is on another host: type the key again"
-    );
+    expect(html).toContain("The address changed: type the key again");
   });
 
   it("says why a save was refused, in French too", async () => {

@@ -18,7 +18,7 @@ export interface StoredImageProvider {
 /**
  * A workspace's provider ready for a call: its settings and its key, none
  * when the stored key no longer decrypts (its key left the keyring, or the
- * row moved to another workspace or origin).
+ * row moved to another workspace or address).
  */
 export interface OpenedImageProvider {
   readonly apiKey: Option.Option<Redacted.Redacted>;
@@ -27,7 +27,7 @@ export interface OpenedImageProvider {
 
 /**
  * The image provider each workspace brought, one at most, its key sealed
- * for that workspace and the origin of its address. A database failure is
+ * for that workspace and its address. A database failure is
  * a defect. Exports, erasures and closed accounts reach the rows through
  * UsageRecords.
  */

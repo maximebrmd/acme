@@ -24,16 +24,21 @@ const saved: ImageProvider = {
 };
 
 describe(keyNeeded, () => {
-  it("keeps the saved key on the same origin", () => {
-    expect(
+  it("keeps the saved key for the same address only", () => {
+    expect([
+      keyNeeded({ ...draftOf(saved), model: "synthetic-image-model-2" }, saved),
+      keyNeeded(
+        { ...draftOf(saved), baseUrl: "https://images.example.com/v1/" },
+        saved
+      ),
       keyNeeded(
         { ...draftOf(saved), baseUrl: "https://images.example.com/v2" },
         saved
-      )
-    ).toBeNull();
+      ),
+    ]).toStrictEqual([null, null, "keyAgain"]);
   });
 
-  it("asks for the key when none is saved, it is unreadable, or the origin moved", () => {
+  it("asks for the key when none is saved, it is unreadable, or the address changed", () => {
     expect([
       keyNeeded(draftOf(null), null),
       keyNeeded(draftOf(saved), { ...saved, keyUnreadable: true }),

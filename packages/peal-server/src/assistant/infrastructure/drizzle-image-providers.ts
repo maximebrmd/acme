@@ -9,7 +9,6 @@ import type {
 import { ProviderSecrets } from "#assistant/application/ports/provider-secrets.ts";
 import {
   ImageProviderSettings,
-  originOfProvider,
   ProviderAddressSchema,
   ProviderModelSchema,
 } from "#assistant/domain/image-provider.ts";
@@ -29,8 +28,8 @@ const settingsOf = (row: Row) =>
 
 /**
  * ImageProviders in Postgres (`assistant.image_providers`), the keys
- * sealed through ProviderSecrets: bound to the workspace and to the origin
- * of the address in the same row, so a row whose address moved, or that
+ * sealed through ProviderSecrets: bound to the workspace and to the
+ * address in the same row, so a row whose address moved, or that
  * was copied to another workspace, opens without its key. A database failure is a
  * defect, as the quota's are.
  */
@@ -50,12 +49,12 @@ export const DrizzleImageProvidersLive = Layer.effect(
           Effect.orDie
         );
 
-    // The row's key, opened for the workspace and the row's own origin.
+    // The row's key, opened for the workspace and the row's own address.
     const keyOf = (workspaceId: WorkspaceId, row: Row) =>
       secrets.open(
         row.sealedKey,
         workspaceId,
-        originOfProvider(ProviderAddressSchema.make(row.baseUrl))
+        ProviderAddressSchema.make(row.baseUrl)
       );
 
     const open = Effect.fn("ImageProviders.open")(function* open(
@@ -104,7 +103,7 @@ export const DrizzleImageProvidersLive = Layer.effect(
           const { keyId, sealed } = yield* secrets.seal(
             key,
             workspaceId,
-            originOfProvider(settings.baseUrl)
+            settings.baseUrl
           );
 
           const values = {

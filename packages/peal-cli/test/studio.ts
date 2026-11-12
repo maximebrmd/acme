@@ -4048,9 +4048,10 @@ export const studioGroupsLive = (studio: Studio) =>
 
             const { imageProvider: brought } = yield* Ref.get(studio.state);
 
+            const address = url.href.replace(/\/+$/u, "");
+
             const kept =
-              brought !== null &&
-              new URL(brought.provider.baseUrl).origin === url.origin
+              brought !== null && brought.provider.baseUrl === address
                 ? brought.apiKey
                 : null;
 
@@ -4061,7 +4062,7 @@ export const studioGroupsLive = (studio: Studio) =>
             }
 
             const provider: ImageProvider = {
-              baseUrl: url.href.replace(/\/+$/u, ""),
+              baseUrl: address,
               keySet: true,
               keyUnreadable: false,
               model: payload.model,
@@ -4072,7 +4073,7 @@ export const studioGroupsLive = (studio: Studio) =>
               ...current,
               imageProvider: { apiKey, provider },
             }));
-            yield* record(studio, `image-provider:set:${url.origin}`);
+            yield* record(studio, `image-provider:set:${address}`);
 
             return provider;
           }),

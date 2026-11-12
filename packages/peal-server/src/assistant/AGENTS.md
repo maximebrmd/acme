@@ -83,13 +83,13 @@
   query or fragment, 2,048 characters, stored without its final slashes),
   a model (one line, `providerModelPattern`) and a key, sealed through the
   `ProviderSecrets` port on the channels context's `TokenCipher`
-  (`CipherProviderSecrets`), bound to `assistant:<workspace>:<origin of
-  the address>`: a row moved to another origin or workspace opens without
-  its key (`keyUnreadable`), so a key never reaches a host it was not
-  typed for. No crypto here. Saving checks the address with the outbound
+  (`CipherProviderSecrets`), bound to `assistant:<workspace>:<address>`,
+  the whole address: a row whose address changed in any way, or moved to
+  another workspace, opens without its key (`keyUnreadable`), so a key
+  never reaches an address it was not typed for. No crypto here. Saving checks the address with the outbound
   guard once (`ProviderAddressCheck`), never calls the provider, and keeps
-  the stored key only while the origin stays (`ImageProviderKeyRequired`
-  otherwise); without a keyring nothing is stored
+  the stored key only while the address stays exactly the same
+  (`ImageProviderKeyRequired` otherwise); without a keyring nothing is stored
   (`ProviderSecretsNotConfigured`, 503). `assistant:configure` (owners,
   admins, keys and partner keys given it; withheld from staff
   impersonating) reads, sets and removes it; no MCP tool does. Staff

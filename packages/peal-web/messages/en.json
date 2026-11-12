@@ -415,7 +415,7 @@
       "apiKeySaved": "Saved",
       "apiKeySet": "A key is saved: leave this empty to keep it. Peal never shows it again.",
       "keyUnreadable": "The saved key can no longer be read. Type the key again.",
-      "keyAgain": "The address is on another host: type the key again, as Peal sends a key only to the address it was given for.",
+      "keyAgain": "The address changed: type the key again, as Peal sends a key only to the exact address it was given for.",
       "notice": "This workspace's image descriptions go to this address, with this key. Its images do not count against the plan's assistant requests, and still take room in the plan's storage. Peal keeps the key encrypted and never shows it again.",
       "updatedAt": "Saved {updatedAt}",
       "save": "Save",

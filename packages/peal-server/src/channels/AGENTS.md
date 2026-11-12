@@ -8,7 +8,7 @@
   way, each to a context of its own (`SecretContextSchema`): `connect:<state>`,
   `choice:<selection>`, `app:<origin>`, and for other contexts
   `webhook:<endpoint id>…` (webhooks), `ads:<grant id>` (ads) and
-  `assistant:<workspace id>:<origin>` (a workspace's image provider key).
+  `assistant:<workspace id>:<address>` (a workspace's image provider key).
 - The keyring is optional: unset or blank, the server starts, encrypting fails
   with `MissingTokenKey` (connecting answers `ConnectFailed` `notConfigured`)
   and decrypting with `UnknownTokenKey`. A malformed keyring stops the server

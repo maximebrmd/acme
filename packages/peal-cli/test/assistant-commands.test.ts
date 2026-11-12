@@ -43,7 +43,7 @@ describe("peal assistant image-provider", () => {
         assert.strictEqual(imageProvider?.apiKey, syntheticKey);
         assert.include(
           changes,
-          "image-provider:set:https://images.example.com"
+          "image-provider:set:https://images.example.com/v1"
         );
 
         const shown = yield* session.printed([
@@ -61,7 +61,7 @@ describe("peal assistant image-provider", () => {
   );
 
   it.effect(
-    "keeps the saved key on the same origin, and asks it on another",
+    "keeps the saved key for the same address, and asks it for another",
     () =>
       Effect.gen(function* keeps() {
         const session = yield* signedIn();
@@ -71,22 +71,19 @@ describe("peal assistant image-provider", () => {
           .printed(setting("https://images.example.com/v1"));
 
         yield* session.printed(
-          setting("https://images.example.com/v2", "--keep-key")
+          setting("https://images.example.com/v1", "--keep-key")
         );
 
         const { imageProvider } = yield* Ref.get(session.studio.state);
 
-        assert.strictEqual(
-          imageProvider?.provider.baseUrl,
-          "https://images.example.com/v2"
-        );
         assert.strictEqual(imageProvider?.apiKey, syntheticKey);
 
+        // Another path on the same host is another address.
         const refused = yield* session.refused(
-          setting("https://other-images.example.com/v1", "--keep-key")
+          setting("https://images.example.com/v2", "--keep-key")
         );
 
-        assert.include(refused, "Peal never sends a key to another origin");
+        assert.include(refused, "Peal never sends a key to another address");
       }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 

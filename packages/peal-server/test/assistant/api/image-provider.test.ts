@@ -169,7 +169,7 @@ layer(StoreTest, { timeout: "60 seconds" })(
     );
 
     it.effect(
-      "keeps the stored key on the same origin, and asks it again on another",
+      "keeps the stored key for the same address, and asks it again for any other",
       () =>
         Effect.gen(function* origins() {
           const workspaceId = yield* freshWorkspace;
@@ -191,39 +191,42 @@ layer(StoreTest, { timeout: "60 seconds" })(
             payload: provider,
           });
 
-          // Another path and model on the same origin keep the key.
-          const moved = yield* admin.assistant.setImageProvider({
+          // Another model at the same address keeps the key.
+          const remodelled = yield* admin.assistant.setImageProvider({
             params,
             payload: {
-              baseUrl: "https://images.example.com/v2",
+              baseUrl: "https://images.example.com/v1",
               model: "synthetic-image-model-2",
             },
           });
 
-          assert.deepInclude(moved, {
-            baseUrl: "https://images.example.com/v2",
+          assert.deepInclude(remodelled, {
+            baseUrl: "https://images.example.com/v1",
             keyUnreadable: false,
             model: "synthetic-image-model-2",
           });
 
-          // Another origin does not, and nothing changes.
-          const elsewhere = yield* refusalOf(
-            admin.assistant.setImageProvider({
-              params,
-              payload: {
-                baseUrl: "https://other-images.example.com/v1",
-                model: provider.model,
-              },
-            })
-          );
+          // Another path on the same host does not, nor another host, and
+          // nothing changes.
+          for (const baseUrl of [
+            "https://images.example.com/other-account/v1",
+            "https://other-images.example.com/v1",
+          ]) {
+            const elsewhere = yield* refusalOf(
+              admin.assistant.setImageProvider({
+                params,
+                payload: { baseUrl, model: provider.model },
+              })
+            );
 
-          assert.strictEqual(elsewhere._tag, "ImageProviderKeyRequired");
+            assert.strictEqual(elsewhere._tag, "ImageProviderKeyRequired");
+          }
 
           const kept = yield* admin.assistant.imageProvider({ params });
 
           assert.strictEqual(
             kept.provider?.baseUrl,
-            "https://images.example.com/v2"
+            "https://images.example.com/v1"
           );
         }).pipe(Effect.provide(imagesTest()))
     );

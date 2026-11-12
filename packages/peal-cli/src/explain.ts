@@ -550,7 +550,7 @@ const reasonOf =
         refused(providerAddressRefusals[reason]),
       ImageProviderKeyRequired: () =>
         refused(
-          "The workspace has no key stored for its image provider that can be read, or the new --base-url is on another origin than the one the key was given for: Peal never sends a key to another origin. Give the key again, on standard input."
+          "The workspace has no key stored for its image provider that can be read, or --base-url is not the address the key was given for (another host or path): Peal never sends a key to another address. Give the key again, on standard input."
         ),
       ImageProviderRefused: ({ reason }) => refused(providerRefusals[reason]),
       ImportUnreadable: (unreadable) => refused(unreadableImport(unreadable)),

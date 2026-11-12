@@ -8,7 +8,6 @@ import {
   maxProviderAddressLength,
   maxProviderKeyLength,
   maxProviderModelLength,
-  originOfProvider,
 } from "#assistant/domain/image-provider.ts";
 
 const outside = { production: false };
@@ -79,13 +78,12 @@ describe(checkProviderAddress, () => {
     }
   });
 
-  it("names the origin a key is bound to", () => {
-    const address = Result.getOrThrow(
-      checkProviderAddress("https://Images.Example.com:443/v1/", production)
-    );
-
-    expect(address).toBe("https://images.example.com/v1");
-    expect(originOfProvider(address)).toBe("https://images.example.com");
+  it("writes the address a key is bound to one way", () => {
+    expect(
+      Result.getOrThrow(
+        checkProviderAddress("https://Images.Example.com:443/v1/", production)
+      )
+    ).toBe("https://images.example.com/v1");
   });
 });
 

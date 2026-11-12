@@ -444,7 +444,7 @@ peal assistant image-provider clear
 ```
 
 - Ces commandes gèrent le [fournisseur d’images](/settings#image-provider) de l’espace de travail, et demandent `assistant:configure` (propriétaires, administrateurs, et les clés à qui il a été donné).
-- `set` ne prend jamais la clé en argument, que l’historique du shell et la liste des processus garderaient : dans un terminal, il la demande sans afficher ce que vous tapez ; sinon, il la lit sur l’entrée standard, jusqu’à sa fin, sans son dernier saut de ligne. `--keep-key` garde la clé déjà enregistrée, que le serveur accepte tant que l’adresse reste sur la même origine ; sur une autre origine, il redemande la clé.
+- `set` ne prend jamais la clé en argument, que l’historique du shell et la liste des processus garderaient : dans un terminal, il la demande sans afficher ce que vous tapez ; sinon, il la lit sur l’entrée standard, jusqu’à sa fin, sans son dernier saut de ligne. `--keep-key` garde la clé déjà enregistrée, que le serveur accepte seulement tant que `--base-url` reste exactement le même (pour changer le modèle seul) ; toute autre adresse redemande la clé.
 - `show` affiche l’adresse, le modèle et si la clé peut encore être lue, jamais la clé. `clear` retire le fournisseur et supprime sa clé, après avoir demandé (`--yes` sinon).
 
 ## Relectures et approbations [#review]
