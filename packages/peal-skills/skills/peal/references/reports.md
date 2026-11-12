@@ -52,4 +52,3 @@ peal short-links show <link-id> --from 2026-11-01 --to 2026-11-30 --json
 Counts are approximate: automated readers and link previews are left
 out by their names, and nothing about visitors is kept. Say so when you
 report them. No command shortens an address outside a post.
-
