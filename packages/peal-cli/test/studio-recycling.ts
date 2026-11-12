@@ -215,14 +215,24 @@ export const studioRecyclingOf = (world: RecyclingWorld) => {
 
             const { recyclingRules } = yield* Ref.get(studio.state);
 
+            const listed = recyclingRules.filter(
+              ({ status }) =>
+                query.status === undefined || status === query.status
+            );
+
+            // Oldest first, from the rule after the cursor's.
+            const from =
+              query.cursor === undefined
+                ? 0
+                : listed.findIndex(({ id }) => id === query.cursor) + 1;
+
+            const limit = query.limit ?? 50;
+            const page = listed.slice(from, from + limit);
+
             return {
-              items: recyclingRules
-                .filter(
-                  ({ status }) =>
-                    query.status === undefined || status === query.status
-                )
-                .map(withComing),
-              nextCursor: null,
+              items: page.map(withComing),
+              nextCursor:
+                from + limit < listed.length ? (page.at(-1)?.id ?? null) : null,
             };
           }),
         resume: ({ params, payload }) =>

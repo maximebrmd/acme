@@ -1,7 +1,9 @@
-import { Console, Effect, Option } from "effect";
+import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
+  CalendarDaySchema,
   maxOccurrences,
+  maxRecyclingPageSize,
   maxRecyclingInterval,
   maxRecyclingVariants,
   minOccurrences,
@@ -108,6 +110,49 @@ const untilFlag = Flag.String("until").pipe(
 const variantsOf = (given: readonly string[]) =>
   given.map((text) => ({ text }));
 
+const isCalendarDay = Schema.is(CalendarDaySchema);
+
+/**
+ * The count, the day and the variants a command was given, checked as the
+ * server checks them, so a value out of range is said before anything is
+ * asked.
+ */
+export const checkedEnding = (given: {
+  readonly count: Option.Option<number>;
+  readonly until: Option.Option<string>;
+  readonly variants: readonly string[];
+}): Effect.Effect<void, Refused> => {
+  if (
+    Option.exists(
+      given.count,
+      (count) => count < minOccurrences || count > maxOccurrences
+    )
+  ) {
+    return Effect.fail(
+      new Refused({
+        reason: `--count takes ${String(minOccurrences)} to ${String(maxOccurrences)} posts in all, the source counted.`,
+      })
+    );
+  }
+
+  if (Option.exists(given.until, (until) => !isCalendarDay(until))) {
+    return Effect.fail(
+      new Refused({
+        reason:
+          "--until takes a day as YYYY-MM-DD that the calendar has, such as 2026-12-31.",
+      })
+    );
+  }
+
+  return given.variants.length > maxRecyclingVariants
+    ? Effect.fail(
+        new Refused({
+          reason: `A rule takes ${String(maxRecyclingVariants)} --variant at most.`,
+        })
+      )
+    : Effect.void;
+};
+
 const printRule = (rule: RecyclingRule, json: boolean, said: string) =>
   json
     ? printJson(RecyclingRuleSchema, rule)
@@ -122,7 +167,17 @@ const printRule = (rule: RecyclingRule, json: boolean, said: string) =>
 const list = Command.make(
   "list",
   {
+    cursor: Flag.String("cursor").pipe(
+      Flag.withDescription("Where the page starts: the More: line's cursor."),
+      Flag.optional
+    ),
     json: jsonFlag,
+    limit: Flag.Int("limit").pipe(
+      Flag.withDescription(
+        `How many rules a page holds, ${String(maxRecyclingPageSize)} at most.`
+      ),
+      Flag.optional
+    ),
     status: Flag.Literals("status", RecyclingStatusSchema.literals).pipe(
       Flag.withDescription("Only the rules with this status."),
       Flag.optional
@@ -135,10 +190,20 @@ const list = Command.make(
     const page = yield* client.recycling
       .list({
         params: { workspaceId: workspace.id },
-        query: Option.match(input.status, {
-          onNone: () => ({}),
-          onSome: (status) => ({ status }),
-        }),
+        query: {
+          ...Option.match(input.cursor, {
+            onNone: () => ({}),
+            onSome: (cursor) => ({ cursor }),
+          }),
+          ...Option.match(input.limit, {
+            onNone: () => ({}),
+            onSome: (limit) => ({ limit }),
+          }),
+          ...Option.match(input.status, {
+            onNone: () => ({}),
+            onSome: (status) => ({ status }),
+          }),
+        },
       })
       .pipe(Effect.mapError(explain(url)));
 
@@ -161,6 +226,18 @@ const list = Command.make(
     for (const rule of page.items) {
       yield* Console.log(
         `  ${rule.id}  post ${rule.sourcePostId}  ${summary(rule)}`
+      );
+    }
+
+    if (page.nextCursor !== null) {
+      // With what this page was asked with: the same list, continued.
+      const asked = [
+        ...Option.toArray(input.status).map((it) => ` --status ${it}`),
+        ...Option.toArray(input.limit).map((it) => ` --limit ${String(it)}`),
+      ].join("");
+
+      yield* Console.log(
+        `More: peal recycling list --workspace ${workspace.slug}${asked} --cursor ${page.nextCursor}`
       );
     }
   })
@@ -227,6 +304,8 @@ const start = Command.make(
   },
   Effect.fn("recycling.start")(function* start(input) {
     const every = yield* intervalOf(input.every);
+
+    yield* checkedEnding(input);
     const session = yield* inWorkspace(input.workspace);
     const { client, url, workspace } = session;
 
@@ -284,6 +363,12 @@ const update = Command.make(
       Flag.withDescription("Take the end date away."),
       Flag.withDefault(false)
     ),
+    noVariants: Flag.Boolean("no-variants").pipe(
+      Flag.withDescription(
+        "Take the variants away: every post says the source's text."
+      ),
+      Flag.withDefault(false)
+    ),
     rule: ruleArgument,
     until: untilFlag,
     variants: variantFlag,
@@ -302,16 +387,18 @@ const update = Command.make(
       payload.until = Option.getOrNull(input.until);
     }
 
-    if (input.variants.length > 0) {
+    if (input.variants.length > 0 || input.noVariants) {
       payload.variants = variantsOf(input.variants);
     }
 
     if (Object.keys(payload).length === 0) {
       yield* new Refused({
         reason:
-          "Give --count, --no-count, --until, --no-until, --variant or several: nothing else of a rule changes.",
+          "Give --count, --no-count, --until, --no-until, --variant, --no-variants or several: nothing else of a rule changes.",
       });
     }
+
+    yield* checkedEnding(input);
 
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
 
@@ -326,38 +413,65 @@ const update = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Change a rule's count, end date or variants: --variant replaces them all. Posts it made keep what they say."
+    "Change a rule's count, end date or variants: --variant replaces them all, --no-variants takes them away. Posts it made keep what they say."
   )
 );
 
-// Pauses a rule, or sets it going again.
-const pausing = (name: "pause" | "resume") =>
-  Command.make(
-    name,
-    { json: jsonFlag, rule: ruleArgument, workspace: workspaceFlag },
-    Effect.fn(`recycling.${name}`)(function* paused(input) {
-      const { client, url, workspace } = yield* inWorkspace(input.workspace);
-      const params = { ruleId: input.rule, workspaceId: workspace.id };
+const pause = Command.make(
+  "pause",
+  { json: jsonFlag, rule: ruleArgument, workspace: workspaceFlag },
+  Effect.fn("recycling.pause")(function* paused(input) {
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
 
-      const rule = yield* (
-        name === "pause"
-          ? client.recycling.update({ params, payload: { paused: true } })
-          : client.recycling.resume({ params, payload: {} })
-      ).pipe(Effect.mapError(explain(url)));
+    const rule = yield* client.recycling
+      .update({
+        params: { ruleId: input.rule, workspaceId: workspace.id },
+        payload: { paused: true },
+      })
+      .pipe(Effect.mapError(explain(url)));
 
-      yield* printRule(
-        rule,
-        input.json,
-        name === "pause" ? `Paused rule ${rule.id}` : `Resumed rule ${rule.id}`
-      );
-    })
-  ).pipe(
-    Command.withDescription(
-      name === "pause"
-        ? "Pause a rule: it makes no post until it is resumed. A post it made already stays scheduled."
-        : "Set a paused rule going again, or one that ended for a reason that can be put right (the plan's room, a refused text, its channels, its queue's slots, its post scheduled again): the next post is due at the first due time from now."
-    )
-  );
+    yield* printRule(rule, input.json, `Paused rule ${rule.id}`);
+  })
+).pipe(
+  Command.withDescription(
+    "Pause a rule: it makes no post until it is resumed. A post it made already stays scheduled."
+  )
+);
+
+const resume = Command.make(
+  "resume",
+  {
+    json: jsonFlag,
+    rule: ruleArgument,
+    variants: variantFlag,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("recycling.resume")(function* resumed(input) {
+    yield* checkedEnding({
+      count: Option.none(),
+      until: Option.none(),
+      variants: input.variants,
+    });
+
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+
+    const rule = yield* client.recycling
+      .resume({
+        params: { ruleId: input.rule, workspaceId: workspace.id },
+        payload:
+          input.variants.length > 0
+            ? { variants: variantsOf(input.variants) }
+            : {},
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    yield* printRule(rule, input.json, `Resumed rule ${rule.id}`);
+  })
+).pipe(
+  Command.withDescription(
+    "Set a paused rule going again, or one that ended for a reason that can be put right (the plan's room, a refused text, its channels, its queue's slots, its post scheduled again): the next post is due at the first due time from now. --variant gives it other variants, as for a refused text."
+  )
+);
 
 const end = Command.make(
   "end",
@@ -385,13 +499,5 @@ export const recycling = Command.make("recycling").pipe(
   Command.withDescription(
     "Repeating posts: rules that make a new post from a source post at an interval, until a count or a date, with text variants taken in turn. Each post is an ordinary one, which peal posts list --recycling finds."
   ),
-  Command.withSubcommands([
-    list,
-    show,
-    start,
-    update,
-    pausing("pause"),
-    pausing("resume"),
-    end,
-  ])
+  Command.withSubcommands([list, show, start, update, pause, resume, end])
 );

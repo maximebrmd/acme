@@ -374,7 +374,8 @@ peal posts list --recycling <rule-id>
 ```
 
 - `peal recycling start` makes a scheduled or published post [repeat](/scheduling#recycling): `--every` takes a count and `d`, `w` or `m` (1d to 365d, 1w to 52w, 1m to 12m); `--count` the posts in all, this one counted (2 to 100); `--until` the last day; `--variant`, repeated, the texts said in turn after the post's, 10 at most; `--queue` a queue, by name or id. It prints the next three posts and the variant each says.
-- `peal recycling update` changes the count (`--no-count` takes it away), the end date (`--no-until`) or the variants (`--variant` replaces them all). `pause` and `resume` stop and restart it; `resume` also restarts a rule that ended for the plan's room, a refused text, its channels or its queue's slots. `end` stops it for good; the posts it made stay.
+- `peal recycling update` changes the count (`--no-count` takes it away), the end date (`--no-until`) or the variants (`--variant` replaces them all, `--no-variants` takes them away). `pause` and `resume` stop and restart it; `resume` also restarts a rule that ended for the plan's room, a refused text, its channels, its queue's slots or its post cancelled or taken back to draft (once it is scheduled again), and `resume --variant` gives it other variants, as a refused text asks. `end` stops it for good; the posts it made stay. A count, a day or more than 10 variants out of range is refused before anything is sent.
+- `peal recycling list` prints 50 rules a page (`--limit`, 100 at most) and a `More:` line with the `--cursor` of the next.
 - `peal posts list --recycling` lists the posts a rule made.
 
 ## Default options [#default-options]

@@ -97,8 +97,137 @@ describe("peal recycling", () => {
       );
       assert.include(
         yield* session.refused(["recycling", "update", ruleId, ...inStudio]),
-        "Give --count, --no-count, --until, --no-until, --variant or several"
+        "Give --count, --no-count, --until, --no-until, --variant, --no-variants or several"
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
+    "refuses a count, a day or a number of variants out of range before asking",
+    () =>
+      Effect.gen(function* outOfRange() {
+        const session = yield* signedIn();
+
+        const startWith = (more: readonly string[]) =>
+          session.refused([
+            "recycling",
+            "start",
+            scheduledId,
+            "--every",
+            "2w",
+            ...more,
+            ...inStudio,
+          ]);
+
+        assert.include(
+          yield* startWith(["--count", "1"]),
+          "--count takes 2 to 100 posts"
+        );
+        assert.include(
+          yield* startWith(["--until", "2026-02-30"]),
+          "--until takes a day as YYYY-MM-DD"
+        );
+        assert.include(
+          yield* startWith(
+            Array.from({ length: 11 }, (_none, place) => [
+              "--variant",
+              `Variant ${String(place)}`,
+            ]).flat()
+          ),
+          "10 --variant at most"
+        );
+        assert.notInclude(
+          (yield* Ref.get(session.studio.state)).changes.join(" "),
+          "recycling:start"
+        );
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
+    "resumes with other variants, clears them, and pages the list",
+    () =>
+      Effect.gen(function* variantsAndPages() {
+        const session = yield* signedIn();
+
+        yield* session.printed([
+          "recycling",
+          "start",
+          scheduledId,
+          "--every",
+          "1w",
+          "--variant",
+          "Teh first.",
+          ...inStudio,
+        ]);
+
+        yield* session.printed([
+          "recycling",
+          "resume",
+          ruleId,
+          "--variant",
+          "The first.",
+          ...inStudio,
+        ]);
+
+        const resumed = (yield* Ref.get(session.studio.state)).recyclingRules;
+
+        assert.deepStrictEqual(
+          resumed.map(({ variants }) => variants.map(({ text }) => text)),
+          [["The first."]]
+        );
+
+        yield* session.printed([
+          "recycling",
+          "update",
+          ruleId,
+          "--no-variants",
+          ...inStudio,
+        ]);
+
+        assert.deepStrictEqual(
+          (yield* Ref.get(session.studio.state)).recyclingRules.map(
+            ({ variants }) => variants.length
+          ),
+          [0]
+        );
+
+        // A second rule, then the list a page of one at a time.
+        yield* Ref.update(session.studio.state, (state) => ({
+          ...state,
+          recyclingRules: [
+            ...state.recyclingRules,
+            ...state.recyclingRules.map((rule) => ({
+              ...rule,
+              id: "0190f3a0-0000-7000-8000-0000000ec002",
+            })),
+          ],
+        }));
+
+        const first = yield* session.printed([
+          "recycling",
+          "list",
+          "--limit",
+          "1",
+          ...inStudio,
+        ]);
+
+        assert.include(
+          first,
+          `More: peal recycling list --workspace studio --limit 1 --cursor ${ruleId}`
+        );
+
+        const second = yield* session.printed([
+          "recycling",
+          "list",
+          "--limit",
+          "1",
+          "--cursor",
+          ruleId,
+          ...inStudio,
+        ]);
+
+        assert.include(second, "0190f3a0-0000-7000-8000-0000000ec002");
+        assert.notInclude(second, "More:");
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });

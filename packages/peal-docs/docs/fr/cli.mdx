@@ -374,7 +374,8 @@ peal posts list --recycling <rule-id>
 ```
 
 - `peal recycling start` [répète](/scheduling#recycling) une publication programmée ou en ligne : `--every` prend un nombre et `d`, `w` ou `m` (1d à 365d, 1w à 52w, 1m à 12m) ; `--count` le nombre de publications en tout, celle-ci comprise (2 à 100) ; `--until` le dernier jour ; `--variant`, répété, les textes dits à tour de rôle après celui de la publication, 10 au plus ; `--queue` une file d’attente, par nom ou identifiant. La commande affiche les trois prochaines publications et la variante de chacune.
-- `peal recycling update` change le nombre (`--no-count` le retire), la date de fin (`--no-until`) ou les variantes (`--variant` les remplace toutes). `pause` et `resume` l’arrêtent et la relancent ; `resume` relance aussi une règle terminée faute de place dans l’offre, pour un texte refusé, ses canaux ou les créneaux de sa file. `end` l’arrête pour de bon ; les publications créées restent.
+- `peal recycling update` change le nombre (`--no-count` le retire), la date de fin (`--no-until`) ou les variantes (`--variant` les remplace toutes, `--no-variants` les retire). `pause` et `resume` l’arrêtent et la relancent ; `resume` relance aussi une règle terminée faute de place dans l’offre, pour un texte refusé, ses canaux, les créneaux de sa file ou sa publication annulée ou remise en brouillon (une fois programmée de nouveau), et `resume --variant` lui donne d’autres variantes, comme un texte refusé le demande. `end` l’arrête pour de bon ; les publications créées restent. Un nombre, un jour ou plus de 10 variantes hors limites est refusé avant tout envoi.
+- `peal recycling list` affiche 50 règles par page (`--limit`, 100 au plus) et une ligne `More:` avec le `--cursor` de la suivante.
 - `peal posts list --recycling` liste les publications créées par une règle.
 
 ## Options par défaut [#default-options]
