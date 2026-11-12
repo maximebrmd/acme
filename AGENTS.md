@@ -292,7 +292,9 @@ The servers' other rules are in
   --diff` before applying it, and keep every task idempotent: a second run
   reports no change. The inventory holds placeholders that `peal_preflight`
   refuses; nothing has been applied yet.
-- Secrets are generated on the server and stay there. Do not copy them, print
+- Secrets are generated on the server and stay there. Do not copy them (the
+  one exception, a planned move, is in
+  [`packages/peal-infra/AGENTS.md`](packages/peal-infra/AGENTS.md)), print
   them, or give the server's credentials to other systems, GitHub included:
   `release.yml` builds the images on the machine running Ansible and uploads
   them. Credentials outside services issue come from a Git-ignored vault or

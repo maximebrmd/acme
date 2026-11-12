@@ -61,10 +61,50 @@
     cache_valid_time: 3600
     upgrade: safe
 
+# chrony keeps the clock, which scheduled posts, two-step codes, tokens and
+# signed requests depend on. It is Ubuntu's own time daemon, in main, which
+# the security updates cover, and apt removes whichever other one the image
+# ran (they all provide time-daemon). No configuration of its own: chrony
+# reads the package's, or the one an earlier install left behind, which
+# dpkg keeps when a package is removed without being purged.
 - name: Install base packages
   ansible.builtin.apt:
-    name: [unattended-upgrades, ufw, ca-certificates, curl]
+    name: [unattended-upgrades, ufw, ca-certificates, curl, chrony]
     state: present
+  register: system_base_packages
+
+# In check mode on a new server, chrony is not installed yet, and its unit
+# waits for it.
+- name: Keep the clock in step
+  ansible.builtin.systemd_service:
+    name: chrony.service
+    enabled: true
+    state: started
+  when: not (ansible_check_mode and system_base_packages is changed)
+
+# Read-only, so it runs in check mode too. Packages install their units in
+# /usr/lib/systemd/system, the administrator in /etc/systemd/system; a
+# masked unit's own file stays where its package put it, so a second run
+# finds it again and masks it with no change.
+- name: Find the units to mask that the server has
+  ansible.builtin.find:
+    paths: "{{ system_unit_folders }}"
+    patterns: "{{ system_masked_units }}"
+    file_type: any
+  register: system_units_found
+  when: system_masked_units | length > 0
+
+# The mask goes first, then the stop. A masked unit cannot start, so it
+# needs no disabling: the module reads a masked unit as not enabled, and
+# `enabled: false` would never act.
+- name: Mask the units the server does not need
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    masked: true
+    state: stopped
+  loop: >-
+    {{ system_masked_units | select('in', system_units_found.files | default([])
+       | map(attribute='path') | map('basename') | list) | list }}
 
 # Security updates install daily. A kernel update needs a reboot, which
 # happens at a fixed early-morning time instead of never. Docker restarts the
@@ -86,20 +126,21 @@
 
 # Swap absorbs a memory spike, such as many images probed at once, instead
 # of the kernel killing a process (videos are streamed to the platforms, a
-# few at a time: PEAL_MAX_CONCURRENT_UPLOADS). The file is made under
-# another name and renamed once it is a swap area, so a run cut short leaves
-# no /swapfile half made; `creates` skips it once /swapfile exists, and check
-# mode says it would run.
+# few at a time: PEAL_MAX_CONCURRENT_UPLOADS). The file is swap_file, which
+# may be one the image made. It is made under another name and renamed once
+# it is a swap area, so a run cut short leaves no swap file half made;
+# `creates` skips it once the file exists, whatever its size, and check mode
+# says it would run.
 - name: Create the swap file
   ansible.builtin.shell: |
     set -eu
     umask 077
-    rm -f /swapfile.new
-    fallocate -l {{ swap_size_mb }}M /swapfile.new
-    mkswap /swapfile.new
-    mv /swapfile.new /swapfile
+    rm -f {{ swap_file }}.new
+    fallocate -l {{ swap_size_mb }}M {{ swap_file }}.new
+    mkswap {{ swap_file }}.new
+    mv {{ swap_file }}.new {{ swap_file }}
   args:
-    creates: /swapfile
+    creates: "{{ swap_file }}"
 
 # Read-only, so it runs in check mode too.
 - name: Read the active swap
@@ -109,13 +150,14 @@
   check_mode: false
 
 - name: Turn the swap on
-  ansible.builtin.command: swapon /swapfile
-  when: "'/swapfile' not in system_swap_active.stdout_lines"
+  ansible.builtin.command: swapon {{ swap_file }}
+  when: swap_file not in system_swap_active.stdout_lines
   changed_when: true
 
+# Found by its file: an image's own line for it is the same, and stays.
 - name: Mount the swap at boot
   ansible.posix.mount:
-    src: /swapfile
+    src: "{{ swap_file }}"
     path: none
     fstype: swap
     opts: sw

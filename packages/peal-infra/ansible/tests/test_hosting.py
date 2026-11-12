@@ -1,7 +1,8 @@
 """Where each server is hosted (hosting_provider and hosting_location in
-each group's settings): placeholders until the owner chooses, which the
-preflight refuses, and an uptime server that shares neither a provider nor
-a city with the servers it watches, so one outage never takes both."""
+each group's settings): production's provider and city, placeholders for
+the others until the owner chooses, which the preflight refuses, and an
+uptime server that shares neither a provider nor a city with the servers
+it watches, so one outage never takes both."""
 
 from __future__ import annotations
 
@@ -41,8 +42,8 @@ def test_each_server_says_where_it_is_hosted(group: str, name: str) -> None:
 @pytest.mark.parametrize("group", GROUPS)
 @pytest.mark.parametrize("name", NAMES)
 def test_the_preflight_reads_where_each_server_is_hosted(group: str, name: str) -> None:
-    """No provider is chosen yet: the settings hold placeholders, and no
-    playbook runs on a server until they name a provider and a city."""
+    """Until a group names a provider and a city, its settings hold
+    placeholders, and no playbook runs on its server."""
     assert name in _preflight_names(group)
 
 
@@ -54,6 +55,23 @@ def test_the_preflight_refuses_a_hosting_placeholder(value: str) -> None:
 @pytest.mark.parametrize("value", ["a-provider", "paris", "stockholm"])
 def test_the_preflight_takes_a_provider_and_a_city(value: str) -> None:
     assert not _placeholder().search(value)
+
+
+def test_production_is_hosted_at_its_provider_in_paris() -> None:
+    production = settings("production")
+
+    assert (production["hosting_provider"], production["hosting_location"]) == ("scaleway", "paris")
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_the_preflight_takes_where_production_is_hosted(name: str) -> None:
+    assert not _placeholder().search(settings("production")[name])
+
+
+@pytest.mark.parametrize("group", ["sandbox", "uptime"])
+@pytest.mark.parametrize("name", NAMES)
+def test_the_others_wait_for_the_owner_s_choice(group: str, name: str) -> None:
+    assert _placeholder().search(settings(group)[name])
 
 
 @pytest.mark.parametrize("watched", WATCHED)
@@ -129,3 +147,21 @@ def test_the_uptime_role_reads_a_provider_s_name_as_written() -> None:
     servers = {"peal-production": {"hosting_provider": "firstXprovider", "hosting_location": "paris"}}
 
     assert _shared({"hosting_provider": "first.provider", "hosting_location": "stockholm"}, servers) == []
+
+
+def test_the_uptime_role_takes_production_as_committed_from_elsewhere() -> None:
+    """Production's provider and city, as the inventory names them, against
+    an uptime server at another provider in another city."""
+    servers = {"peal-production": settings("production")}
+
+    assert _shared({"hosting_provider": "second-provider", "hosting_location": "stockholm"}, servers) == []
+
+
+def test_the_uptime_role_refuses_production_s_provider_and_city() -> None:
+    production = settings("production")
+    uptime = {name: production[name] for name in NAMES}
+
+    assert _shared(uptime, {"peal-production": production}) == [
+        "hosting_provider of peal-production",
+        "hosting_location of peal-production",
+    ]
