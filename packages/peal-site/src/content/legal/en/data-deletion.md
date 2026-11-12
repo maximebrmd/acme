@@ -8,25 +8,29 @@ Under the GDPR, you can ask for your personal data to be erased (Article 17); th
 
 ## Delete your account in Peal
 
-[The steps in the app, for example Settings, then Account, then Delete account.]
+1. Open the menu with your name, then **Account settings**.
+2. Under **Delete the account**, choose **Delete my account…**.
+3. Enter your password, then **Delete my account**.
+
+The deletion takes effect at once, and we email you a confirmation. If you are the only owner of an organisation other people use, Peal first asks you to give it another owner, with a link to each one's members page. If an organisation deleted with your account has a subscription, you are asked to cancel it in the same step.
 
 ## Ask by email
 
-Write to privacy@peal.social from the email address of your account, so that the request can be matched to it. [The time within which a request is completed, and how you are told it is done.]
+Write to privacy@peal.social from the email address of your account, so that the request can be matched to it. If the request comes from another address, we first confirm it with the account's address. We complete it within one month at most (GDPR Article 12(3)), and reply by email once your account is deleted.
 
 ## Disconnect a social media account
 
-Disconnecting an account in Peal ends Peal's access to it. [Confirm what is deleted when an account is disconnected, such as its access tokens.]
+Disconnecting an account in Peal ends Peal's access to it. Peal deletes the channel and the tokens it holds for it, and publishes nothing more there; posts still scheduled to it fail. Where the platform allows it (YouTube, Google Business Profile and TikTok), Peal also revokes its access there, unless another organisation still uses the same account. The channel's figures are kept 7 days, so that connecting it again brings them back, then erased.
 
 You can also revoke Peal's access from the platform's own settings, where it lists the apps connected to your account.
 
 ## Requests from a platform
 
-[Some platforms notify the apps you remove from your account there. Describe how Peal handles such a request and how you can check its status, for example with a confirmation code.]
+When you remove Peal from your Facebook, Instagram or Threads account, or ask Meta to delete your data, Meta tells Peal. For a deletion request, Peal deletes the channels that account connected or owns, in every organisation, and their figures, and gives Meta a confirmation code and a link to its status, at app.peal.social/data-deletion/ followed by the code, which you can open to check it is done. When you only remove the app, Peal deletes nothing, but marks those channels as needing to be connected again, and tells their organisations.
 
 ## What is deleted
 
-[The data deleted with an account, such as the profile, the organisations it is the only owner of, posts, media, schedules, connected account tokens and metrics.]
+Your profile, sessions, notifications and preferences; the applications you connected to your account; and each organisation where you are the only member, with everything in it: its posts, media, schedules, connected accounts and their tokens, and their figures. In an organisation you share with others, the posts you wrote stay with that organisation, without your name, and the channels you connected stay with it.
 
 Posts already published stay on the platforms they were published to. Delete them on each platform.
 
@@ -40,7 +44,7 @@ French law requires a host to keep the data that identifies whoever contributed 
 
 They are then deleted automatically. Nothing else of your account is kept.
 
-[Other data kept after deletion and why, such as invoices that accounting law requires, and how long backups keep deleted data.]
+Invoices stay with Stripe, our payment provider, for the 10 years accounting law requires (Code de commerce, Article L123-22), and orders for 5 years, as proof of the contract. Deleted data leaves the encrypted backups within 5 weeks; to apply deletions again should a backup be restored, we keep the id of each deleted account and organisation, with the time, for 42 days. In the record of what Peal's staff do, events about your account lose its id; if your account was suspended, a pseudonym of your email address is kept for 5 years, so that the suspension cannot be escaped by signing up again.
 
 ## Self-hosted instances
 
