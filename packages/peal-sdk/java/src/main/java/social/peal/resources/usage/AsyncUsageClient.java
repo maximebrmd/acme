@@ -8,6 +8,8 @@ import social.peal.core.ClientOptions;
 import social.peal.core.PealClientHttpResponse;
 import social.peal.core.RequestOptions;
 import social.peal.resources.usage.requests.GetUsageRequest;
+import social.peal.resources.usage.requests.PartnerUsageRequest;
+import social.peal.types.PartnerUsageReport;
 import social.peal.types.WorkspaceUsageReport;
 
 public class AsyncUsageClient {
@@ -79,6 +81,66 @@ public class AsyncUsageClient {
         CompletableFuture<PealClientHttpResponse<WorkspaceUsageReport>> rawFuture =
                 this.rawClient.get(workspaceId, request, requestOptions);
         CompletableFuture<WorkspaceUsageReport> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers what the partner account uses across the workspaces it holds, from <code>from</code> to <code>to</code> (UTC days, both included, at most 92; by default the 30 days that end today), and per workspace. <code>current</code> is what it holds now: the workspaces it owns and the channels connected across them and its home workspace, which its plan's channel limit counts. Each day gives the workspaces it owned and the channels connected across them as the daily count found them at 23:41 UTC (null for a day without a count), and the posts that went out in the workspaces that still exist. <code>workspaces</code> is a page of its workspaces with each one's external id, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and, for each calendar month the period touches, posts on platforms that bill the server per post: newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400); the home workspace comes first, on the first page only, one more than asked. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily <code>workspaces</code> and <code>channels</code> still count it for the days it existed. Kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, <code>plan</code> and <code>allowances</code> are null. For the people of the partner's home workspace: a workspace with no partner account answers 404 <code>PartnerNotFound</code>. A partner key reads the same at <code>GET /api/partner/usage</code>. Needs partner:read.
+     */
+    public CompletableFuture<PartnerUsageReport> partner(String workspaceId) {
+        CompletableFuture<PealClientHttpResponse<PartnerUsageReport>> rawFuture = this.rawClient.partner(workspaceId);
+        CompletableFuture<PartnerUsageReport> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers what the partner account uses across the workspaces it holds, from <code>from</code> to <code>to</code> (UTC days, both included, at most 92; by default the 30 days that end today), and per workspace. <code>current</code> is what it holds now: the workspaces it owns and the channels connected across them and its home workspace, which its plan's channel limit counts. Each day gives the workspaces it owned and the channels connected across them as the daily count found them at 23:41 UTC (null for a day without a count), and the posts that went out in the workspaces that still exist. <code>workspaces</code> is a page of its workspaces with each one's external id, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and, for each calendar month the period touches, posts on platforms that bill the server per post: newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400); the home workspace comes first, on the first page only, one more than asked. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily <code>workspaces</code> and <code>channels</code> still count it for the days it existed. Kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, <code>plan</code> and <code>allowances</code> are null. For the people of the partner's home workspace: a workspace with no partner account answers 404 <code>PartnerNotFound</code>. A partner key reads the same at <code>GET /api/partner/usage</code>. Needs partner:read.
+     */
+    public CompletableFuture<PartnerUsageReport> partner(String workspaceId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<PartnerUsageReport>> rawFuture =
+                this.rawClient.partner(workspaceId, requestOptions);
+        CompletableFuture<PartnerUsageReport> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers what the partner account uses across the workspaces it holds, from <code>from</code> to <code>to</code> (UTC days, both included, at most 92; by default the 30 days that end today), and per workspace. <code>current</code> is what it holds now: the workspaces it owns and the channels connected across them and its home workspace, which its plan's channel limit counts. Each day gives the workspaces it owned and the channels connected across them as the daily count found them at 23:41 UTC (null for a day without a count), and the posts that went out in the workspaces that still exist. <code>workspaces</code> is a page of its workspaces with each one's external id, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and, for each calendar month the period touches, posts on platforms that bill the server per post: newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400); the home workspace comes first, on the first page only, one more than asked. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily <code>workspaces</code> and <code>channels</code> still count it for the days it existed. Kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, <code>plan</code> and <code>allowances</code> are null. For the people of the partner's home workspace: a workspace with no partner account answers 404 <code>PartnerNotFound</code>. A partner key reads the same at <code>GET /api/partner/usage</code>. Needs partner:read.
+     */
+    public CompletableFuture<PartnerUsageReport> partner(String workspaceId, PartnerUsageRequest request) {
+        CompletableFuture<PealClientHttpResponse<PartnerUsageReport>> rawFuture =
+                this.rawClient.partner(workspaceId, request);
+        CompletableFuture<PartnerUsageReport> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers what the partner account uses across the workspaces it holds, from <code>from</code> to <code>to</code> (UTC days, both included, at most 92; by default the 30 days that end today), and per workspace. <code>current</code> is what it holds now: the workspaces it owns and the channels connected across them and its home workspace, which its plan's channel limit counts. Each day gives the workspaces it owned and the channels connected across them as the daily count found them at 23:41 UTC (null for a day without a count), and the posts that went out in the workspaces that still exist. <code>workspaces</code> is a page of its workspaces with each one's external id, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and, for each calendar month the period touches, posts on platforms that bill the server per post: newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400); the home workspace comes first, on the first page only, one more than asked. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily <code>workspaces</code> and <code>channels</code> still count it for the days it existed. Kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, <code>plan</code> and <code>allowances</code> are null. For the people of the partner's home workspace: a workspace with no partner account answers 404 <code>PartnerNotFound</code>. A partner key reads the same at <code>GET /api/partner/usage</code>. Needs partner:read.
+     */
+    public CompletableFuture<PartnerUsageReport> partner(
+            String workspaceId, PartnerUsageRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<PartnerUsageReport>> rawFuture =
+                this.rawClient.partner(workspaceId, request, requestOptions);
+        CompletableFuture<PartnerUsageReport> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);

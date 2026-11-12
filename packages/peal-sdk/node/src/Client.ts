@@ -20,6 +20,7 @@ import { NoticesClient } from "./api/resources/notices/client/Client.js";
 import { NotificationPreferencesClient } from "./api/resources/notificationPreferences/client/Client.js";
 import { PartnerClient } from "./api/resources/partner/client/Client.js";
 import { PartnerAccountClient } from "./api/resources/partnerAccount/client/Client.js";
+import { PartnerUsageClient } from "./api/resources/partnerUsage/client/Client.js";
 import { PostsClient } from "./api/resources/posts/client/Client.js";
 import { QueuesClient } from "./api/resources/queues/client/Client.js";
 import { RecyclingClient } from "./api/resources/recycling/client/Client.js";
@@ -67,6 +68,7 @@ export class PealClient {
     protected _ads: AdsClient | undefined;
     protected _activity: ActivityClient | undefined;
     protected _partner: PartnerClient | undefined;
+    protected _partnerUsage: PartnerUsageClient | undefined;
     protected _partnerAccount: PartnerAccountClient | undefined;
     protected _connectLinks: ConnectLinksClient | undefined;
     protected _review: ReviewClient | undefined;
@@ -168,6 +170,10 @@ export class PealClient {
 
     public get partner(): PartnerClient {
         return (this._partner ??= new PartnerClient(this._options));
+    }
+
+    public get partnerUsage(): PartnerUsageClient {
+        return (this._partnerUsage ??= new PartnerUsageClient(this._options));
     }
 
     public get partnerAccount(): PartnerAccountClient {
