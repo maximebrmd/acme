@@ -76,6 +76,32 @@ const replying = (text: string, actor = editor, to = commentId(101)) =>
 
 const sending = (id = replyId(1)) => SendReply.use((send) => send.run(id));
 
+// Hides comment 101 on a Facebook Page, on a server that reads `inbox`.
+const hideOnFacebook = (inbox: InboxPlatforms) => {
+  const world = worldWith();
+
+  world.state.channels.set(channelId(1), {
+    platform: "facebook",
+    scopes: ["pages_read_user_content", "pages_manage_engagement"],
+  });
+
+  return at(
+    Effect.gen(function* moderating() {
+      const hidden = yield* EngagementReplies.use((replies) =>
+        replies.moderate(editor, commentId(101), "hide")
+      ).pipe(Effect.result);
+
+      return {
+        hidden: hidden._tag === "Success" ? "done" : hidden.failure._tag,
+        moderated: world.state.moderated.length,
+      };
+    })
+  ).pipe(
+    Effect.provide(world.layer),
+    Effect.provideService(CurrentInboxPlatforms, inbox)
+  );
+};
+
 describe("answering a comment", () => {
   it.effect(
     "journals the reply with the start of its job, and sends nothing itself",
@@ -834,43 +860,17 @@ describe("moderating a comment", () => {
 
   it.effect(
     "answers and hides on a Facebook Page only where the server reads Facebook",
-    () => {
-      const run = (inbox: InboxPlatforms) => {
-        const world = worldWith();
-
-        world.state.channels.set(channelId(1), {
-          platform: "facebook",
-          scopes: ["pages_read_user_content", "pages_manage_engagement"],
-        });
-
-        return at(
-          Effect.gen(function* moderating() {
-            const hidden = yield* EngagementReplies.use((replies) =>
-              replies.moderate(editor, commentId(101), "hide")
-            ).pipe(Effect.result);
-
-            return {
-              hidden: hidden._tag === "Success" ? "done" : hidden.failure._tag,
-              moderated: world.state.moderated.length,
-            };
-          })
-        ).pipe(
-          Effect.provide(world.layer),
-          Effect.provideService(CurrentInboxPlatforms, inbox)
-        );
-      };
-
-      return Effect.gen(function* both() {
-        assert.deepStrictEqual(yield* run(new Set()), {
+    () =>
+      Effect.gen(function* both() {
+        assert.deepStrictEqual(yield* hideOnFacebook(new Set()), {
           hidden: "AbilityUnavailable",
           moderated: 0,
         });
-        assert.deepStrictEqual(yield* run(new Set(["facebook"])), {
+        assert.deepStrictEqual(yield* hideOnFacebook(new Set(["facebook"])), {
           hidden: "done",
           moderated: 1,
         });
-      });
-    }
+      })
   );
 
   it.effect("changes nothing in Peal when the platform refused", () => {
