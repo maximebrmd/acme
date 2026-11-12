@@ -9,6 +9,9 @@ import type { AttachableMedia } from "#publishing/application/attachable-media.t
 import { ChannelDefaults } from "#publishing/application/channel-defaults.ts";
 import { ChannelLookups } from "#publishing/application/channel-lookups.ts";
 import { ChannelSets } from "#publishing/application/channel-sets.ts";
+import { FeedNotices } from "#publishing/application/feed-notices.ts";
+import { FeedSource } from "#publishing/application/feed-source.ts";
+import { Feeds } from "#publishing/application/feeds.ts";
 import { HeldPosts } from "#publishing/application/held-posts.ts";
 import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
 import { LivePostClients } from "#publishing/application/live-post-clients.ts";
@@ -55,12 +58,15 @@ import {
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
 import {
+  FeedsCron,
   IdempotencyRetentionCron,
   RecyclingCron,
 } from "#publishing/infrastructure/crons.ts";
 import { DrizzleChannelDefaultsStore } from "#publishing/infrastructure/drizzle-channel-defaults-store.ts";
 import { DrizzleChannelSetStore } from "#publishing/infrastructure/drizzle-channel-set-store.ts";
 import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
+import { DrizzleFeedReads } from "#publishing/infrastructure/drizzle-feed-reads.ts";
+import { DrizzleFeedStore } from "#publishing/infrastructure/drizzle-feed-store.ts";
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzleLivePostChangeStore } from "#publishing/infrastructure/drizzle-live-post-change-store.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
@@ -76,6 +82,7 @@ import { DrizzleSignatureStore } from "#publishing/infrastructure/drizzle-signat
 import { DrizzleTagStore } from "#publishing/infrastructure/drizzle-tag-store.ts";
 import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
 import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
+import { HttpFeedSource } from "#publishing/infrastructure/feeds/http-feed-source.ts";
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
 import { ListedChannelConnections } from "#publishing/infrastructure/listed-channel-connections.ts";
@@ -84,6 +91,7 @@ import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-h
 import { LoggedOperatorAlerts } from "#publishing/infrastructure/logged-operator-alerts.ts";
 import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
 import { NamedPostOrigins } from "#publishing/infrastructure/named-post-origins.ts";
+import { NotifiedFeedNotices } from "#publishing/infrastructure/notified-feed-notices.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { NotifiedRecyclingNotices } from "#publishing/infrastructure/notified-recycling-notices.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
@@ -118,6 +126,16 @@ type LiveServices = LivePostEvents | LivePostHolds | PlatformCredentials;
 // starter is now, and who hears that a rule ended.
 type RecyclingServices = RecyclingActors | RecyclingNotices;
 
+// What feeds need beside publishing's own adapters: what reads them, and
+// who hears that one stopped.
+type FeedServices = FeedNotices | FeedSource;
+
+/**
+ * For tests that read no feed: every host is out of reach, and nobody
+ * hears that a feed stopped.
+ */
+export const FeedsUnused = Layer.merge(FeedSource.none, FeedNotices.none);
+
 /**
  * For tests that make no occurrence: every starter is gone, and nobody
  * hears that a rule ended.
@@ -138,7 +156,7 @@ export const LivePostsUnused = Layer.mergeAll(
   PlatformCredentials.unusable
 );
 
-const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6>(
+const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6, E7, R7>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
@@ -148,13 +166,15 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6>(
   origins: Layer.Layer<PostOrigins, E3, R3>,
   events: Layer.Layer<PostEvents | H, never, R4>,
   live: Layer.Layer<LiveServices, never, R5>,
-  recycling: Layer.Layer<RecyclingServices, never, R6>
+  recycling: Layer.Layer<RecyclingServices, never, R6>,
+  feeds: Layer.Layer<FeedServices, E7, R7>
 ) =>
   Layer.mergeAll(
-    Layer.merge(PostBatches.layer, Recycling.layer).pipe(
-      Layer.provideMerge(Layer.merge(PostChecks.layer, PostScheduling.layer))
+    Layer.mergeAll(PostBatches.layer, Recycling.layer, Feeds.layer).pipe(
+      Layer.provideMerge(
+        Layer.mergeAll(PostChecks.layer, PostScheduling.layer, PostDrafts.layer)
+      )
     ),
-    PostDrafts.layer,
     PostOutcomesLive,
     PostQueries.layer,
     PostRecords.layer,
@@ -175,6 +195,8 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6>(
         DrizzleChannelDefaultsStore,
         DrizzleChannelSetStore,
         DrizzleContentFingerprints,
+        DrizzleFeedReads,
+        DrizzleFeedStore,
         DrizzleIdempotencyKeys,
         DrizzleLivePostChangeStore,
         DrizzlePostOversight,
@@ -192,6 +214,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6>(
         WorkflowLivePostJobs,
         live,
         recycling,
+        feeds,
         references,
         accounts,
         origins,
@@ -230,6 +253,7 @@ export const publishingWith = <
   R4 = never,
   R5 = never,
   R6 = never,
+  R7 = never,
 >(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
@@ -240,11 +264,18 @@ export const publishingWith = <
   origins: Layer.Layer<PostOrigins, E3, R3> = PostOrigins.unnamed,
   events: Layer.Layer<PostEvents, never, R4> = PostEvents.none,
   live: Layer.Layer<LiveServices, never, R5> = LivePostsUnused,
-  recycling: Layer.Layer<RecyclingServices, never, R6> = RecyclingUnused
+  recycling: Layer.Layer<RecyclingServices, never, R6> = RecyclingUnused,
+  feeds: Layer.Layer<FeedServices, never, R7> = FeedsUnused
 ) =>
-  publishingOver(references, accounts, origins, events, live, recycling).pipe(
-    Layer.provideMerge(ApprovalGate.open)
-  );
+  publishingOver(
+    references,
+    accounts,
+    origins,
+    events,
+    live,
+    recycling,
+    feeds
+  ).pipe(Layer.provideMerge(ApprovalGate.open));
 
 /**
  * The same behind `gate`, which says which posts wait for an approval, and
@@ -262,6 +293,7 @@ export const publishingBehind = <
   R4,
   R5 = never,
   R6 = never,
+  R7 = never,
 >(
   gate: Layer.Layer<ApprovalGate | G, E3, R3>,
   references: Layer.Layer<
@@ -271,7 +303,8 @@ export const publishingBehind = <
   >,
   events: Layer.Layer<PostEvents | H, never, R4>,
   live: Layer.Layer<LiveServices, never, R5> = LivePostsUnused,
-  recycling: Layer.Layer<RecyclingServices, never, R6> = RecyclingUnused
+  recycling: Layer.Layer<RecyclingServices, never, R6> = RecyclingUnused,
+  feeds: Layer.Layer<FeedServices, never, R7> = FeedsUnused
 ) =>
   publishingOver(
     references,
@@ -279,7 +312,8 @@ export const publishingBehind = <
     PostOrigins.unnamed,
     events,
     live,
-    recycling
+    recycling,
+    feeds
   ).pipe(Layer.provideMerge(gate));
 
 /**
@@ -323,7 +357,16 @@ export const PublishingLive = publishingOver(
   ),
   // Recycling rules: the workspace context says who a starter is now, and
   // the notices tell that a rule ended.
-  Layer.merge(WorkspaceRecyclingActors, NotifiedRecyclingNotices)
+  Layer.merge(WorkspaceRecyclingActors, NotifiedRecyclingNotices),
+  // Feeds: read over the guarded public client, and the notices tell that
+  // one stopped.
+  Layer.merge(
+    HttpFeedSource.pipe(
+      Layer.provide(OutboundGuard.layer),
+      Layer.provide(Layer.merge(FetchHttpClient.layer, Digest.layerWebCrypto))
+    ),
+    NotifiedFeedNotices
+  )
 ).pipe(
   // The operator's X_THREADS, which scheduling reads.
   Layer.provide(XThreadsLive),
@@ -515,10 +558,12 @@ export {
 } from "#publishing/infrastructure/channel-gate.ts";
 
 /**
- * The idempotency keys' daily retention, and the recycling rules'
- * occurrences every ten minutes. Needs PostScheduling and Recycling.
+ * The idempotency keys' daily retention, the recycling rules'
+ * occurrences and the feeds' reads every ten minutes. Needs
+ * PostScheduling, Recycling and Feeds.
  */
-export const PublishingCronsLive = Layer.merge(
+export const PublishingCronsLive = Layer.mergeAll(
   IdempotencyRetentionCron,
-  RecyclingCron
+  RecyclingCron,
+  FeedsCron
 );

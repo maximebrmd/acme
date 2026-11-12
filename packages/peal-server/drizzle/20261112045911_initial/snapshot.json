@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "b7d3de17-22d7-4842-8f6d-0e25d89a0b0e",
+  "id": "1176901b-4c85-4543-86d3-4f6e8b328ba0",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -13226,6 +13226,19 @@
       "notNull": true,
       "dimensions": 0,
       "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
+      "name": "email_feed_stopped",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
       "generated": null,
       "identity": null,
       "entityType": "columns"

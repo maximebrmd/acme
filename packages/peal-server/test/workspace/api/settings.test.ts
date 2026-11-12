@@ -240,6 +240,7 @@ const PortsLive = Layer.mergeAll(
               email: {
                 channelReconnect: true,
                 comments: false,
+                feedStopped: true,
                 postFailed: true,
                 postPublished: false,
                 postReview: true,

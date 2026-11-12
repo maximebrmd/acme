@@ -326,6 +326,13 @@ export const readFailed = (
   });
 };
 
+/**
+ * The feed held by a run until `until`: no other run takes it before,
+ * and one that died gives it back then.
+ */
+export const leaseFeed = (feed: Feed, until: DateTime.Utc): Feed =>
+  changed(feed, { nextCheckAt: until });
+
 /** Pauses a feed that is not stopped; a paused one stays so. */
 export const pauseFeed = (feed: Feed, now: DateTime.Utc): Feed =>
   feed.status._tag === "active"
@@ -354,12 +361,12 @@ export const resumeFeed = (
 
 /** What a member changes of a feed: each left out stays as it is. */
 export interface FeedChange {
-  readonly attachPicture?: boolean;
-  readonly channelIds?: readonly ChannelId[];
-  readonly channelSetId?: Option.Option<ChannelSetId>;
-  readonly mode?: FeedMode;
-  readonly queueId?: Option.Option<QueueId>;
-  readonly template?: string;
+  readonly attachPicture?: boolean | undefined;
+  readonly channelIds?: readonly ChannelId[] | undefined;
+  readonly channelSetId?: Option.Option<ChannelSetId> | undefined;
+  readonly mode?: FeedMode | undefined;
+  readonly queueId?: Option.Option<QueueId> | undefined;
+  readonly template?: string | undefined;
 }
 
 /** The feed with what a member changed of it. */

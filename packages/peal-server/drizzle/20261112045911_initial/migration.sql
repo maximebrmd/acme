@@ -674,6 +674,7 @@ CREATE TABLE "notifications"."notices" (
 CREATE TABLE "notifications"."notification_preferences" (
 	"email_channel_reconnect" boolean NOT NULL,
 	"email_comments" boolean DEFAULT false NOT NULL,
+	"email_feed_stopped" boolean DEFAULT true NOT NULL,
 	"email_post_failed" boolean NOT NULL,
 	"email_post_published" boolean NOT NULL,
 	"email_post_review" boolean DEFAULT true NOT NULL,

@@ -1,10 +1,12 @@
 import { Effect, Layer, Ref } from "effect";
 
 import { RecyclingActors } from "#publishing/application/recycling-actors.ts";
-import type { RuleStarter } from "#publishing/application/recycling-actors.ts";
+import type {
+  RuleStarter,
+  StartedIn,
+} from "#publishing/application/recycling-actors.ts";
 import { RecyclingNotices } from "#publishing/application/recycling-notices.ts";
 import type { RecyclingEndReason } from "#publishing/domain/recycling-end-reason.ts";
-import type { RecyclingRule } from "#publishing/domain/recycling-rule.ts";
 import { actorIn } from "#test/publishing/support.ts";
 
 // Who a rule's starter is, as a test says, and the ends a rule told, as
@@ -19,12 +21,12 @@ export interface ToldEnd {
 }
 
 /** An editor of the rule's workspace, acting. */
-const editorOf = (rule: RecyclingRule): RuleStarter => ({
+const editorOf = (rule: StartedIn): RuleStarter => ({
   _tag: "acting",
   actor: actorIn(rule.workspaceId),
 });
 
-const starters = Ref.makeUnsafe<(rule: RecyclingRule) => RuleStarter>(editorOf);
+const starters = Ref.makeUnsafe<(started: StartedIn) => RuleStarter>(editorOf);
 
 const told = Ref.makeUnsafe<readonly ToldEnd[]>([]);
 
@@ -44,7 +46,7 @@ export const whileRunning = (effect: Effect.Effect<void>) =>
   Ref.set(meanwhile, effect);
 
 /** Who every rule's starter is from now on. */
-export const startersAre = (starter: (rule: RecyclingRule) => RuleStarter) =>
+export const startersAre = (starter: (started: StartedIn) => RuleStarter) =>
   Ref.set(starters, starter);
 
 /** The ends told so far. */

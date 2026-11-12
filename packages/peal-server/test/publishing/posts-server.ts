@@ -7,10 +7,13 @@ import { ListChannels } from "#channels/application/list-channels.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
+import type { FeedNotices } from "#publishing/application/feed-notices.ts";
+import type { FeedSource } from "#publishing/application/feed-source.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import type { RecyclingActors } from "#publishing/application/recycling-actors.ts";
 import type { RecyclingNotices } from "#publishing/application/recycling-notices.ts";
 import {
+  FeedsUnused,
   publishingBehind,
   publishingWorkers,
   RecyclingUnused,
@@ -70,7 +73,9 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
   // Who hears what happens to posts, and what a test reads it with.
   events: Layer.Layer<PostEvents | H, never, R4>,
   // Who a recycling rule's starter is, and who hears it ended.
-  recycling: Layer.Layer<RecyclingActors | RecyclingNotices> = RecyclingUnused
+  recycling: Layer.Layer<RecyclingActors | RecyclingNotices> = RecyclingUnused,
+  // What reads feeds, and who hears one stopped.
+  feeds: Layer.Layer<FeedNotices | FeedSource> = FeedsUnused
 ) =>
   publishingWorkers(
     FakePlatformPublisher,
@@ -86,7 +91,8 @@ export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
         // Changes of live posts: the channels' rows say whether one can be
         // used, and FakeRemovals deletes, holds and hears.
         Layer.mergeAll(RepositoryCredentials, FakeHolds, RecordedLiveEvents),
-        recycling
+        recycling,
+        feeds
       )
     ),
     Layer.provideMerge(FakeLivePostClients),

@@ -15,6 +15,8 @@ export const NotificationPreferencesSchema = Schema.Struct({
     channelReconnect: Schema.Boolean,
     // New comments under the posts that went live.
     comments: Schema.Boolean,
+    // A feed that stopped making posts.
+    feedStopped: Schema.Boolean,
     postFailed: Schema.Boolean,
     postPublished: Schema.Boolean,
     // Comments on posts, and approvals asked for and decided.
@@ -39,6 +41,7 @@ export const NotificationPreferencesChangeSchema = Schema.Struct({
     Schema.Struct({
       channelReconnect: Schema.optionalKey(Schema.Boolean),
       comments: Schema.optionalKey(Schema.Boolean),
+      feedStopped: Schema.optionalKey(Schema.Boolean),
       postFailed: Schema.optionalKey(Schema.Boolean),
       postPublished: Schema.optionalKey(Schema.Boolean),
       postReview: Schema.optionalKey(Schema.Boolean),

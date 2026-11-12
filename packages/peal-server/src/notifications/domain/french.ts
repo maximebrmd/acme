@@ -191,6 +191,22 @@ export const french: EmailCatalog = {
       "l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.",
     unavailable: "la plateforme était injoignable.",
   },
+  feedStopReasons: {
+    gone: "son site indique que le flux n’existe plus.",
+    notAFeed: "depuis sept jours, son adresse donne autre chose qu’un flux.",
+    queueGone:
+      "la file d’attente où il programme ses publications a été supprimée.",
+    starterGone:
+      "la personne qui l’a ajouté ne peut plus y créer de publications.",
+    unreachable: "il n’a pas pu être lu pendant sept jours.",
+  },
+  feedStopped: {
+    action: "Ouvrir les flux",
+    body: "Un flux de {workspaceName} ne crée plus de publications : {reason} Les publications déjà créées restent telles quelles. Une fois le problème réglé, reprenez-le depuis les flux, dans les réglages de l’espace de travail.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez ajouté ce flux dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Un flux ne crée plus de publications",
+  },
   intervals: { month: "mois", year: "an" },
   invitation: {
     action: "Accepter l’invitation",

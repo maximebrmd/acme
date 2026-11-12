@@ -623,6 +623,11 @@ export type NoticeEventRecord =
       readonly network: string;
     }
   | {
+      readonly _tag: "FeedStopped";
+      readonly feedId: string;
+      readonly reason: string;
+    }
+  | {
       readonly _tag: "RecyclingEnded";
       readonly reason: string;
       readonly ruleId: string;
@@ -652,6 +657,7 @@ export interface PreferencesRecord {
   readonly email: {
     readonly channelReconnect: boolean;
     readonly comments: boolean;
+    readonly feedStopped: boolean;
     readonly postFailed: boolean;
     readonly postPublished: boolean;
     readonly postReview: boolean;

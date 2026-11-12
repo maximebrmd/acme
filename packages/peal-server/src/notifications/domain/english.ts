@@ -184,6 +184,21 @@ export const english: EmailCatalog = {
       "the account’s authorization stopped working. Reconnect it, then post again.",
     unavailable: "the platform could not be reached.",
   },
+  feedStopReasons: {
+    gone: "its site says the feed is gone for good.",
+    notAFeed:
+      "for seven days, its address has given something that is not a feed.",
+    queueGone: "the queue it puts posts on was deleted.",
+    starterGone: "whoever added it can no longer make posts there.",
+    unreachable: "it could not be read for seven days.",
+  },
+  feedStopped: {
+    action: "Open the feeds",
+    body: "A feed of {workspaceName} no longer makes posts: {reason} The posts it already made stay as they are. Once that is put right, resume it from the feeds in the workspace’s settings.",
+    ignore:
+      "You receive this email because you added this feed in {workspaceName} on Peal, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
+    subject: "A feed no longer makes posts",
+  },
   intervals: { month: "month", year: "year" },
   invitation: {
     action: "Accept the invitation",

@@ -25,6 +25,7 @@ const watched = [
   "peal_ads_sync_unfinished_total",
   "peal_publishing_uploads_waiting",
   "peal_publishing_recycling_overdue",
+  "peal_publishing_feeds_overdue",
 ];
 
 describe("the production alert rules", () => {

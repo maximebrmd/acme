@@ -319,6 +319,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
         email: {
           channelReconnect: true,
           comments: false,
+          feedStopped: true,
           postFailed: true,
           postPublished: false,
           postReview: true,
@@ -341,6 +342,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
           email: {
             channelReconnect: true,
             comments: false,
+            feedStopped: true,
             postFailed: false,
             postPublished: true,
             postReview: true,

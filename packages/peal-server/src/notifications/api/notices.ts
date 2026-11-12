@@ -95,6 +95,11 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       postId,
       threadId,
     }),
+    FeedStopped: ({ feedId, reason }): NoticeEventView => ({
+      _tag: "FeedStopped",
+      feedId,
+      reason,
+    }),
     PostApprovalRequested: ({ postId, scheduledAt }): NoticeEventView => ({
       _tag: "PostApprovalRequested",
       postId,

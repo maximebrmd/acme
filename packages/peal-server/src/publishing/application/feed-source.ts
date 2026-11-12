@@ -1,11 +1,10 @@
-import { Context } from "effect";
-import type { Effect } from "effect";
+import { Context, Effect, Layer, Option } from "effect";
 
 import type { FeedAddress } from "#publishing/domain/feed-address.ts";
 import type { FeedDocument } from "#publishing/domain/feed-document.ts";
 import type { FeedValidators } from "#publishing/domain/feed.ts";
 
-import type { FeedReadFailed } from "./feed-read-failed.ts";
+import { FeedReadFailed } from "./feed-read-failed.ts";
 
 /**
  * What a read of a feed gave: nothing new since the validators sent
@@ -34,4 +33,18 @@ export class FeedSource extends Context.Service<
       validators: FeedValidators
     ) => Effect.Effect<FeedRead, FeedReadFailed>;
   }
->()("peal-server/publishing/application/FeedSource") {}
+>()("peal-server/publishing/application/FeedSource") {
+  /** For tests that read no feed: every host is out of reach. */
+  static readonly none = Layer.succeed(
+    FeedSource,
+    FeedSource.of({
+      read: () =>
+        Effect.fail(
+          new FeedReadFailed({
+            failure: "unreachable",
+            retryAfterSeconds: Option.none(),
+          })
+        ),
+    })
+  );
+}

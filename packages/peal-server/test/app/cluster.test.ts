@@ -36,6 +36,7 @@ import { CollectComments } from "#engagement/application/collect-comments.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
 import { SendReply } from "#engagement/application/send-reply.ts";
 import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
+import { Feeds } from "#publishing/application/feeds.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
@@ -298,8 +299,29 @@ const ChannelJobsTest = Layer.mergeAll(
 
 // The publishing crons' work, done on nothing: on the real clock, a run
 // would make the occurrences of the rules other suites keep in this
-// database, and a purge delete their idempotency keys.
+// database, read their feeds, and a purge delete their idempotency keys.
 const PublishingCronWorkTest = Layer.mergeAll(
+  Layer.effect(
+    Feeds,
+    Feeds.use((feeds) =>
+      Effect.succeed(
+        Feeds.of({
+          ...feeds,
+          overdue: () => Effect.succeed(0),
+          poll: () =>
+            Effect.succeed({
+              failed: 0,
+              left: 0,
+              made: 0,
+              read: 0,
+              stopped: 0,
+              unfinished: false,
+            }),
+          prune: Effect.succeed({ items: 0, reads: 0 }),
+        })
+      )
+    )
+  ),
   Layer.effect(
     Recycling,
     Recycling.use((rules) =>
@@ -339,6 +361,7 @@ const serverWith = <E, R>(
     never,
     never,
     | Layer.Success<typeof ChannelJobsTest>
+    | Feeds
     | PostScheduling
     | Recycling
     | Sharding.Sharding

@@ -26,6 +26,7 @@ import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { ChannelSetNameTaken } from "./channel-set-name-taken.ts";
 import { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import { ChannelSetStore } from "./channel-set-store.ts";
+import { FeedStore } from "./feed-store.ts";
 import { channelsFor } from "./post-references.ts";
 import { QueueStore } from "./queue-store.ts";
 import { TooManyChannelSets } from "./too-many-channel-sets.ts";
@@ -103,6 +104,7 @@ export class ChannelSets extends Context.Service<
     Effect.gen(function* ChannelSetsLive() {
       const store = yield* ChannelSetStore;
       const queues = yield* QueueStore;
+      const feeds = yield* FeedStore;
       const channels = yield* WorkspaceChannels;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<Ids | WorkspaceChannels>();
@@ -230,8 +232,9 @@ export class ChannelSets extends Context.Service<
               return yield* new ChannelSetNotFound({ channelSet: setId });
             }
 
-            // No queue goes on naming it.
+            // No queue, nor feed, goes on naming it.
             yield* queues.forgetChannelSet(actor.workspaceId, setId);
+            yield* feeds.forgetChannelSet(actor.workspaceId, setId);
 
             return yield* store.remove(actor.workspaceId, setId);
           })

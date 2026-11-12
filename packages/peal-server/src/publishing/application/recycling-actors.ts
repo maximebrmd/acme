@@ -1,8 +1,10 @@
 import { Context, Effect, Layer } from "effect";
 
-import type { RecyclingRule } from "#publishing/domain/recycling-rule.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
+
+import type { Started } from "./started-by.ts";
 
 /**
  * Who a rule's starter is now: acting, with the permissions they hold
@@ -16,15 +18,21 @@ export type RuleStarter =
   | { readonly _tag: "gone" }
   | { readonly _tag: "lockedOut" };
 
+/** What acts later as whoever started it, in its workspace. */
+export interface StartedIn extends Started {
+  readonly workspaceId: WorkspaceId;
+}
+
 /**
- * The actor a recycling rule's occurrences act as: whoever started it, as
- * they are when the occurrence is made, never as they were.
+ * The actor what someone started acts as (a recycling rule's occurrences,
+ * a feed's posts): whoever started it, as they are when the post is made,
+ * never as they were.
  */
 export class RecyclingActors extends Context.Service<
   RecyclingActors,
   {
     readonly of: (
-      rule: RecyclingRule
+      started: StartedIn
     ) => Effect.Effect<RuleStarter, DatabaseError>;
   }
 >()("peal-server/publishing/application/RecyclingActors") {

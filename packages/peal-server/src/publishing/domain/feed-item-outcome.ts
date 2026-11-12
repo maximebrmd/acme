@@ -24,7 +24,7 @@ export type FeedItemOutcome = typeof FeedItemOutcomeSchema.Type;
  * than a run or a day makes (`tooMany`), or the template wrote nothing
  * from it (`empty`); or why one was held back as a draft: what the queue
  * refused (`contentRejected`, `planLimit`, `queueFull`, `noChannels`,
- * `duplicate`). Stored: add a member, never rename or remove one.
+ * `duplicate`), or the queue deleted since (`queueGone`). Stored: add a member, never rename or remove one.
  */
 export const FeedItemReasonSchema = Schema.Literals([
   "existing",
@@ -35,6 +35,7 @@ export const FeedItemReasonSchema = Schema.Literals([
   "queueFull",
   "noChannels",
   "duplicate",
+  "queueGone",
 ]);
 
 export type FeedItemReason = typeof FeedItemReasonSchema.Type;

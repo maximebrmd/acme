@@ -63,6 +63,23 @@ export const RecyclingNoticeReasonSchema = Schema.Literals([
 export type RecyclingNoticeReason = typeof RecyclingNoticeReasonSchema.Type;
 
 /**
+ * Why a feed stopped making posts: it could not be read for seven days
+ * (`unreachable`), its address gave something that is not a feed all
+ * that time (`notAFeed`), its site said it is gone (`gone`), whoever
+ * added it can no longer make posts (`starterGone`), or its queue was
+ * deleted (`queueGone`).
+ */
+export const FeedStopReasonSchema = Schema.Literals([
+  "unreachable",
+  "notAFeed",
+  "gone",
+  "starterGone",
+  "queueGone",
+]).annotate({ identifier: "FeedStopReason" });
+
+export type FeedStopReason = typeof FeedStopReasonSchema.Type;
+
+/**
  * What happened, as data: clients write it in the reader's language. A post's
  * channel is null when it was disconnected before the notice was made.
  */
@@ -214,6 +231,11 @@ export const NoticeEventSchema = Schema.Union([
     reason: RecyclingNoticeReasonSchema,
     ruleId: Schema.String,
     sourcePostId: Schema.String,
+  }),
+  // A feed stopped making posts (`feedId`) for `reason`.
+  Schema.TaggedStruct("FeedStopped", {
+    feedId: Schema.String,
+    reason: FeedStopReasonSchema,
   }),
 ]).annotate({ identifier: "NoticeEvent" });
 
