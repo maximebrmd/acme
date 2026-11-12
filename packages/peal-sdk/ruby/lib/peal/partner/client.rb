@@ -61,10 +61,11 @@ module Peal
       # and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused,
       # 400): page through every customer to find those that need attention, as nothing filters them. `account` comes
       # with the first page only: whether the account's workspaces, which share one plan and one channel count, hold
-      # more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill).
-      # Each section needs the permission that reads it in a workspace: `channel:read`, `post:read`, `engagement:read`,
-      # and `mayApprove` says whether the key holds `post:approve`. Needs the scope workspaces:read. Takes a partner key
-      # (`Authorization: Bearer peal_partner_…`): any other credential answers 403.
+      # more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill);
+      # with no customer yet, it is the home workspace's own standing. Each section needs the permission that reads it
+      # in a workspace: `channel:read`, `post:read`, `engagement:read`, and `mayApprove` says whether the key holds
+      # `post:approve`. Needs the scope workspaces:read. Takes a partner key (`Authorization: Bearer peal_partner_…`):
+      # any other credential answers 403.
       #
       # @param request_options [Hash]
       # @param params [Hash]

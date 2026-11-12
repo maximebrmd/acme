@@ -349,9 +349,11 @@ module Peal
       # and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused,
       # 400): page through every customer to find those that need attention, as nothing filters them. `account` comes
       # with the first page only: whether the account's workspaces, which share one plan and one channel count, hold
-      # more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill).
-      # For the home workspace's owners and admins: the sections are those a partner key may read, as the workspaces
-      # have no member of their own. Needs partner:read.
+      # more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill);
+      # with no customer yet, it is the home workspace's own standing. For the home workspace's people: each section
+      # only where the caller holds its permission in the home workspace (`channel:read`, `post:read`,
+      # `engagement:read`), as the overview across their workspaces gives it, so staff acting as a member read no inbox;
+      # `mayApprove` is always false, as they are members of no customer's workspace. Needs partner:read.
       #
       # @param request_options [Hash]
       # @param params [Hash]
