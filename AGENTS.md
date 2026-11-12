@@ -137,6 +137,8 @@ several:
 - Pin every dependency to the exact latest release, and commit `bun.lock` with
   dependency changes, `packages/peal-infra/ansible/uv.lock` with Python ones. The
   SDKs' manifests are the exception (see [SDKs](packages/peal-sdk/AGENTS.md)).
+  Dependabot (`.github/dependabot.yml`) proposes the upgrades weekly, grouped;
+  a new package joins its group there.
 - A change to the contract regenerates the SDKs in the same change:
   `bun run sdk:generate` (Docker), then `bun run sdk:build`. CI's `sdks` job
   fails while they are stale.

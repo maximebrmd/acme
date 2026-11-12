@@ -1,0 +1,166 @@
+# Dependabot keeps every dependency on its exact latest release, as AGENTS.md
+# asks: once a week, one pull request per group, a few open at a time.
+#
+# A dependency that matches several groups goes to the first one listed, so
+# the narrow groups come before the broad ones. Groups apply to version
+# updates only: a security update always gets a pull request of its own.
+#
+# Left to hand updates, because Dependabot reads none of them: the SDKs'
+# generated manifests under packages/peal-sdk (they keep the generator's
+# ranges, see packages/peal-sdk/AGENTS.md) and the generator images
+# scripts/languages.ts pins; CI's service images (.github/workflows/ci.yml);
+# the Ansible collections (requirements.yml) and the images the uptime role
+# templates.
+version: 2
+
+updates:
+  # The Bun workspace: the root package.json and every workspace it lists,
+  # the Pulumi project included, with bun.lock. Bun takes no
+  # versioning-strategy; an exact version stays exact when it moves.
+  - package-ecosystem: bun
+    directory: /
+    exclude-paths:
+      - packages/peal-sdk/**
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore
+      include: scope
+    ignore:
+      # Fern's CLI writes the committed SDKs with the generators
+      # packages/peal-sdk/scripts/languages.ts pins: upgrade it with them,
+      # regenerating the SDKs and reading the diff.
+      - dependency-name: fern-api
+    groups:
+      effect:
+        patterns:
+          - effect
+          - "@effect/*"
+      better-auth:
+        patterns:
+          - better-auth
+          - "@better-auth/*"
+          - better-call
+          - "@better-fetch/*"
+      drizzle:
+        patterns:
+          - drizzle-orm
+          - drizzle-kit
+      tiptap:
+        patterns:
+          - "@tiptap/*"
+      react:
+        patterns:
+          - react
+          - react-dom
+          - react-is
+          - scheduler
+          - "@types/react"
+          - "@types/react-dom"
+      astro:
+        patterns:
+          - astro
+          - "@astrojs/*"
+      tailwind:
+        patterns:
+          - tailwindcss
+          - "@tailwindcss/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      pulumi:
+        patterns:
+          - "@pulumi/*"
+      e2e:
+        patterns:
+          - e2e
+          - "@e2e-dev/*"
+      lint-tooling:
+        patterns:
+          - ultracite
+          - oxlint
+          - oxlint-tsgolint
+          - oxfmt
+          - "@shadcn/lint"
+      dev-tooling:
+        patterns:
+          - typescript
+          - nx
+          - vitest
+          - "@types/*"
+
+  # The Ansible toolchain and its tests, with uv.lock. The project pins each
+  # package with ==, and increase keeps it that way.
+  - package-ecosystem: uv
+    directory: /packages/peal-infra/ansible
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      ansible:
+        patterns:
+          - ansible-core
+          - ansible-lint
+      test-tooling:
+        patterns:
+          - "*"
+
+  # The workflows' actions, pinned by commit with the release in a comment;
+  # Dependabot moves both.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # The images the Dockerfiles build on, pinned by tag and digest. Bun's and
+  # Node's follow .bun-version and CI's Node: compose.test.ts fails until
+  # those move with them.
+  - package-ecosystem: docker
+    directory: /packages/peal-docker
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      runtimes:
+        patterns:
+          - oven/bun
+          - node
+      base-images:
+        patterns:
+          - "*"
+
+  # The compose files' images: the development stack's by tag, production's
+  # and the self-host overlay's by tag and digest, at the version development
+  # runs. One group keeps them in step, as compose.test.ts checks.
+  - package-ecosystem: docker-compose
+    directory: /packages/peal-docker
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      compose-images:
+        patterns:
+          - "*"

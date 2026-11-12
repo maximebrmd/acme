@@ -65,7 +65,16 @@ you change before you change it. The ones contributors meet first:
   package reads is listed on the environment variables page, in both
   languages.
 - **Dependencies are pinned** to the exact latest release, and `bun.lock` (or
-  `packages/peal-infra/ansible/uv.lock`) is committed with them.
+  `packages/peal-infra/ansible/uv.lock`) is committed with them. Dependabot
+  (`.github/dependabot.yml`) opens grouped pull requests each Monday for the
+  Bun workspace, the Ansible toolchain (uv), the workflows' actions, the
+  Dockerfiles and the compose files. Run the checks on its branch and push
+  the follow-ups it cannot make: a Bun or Node image moves `.bun-version` or
+  CI's `node-version` with it, a compose image moves CI's service image of
+  the same name, and Effect, Drizzle or Better Auth may need code changes.
+  It leaves alone what it cannot read: the SDKs' generated manifests and
+  generator images, CI's service images, the Ansible collections and the
+  uptime role's images.
 - **Lint findings are fixed, not suppressed.** `bun run fix` applies what it
   can.
 - **Tests come with the change.** A fix has a test that failed before it; a
