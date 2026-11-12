@@ -98,6 +98,9 @@ require_relative "peal/notices/types/list_notices_request"
 require_relative "peal/notices/types/mark_notices_read"
 require_relative "peal/notification_preferences/client"
 require_relative "peal/notification_preferences/types/notification_preferences_change"
+require_relative "peal/overview/client"
+require_relative "peal/overview/types/get_overview_request"
+require_relative "peal/overview/types/agenda_overview_request"
 require_relative "peal/assistant/client"
 require_relative "peal/assistant/types/status_assistant_request"
 require_relative "peal/assistant/types/suggestion_request"
@@ -392,13 +395,16 @@ module Peal
     autoload :AdsMode, ::File.join(__dir__, "peal/types/ads_mode")
     autoload :AdsStatus, ::File.join(__dir__, "peal/types/ads_status")
     autoload :AdsUnavailableEncoded, ::File.join(__dir__, "peal/types/ads_unavailable_encoded")
+    autoload :Platform, ::File.join(__dir__, "peal/types/platform")
+    autoload :PostStatus, ::File.join(__dir__, "peal/types/post_status")
+    autoload :AgendaItem, ::File.join(__dir__, "peal/types/agenda_item")
+    autoload :AgendaPage, ::File.join(__dir__, "peal/types/agenda_page")
     autoload :AlreadyMemberEncoded, ::File.join(__dir__, "peal/types/already_member_encoded")
     autoload :AltTextTooLongEncodedTag, ::File.join(__dir__, "peal/types/alt_text_too_long_encoded_tag")
     autoload :AltTextTooLongEncoded, ::File.join(__dir__, "peal/types/alt_text_too_long_encoded")
     autoload :AnalyticsDashboardPrevious, ::File.join(__dir__, "peal/types/analytics_dashboard_previous")
     autoload :DashboardTotals, ::File.join(__dir__, "peal/types/dashboard_totals")
     autoload :FollowerChange, ::File.join(__dir__, "peal/types/follower_change")
-    autoload :Platform, ::File.join(__dir__, "peal/types/platform")
     autoload :ChannelDashboard, ::File.join(__dir__, "peal/types/channel_dashboard")
     autoload :DashboardDay, ::File.join(__dir__, "peal/types/dashboard_day")
     autoload :PlatformDashboard, ::File.join(__dir__, "peal/types/platform_dashboard")
@@ -523,7 +529,6 @@ module Peal
     autoload :PostOriginVia, ::File.join(__dir__, "peal/types/post_origin_via")
     autoload :PostOrigin, ::File.join(__dir__, "peal/types/post_origin")
     autoload :PostOutcome, ::File.join(__dir__, "peal/types/post_outcome")
-    autoload :PostStatus, ::File.join(__dir__, "peal/types/post_status")
     autoload :PostTargetStatus, ::File.join(__dir__, "peal/types/post_target_status")
     autoload :TargetParts, ::File.join(__dir__, "peal/types/target_parts")
     autoload :UnconfirmedReason, ::File.join(__dir__, "peal/types/unconfirmed_reason")
@@ -832,6 +837,12 @@ module Peal
     autoload :NotificationPreferencesEmail, ::File.join(__dir__, "peal/types/notification_preferences_email")
     autoload :NotificationPreferences, ::File.join(__dir__, "peal/types/notification_preferences")
     autoload :OrganicCounts, ::File.join(__dir__, "peal/types/organic_counts")
+    autoload :OverviewChannels, ::File.join(__dir__, "peal/types/overview_channels")
+    autoload :OverviewInbox, ::File.join(__dir__, "peal/types/overview_inbox")
+    autoload :OverviewPosts, ::File.join(__dir__, "peal/types/overview_posts")
+    autoload :OverviewRefusal, ::File.join(__dir__, "peal/types/overview_refusal")
+    autoload :WorkspaceOverview, ::File.join(__dir__, "peal/types/workspace_overview")
+    autoload :Overview, ::File.join(__dir__, "peal/types/overview")
     autoload :Partner, ::File.join(__dir__, "peal/types/partner")
     autoload :PartnerDetailField, ::File.join(__dir__, "peal/types/partner_detail_field")
     autoload :PartnerDetailsInvalidEncodedTag, ::File.join(__dir__, "peal/types/partner_details_invalid_encoded_tag")

@@ -37,6 +37,8 @@ export * as notices from "./notices/index.js";
 export * from "./notices/client/requests/index.js";
 export * as notificationPreferences from "./notificationPreferences/index.js";
 export * from "./notificationPreferences/client/requests/index.js";
+export * as overview from "./overview/index.js";
+export * from "./overview/client/requests/index.js";
 export * as partner from "./partner/index.js";
 export * from "./partner/client/requests/index.js";
 export * as partnerAccount from "./partnerAccount/index.js";

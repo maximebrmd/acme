@@ -32,9 +32,10 @@ export const agendaExcerptLength = 140;
  * Why a workspace shows no figure: it requires two-step verification, and
  * the person's account does not have it on (`twoStepRequired`).
  */
-export const OverviewRefusalSchema = Schema.Literals([
-  "twoStepRequired",
-]).annotate({ identifier: "OverviewRefusal" });
+// One reason for now: a list of one would be written as a union of one.
+export const OverviewRefusalSchema = Schema.Literal("twoStepRequired").annotate(
+  { identifier: "OverviewRefusal" }
+);
 
 export type OverviewRefusal = typeof OverviewRefusalSchema.Type;
 

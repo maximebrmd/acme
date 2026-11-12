@@ -158,6 +158,8 @@ const coverage = {
   "notices.unread": exempt(inbox),
   "notificationPreferences.get": exempt(inbox),
   "notificationPreferences.update": exempt(inbox),
+  "overview.agenda": by("agenda"),
+  "overview.get": by("overview"),
   "partner.account": exempt(partnerApi),
   "partner.createWorkspace": exempt(partnerApi),
   "partner.deleteWorkspace": exempt(partnerApi),

@@ -12477,40 +12477,6 @@ func (p PostSort) Ptr() *PostSort {
 	return &p
 }
 
-type PostStatus string
-
-const (
-	PostStatusDraft            PostStatus = "draft"
-	PostStatusAwaitingApproval PostStatus = "awaitingApproval"
-	PostStatusScheduled        PostStatus = "scheduled"
-	PostStatusPublishing       PostStatus = "publishing"
-	PostStatusFinished         PostStatus = "finished"
-	PostStatusCancelled        PostStatus = "cancelled"
-)
-
-func NewPostStatusFromString(s string) (PostStatus, error) {
-	switch s {
-	case "draft":
-		return PostStatusDraft, nil
-	case "awaitingApproval":
-		return PostStatusAwaitingApproval, nil
-	case "scheduled":
-		return PostStatusScheduled, nil
-	case "publishing":
-		return PostStatusPublishing, nil
-	case "finished":
-		return PostStatusFinished, nil
-	case "cancelled":
-		return PostStatusCancelled, nil
-	}
-	var t PostStatus
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (p PostStatus) Ptr() *PostStatus {
-	return &p
-}
-
 var (
 	postTargetFieldChannelID         = big.NewInt(1 << 0)
 	postTargetFieldEditedAt          = big.NewInt(1 << 1)

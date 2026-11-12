@@ -106,6 +106,17 @@
       },
       "default": "./dist/cjs/api/resources/notificationPreferences/exports.js"
     },
+    "./overview": {
+      "import": {
+        "types": "./dist/esm/api/resources/overview/exports.d.mts",
+        "default": "./dist/esm/api/resources/overview/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/overview/exports.d.ts",
+        "default": "./dist/cjs/api/resources/overview/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/overview/exports.js"
+    },
     "./assistant": {
       "import": {
         "types": "./dist/esm/api/resources/assistant/exports.d.mts",

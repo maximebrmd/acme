@@ -2147,6 +2147,78 @@
       }
     },
     {
+      "id": "cf3e5553-9cde-4f5a-98a0-39d078c04ac1",
+      "name": "Get what needs attention across workspaces - default",
+      "request": {
+        "urlPathTemplate": "/api/me/overview",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"generatedAt\": \"generatedAt\",\n  \"nextCursor\": \"nextCursor\",\n  \"workspaces\": [\n    {\n      \"channels\": {\n        \"connected\": 1,\n        \"off\": 1,\n        \"toReconnect\": 1\n      },\n      \"id\": \"id\",\n      \"inbox\": {\n        \"unanswered\": 1\n      },\n      \"name\": \"name\",\n      \"overPlan\": true,\n      \"posts\": {\n        \"awaitingApproval\": 1,\n        \"failedLast7Days\": 1,\n        \"mayApprove\": true,\n        \"scheduledNext7Days\": 1,\n        \"unconfirmedLast7Days\": 1\n      },\n      \"refused\": \"twoStepRequired\",\n      \"role\": \"role\",\n      \"slug\": \"slug\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "cf3e5553-9cde-4f5a-98a0-39d078c04ac1",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "8c39aeb4-e020-45cb-900d-6aacc2d624c9",
+      "name": "List the agenda across workspaces - default",
+      "request": {
+        "urlPathTemplate": "/api/me/agenda",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "queryParameters": {
+          "from": {
+            "equalTo": "from"
+          },
+          "to": {
+            "equalTo": "to"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"excerpt\": \"excerpt\",\n      \"platforms\": [\n        \"x\"\n      ],\n      \"postId\": \"postId\",\n      \"scheduledAt\": \"scheduledAt\",\n      \"status\": \"draft\",\n      \"timeZone\": \"timeZone\",\n      \"workspaceId\": \"workspaceId\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "8c39aeb4-e020-45cb-900d-6aacc2d624c9",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
       "id": "e1107588-162c-4297-a5b8-4738e0a6617b",
       "name": "Get the assistant's status - default",
       "request": {
@@ -7170,6 +7242,6 @@
     }
   ],
   "meta": {
-    "total": 191
+    "total": 193
   }
 }

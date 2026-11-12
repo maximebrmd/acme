@@ -145,6 +145,7 @@ import {
 import { studioFeedsOf } from "./studio-feeds.ts";
 import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
 import type { InboxState } from "./studio-inbox.ts";
+import { overviewGroupLive } from "./studio-overview.ts";
 import { studioQueues, studioQueuesOf } from "./studio-queues.ts";
 import type { StudioQueue } from "./studio-queues.ts";
 import { studioRecyclingOf } from "./studio-recycling.ts";
@@ -3007,6 +3008,7 @@ export const studioGroupsLive = (studio: Studio) =>
     queuesOfStudio.groupLive(studio),
     recyclingOfStudio.groupLive(studio),
     feedsOfStudio.groupLive(studio),
+    overviewGroupLive(studio, studioId),
     HttpApiBuilder.group(Api, "session", (handlers) =>
       handlers.handleAll({
         me: () => inPerson.pipe(Effect.as(studio.me)),
