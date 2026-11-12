@@ -1,6 +1,7 @@
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 import { FetchHttpClient } from "effect/http";
+import { SqlClient } from "effect/sql";
 import sharp from "sharp";
 
 import { mediaWith } from "#media/container.ts";
@@ -53,6 +54,13 @@ const PicturesTest = LibraryFeedPictures.pipe(
   )
 );
 
+// Bytes that start like an MP4, which the import would store as a video.
+const mp4Like = Uint8Array.from(
+  { length: 4096 },
+  (_, index) =>
+    [0, 0, 0, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d][index] ?? 7
+);
+
 const freshWorkspace = Ids.use((ids) => ids.next).pipe(
   Effect.map((uuid) => WorkspaceIdSchema.make(uuid))
 );
@@ -103,6 +111,7 @@ layer(PicturesTest, { timeout: "120 seconds" })("an item's picture", (it) => {
               "/text.txt",
               serving("Not a picture", { "content-type": "text/plain" }),
             ],
+            ["/clip.mp4", serving(mp4Like, { "content-type": "video/mp4" })],
           ])
         );
 
@@ -121,13 +130,31 @@ layer(PicturesTest, { timeout: "120 seconds" })("an item's picture", (it) => {
         assert.deepStrictEqual(
           [
             yield* attach(`${host.url}/file.pdf`),
+            yield* attach(`${host.url}/clip.mp4`),
             yield* attach(`${host.url}/text.txt`),
             yield* attach(`${host.url}/missing.png`),
             yield* attach("https://user:secret@cdn.blog.example/one.png"),
             yield* attach(`${host.url}/text.txt`, ["media:read"]),
           ],
-          ["notAnImage", "notAnImage", "unreachable", "notPublic", "notAllowed"]
+          [
+            "notAnImage",
+            "notAnImage",
+            "notAnImage",
+            "unreachable",
+            "notPublic",
+            "notAllowed",
+          ]
         );
+
+        // A file that is not an image is never stored.
+        const [stored] = yield* SqlClient.SqlClient.use(
+          (sql) =>
+            sql<{
+              readonly count: number;
+            }>`SELECT count(*)::int AS count FROM media.media_assets WHERE workspace_id = ${workspaceId}`
+        ).pipe(Effect.orDie);
+
+        assert.strictEqual(stored?.count, 0);
       })
   );
 });

@@ -949,6 +949,7 @@ publishing's schema, naming nobody: each goes with its workspace
   `MediaLibrary.importMedia`, as the starter, who needs media:upload)
   before the item's transaction, and attached, described by the item's
   title, only when it is a ready image; anything else leaves the post
-  without it and writes `feed_items.picture_skipped`. A crash after the
-  import, or a file that is not an image, leaves an asset unattached in
-  the library: accepted. A claim sent again imports again.
+  without it and writes `feed_items.picture_skipped`. The import takes
+  `kinds: ["image"]`, so a video or a document is refused from its first
+  bytes and never stored. A crash after the import leaves an asset
+  unattached in the library: accepted. A claim sent again imports again.

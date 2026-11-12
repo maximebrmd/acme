@@ -14,7 +14,10 @@ import { altTextOf } from "#media/domain/alt-text.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import { acceptUpload, startUpload } from "#media/domain/media-asset.ts";
 import { kindOf, maxByteSize } from "#media/domain/media-format.ts";
-import type { MediaContentType } from "#media/domain/media-format.ts";
+import type {
+  MediaContentType,
+  MediaKind,
+} from "#media/domain/media-format.ts";
 import { sniffContentType } from "#media/domain/media-signature.ts";
 import { MediaTooLarge } from "#media/domain/media-too-large.ts";
 import { storageKeyFor } from "#media/domain/storage-key.ts";
@@ -28,6 +31,11 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 export interface ImportMediaRequest {
   /** Its description, as the person typed it, if they did. */
   readonly altText: Option.Option<string>;
+  /**
+   * The kinds of file taken, when only some are: another is refused
+   * (UnsupportedMediaType) from its first bytes, before it is stored.
+   */
+  readonly kinds?: readonly MediaKind[];
   readonly url: string;
   readonly workspaceId: WorkspaceId;
 }
@@ -102,7 +110,12 @@ const boundedBytes = (
  * upload's is. The whole import has `importTimeout`.
  */
 export const importMedia = Effect.fn("Media.importMedia")(
-  function* importMedia({ altText, url, workspaceId }: ImportMediaRequest) {
+  function* importMedia({
+    altText,
+    kinds,
+    url,
+    workspaceId,
+  }: ImportMediaRequest) {
     const description = yield* Effect.fromResult(
       altTextOf(Option.getOrElse(altText, () => ""))
     );
@@ -143,6 +156,10 @@ export const importMedia = Effect.fn("Media.importMedia")(
     const stored = yield* Effect.gen(function* fetching() {
       const file = yield* RemoteMedia.use((remote) => remote.open(url));
       const contentType = yield* formatOf(file);
+
+      if (kinds !== undefined && !kinds.includes(kindOf(contentType))) {
+        return yield* new UnsupportedMediaType({ contentType });
+      }
 
       // What the host declares is refused before a byte more is read.
       if (Option.isSome(file.declaredSize)) {

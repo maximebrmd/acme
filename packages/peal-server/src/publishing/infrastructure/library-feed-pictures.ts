@@ -29,6 +29,9 @@ export const LibraryFeedPictures = Layer.effect(
             altText: Option.some(altText.slice(0, maxAltTextLength)).pipe(
               Option.filter((text) => text.length > 0)
             ),
+            // Only an image is fetched whole and stored: a video or a
+            // document is refused from its first bytes.
+            kinds: ["image"],
             url,
           })
           .pipe(
