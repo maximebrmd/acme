@@ -29,6 +29,8 @@ OUTPUTS = {
     "tunnelToken": "synthetic-tunnel-token",
     "mediaKey": {"accessKeyId": "media-id", "secretAccessKey": "media-secret-synthetic"},
     "backupKey": {"accessKeyId": "backup-id", "secretAccessKey": "backup-secret-synthetic"},
+    "uptimeAccessToken": {"clientId": "client-id-synthetic.access", "clientSecret": "client-secret-synthetic"},
+    "uptimeAccessTokenExpiresAt": "2027-11-12T00:00:00Z",
 }
 
 
@@ -50,6 +52,17 @@ def inventory(tmp_path: Path) -> Path:
         folder = tmp_path / "group_vars" / group
         folder.mkdir(parents=True)
         (folder / "vault.yml").write_bytes(VaultLib([("default", secret)]).encrypt(yaml.safe_dump(plain).encode(), secret))
+    uptime = tmp_path / "group_vars" / "uptime"
+    uptime.mkdir(parents=True)
+    plain_uptime = {
+        "uptime_credentials": {
+            "TELEGRAM_BOT_TOKEN": "bot-synthetic",
+            "TELEGRAM_CHAT_ID": "chat-synthetic",
+            "SANDBOX_ACCESS_CLIENT_ID": "REPLACE",
+            "SANDBOX_ACCESS_CLIENT_SECRET": "REPLACE",
+        }
+    }
+    (uptime / "vault.yml").write_bytes(VaultLib([("default", secret)]).encrypt(yaml.safe_dump(plain_uptime).encode(), secret))
     (tmp_path / "password").write_bytes(PASSWORD + b"\n")
     return tmp_path
 
@@ -168,3 +181,64 @@ def test_the_vault_password_can_come_from_a_client_script(inventory: Path) -> No
 def test_a_vault_id_without_its_source_is_refused(inventory: Path) -> None:
     with pytest.raises(SystemExit):
         script.main(["--vault-id", "sandbox", "--inventory", str(inventory)], outputs_of=lambda _group: OUTPUTS)
+
+
+def test_the_uptime_server_takes_the_sandbox_s_service_token(inventory: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    asked: list[str] = []
+
+    def outputs_of(stack: str) -> dict:
+        asked.append(stack)
+        return OUTPUTS
+
+    script.main(["--vault-id", f"uptime@{inventory / 'password'}", "--inventory", str(inventory)], outputs_of=outputs_of)
+
+    assert asked == ["sandbox"]
+    assert vault_of(inventory, "uptime") == {
+        "uptime_credentials": {
+            "TELEGRAM_BOT_TOKEN": "bot-synthetic",
+            "TELEGRAM_CHAT_ID": "chat-synthetic",
+            "SANDBOX_ACCESS_CLIENT_ID": "client-id-synthetic.access",
+            "SANDBOX_ACCESS_CLIENT_SECRET": "client-secret-synthetic",
+        }
+    }
+    raw = (inventory / "group_vars" / "uptime" / "vault.yml").read_text()
+    assert raw.startswith("$ANSIBLE_VAULT")
+    assert "client-secret-synthetic" not in raw
+    printed = capsys.readouterr().out
+    assert "uptime_credentials.SANDBOX_ACCESS_CLIENT_SECRET" in printed
+    assert "client-secret-synthetic" not in printed
+    assert "client-id-synthetic" not in printed
+    # The sandbox's own files are left alone, and the uptime server has no
+    # cloudflare.yml.
+    assert not (inventory / "group_vars" / "uptime" / "cloudflare.yml").exists()
+    assert not (inventory / "group_vars" / "sandbox" / "cloudflare.yml").exists()
+    assert vault_of(inventory)["cloudflared_tunnel_token"] == "old-token"
+
+
+def test_a_second_run_changes_nothing_in_the_uptime_vault(inventory: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    run(inventory, OUTPUTS, group="uptime")
+    before = (inventory / "group_vars" / "uptime" / "vault.yml").read_bytes()
+    capsys.readouterr()
+
+    run(inventory, OUTPUTS, group="uptime")
+
+    assert (inventory / "group_vars" / "uptime" / "vault.yml").read_bytes() == before
+    assert "nothing changed" in capsys.readouterr().out
+
+
+def test_the_uptime_vault_waits_for_the_sandbox_s_token(inventory: Path) -> None:
+    without_token = {key: value for key, value in OUTPUTS.items() if not key.startswith("uptime")}
+
+    with pytest.raises(SystemExit, match="service token"):
+        run(inventory, without_token, group="uptime")
+
+    assert vault_of(inventory, "uptime")["uptime_credentials"]["SANDBOX_ACCESS_CLIENT_ID"] == "REPLACE"
+
+
+def test_the_uptime_vault_must_exist_first(inventory: Path) -> None:
+    (inventory / "group_vars" / "uptime" / "vault.yml").unlink()
+
+    with pytest.raises(SystemExit, match=r"vault\.uptime\.example\.yml"):
+        run(inventory, OUTPUTS, group="uptime")
+
+    assert not (inventory / "group_vars" / "uptime" / "vault.yml").exists()
