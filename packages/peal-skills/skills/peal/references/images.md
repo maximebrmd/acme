@@ -11,8 +11,8 @@ peal media generate --prompt "A paper catalogue open on a wooden table, morning 
 
 - Make an image only when the user asked for one. Each call makes a new
   image and spends 5 of the workspace's daily assistant requests, given
-  back only when the provider could not be reached; on the free plan none
-  is made.
+  back when no image came of it (a timeout or an unusable answer counts);
+  on the free plan and during a trial none is made.
 - The prompt, 1 to 1,000 characters, goes as it is to the image provider
   the server's operator chose: put nothing in it the user would not send
   there.
