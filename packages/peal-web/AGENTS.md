@@ -198,7 +198,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   advice that blocks nothing: never flag a working link) and
   `PostTagsField`, which saves tags with the post while it is written and
   at once (`posts.tag`, `savedOn`) on a post scheduled or out, as
-  `PostDetail` does.
+  `PostDetail` does. `ShortenLinks` with `useShortLinking` shows only on
+  a server with short links (`shortLinks.status`): the member's choice,
+  else the post's, else the workspace's `byDefault`, sent as
+  `shortenLinks` with every save; its line counts with the contract's
+  `linksToShorten` (`#short-links/count.ts`), the server's rule. A post
+  that asked shows `PostLinks` (its links and their clicks over 30 days)
+  to members with analytics:read; the general settings hold the default
+  (`ShortLinkDefaultForm`).
 - Name a channel with `#channels/channel-name.ts`, never `channel.handle`
   alone: `channelName` wherever one line names it (the workspace's name
   with the handle beside it, "Client A (@handle)"), `channelTitle` where

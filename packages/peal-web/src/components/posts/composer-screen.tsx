@@ -10,6 +10,7 @@ import { Skeleton } from "peal-ui/components/skeleton";
 import { Composer } from "#components/posts/composer.tsx";
 import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
 import { PostDetail } from "#components/posts/post-detail.tsx";
+import { PostLinks } from "#components/posts/post-links.tsx";
 import { PostRepeat } from "#components/recycling/post-repeat.tsx";
 import { PostReviewSection } from "#components/review/post-review-section.tsx";
 import { Link } from "#i18n/navigation.ts";
@@ -139,6 +140,13 @@ const ExistingPost = ({
           userId={userId}
           workspaceId={workspaceId}
         />
+        {post.shortenLinks && permissions.includes("analytics:read") ? (
+          <PostLinks
+            channels={channels}
+            postId={post.id}
+            workspaceId={workspaceId}
+          />
+        ) : null}
         <PostRepeat
           permissions={permissions}
           post={post}

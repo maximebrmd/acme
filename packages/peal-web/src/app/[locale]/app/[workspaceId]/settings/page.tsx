@@ -12,11 +12,13 @@ import {
 import { ApprovalPolicyForm } from "#components/settings/approval-policy-form.tsx";
 import { DeleteWorkspace } from "#components/settings/delete-workspace.tsx";
 import { RenameWorkspaceForm } from "#components/settings/rename-workspace-form.tsx";
+import { ShortLinkDefaultForm } from "#components/settings/short-link-default-form.tsx";
 import { routing } from "#i18n/routing.ts";
 import { membershipOf } from "#posts/membership.ts";
 
 // A workspace's general settings: its name, which posts wait for an
-// approval, and deleting it, for those whose role allows each.
+// approval, whether new posts shorten their links, and deleting it, for
+// those whose role allows each.
 const GeneralSettingsPage = async ({
   params,
 }: PageProps<"/[locale]/app/[workspaceId]/settings">) => {
@@ -29,6 +31,7 @@ const GeneralSettingsPage = async ({
   const workspace = await membershipOf(locale, workspaceId);
   const t = await getTranslations("WorkspaceSettings");
   const review = await getTranslations("Review");
+  const shortLinks = await getTranslations("ShortLinks.settings");
   const may = new Set(workspace.permissions);
 
   return (
@@ -69,6 +72,22 @@ const GeneralSettingsPage = async ({
           </CardContent>
         ) : null}
       </Card>
+      {may.has("post:read") ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>{shortLinks("title")}</h2>
+            </CardTitle>
+            <CardDescription>{shortLinks("description")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ShortLinkDefaultForm
+              mayChange={may.has("organization:update")}
+              workspaceId={workspace.id}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
       {may.has("organization:delete") ? (
         <Card>
           <CardHeader>

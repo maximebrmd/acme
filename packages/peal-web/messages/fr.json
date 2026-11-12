@@ -2026,7 +2026,7 @@
       "description": "Supprime définitivement l’espace de travail, avec tout son contenu. Seuls les propriétaires le peuvent.",
       "open": "Supprimer cet espace de travail…",
       "confirmTitle": "Supprimer définitivement {name} ?",
-      "confirmDescription": "Ses canaux et leurs autorisations, ses publications, programmées ou non, sa médiathèque, ses notifications, ses membres et invitations, et ses clés d’API disparaissent, sans retour possible. Plus rien n’en est publié, et son abonnement, s’il en a un, est résilié.",
+      "confirmDescription": "Ses canaux et leurs autorisations, ses publications, programmées ou non, sa médiathèque, ses notifications, ses membres et invitations, et ses clés d’API disparaissent, sans retour possible. Plus rien n’en est publié, et son abonnement, s’il en a un, est résilié. Les liens courts de ses publications mises en ligne cessent de fonctionner.",
       "typeName": "Saisissez {name} pour confirmer",
       "confirm": "Supprimer l’espace de travail",
       "deleting": "Suppression…",
@@ -3376,6 +3376,38 @@
       "inPublic": "Elle repart, en public, sans que personne ne soit sollicité à chaque fois, sauf si l’espace de travail demande des approbations : chaque publication en attend alors une.",
       "start": "Répéter",
       "cancel": "Annuler"
+    }
+  },
+  "ShortLinks": {
+    "composer": {
+      "label": "Raccourcir les liens",
+      "count": "{count, plural, =0 {Aucun lien de la publication n’est assez long pour être raccourci.} one {# lien part sous une adresse courte, qui compte ses clics, sur chaque canal.} other {# liens partent sous des adresses courtes, qui comptent leurs clics, sur chaque canal.}}",
+      "off": "Les liens partent tels qu’écrits.",
+      "pinterest": "Pinterest garde les liens tels qu’écrits."
+    },
+    "post": {
+      "title": "Liens",
+      "description": "Les adresses courtes avec lesquelles cette publication est partie, et combien de fois chacune a été suivie ces 30 derniers jours (UTC). Les décomptes sont approximatifs : les lecteurs automatisés sont écartés, et rien des visiteurs n’est conservé.",
+      "loading": "Lecture des liens…",
+      "loadFailed": "Les liens n’ont pas pu être lus.",
+      "empty": "Cette publication est partie sans lien court.",
+      "link": "Lien",
+      "channel": "Canal",
+      "clicks": "Clics",
+      "part": "partie {number}",
+      "off": "Désactivé",
+      "unknownChannel": "Un canal qui n’est plus connecté"
+    },
+    "settings": {
+      "title": "Liens courts",
+      "description": "Une publication qui demande des liens courts part avec ses liens longs remplacés par des adresses courtes, une par canal, qui comptent leurs clics. Le texte conservé reste tel qu’écrit, Pinterest garde les liens tels qu’écrits, et les adresses courtes cessent de fonctionner quand l’espace de travail est supprimé.",
+      "unavailable": "Ce serveur n’a pas de liens courts : son exploitant n’a pas indiqué où ils se trouvent.",
+      "label": "Raccourcir les liens des nouvelles publications par défaut",
+      "hint": "Chaque publication peut toujours choisir dans l’éditeur.",
+      "readOnly": "Les propriétaires et les administrateurs choisissent la valeur par défaut.",
+      "saved": "Valeur par défaut enregistrée.",
+      "saveFailed": "La valeur par défaut n’a pas pu être enregistrée.",
+      "loadFailed": "Impossible de savoir si ce serveur a des liens courts."
     }
   }
 }

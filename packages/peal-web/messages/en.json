@@ -2026,7 +2026,7 @@
       "description": "Deletes the workspace for good, with everything in it. Only owners may.",
       "open": "Delete this workspace…",
       "confirmTitle": "Delete {name} for good?",
-      "confirmDescription": "Its channels and their authorizations, its posts, scheduled or not, its media library, its notifications, its members and invitations, and its API keys all go, and cannot be brought back. Nothing more is posted from it, and its subscription, if it has one, is cancelled.",
+      "confirmDescription": "Its channels and their authorizations, its posts, scheduled or not, its media library, its notifications, its members and invitations, and its API keys all go, and cannot be brought back. Nothing more is posted from it, and its subscription, if it has one, is cancelled. The short links in its published posts stop working.",
       "typeName": "Type {name} to confirm",
       "confirm": "Delete the workspace",
       "deleting": "Deleting…",
@@ -3376,6 +3376,38 @@
       "inPublic": "It goes out again, in public, without anyone being asked each time, unless the workspace asks for approvals: then each post waits for one.",
       "start": "Repeat",
       "cancel": "Cancel"
+    }
+  },
+  "ShortLinks": {
+    "composer": {
+      "label": "Shorten links",
+      "count": "{count, plural, =0 {No link of the post is long enough to shorten.} one {# link goes out as a short address, which counts its clicks, on each channel.} other {# links go out as short addresses, which count their clicks, on each channel.}}",
+      "off": "Links go out as written.",
+      "pinterest": "Pinterest keeps links as written."
+    },
+    "post": {
+      "title": "Links",
+      "description": "The short addresses this post went out with, and how many times each was followed in the last 30 days (UTC). Counts are approximate: automated readers are left out, and nothing about visitors is kept.",
+      "loading": "Reading the links…",
+      "loadFailed": "The links could not be read.",
+      "empty": "This post went out with no short link.",
+      "link": "Link",
+      "channel": "Channel",
+      "clicks": "Clicks",
+      "part": "part {number}",
+      "off": "Turned off",
+      "unknownChannel": "A channel no longer connected"
+    },
+    "settings": {
+      "title": "Short links",
+      "description": "A post that asks for short links goes out with its long links replaced by short addresses, one per channel, which count their clicks. The text kept stays as written, Pinterest keeps links as written, and the short addresses stop working when the workspace is deleted.",
+      "unavailable": "This server has no short links: its operator has not set where they live.",
+      "label": "Shorten links in new posts by default",
+      "hint": "Each post can still choose for itself in the composer.",
+      "readOnly": "Owners and admins choose the default.",
+      "saved": "Default saved.",
+      "saveFailed": "The default could not be saved.",
+      "loadFailed": "Whether this server has short links could not be read."
     }
   }
 }
