@@ -460,6 +460,11 @@
     "tag": "PostNotPromotable"
   },
   {
+    "code": "post_not_recyclable",
+    "status": 409,
+    "tag": "PostNotRecyclable"
+  },
+  {
     "code": "post_not_reviewable",
     "status": 409,
     "tag": "PostNotReviewable"
@@ -483,6 +488,26 @@
     "code": "queue_not_found",
     "status": 404,
     "tag": "QueueNotFound"
+  },
+  {
+    "code": "recycling_ends_too_soon",
+    "status": 422,
+    "tag": "RecyclingEndsTooSoon"
+  },
+  {
+    "code": "recycling_rule_ended",
+    "status": 409,
+    "tag": "RecyclingRuleEnded"
+  },
+  {
+    "code": "recycling_rule_not_found",
+    "status": 404,
+    "tag": "RecyclingRuleNotFound"
+  },
+  {
+    "code": "recycling_variants_invalid",
+    "status": 422,
+    "tag": "RecyclingVariantsInvalid"
   },
   {
     "code": "reduction_refused",
@@ -623,6 +648,11 @@
     "code": "too_many_queues",
     "status": 409,
     "tag": "TooManyQueues"
+  },
+  {
+    "code": "too_many_recycling_rules",
+    "status": 409,
+    "tag": "TooManyRecyclingRules"
   },
   {
     "code": "too_many_requests",

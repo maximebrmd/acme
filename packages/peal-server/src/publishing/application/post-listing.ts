@@ -6,6 +6,7 @@ import type {
   PostStatusName,
 } from "#publishing/domain/post-status.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
+import type { RecyclingRuleId } from "#publishing/domain/recycling-rule-id.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -41,6 +42,8 @@ export interface PostFilter {
   readonly outcome: Option.Option<PostOutcome>;
   /** Posts that queue placed. */
   readonly queueId: Option.Option<QueueId>;
+  /** Posts that recycling rule made. */
+  readonly recyclingId: Option.Option<RecyclingRuleId>;
   /**
    * True: posts Peal deleted from at least one channel's platform; false:
    * posts deleted from none.

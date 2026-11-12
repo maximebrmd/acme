@@ -1,4 +1,4 @@
-import { Effect, Match, Option } from "effect";
+import { DateTime, Effect, Match, Option } from "effect";
 import type { Schema } from "effect";
 import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
@@ -15,6 +15,7 @@ import type {
   DuplicateOnChannel,
   ImportUnreadable,
   MediaSourceFailure,
+  NotRecyclableReason,
   PostNotPromotable,
   WebhookUrlRefused,
 } from "peal-contract";
@@ -71,6 +72,20 @@ const urlRefusals: Readonly<Record<WebhookUrlRefused["reason"], string>> = {
   tooLong: "The address is longer than 2048 characters.",
   unknownHost:
     "The address's host name does not resolve: check its spelling, and that its DNS record exists.",
+};
+
+// Why a post cannot repeat, as the user puts it right.
+const notRecyclable: Readonly<Record<NotRecyclableReason, string>> = {
+  awaitingApproval:
+    "The post waits for an approval: it repeats once it is scheduled.",
+  cancelled:
+    "The post was cancelled: only a post on its way, or that went out, repeats.",
+  draft: "The post is a draft: schedule it first, then make it repeat.",
+  noChannels: "None of the post's channels is connected any more.",
+  occurrence:
+    "A recycling rule made this post: make its source repeat instead.",
+  repeating:
+    "Another rule repeats this post already: peal recycling list shows it, and peal recycling end stops it.",
 };
 
 // What breaks a platform's rule, as the author fixes it.
@@ -504,6 +519,7 @@ const reasonOf =
         ),
       PostNotFound: () => refused("The workspace has no such post."),
       PostNotPromotable: ({ reason }) => refused(notPromotable[reason]),
+      PostNotRecyclable: ({ reason }) => refused(notRecyclable[reason]),
       PostNotReviewable: ({ status }) =>
         refused(
           status === "cancelled"
@@ -525,6 +541,30 @@ const reasonOf =
       QueueNotFound: () =>
         refused(
           "The workspace has no such queue, or no default queue: peal queues list shows them, and peal queues update --default makes one the default."
+        ),
+      RecyclingEndsTooSoon: ({ firstDueAt }) =>
+        refused(
+          `The rule's --until or --count leaves no post to make: the next would be due at ${DateTime.formatIso(firstDueAt)}. Nothing was changed.`
+        ),
+      RecyclingRuleEnded: ({ reason }) =>
+        refused(
+          `The rule ended (${reason}) and changes no more: peal recycling resume sets it going again when it ended for the plan's room, a refused text, its channels or its queue's slots; start a new one otherwise.`
+        ),
+      RecyclingRuleNotFound: () =>
+        refused(
+          "The workspace has no such recycling rule: peal recycling list shows them."
+        ),
+      RecyclingVariantsInvalid: ({ variants }) =>
+        refused(
+          [
+            "Peal refused the variants, and saved nothing:",
+            ...variants.flatMap(({ variant, violations }) =>
+              violations.map(
+                (violation) =>
+                  `  variant ${String(variant)}: ${violationOf(violation)}`
+              )
+            ),
+          ].join("\n")
         ),
       ReplyInvalid: ({ length, maximum, reason, unit }) =>
         refused(
@@ -593,6 +633,10 @@ const reasonOf =
       TooManyQueues: ({ allowed }) =>
         refused(
           `The workspace has ${String(allowed)} queues, the most it may: delete one first, with peal queues delete.`
+        ),
+      TooManyRecyclingRules: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} recycling rules going, the most it may: end one first, with peal recycling end.`
         ),
       TooManyRequests: ({ limit, retryAfterSeconds, windowSeconds }) =>
         refused(

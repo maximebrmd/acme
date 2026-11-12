@@ -125,6 +125,7 @@ const reads = (workspaceId: string) => [
   `/api/workspaces/${workspaceId}/review/settings`,
   `/api/workspaces/${workspaceId}/connect-links`,
   `/api/workspaces/${workspaceId}/queues`,
+  `/api/workspaces/${workspaceId}/recycling`,
   // The numbers and their exports, and the comments under its posts.
   `/api/workspaces/${workspaceId}/analytics/dashboard?days=7&timeZone=Europe/Paris`,
   `/api/workspaces/${workspaceId}/analytics/export?kind=posts&days=7&timeZone=Europe/Paris`,

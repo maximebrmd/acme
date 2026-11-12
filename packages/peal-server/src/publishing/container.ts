@@ -380,6 +380,8 @@ export { ChannelSetsHandlers as ChannelSetsApiLive } from "#publishing/api/chann
 
 export { QueuesHandlers as QueuesApiLive } from "#publishing/api/queues.ts";
 
+export { RecyclingHandlers as RecyclingApiLive } from "#publishing/api/recycling.ts";
+
 export { ChannelDefaultsHandlers as ChannelDefaultsApiLive } from "#publishing/api/channel-defaults.ts";
 
 // The workspace's tags, behind the same middleware.
