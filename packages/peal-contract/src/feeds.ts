@@ -414,7 +414,7 @@ export class FeedsApi extends HttpApiGroup.make("feeds")
       success: FeedSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Changes a feed; what the request leaves out stays. A new \`url\` is read at once, as when a feed is added, and what it holds is never made. \`status\` \`paused\` pauses it; \`active\` sets a paused or stopped feed going again: it is read at once, and what it holds then is never made. Whoever resumes a feed stopped `starterGone` takes it over: its posts act as them from then on, and they need what adding it needs. ${reading} Needs post:create, and post:schedule too for a feed that is or becomes \`queue\`; those without post:schedule change only a feed they added, as they added it: in the web app, through the same application or with the same API key.`,
+        description: `Changes a feed; what the request leaves out stays. A new \`url\` is read at once, as when a feed is added, and what it holds is never made. \`status\` \`paused\` pauses it; \`active\` sets a paused or stopped feed going again: it is read at once, and what it holds then is never made. Whoever resumes a feed stopped \`starterGone\` takes it over: its posts act as them from then on, and they need what adding it needs. ${reading} Needs post:create, and post:schedule too for a feed that is or becomes \`queue\`; those without post:schedule change only a feed they added, as they added it: in the web app, through the same application or with the same API key.`,
         summary: "Update a feed",
       })
     ),
