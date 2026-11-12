@@ -70,6 +70,13 @@ layer(DatabaseTest)("the assistant endpoints", (it) => {
         {
           available: true,
           dailyLimit: 2,
+          images: {
+            aspects: ["square", "landscape", "portrait"],
+            available: false,
+            dailyLimit: 2,
+            maxPromptLength: 1000,
+            requestCost: 5,
+          },
           maxTextLength: 5000,
           remaining: 2,
           resetsAt: "1970-01-02T00:00:00.000Z",
@@ -91,6 +98,30 @@ layer(DatabaseTest)("the assistant endpoints", (it) => {
         1
       );
     }).pipe(Effect.provide(assistantTest({ dailyRequests: 2 })))
+  );
+
+  it.effect("write a post from a subject", () =>
+    Effect.gen(function* writes() {
+      const workspaceId = yield* freshWorkspace;
+      const client = yield* as(workspaceId);
+
+      yield* FakeModel.use((model) =>
+        model.replyWith(answer({ text: "Nos soldes de printemps commencent." }))
+      );
+
+      const suggestion = yield* client.assistant.suggest({
+        params: { workspaceId },
+        payload: {
+          action: { _tag: "write", language: "fr", platform: "bluesky" },
+          text: "Our spring sale starts today.",
+        },
+      });
+
+      assert.deepStrictEqual(suggestion, {
+        _tag: "text",
+        text: "Nos soldes de printemps commencent.",
+      });
+    }).pipe(Effect.provide(assistantTest()))
   );
 
   it.effect("answer a typed error past the quota", () =>

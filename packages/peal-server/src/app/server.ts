@@ -333,8 +333,10 @@ const EngagementContextLive = engagementOver(
 // As AppLive runs it, without workers: nothing is read or sent.
 const EngagementWithoutPlatformsLive = engagementOver(UnreadComments);
 
-// The assistant, whose daily quota is the workspace plan's.
+// The assistant, whose daily quota is the workspace plan's, and whose
+// images the media context keeps.
 const AssistantContextLive = AssistantLive.pipe(
+  Layer.provide(MediaContextLive),
   Layer.provideMerge(BillingContextsLive)
 );
 

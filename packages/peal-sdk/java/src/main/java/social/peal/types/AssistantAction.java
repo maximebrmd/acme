@@ -42,6 +42,10 @@ public final class AssistantAction {
         return new AssistantAction(new HashtagsValue(value));
     }
 
+    public static AssistantAction write(AssistantActionWrite value) {
+        return new AssistantAction(new WriteValue(value));
+    }
+
     public boolean isRewrite() {
         return value instanceof RewriteValue;
     }
@@ -56,6 +60,10 @@ public final class AssistantAction {
 
     public boolean isHashtags() {
         return value instanceof HashtagsValue;
+    }
+
+    public boolean isWrite() {
+        return value instanceof WriteValue;
     }
 
     public boolean _isUnknown() {
@@ -86,6 +94,13 @@ public final class AssistantAction {
     public Optional<AssistantActionHashtags> getHashtags() {
         if (isHashtags()) {
             return Optional.of(((HashtagsValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<AssistantActionWrite> getWrite() {
+        if (isWrite()) {
+            return Optional.of(((WriteValue) value).value);
         }
         return Optional.empty();
     }
@@ -127,6 +142,8 @@ public final class AssistantAction {
 
         T visitHashtags(AssistantActionHashtags hashtags);
 
+        T visitWrite(AssistantActionWrite write);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -135,7 +152,8 @@ public final class AssistantAction {
         @JsonSubTypes.Type(RewriteValue.class),
         @JsonSubTypes.Type(ShortenValue.class),
         @JsonSubTypes.Type(TranslateValue.class),
-        @JsonSubTypes.Type(HashtagsValue.class)
+        @JsonSubTypes.Type(HashtagsValue.class),
+        @JsonSubTypes.Type(WriteValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -288,6 +306,46 @@ public final class AssistantAction {
         }
 
         private boolean equalTo(HashtagsValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "AssistantAction{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("write")
+    @JsonIgnoreProperties("_tag")
+    private static final class WriteValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private AssistantActionWrite value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private WriteValue() {}
+
+        private WriteValue(AssistantActionWrite value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitWrite(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof WriteValue && equalTo((WriteValue) other);
+        }
+
+        private boolean equalTo(WriteValue other) {
             return value.equals(other.value);
         }
 

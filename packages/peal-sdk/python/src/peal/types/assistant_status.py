@@ -6,11 +6,13 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .assistant_images_status import AssistantImagesStatus
 
 
 class AssistantStatus(UniversalBaseModel):
     available: bool
     daily_limit: typing_extensions.Annotated[int, FieldMetadata(alias="dailyLimit"), pydantic.Field(alias="dailyLimit")]
+    images: AssistantImagesStatus
     max_text_length: typing_extensions.Annotated[
         int, FieldMetadata(alias="maxTextLength"), pydantic.Field(alias="maxTextLength")
     ]

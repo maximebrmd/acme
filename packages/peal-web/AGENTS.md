@@ -274,6 +274,25 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   only while `GET …/assistant` answers `available`; refresh that status after
   every request, which can change the requests left. Show each suggestion in
   a preview the person accepts or discards: never apply one unasked.
+- The assistant's first item, "Write a post…" (`AssistantWriteForm`),
+  takes a subject, a tone and, among the post's platforms with a short
+  limit (`writablePlatforms`), one to fit: offered with or without text,
+  its suggestion shows in the same preview.
+- `GenerateImage` (`components/media/generate-image.tsx`) makes an image
+  into the library, in `MediaPicker` (the new image is picked) and on the
+  media page, for members `canGenerateImages` allows (assistant:use and
+  media:upload) and only while the status answers `images.available`; it
+  shows the cost and the requests left (`imageAllowanceHint`) without
+  blocking: a refusal of the quota or the storage opens the upgrade dialog,
+  the free plan's and a trial's included. The library and the picker mark
+  `aiGenerated` files. Attaching one, to the post or a follow-up part,
+  presets the AI label of each channel whose platform has one
+  (`#posts/ai-labels.ts`, through `useAiLabels`): once a channel, only
+  while the post can be written, never over a label the member changed,
+  which they may turn off. A channel whose label is settled always sends
+  its options (`channelOptionsOf`'s `settled`), so a label turned off is
+  stored as off. `AiLabelsNotice` says where the label is on, where it is
+  not, and when one outlived the media.
 - A plan's refusal opens the one upgrade dialog (`UpgradeDialog`, its view
   `UpgradeView`): the limit with usage and plan, the smallest plan with
   room priced with VAT first (`offerOf`, from the contract's catalogue),

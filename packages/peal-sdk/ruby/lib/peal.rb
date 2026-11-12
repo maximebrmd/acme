@@ -101,6 +101,7 @@ require_relative "peal/notification_preferences/types/notification_preferences_c
 require_relative "peal/assistant/client"
 require_relative "peal/assistant/types/status_assistant_request"
 require_relative "peal/assistant/types/suggestion_request"
+require_relative "peal/assistant/types/image_request"
 require_relative "peal/members/client"
 require_relative "peal/members/types/list_members_request"
 require_relative "peal/invitations/client"
@@ -445,10 +446,13 @@ module Peal
     autoload :AssistantActionShorten, ::File.join(__dir__, "peal/types/assistant_action_shorten")
     autoload :TranslationLanguage, ::File.join(__dir__, "peal/types/translation_language")
     autoload :AssistantActionTranslate, ::File.join(__dir__, "peal/types/assistant_action_translate")
+    autoload :AssistantActionWrite, ::File.join(__dir__, "peal/types/assistant_action_write")
     autoload :AssistantAction, ::File.join(__dir__, "peal/types/assistant_action")
     autoload :AssistantFailedEncodedTag, ::File.join(__dir__, "peal/types/assistant_failed_encoded_tag")
     autoload :AssistantFailedEncodedReason, ::File.join(__dir__, "peal/types/assistant_failed_encoded_reason")
     autoload :AssistantFailedEncoded, ::File.join(__dir__, "peal/types/assistant_failed_encoded")
+    autoload :ImageAspect, ::File.join(__dir__, "peal/types/image_aspect")
+    autoload :AssistantImagesStatus, ::File.join(__dir__, "peal/types/assistant_images_status")
     autoload :AssistantInputRejectedEncodedTag, ::File.join(__dir__, "peal/types/assistant_input_rejected_encoded_tag")
     autoload :AssistantInputRejectedEncodedReason, ::File.join(__dir__, "peal/types/assistant_input_rejected_encoded_reason")
     autoload :AssistantInputRejectedEncoded, ::File.join(__dir__, "peal/types/assistant_input_rejected_encoded")

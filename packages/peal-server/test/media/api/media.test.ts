@@ -212,6 +212,8 @@ layer(UseCasesTest)("the media endpoints", (it) => {
       assert.deepStrictEqual(ready.status, { _tag: "ready" });
       assert.deepStrictEqual(ready.dimensions, { height: 3, width: 4 });
       assert.isString(ready.url);
+      // An upload is never marked as made by AI.
+      assert.isFalse(ready.aiGenerated);
 
       assert.deepStrictEqual(
         (yield* client.media.get({ params })).dimensions,

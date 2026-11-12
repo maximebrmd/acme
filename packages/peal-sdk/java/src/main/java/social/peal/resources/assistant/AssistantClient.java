@@ -5,9 +5,11 @@ package social.peal.resources.assistant;
 
 import social.peal.core.ClientOptions;
 import social.peal.core.RequestOptions;
+import social.peal.resources.assistant.requests.ImageRequest;
 import social.peal.resources.assistant.requests.StatusAssistantRequest;
 import social.peal.resources.assistant.requests.SuggestionRequest;
 import social.peal.types.AssistantStatus;
+import social.peal.types.Media;
 import social.peal.types.Suggestion;
 
 public class AssistantClient {
@@ -28,44 +30,60 @@ public class AssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public AssistantStatus status(String workspaceId) {
         return this.rawClient.status(workspaceId).body();
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public AssistantStatus status(String workspaceId, RequestOptions requestOptions) {
         return this.rawClient.status(workspaceId, requestOptions).body();
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public AssistantStatus status(String workspaceId, StatusAssistantRequest request) {
         return this.rawClient.status(workspaceId, request).body();
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public AssistantStatus status(String workspaceId, StatusAssistantRequest request, RequestOptions requestOptions) {
         return this.rawClient.status(workspaceId, request, requestOptions).body();
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      */
     public Suggestion suggest(String workspaceId, SuggestionRequest request) {
         return this.rawClient.suggest(workspaceId, request).body();
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      */
     public Suggestion suggest(String workspaceId, SuggestionRequest request, RequestOptions requestOptions) {
         return this.rawClient.suggest(workspaceId, request, requestOptions).body();
+    }
+
+    /**
+     * Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the server has an image model.
+     */
+    public Media generateImage(String workspaceId, ImageRequest request) {
+        return this.rawClient.generateImage(workspaceId, request).body();
+    }
+
+    /**
+     * Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the server has an image model.
+     */
+    public Media generateImage(String workspaceId, ImageRequest request, RequestOptions requestOptions) {
+        return this.rawClient
+                .generateImage(workspaceId, request, requestOptions)
+                .body();
     }
 }

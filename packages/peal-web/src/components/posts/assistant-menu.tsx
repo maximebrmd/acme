@@ -35,11 +35,13 @@ import {
   acceptedText,
   languageLabel,
   shortenablePlatforms,
+  writablePlatforms,
 } from "#assistant/suggestion.ts";
 import type { AssistantFailure } from "#assistant/suggestion.ts";
 import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import { AssistantPreview } from "#components/posts/assistant-preview.tsx";
 import type { PreviewState } from "#components/posts/assistant-preview.tsx";
+import { AssistantWriteForm } from "#components/posts/assistant-write-form.tsx";
 import { failureOf } from "#posts/outcome.ts";
 
 interface AssistantMenuProps {
@@ -187,6 +189,8 @@ const Controls = ({
   // Whatever a request ends with, the count of requests left may change.
   const refreshStatus = useAtomRefresh(assistantStatus(workspaceId));
   const [asked, setAsked] = useState<Asked | null>(null);
+  // Whether the person is writing the subject of a post to write.
+  const [composing, setComposing] = useState(false);
 
   // Each request has a number: an answer that comes after the person closed
   // the dialog, or asked again, is dropped.
@@ -233,6 +237,7 @@ const Controls = ({
   const close = () => {
     latest.current += 1;
     setAsked(null);
+    setComposing(false);
   };
 
   const accept = (suggestion: Suggestion, from: string) => {
@@ -266,16 +271,29 @@ const Controls = ({
             <DropdownMenuLabel>
               {t("remaining", { remaining: status.remaining })}
             </DropdownMenuLabel>
-            {blocked === "needsText" ? (
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={blocked === "noRequestsLeft"}
+            onClick={() => {
+              setComposing(true);
+            }}
+          >
+            {t("writePost")}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {blocked === "needsText" ? (
+            <DropdownMenuGroup>
               <DropdownMenuLabel>{t("needsText")}</DropdownMenuLabel>
-            ) : null}
-            {blocked === "textTooLong" ? (
+            </DropdownMenuGroup>
+          ) : null}
+          {blocked === "textTooLong" ? (
+            <DropdownMenuGroup>
               <DropdownMenuLabel>
                 {t("textTooLong", { maxLength: status.maxTextLength })}
               </DropdownMenuLabel>
-            ) : null}
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
+            </DropdownMenuGroup>
+          ) : null}
           {blocked === null ? (
             <Actions
               locale={locale}
@@ -289,7 +307,7 @@ const Controls = ({
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog
-        open={asked !== null}
+        open={asked !== null || composing}
         onOpenChange={(open) => {
           if (!open) {
             close();
@@ -297,6 +315,17 @@ const Controls = ({
         }}
       >
         <DialogContent closeLabel={t("close")}>
+          {asked === null && composing ? (
+            <AssistantWriteForm
+              maxLength={status.maxTextLength}
+              platforms={writablePlatforms(platforms)}
+              onCancel={close}
+              onWrite={(action, subject) => {
+                setComposing(false);
+                void ask(action, subject);
+              }}
+            />
+          ) : null}
           {asked === null ? null : (
             <AssistantPreview
               action={asked.action}

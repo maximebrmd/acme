@@ -7,6 +7,8 @@ pub struct AssistantStatus {
     #[serde(rename = "dailyLimit")]
     #[serde(default)]
     pub daily_limit: i64,
+    #[serde(default)]
+    pub images: AssistantImagesStatus,
     #[serde(rename = "maxTextLength")]
     #[serde(default)]
     pub max_text_length: i64,
@@ -28,6 +30,7 @@ impl AssistantStatus {
 pub struct AssistantStatusBuilder {
     available: Option<bool>,
     daily_limit: Option<i64>,
+    images: Option<AssistantImagesStatus>,
     max_text_length: Option<i64>,
     remaining: Option<i64>,
     resets_at: Option<String>,
@@ -41,6 +44,11 @@ impl AssistantStatusBuilder {
 
     pub fn daily_limit(mut self, value: i64) -> Self {
         self.daily_limit = Some(value);
+        self
+    }
+
+    pub fn images(mut self, value: AssistantImagesStatus) -> Self {
+        self.images = Some(value);
         self
     }
 
@@ -63,6 +71,7 @@ impl AssistantStatusBuilder {
     /// This method will fail if any of the following fields are not set:
     /// - [`available`](AssistantStatusBuilder::available)
     /// - [`daily_limit`](AssistantStatusBuilder::daily_limit)
+    /// - [`images`](AssistantStatusBuilder::images)
     /// - [`max_text_length`](AssistantStatusBuilder::max_text_length)
     /// - [`remaining`](AssistantStatusBuilder::remaining)
     /// - [`resets_at`](AssistantStatusBuilder::resets_at)
@@ -74,6 +83,9 @@ impl AssistantStatusBuilder {
             daily_limit: self
                 .daily_limit
                 .ok_or_else(|| BuildError::missing_field("daily_limit"))?,
+            images: self
+                .images
+                .ok_or_else(|| BuildError::missing_field("images"))?,
             max_text_length: self
                 .max_text_length
                 .ok_or_else(|| BuildError::missing_field("max_text_length"))?,

@@ -5,6 +5,8 @@ require_relative "../../peal"
 module Peal
   module Types
     class Media < Internal::Types::Model
+      field :ai_generated, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "aiGenerated"
+
       field :alt_text, -> { String }, optional: false, nullable: true, api_name: "altText"
 
       field :byte_size, -> { Integer }, optional: false, nullable: false, api_name: "byteSize"

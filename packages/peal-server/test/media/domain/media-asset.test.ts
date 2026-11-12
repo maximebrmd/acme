@@ -359,3 +359,37 @@ describe(altTextOf, () => {
     );
   });
 });
+
+describe("the mark of a file made by AI", () => {
+  it("is off unless the file was generated", () => {
+    expect(pending.aiGenerated).toBeFalsy();
+  });
+
+  it("stays with the asset through every change", () => {
+    const generated = startUpload(
+      {
+        accepted: png,
+        aiGenerated: true,
+        altText: Option.none(),
+        id,
+        upload: { _tag: "single" },
+        workspaceId,
+      },
+      createdAt
+    );
+
+    const ready = Result.getOrThrow(
+      markReady(
+        Result.getOrThrow(markUploaded(generated, now)),
+        MediaMetadata.unknown,
+        now
+      )
+    );
+
+    expect([
+      generated.aiGenerated,
+      ready.aiGenerated,
+      describeAsset(ready, Option.none(), now).aiGenerated,
+    ]).toStrictEqual([true, true, true]);
+  });
+});
