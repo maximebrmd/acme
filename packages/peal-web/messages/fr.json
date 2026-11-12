@@ -573,6 +573,8 @@
     "description": "Rédigez une fois, planifiez partout.",
     "submit": "Créer mon compte",
     "submitting": "Création du compte…",
+    "acceptTerms": "En créant un compte, vous acceptez les conditions d’utilisation.",
+    "privacy": "Le traitement de vos données : la politique de confidentialité.",
     "haveAccount": "Vous avez déjà un compte ?",
     "signIn": "Se connecter",
     "checkInbox": "Consultez votre boîte de réception",

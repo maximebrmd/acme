@@ -265,8 +265,10 @@ services:
       PEAL_API_URL: http://server:3000
       # Named in the web app's error reports.
       PEAL_RELEASE: ${PEAL_VERSION:-local}
-      # The terms of service the billing page links to before an order.
+      # The terms of service the sign-up form and the billing page link to.
       PEAL_TERMS_URL:
+      # The privacy policy the sign-up form links to.
+      PEAL_PRIVACY_URL:
       # Where to write for more than the largest plan allows.
       PEAL_CONTACT_URL:
       # Longer than the edge keeps idle connections (90 s for the tunnel, 2
