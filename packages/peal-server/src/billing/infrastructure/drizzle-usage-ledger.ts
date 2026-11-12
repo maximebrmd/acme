@@ -122,7 +122,9 @@ export const DrizzleUsageLedgerLive = Layer.effect(
             Effect.withSpan("UsageLedger.ofWorkspace")
           ),
       // One read for the whole list (`workspace_id = any(…)`), on the
-      // primary key, which starts with the workspace and the day.
+      // primary key, which starts with the workspace and the day; in no
+      // order, as the report tallies them by day (a page of 101 workspaces
+      // over 92 days is some 55,000 rows to sort otherwise).
       ofWorkspaces: (workspaceIds, { from, to }) =>
         workspaceIds.length === 0
           ? Effect.succeed([])
@@ -139,7 +141,6 @@ export const DrizzleUsageLedgerLive = Layer.effect(
                   )
                 )
               )
-              .orderBy(asc(usageDays.workspaceId), ...ordered)
               .pipe(
                 Effect.mapError(failed),
                 Effect.flatMap(Effect.forEach(toEntry)),

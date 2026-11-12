@@ -39,8 +39,8 @@ export class UsageLedger extends Context.Service<
       period: UsagePeriod
     ) => Effect.Effect<readonly UsageRecord[], DatabaseError>;
     /**
-     * The records of these workspaces over the period's days, in one read:
-     * nothing is asked for none.
+     * The records of these workspaces over the period's days, in one read,
+     * in no order: nothing is asked for none.
      */
     readonly ofWorkspaces: (
       workspaceIds: readonly WorkspaceId[],
