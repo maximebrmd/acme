@@ -139,9 +139,9 @@ export type InboxCommentState = typeof InboxCommentStateSchema.Type;
  * comment for a limited time without reading it again, and no read found
  * it in that time. A later read that finds it shows it again.
  */
-export const InboxCommentForgottenSchema = Schema.Literals([
-  "expired",
-]).annotate({ identifier: "InboxCommentForgotten" });
+export const InboxCommentForgottenSchema = Schema.Literal("expired").annotate({
+  identifier: "InboxCommentForgotten",
+});
 
 export type InboxCommentForgotten = typeof InboxCommentForgottenSchema.Type;
 
