@@ -127,6 +127,14 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM auth.session WHERE active_organization_id = ${id}`,
   "auth.subscription": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.subscription WHERE reference_id = ${id}`,
+  // Its billing account, with the workspace it bills, and an offer to
+  // hand it to another payer.
+  "billing.account_transfers": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.account_transfers WHERE workspace_id = ${id}`,
+  "billing.account_workspaces": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.account_workspaces WHERE workspace_id = ${id}`,
+  "billing.accounts": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.accounts WHERE holder_workspace_id = ${id}`,
   // Its contract numbers find nothing more.
   "billing.contract_references": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.contract_references WHERE workspace_id = ${id}`,
@@ -298,6 +306,12 @@ const userRows = {
   // the second steps of sign-ins in progress hold their user's id.
   "auth.verification": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.verification WHERE value = ${id}`,
+  // The billing accounts they paid for, and the offers they made or were
+  // made: the workspaces left go to their oldest owner left.
+  "billing.account_transfers": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.account_transfers WHERE to_user_id = ${id} OR offered_by = ${id}`,
+  "billing.accounts": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.accounts WHERE payer_user_id = ${id}`,
   // Orders, trials, withdrawals and requests to cancel or withdraw stay
   // with their workspaces, without the user, nor, for requests, the name
   // and the address they wrote.
@@ -606,6 +620,12 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO billing.contract_references (reference, stripe_subscription_id, workspace_id, issued_at)
     VALUES (${randomUUID()}, ${`sub_${randomUUID()}`}, ${workspaceId}, now())`;
 
+  // Its billing account, made with it, and an offer of it to the person
+  // (made up: an offer goes to another owner).
+  yield* sql`INSERT INTO billing.account_transfers (id, workspace_id, from_account_id, to_user_id, offered_by, offered_at, expires_at)
+    SELECT ${uuid7()}, ${workspaceId}, account_id, ${person.id}, ${person.id}, now(), now() + interval '7 days'
+    FROM billing.account_workspaces WHERE workspace_id = ${workspaceId}`;
+
   yield* sql`INSERT INTO media.media_assets (id, workspace_id, storage_key, content_type, byte_size, status, created_at, updated_at)
     VALUES (${randomUUID()}, ${workspaceId}, ${`media/${workspaceId}/${randomUUID()}.png`}, 'image/png', 128, 'pending', now(), now())`;
 
@@ -754,6 +774,11 @@ const fillPerson = Effect.fn("fillPerson")(function* fillPerson(
     headers: { cookie: person.cookies },
     method: "PATCH",
   });
+
+  // A billing account they pay for, as a plan of its own keeps one
+  // workspace alone.
+  yield* sql`INSERT INTO billing.accounts (id, holder_workspace_id, payer_user_id, standalone, created_at)
+    VALUES (${uuid7()}, ${randomUUID()}, ${person.id}, true, now())`;
 
   yield* sql`INSERT INTO auth.device_code (device_code, user_code, user_id, expires_at, status)
     VALUES (${randomUUID()}, ${randomUUID().slice(0, 8)}, ${person.id}, now() + interval '10 minutes', 'approved')`;

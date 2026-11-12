@@ -10,6 +10,7 @@ import {
 } from "effect";
 import type { LogLevel } from "effect";
 
+import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
@@ -58,6 +59,8 @@ const drainTimeout = "10 seconds";
 const decodeUserId = Schema.decodeUnknownEffect(UserIdSchema);
 
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
+
+const decodeWorkspaceIdEffect = Schema.decodeUnknownEffect(WorkspaceIdSchema);
 
 const decodeUser = Schema.decodeUnknownOption(UserIdSchema);
 
@@ -274,6 +277,7 @@ export const BetterAuthLive = Layer.effect(
     const database = yield* makeAuthDatabase(settings.databasePoolMax);
     const emails = yield* SendAuthEmail;
     const entitlements = yield* WorkspaceEntitlements;
+    const accounts = yield* BillingAccounts;
     const upgrades = yield* UpgradePaths;
     const subscriptions = yield* RecordSubscription;
     const checkouts = yield* CheckoutOrders;
@@ -320,23 +324,6 @@ export const BetterAuthLive = Layer.effect(
                 }),
             })
           )
-        ),
-      // Read while a workspace is created. A database failure refuses it.
-      // A workspace in its trial counts as free: it is, once the trial ends.
-      freeWorkspace: async (workspaceId) =>
-        await runPromise(
-          Effect.gen(function* freeWorkspace() {
-            const { plan, subscription } = yield* entitlements.of(workspaceId);
-
-            const free =
-              Option.exists(plan, (current) => current === "free") ||
-              Option.exists(
-                subscription,
-                ({ status }) => status === "trialing"
-              );
-
-            return free ? upgradeOf(yield* upgrades.paid(workspaceId)) : null;
-          })
         ),
       // Awaited: the route runs only once the request is admitted and
       // recorded. A database failure refuses it.
@@ -403,6 +390,24 @@ export const BetterAuthLive = Layer.effect(
       // Awaited, so the log holds the change once its answer is read.
       workspaceChange: async (change) => {
         await runPromise(keptChange(activity, directory)(change));
+      },
+      // Awaited, so the workspace answered is in its creator's billing
+      // account. A failure is logged: the account is given the next time
+      // the workspace is read.
+      workspaceCreated: async (workspaceId) => {
+        await runPromise(
+          decodeWorkspaceIdEffect(workspaceId).pipe(
+            Effect.flatMap((id) => accounts.of(id)),
+            Effect.asVoid,
+            Effect.catchCause((cause) =>
+              Effect.logWarning(
+                "Giving a new workspace its billing account failed",
+                cause
+              )
+            ),
+            Effect.withSpan("BetterAuth.workspaceCreated")
+          )
+        );
       },
     };
 

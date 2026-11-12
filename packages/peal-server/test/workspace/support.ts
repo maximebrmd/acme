@@ -228,7 +228,6 @@ export const authWithoutDatabase = () =>
     hooks: {
       checkout: async () =>
         await Promise.resolve({ _tag: "start", trialDays: null } as const),
-      freeWorkspace: async () => await Promise.resolve(null),
       impersonatedRequest: async () => await Promise.resolve(true),
       invitation: ignore,
       log: ignore,
@@ -249,6 +248,7 @@ export const authWithoutDatabase = () =>
       twoStepChanged: ignore,
       verifyEmail: ignore,
       workspaceChange: nothing,
+      workspaceCreated: nothing,
     },
     settings: {
       captcha: Option.none(),

@@ -60,12 +60,6 @@ export interface Upgrade {
 export interface BillingHooks {
   /** Whether a checkout may start, from the order the member placed. */
   readonly checkout: (start: CheckoutStart) => Promise<CheckoutAnswer>;
-  /**
-   * The way out for a workspace on the free plan of a server that bills,
-   * or in its trial, which ends on it: an account owns one such workspace
-   * at most. Null for a workspace that is paid for, or not limited.
-   */
-  readonly freeWorkspace: (workspaceId: WorkspaceId) => Promise<Upgrade | null>;
   /** The workspace's member allowance, from its plan. */
   readonly memberAllowance: (workspaceId: WorkspaceId) => Promise<Allowance>;
   /** The way out for a workspace whose members have no room for `needed`. */
@@ -78,6 +72,12 @@ export interface BillingHooks {
    * makes the webhook answer an error, so Stripe sends the event again.
    */
   readonly subscriptionChanged: (event: SubscriptionEvent) => Promise<void>;
+  /**
+   * Gives a workspace just made its billing account: its creator's, made
+   * then if they have none. Never throws: the account is given the next
+   * time the workspace is read otherwise.
+   */
+  readonly workspaceCreated: (workspaceId: string) => Promise<void>;
 }
 
 /**
@@ -911,68 +911,6 @@ export const checkMemberRoom = async (
       allowed,
       limit,
       used,
-    });
-  }
-};
-
-const FreeWorkspaceError = {
-  code: "FREE_WORKSPACE_LIMIT_REACHED",
-  message:
-    "The account already owns a workspace on the free plan: subscribe it, or use that one",
-} as const;
-
-const OwnedRowSchema = Schema.Struct({ organizationId: Schema.String });
-
-const decodeOwnedRow = Schema.decodeUnknownOption(OwnedRowSchema);
-
-/**
- * Refuses a new workspace to an account that already owns one on the free
- * plan of a server that bills: one free workspace per account, as each
- * gets the free plan's allowances. A workspace that falls back to the free
- * plan stays; paid ones do not count, and trialing ones do, as the trial
- * puts them back on the free plan when it ends. The refusal names the
- * workspace and the plan that, ordered for it, makes room for another.
- */
-export const checkFreeWorkspace = async (
-  hooks: BillingHooks,
-  userId: string
-): Promise<void> => {
-  const { adapter } = getCurrentAuthEndpointContext().context;
-
-  const owned: unknown[] = await adapter.findMany({
-    model: "member",
-    select: ["organizationId"],
-    where: [
-      { field: "userId", value: userId },
-      { field: "role", value: "owner" },
-    ],
-  });
-
-  const workspaces = owned.flatMap((row) =>
-    Option.toArray(
-      decodeOwnedRow(row).pipe(
-        Option.flatMap(({ organizationId }) =>
-          decodeWorkspaceId(organizationId)
-        )
-      )
-    )
-  );
-
-  const free = await Promise.all(
-    workspaces.map(async (workspaceId) => ({
-      upgrade: await hooks.freeWorkspace(workspaceId),
-      workspaceId,
-    }))
-  );
-
-  const found = free.find(({ upgrade }) => upgrade !== null);
-
-  if (found !== undefined) {
-    // Names the workspace to pay for, and the plan to order for it.
-    throw new APIError("PAYMENT_REQUIRED", {
-      ...FreeWorkspaceError,
-      ...found.upgrade,
-      workspaceId: found.workspaceId,
     });
   }
 };

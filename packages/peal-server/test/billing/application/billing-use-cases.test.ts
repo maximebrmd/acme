@@ -22,6 +22,7 @@ import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import {
+  AloneInAccountsTest,
   NoAddressesTest,
   NoContractsTest,
   NoTrialsTest,
@@ -109,7 +110,8 @@ const billingWith = (enabled: boolean) =>
         NoTrialsTest,
         StripeUncalledTest,
         NoAddressesTest,
-        PlainPseudonymsTest
+        PlainPseudonymsTest,
+        AloneInAccountsTest
       )
     ),
     Layer.provide(Layer.mergeAll(TransactionsTest, WorkspacesTest)),
@@ -369,7 +371,8 @@ const recordsWith = (enabled: boolean) =>
         SubscriptionsInMemory,
         NoTrialsTest,
         StripeUncalledTest,
-        NoContractsTest
+        NoContractsTest,
+        AloneInAccountsTest
       )
     ),
     Layer.provide(Layer.mergeAll(MeteredPostsInMemory, UsageInMemory)),
@@ -732,6 +735,7 @@ const UnreadTest = Layer.mergeAll(
       MeteredPostsInMemory,
       UsageInMemory,
       NoContractsTest,
+      AloneInAccountsTest,
       Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
       Layer.succeed(
         Checkouts,

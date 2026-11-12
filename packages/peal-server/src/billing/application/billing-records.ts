@@ -14,6 +14,7 @@ import type {
 } from "#shared/application/personal-data.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
+import { BillingAccounts } from "./billing-accounts.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Checkouts } from "./ports/checkouts.ts";
 import { ContractRecords } from "./ports/contract-records.ts";
@@ -172,6 +173,7 @@ export class BillingRecords extends Context.Service<
       const contracts = yield* ContractRecords;
       const requests = yield* ContractRequests;
       const references = yield* ContractReferences;
+      const accounts = yield* BillingAccounts;
 
       const exportUser = Effect.fn("BillingRecords.exportUser")(
         function* exportUser(userId: UserId) {
@@ -347,6 +349,9 @@ export class BillingRecords extends Context.Service<
           // numbers find nothing more.
           yield* requests.eraseWorkspace(workspaceId);
           yield* references.eraseWorkspace(workspaceId);
+          // Its billing account: another of its workspaces bills from now,
+          // or the account goes with its last workspace.
+          yield* accounts.eraseWorkspace(workspaceId);
         }
       );
 
@@ -356,9 +361,12 @@ export class BillingRecords extends Context.Service<
         exportUser,
         exportWorkspace,
         forgetUser: (userId, pseudonym) =>
-          subscriptions
-            .forgetUser(userId, pseudonym)
-            .pipe(Effect.andThen(requests.forgetUser(userId))),
+          subscriptions.forgetUser(userId, pseudonym).pipe(
+            Effect.andThen(requests.forgetUser(userId)),
+            // The accounts they paid for: the workspaces left go to their
+            // oldest owner left.
+            Effect.andThen(accounts.forgetPayer(userId))
+          ),
         settleWorkspace,
       });
     })

@@ -139,6 +139,7 @@ import {
   OverviewApiLive,
   OverviewLive,
   PartnerOwnershipLive,
+  WorkspaceOwnersLive,
   PartnerTenantsLive,
   StripeCheckoutsLive,
   WorkspaceApiLive,
@@ -217,7 +218,13 @@ export const RoutesLive = Layer.mergeAll(
 // Billing, which reads the checkouts the workspace context's Stripe plugin
 // keeps, and whose plan a partner's workspace is on.
 const BillingContextsLive = BillingLive.pipe(
-  Layer.provide(Layer.mergeAll(StripeCheckoutsLive, PartnerOwnershipLive))
+  Layer.provide(
+    Layer.mergeAll(
+      StripeCheckoutsLive,
+      PartnerOwnershipLive,
+      WorkspaceOwnersLive
+    )
+  )
 );
 
 // The request counts and the workspaces' activity logs, which name the
@@ -436,7 +443,7 @@ const LegalRequestsContextLive = LegalRequestsLive.pipe(
 // notices; and a partner's usage per customer, from the workspaces the
 // workspace context says it holds.
 const BillingContextLive = BillingOverviewLive.pipe(
-  Layer.provide(PartnerTenantsLive),
+  Layer.provide(Layer.merge(PartnerTenantsLive, WorkspaceOwnersLive)),
   Layer.provide(
     Layer.mergeAll(
       ChannelsWithNoticesLive,

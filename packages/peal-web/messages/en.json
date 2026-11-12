@@ -2191,11 +2191,9 @@
     }
   },
   "Upgrade": {
-    "title": "{limit, select, channels {This plan has no room for another channel} members {This plan has no room for another member} scheduledPosts {This plan has no room for another post that month} assistantRequests {The writing assistant’s requests for today are used} mediaStorage {This plan has no room for this file} freeWorkspace {One free workspace per account} other {The plan’s limit is reached}}",
+    "title": "{limit, select, channels {This plan has no room for another channel} members {This plan has no room for another member} scheduledPosts {This plan has no room for another post that month} assistantRequests {The writing assistant’s requests for today are used} mediaStorage {This plan has no room for this file} other {The plan’s limit is reached}}",
     "reached": "{limit, select, channels {The {plan} plan of {workspace} allows {allowed, plural, one {# channel} other {# channels}}, and it has {used, number}.} members {The {plan} plan of {workspace} allows {allowed, plural, one {# member} other {# members}}, pending invitations included, and it has {used, number}.} scheduledPosts {The {plan} plan of {workspace} allows {allowed, plural, one {# post} other {# posts}} going out in a month, and that month has {used, number}.} assistantRequests {The {plan} plan of {workspace} allows {allowed, plural, one {# request} other {# requests}} to the writing assistant a day, and today’s are used. They start again at midnight UTC.} other {The {plan} plan of {workspace} allows no more of this.}}",
     "reachedStorage": "The {plan} plan of {workspace} allows {allowed} of media, and it stores {used}, uploads in progress included.",
-    "freeWorkspace": "Your account already owns a workspace on the free plan: {workspace}. Each account has one; another needs that one on a paid plan.",
-    "freeWorkspaceTrial": "Your account already owns a workspace in its trial, which ends on the free plan: {workspace}. Each account has one free workspace; another needs that one on a paid plan.",
     "offer": "The {plan} plan has room:",
     "trial": "{workspace} is in its trial: ordering starts the paid plan, and ends the trial once it is paid for. Nothing is charged for the trial.",
     "comeBack": "Payment is by card, on Stripe’s checkout. You then come back to this page; the plan changes as soon as Stripe confirms the payment, usually within seconds.",

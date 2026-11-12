@@ -1,5 +1,6 @@
 import { Effect, Layer } from "effect";
 
+import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
 import { CancelSubscription } from "#billing/application/cancel-subscription.ts";
@@ -22,6 +23,7 @@ import { UsageReports } from "#billing/application/usage-reports.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
+import { AccountPlanHoldersLive } from "#billing/infrastructure/account-plan-holders.ts";
 import { AuditedRequestReviewLive } from "#billing/infrastructure/audited-request-review.ts";
 import { billingReminders } from "#billing/infrastructure/billing-reminders-cron.ts";
 import { ConfiguredBillingModeLive } from "#billing/infrastructure/configured-billing-mode.ts";
@@ -31,6 +33,7 @@ import { ContextWorkspaceHoldingsLive } from "#billing/infrastructure/context-wo
 import { ContextWorkspaceUsageLive } from "#billing/infrastructure/context-workspace-usage.ts";
 import { contractRequests } from "#billing/infrastructure/contract-requests-cron.ts";
 import { contractRetention } from "#billing/infrastructure/contract-retention-cron.ts";
+import { DrizzleBillingAccountStoreLive } from "#billing/infrastructure/drizzle-billing-account-store.ts";
 import { DrizzleContractRecordsLive } from "#billing/infrastructure/drizzle-contract-records.ts";
 import { DrizzleContractRequestsLive } from "#billing/infrastructure/drizzle-contract-requests.ts";
 import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
@@ -42,11 +45,11 @@ import { DrizzleWithdrawalsLive } from "#billing/infrastructure/drizzle-withdraw
 import { EmailedRequestMailLive } from "#billing/infrastructure/emailed-request-mail.ts";
 import { KeyedContractReferencesLive } from "#billing/infrastructure/keyed-contract-references.ts";
 import { NotifiedBillingNoticesLive } from "#billing/infrastructure/notified-billing-notices.ts";
-import { PartnerPlanHoldersLive } from "#billing/infrastructure/partner-plan-holders.ts";
 import { PlanUpgradePathsLive } from "#billing/infrastructure/plan-upgrade-paths.ts";
 import { RandomRequestTokensLive } from "#billing/infrastructure/random-request-tokens.ts";
 import { StripeContractsLive } from "#billing/infrastructure/stripe-contracts-live.ts";
 import { usageSnapshot } from "#billing/infrastructure/usage-snapshot-cron.ts";
+import { WorkspaceAccountPayersLive } from "#billing/infrastructure/workspace-account-payers.ts";
 import { WorkspaceContractHoldersLive } from "#billing/infrastructure/workspace-contract-holders.ts";
 import { WorkspacePartnerTenancyLive } from "#billing/infrastructure/workspace-partner-tenancy.ts";
 import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
@@ -62,6 +65,21 @@ const RecordsLive = Layer.mergeAll(
   DrizzleUsageLedgerLive,
   ConfiguredBillingModeLive
 );
+
+// Who pays for each workspace: its billing account, which the workspace
+// context's PartnerOwnership and WorkspaceOwners decide.
+const AccountsLive = BillingAccounts.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      DrizzleBillingAccountStoreLive,
+      WorkspaceAccountPayersLive,
+      DrizzleSubscriptionsLive
+    )
+  )
+);
+
+// Whose plan each workspace is on: its billing account's billing workspace.
+const HoldersLive = AccountPlanHoldersLive.pipe(Layer.provide(AccountsLive));
 
 /**
  * The billing context's use cases for the other contexts: what each
@@ -83,6 +101,7 @@ const RecordsLive = Layer.mergeAll(
  * brings both.
  */
 export const BillingLive = Layer.mergeAll(
+  AccountsLive,
   WorkspaceEntitlements.layerShared,
   RecordSubscription.layer,
   CheckoutOrders.layer,
@@ -98,7 +117,8 @@ export const BillingLive = Layer.mergeAll(
       StripeContractsLive,
       KeyedPseudonymsLive,
       UsageAtCheckout.layer,
-      PartnerPlanHoldersLive
+      HoldersLive,
+      AccountsLive
     )
   )
 );
@@ -146,7 +166,8 @@ export const BillingOverviewLive = Layer.mergeAll(
     Layer.mergeAll(
       RecordsLive,
       ContextUsageStatesLive,
-      PartnerPlanHoldersLive,
+      HoldersLive,
+      AccountsLive,
       DrizzleWithdrawalsLive,
       StripeContractsLive,
       NotifiedBillingNoticesLive,

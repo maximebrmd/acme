@@ -18,7 +18,7 @@ import { platformRegistrations } from "#channels/infrastructure/platforms/platfo
 import type { PlatformRegistration } from "#channels/infrastructure/platforms/platform-addresses.ts";
 import { Notify } from "#notifications/application/notify.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
-import { UnmeteredTest } from "#test/billing/support.ts";
+import { AloneInAccountsTest, UnmeteredTest } from "#test/billing/support.ts";
 import {
   actorIn,
   DatabaseTest,
@@ -43,6 +43,7 @@ const Neighbours = Layer.mergeAll(
     WebhookEvents.of({ publish: () => Effect.void })
   ),
   UnmeteredTest,
+  AloneInAccountsTest,
   PartnerOwnership.layerNone,
   ConnectLinkJournal.none,
   DrizzleAnalyticsRecords.pipe(Layer.provide(DatabaseTest))

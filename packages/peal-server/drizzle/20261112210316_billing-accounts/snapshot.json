@@ -1,0 +1,832 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "0d7f427d-65a6-4bc1-810a-8406d21e8490",
+  "prevIds": [
+    "14284c97-14fd-4225-91f9-d64018ce11df"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "account_transfers"
+      ],
+      "writes": [
+        "s|tbl|billing.account_transfers",
+        "n|tbl|billing.account_transfers",
+        "e|tbl|billing.account_transfers",
+        "n|rel|billing.account_transfers",
+        "n|type|billing.account_transfers",
+        "n|rel|billing.account_transfers_pkey",
+        "n|rel|billing.account_transfers_workspace_id_key"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "account_workspaces"
+      ],
+      "writes": [
+        "s|tbl|billing.account_workspaces",
+        "n|tbl|billing.account_workspaces",
+        "e|tbl|billing.account_workspaces",
+        "n|rel|billing.account_workspaces",
+        "n|type|billing.account_workspaces",
+        "n|rel|billing.account_workspaces_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "accounts"
+      ],
+      "writes": [
+        "s|tbl|billing.accounts",
+        "n|tbl|billing.accounts",
+        "e|tbl|billing.accounts",
+        "n|rel|billing.accounts",
+        "n|type|billing.accounts",
+        "n|rel|billing.accounts_pkey",
+        "n|rel|billing.accounts_holder_workspace_id_key"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "account_transfers",
+        "account_transfers_from"
+      ],
+      "writes": [
+        "s|idx|billing.account_transfers_from",
+        "n|idx|billing.account_transfers_from",
+        "e|idx|billing.account_transfers_from",
+        "n|rel|billing.account_transfers_from"
+      ],
+      "reads": [
+        "n|tbl|billing.account_transfers",
+        "n|sch|billing",
+        "n|col|billing.account_transfers.from_account_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "account_transfers",
+        "account_transfers_to"
+      ],
+      "writes": [
+        "s|idx|billing.account_transfers_to",
+        "n|idx|billing.account_transfers_to",
+        "e|idx|billing.account_transfers_to",
+        "n|rel|billing.account_transfers_to"
+      ],
+      "reads": [
+        "n|tbl|billing.account_transfers",
+        "n|sch|billing",
+        "n|col|billing.account_transfers.to_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "account_transfers",
+        "account_transfers_by"
+      ],
+      "writes": [
+        "s|idx|billing.account_transfers_by",
+        "n|idx|billing.account_transfers_by",
+        "e|idx|billing.account_transfers_by",
+        "n|rel|billing.account_transfers_by"
+      ],
+      "reads": [
+        "n|tbl|billing.account_transfers",
+        "n|sch|billing",
+        "n|col|billing.account_transfers.offered_by"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "account_workspaces",
+        "account_workspaces_account"
+      ],
+      "writes": [
+        "s|idx|billing.account_workspaces_account",
+        "n|idx|billing.account_workspaces_account",
+        "e|idx|billing.account_workspaces_account",
+        "n|rel|billing.account_workspaces_account"
+      ],
+      "reads": [
+        "n|tbl|billing.account_workspaces",
+        "n|sch|billing",
+        "n|col|billing.account_workspaces.account_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "accounts",
+        "accounts_payer"
+      ],
+      "writes": [
+        "s|idx|billing.accounts_payer",
+        "n|idx|billing.accounts_payer",
+        "e|idx|billing.accounts_payer",
+        "n|rel|billing.accounts_payer"
+      ],
+      "reads": [
+        "n|tbl|billing.accounts",
+        "n|sch|billing",
+        "n|col|billing.accounts.payer_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "accounts",
+        "accounts_payer_user"
+      ],
+      "writes": [
+        "s|idx|billing.accounts_payer_user",
+        "n|idx|billing.accounts_payer_user",
+        "e|idx|billing.accounts_payer_user",
+        "n|rel|billing.accounts_payer_user"
+      ],
+      "reads": [
+        "n|tbl|billing.accounts",
+        "n|sch|billing",
+        "n|col|billing.accounts.payer_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "accounts",
+        "accounts_partner"
+      ],
+      "writes": [
+        "s|idx|billing.accounts_partner",
+        "n|idx|billing.accounts_partner",
+        "e|idx|billing.accounts_partner",
+        "n|rel|billing.accounts_partner"
+      ],
+      "reads": [
+        "n|tbl|billing.accounts",
+        "n|sch|billing",
+        "n|col|billing.accounts.partner_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "billing",
+        "account_transfers"
+      ],
+      "writes": [
+        "s|fk|billing.account_transfers.account_transfers_from_account_id_accounts_id_fkey",
+        "n|fk|billing.account_transfers.account_transfers_from_account_id_accounts_id_fkey",
+        "e|fk|billing.account_transfers.account_transfers_from_account_id_accounts_id_fkey",
+        "n|con|billing.account_transfers.account_transfers_from_account_id_accounts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|billing.account_transfers",
+        "n|sch|billing",
+        "n|tbl|billing.accounts",
+        "n|sch|billing",
+        "n|col|billing.account_transfers.from_account_id",
+        "n|col|billing.accounts.id",
+        "e|uniqueness|billing.accounts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "billing",
+        "account_workspaces"
+      ],
+      "writes": [
+        "s|fk|billing.account_workspaces.account_workspaces_account_id_accounts_id_fkey",
+        "n|fk|billing.account_workspaces.account_workspaces_account_id_accounts_id_fkey",
+        "e|fk|billing.account_workspaces.account_workspaces_account_id_accounts_id_fkey",
+        "n|con|billing.account_workspaces.account_workspaces_account_id_accounts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|billing.account_workspaces",
+        "n|sch|billing",
+        "n|tbl|billing.accounts",
+        "n|sch|billing",
+        "n|col|billing.account_workspaces.account_id",
+        "n|col|billing.accounts.id",
+        "e|uniqueness|billing.accounts.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "name": "account_transfers",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "name": "account_workspaces",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "name": "accounts",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "expires_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "from_account_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "offered_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "offered_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "to_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_workspaces",
+        "name": "account_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_workspaces",
+        "name": "attached_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_workspaces",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "free_tier",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "holder_workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "partner_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "payer_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "standalone",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "account_transfers_from",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "from_account_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "account_transfers_to",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "to_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "account_transfers_by",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "offered_by",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_workspaces",
+        "name": "account_workspaces_account",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "account_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "accounts_payer",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "payer_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "\"payer_user_id\" IS NOT NULL AND \"standalone\" = false",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "accounts_payer_user",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "payer_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "accounts_partner",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "partner_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "\"partner_id\" IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "account_transfers_from_account_id_accounts_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "from_account_id"
+        ],
+        "schemaTo": "billing",
+        "tableTo": "accounts",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "NO ACTION",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_workspaces",
+        "name": "account_workspaces_account_id_accounts_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "account_id"
+        ],
+        "schemaTo": "billing",
+        "tableTo": "accounts",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "NO ACTION",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "account_transfers_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_workspaces",
+        "name": "account_workspaces_pkey",
+        "columns": [
+          "workspace_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "accounts_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "account_transfers",
+        "name": "account_transfers_workspace_id_key",
+        "nameExplicit": false,
+        "columns": [
+          "workspace_id"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "billing",
+        "table": "accounts",
+        "name": "accounts_holder_workspace_id_key",
+        "nameExplicit": false,
+        "columns": [
+          "holder_workspace_id"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}

@@ -27,7 +27,7 @@ import { DrizzleConnectLinkStore } from "#channels/infrastructure/drizzle-connec
 import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-deletions.ts";
 import { NotifiedChannelNotices } from "#channels/infrastructure/notified-channel-notices.ts";
 import { PartnerLinkHosts } from "#channels/infrastructure/partner-link-hosts.ts";
-import { SharedChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
+import { AccountChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { ChannelPlatformsLive } from "#channels/infrastructure/platforms/channel-platform-settings.ts";
 import { MetaSignedRequestsLive } from "#channels/infrastructure/platforms/meta/meta-signed-requests.ts";
 import { OAuthClientDocumentsLive } from "#channels/infrastructure/platforms/oauth-client-documents-live.ts";
@@ -90,7 +90,7 @@ const AdaptersLive = Layer.mergeAll(
   SqlChannelLocks,
   webhookChannelNotices(NotifiedChannelNotices),
   ChannelEventsLive,
-  SharedChannelAllowanceLive,
+  AccountChannelAllowanceLive,
   PlatformsLive
 ).pipe(Layer.provideMerge(TokenCipherLive));
 

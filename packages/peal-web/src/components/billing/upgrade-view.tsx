@@ -43,23 +43,12 @@ export interface UpgradeViewProps {
 // What was refused, with what the workspace holds against its plan.
 const Reached = ({
   reason,
-  trialing,
   workspaceName,
-}: Pick<UpgradeViewProps, "reason" | "trialing" | "workspaceName">) => {
+}: Pick<UpgradeViewProps, "reason" | "workspaceName">) => {
   const t = useTranslations("Upgrade");
   const billing = useTranslations("Billing");
   const size = useSize();
   const plan = billing("plan", { plan: reason.plan });
-
-  if (reason.limit === "freeWorkspace") {
-    return (
-      <p>
-        {t(trialing ? "freeWorkspaceTrial" : "freeWorkspace", {
-          workspace: workspaceName,
-        })}
-      </p>
-    );
-  }
 
   return (
     <p>
@@ -87,7 +76,7 @@ const useRoom = () => {
   const size = useSize();
 
   return (plan: PaidPlan, reason: UpgradeReason): string => {
-    const limit = reason.limit === "freeWorkspace" ? "channels" : reason.limit;
+    const { limit } = reason;
     const count = planCatalogue[plan].limits[limit];
 
     if (count === null) {
@@ -229,16 +218,10 @@ export const UpgradeView = (props: UpgradeViewProps) => {
   return (
     <div className="flex flex-col gap-4 text-sm">
       <div className="flex flex-col gap-1">
-        <Reached
-          reason={reason}
-          trialing={trialing}
-          workspaceName={workspaceName}
-        />
-        {reason.limit === "freeWorkspace" ? null : (
-          <p className="text-muted-foreground">
-            {t("orRemove", { limit: reason.limit })}
-          </p>
-        )}
+        <Reached reason={reason} workspaceName={workspaceName} />
+        <p className="text-muted-foreground">
+          {t("orRemove", { limit: reason.limit })}
+        </p>
       </div>
       {trialing && canManage && planWithRoom !== null ? (
         <p>{t("trial", { workspace: workspaceName })}</p>

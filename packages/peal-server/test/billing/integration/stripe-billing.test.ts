@@ -190,10 +190,7 @@ const LimitErrorSchema = Schema.Struct({
   used: Schema.Number,
 });
 
-const FreeWorkspaceErrorSchema = Schema.Struct({
-  ...upgradeFields,
-  workspaceId: Schema.String,
-});
+const CreatedSchema = Schema.Struct({ id: Schema.String });
 
 // The subscriptions a refused deletion lists, as JSON carries them.
 const decodeSubscribed = Schema.decodeUnknownSync(
@@ -1135,26 +1132,18 @@ layer(BillingIntegration, {
         assert.isNotNull(trying.subscription?.trialEnd);
         assert.isFalse(trying.trial?.available);
 
-        // A workspace in its trial is free once it ends: the account owns
-        // no second free workspace.
+        // Another workspace of the account is on the same account, and
+        // shares the plan the trial gives.
         const another = yield* app.request("/api/auth/organization/create", {
           body: { name: "Another", slug: `another-${randomUUID()}` },
           headers: { cookie: owner.cookies },
         });
 
-        assert.strictEqual(another.status, 402);
+        assert.strictEqual(another.status, 200);
 
-        // Ordering the plan it tries is the way out.
-        assert.deepStrictEqual(
-          yield* bodyOf(FreeWorkspaceErrorSchema, another),
-          {
-            billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
-            code: "FREE_WORKSPACE_LIMIT_REACHED",
-            plan: "pro",
-            planWithRoom: "pro",
-            workspaceId,
-          }
-        );
+        const { id: anotherId } = yield* bodyOf(CreatedSchema, another);
+
+        assert.strictEqual((yield* billingOf(owner, anotherId)).plan, "pro");
 
         // The same account, admin of another workspace: no second trial.
         const colleague = yield* signedUp("trial-colleague");
@@ -1273,29 +1262,40 @@ layer(BillingIntegration, {
       })
   );
 
-  it.effect("lets an account own one workspace on the free plan", () =>
-    Effect.gen(function* oneFree() {
-      const app = yield* TestApp;
-      const owner = yield* signedUp("one-free");
+  it.effect(
+    "puts every workspace an account makes on its billing account, billed on the first",
+    () =>
+      Effect.gen(function* oneAccount() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const owner = yield* signedUp("one-account");
 
-      const first = yield* workspaceOf(owner, "First");
+        const first = yield* workspaceOf(owner, "First");
 
-      const refused = yield* app.request("/api/auth/organization/create", {
-        body: { name: "Second", slug: `second-${randomUUID()}` },
-        headers: { cookie: owner.cookies },
-      });
+        const made = yield* app.request("/api/auth/organization/create", {
+          body: { name: "Second", slug: `second-${randomUUID()}` },
+          headers: { cookie: owner.cookies },
+        });
 
-      assert.strictEqual(refused.status, 402);
+        assert.strictEqual(made.status, 200);
 
-      // Names the free workspace, and the plan that makes room for another.
-      assert.deepStrictEqual(yield* bodyOf(FreeWorkspaceErrorSchema, refused), {
-        billingUrl: `http://localhost:3001/app/${first}/billing`,
-        code: "FREE_WORKSPACE_LIMIT_REACHED",
-        plan: "free",
-        planWithRoom: "starter",
-        workspaceId: first,
-      });
-    })
+        const { id: second } = yield* bodyOf(CreatedSchema, made);
+
+        const rows = yield* sql<{
+          readonly holder: string;
+          readonly payer: string;
+          readonly workspaceId: string;
+        }>`SELECT a.holder_workspace_id AS holder, a.payer_user_id AS payer, w.workspace_id AS "workspaceId"
+          FROM billing.account_workspaces w JOIN billing.accounts a ON a.id = w.account_id
+          WHERE w.workspace_id IN (${first}, ${second}) ORDER BY w.workspace_id = ${first} DESC`.pipe(
+          Effect.orDie
+        );
+
+        assert.deepStrictEqual(rows, [
+          { holder: first, payer: owner.id, workspaceId: first },
+          { holder: first, payer: owner.id, workspaceId: second },
+        ]);
+      })
   );
 
   // Cancelling and withdrawing tell the members by notice and email, which
@@ -1525,25 +1525,33 @@ layer(BillingIntegration, {
       })
   );
 
-  it.effect(
-    "lets one of two workspaces created together be the account's free one",
-    () =>
-      Effect.gen(function* createdTogether() {
-        const app = yield* TestApp;
-        const owner = yield* signedUp("created-together");
+  it.effect("puts two workspaces created together on one billing account", () =>
+    Effect.gen(function* createdTogether() {
+      const app = yield* TestApp;
+      const owner = yield* signedUp("created-together");
 
-        const create = (name: string) =>
-          app.request("/api/auth/organization/create", {
-            body: { name, slug: `${name}-${randomUUID()}` },
-            headers: { cookie: owner.cookies },
-          });
-
-        const replies = yield* Effect.all([create("first"), create("second")], {
-          concurrency: "unbounded",
+      const create = (name: string) =>
+        app.request("/api/auth/organization/create", {
+          body: { name, slug: `${name}-${randomUUID()}` },
+          headers: { cookie: owner.cookies },
         });
 
-        assert.deepStrictEqual(statusesOf(replies), [200, 402]);
-      })
+      const replies = yield* Effect.all([create("first"), create("second")], {
+        concurrency: "unbounded",
+      });
+
+      assert.deepStrictEqual(statusesOf(replies), [200, 200]);
+
+      const sql = yield* SqlClient.SqlClient;
+
+      const accounts = yield* sql<{
+        readonly workspaces: number;
+      }>`SELECT count(w.workspace_id)::int AS workspaces FROM billing.accounts a JOIN billing.account_workspaces w ON w.account_id = a.id WHERE a.payer_user_id = ${owner.id} GROUP BY a.id`.pipe(
+        Effect.orDie
+      );
+
+      assert.deepStrictEqual(accounts, [{ workspaces: 2 }]);
+    })
   );
   // A plan that shrinks under a workspace deletes nothing: the workspace
   // says what it holds beyond the plan, and comes back within it by

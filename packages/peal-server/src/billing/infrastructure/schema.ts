@@ -271,3 +271,81 @@ export const contractReferences = billing.table(
   },
   (table) => [index("contract_references_workspace").on(table.workspaceId)]
 );
+
+/**
+ * Each billing account: a person who pays for the workspaces they made
+ * (`payer_user_id`), or a partner, for its home workspace and those it owns
+ * (`partner_id`). Its workspaces share its plan and its channels. The
+ * billing workspace (`holder_workspace_id`) carries the Stripe customer and
+ * the subscription, as a workspace does on its own. `standalone` is a
+ * workspace a plan subscription of its own keeps alone, until it ends: a
+ * person has one account that is not standalone at most. `free_tier`
+ * false is staff requiring a payment method. Ids only: no name, no
+ * address. Closing the payer's account and erasing its last workspace
+ * delete it.
+ */
+export const accounts = billing.table(
+  "accounts",
+  {
+    createdAt: instant("created_at").notNull(),
+    freeTier: boolean("free_tier").notNull().default(true),
+    holderWorkspaceId: uuid("holder_workspace_id").notNull().unique(),
+    id: uuid("id").primaryKey(),
+    partnerId: uuid("partner_id"),
+    payerUserId: text("payer_user_id"),
+    standalone: boolean("standalone").notNull().default(false),
+  },
+  (table) => [
+    uniqueIndex("accounts_payer")
+      .on(table.payerUserId)
+      .where(
+        sql`${table.payerUserId} IS NOT NULL AND ${table.standalone} = false`
+      ),
+    index("accounts_payer_user").on(table.payerUserId),
+    uniqueIndex("accounts_partner")
+      .on(table.partnerId)
+      .where(sql`${table.partnerId} IS NOT NULL`),
+  ]
+);
+
+/**
+ * The billing account each workspace belongs to, one each. Written the
+ * first time the workspace is read or made; erasing the workspace deletes
+ * its row.
+ */
+export const accountWorkspaces = billing.table(
+  "account_workspaces",
+  {
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id),
+    attachedAt: instant("attached_at").notNull(),
+    workspaceId: uuid("workspace_id").primaryKey(),
+  },
+  (table) => [index("account_workspaces_account").on(table.accountId)]
+);
+
+/**
+ * A workspace its payer offered to another of its owners, not yet taken:
+ * one at a time per workspace, until `expires_at`. Taking it, withdrawing
+ * it, erasing the workspace and closing either account delete it.
+ */
+export const accountTransfers = billing.table(
+  "account_transfers",
+  {
+    expiresAt: instant("expires_at").notNull(),
+    fromAccountId: uuid("from_account_id")
+      .notNull()
+      .references(() => accounts.id),
+    id: uuid("id").primaryKey(),
+    offeredAt: instant("offered_at").notNull(),
+    offeredBy: text("offered_by").notNull(),
+    toUserId: text("to_user_id").notNull(),
+    workspaceId: uuid("workspace_id").notNull().unique(),
+  },
+  (table) => [
+    index("account_transfers_from").on(table.fromAccountId),
+    index("account_transfers_to").on(table.toUserId),
+    index("account_transfers_by").on(table.offeredBy),
+  ]
+);

@@ -27,7 +27,6 @@ import { accessControl, roles } from "./access-control.ts";
 import {
   checkMemberRoom,
   refusePersonalSubscriptions,
-  checkFreeWorkspace,
   stripeBilling,
   turnstile,
 } from "./billing.ts";
@@ -470,6 +469,10 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         invitationExpiresIn: invitationLifetime,
         invitationLimit: pendingInvitationLimit,
         organizationHooks: {
+          // Its creator pays for it: it joins their billing account.
+          afterCreateOrganization: async ({ organization: workspace }) => {
+            await hooks.workspaceCreated(workspace.id);
+          },
           // An invitation is accepted, or a member added, only while the
           // workspace's plan has room for one more.
           beforeAcceptInvitation: async ({ invitation }) => {
@@ -490,10 +493,6 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
               invitation.organizationId,
               Option.some(invitation.email)
             );
-          },
-          // One free workspace per account, on a server that bills.
-          beforeCreateOrganization: async ({ user }) => {
-            await checkFreeWorkspace(hooks, user.id);
           },
           // A workspace's API keys go with it: they refer to it by id alone,
           // with no foreign key, and would otherwise outlive it. They go
