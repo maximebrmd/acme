@@ -78,16 +78,19 @@ export const isDue = (
   schedule !== null &&
   DateTime.isLessThanOrEqualTo(schedule.at, now);
 
+/** The channels a post publishes on, and those it cannot, by name. */
+export interface WhereItGoes {
+  readonly publishing: readonly string[];
+  readonly skipped: readonly string[];
+}
+
 /**
  * Where "Publish now" sends the post, by channel name: the channels that
  * publish, and apart those turned off or to reconnect, where it would fail.
  */
 export const whereItGoes = (
   channels: readonly Channel[]
-): {
-  readonly publishing: readonly string[];
-  readonly skipped: readonly string[];
-} => ({
+): WhereItGoes => ({
   publishing: channels.flatMap((channel) =>
     channel.status._tag === "active" ? [channelName(channel)] : []
   ),
