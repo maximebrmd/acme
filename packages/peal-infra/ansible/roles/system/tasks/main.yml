@@ -64,7 +64,9 @@
 # chrony keeps the clock, which scheduled posts, two-step codes, tokens and
 # signed requests depend on. It is Ubuntu's own time daemon, in main, which
 # the security updates cover, and apt removes whichever other one the image
-# ran (they all provide time-daemon). It keeps Ubuntu's default sources.
+# ran (they all provide time-daemon). No configuration of its own: chrony
+# reads the package's, or the one an earlier install left behind, which
+# dpkg keeps when a package is removed without being purged.
 - name: Install base packages
   ansible.builtin.apt:
     name: [unattended-upgrades, ufw, ca-certificates, curl, chrony]
