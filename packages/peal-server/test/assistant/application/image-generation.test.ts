@@ -19,6 +19,8 @@ import { MediaMetadata } from "#media/domain/media-metadata.ts";
 import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
 import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 import { Ids } from "#shared/application/ids.ts";
+import { Actor } from "#shared/domain/access.ts";
+import { UserIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
   actorIn,
@@ -716,6 +718,43 @@ layer(ImagesTest, { timeout: "60 seconds" })(
           assert.lengthOf(yield* ownCalls, ownImagesPerDay);
           // Peal's allowance never moved.
           assert.strictEqual(yield* remainingIn(workspaceId), 10);
+        }).pipe(Effect.provide(imagesTest()))
+    );
+
+    it.effect(
+      "refuses staff acting as a member: the workspace's account would pay for their images",
+      () =>
+        Effect.gen(function* impersonated() {
+          const workspaceId = yield* freshWorkspace;
+          const member = actorIn(workspaceId);
+
+          const staff = new Actor({
+            permissions: member.permissions,
+            subject: {
+              _tag: "user",
+              impersonatedBy: Option.some(
+                UserIdSchema.make("1f2e3d4c-5b6a-4978-8a9b-0c1d2e3f4a5b")
+              ),
+              userId: UserIdSchema.make("5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"),
+            },
+            workspaceId: member.workspaceId,
+          });
+
+          yield* bringProvider(workspaceId);
+
+          const refused = yield* FakeOwnImageModel.use((model) =>
+            model.replyWith(ownImage(new Uint8Array(8)))
+          ).pipe(
+            Effect.andThen(
+              WritingAssistant.use((assistant) =>
+                assistant.generateImage(staff, lighthouse)
+              )
+            ),
+            Effect.flip
+          );
+
+          assert.strictEqual(refused._tag, "MissingPermission");
+          assert.lengthOf(yield* ownCalls, 0);
         }).pipe(Effect.provide(imagesTest()))
     );
 

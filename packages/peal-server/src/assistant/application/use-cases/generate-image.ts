@@ -23,6 +23,7 @@ import {
 import { checkImagePrompt } from "#assistant/domain/image-prompt.ts";
 import { usageWindowAt } from "#assistant/domain/usage-window.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 /** What image to make, for the actor's workspace. */
 export interface ImageGenerationRequest {
@@ -40,13 +41,25 @@ export interface ImageGenerationRequest {
  * counts whatever the call ends with. Nothing of Peal's daily requests is
  * read or counted, whatever the plan (a trial and the free plan included), and the
  * server's model is never asked, not even when the workspace's provider
- * fails, nor when its key no longer opens.
+ * fails, nor when its key no longer opens. Staff acting as a member are
+ * refused: the workspace's account at its provider would pay.
  */
 const ownImage = Effect.fn("WritingAssistant.generateOwnImage")(
   function* ownImage(
     { actor, aspect, prompt }: ImageGenerationRequest,
     { apiKey, settings }: OpenedImageProvider
   ) {
+    // Staff acting as a member would send their prompt to the workspace's
+    // provider, which its account pays: the member does it themselves.
+    if (
+      actor.subject._tag === "user" &&
+      Option.isSome(actor.subject.impersonatedBy)
+    ) {
+      return yield* new MissingPermission({
+        permission: "assistant:configure",
+      });
+    }
+
     const checked = yield* Effect.fromResult(checkImagePrompt(prompt));
 
     // A key that no longer opens is typed again; nothing is asked of
