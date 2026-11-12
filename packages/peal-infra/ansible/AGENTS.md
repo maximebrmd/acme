@@ -103,7 +103,9 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   rules alert on them (`peal-docker`'s `rules.yaml`), with no mail
   transport or credential on the host. Never fail a disk, on any server,
   to test it: the script is tested on a made-up `/sys`
-  (`tests/test_disks.py`), the rules by their expressions.
+  (`tests/test_disks.py`), the rules by their expressions. The nightly
+  reboot is `peal-reboot`'s (the `system` role), not unattended-upgrades':
+  it holds a pending reboot while an md array is degraded.
 - `site.yml` restarts the server when the privacy declaration changes (the
   server reads it at startup), refuses to remove the image's account while
   connected as it, and takes a storage endpoint only in the EU: R2's `.eu.`

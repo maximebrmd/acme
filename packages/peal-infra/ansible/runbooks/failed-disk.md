@@ -93,8 +93,11 @@ without the role sends none, and the rules must stay quiet there):
 
    Do not reboot the server by hand meanwhile. A mirror boots on its
    remaining disk, but that has never been tried on this server and will
-   not be; the unattended upgrades still reboot it at 03:30 UTC after a
-   kernel update, one more reason to move within days.
+   not be. The nightly reboot a kernel update asks for is held while an
+   array is degraded: `journalctl --unit peal-reboot` says `a reboot is
+   pending, held while md1 is degraded`, and the server keeps running its
+   old kernel, without that update's fixes, one more reason to move within
+   days.
 
 4. **Move to a new server.** While the old server still runs, follow
    [A planned move](restore-database.md#a-planned-move): it carries
