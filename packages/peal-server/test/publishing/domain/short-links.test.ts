@@ -75,3 +75,14 @@ describe("a text with its links shortened", () => {
     expect(sent).toBe(text);
   });
 });
+
+describe("a link written outside ASCII", () => {
+  it("is shortened while its address stays within 2,048 characters", () => {
+    const cyrillic = "https://example.com/путь/к/странице/и/ещё/немного";
+    const tooLong = `https://example.com/${"ж".repeat(400)}`;
+
+    expect(linksToShorten(cyrillic, "x", addresses)).toHaveLength(1);
+    // Percent-encoded, 400 letters make 2,400 characters: left as written.
+    expect(linksToShorten(tooLong, "x", addresses)).toStrictEqual([]);
+  });
+});

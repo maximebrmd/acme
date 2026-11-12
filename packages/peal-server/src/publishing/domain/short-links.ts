@@ -31,20 +31,20 @@ const maxDestinationLength = 2048;
 // `domain/destination.ts`, kept equal): an absolute http or https address
 // of 2,048 characters at most, naming no user or password, on another
 // host than the short links' own.
-const isShortenable = (address: string, addresses: ShortAddresses): boolean => {
-  if (address.length > maxDestinationLength) {
-    return false;
-  }
-
+const isShortenable = (address: string, addresses: ShortAddresses) => {
   const parsed = URL.parse(address);
   const base = URL.parse(addresses.base);
 
+  // Written as its redirect writes it (`URL.href`: ASCII, as a header
+  // takes it), of 2,048 characters at most.
   return (
     parsed !== null &&
     (parsed.protocol === "https:" || parsed.protocol === "http:") &&
     parsed.username === "" &&
     parsed.password === "" &&
-    parsed.host !== base?.host
+    parsed.host !== base?.host &&
+    parsed.href.length <= maxDestinationLength &&
+    /^[\u0021-\u007E]+$/u.test(parsed.href)
   );
 };
 

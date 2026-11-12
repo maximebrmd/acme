@@ -11,7 +11,7 @@ import type {
 import { clickDayOf } from "#shortlinks/domain/click-range.ts";
 import { isCountedVisit } from "#shortlinks/domain/counted-visit.ts";
 import type { VisitRequest } from "#shortlinks/domain/counted-visit.ts";
-import { isShortenable } from "#shortlinks/domain/destination.ts";
+import { destinationOf, locationOf } from "#shortlinks/domain/destination.ts";
 import { ShortCodeSchema } from "#shortlinks/domain/short-code.ts";
 import type { ShortCode } from "#shortlinks/domain/short-code.ts";
 import { ShortLinkIdSchema } from "#shortlinks/domain/short-link-id.ts";
@@ -111,11 +111,13 @@ export class ShortLinks extends Context.Service<
 
         return yield* Effect.all(
           destinations.map((destination) =>
-            isShortenable(destination, base.value)
-              ? codeFor({ ...asked, destination }, 0).pipe(
+            Option.match(destinationOf(destination, base.value), {
+              onNone: () => Effect.succeed(destination),
+              onSome: (written) =>
+                codeFor({ ...asked, destination: written }, 0).pipe(
                   Effect.map((code) => shortUrlOf(base.value, code))
-                )
-              : Effect.succeed(destination)
+                ),
+            })
           )
         );
       });
@@ -153,9 +155,21 @@ export class ShortLinks extends Context.Service<
             );
         }
 
+        // Written again as an address: a header carries ASCII only, and a
+        // value it cannot carry would leave the redirect unanswered.
+        const location = locationOf(link.destination);
+
+        if (Option.isNone(location)) {
+          yield* Effect.logWarning(
+            "A short link's destination cannot be written in a redirect"
+          );
+
+          return { _tag: "unknown" } satisfies Followed;
+        }
+
         return {
           _tag: "found",
-          destination: link.destination,
+          destination: location.value,
         } satisfies Followed;
       });
 

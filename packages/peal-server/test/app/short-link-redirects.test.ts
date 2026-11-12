@@ -109,6 +109,59 @@ layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
         })
     );
 
+    it.effect(
+      "redirects to an address outside Latin letters, written as a header takes it",
+      () =>
+        Effect.gen(function* international() {
+          const app = yield* TestApp;
+          const cyrillic = yield* issued(
+            "https://example.test/путь/к/странице"
+          );
+          const host = yield* issued("https://пример.рф/page");
+
+          const onPath = yield* app.request(cyrillic.path, {
+            headers: { ...fromAddress(), "user-agent": browser },
+          });
+
+          const onHost = yield* app.request(host.path, {
+            headers: { ...fromAddress(), "user-agent": browser },
+          });
+
+          assert.strictEqual(onPath.status, 302);
+          assert.strictEqual(
+            onPath.headers.get("location"),
+            "https://example.test/%D0%BF%D1%83%D1%82%D1%8C/%D0%BA/%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B5"
+          );
+          assert.strictEqual(onHost.status, 302);
+          assert.strictEqual(
+            onHost.headers.get("location"),
+            "https://xn--e1afmkfd.xn--p1ai/page"
+          );
+        })
+    );
+
+    it.effect(
+      "answers quickly, never hanging, for a destination no header can carry",
+      () =>
+        Effect.gen(function* unwritable() {
+          const app = yield* TestApp;
+          const { code, path } = yield* issued("https://example.test/kept");
+
+          // As a row from before destinations were written as addresses.
+          yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql`UPDATE shortlinks.links SET destination = ${"https://example.test/путь\r\nx"} WHERE code = ${code}`
+          ).pipe(Effect.orDie);
+
+          const reply = yield* app.request(path, {
+            headers: { ...fromAddress(), "user-agent": browser },
+          });
+
+          assert.include([302, 404], reply.status);
+          assert.notInclude(reply.headers.get("location") ?? "", "\n");
+        }).pipe(Effect.timeout("5 seconds"))
+    );
+
     it.effect("answers HEAD the same, and counts nothing", () =>
       Effect.gen(function* head() {
         const app = yield* TestApp;

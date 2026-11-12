@@ -818,6 +818,8 @@ describe("the contract's short links rule", () => {
     "Own https://go.example.com/AbCdEfG/and/a/long/tail/after/it",
     "User https://someone:secret@example.com/a/long/path/with/a/user",
     "🎉 HTTP://EXAMPLE.COM/AN/UPPER/CASE/ADDRESS/WRITTEN/LOUDLY 👋",
+    "Cyrillic https://example.com/путь/к/странице/длиннее/короткой/ссылки",
+    `Too long once written https://example.com/${"ж".repeat(400)}`,
   ];
 
   it.each(linkTexts)("finds in %j what the server shortens", (text) => {
