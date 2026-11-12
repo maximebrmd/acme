@@ -2,13 +2,14 @@
 
 What Peal keeps at Cloudflare, as code: the Zero Trust Access policies and
 applications, each environment's tunnel and the host names that point to
-it, its R2 buckets with their lifecycle and CORS rules, and the addresses
-Email Routing forwards. TypeScript, run by Bun (`runtime: bun`).
+it, its R2 buckets with their lifecycle and CORS rules, the addresses
+Email Routing forwards, and the short-link domain, peal.link. TypeScript,
+run by Bun (`runtime: bun`).
 
-| Project       | Stacks                      | What it holds                                                         |
-| ------------- | --------------------------- | --------------------------------------------------------------------- |
-| `account`     | `peal`                      | What the account shares: the Access policies, the forwarded addresses |
-| `environment` | `sandbox` (production next) | An environment's tunnel, host names, Access applications and buckets  |
+| Project       | Stacks                      | What it holds                                                                                   |
+| ------------- | --------------------------- | ----------------------------------------------------------------------------------------------- |
+| `account`     | `peal`                      | What the account shares: the Access policies, the forwarded addresses, the short-link domain    |
+| `environment` | `sandbox` (production next) | An environment's tunnel, host names (its short-link one included), Access applications, buckets |
 
 Each environment's stack reads the policies from the account's stack, so
 the account comes first. Pulumi comes before Ansible: the Ansible project
@@ -33,6 +34,33 @@ Cloudflare with its data (`retainOnDelete`). Each project's resources are
 grouped in a component (`peal:cloudflare:Account`,
 `peal:cloudflare:Environment`).
 
+## The short-link domain
+
+Short links are on a domain of their own, peal.link, so that a platform
+which frowns on a host that redirects marks it, never the host people sign
+in at. The account project holds its zone and what applies to the whole of
+it (`src/link-domain.ts`): a zone has one ruleset per phase, which the
+environments share.
+
+| What              | How                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| The zone          | `link-zone`, which Cloudflare Registrar made: imported (below), protected, kept at Cloudflare if its resource goes       |
+| DNSSEC            | On; Cloudflare Registrar publishes the DS record itself                                                                  |
+| Zone settings     | Always Use HTTPS, TLS 1.2 at least, SSL Full (strict)                                                                    |
+| Mail              | None: a null MX (`0 .`), `v=spf1 -all`, and DMARC `p=reject` for the domain and its subdomains                           |
+| `peal.link/`      | A 302 to `https://peal.social/`, so browsers keep nothing should the domain get a page of its own                        |
+| `peal.link/<any>` | Rewritten to `/api/l/<any>`, which the tunnel sends to the server when it is a code (seven letters and digits), 404 else |
+
+Each environment's stack points its own host name on the zone
+(`shortLinkHost`) at its tunnel, from the zone id the account's stack
+outputs (`linkZoneId`): `sandbox.peal.link` for the sandbox, behind its
+Access application like the rest of it; `peal.link` for production, public,
+once production has its stack (until then, its record is made by hand with
+its tunnel, as its other names are: the Ansible project's README, "Before
+the first run"). An unknown code answers the server's 404, and a path that
+is no code cloudflared's: neither leads to the site, so a mistyped or
+erased link says it is not one.
+
 ## What stays manual
 
 - The rest of each environment's vault (the Ansible project's README,
@@ -50,11 +78,11 @@ it needs, unless already set in the environment, read from one item of the
 owner's login keychain, `peal-pulumi`, and handed to Pulumi in its
 environment alone, never a file:
 
-| Variable                                     | What it is                                                                                                                                                                  |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`                       | An account API token: Access Edit, Cloudflare One Connector: cloudflared Edit, R2 Edit, Account API Tokens Edit; on the zone, DNS Edit, Zone Read, Email Routing Rules Edit |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | An R2 key with Object Read & Write on `peal-infra-state` alone                                                                                                              |
-| `PULUMI_CONFIG_PASSPHRASE`                   | The passphrase of the stacks' secrets                                                                                                                                       |
+| Variable                                     | What it is                                                                                                                                                                                                                                                                        |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`                       | An account API token: Access Edit, Cloudflare One Connector: cloudflared Edit, R2 Edit, Account API Tokens Edit; on peal.social, DNS Edit, Zone Read, Email Routing Rules Edit; on peal.link, DNS Edit, Zone Read, Zone Settings Edit, Single Redirect Edit, Transform Rules Edit |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | An R2 key with Object Read & Write on `peal-infra-state` alone                                                                                                                                                                                                                    |
+| `PULUMI_CONFIG_PASSPHRASE`                   | The passphrase of the stacks' secrets                                                                                                                                                                                                                                             |
 
 The password manager holds them; the keychain item is a copy for the
 scripts, which a password manager's own keychain does not let them read.
@@ -87,3 +115,12 @@ declaring the rules a bucket already has writes them again, unchanged. Nor
 does Pulumi remove a bucket's lifecycle rules when their resource goes (the
 provider warns of it): change them in the code, or remove them in the
 dashboard.
+
+The peal.link zone is adopted so, once: put its zone id (the dashboard,
+peal.link › Overview, "Zone ID") in a file outside Git as
+`{ "link-zone": "<zone id>" }`, and run the account's `preview` and `up`
+with `PEAL_PULUMI_IMPORT` naming it. The preview then imports `link-zone`
+and creates the rest of the domain; one that creates `link-zone` instead
+lacks the file, and `up` would fail at Cloudflare, which holds one zone of
+a name per account. The zone settings and DNSSEC are created by setting
+them on the zone as it is, and need no import.

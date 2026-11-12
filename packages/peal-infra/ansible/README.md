@@ -36,9 +36,18 @@ The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`
 | `app.peal.social`     | anything else                                                           | the web app, 127.0.0.1:3001 | public    |
 | `peal.social`         | any                                                                     | the site, 127.0.0.1:4321    | public    |
 | `docs.peal.social`    | any                                                                     | the docs, 127.0.0.1:4322    | public    |
+| `peal.link`           | `/api/l/<code>`, which the edge rewrote from `/<code>`                  | the server, 127.0.0.1:3000  | public    |
+| `peal.link`           | anything else                                                           | 404                         | public    |
+
+Short links are on a domain of their own (`peal_short_link_hostname`), whose
+zone the Pulumi project holds with the rules that send the bare domain to
+the site and rewrite `/<code>` to `/api/l/<code>` ([`../pulumi`](../pulumi/README.md#the-short-link-domain)):
+a code is seven letters and digits, and no other path on the host reaches
+the stack. The server issues links on it (`PEAL_SHORT_LINK_BASE`, which
+`peal_runtime` derives from the host name).
 
 The sandbox has the same routes on its own names (`sandbox.peal.social`,
-`sandbox-grafana.peal.social`…), all behind Access but for what outside
+`sandbox-grafana.peal.social`, `sandbox.peal.link`…), all behind Access but for what outside
 services call: `/api/channels/oauth/*`, which Bluesky's servers fetch, and
 Stripe's webhook (`/api/auth/stripe/webhook`) and Meta's data deletion and
 deauthorize requests (`/api/data-deletion/<app>` and
@@ -277,7 +286,8 @@ These are made by hand, by the owner, on free plans. Anything that costs
 money, the server and the domain first, or R2 beyond its free tier, needs
 the owner's approval.
 
-1. **The zone** on Cloudflare, for the domain.
+1. **The zone** on Cloudflare, for the domain, and the short-link domain's
+   (peal.link), which the Pulumi project's account stack holds.
 2. **Zero Trust**: a team (`<team>.cloudflareaccess.com`) and these Access
    applications, each with a policy that lets in the team's emails. Copy each
    application's audience tag (AUD) into `cloudflare_access_aud`.
@@ -302,6 +312,7 @@ the owner's approval.
    cloudflared tunnel login                              # once, a certificate for your account
    cloudflared tunnel create peal-production
    cloudflared tunnel route dns peal-production app.peal.social   # and each other name
+   cloudflared tunnel route dns peal-production peal.link         # short links, on their zone
    cloudflared tunnel token peal-production              # the token for the vault
    ```
 
