@@ -496,6 +496,7 @@ describe(valuesOfPost, () => {
         schedule: null,
         scheduledBy: null,
         scheduledVia: null,
+        shortenLinks: false,
         status: "draft",
         tagIds: [],
         targets: ["c1", "c2", "gone"].map((id) => ({
@@ -627,6 +628,7 @@ describe(channelOptionsOf, () => {
         schedule: null,
         scheduledBy: null,
         scheduledVia: null,
+        shortenLinks: false,
         status: "draft",
         tagIds: [],
         targets: [

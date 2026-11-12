@@ -57,6 +57,7 @@ const removed: Post = {
   schedule: { at: utc("2026-06-15T08:00:00Z"), timeZone: "Europe/Paris" },
   scheduledBy: null,
   scheduledVia: null,
+  shortenLinks: false,
   status: "finished",
   tagIds: [],
   targets: [

@@ -538,6 +538,19 @@ const ExportedWebhookSchema = Schema.Struct({
   url: Schema.String,
 });
 
+// A short link a published post holds: its code, where it leads, and its
+// address on this server, null once the server has none. Its clicks are
+// counts, read through the short links' endpoints.
+const ExportedShortLinkSchema = Schema.Struct({
+  channelId: Schema.String,
+  code: Schema.String,
+  createdAt: instant,
+  destination: Schema.String,
+  part: Schema.Int,
+  postId: Schema.String,
+  shortUrl: nullable(Schema.String),
+});
+
 // A channel's account on one UTC day: its followers, the accounts it
 // follows and its posts as read that day, and the views and reach its
 // platform counted. Each is null where the platform gives none.
@@ -707,6 +720,8 @@ const ExportedWorkspaceSchema = Schema.Struct({
   // Its tags, signatures, channel sets, queues, recycling rules and
   // channels' default options.
   saved: ExportedSavedItemsSchema,
+  // The short links its published posts went out with.
+  shortLinks: Schema.Array(ExportedShortLinkSchema),
   slug: Schema.String,
   webhooks: Schema.Array(ExportedWebhookSchema),
 });

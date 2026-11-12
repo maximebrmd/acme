@@ -681,3 +681,88 @@ export const rulesFor = (
 
   return { ...base, ...format };
 };
+
+/** What a server's short addresses look like: its base, then a code. */
+export interface ShortAddresses {
+  /** The base, ending in `/`, as `shortLinks.status` answers it. */
+  readonly base: string;
+  /** How many characters a code has. */
+  readonly codeLength: number;
+}
+
+/** Where a link stands in a text, in UTF-16 offsets. */
+export interface LinkPlace {
+  readonly end: number;
+  readonly start: number;
+}
+
+/** A distinct address a post's text goes out with shortened. */
+export interface LinkToShorten {
+  readonly address: string;
+  readonly places: readonly LinkPlace[];
+}
+
+/** The longest address the server shortens. */
+export const maxShortenedLinkLength = 2048;
+
+/**
+ * Whether a platform takes its links as written, never shortened:
+ * Pinterest, whose help page refuses link shorteners.
+ */
+export const keepsLinksAsWritten = (platform: Platform): boolean =>
+  platform === "pinterest";
+
+const hasLinkScheme = (address: string) => /^https?:\/\//iu.test(address);
+
+// An absolute http or https address of 2,048 characters at most, naming
+// no user or password, on another host than the short links' own.
+const isShortenable = (address: string, addresses: ShortAddresses) => {
+  if (address.length > maxShortenedLinkLength) {
+    return false;
+  }
+
+  const parsed = URL.parse(address);
+  const base = URL.parse(addresses.base);
+
+  return (
+    parsed !== null &&
+    (parsed.protocol === "https:" || parsed.protocol === "http:") &&
+    parsed.username === "" &&
+    parsed.password === "" &&
+    parsed.host !== base?.host
+  );
+};
+
+/**
+ * The links of `text` a post that asks for short links sends shortened on
+ * `platform`, as the server decides it: those written with `http://` or
+ * `https://` and longer than a short address (`base` and a code), one
+ * entry per distinct address with every place it stands; none on a
+ * platform that keeps links as written. The composer counts them.
+ */
+export const linksToShorten = (
+  text: string,
+  platform: Platform,
+  addresses: ShortAddresses
+): readonly LinkToShorten[] => {
+  if (keepsLinksAsWritten(platform)) {
+    return [];
+  }
+
+  const shortLength = addresses.base.length + addresses.codeLength;
+  const found = new Map<string, LinkPlace[]>();
+
+  for (const { end, start } of xLinksIn(text)) {
+    const address = text.slice(start, end);
+
+    if (
+      hasLinkScheme(address) &&
+      address.length > shortLength &&
+      isShortenable(address, addresses)
+    ) {
+      found.set(address, [...(found.get(address) ?? []), { end, start }]);
+    }
+  }
+
+  return Array.from(found, ([address, places]) => ({ address, places }));
+};

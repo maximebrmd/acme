@@ -376,6 +376,12 @@ export const post = Command.make(
     sets: setsFlag(
       "A channel set the post goes to, by its id or its name, as peal sets list shows them; repeat it for several: its connected channels, beside any --channel, with the options the set keeps for them where --options gives none. A channel of the set that is no longer connected is left out, and said; when none is left and no --channel is given, nothing is posted."
     ),
+    shortenLinks: Flag.Boolean("shorten-links").pipe(
+      Flag.withDescription(
+        "Send the post's links shortened, where the server has short links (peal short-links status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks (peal short-links list); the text kept stays as written, and Pinterest keeps links as written."
+      ),
+      Flag.withDefault(false)
+    ),
     signature: signatureFlag(
       "A signature to put under the post's text, on every channel, by its id or its name, as peal signatures list shows them; under the last part of a post with --then parts. It is then text of the post, counted against each platform's limit, and never added twice."
     ),
@@ -415,9 +421,14 @@ export const post = Command.make(
         ...presets,
       };
 
-      // Tags are sent only when some were given.
-      const filed: NewPost =
+      // Tags are sent only when some were given, and short links only
+      // when asked for.
+      const tagged: NewPost =
         tagIds.length === 0 ? written : { ...written, tagIds };
+
+      const filed: NewPost = input.shortenLinks
+        ? { ...tagged, shortenLinks: true }
+        : tagged;
 
       return checkPost(
         input.allowDuplicate ? { ...filed, allowDuplicate: true } : filed

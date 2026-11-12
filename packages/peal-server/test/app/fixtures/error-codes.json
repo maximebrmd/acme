@@ -575,6 +575,11 @@
     "tag": "ServiceUnavailable"
   },
   {
+    "code": "short_link_not_found",
+    "status": 404,
+    "tag": "ShortLinkNotFound"
+  },
+  {
     "code": "signature_name_taken",
     "status": 409,
     "tag": "SignatureNameTaken"

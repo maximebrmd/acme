@@ -33,8 +33,8 @@ import { DiscoveryLive } from "#app/discovery/live.ts";
 import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { countRequests } from "#app/request-metrics.ts";
-import { SystemHandlers } from "#app/system.ts";
 import { ShortLinkRedirectsLive } from "#app/short-links/redirects.ts";
+import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
   BillingApiLive,
@@ -104,7 +104,7 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
-import { ShortLinksLive } from "#shortlinks/container.ts";
+import { ShortLinksApiLive, ShortLinksLive } from "#shortlinks/container.ts";
 import {
   ContractRequestAuditLive,
   ImpersonationAuditLive,
@@ -161,7 +161,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   QueuesApiLive,
   RecyclingApiLive,
   ChannelDefaultsApiLive,
-  AdsApiLive
+  AdsApiLive,
+  ShortLinksApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 // `/openapi.json` is served with the discovery documents, the same as
@@ -334,7 +335,8 @@ const AdsRoutesContextLive = adsContext(DirectAds);
 
 // Workspace and account settings, which erase and export what every context
 // keeps, billing's included, which the workspace context brings, the staff
-// audit log's, and the legal records, which keep who held a closed account.
+// audit log's, the short links', and the legal records, which keep who held
+// a closed account.
 const SettingsContextLive = WorkspaceSettingsLive.pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -346,7 +348,8 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       EngagementRecordsLive,
       StaffRecordsLive,
       ReviewGateContextLive,
-      AdsRoutesContextLive
+      AdsRoutesContextLive,
+      ShortLinksLive
     )
   )
 );
@@ -361,7 +364,8 @@ const ErasedContextsLive = Layer.mergeAll(
   EngagementRecordsLive,
   StaffRecordsLive,
   ReviewGateContextLive,
-  AdsRoutesContextLive
+  AdsRoutesContextLive,
+  ShortLinksLive
 );
 
 // The staff console, which reads accounts and workspaces from the workspace

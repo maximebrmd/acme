@@ -42,6 +42,7 @@ import {
   ReviewLinkNotFound,
   ScheduleInPast,
   SignatureNameTaken,
+  ShortLinkNotFound,
   SignatureNotFound,
   signedText,
   TagNameTaken,
@@ -467,6 +468,7 @@ const posts: readonly Post[] = [
     schedule: null,
     scheduledBy: null,
     scheduledVia: null,
+    shortenLinks: false,
     status: "draft",
     tagIds: [],
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e010", mastodonId)],
@@ -483,6 +485,7 @@ const posts: readonly Post[] = [
     schedule: { at: at("2026-11-20T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: null,
     scheduledVia: null,
+    shortenLinks: false,
     status: "scheduled",
     tagIds: [campaignTagId],
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e011", mastodonId)],
@@ -499,6 +502,7 @@ const posts: readonly Post[] = [
     schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: contributorId,
     scheduledVia: null,
+    shortenLinks: false,
     status: "awaitingApproval",
     tagIds: [],
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e012", mastodonId)],
@@ -515,6 +519,7 @@ const posts: readonly Post[] = [
     schedule: { at: at("2026-11-08T09:00:00Z"), timeZone: "Europe/Paris" },
     scheduledBy: null,
     scheduledVia: null,
+    shortenLinks: false,
     status: "finished",
     tagIds: [],
     targets: [
@@ -2376,6 +2381,7 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
       schedule: when,
       scheduledBy: userId,
       scheduledVia: viaCommandLine,
+      shortenLinks: payload.shortenLinks ?? false,
       status,
       tagIds: payload.tagIds ?? [],
       targets: targetsOf(id, written),
@@ -2845,6 +2851,27 @@ const madeRow = (
       );
 
 /** The workspace groups and the account's, answered from the studio. */
+// A short link a post went out with, and the server's short links.
+const shortLinkStatusFixture = {
+  available: true,
+  base: "https://go.example.test/",
+  byDefault: false,
+  shortLength: 31,
+};
+
+const shortLinkFixture = {
+  channelId: "0190f3a0-0000-7000-8000-0000000000c1",
+  clicks: 12,
+  createdAt: at("2026-11-01T09:00:00Z"),
+  destination: "https://example.test/spring-catalogue",
+  disabled: false,
+  id: "0190f3a0-0000-7000-8000-0000000005a1",
+  part: 0,
+  postId: "0190f3a0-0000-7000-8000-0000000005b1",
+  shortUrl: "https://go.example.test/AbC1234",
+  targetId: "0190f3a0-0000-7000-8000-0000000005c1",
+};
+
 export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
     adsGroupLive(studio),
@@ -3067,6 +3094,7 @@ export const studioGroupsLive = (studio: Studio) =>
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,
+              shortenLinks: payload.shortenLinks ?? false,
               status: "draft",
               tagIds: payload.tagIds ?? [],
               targets: targetsOf(id, written),
@@ -3164,6 +3192,7 @@ export const studioGroupsLive = (studio: Studio) =>
               schedule: null,
               scheduledBy: null,
               scheduledVia: null,
+              shortenLinks: post.shortenLinks,
               status: "draft",
               tagIds: post.tagIds.filter((tagId) =>
                 current.tags.some((tag) => tag.id === tagId)
@@ -4176,6 +4205,53 @@ export const studioGroupsLive = (studio: Studio) =>
           Ref.get(studio.state).pipe(
             Effect.map(({ overPlan }) => (overPlan ? over : within))
           ),
+      })
+    ),
+    HttpApiBuilder.group(Api, "shortLinks", (handlers) =>
+      handlers.handleAll({
+        get: ({ params }) =>
+          allowed("analytics:read").pipe(
+            Effect.flatMap(() =>
+              params.linkId === shortLinkFixture.id
+                ? Effect.succeed({
+                    days: [
+                      { clicks: 0, day: "2026-11-01" },
+                      { clicks: 4, day: "2026-11-02" },
+                      { clicks: 1, day: "2026-11-03" },
+                    ],
+                    link: { ...shortLinkFixture, clicks: 5 },
+                    period: { from: "2026-11-01", to: "2026-11-03" },
+                  })
+                : Effect.fail(new ShortLinkNotFound())
+            )
+          ),
+        list: ({ query }) =>
+          allowed("analytics:read").pipe(
+            Effect.as({
+              items:
+                query.postId === undefined ||
+                query.postId === shortLinkFixture.postId
+                  ? [shortLinkFixture]
+                  : [],
+              nextCursor: null,
+              period: {
+                from: query.from ?? "2026-10-05",
+                to: query.to ?? "2026-11-03",
+              },
+            })
+          ),
+        setDefault: ({ payload }) =>
+          allowed("organization:update").pipe(
+            Effect.tap(() =>
+              record(studio, `short-links-default:${String(payload.byDefault)}`)
+            ),
+            Effect.as({
+              ...shortLinkStatusFixture,
+              byDefault: payload.byDefault,
+            })
+          ),
+        status: () =>
+          allowed("post:read").pipe(Effect.as(shortLinkStatusFixture)),
       })
     ),
     HttpApiBuilder.group(Api, "usage", (handlers) =>

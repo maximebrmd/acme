@@ -29,3 +29,8 @@ export const ShortLinksLive = Layer.mergeAll(
 
 /** The clicks' daily retention. Needs PurgeClicks. */
 export { ClickRetentionCron as ShortLinksCronsLive } from "#shortlinks/infrastructure/crons.ts";
+
+// The short links' endpoints. They need ShortLinkReports, ShortLinkSettings
+// and ShortLinkBase, which ShortLinksLive provides, and the middlewares of
+// the workspace context, which the composition root brings.
+export { ShortLinksHandlers as ShortLinksApiLive } from "#shortlinks/api/short-links.ts";

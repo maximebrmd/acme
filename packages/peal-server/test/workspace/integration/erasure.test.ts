@@ -56,6 +56,7 @@ const schemas = [
   "notifications",
   "publishing",
   "review",
+  "shortlinks",
   "staff",
   "webhooks",
   "workspace",
@@ -196,6 +197,13 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM review.links WHERE workspace_id = ${id}`,
   "review.settings": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM review.settings WHERE workspace_id = ${id}`,
+  // Its short links' clicks go with their links.
+  "shortlinks.clicks": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM shortlinks.clicks c JOIN shortlinks.links l ON l.id = c.link_id WHERE l.workspace_id = ${id}`,
+  "shortlinks.links": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM shortlinks.links WHERE workspace_id = ${id}`,
+  "shortlinks.settings": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM shortlinks.settings WHERE workspace_id = ${id}`,
   "webhooks.deliveries": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM webhooks.deliveries WHERE workspace_id = ${id}`,
   "webhooks.endpoints": (sql, id) =>
@@ -441,6 +449,15 @@ const fill = Effect.fn("fill")(function* fill(
 
   // As a post the person scheduled in the web app keeps it.
   yield* sql`UPDATE publishing.posts SET created_via = '{"_tag":"web"}'::jsonb, scheduled_via = '{"_tag":"web"}'::jsonb, scheduled_by = ${person.id} WHERE id = ${postId}`;
+
+  // A short link the post went out with, a day's clicks, and the
+  // workspace's default.
+  const shortLinkId = uuid7();
+
+  yield* sql`INSERT INTO shortlinks.links (id, code, workspace_id, post_id, target_id, channel_id, part, destination, created_at)
+    VALUES (${shortLinkId}, ${randomUUID().replaceAll("-", "").slice(0, 7)}, ${workspaceId}, ${postId}, ${uuid7()}, ${channelId}, 0, 'https://example.test/erased', now())`;
+  yield* sql`INSERT INTO shortlinks.clicks (link_id, day, clicks) VALUES (${shortLinkId}, '2026-11-10', 3)`;
+  yield* sql`INSERT INTO shortlinks.settings (workspace_id, by_default) VALUES (${workspaceId}, true)`;
 
   // A tag the post is filed under.
   const tagId = uuid7();

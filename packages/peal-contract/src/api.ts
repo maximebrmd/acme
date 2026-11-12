@@ -37,6 +37,7 @@ import { RecyclingApi } from "./recycling.ts";
 import { ReviewLinkApi } from "./review-link.ts";
 import { ReviewApi } from "./review.ts";
 import { SessionApi } from "./session.ts";
+import { ShortLinksApi } from "./short-links.ts";
 import { SignaturesApi } from "./signatures.ts";
 import { StaffApi } from "./staff.ts";
 import { SystemApi } from "./system.ts";
@@ -219,6 +220,32 @@ export { RecyclingEndsTooSoon } from "./recycling-ends-too-soon.ts";
 export { RecyclingRuleEnded } from "./recycling-rule-ended.ts";
 
 export { RecyclingRuleNotFound } from "./recycling-rule-not-found.ts";
+
+export { ShortLinkNotFound } from "./short-link-not-found.ts";
+
+export {
+  defaultShortLinkPageSize,
+  defaultShortLinkRangeDays,
+  maxShortLinkPageSize,
+  maxShortLinkRangeDays,
+  shortLinkClickRetentionDays,
+  ShortLinkDaySchema,
+  ShortLinkPageSchema,
+  ShortLinkPeriodSchema,
+  ShortLinkReportSchema,
+  ShortLinkSchema,
+  ShortLinkSettingsSchema,
+  ShortLinksApi,
+  ShortLinkStatusSchema,
+} from "./short-links.ts";
+
+export type {
+  ShortLink,
+  ShortLinkPage,
+  ShortLinkReport,
+  ShortLinkSettings,
+  ShortLinkStatus,
+} from "./short-links.ts";
 
 export { RecyclingVariantsInvalid } from "./recycling-variants-invalid.ts";
 
@@ -1876,6 +1903,7 @@ export class Api extends HttpApi.make("peal")
   .add(QueuesApi)
   .add(RecyclingApi)
   .add(ChannelDefaultsApi)
+  .add(ShortLinksApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.
   .annotateMerge(
