@@ -109,4 +109,65 @@ describe("peal short-links", () => {
       assert.isFalse(asked("Another synthetic draft."));
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
+
+  it.effect(
+    "leaves a post without the flag to the workspace's default, which --no-shorten-links refuses",
+    () =>
+      Effect.gen(function* byDefault() {
+        const session = yield* signedIn();
+
+        yield* session.printed([
+          "short-links",
+          "set-default",
+          "on",
+          ...inStudio,
+        ]);
+        yield* session.printed([
+          "post",
+          "Out with the default https://example.test/a/long/landing/page",
+          "--channel",
+          mastodonId,
+          "--now",
+          ...inStudio,
+        ]);
+        yield* session.printed([
+          "post",
+          "Out as written https://example.test/a/long/landing/page",
+          "--channel",
+          mastodonId,
+          "--now",
+          "--no-shorten-links",
+          ...inStudio,
+        ]);
+        yield* session.printed([
+          "drafts",
+          "save",
+          "--text",
+          "A synthetic draft with the default.",
+          ...inStudio,
+        ]);
+        yield* session.printed([
+          "drafts",
+          "save",
+          "--text",
+          "A synthetic draft as written.",
+          "--no-shorten-links",
+          ...inStudio,
+        ]);
+
+        const posts = yield* postsOf(session.studio);
+
+        const asked = (text: string) =>
+          posts.find(({ content }) => content.text === text)?.shortenLinks;
+
+        assert.isTrue(
+          asked("Out with the default https://example.test/a/long/landing/page")
+        );
+        assert.isFalse(
+          asked("Out as written https://example.test/a/long/landing/page")
+        );
+        assert.isTrue(asked("A synthetic draft with the default."));
+        assert.isFalse(asked("A synthetic draft as written."));
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
 });

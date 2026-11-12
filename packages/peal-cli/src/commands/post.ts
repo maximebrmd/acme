@@ -378,9 +378,9 @@ export const post = Command.make(
     ),
     shortenLinks: Flag.Boolean("shorten-links").pipe(
       Flag.withDescription(
-        "Send the post's links shortened, where the server has short links (peal short-links status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks (peal short-links list); the text kept stays as written, and Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform."
+        "Send the post's links shortened, where the server has short links (peal short-links status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks (peal short-links list); the text kept stays as written, and Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform. With --no-shorten-links, they go out as written. Without either, the post takes the workspace's default (peal short-links status) when it is made."
       ),
-      Flag.withDefault(false)
+      Flag.optional
     ),
     signature: signatureFlag(
       "A signature to put under the post's text, on every channel, by its id or its name, as peal signatures list shows them; under the last part of a post with --then parts. It is then text of the post, counted against each platform's limit, and never added twice."
@@ -422,13 +422,14 @@ export const post = Command.make(
       };
 
       // Tags are sent only when some were given, and short links only
-      // when asked for.
+      // when a flag says: the post takes the workspace's default without.
       const tagged: NewPost =
         tagIds.length === 0 ? written : { ...written, tagIds };
 
-      const filed: NewPost = input.shortenLinks
-        ? { ...tagged, shortenLinks: true }
-        : tagged;
+      const filed: NewPost = Option.match(input.shortenLinks, {
+        onNone: () => tagged,
+        onSome: (shortenLinks) => ({ ...tagged, shortenLinks }),
+      });
 
       return checkPost(
         input.allowDuplicate ? { ...filed, allowDuplicate: true } : filed
