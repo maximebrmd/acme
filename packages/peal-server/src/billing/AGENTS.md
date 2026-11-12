@@ -163,11 +163,14 @@
   answer a partner's usage per customer: what the workspace context's
   `PartnerTenants` says it holds, through billing's port `PartnerTenancy`
   (`WorkspacePartnerTenancyLive`, which maps its refusals to billing's
-  own), then three set-based reads whatever the page's size
-  (`UsageLedger.ofWorkspaces` for the page, `postsAcross` and
-  `MeteredPostLedger.ofWorkspaces` over every workspace it holds; an empty
-  list asks nothing), the home workspace's plan, and the partner's daily
-  counts for `days` and `channelDays`. An offboarded workspace's rows went
+  own), checked before the period, then set-based reads, their ids one
+  array parameter (`anyUuid`, `#shared/infrastructure/any-uuid.ts`: a
+  statement takes 65,535 parameters, so never `inArray` over a partner's
+  workspaces): `UsageLedger.ofWorkspaces` for the page, grouped by
+  workspace once, and, on the first page only, `postsAcross`,
+  `MeteredPostLedger.ofWorkspaces` over every workspace it holds and the
+  partner's daily counts for `current`, `days` and `totals`, which are
+  null on the pages after it. An empty list asks nothing. An offboarded workspace's rows went
   with it: it leaves the list and the sums, never the daily counts. The
   MCP tool is `get_partner_usage`, the CLI's `peal partner usage`.
   Nothing prices or

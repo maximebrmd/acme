@@ -32,8 +32,9 @@ peal usage --from 2026-11-01 --to 2026-11-30 --json
 For a workspace with a partner account (owners and admins, partner:read):
 what the account used across every workspace it holds, then a page of its
 workspaces, each with the partner's external id, its channels, channel-days
-and posts. The home workspace comes first, on the first page only; pass the
-page's `next` as `--before` for the next one. A customer offboarded since
+and posts. The home workspace and the account's totals come with the first
+page only; the command prints the one for the next page, with the same
+days. A customer offboarded since
 is no longer listed, and its posts leave the sums. Counts only, never
 prices.
 
