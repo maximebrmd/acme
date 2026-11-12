@@ -487,6 +487,38 @@ describe(Overview, () => {
         })
     );
 
+    it.effect("refuses a cursor whose time is outside the range", () =>
+      Effect.gen(function* forged() {
+        const calls = yield* noCalls();
+
+        // A post's id and the furthest instant a date holds, written as
+        // the agenda's cursors are: base64url of their JSON.
+        const forgedCursor = Buffer.from(
+          JSON.stringify({
+            postId: "019a0000-0000-7000-8000-000000000001",
+            scheduledAt: -8_640_000_000_000_000,
+          })
+        ).toString("base64url");
+
+        const refused = yield* Overview.use((overview) =>
+          overview.agenda(person, {
+            ...range,
+            cursor: Option.some(forgedCursor),
+            limit: 10,
+            workspaceIds: Option.none(),
+          })
+        ).pipe(
+          Effect.provide(
+            overviewOver([{ id: alpha, name: "Alpha", role: "viewer" }], calls)
+          ),
+          Effect.flip
+        );
+
+        assert.strictEqual(refused._tag, "InvalidOverviewCursor");
+        assert.deepStrictEqual((yield* Ref.get(calls)).agenda, []);
+      })
+    );
+
     it.effect(
       "refuses a range past 31 days, or one that ends before it starts",
       () =>

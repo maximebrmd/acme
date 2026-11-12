@@ -74,7 +74,6 @@ import { DrizzleFeedStore } from "#publishing/infrastructure/drizzle-feed-store.
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzleLivePostChangeStore } from "#publishing/infrastructure/drizzle-live-post-change-store.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
-import { DrizzlePostAttentionReads } from "#publishing/infrastructure/drizzle-post-attention-reads.ts";
 import { DrizzlePostOversight } from "#publishing/infrastructure/drizzle-post-oversight.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
@@ -107,6 +106,7 @@ import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platfo
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
 import { ShortLinksLinkShortener } from "#publishing/infrastructure/shortlinks-link-shortener.ts";
 import { ShortLinksShortLinkDefaults } from "#publishing/infrastructure/shortlinks-short-link-defaults.ts";
+import { SqlPostAttentionReads } from "#publishing/infrastructure/sql-post-attention-reads.ts";
 import { ToldLivePostEvents } from "#publishing/infrastructure/told-live-post-events.ts";
 import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
 import {
@@ -436,7 +436,7 @@ export const MediaInPostsLive = MediaInPosts.layer.pipe(
  * (Drizzle).
  */
 export const PostAttentionLive = PostAttention.layer.pipe(
-  Layer.provide(DrizzlePostAttentionReads)
+  Layer.provide(SqlPostAttentionReads)
 );
 
 // The posts endpoints. They need the use cases PublishingLive provides, and

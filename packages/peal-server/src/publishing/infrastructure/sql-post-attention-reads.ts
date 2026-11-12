@@ -1,4 +1,3 @@
-import { and, asc, eq, gt, gte, inArray, lt, or, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -11,10 +10,6 @@ import {
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
-import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
-import { Drizzle } from "#shared/infrastructure/database.ts";
-
-import { posts, postTargets } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -32,17 +27,12 @@ const decodeCounts = Schema.decodeUnknownEffect(
   )
 );
 
-// Every workspace's id in one text parameter, split in the database, as
-// `anyUuid` writes it for Drizzle.
-const idsOf = (workspaceIds: readonly WorkspaceId[]) => workspaceIds.join(",");
+// Before every post at an instant: what no cursor's id is less than.
+const noPost = "00000000-0000-0000-0000-000000000000";
 
-// The statuses of a post with a time that goes out, or went out.
-const agendaStatuses = [
-  "awaitingApproval",
-  "scheduled",
-  "publishing",
-  "finished",
-];
+// Every workspace's id in one text parameter, split in the database, as
+// `anyUuid` writes it: a statement takes 65,535 parameters at most.
+const idsOf = (workspaceIds: readonly WorkspaceId[]) => workspaceIds.join(",");
 
 // How much of a post's text the query reads: enough for the excerpt the
 // domain cuts, which counts characters as a reader does, never the whole
@@ -73,67 +63,75 @@ const decodeChannelIds = Schema.decodeUnknownEffect(
 );
 
 /**
- * The counts and the agenda across workspaces, in one query each, with
- * every workspace's id in one parameter (`anyUuid`), on the index of a
- * workspace's posts by time (`posts_workspace_scheduled_at`).
+ * The counts and the agenda across workspaces, in Postgres, one statement
+ * each, every workspace's id in one parameter, each part on an index that
+ * bounds what it reads.
  */
-export const DrizzlePostAttentionReads = Layer.effect(
+export const SqlPostAttentionReads = Layer.effect(
   PostAttentionReads,
-  Effect.gen(function* DrizzlePostAttentionReads() {
-    const db = yield* Drizzle;
+  Effect.gen(function* SqlPostAttentionReads() {
     const client = yield* SqlClient.SqlClient;
 
     return PostAttentionReads.of({
-      agenda: ({ after, from, limit, to, workspaceIds }) =>
-        db
-          .select({
-            channelIds: sql<string>`array_to_string(ARRAY(SELECT ${postTargets.channelId} FROM ${postTargets} WHERE ${postTargets.postId} = ${posts.id} ORDER BY ${postTargets.channelId}), ',')`,
-            postId: posts.id,
-            scheduledAt: posts.scheduledAt,
-            status: posts.status,
-            textStart: sql<string>`left(${posts.text}, ${textRead})`,
-            timeZone: posts.scheduleZone,
-            workspaceId: posts.workspaceId,
-          })
-          .from(posts)
-          .where(
-            and(
-              anyUuid(posts.workspaceId, workspaceIds),
-              inArray(posts.status, agendaStatuses),
-              gte(posts.scheduledAt, DateTime.toDateUtc(from)),
-              lt(posts.scheduledAt, DateTime.toDateUtc(to)),
-              ...Option.toArray(
-                after.pipe(
-                  Option.map(({ postId, scheduledAt }) =>
-                    or(
-                      gt(posts.scheduledAt, DateTime.toDateUtc(scheduledAt)),
-                      and(
-                        eq(posts.scheduledAt, DateTime.toDateUtc(scheduledAt)),
-                        gt(posts.id, postId)
-                      )
-                    )
-                  )
-                )
+      // A keyset per workspace, on the index of its posts by time
+      // (`posts_workspace_scheduled_at`): each reads from the cursor on, a
+      // page at most, so a page reads at most a page a workspace whatever
+      // the range holds; then the page's rows alone get their text and
+      // channels.
+      agenda: ({ after, from, limit, to, workspaceIds }) => {
+        const position = Option.getOrElse(after, () => ({
+          postId: noPost,
+          scheduledAt: from,
+        }));
+
+        const since = DateTime.toDateUtc(position.scheduledAt);
+
+        return client`
+          SELECT
+            p.id AS "postId",
+            p.workspace_id AS "workspaceId",
+            p.scheduled_at AS "scheduledAt",
+            p.schedule_zone AS "timeZone",
+            p.status,
+            left(p.text, ${textRead}) AS "textStart",
+            array_to_string(ARRAY(
+              SELECT t.channel_id FROM publishing.post_targets t
+              WHERE t.post_id = p.id ORDER BY t.channel_id
+            ), ',') AS "channelIds"
+          FROM (
+            SELECT q.id, q.scheduled_at
+            FROM unnest(string_to_array(${idsOf(workspaceIds)}, ',')::uuid[]) AS w(id)
+            CROSS JOIN LATERAL (
+              SELECT id, scheduled_at FROM publishing.posts
+              WHERE workspace_id = w.id
+                AND status IN ('awaitingApproval', 'scheduled', 'publishing', 'finished')
+                AND scheduled_at >= ${since}
+                AND scheduled_at < ${DateTime.toDateUtc(to)}
+                AND (scheduled_at > ${since} OR id > ${position.postId}::uuid)
+              ORDER BY scheduled_at, id
+              LIMIT ${limit}
+            ) AS q
+            ORDER BY q.scheduled_at, q.id
+            LIMIT ${limit}
+          ) AS page
+          JOIN publishing.posts p ON p.id = page.id
+          ORDER BY p.scheduled_at, p.id
+        `.pipe(
+          Effect.mapError(failed),
+          Effect.flatMap((rows) => decodeAgendaRows(rows).pipe(Effect.orDie)),
+          Effect.flatMap(
+            Effect.forEach(({ channelIds, ...row }) =>
+              decodeChannelIds(
+                channelIds === "" ? [] : channelIds.split(",")
+              ).pipe(
+                Effect.orDie,
+                Effect.map((ids) => ({ ...row, channelIds: ids }))
               )
             )
-          )
-          .orderBy(asc(posts.scheduledAt), asc(posts.id))
-          .limit(limit)
-          .pipe(
-            Effect.mapError(failed),
-            Effect.flatMap((rows) => decodeAgendaRows(rows).pipe(Effect.orDie)),
-            Effect.flatMap(
-              Effect.forEach(({ channelIds, ...row }) =>
-                decodeChannelIds(
-                  channelIds === "" ? [] : channelIds.split(",")
-                ).pipe(
-                  Effect.orDie,
-                  Effect.map((ids) => ({ ...row, channelIds: ids }))
-                )
-              )
-            ),
-            Effect.withSpan("PostAttentionReads.agenda")
           ),
+          Effect.withSpan("PostAttentionReads.agenda")
+        );
+      },
       // One read an index serves for each thing counted, put together:
       // the posts going out by their time (`posts_workspace_scheduled_at`),
       // those waiting for an approval (`posts_workspace_awaiting_approval`)

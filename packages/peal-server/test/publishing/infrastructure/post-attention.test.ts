@@ -3,7 +3,7 @@ import { DateTime, Effect, Layer, Option } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { PostAttention } from "#publishing/application/post-attention.ts";
-import { DrizzlePostAttentionReads } from "#publishing/infrastructure/drizzle-post-attention-reads.ts";
+import { SqlPostAttentionReads } from "#publishing/infrastructure/sql-post-attention-reads.ts";
 import { newId } from "#shared/application/ids.ts";
 import {
   ChannelIdSchema,
@@ -18,7 +18,7 @@ import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
 // suite uses (2053), and deleted after: none is left scheduled.
 
 const AttentionTest = PostAttention.layer.pipe(
-  Layer.provide(DrizzlePostAttentionReads),
+  Layer.provide(SqlPostAttentionReads),
   Layer.provideMerge(DatabaseTest)
 );
 

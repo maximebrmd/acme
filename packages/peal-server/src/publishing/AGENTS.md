@@ -717,7 +717,10 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   `posts_workspace_finished_attention`), so its cost follows what is
   counted, never the posts a workspace keeps: read such a plan on a
   database with long histories (about 20,000 posts a workspace), which
-  `seed-scale.ts`'s 90 a workspace does not show.
+  `seed-scale.ts`'s 90 a workspace does not show. The agenda is a keyset per
+  workspace (a lateral read on `posts_workspace_scheduled_at` from the
+  cursor, a page at most each), the text and channels read for the page's
+  rows alone.
 - `PostSearch` (`posts.search`, `list_posts`, `peal posts list`) pages by
   keyset on `(scheduled_at, id)` or on `id`, which orders by creation
   (UUIDv7), never by offset; a cursor is opaque (`PostPositionSchema`) and

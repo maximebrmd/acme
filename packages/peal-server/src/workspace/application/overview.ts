@@ -443,6 +443,18 @@ export class Overview extends Context.Service<
           request.cursor
         );
 
+        // A page ends inside its range: a time outside it is no page's.
+        if (
+          Option.exists(
+            after,
+            ({ scheduledAt }) =>
+              DateTime.isLessThan(scheduledAt, request.from) ||
+              !DateTime.isLessThan(scheduledAt, request.to)
+          )
+        ) {
+          return yield* new InvalidOverviewCursor();
+        }
+
         const all = yield* workspacesOf(principal);
 
         const asked = Option.match(request.workspaceIds, {
