@@ -5,7 +5,14 @@ import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import { defaultFeedTemplate } from "peal-contract";
-import type { Channel, Feed, FeedPreview, NewFeed, Queue } from "peal-contract";
+import type {
+  Channel,
+  Feed,
+  FeedChange,
+  FeedPreview,
+  NewFeed,
+  Queue,
+} from "peal-contract";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,10 +113,12 @@ const Items = ({
 // A feed's pause, resume and delete, for those who may change it.
 const FeedActions = ({
   feed,
+  onEdit,
   onItems,
   workspaceId,
 }: {
   readonly feed: Feed;
+  readonly onEdit: () => void;
   readonly onItems: () => void;
   readonly workspaceId: string;
 }) => {
@@ -125,6 +134,9 @@ const FeedActions = ({
     <>
       <Button variant="outline" size="sm" onClick={onItems}>
         {t("showItems")}
+      </Button>
+      <Button variant="outline" size="sm" onClick={onEdit}>
+        {t("edit")}
       </Button>
       <Button
         variant="outline"
@@ -177,19 +189,122 @@ const FeedActions = ({
   );
 };
 
-// A feed of the list, its items shown on demand.
+// What the edit form starts from: the feed as it is.
+const draftOf = (feed: Feed): FeedDraft => ({
+  attachPicture: feed.attachPicture,
+  channelIds: feed.channelIds,
+  mode: feed.mode,
+  queueId: feed.queueId ?? "",
+  template: feed.template,
+  url: feed.url,
+});
+
+// The form that changes where a feed's posts go and what they say: the
+// way to put right a channel or a queue gone since.
+const EditForm = ({
+  channels,
+  feed,
+  mayQueue,
+  onDone,
+  queues,
+  workspaceId,
+}: {
+  readonly channels: readonly Channel[];
+  readonly feed: Feed;
+  readonly mayQueue: boolean;
+  readonly onDone: () => void;
+  readonly queues: readonly Queue[];
+  readonly workspaceId: string;
+}) => {
+  const t = useTranslations("Feeds");
+  const update = useAtomSet(updateFeed, { mode: "promiseExit" });
+  const answered = useAnswered();
+  const [draft, setDraft] = useState(() => draftOf(feed));
+  const [busy, start] = useTransition();
+
+  // Only the channels the workspace still has: one gone is dropped.
+  const connected = new Set(channels.map(({ id }) => id));
+
+  const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const payload: FeedChange = {
+      attachPicture: draft.attachPicture,
+      channelIds: draft.channelIds.filter((id) => connected.has(id)),
+      mode: draft.mode,
+      queueId:
+        draft.mode === "queue" && draft.queueId !== "" ? draft.queueId : null,
+      template: draft.template,
+    };
+
+    const asked: FeedChange =
+      draft.url.trim() === feed.url
+        ? payload
+        : { ...payload, url: draft.url.trim() };
+
+    start(async () => {
+      const saved = answered(
+        await update({
+          params: { feedId: feed.id, workspaceId },
+          payload: asked,
+          reactivityKeys: feedsChanged(workspaceId),
+        }),
+        t("saved")
+      );
+
+      if (saved) {
+        onDone();
+      }
+    });
+  };
+
+  return (
+    <form className="flex flex-col gap-4" onSubmit={onSubmit}>
+      <FeedFieldsView
+        channels={channels}
+        disabled={busy}
+        draft={draft}
+        mayQueue={mayQueue}
+        queues={queues}
+        onChange={setDraft}
+      />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={busy || draft.url.trim() === ""}>
+          {t("save")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy}
+          onClick={onDone}
+        >
+          {t("cancel")}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+// A feed of the list, its items and its edit form shown on demand.
 const FeedRow = ({
+  channels,
   feed,
   highlighted,
   mayChange,
+  mayQueue,
+  queues,
   workspaceId,
 }: {
+  readonly channels: readonly Channel[];
   readonly feed: Feed;
   readonly highlighted: boolean;
   readonly mayChange: boolean;
+  readonly mayQueue: boolean;
+  readonly queues: readonly Queue[];
   readonly workspaceId: string;
 }) => {
   const [showItems, setShowItems] = useState(highlighted);
+  const [editing, setEditing] = useState(false);
 
   return (
     <FeedItemView
@@ -200,6 +315,9 @@ const FeedRow = ({
           <FeedActions
             feed={feed}
             workspaceId={workspaceId}
+            onEdit={() => {
+              setEditing((open) => !open);
+            }}
             onItems={() => {
               setShowItems((shown) => !shown);
             }}
@@ -207,7 +325,23 @@ const FeedRow = ({
         ) : null
       }
       items={
-        showItems ? <Items feedId={feed.id} workspaceId={workspaceId} /> : null
+        <>
+          {editing ? (
+            <EditForm
+              channels={channels}
+              feed={feed}
+              mayQueue={mayQueue}
+              queues={queues}
+              workspaceId={workspaceId}
+              onDone={() => {
+                setEditing(false);
+              }}
+            />
+          ) : null}
+          {showItems ? (
+            <Items feedId={feed.id} workspaceId={workspaceId} />
+          ) : null}
+        </>
       }
     />
   );
@@ -369,9 +503,12 @@ const Loaded = ({
             {feeds.value.items.map((feed) => (
               <FeedRow
                 key={feed.id}
+                channels={channels.value}
                 feed={feed}
                 highlighted={feed.id === highlighted}
                 mayChange={mayChange}
+                mayQueue={mayQueue}
+                queues={queues}
                 workspaceId={workspaceId}
               />
             ))}

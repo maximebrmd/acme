@@ -1106,3 +1106,56 @@ describe("a feed whose starter is gone", () => {
     timeout
   );
 });
+
+describe("a feed whose queue is gone", () => {
+  it.effect(
+    "pauses all the same, and resumes once given another queue",
+    () =>
+      onServer(
+        Effect.gen(function* repairs() {
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const queueId = yield* queueOn(workspaceId, channel);
+
+          yield* serveItems(blog, []);
+
+          const { feed } = yield* created(workspaceId, {
+            mode: "queue",
+            queueId: Option.some(queueId),
+          });
+
+          yield* Queues.use((queues) =>
+            queues.remove(actorIn(workspaceId), queueId)
+          );
+
+          const paused = yield* Feeds.use((feeds) =>
+            feeds.change(actorIn(workspaceId), feed.id, { status: "paused" })
+          );
+
+          assert.strictEqual(paused.status._tag, "paused");
+
+          const refused = yield* Feeds.use((feeds) =>
+            feeds.change(actorIn(workspaceId), feed.id, { status: "active" })
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "QueueNotFound");
+
+          const another = yield* queueOn(workspaceId, channel);
+
+          const resumed = yield* Feeds.use((feeds) =>
+            feeds.change(actorIn(workspaceId), feed.id, {
+              queueId: Option.some(another),
+              status: "active",
+            })
+          );
+
+          assert.deepStrictEqual(
+            [resumed.status._tag, resumed.queueId],
+            ["active", Option.some(another)]
+          );
+        })
+      ),
+    timeout
+  );
+});
+

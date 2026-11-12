@@ -3457,12 +3457,15 @@
       "tooMany": "L’espace de travail suit {allowed} flux, le maximum permis : supprimez-en un d’abord.",
       "forbidden": "Votre rôle ne le permet pas.",
       "noChannelSet": "Ce groupe de canaux n’existe plus.",
-      "noQueue": "L’espace de travail n’a pas cette file, ou pas de file par défaut : ajoutez-en une d’abord.",
+      "noQueue": "La file d’attente du flux, ou la file par défaut de l’espace de travail, n’existe plus : modifiez le flux pour choisir une autre file, ou faire de ses publications des brouillons.",
       "notFound": "Ce flux n’existe plus.",
-      "unknownChannels": "Un canal choisi n’est plus connecté."
+      "unknownChannels": "Un canal du flux n’est plus connecté : modifiez le flux pour choisir de nouveau ses canaux."
     },
     "pictureSkipped": "Son image a été laissée de côté : {reason, select, notPublic {son adresse n’est pas publique.} unreachable {elle n’a pas pu être récupérée.} tooLarge {elle est trop lourde.} notAnImage {ce n’est pas une image.} storageFull {le stockage de l’offre est plein.} busy {trop d’imports avaient lieu à la fois.} notAllowed {la personne qui a ajouté le flux ne peut pas importer de médias.} other {elle n’a pas pu être importée.}}",
     "picture": "Joindre l’image de chaque élément",
-    "pictureHint": "Importée dans la médiathèque, décrite par le titre de l’élément. Une publication part sans elle quand elle ne peut pas être récupérée."
+    "pictureHint": "Importée dans la médiathèque, décrite par le titre de l’élément. Une publication part sans elle quand elle ne peut pas être récupérée.",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saved": "Le flux est enregistré."
   }
 }

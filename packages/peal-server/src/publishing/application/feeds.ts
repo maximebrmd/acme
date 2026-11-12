@@ -592,10 +592,22 @@ export class Feeds extends Context.Service<
 
         const edited = editFeed(current, edit, current.updatedAt);
 
-        yield* checkedTargets(actor, edited);
-
         const resuming =
           request.status === "active" && current.status._tag !== "active";
+
+        // Where its posts go is checked when it changes, or when the feed
+        // goes again: pausing one whose channel or queue is gone is never
+        // refused, and resuming it names what to put right (the channels,
+        // UnknownChannels; the queue, QueueNotFound).
+        const targetsChange =
+          request.channelIds !== undefined ||
+          request.channelSetId !== undefined ||
+          request.mode !== undefined ||
+          request.queueId !== undefined;
+
+        if (targetsChange || resuming) {
+          yield* checkedTargets(actor, edited);
+        }
 
         // A feed whose starter is gone is taken over by whoever resumes
         // it, as one they add would be: their posts, as they reach Peal.
