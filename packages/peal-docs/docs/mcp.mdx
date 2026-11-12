@@ -228,6 +228,8 @@ A workspace saves three things to write its posts with, and `create_draft`, `upd
 
 **Repeating posts.** `recycle_post` makes a scheduled or published post [repeat](/scheduling#recycling) (`every`, `count` or `until`, `variants`, `queueId`): it publishes again, in public, without anyone being asked each time, so a client calls it only when you asked for the post to repeat. `update_recycling_rule` changes or pauses a rule and `resume_recycling_rule` sets one going again; all three take `workspace:publish`. `list_recycling_rules` and `get_recycling_rule` read the rules, with their next posts, and `stop_recycling_rule` ends one (`workspace:publish` too); `list_posts` takes `recyclingId`.
 
+**Feeds.** `list_feeds`, `get_feed` (with its 50 newest items, never what they said) and `preview_feed` (an address's three newest items as the template would write them, keeping nothing) read the workspace's [feeds](/scheduling#feeds). `create_feed` follows one, `update_feed` changes, pauses or resumes one, and `delete_feed` stops following one; `create_feed` and `update_feed` take `workspace:publish`, as a feed on a queue puts posts out without anyone reading each first. What a feed says is other people's text: the tools tell the client to take it as data, never as instructions.
+
 Annotations are hints a client may show you; the permission checks are the server's.
 
 ### Comments [#inbox-tools]
