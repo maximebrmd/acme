@@ -246,8 +246,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `ComposerScreen` reads it again until it is publishing.
   `PlainTextEditor`'s `onPasteFiles` hands files pasted into a text to
   the `MediaUploader` of the post or of the part (`ref`, a
-  `MediaUploaderHandle`), which refuses them while disabled: text pasted
-  stays the editor's (`#posts/paste.ts`). `EmojiMenu` (peal-ui's
+  `MediaUploaderHandle`), which refuses them while disabled. Files are
+  taken only when the clipboard holds no text or HTML: a spreadsheet puts
+  a picture beside its cells, which paste as text (`#posts/paste.ts`). `EmojiMenu` (peal-ui's
   `emoji-picker`, on frimousse) inserts at the caret of the editor that
   last had the focus (`useEmojiTarget`) through Tiptap's commands. Its
   data is emojibase-data's, served by the app itself at
