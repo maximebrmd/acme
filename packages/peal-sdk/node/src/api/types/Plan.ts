@@ -5,6 +5,7 @@ export const Plan = {
         Starter: "starter",
         Pro: "pro",
         Business: "business",
-        Agency: "agency"
+        Agency: "agency",
+        PayAsYouGo: "payAsYouGo"
     } as const;
 export type Plan = typeof Plan[keyof typeof Plan];

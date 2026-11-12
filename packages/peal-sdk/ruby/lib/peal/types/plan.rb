@@ -12,6 +12,7 @@ module Peal
       PRO = "pro"
       BUSINESS = "business"
       AGENCY = "agency"
+      PAY_AS_YOU_GO = "payAsYouGo"
     end
   end
 end

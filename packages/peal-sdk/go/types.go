@@ -15324,10 +15324,11 @@ func (o *OwnImageLimitReachedEncoded) String() string {
 type PaidPlan string
 
 const (
-	PaidPlanStarter  PaidPlan = "starter"
-	PaidPlanPro      PaidPlan = "pro"
-	PaidPlanBusiness PaidPlan = "business"
-	PaidPlanAgency   PaidPlan = "agency"
+	PaidPlanStarter    PaidPlan = "starter"
+	PaidPlanPro        PaidPlan = "pro"
+	PaidPlanBusiness   PaidPlan = "business"
+	PaidPlanAgency     PaidPlan = "agency"
+	PaidPlanPayAsYouGo PaidPlan = "payAsYouGo"
 )
 
 func NewPaidPlanFromString(s string) (PaidPlan, error) {
@@ -15340,6 +15341,8 @@ func NewPaidPlanFromString(s string) (PaidPlan, error) {
 		return PaidPlanBusiness, nil
 	case "agency":
 		return PaidPlanAgency, nil
+	case "payAsYouGo":
+		return PaidPlanPayAsYouGo, nil
 	}
 	var t PaidPlan
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -17632,11 +17635,12 @@ func (p *PinterestOptions) String() string {
 type Plan string
 
 const (
-	PlanFree     Plan = "free"
-	PlanStarter  Plan = "starter"
-	PlanPro      Plan = "pro"
-	PlanBusiness Plan = "business"
-	PlanAgency   Plan = "agency"
+	PlanFree       Plan = "free"
+	PlanStarter    Plan = "starter"
+	PlanPro        Plan = "pro"
+	PlanBusiness   Plan = "business"
+	PlanAgency     Plan = "agency"
+	PlanPayAsYouGo Plan = "payAsYouGo"
 )
 
 func NewPlanFromString(s string) (Plan, error) {
@@ -17651,6 +17655,8 @@ func NewPlanFromString(s string) (Plan, error) {
 		return PlanBusiness, nil
 	case "agency":
 		return PlanAgency, nil
+	case "payAsYouGo":
+		return PlanPayAsYouGo, nil
 	}
 	var t Plan
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

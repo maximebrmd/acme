@@ -65728,6 +65728,13 @@ func TestEnumPaidPlan(t *testing.T) {
 		assert.Equal(t, PaidPlan("agency"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_payAsYouGo", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPaidPlanFromString("payAsYouGo")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PaidPlan("payAsYouGo"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewPaidPlanFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)
@@ -66208,6 +66215,13 @@ func TestEnumPlan(t *testing.T) {
 		val, err := NewPlanFromString("agency")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, Plan("agency"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_payAsYouGo", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlanFromString("payAsYouGo")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, Plan("payAsYouGo"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
