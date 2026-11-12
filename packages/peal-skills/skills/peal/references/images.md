@@ -12,7 +12,8 @@ peal media generate --prompt "A paper catalogue open on a wooden table, morning 
 - Make an image only when the user asked for one. Each call makes a new
   image. `GET /api/workspaces/{workspaceId}/assistant` says who makes it
   (`images.source`): `workspace`, the provider the workspace set, which
-  costs none of the day's assistant requests on any plan; `server`, the
+  costs none of the day's assistant requests on any plan, up to 50 images
+  a day (`own_image_limit_reached` past them); `server`, the
   operator's model, which spends 5 of them, given back when no image came
   of it (a timeout or an unusable answer counts), and makes none on the
   free plan or during a trial.

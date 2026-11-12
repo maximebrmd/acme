@@ -100,8 +100,12 @@
   (`openai-compatible-own-image-model.ts`, the same request and answer
   reading as the server's adapter, `images-api.ts`): through
   `publicHttpClientWith` (the guard on every call, no redirect, the answer
-  bounded), with the same slots and storage check, and reads and counts
-  nothing of `AssistantAllowance` or `AssistantUsage`, on any plan. Never
+  bounded), with slots of its own (`ImageSlots.take(…, "workspace")`, as
+  many as the server model's, so a silent endpoint starves nobody else),
+  the storage check, and `ownImagesPerDay` (50) a workspace and UTC day,
+  counted whatever each ends with (`OwnImageCounts`,
+  `assistant.own_image_days`; `OwnImagesExhausted`, 429). It reads and
+  counts nothing of `AssistantAllowance` or `AssistantUsage`, on any plan. Never
   the server's `ImageModel`, not even when it fails, nor with a key that no
   longer opens (`ImageProviderRefused` `keyUnreadable`). 401 to 404 and an
   address the guard refuses are `ImageProviderRefused`, with no state: the
