@@ -82,7 +82,8 @@ export interface IssuedTokens {
   /**
    * The platform member the token belongs to, when the account is not
    * theirs: a LinkedIn page's administrator, whose calls LinkedIn counts
-   * per member. A refresh gives none, and the one kept stays.
+   * per member. A refresh gives the one kept (`StoredTokens.tokenOwner`)
+   * again; tokens saved without one forget it.
    */
   readonly tokenOwner?: string;
 }

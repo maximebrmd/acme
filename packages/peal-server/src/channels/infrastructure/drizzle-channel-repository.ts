@@ -112,23 +112,20 @@ const channelColumns = (channel: Channel) => {
   };
 };
 
-// A token without its owner (a renewal, an older sign-in) leaves the one
-// kept in place.
+// Tokens without an owner forget the one kept: the authorizer hands a
+// renewal the owner it keeps.
 const credentialColumns = ({
   accessToken,
   grantedBy,
   refreshToken,
   tokenOwner,
-}: ChannelCredentials) => {
-  const columns = {
-    accessToken,
-    grantedBy: grantedBy ?? null,
-    refreshToken: Option.getOrNull(refreshToken),
-    tokenKeyId: tokenKeyIdOf(accessToken),
-  };
-
-  return tokenOwner === undefined ? columns : { ...columns, tokenOwner };
-};
+}: ChannelCredentials) => ({
+  accessToken,
+  grantedBy: grantedBy ?? null,
+  refreshToken: Option.getOrNull(refreshToken),
+  tokenKeyId: tokenKeyIdOf(accessToken),
+  tokenOwner: tokenOwner ?? null,
+});
 
 // Whether the channel already asks for a reconnect.
 const isMarked = sql<boolean>`(${channels.status} = 'refreshNeeded')`;

@@ -68,7 +68,8 @@ export interface ChannelToken extends ChannelAccount {
   /**
    * The platform member the token belongs to, when the account is not
    * theirs (a LinkedIn page's administrator); none when the channel was
-   * connected before Peal kept it, or for a token just renewed.
+   * connected before Peal kept it, or where the inbox does not read the
+   * platform.
    */
   readonly tokenOwner?: string;
 }
@@ -264,9 +265,14 @@ export class ChannelAccess extends Context.Service<
           const renewal: Renewal = {
             _tag: "renewed",
             channel: updated,
+            // The owner the authorizer kept, as saved.
             tokens: {
               accessToken: issued.accessToken,
               refreshToken: issued.refreshToken,
+              ...Option.match(Option.fromUndefinedOr(issued.tokenOwner), {
+                onNone: () => ({}),
+                onSome: (tokenOwner) => ({ tokenOwner }),
+              }),
             },
           };
 

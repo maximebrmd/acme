@@ -192,6 +192,17 @@ export const linkedinPagesAuthorizer = Effect.fn(
 }) {
   const { client, endpoints, http, version } = options;
   const asked = linkedinPagesScopesFor(options.inbox);
+
+  // The tokens with their owner, where the inbox reads LinkedIn; without
+  // one elsewhere, so that saving them forgets any kept.
+  const ownedBy = (
+    issued: IssuedTokens,
+    owner: string | undefined
+  ): IssuedTokens =>
+    owner === undefined || !options.inbox.has("linkedin")
+      ? issued
+      : { ...issued, tokenOwner: owner };
+
   const redirectUri = new URL(linkedinCallbackPath, options.publicUrl).href;
   const randomText = yield* randomTexts;
 
@@ -351,13 +362,13 @@ export const linkedinPagesAuthorizer = Effect.fn(
       };
 
       // The member the token is theirs, whose calls LinkedIn counts: the
-      // roles' assignee, a `urn:li:person:…`.
+      // roles' assignee, a `urn:li:person:…`; kept only where the inbox
+      // reads LinkedIn, which is all it is for.
       const owner = roles.find(({ roleAssignee }) =>
         (roleAssignee ?? "").startsWith("urn:li:person:")
       )?.roleAssignee;
 
-      const tokens: IssuedTokens =
-        owner === undefined ? issued : { ...issued, tokenOwner: owner };
+      const tokens: IssuedTokens = ownedBy(issued, owner);
 
       const administered = [
         ...new Set(
@@ -468,7 +479,9 @@ export const linkedinPagesAuthorizer = Effect.fn(
         scopes: scopesOf(answer, channel.scopes),
       };
 
-      return renewed;
+      // The same member's token: the owner kept stays, where the inbox
+      // still reads LinkedIn.
+      return ownedBy(renewed, tokens.tokenOwner);
     });
 
   const authorizer: PlatformAuthorizer = {

@@ -13,7 +13,9 @@ import { RefreshChannelTokens } from "#channels/application/refresh-channel-toke
 import { renewToken } from "#channels/domain/channel.ts";
 import type { Channel } from "#channels/domain/channel.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
+import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import { everyWorkspaceOn } from "#test/billing/support.ts";
 import {
   authorizersOf,
@@ -71,14 +73,16 @@ const administrator = (page: { readonly id: number }) => ({
 
 // LinkedIn with both of Peal's apps, and the use case over the two.
 const onLinkedIn = Effect.fn("test.onLinkedIn")(function* onLinkedIn(
-  version?: string
+  version?: string,
+  inbox: InboxPlatforms = new Set()
 ) {
   const linkedin = yield* fakeLinkedIn();
   const profiles = yield* linkedinAuthorizerOn(linkedin.endpoints);
 
   const authorizer = yield* linkedinPagesAuthorizerOn(
     linkedin.endpoints,
-    version
+    version,
+    inbox
   );
 
   const connect = yield* connectChannelOver(profiles, authorizer);
@@ -131,6 +135,16 @@ const storedTokens = (channel: Channel) =>
       refresh: refreshToken.pipe(Option.map(Redacted.value)),
     }))
   );
+
+// The member the stored token is theirs, if kept.
+const storedOwner = (channel: Channel) =>
+  ChannelRepository.use((channels) => channels.credentials(channel.id)).pipe(
+    Effect.map(Option.getOrThrow),
+    Effect.map(({ tokenOwner }) => tokenOwner)
+  );
+
+// A server whose inbox reads LinkedIn pages' comments.
+const readsLinkedIn: InboxPlatforms = new Set(["linkedin"]);
 
 // Makes the channel's token due for the sweep: five minutes left.
 const makeDue = (channel: Channel) =>
@@ -187,19 +201,15 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
   );
 
   it.effect(
-    "keeps who the page's token belongs to, and keeps it through a reconnect that does not say",
+    "keeps who the page's token belongs to where the inbox reads LinkedIn, and hands it with the token",
     () =>
       Effect.gen(function* owner() {
-        const on = yield* onLinkedIn();
+        const on = yield* onLinkedIn(undefined, readsLinkedIn);
         const workspaceId = yield* freshWorkspace;
         const channel = yield* connectedPage(on, workspaceId);
 
-        const stored = yield* ChannelRepository.use((channels) =>
-          channels.credentials(channel.id)
-        ).pipe(Effect.map(Option.getOrThrow));
-
         assert.strictEqual(
-          stored.tokenOwner,
+          yield* storedOwner(channel),
           `urn:li:person:${linkedinMember.sub}`
         );
 
@@ -211,7 +221,134 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
           token.tokenOwner,
           `urn:li:person:${linkedinMember.sub}`
         );
-      })
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "keeps the owner through a renewal, by the sweep or on a refused token",
+    () =>
+      Effect.gen(function* renewal() {
+        const on = yield* onLinkedIn(undefined, readsLinkedIn);
+        const workspaceId = yield* freshWorkspace;
+
+        on.linkedin.issueRefreshTokens();
+
+        const channel = yield* connectedPage(on, workspaceId);
+        const jobs = tokenJobs(workspaceId, on.authorizer);
+        const owner = `urn:li:person:${linkedinMember.sub}`;
+
+        yield* makeDue(channel);
+        assert.strictEqual(
+          yield* RefreshChannelTokens.use((tokens) =>
+            tokens.refresh(channel.id)
+          ).pipe(Effect.provide(jobs)),
+          "refreshed"
+        );
+        assert.strictEqual(yield* storedOwner(channel), owner);
+
+        // LinkedIn refuses the token once: renewed, it still names the
+        // member, and so does the one stored.
+        let refused = false;
+
+        const token = yield* ChannelAccess.use((access) =>
+          access.withToken(channel.id, (given) => {
+            if (refused) {
+              return Effect.succeed(given);
+            }
+
+            refused = true;
+
+            return Effect.fail(new TokenRejected());
+          })
+        ).pipe(Effect.provide(jobs));
+
+        assert.strictEqual(
+          Redacted.value(token.accessToken),
+          "linkedin-token-3"
+        );
+        assert.strictEqual(token.tokenOwner, owner);
+        assert.strictEqual(yield* storedOwner(channel), owner);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect("takes the member who reconnects a page for its owner", () =>
+    Effect.gen(function* replaced() {
+      const on = yield* onLinkedIn(undefined, readsLinkedIn);
+      const workspaceId = yield* freshWorkspace;
+      const channel = yield* connectedPage(on, workspaceId);
+      const other = { ...linkedinMember, sub: "zY9xW8vU7t" };
+
+      on.linkedin.addMember(other);
+      on.linkedin.grantRoles(other.sub, [administrator(linkedinPage)]);
+
+      const url = yield* on.connect.reconnect(manager(workspaceId), channel.id);
+
+      const again = yield* on.connect.complete(
+        manager(workspaceId),
+        "linkedin",
+        callbackOf(on.linkedin.approve(url, other.sub))
+      );
+
+      assert(again._tag === "connected");
+      assert.strictEqual(
+        yield* storedOwner(channel),
+        `urn:li:person:${other.sub}`
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "keeps no owner where the inbox does not read LinkedIn, and forgets one kept at the next sign-in or renewal",
+    () =>
+      Effect.gen(function* inboxOff() {
+        const off = yield* onLinkedIn();
+        const workspaceId = yield* freshWorkspace;
+        const channel = yield* connectedPage(off, workspaceId);
+
+        assert.isUndefined(yield* storedOwner(channel));
+
+        // Kept while the inbox read LinkedIn, then turned off: a
+        // reconnection forgets it.
+        const on = yield* onLinkedIn(undefined, readsLinkedIn);
+        const kept = yield* connectedPage(on, yield* freshWorkspace);
+
+        assert.isDefined(yield* storedOwner(kept));
+
+        const turnedOff = yield* linkedinPagesAuthorizerOn(
+          on.linkedin.endpoints
+        );
+
+        const connect = yield* connectChannelOver(on.profiles, turnedOff);
+
+        const url = yield* connect.reconnect(
+          manager(kept.workspaceId),
+          kept.id
+        );
+
+        yield* connect.complete(
+          manager(kept.workspaceId),
+          "linkedin",
+          callbackOf(on.linkedin.approve(url))
+        );
+
+        assert.isUndefined(yield* storedOwner(kept));
+
+        // So does a renewal.
+        on.linkedin.issueRefreshTokens();
+
+        const renewed = yield* connectedPage(on, yield* freshWorkspace);
+
+        assert.isDefined(yield* storedOwner(renewed));
+
+        yield* makeDue(renewed);
+        assert.strictEqual(
+          yield* RefreshChannelTokens.use((tokens) =>
+            tokens.refresh(renewed.id)
+          ).pipe(Effect.provide(tokenJobs(renewed.workspaceId, turnedOff))),
+          "refreshed"
+        );
+        assert.isUndefined(yield* storedOwner(renewed));
+      }).pipe(Effect.scoped)
   );
 
   it.effect("connects the only page the member may post to, at once", () =>
