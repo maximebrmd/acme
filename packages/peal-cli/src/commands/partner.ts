@@ -4,11 +4,16 @@ import {
   CalendarDaySchema,
   CustomerWorkspacePageSchema,
   maxWorkspacePageSize,
+  PartnerHealthSchema,
   PartnerKeySchema,
   PartnerStandingSchema,
   PartnerUsageReportSchema,
 } from "peal-contract";
-import type { PartnerUsageReport, PlatformPosts } from "peal-contract";
+import type {
+  CustomerHealth,
+  PartnerUsageReport,
+  PlatformPosts,
+} from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
@@ -345,9 +350,120 @@ const usage = Command.make(
   )
 );
 
+// What needs attention in one customer, as the person reads it: only what
+// is there, or once that nothing is.
+const attentionOf = ({ channels, inbox, posts }: CustomerHealth): string => {
+  const found = [
+    ...(channels !== null && channels.toReconnect > 0
+      ? [`${String(channels.toReconnect)} to reconnect`]
+      : []),
+    ...(channels !== null && channels.off > 0
+      ? [`${String(channels.off)} turned off`]
+      : []),
+    ...(posts !== null && posts.failedLast7Days > 0
+      ? [`${String(posts.failedLast7Days)} failed in 7 days`]
+      : []),
+    ...(posts !== null && posts.unconfirmedLast7Days > 0
+      ? [`${String(posts.unconfirmedLast7Days)} to confirm`]
+      : []),
+    ...(posts !== null && posts.awaitingApproval > 0
+      ? [`${String(posts.awaitingApproval)} awaiting approval`]
+      : []),
+    ...(inbox !== null && inbox.unanswered > 0
+      ? [`${String(inbox.unanswered)} unanswered`]
+      : []),
+  ];
+
+  return found.length === 0 ? "Nothing needs attention." : found.join(", ");
+};
+
+const overview = Command.make(
+  "overview",
+  {
+    cursor: Flag.String("cursor").pipe(
+      Flag.withMetavar("<cursor>"),
+      Flag.withDescription(
+        "The next page: the cursor the page before printed, as it is."
+      ),
+      Flag.optional
+    ),
+    json: jsonFlag,
+    limit: Flag.Int("limit").pipe(
+      Flag.withMetavar("<count>"),
+      Flag.withDescription(
+        `How many of the partner's customers a page lists, 50 by default, ${String(maxWorkspacePageSize)} at most.`
+      ),
+      Flag.optional
+    ),
+    workspace: workspaceFlag,
+  },
+  Effect.fn("partner.overview")(function* showOverview(input) {
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+
+    const page = yield* client.partnerAccount
+      .overview({
+        params: { workspaceId: workspace.id },
+        query: {
+          ...Option.match(input.cursor, {
+            onNone: () => ({}),
+            onSome: (before) => ({ before }),
+          }),
+          ...Option.match(input.limit, {
+            onNone: () => ({}),
+            onSome: (limit) => ({ limit }),
+          }),
+        },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(PartnerHealthSchema, page);
+
+      return;
+    }
+
+    yield* Console.log(
+      `What needs attention in the partner account of ${workspace.name}'s workspaces (${String(page.workspaces.length)} of ${String(page.total)}, newest first):`
+    );
+
+    for (const line of columns(
+      page.workspaces.map((customer) => [
+        `  ${customer.externalId ?? "–"}`,
+        customer.name,
+        attentionOf(customer),
+      ])
+    )) {
+      yield* Console.log(line);
+    }
+
+    if (page.account?.overPlan === true) {
+      yield* Console.log(
+        "Its workspaces hold more channels than the plan allows: they schedule and publish nothing until some are removed or the plan grows."
+      );
+    } else if (page.account?.overPlan === false) {
+      yield* Console.log("The plan holds every channel.");
+    }
+
+    if (page.next !== null) {
+      const limit = Option.match(input.limit, {
+        onNone: () => "",
+        onSome: (given) => ` --limit ${String(given)}`,
+      });
+
+      yield* Console.log(
+        `More: peal partner overview${limit} --cursor ${page.next}`
+      );
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "Show which of the partner account's customers need attention: channels to reconnect or turned off, posts that failed or wait to be confirmed or approved in the last 7 days, threads waiting for an answer; and, on the first page, whether the plan holds their channels. Newest first, a page at a time. It changes nothing. With --json, the API's answer as it came."
+  )
+);
+
 export const partner = Command.make("partner").pipe(
   Command.withDescription(
     "A workspace's partner account, which lets a product use Peal for its own customers. Creating and deleting their workspaces is for the partner API, with a partner key."
   ),
-  Command.withSubcommands([show, keys, workspaces, usage])
+  Command.withSubcommands([show, keys, workspaces, usage, overview])
 );
