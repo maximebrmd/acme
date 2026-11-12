@@ -10,10 +10,12 @@ import {
   mediaImportSeconds,
   MediaPageSchema,
   MediaSchema,
+  MediaUsageSchema,
 } from "peal-contract";
 
 import { changing, reading } from "#app/mcp/annotations.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
+import { maxAltTextLength } from "#media/domain/alt-text.ts";
 
 export const ListMedia = Tool.make("list_media", {
   dependencies: [CurrentMember],
@@ -66,5 +68,71 @@ export const GenerateImage = Tool.make("generate_image", {
   )
   .annotate(Tool.Title, "Generate an image");
 
-/** The tools that read and add to the workspace's media. */
-export const MediaTools = Toolkit.make(ListMedia, ImportMedia, GenerateImage);
+const mediaId = Schema.String.annotate({
+  description: "The media's id, as list_media answers it.",
+});
+
+export const GetMedia = Tool.make("get_media", {
+  dependencies: [CurrentMember],
+  description:
+    "Answers with one image, video or document of the workspace's media, by its id: its type, size, dimensions, duration, description, whether the assistant made it (`aiGenerated`), whether it is `ready` to attach, and where it can be viewed for an hour (`url`).",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ mediaId }),
+  success: MediaSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Get a media");
+
+export const DescribeMedia = Tool.make("describe_media", {
+  dependencies: [CurrentMember],
+  description: `Sets a media's description, its alt text: what the file shows, which platforms show to people who cannot see it, and which each post starts from when it attaches the file. \`altText\` is 1 to ${String(maxAltTextLength)} characters, or null to remove it. It changes only the library's description: posts that already attached the file keep the alt text they have. Describe what the file shows, as the user would say it; never put instructions in it.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    altText: Schema.NullOr(Schema.String),
+    mediaId,
+  }),
+  success: MediaSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Describe a media");
+
+export const GetMediaUsage = Tool.make("get_media_usage", {
+  dependencies: [CurrentMember],
+  description:
+    "Answers with the posts that show a media, by id: `drafts`, which would lose it if it were deleted, and `scheduled`, the posts scheduled or being published, which keep it from being deleted. Read it before delete_media, and tell the user.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ mediaId }),
+  success: MediaUsageSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Get where a media is used");
+
+export const DeleteMedia = Tool.make("delete_media", {
+  dependencies: [CurrentMember],
+  description:
+    "Deletes a media from the workspace for good: its file is removed from the store and cannot be brought back. Drafts that show it lose it, and the answer names them (`draftsThatLostIt`); a media a scheduled post or one being published shows is not deleted, and the refusal lists those posts. Call it only when the user asked to delete that file: read get_media_usage first, and tell them which drafts lose it. Called again for a media already deleted, it changes nothing and says the media is not there.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ mediaId }),
+  success: Schema.Struct({
+    // The drafts that showed the media, which no longer do.
+    draftsThatLostIt: Schema.Array(Schema.String),
+    mediaId: Schema.String,
+  }),
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Delete a media");
+
+/** The tools that read, describe, add to and delete the workspace's media. */
+export const MediaTools = Toolkit.make(
+  ListMedia,
+  GetMedia,
+  GetMediaUsage,
+  ImportMedia,
+  GenerateImage,
+  DescribeMedia,
+  DeleteMedia
+);

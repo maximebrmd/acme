@@ -4197,7 +4197,19 @@ export const studioGroupsLive = (studio: Studio) =>
             }));
             yield* record(studio, `delete-media:${found.id}`);
           }),
-        describe: () => refusing,
+        describe: ({ params, payload }) =>
+          Effect.gen(function* describe() {
+            yield* allowed("media:upload");
+
+            const found = yield* findMedia(studio, params.mediaId);
+
+            yield* record(studio, `describe-media:${found.id}`);
+
+            return yield* saveMedia(studio, {
+              ...found,
+              altText: payload.altText,
+            });
+          }),
         get: ({ params }) =>
           allowed("media:read").pipe(
             Effect.andThen(findMedia(studio, params.mediaId))
@@ -4280,7 +4292,28 @@ export const studioGroupsLive = (studio: Studio) =>
                   : null,
             };
           }),
-        usage: () => refusing,
+        // The drafts and the scheduled posts that show it, as the server
+        // reads them from each post's content.
+        usage: ({ params }) =>
+          Effect.gen(function* usage() {
+            yield* allowed("media:read");
+
+            const found = yield* findMedia(studio, params.mediaId);
+            const { posts: all } = yield* Ref.get(studio.state);
+
+            const showing = all.filter((post) =>
+              post.content.media.some(({ mediaId }) => mediaId === found.id)
+            );
+
+            return {
+              drafts: showing
+                .filter(({ status }) => status === "draft")
+                .map(({ id }) => id),
+              scheduled: showing
+                .filter(({ status }) => status !== "draft")
+                .map(({ id }) => id),
+            };
+          }),
       })
     ),
     HttpApiBuilder.group(Api, "analytics", (handlers) =>

@@ -612,6 +612,10 @@ const reasonOf =
         refused(
           "The workspace already imports two files at once, or has two images being made, or the server runs as many as it takes together: nothing was fetched or made. Try again in a moment."
         ),
+      MediaInUse: ({ postIds }) =>
+        refused(
+          `The media was not deleted: posts that are scheduled or being published show it (${postIds.join(", ")}). Take them back to draft and remove it from them first, or wait until they have gone out.`
+        ),
       MediaNotFound: () => refused("The workspace has no such media."),
       MediaSourceNotPublic: () =>
         refused(

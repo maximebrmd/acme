@@ -16,6 +16,18 @@ import { actorOf } from "#shared/api/actor.ts";
 
 const decodeAssetId = Schema.decodeUnknownOption(MediaAssetIdSchema);
 
+const noSuchMedia = () =>
+  refuse(
+    "The workspace has no media with this id: list_media answers those it has."
+  );
+
+// The media a call names, or a refusal: an id of the wrong form names none.
+const assetOf = (raw: string) =>
+  Option.match(decodeAssetId(raw), {
+    onNone: noSuchMedia,
+    onSome: (assetId) => Effect.succeed(assetId),
+  });
+
 // The log says why, for whoever runs the server; the model is told to wait.
 const storeDown = (failure: MediaStorageFailed) =>
   Effect.logWarning("The media store failed", failure).pipe(
@@ -76,6 +88,44 @@ export const MediaToolsLive = MediaTools.toLayer(
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
     return MediaTools.of({
+      delete_media: ({ mediaId }) =>
+        Effect.gen(function* deleting() {
+          const assetId = yield* assetOf(mediaId);
+
+          const lost = yield* library.deleteMedia(yield* actor, assetId).pipe(
+            Effect.catchTags({
+              MediaAssetNotFound: noSuchMedia,
+              MediaInUse: ({ postIds }) =>
+                refuse(
+                  `The media was not deleted: posts that are scheduled or being published show it (${postIds.join(", ")}). Take them back to draft and remove it from them first, or wait until they have gone out.`
+                ),
+              MediaStorageFailed: storeDown,
+              MissingPermission: notAllowed("delete media"),
+            })
+          );
+
+          return { draftsThatLostIt: [...lost], mediaId: assetId };
+        }),
+      describe_media: ({ altText, mediaId }) =>
+        Effect.gen(function* describing() {
+          const assetId = yield* assetOf(mediaId);
+
+          const described = yield* library
+            .describeMedia(yield* actor, assetId, Option.fromNullOr(altText))
+            .pipe(
+              Effect.catchTags({
+                AltTextTooLong: ({ maxLength }) =>
+                  refuse(
+                    `The altText is longer than the ${String(maxLength)} characters a description may have: shorten it.`
+                  ),
+                MediaAssetNotFound: noSuchMedia,
+                MediaStorageFailed: storeDown,
+                MissingPermission: notAllowed("describe media"),
+              })
+            );
+
+          return itemView(described);
+        }),
       generate_image: ({ aspect, prompt }) =>
         Effect.gen(function* generating() {
           const maker = yield* actor;
@@ -92,7 +142,7 @@ export const MediaToolsLive = MediaTools.toLayer(
                   ),
                 AssistantUnavailable: () =>
                   refuse(
-                    "This Peal server makes no images: its operator has not set up an image model, or the image provider refused the server's settings. Ask the user for a picture to upload or import instead."
+                    "This Peal server makes no images for this workspace: the workspace has no image provider of its own, and the server's operator has not set up an image model, or that provider refused the server's settings. Ask the user for a picture to upload or import instead, or to have an owner or an admin set the workspace's own image provider in the web app."
                   ),
                 DraftRejected: ({ maxLength, reason }) =>
                   refuse(
@@ -118,6 +168,31 @@ export const MediaToolsLive = MediaTools.toLayer(
                 ),
               })
             );
+        }),
+      get_media: ({ mediaId }) =>
+        Effect.gen(function* getting() {
+          const assetId = yield* assetOf(mediaId);
+
+          const item = yield* library.getMedia(yield* actor, assetId).pipe(
+            Effect.catchTags({
+              MediaAssetNotFound: noSuchMedia,
+              MediaStorageFailed: storeDown,
+              MissingPermission: notAllowed("see the workspace's media"),
+            })
+          );
+
+          return itemView(item);
+        }),
+      get_media_usage: ({ mediaId }) =>
+        Effect.gen(function* usage() {
+          const assetId = yield* assetOf(mediaId);
+
+          return yield* library.mediaUsage(yield* actor, assetId).pipe(
+            Effect.catchTags({
+              MediaAssetNotFound: noSuchMedia,
+              MissingPermission: notAllowed("see the workspace's media"),
+            })
+          );
         }),
       import_media: ({ altText, url }) =>
         Effect.gen(function* importing() {
