@@ -217,6 +217,33 @@
   hide, show and withdraw one comment on a test channel (a reply to a
   reply among them), and watch the project's quota for a day; have the
   privacy policy name YouTube, and Google verify the scope.
+- LinkedIn is read only where `PEAL_INBOX_PLATFORMS` names it (with
+  `LINKEDIN_PAGES_CLIENT_ID` and its secret), and on company pages only:
+  `abilitiesOf` and `askedAtSignIn` take the channel's `connection`
+  (`EngagedChannel.connection`), and a profile is `unsupported`, never
+  `reconnect`, as LinkedIn closes the permission that reads a member's
+  posts. `linkedinCommentScopes`: read ← `r_organization_social_feed`;
+  reply and withdraw ← `w_organization_social_feed`; no hide, no like
+  yet. The adapter (`infrastructure/platforms/linkedin/`, on
+  `#shared/infrastructure/platforms/linkedin-rest.ts` and
+  `linkedinVersionConfig`) cites the Comments and Social Actions pages
+  and the date read: a thread's summary first (a post without comments
+  answers 404 to its comments), then its comments by pages of 100 and
+  each one's nested comments; a 404 on the summary is `missing` only
+  while the token still reads the page itself. A comment is kept by its
+  `commentUrn` as given (its thread may be an activity the post's URN is
+  not) and its author by URN, with no name ("A LinkedIn member", "A
+  LinkedIn page" in the clients): LinkedIn caps other members' profile
+  data at a day, and the refresh bound is a day (`linkedinRefreshWithin`).
+  401 renews the token, 403 pauses the channel on a batch's first thread,
+  429 and 426 (logged) halt, 5xx waits. A reply goes under the top-level
+  comment as the page; a resume never sends (`foundAmong`); a withdrawal
+  deletes by the comment's id, inside its URN, and a 404 is done. The
+  Development tier's 500 calls a day halt the reading most days. Never
+  run against LinkedIn: before the setting is turned on anywhere, the
+  pages app holds the Standard tier and both scopes (a pages sign-in fails
+  without them), the privacy policy names LinkedIn, and one comment is
+  read, answered and withdrawn on a test page.
 - Threads of a platform that is off end `unsupported` at their first
   read, and stay ended when the setting is turned on: only posts published
   afterwards are read. They are not reopened, because a thread does not

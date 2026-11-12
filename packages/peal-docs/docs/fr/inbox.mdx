@@ -1,13 +1,13 @@
 ---
 title: Boîte de réception
-description: Lisez les commentaires laissés sous vos publications mises en ligne sur Mastodon et Bluesky, et sur les Pages Facebook, Instagram et YouTube là où le serveur les lit, et répondez-y depuis Peal. Ce que Peal collecte, d’où, pour combien de temps, et ce que chaque plateforme permet à un compte.
+description: Lisez les commentaires laissés sous vos publications mises en ligne sur Mastodon et Bluesky, et sur les Pages Facebook, Instagram, YouTube et les pages LinkedIn là où le serveur les lit, et répondez-y depuis Peal. Ce que Peal collecte, d’où, pour combien de temps, et ce que chaque plateforme permet à un compte.
 sidebar:
   order: 10
 ---
 
 La boîte de réception rassemble les commentaires laissés sous les publications que Peal a mises en ligne pour un espace de travail, et permet à ses membres d’y répondre en public, au nom du compte connecté. Ouvrez un espace de travail depuis **Espaces de travail**, puis **Boîte de réception**.
 
-C’est la première partie de la boîte de réception : les commentaires des publications mises en ligne depuis Peal, sur Mastodon et Bluesky, et sur les Pages Facebook, Instagram et YouTube là où la personne qui exploite le serveur les a activés ([Pages Facebook et Instagram](#meta), [YouTube](#youtube)). Les messages privés, les mentions et les avis ne sont pas collectés, et Peal ne répond à rien de lui-même : chaque réponse est écrite et envoyée par une personne, ou par une application qu’une personne a connectée et autorisée à publier.
+C’est la première partie de la boîte de réception : les commentaires des publications mises en ligne depuis Peal, sur Mastodon et Bluesky, et sur les Pages Facebook, Instagram, YouTube et les pages d’entreprise LinkedIn là où la personne qui exploite le serveur les a activés ([Pages Facebook et Instagram](#meta), [YouTube](#youtube), [pages LinkedIn](#linkedin)). Les messages privés, les mentions et les avis ne sont pas collectés, et Peal ne répond à rien de lui-même : chaque réponse est écrite et envoyée par une personne, ou par une application qu’une personne a connectée et autorisée à publier.
 
 ## Ce que Peal collecte [#collected]
 
@@ -40,7 +40,7 @@ Quand un commentaire a été modifié, Peal montre son nouveau texte. Quand une 
 
 Un fil (les commentaires d’une publication sur un canal, et les réponses envoyées) est supprimé {{keep-inbox-fr}} après que Peal a cessé de lire les commentaires de la publication : avec la fenêtre habituelle, 60 jours après la mise en ligne. La suppression a lieu une fois par jour.
 
-Une plateforme peut ne laisser Peal conserver ce qu’elle donne que moins longtemps, à moins que Peal ne le relise : sur [YouTube](#youtube), un commentaire qui n’a pas été relu dans les 29 jours est effacé, son texte et son auteur, comme quand la plateforme ne le montre plus, et la boîte de réception indique « Plus conservé ». Une lecture suivante qui le retrouve l’affiche de nouveau. Peal le vérifie toutes les heures. Déconnecter un canal d’une telle plateforme efface aussitôt ses commentaires.
+Une plateforme peut ne laisser Peal conserver ce qu’elle donne que moins longtemps, à moins que Peal ne le relise : sur [YouTube](#youtube), un commentaire qui n’a pas été relu dans les 29 jours, et sur [LinkedIn](#linkedin) dans la journée, est effacé, son texte et son auteur, comme quand la plateforme ne le montre plus, et la boîte de réception indique « Plus conservé ». Une lecture suivante qui le retrouve l’affiche de nouveau. Peal le vérifie toutes les heures. Déconnecter un canal d’une telle plateforme efface aussitôt ses commentaires.
 
 Supprimer un espace de travail supprime aussitôt ses fils. Quand un membre ferme son compte, les réponses qu’il a envoyées restent à l’espace de travail, sans son nom ; son [export de données](/settings) liste les réponses qu’il a envoyées, jamais les commentaires auxquels il répondait, qui appartiennent à d’autres.
 
@@ -76,14 +76,14 @@ Vous pouvez aussi marquer un commentaire comme traité quand il n’appelle pas 
 
 ## Ce que chaque plateforme permet [#abilities]
 
-| Possibilité                                                | Mastodon                                        | Bluesky                                                     | Pages Facebook ([où activées](#meta)) | Instagram ([où activé](#meta))            | YouTube ([où activé](#youtube))               |
-| ---------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------- | ------------------------------------- | ----------------------------------------- | --------------------------------------------- |
-| Lire les commentaires d’une publication                    | Oui                                             | Oui                                                         | Oui                                   | Oui                                       | Oui                                           |
-| Répondre à un commentaire                                  | Oui                                             | Oui                                                         | Oui                                   | Oui                                       | Oui                                           |
-| Retirer une réponse                                        | Oui                                             | Oui                                                         | Oui                                   | Oui                                       | Oui                                           |
-| Aimer un commentaire                                       | Pas encore : Peal ne demande pas l’autorisation | Pas encore : Peal ne demande pas l’autorisation             | Pas encore                            | Non : l’API d’Instagram n’a pas de j’aime | Non : l’API de YouTube n’a pas de j’aime      |
-| Masquer le commentaire de quelqu’un sous votre publication | Non : Mastodon ne l’offre à aucun compte        | Pas encore : Peal ne demande pas l’autorisation             | Oui                                   | Oui                                       | Oui : il est rejeté                           |
-| Supprimer le commentaire de quelqu’un d’autre              | Non : Mastodon ne l’offre à aucun compte        | Non : personne ne supprime la publication d’un autre compte | Pas encore                            | Pas encore                                | Non : seul son auteur supprime un commentaire |
+| Possibilité                                                | Mastodon                                        | Bluesky                                                     | Pages Facebook ([où activées](#meta)) | Instagram ([où activé](#meta))            | YouTube ([où activé](#youtube))               | Pages LinkedIn ([où activées](#linkedin))                   |
+| ---------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------- | ------------------------------------- | ----------------------------------------- | --------------------------------------------- | ----------------------------------------------------------- |
+| Lire les commentaires d’une publication                    | Oui                                             | Oui                                                         | Oui                                   | Oui                                       | Oui                                           | Oui                                                         |
+| Répondre à un commentaire                                  | Oui                                             | Oui                                                         | Oui                                   | Oui                                       | Oui                                           | Oui                                                         |
+| Retirer une réponse                                        | Oui                                             | Oui                                                         | Oui                                   | Oui                                       | Oui                                           | Oui                                                         |
+| Aimer un commentaire                                       | Pas encore : Peal ne demande pas l’autorisation | Pas encore : Peal ne demande pas l’autorisation             | Pas encore                            | Non : l’API d’Instagram n’a pas de j’aime | Non : l’API de YouTube n’a pas de j’aime      | Pas encore                                                  |
+| Masquer le commentaire de quelqu’un sous votre publication | Non : Mastodon ne l’offre à aucun compte        | Pas encore : Peal ne demande pas l’autorisation             | Oui                                   | Oui                                       | Oui : il est rejeté                           | Non : l’API des pages ne masque rien                        |
+| Supprimer le commentaire de quelqu’un d’autre              | Non : Mastodon ne l’offre à aucun compte        | Non : personne ne supprime la publication d’un autre compte | Pas encore                            | Pas encore                                | Non : seul son auteur supprime un commentaire | Non : personne ne supprime le commentaire d’un autre membre |
 
 `GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` et chaque fil répondent la même chose pour un canal : `available`, `reconnect` (le compte a été connecté avant que Peal ne demande ce que la possibilité exige : [connectez de nouveau le compte](/channels), sans le déconnecter, et le canal reste avec son historique), ou `unsupported`.
 
@@ -131,6 +131,27 @@ Sur YouTube :
 - Les règles de YouTube laissent Peal conserver un commentaire 30 jours sans le relire : Peal efface celui qui n’a pas été relu dans les 29 jours ([conservation](#retention)), et les efface tous aussitôt quand la chaîne est déconnectée.
 - Seules les vidéos mises en ligne après l’activation de YouTube sont lues : celles d’avant n’ont pas de boîte de réception.
 
+### Pages LinkedIn [#linkedin]
+
+Peal lit les commentaires des publications d’une page d’entreprise LinkedIn seulement là où la personne qui exploite le serveur a activé LinkedIn ([`PEAL_INBOX_PLATFORMS`](/environment-variables#core)), avec l’application des pages (`LINKEDIN_PAGES_CLIENT_ID`, `LINKEDIN_PAGES_CLIENT_SECRET`). Le profil d’un membre n’est pas lu : LinkedIn ferme à presque toutes les applications l’autorisation qui lit les publications d’un membre.
+
+| Ce que l’administrateur de la page autorise à la connexion | Ce que cela permet                                 |
+| ---------------------------------------------------------- | -------------------------------------------------- |
+| `r_organization_social_feed`                               | Lire les commentaires des publications de la page  |
+| `w_organization_social_feed`                               | Répondre au nom de la page, et retirer une réponse |
+
+La connexion des pages demande les deux là où le serveur lit LinkedIn. LinkedIn accorde tout ce qui est demandé ou rien : une application qui ne détient pas encore ces champs d’application fait refuser toute la connexion par LinkedIn ; n’activez donc LinkedIn qu’une fois que les produits de l’application les listent. Une page connectée avant affiche `reconnect` : [connectez-la de nouveau](/channels), sans la déconnecter.
+
+Sur LinkedIn :
+
+- Peal garde qui a commenté par son identifiant LinkedIn et ne récupère aucun nom : LinkedIn ne laisse une application conserver le profil d’un autre membre qu’une journée au plus ; la boîte de réception affiche donc « Un membre de LinkedIn », ou « Une page LinkedIn » pour une page.
+- LinkedIn laisse une application conserver les commentaires 48 heures, et les données de profil une journée. Peal efface un commentaire qui n’a pas été relu dans la journée ([conservation](#retention)) ; tant qu’une publication est lue, elle l’est au moins toutes les six heures, et ses commentaires restent affichés.
+- Un commentaire a des commentaires imbriqués sur un niveau : une réponse à un commentaire imbriqué va sous le commentaire auquel il répond.
+- Rien n’est masqué ni aimé depuis Peal.
+- LinkedIn ne prend aucune clé qui rendrait une réponse sûre à envoyer deux fois : quand on ne sait pas comment son envoi s’est terminé, Peal la cherche parmi les commentaires sous celui auquel elle répond, comme sur [les plateformes de Meta](#meta), et ne l’envoie jamais de nouveau.
+- Le niveau Development de LinkedIn permet 500 appels par jour pour toute l’application : la lecture s’y arrête la plupart des jours dès que LinkedIn le dit, et les commentaires attendent la passe suivante. Le niveau Standard n’a pas cette limite.
+- Seules les publications mises en ligne après l’activation de LinkedIn sont lues.
+
 ### Autres plateformes [#other-platforms]
 
 Peal ne lit pas encore de commentaires sur les autres plateformes. Chacune exige une autorisation que sa plateforme accorde après un examen :
@@ -138,7 +159,6 @@ Peal ne lit pas encore de commentaires sur les autres plateformes. Chacune exige
 | Plateforme                         | Ce qu’exigent la lecture des commentaires et les réponses                                                                  |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Threads                            | `threads_read_replies` et `threads_manage_replies`, accordées par l’App Review de Meta                                     |
-| LinkedIn                           | La Community Management API, pour les pages d’entreprise seulement, que LinkedIn accorde sur demande                       |
 | X                                  | Un accès payant à l’API de X pour lire les réponses                                                                        |
 | TikTok                             | Les commentaires sont offerts aux comptes professionnels par un autre produit de TikTok, que Peal n’utilise pas            |
 | Pinterest, Google Business Profile | Non prévu : l’API de Pinterest n’a pas de commentaires, et une fiche d’établissement a des avis, qui ne sont pas collectés |

@@ -151,7 +151,11 @@
   it); Google Business Profile's sign-in never changes
   (`youtube-comment-scopes.test.ts`). Peal never sends
   `include_granted_scopes`: a reconnection records what that consent
-  granted.
+  granted. Where it names LinkedIn, the pages' sign-in asks
+  `r_organization_social_feed` and `w_organization_social_feed` after its
+  own (`linkedinPagesScopesFor`); LinkedIn grants all or nothing, so an
+  answer that lists no scope records what was asked. The profile's sign-in
+  never changes (`linkedin-comment-scopes.test.ts`).
 - Instagram has two ways in, one platform with a connection kind
   (`InstagramConnectionSchema` in `#shared/domain/instagram-connection.ts`,
   copied by the contract): `instagramLogin`, the default, and
