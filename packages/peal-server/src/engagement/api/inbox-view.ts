@@ -34,28 +34,36 @@ export const toAbilitiesView = (
 export const toCommentView = (
   comment: Comment,
   ids: ReadonlyMap<string, string> = new Map()
-): InboxComment => ({
-  author: comment.author.pipe(
-    Option.map(({ displayName, handle, platformId }) => ({
-      displayName: Option.getOrNull(displayName),
-      handle,
-      platformId,
-    })),
-    Option.getOrNull
-  ),
-  id: comment.id,
-  liked: comment.liked,
-  parentId: comment.parentPlatformId.pipe(
-    Option.flatMap((parent) => Option.fromUndefinedOr(ids.get(parent))),
-    Option.getOrNull
-  ),
-  permalink: Option.getOrNull(comment.permalink),
-  receivedAt: comment.receivedAt,
-  state: comment.state,
-  text: comment.text,
-  threadId: comment.threadId,
-  writtenAt: comment.writtenAt,
-});
+): InboxComment => {
+  const view: InboxComment = {
+    author: comment.author.pipe(
+      Option.map(({ displayName, handle, platformId }) => ({
+        displayName: Option.getOrNull(displayName),
+        handle,
+        platformId,
+      })),
+      Option.getOrNull
+    ),
+    id: comment.id,
+    liked: comment.liked,
+    parentId: comment.parentPlatformId.pipe(
+      Option.flatMap((parent) => Option.fromUndefinedOr(ids.get(parent))),
+      Option.getOrNull
+    ),
+    permalink: Option.getOrNull(comment.permalink),
+    receivedAt: comment.receivedAt,
+    state: comment.state,
+    text: comment.text,
+    threadId: comment.threadId,
+    writtenAt: comment.writtenAt,
+  };
+
+  // A comment forgotten for its age says so; one the platform no longer
+  // shows says nothing more than `deleted`.
+  return comment.state === "deleted" && Option.isSome(comment.expiredAt)
+    ? { ...view, forgotten: "expired" }
+    : view;
+};
 
 export const toReplyView = (reply: Reply): InboxReply => {
   const { status } = reply;

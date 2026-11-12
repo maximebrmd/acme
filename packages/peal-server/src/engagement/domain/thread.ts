@@ -11,6 +11,7 @@ import {
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 
 import { nextCollection, retryAfter } from "./collection-schedule.ts";
+import { refreshDeadline } from "./engagement-retention.ts";
 import { ThreadIdSchema } from "./thread-id.ts";
 import type { ThreadId } from "./thread-id.ts";
 
@@ -66,6 +67,10 @@ export class Thread extends Schema.Class<Thread>(
   platformPostId: PlatformPostIdSchema,
   postId: PostIdSchema,
   publishedAt: Schema.DateTimeUtc,
+  // When its comments must be read again or be forgotten, on a platform
+  // that bounds how long Peal keeps what it gave without reading it
+  // again; none elsewhere, and once the retention forgot them.
+  refreshBy: Schema.Option(Schema.DateTimeUtc),
   targetId: PostTargetIdSchema,
   workspaceId: WorkspaceIdSchema,
 }) {}
@@ -95,6 +100,7 @@ const withFields = (thread: Thread, changed: Partial<Fields>): Thread =>
     platformPostId: thread.platformPostId,
     postId: thread.postId,
     publishedAt: thread.publishedAt,
+    refreshBy: thread.refreshBy,
     targetId: thread.targetId,
     workspaceId: thread.workspaceId,
     ...changed,
@@ -115,6 +121,7 @@ export const followPost = (id: ThreadId, post: FollowedPost): Thread =>
     platformPostId: post.platformPostId,
     postId: post.postId,
     publishedAt: post.publishedAt,
+    refreshBy: Option.none(),
     targetId: post.targetId,
     workspaceId: post.workspaceId,
   });
@@ -132,18 +139,32 @@ const scheduled = (
 /**
  * The thread once the run scheduled at `at` read its comments, at
  * `collectedAt`: its next read follows the schedule, or it ends with the
- * window.
+ * window. On a platform that bounds how long Peal keeps a comment without
+ * reading it again (`refreshWithin`), only a `complete` read, which saw
+ * every comment the thread keeps, moves the bound: an incomplete one (a
+ * cap, a deadline, comments turned off) never extends it, so a comment it
+ * did not return is forgotten at the bound. An incomplete read sets one
+ * only where the thread had none.
  */
 export const recordCollection = (
   thread: Thread,
   collectedAt: DateTime.Utc,
   at: DateTime.Utc,
-  window: Duration.Duration
-): Thread =>
-  withFields(thread, {
+  window: Duration.Duration,
+  refreshWithin: Option.Option<Duration.Duration>,
+  complete: boolean
+): Thread => {
+  const deadline = refreshDeadline(collectedAt, refreshWithin);
+
+  return withFields(thread, {
     collection: scheduled(thread, at, window),
     lastCollectedAt: Option.some(collectedAt),
+    refreshBy:
+      complete || Option.isNone(refreshWithin)
+        ? deadline
+        : Option.orElse(thread.refreshBy, () => deadline),
   });
+};
 
 /**
  * The thread once the run scheduled at `at` could not read it for now (its
@@ -171,6 +192,13 @@ export const postponeCollection = (
     },
   });
 };
+
+/**
+ * The thread once the retention forgot what its last read found: nothing
+ * of it waits for a refresh any more.
+ */
+export const withoutRefresh = (thread: Thread): Thread =>
+  withFields(thread, { refreshBy: Option.none() });
 
 /** The thread, read no more. */
 export const endCollection = (

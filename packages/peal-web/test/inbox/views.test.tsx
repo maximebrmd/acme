@@ -176,12 +176,12 @@ describe(InboxEmptyView, () => {
     await expect(
       render("en", <InboxEmptyView filtered={false} />)
     ).resolves.toContain(
-      "Peal reads comments on Mastodon and Bluesky, and on Facebook and Instagram where whoever runs Peal turned them on, for 30 days after a post went live unless whoever runs Peal set another window, and keeps them 30 days after that."
+      "Peal reads comments on Mastodon and Bluesky, and on Facebook, Instagram, and YouTube where whoever runs Peal turned them on, for 30 days after a post went live unless whoever runs Peal set another window, and keeps them 30 days after that."
     );
     await expect(
       render("fr", <InboxEmptyView filtered={false} />)
     ).resolves.toContain(
-      "Peal lit les commentaires sur Mastodon et Bluesky, et sur Facebook et Instagram là où la personne qui exploite Peal les a activés, pendant 30 jours après la mise en ligne d’une publication sauf si la personne qui exploite Peal a fixé une autre fenêtre, et les conserve 30 jours de plus."
+      "Peal lit les commentaires sur Mastodon et Bluesky, et sur Facebook, Instagram et YouTube là où la personne qui exploite Peal les a activés, pendant 30 jours après la mise en ligne d’une publication sauf si la personne qui exploite Peal a fixé une autre fenêtre, et les conserve 30 jours de plus."
     );
   });
 
@@ -342,6 +342,38 @@ describe(CommentView, () => {
     expect(html).not.toContain("View the comment on the platform");
     await expect(render("fr", view)).resolves.toContain(
       "Ce commentaire n’est plus sur la plateforme"
+    );
+  });
+
+  it("says a comment forgotten for its age is no longer kept, naming its platform", async () => {
+    const forgotten: InboxComment = {
+      ...comment,
+      author: null,
+      forgotten: "expired",
+      state: "deleted",
+      text: "",
+    };
+
+    const view = (platform: "youtube" | null) => (
+      <ul>
+        <CommentView comment={forgotten} platform={platform} />
+      </ul>
+    );
+
+    const html = await render("en", view("youtube"));
+
+    expect(
+      missingFrom(html, [
+        "No longer kept: YouTube lets Peal keep a comment for a limited time.",
+        ">No longer kept<",
+      ])
+    ).toStrictEqual([]);
+    expect(html).not.toContain("This comment is no longer on the platform");
+    await expect(render("fr", view("youtube"))).resolves.toContain(
+      "Plus conservé : YouTube ne laisse Peal conserver un commentaire que pour un temps limité."
+    );
+    await expect(render("en", view(null))).resolves.toContain(
+      "No longer kept: the platform lets Peal keep a comment for a limited time."
     );
   });
 

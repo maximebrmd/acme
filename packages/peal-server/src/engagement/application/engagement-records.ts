@@ -3,7 +3,13 @@ import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { SentReplyRecord } from "#shared/application/personal-data.ts";
-import type { PostTargetId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type {
+  ChannelId,
+  PostTargetId,
+  UserId,
+  WorkspaceId,
+} from "#shared/domain/ids.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 
 /**
  * What engagement keeps about a workspace or a user, for the workspace
@@ -17,6 +23,22 @@ import type { PostTargetId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 export class EngagementRecords extends Context.Service<
   EngagementRecords,
   {
+    /**
+     * A channel of `platform` left its workspace (disconnected, or its
+     * platform asked for its data to be deleted), in the caller's
+     * transaction. On a platform that bounds how long Peal keeps a
+     * comment, as it asks within days of a revocation, every thread of
+     * the channel ends `disconnected` at `at` and its comments are
+     * forgotten, those of threads not read yet included, so a read on its
+     * way keeps nothing; on the others, nothing changes until the next
+     * read ends them, and the comments stay for their retention. The
+     * replies sent stay, the workspace's own.
+     */
+    readonly channelGone: (
+      channelId: ChannelId,
+      platform: Platform,
+      at: DateTime.Utc
+    ) => Effect.Effect<void, DatabaseError>;
     /** The replies the user wrote, oldest first. */
     readonly exportUser: (
       userId: UserId

@@ -77,7 +77,10 @@ const useRoom = () => {
 
   return (plan: PaidPlan, reason: UpgradeReason): string => {
     const { limit } = reason;
-    const count = planCatalogue[plan].limits[limit];
+
+    // Per-account pricing limits none of the legacy plans' limits.
+    const count =
+      plan === "payAsYouGo" ? null : planCatalogue[plan].limits[limit];
 
     if (count === null) {
       return billing("unlimited", { limit });

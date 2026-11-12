@@ -14,6 +14,12 @@ class InboxComment extends JsonSerializableType
     public ?InboxAuthor $author;
 
     /**
+     * @var ?value-of<InboxCommentForgotten> $forgotten
+     */
+    #[JsonProperty('forgotten')]
+    public ?string $forgotten;
+
+    /**
      * @var string $id
      */
     #[JsonProperty('id')]
@@ -77,6 +83,7 @@ class InboxComment extends JsonSerializableType
      *   threadId: string,
      *   writtenAt: string,
      *   author?: ?InboxAuthor,
+     *   forgotten?: ?value-of<InboxCommentForgotten>,
      *   parentId?: ?string,
      *   permalink?: ?string,
      * } $values
@@ -85,6 +92,7 @@ class InboxComment extends JsonSerializableType
         array $values,
     ) {
         $this->author = $values['author'] ?? null;
+        $this->forgotten = $values['forgotten'] ?? null;
         $this->id = $values['id'];
         $this->liked = $values['liked'];
         $this->parentId = $values['parentId'] ?? null;

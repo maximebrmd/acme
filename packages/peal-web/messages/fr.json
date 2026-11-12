@@ -1963,7 +1963,7 @@
       "recyclingEnded": "Une publication cesse de se répéter",
       "feedStopped": "Un flux cesse de créer des publications"
     },
-    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
+    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Tarif par compte} other {{plan}}}",
     "excess": "{limit, select, channels {{used, number} canaux, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
     "excessStorage": "{used} de médias, {allowed} permis",
     "boostReason": "{reason, select, accountUnusable {le compte publicitaire ne peut pas diffuser de publicités pour le moment.} accountSpendCap {le plafond de dépenses du compte publicitaire laisse trop peu de marge.} ceilingExceeded {le plafond mensuel laisse trop peu de marge.} spendingOff {les dépenses ont été désactivées pour le compte publicitaire.} currencyMismatch {sa devise n’est pas celle du compte publicitaire.} budgetTooLow {le budget est inférieur au minimum du réseau publicitaire.} postNotPromotable {la publication ne peut pas être diffusée comme publicité.} permissionMissing {la connexion au réseau publicitaire n’a pas une autorisation que les publicités demandent.} reconnectNeeded {le réseau publicitaire a refusé la connexion, que la personne concernée renouvelle en se connectant de nouveau.} networkUnavailable {le réseau publicitaire n’a pas répondu pendant trop longtemps.} spendingUnavailable {ce serveur ne propose plus de dépenser en publicité.} other {le réseau publicitaire l’a refusée.}}",
@@ -1977,7 +1977,7 @@
     "description": "L’abonnement de {workspace}, et ce que l’espace de travail en utilise.",
     "loadFailed": "La facturation n’a pas pu être chargée.",
     "retry": "Réessayer",
-    "plan": "{plan, select, free {Gratuit} starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
+    "plan": "{plan, select, free {Gratuit} starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Tarif par compte} other {{plan}}}",
     "off": {
       "title": "Rien n’est limité",
       "description": "Ce serveur ne facture pas les espaces de travail : il n’y a pas d’abonnement, et tout est disponible sans limite."
@@ -3598,6 +3598,9 @@
       "writtenAt": "Écrit le {at}",
       "state": "{state, select, new {Nouveau} answered {Répondu} hidden {Masqué} deleted {Supprimé} other {{state}}}",
       "deleted": "Ce commentaire n’est plus sur la plateforme",
+      "expired": "Plus conservé : {platform} ne laisse Peal conserver un commentaire que pour un temps limité.",
+      "expiredState": "Plus conservé",
+      "somePlatform": "la plateforme",
       "liked": "Aimé",
       "onPlatform": "Voir le commentaire sur la plateforme",
       "answers": "Réponses à ce commentaire",
@@ -3609,7 +3612,7 @@
       "onPlatform": "Voir la réponse sur la plateforme",
       "failed": "Rien n’est parti : {reason}",
       "unconfirmed": "Cette réponse est peut-être sur la plateforme : {reason} Peal ne la renvoie jamais. Vérifiez sur la plateforme, puis dites ce que vous avez trouvé.",
-      "reason": "{reason, select, channelUnavailable {le canal a été déconnecté ou désactivé.} reconnectNeeded {la plateforme refuse l’autorisation du compte. Déconnectez le canal et connectez à nouveau le compte.} rateLimited {la plateforme a continué de refuser les requêtes.} platformUnavailable {la plateforme était injoignable.} commentGone {le commentaire n’est plus sur la plateforme.} refused {la plateforme a refusé la réponse.} notSent {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} noResponse {la requête est partie et aucune réponse n’est venue.} interrupted {Peal s’est arrêté pendant l’appel, et la plateforme n’a pas pu le dire ensuite.} adapterFailure {une erreur de Peal est survenue alors que la requête était peut-être partie.} other {{reason}}}",
+      "reason": "{reason, select, channelUnavailable {le canal a été déconnecté ou désactivé.} reconnectNeeded {la plateforme refuse l’autorisation du compte. Déconnectez le canal et connectez à nouveau le compte.} rateLimited {la plateforme a continué de refuser les requêtes.} platformUnavailable {la plateforme était injoignable.} commentGone {le commentaire n’est plus sur la plateforme.} refused {la plateforme a refusé la réponse.} notSent {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} tooLong {la plateforme a trouvé la réponse trop longue : raccourcissez-la et envoyez-la de nouveau.} noResponse {la requête est partie et aucune réponse n’est venue.} interrupted {Peal s’est arrêté pendant l’appel, et la plateforme n’a pas pu le dire ensuite.} adapterFailure {une erreur de Peal est survenue alors que la requête était peut-être partie.} other {{reason}}}",
       "withdrawnNote": "Elle a été supprimée de la plateforme.",
       "confirmSent": "Elle y est",
       "confirmNotSent": "Elle n’est pas partie",

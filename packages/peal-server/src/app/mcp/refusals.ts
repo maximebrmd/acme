@@ -70,6 +70,7 @@ const planNames: Readonly<Record<Plan, string>> = {
   agency: "Agency",
   business: "Business",
   free: "Free",
+  payAsYouGo: "Per-account pricing",
   pro: "Pro",
   starter: "Starter",
 };

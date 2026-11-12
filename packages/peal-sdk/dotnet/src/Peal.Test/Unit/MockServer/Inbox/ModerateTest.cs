@@ -25,6 +25,7 @@ public class ModerateTest : BaseMockServerTest
                 "handle": "handle",
                 "platformId": "platformId"
               },
+              "forgotten": "expired",
               "id": "id",
               "liked": true,
               "parentId": "parentId",
@@ -80,6 +81,7 @@ public class ModerateTest : BaseMockServerTest
                 "handle": "handle",
                 "platformId": "platformId"
               },
+              "forgotten": "expired",
               "id": "id",
               "liked": true,
               "parentId": "parentId",

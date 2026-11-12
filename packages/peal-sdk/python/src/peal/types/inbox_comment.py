@@ -7,11 +7,13 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .inbox_author import InboxAuthor
+from .inbox_comment_forgotten import InboxCommentForgotten
 from .inbox_comment_state import InboxCommentState
 
 
 class InboxComment(UniversalBaseModel):
     author: typing.Optional[InboxAuthor] = None
+    forgotten: typing.Optional[InboxCommentForgotten] = None
     id: str
     liked: bool
     parent_id: typing_extensions.Annotated[

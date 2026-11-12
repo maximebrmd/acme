@@ -1,5 +1,5 @@
-import { DateTime, Effect, Option, Schema } from "effect";
-import { HttpClientResponse } from "effect/http";
+import { DateTime, Effect, Option } from "effect";
+import type { HttpClientResponse } from "effect/http";
 
 import { dailyLimitCodes } from "#publishing/domain/own-refusals.ts";
 import { codeOf } from "#publishing/infrastructure/platforms/platform-exchange.ts";
@@ -9,35 +9,9 @@ import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { googleReasonOf } from "#shared/infrastructure/platforms/google-refusal.ts";
 import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
-
-import { untilQuotaReset } from "./quota-day.ts";
-
-/**
- * A Google API error: `errors[].reason` names it, such as `quotaExceeded`
- * or `invalidTitle`. Messages may quote what was sent, so they are never
- * read.
- */
-const GoogleErrorSchema = Schema.Struct({
-  error: Schema.Struct({
-    errors: Schema.optionalKey(
-      Schema.Array(Schema.Struct({ reason: Schema.optionalKey(Schema.String) }))
-    ),
-  }),
-});
-
-/** The reason Google gave for refusing, if its answer named one. */
-export const reasonOf = (
-  response: HttpClientResponse.HttpClientResponse
-): Effect.Effect<Option.Option<string>> =>
-  HttpClientResponse.schemaBodyJson(GoogleErrorSchema)(response).pipe(
-    Effect.map(({ error }) =>
-      Option.fromUndefinedOr(
-        error.errors?.find(({ reason }) => reason !== undefined)?.reason
-      )
-    ),
-    Effect.orElseSucceed(() => Option.none<string>())
-  );
+import { untilQuotaReset } from "#shared/infrastructure/platforms/youtube-quota-day.ts";
 
 export type YouTubeRefusal = PublishFailure | TokenRejected;
 
@@ -101,7 +75,7 @@ export const refusalOf = (
       return refusedFor(new PlatformUnavailable());
     }
 
-    const reason = yield* reasonOf(response);
+    const reason = yield* googleReasonOf(response);
     const named = Option.getOrElse(reason, () => "");
     const now = yield* DateTime.now;
 

@@ -1,13 +1,13 @@
 ---
 title: Inbox
-description: Read the comments people leave under your published posts on Mastodon and Bluesky, and on Facebook Pages and Instagram where the server reads them, and answer them from Peal. What Peal collects, from where, for how long, and what each platform lets an account do.
+description: Read the comments people leave under your published posts on Mastodon and Bluesky, and on Facebook Pages, Instagram and YouTube where the server reads them, and answer them from Peal. What Peal collects, from where, for how long, and what each platform lets an account do.
 sidebar:
   order: 10
 ---
 
 The inbox gathers the comments people leave under the posts Peal published for a workspace, and lets its members answer them in public, as the connected account. Open a workspace from **Workspaces**, then **Inbox**.
 
-This is the first part of the inbox: comments on posts published from Peal, on Mastodon and Bluesky, and on Facebook Pages and Instagram where whoever runs the server turned them on ([Facebook Pages and Instagram](#meta)). Direct messages, mentions and reviews are not collected, and Peal answers nothing by itself: every reply is written and sent by a person, or by an application a person connected and allowed to publish.
+This is the first part of the inbox: comments on posts published from Peal, on Mastodon and Bluesky, and on Facebook Pages, Instagram and YouTube where whoever runs the server turned them on ([Facebook Pages and Instagram](#meta), [YouTube](#youtube)). Direct messages, mentions and reviews are not collected, and Peal answers nothing by itself: every reply is written and sent by a person, or by an application a person connected and allowed to publish.
 
 ## What Peal collects [#collected]
 
@@ -39,6 +39,8 @@ When a comment was edited, Peal shows its new text. When a platform no longer sh
 ## How long comments are kept [#retention]
 
 A thread (a post's comments on one channel, and the replies sent to them) is deleted {{keep-inbox-en}} after Peal stopped reading the post's comments: with the usual window, 60 days after the post went live. The deletion runs once a day.
+
+A platform may let Peal keep what it gives for less time unless Peal reads it again: on [YouTube](#youtube), a post's comments are erased, their text and their author, 29 days after the last reading that found all of them, as when the platform no longer shows them, and the inbox says "No longer kept". A reading that stops short (a post with more than 500 comments, comments turned off, a day's quota spent) does not count: the comments it did not find are erased at that date. A later reading that finds a comment shows it again. Peal checks this every hour. Disconnecting a channel of such a platform erases its comments at once.
 
 Deleting a workspace deletes its threads at once. When a member closes their account, the replies they sent stay with the workspace, without their name; their [data export](/settings) lists the replies they sent, never the comments they answered, which are someone else's.
 
@@ -74,14 +76,14 @@ You can also mark a comment as answered when it needs no reply. A comment the ac
 
 ## What each platform allows [#abilities]
 
-| Ability                                | Mastodon                                      | Bluesky                                       | Facebook Pages ([where on](#meta)) | Instagram ([where on](#meta))   |
-| -------------------------------------- | --------------------------------------------- | --------------------------------------------- | ---------------------------------- | ------------------------------- |
-| Read the comments under a post         | Yes                                           | Yes                                           | Yes                                | Yes                             |
-| Reply to a comment                     | Yes                                           | Yes                                           | Yes                                | Yes                             |
-| Take a reply back                      | Yes                                           | Yes                                           | Yes                                | Yes                             |
-| Like a comment                         | Not yet: Peal does not ask for the permission | Not yet: Peal does not ask for the permission | Not yet                            | No: Instagram's API has no like |
-| Hide someone's comment under your post | No: Mastodon offers it to no account          | Not yet: Peal does not ask for the permission | Yes                                | Yes                             |
-| Delete someone else's comment          | No: Mastodon offers it to no account          | No: nobody deletes another account's post     | Not yet                            | Not yet                         |
+| Ability                                | Mastodon                                      | Bluesky                                       | Facebook Pages ([where on](#meta)) | Instagram ([where on](#meta))   | YouTube ([where on](#youtube))        |
+| -------------------------------------- | --------------------------------------------- | --------------------------------------------- | ---------------------------------- | ------------------------------- | ------------------------------------- |
+| Read the comments under a post         | Yes                                           | Yes                                           | Yes                                | Yes                             | Yes                                   |
+| Reply to a comment                     | Yes                                           | Yes                                           | Yes                                | Yes                             | Yes                                   |
+| Take a reply back                      | Yes                                           | Yes                                           | Yes                                | Yes                             | Yes                                   |
+| Like a comment                         | Not yet: Peal does not ask for the permission | Not yet: Peal does not ask for the permission | Not yet                            | No: Instagram's API has no like | No: YouTube's API has no like         |
+| Hide someone's comment under your post | No: Mastodon offers it to no account          | Not yet: Peal does not ask for the permission | Yes                                | Yes                             | Yes: it is rejected                   |
+| Delete someone else's comment          | No: Mastodon offers it to no account          | No: nobody deletes another account's post     | Not yet                            | Not yet                         | No: only its author deletes a comment |
 
 `GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` and each thread answer the same for one channel: `available`, `reconnect` (the account was connected before Peal asked for what the ability takes: [connect the account again](/channels), without disconnecting it, and the channel stays with its history), or `unsupported`.
 
@@ -109,6 +111,26 @@ On these platforms:
 - Peal reads comments every ten minutes, as on the other platforms, and stops for the run once Meta says half the account's calls are used, so that publishing keeps the rest; Meta's notifications of new comments are not used yet.
 - Only posts published after the platform was turned on are read: those published before keep no inbox.
 
+### YouTube [#youtube]
+
+Peal reads the comments under a YouTube channel's videos, Shorts included, only where whoever runs the server turned YouTube on ([`PEAL_INBOX_PLATFORMS`](/environment-variables#core)): the scope they take, `youtube.force-ssl`, is one Google verifies before an app may ask anyone but its own testers for it.
+
+| What the account allows at sign-in                                           | What the server's operator sets                                                                           |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `youtube.force-ssl` to read the comments, answer, hide and take a reply back | `youtube` in `PEAL_INBOX_PLATFORMS`, with YouTube's client (`YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`) |
+
+The sign-in asks for this scope where the server reads YouTube, and Google's consent page lets the owner untick it: the channel still connects and posts, with no inbox. A channel connected before shows `reconnect`: [connect it again](/channels), without disconnecting it.
+
+On YouTube:
+
+- YouTube has one level of replies: a reply to a reply goes under the top-level comment.
+- Hiding a comment rejects it: it and the replies under it are no longer shown on YouTube, Peal never bans its author, and the next reading no longer finds it, which then erases it as no longer on the platform: YouTube's API lists no rejected comment. Until then, showing it again asks YouTube to publish it, which YouTube may refuse; after, show it again from YouTube Studio, and Peal reads it once YouTube shows it.
+- A comment's author is shown by the name they display, which is often their handle; there is no link to a comment.
+- The project's daily quota of 10,000 units resets at midnight Pacific Time. Peal splits the project's 10,000 daily units in three by default: comment reads take at most 3,000 (`YOUTUBE_DAILY_COMMENT_UNITS`), custom thumbnails about 4,000 (`YOUTUBE_DAILY_THUMBNAILS`, 80 at about 50 units each), and 3,000 are left for what Peal does not count: replies, hides and withdrawals (50 units each), publishing's status reads and lookups, and analytics. Reading comments spends one unit a page; past its share, or once YouTube says the quota is spent, comments wait for the next day. Replies, hides and withdrawals are never held back for the reading's share.
+- YouTube takes no key that would make a reply safe to send twice: when a reply's outcome is unknown, Peal looks for it among the replies under the comment, as on [Meta's platforms](#meta), and never sends it again.
+- YouTube's policies let Peal keep a comment 30 days without reading it again: Peal erases a post's comments 29 days after the last reading that found all of them ([retention](#retention)), and erases them all at once when the channel is disconnected.
+- Only videos published after YouTube was turned on are read: those published before keep no inbox.
+
 ### Other platforms [#other-platforms]
 
 Peal reads no comments on the other platforms yet. Each needs a permission its platform grants after a review:
@@ -116,7 +138,6 @@ Peal reads no comments on the other platforms yet. Each needs a permission its p
 | Platform                           | What reading and answering comments needs                                                                 |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Threads                            | `threads_read_replies` and `threads_manage_replies`, granted by Meta's App Review                         |
-| YouTube                            | The `youtube.force-ssl` scope, which Google verifies before an app may ask for it, and a larger quota     |
 | LinkedIn                           | The Community Management API, for company pages only, which LinkedIn grants on application                |
 | X                                  | Paid access to X's API for reading replies                                                                |
 | TikTok                             | Comments are offered to business accounts through a separate TikTok product, which Peal does not use      |

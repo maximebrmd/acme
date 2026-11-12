@@ -131,7 +131,9 @@ const priced = (cents: number): OfferPrice => ({
 
 /** What the plan costs, as Peal publishes it. */
 export const offerOf = (plan: PaidPlan): PlanOffer => {
-  const price = planCatalogue[plan].price ?? { month: 0, year: 0 };
+  // Per-account pricing has no listed price: the rate card prices it.
+  const listed = plan === "payAsYouGo" ? null : planCatalogue[plan].price;
+  const price = listed ?? { month: 0, year: 0 };
 
   return { month: priced(price.month), plan, year: priced(price.year) };
 };

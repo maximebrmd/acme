@@ -1963,7 +1963,7 @@
       "recyclingEnded": "A post stops repeating",
       "feedStopped": "A feed stops making posts"
     },
-    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
+    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Per-account pricing} other {{plan}}}",
     "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
     "excessStorage": "{used} of media, {allowed} allowed",
     "boostReason": "{reason, select, accountUnusable {the ad account cannot run ads at the moment.} accountSpendCap {the ad account’s own spend cap leaves too little room.} ceilingExceeded {the monthly ceiling leaves too little room.} spendingOff {spending was turned off for the ad account.} currencyMismatch {its currency is not the ad account’s.} budgetTooLow {the budget is under the ad network’s minimum.} postNotPromotable {the post cannot be shown as an ad.} permissionMissing {the sign-in to the ad network lacks a permission ads need.} reconnectNeeded {the ad network refused the sign-in, which its person renews by signing in again.} networkUnavailable {the ad network did not answer for too long.} spendingUnavailable {this server no longer offers spending on ads.} other {the ad network refused it.}}",
@@ -1977,7 +1977,7 @@
     "description": "The plan of {workspace}, and how much of it the workspace uses.",
     "loadFailed": "The billing could not be loaded.",
     "retry": "Try again",
-    "plan": "{plan, select, free {Free} starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
+    "plan": "{plan, select, free {Free} starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Per-account pricing} other {{plan}}}",
     "off": {
       "title": "Nothing is limited",
       "description": "This server does not bill workspaces: there is no plan, and every feature is available without limits."
@@ -3598,6 +3598,9 @@
       "writtenAt": "Written on {at}",
       "state": "{state, select, new {New} answered {Answered} hidden {Hidden} deleted {Deleted} other {{state}}}",
       "deleted": "This comment is no longer on the platform",
+      "expired": "No longer kept: {platform} lets Peal keep a comment for a limited time.",
+      "expiredState": "No longer kept",
+      "somePlatform": "the platform",
       "liked": "Liked",
       "onPlatform": "View the comment on the platform",
       "answers": "Answers to this comment",
@@ -3609,7 +3612,7 @@
       "onPlatform": "View the reply on the platform",
       "failed": "Nothing went out: {reason}",
       "unconfirmed": "This reply may be on the platform: {reason} Peal never sends it again. Check the platform, then say what you found.",
-      "reason": "{reason, select, channelUnavailable {the channel was disconnected or turned off.} reconnectNeeded {the platform refuses the account’s authorization. Disconnect the channel and connect the account again.} rateLimited {the platform kept turning requests away.} platformUnavailable {the platform could not be reached.} commentGone {the comment is no longer on the platform.} refused {the platform refused the reply.} notSent {someone checked the platform and did not find it.} noResponse {the request left and no answer came.} interrupted {Peal stopped during the call, and the platform could not say afterwards.} adapterFailure {a fault in Peal happened after the request may have left.} other {{reason}}}",
+      "reason": "{reason, select, channelUnavailable {the channel was disconnected or turned off.} reconnectNeeded {the platform refuses the account’s authorization. Disconnect the channel and connect the account again.} rateLimited {the platform kept turning requests away.} platformUnavailable {the platform could not be reached.} commentGone {the comment is no longer on the platform.} refused {the platform refused the reply.} notSent {someone checked the platform and did not find it.} tooLong {the platform found the reply too long: shorten it and send it again.} noResponse {the request left and no answer came.} interrupted {Peal stopped during the call, and the platform could not say afterwards.} adapterFailure {a fault in Peal happened after the request may have left.} other {{reason}}}",
       "withdrawnNote": "It was deleted from the platform.",
       "confirmSent": "It is there",
       "confirmNotSent": "It did not go out",

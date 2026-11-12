@@ -1,5 +1,13 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Redacted, Result } from "effect";
+import {
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Option,
+  Redacted,
+  Result,
+} from "effect";
 import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
@@ -16,13 +24,16 @@ import {
 } from "#engagement/domain/reply.ts";
 import type { Reply } from "#engagement/domain/reply.ts";
 import { platformEngagementWith } from "#engagement/infrastructure/platforms/platform-engagement.ts";
+import { youtubeCommentsDailyUnits } from "#engagement/infrastructure/platforms/youtube/youtube-engagement.ts";
 import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
+import { youtubeCommentScope } from "#shared/domain/inbox-platform.ts";
 import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { AccountFailure } from "#test/analytics/access-log.ts";
 import { channelAccessOf } from "#test/analytics/access-log.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
+import { memoryQuota } from "#test/engagement/fakes/fake-youtube-comments.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
 import type { World } from "#test/engagement/fakes/world.ts";
 import {
@@ -84,36 +95,52 @@ const onServer = Effect.fnUntraced(function* onServer(
   failure: Option.Option<AccountFailure> = Option.none(),
   on: {
     readonly inbox?: InboxPlatforms;
-    readonly platform?: "facebook" | "mastodon";
+    readonly platform?: "facebook" | "mastodon" | "youtube";
   } = {}
 ) {
   const server = yield* platformServer(() => answer);
   const url = new URL(server.url);
 
-  const account: ChannelAccount =
-    on.platform === "facebook"
-      ? {
-          accountId: "102000000000001",
-          channelId: channelId(1),
-          connection: Option.none(),
-          platform: "facebook",
-          scopes: ["pages_read_user_content", "pages_manage_engagement"],
-        }
-      : {
-          accountId: `109372@${url.host}`,
-          channelId: channelId(1),
-          connection: Option.none(),
-          platform: "mastodon",
-          scopes: ["read:statuses", "write:statuses"],
-        };
+  const youtube: ChannelAccount = {
+    accountId: "UCsyntheticChannel000001",
+    channelId: channelId(1),
+    connection: Option.none(),
+    platform: "youtube",
+    scopes: [youtubeCommentScope],
+  };
+
+  const accounts: Readonly<
+    Record<"facebook" | "mastodon" | "youtube", ChannelAccount>
+  > = {
+    facebook: {
+      accountId: "102000000000001",
+      channelId: channelId(1),
+      connection: Option.none(),
+      platform: "facebook",
+      scopes: ["pages_read_user_content", "pages_manage_engagement"],
+    },
+    mastodon: {
+      accountId: `109372@${url.host}`,
+      channelId: channelId(1),
+      connection: Option.none(),
+      platform: "mastodon",
+      scopes: ["read:statuses", "write:statuses"],
+    },
+    youtube,
+  };
+
+  const account = accounts[on.platform ?? "mastodon"];
 
   const gate = platformEngagementWith({
     blueskyAppView: url,
     mastodonScheme: "http:",
     metaAppSecret: Option.some(Redacted.make("synthetic-meta-secret")),
     metaHosts: { ...metaHosts, facebookGraph: url, instagramGraph: url },
+    youtubeApi: url,
+    youtubeCommentUnits: youtubeCommentsDailyUnits,
   }).pipe(
-    Layer.provide(Layer.succeed(CurrentInboxPlatforms, on.inbox ?? new Set()))
+    Layer.provide(Layer.succeed(CurrentInboxPlatforms, on.inbox ?? new Set())),
+    Layer.provide(memoryQuota().layer)
   );
 
   const built = yield* Effect.all({
@@ -261,6 +288,94 @@ describe("the gate's reply sender", () => {
         );
         assert.lengthOf(server.requests(), 0);
       }).pipe(Effect.scoped)
+  );
+
+  it.effect("never calls YouTube where the server does not read it", () =>
+    Effect.gen(function* youtubeOff() {
+      const world = worldWith(attempted());
+
+      const { sender, server, source } = yield* onServer(
+        world,
+        made,
+        Option.none(),
+        { inbox: new Set(["facebook", "instagram"]), platform: "youtube" }
+      );
+
+      assert.deepStrictEqual(yield* sender.send(request), {
+        _tag: "failed",
+        reason: "channelUnavailable",
+      });
+
+      const read = yield* source
+        .read({
+          channelId: channelId(1),
+          threads: [
+            {
+              platformPostId: PlatformPostIdSchema.make("vidSynthetic01"),
+              threadId: threadId(1),
+            },
+          ],
+        })
+        .pipe(Effect.result);
+
+      assert.isTrue(
+        read._tag === "Failure" &&
+          read.failure._tag === "ChannelUnreadable" &&
+          read.failure.reason === "unsupported"
+      );
+      assert.lengthOf(server.requests(), 0);
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "reads YouTube where the server reads it, with YouTube's bound on keeping it",
+    () =>
+      Effect.gen(function* youtubeOn() {
+        const world = worldWith(attempted());
+
+        const { server, source } = yield* onServer(
+          world,
+          json({ items: [] }),
+          Option.none(),
+          { inbox: new Set(["youtube"]), platform: "youtube" }
+        );
+
+        const batch = yield* source.read({
+          channelId: channelId(1),
+          threads: [
+            {
+              platformPostId: PlatformPostIdSchema.make("vidSynthetic01"),
+              threadId: threadId(1),
+            },
+          ],
+        });
+
+        assert.deepStrictEqual(batch.refreshWithin, Duration.days(29));
+        assert.lengthOf(server.requests(), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect("carries no bound for a platform that sets none", () =>
+    Effect.gen(function* mastodon() {
+      const world = worldWith(attempted());
+
+      const { source } = yield* onServer(
+        world,
+        json({ ancestors: [], descendants: [] })
+      );
+
+      const batch = yield* source.read({
+        channelId: channelId(1),
+        threads: [
+          {
+            platformPostId: PlatformPostIdSchema.make("1001"),
+            threadId: threadId(1),
+          },
+        ],
+      });
+
+      assert.isFalse("refreshWithin" in batch);
+    }).pipe(Effect.scoped)
   );
 
   it.effect("sends on Facebook where the server reads it", () =>

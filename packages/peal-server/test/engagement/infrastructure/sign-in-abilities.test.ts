@@ -8,11 +8,13 @@ import {
 import { facebookPages } from "#channels/infrastructure/platforms/meta/facebook-authorizer.ts";
 import { instagramAccounts } from "#channels/infrastructure/platforms/meta/instagram-authorizer.ts";
 import { instagramLoginScopes } from "#channels/infrastructure/platforms/meta/instagram-login-authorizer.ts";
+import { youtubeScopes } from "#channels/infrastructure/platforms/youtube/youtube-authorizer.ts";
 import {
   abilitiesOf,
   askedAtSignIn,
   engagedPlatforms,
 } from "#engagement/domain/engagement-abilities.ts";
+import { youtubeCommentScope } from "#shared/domain/inbox-platform.ts";
 import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 
 // What an account connected today can do about comments, from the scopes
@@ -20,9 +22,9 @@ import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 // connects it in the app or a customer through a connect link. An ability
 // said to be asked at sign-in must be one a fresh connection holds, or the
 // inbox would tell everyone to reconnect for ever. Facebook's and
-// Instagram's are asked where the server reads them.
+// Instagram's and YouTube's are asked where the server reads them.
 
-const inbox: InboxPlatforms = new Set(["facebook", "instagram"]);
+const inbox: InboxPlatforms = new Set(["facebook", "instagram", "youtube"]);
 
 // Everything a Facebook Login product asks for, granted.
 const facebookLogin = (product: typeof facebookPages) => [
@@ -36,6 +38,7 @@ const grants = {
   facebook: [facebookLogin(facebookPages)],
   instagram: [facebookLogin(instagramAccounts), instagramLoginScopes(inbox)],
   mastodon: [profileScopes.split(" "), legacyScopes.split(" ")],
+  youtube: [[...youtubeScopes, youtubeCommentScope]],
 } as const;
 
 describe("the inbox abilities of an account connected today", () => {

@@ -31,8 +31,10 @@ import type {
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
 import { SendReply } from "#engagement/application/send-reply.ts";
 import type { Comment } from "#engagement/domain/comment.ts";
+import { isPastRefresh } from "#engagement/domain/engagement-retention.ts";
 import type { ReplyId } from "#engagement/domain/reply-id.ts";
 import type { Reply, SendOutcome } from "#engagement/domain/reply.ts";
+import { withoutRefresh } from "#engagement/domain/thread.ts";
 import type { FollowedPost, Thread } from "#engagement/domain/thread.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids } from "#shared/application/ids.ts";
@@ -204,6 +206,18 @@ export const makeWorld = () => {
 
         return true;
       }),
+    clearRefresh: (threadId, at) =>
+      Effect.sync(() => {
+        const found = state.threads.get(threadId);
+
+        if (found === undefined || !isPastRefresh(found.refreshBy, at)) {
+          return false;
+        }
+
+        state.threads.set(threadId, withoutRefresh(found));
+
+        return true;
+      }),
     comment: (commentId) =>
       Effect.succeed(Option.fromUndefinedOr(state.comments.get(commentId))),
     commentsOf: (threadId) =>
@@ -250,6 +264,34 @@ export const makeWorld = () => {
             .toSorted((left, right) => before(nextAt(left), nextAt(right)))
             .slice(0, perChannel)
         )
+      ),
+    expiring: (at, limit, after) =>
+      Effect.succeed(
+        [...state.threads.values()]
+          .flatMap((thread) =>
+            Option.isSome(thread.refreshBy) &&
+            isPastRefresh(thread.refreshBy, at)
+              ? [{ refreshBy: thread.refreshBy.value, threadId: thread.id }]
+              : []
+          )
+          .toSorted(
+            (left, right) =>
+              DateTime.toEpochMillis(left.refreshBy) -
+                DateTime.toEpochMillis(right.refreshBy) ||
+              left.threadId.localeCompare(right.threadId)
+          )
+          .filter((listed) =>
+            Option.match(after, {
+              onNone: () => true,
+              onSome: (last) =>
+                DateTime.toEpochMillis(listed.refreshBy) >
+                  DateTime.toEpochMillis(last.refreshBy) ||
+                (DateTime.toEpochMillis(listed.refreshBy) ===
+                  DateTime.toEpochMillis(last.refreshBy) &&
+                  listed.threadId > last.threadId),
+            })
+          )
+          .slice(0, limit)
       ),
     follow: (threads) =>
       Effect.sync(() => {

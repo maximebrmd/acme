@@ -25,6 +25,7 @@ import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect
 import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-choices.ts";
 import { DrizzleConnectLinkStore } from "#channels/infrastructure/drizzle-connect-link-store.ts";
 import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-deletions.ts";
+import { engagementChannelEvents } from "#channels/infrastructure/engagement-channel-events.ts";
 import { NotifiedChannelNotices } from "#channels/infrastructure/notified-channel-notices.ts";
 import { PartnerLinkHosts } from "#channels/infrastructure/partner-link-hosts.ts";
 import { AccountChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
@@ -46,8 +47,12 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 
 // Who hears of a channel connected or gone: the workspace's webhook
 // endpoints, then the analytics context, which keeps or deletes the
-// channel's numbers. Needs WebhookEvents and AnalyticsRecords.
-const ChannelEventsLive = analyticsChannelEvents(WebhookChannelEvents);
+// channel's numbers, then the engagement context, which forgets the
+// comments a bounding platform gave under its posts. Needs WebhookEvents,
+// AnalyticsRecords and EngagementRecords.
+const ChannelEventsLive = engagementChannelEvents(
+  analyticsChannelEvents(WebhookChannelEvents)
+);
 
 // The platforms' sign-in flows, the documents that identify Peal's
 // clients, and the check of Meta's signed requests, from the settings read

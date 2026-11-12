@@ -20,6 +20,7 @@ import { SqlClient } from "effect/sql";
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import type {
   DueChannel,
+  ExpiringThread,
   Journalled,
   LatestFollowed,
   ReplyKey,
@@ -31,6 +32,7 @@ import { Comment } from "#engagement/domain/comment.ts";
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
 import { Reply } from "#engagement/domain/reply.ts";
 import type { ReplyStatus } from "#engagement/domain/reply.ts";
+import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { Thread } from "#engagement/domain/thread.ts";
 import type { ThreadCollection } from "#engagement/domain/thread.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -81,6 +83,7 @@ const threadOf = (row: ThreadRow) =>
     platformPostId: row.platformPostId,
     postId: row.postId,
     publishedAt: utc(row.publishedAt),
+    refreshBy: instant(row.refreshBy),
     targetId: row.targetId,
     workspaceId: row.workspaceId,
   }).pipe(Effect.orDie);
@@ -107,6 +110,7 @@ const commentOf = (row: CommentRow) =>
             platformId: row.authorPlatformId,
           }),
     channelId: row.channelId,
+    expiredAt: instant(row.expiredAt),
     id: row.id,
     liked: row.liked,
     parentPlatformId: Option.fromNullOr(row.parentPlatformId),
@@ -180,6 +184,7 @@ const threadRowOf = (thread: Thread) => ({
   platformPostId: thread.platformPostId,
   postId: thread.postId,
   publishedAt: date(thread.publishedAt),
+  refreshBy: thread.refreshBy.pipe(Option.map(date), Option.getOrNull),
   targetId: thread.targetId,
   workspaceId: thread.workspaceId,
 });
@@ -197,6 +202,7 @@ const schedulesOf = (saved: readonly Thread[]) =>
         id: thread.id,
         last_collected_at: iso(thread.lastCollectedAt),
         next_collection_at: schedule.nextCollectionAt,
+        refresh_by: iso(thread.refreshBy),
       };
     })
   );
@@ -218,6 +224,7 @@ const commentsOfJson = (saved: readonly Comment[]) =>
         Option.getOrNull
       ),
       channel_id: comment.channelId,
+      expired_at: iso(comment.expiredAt),
       id: comment.id,
       liked: comment.liked,
       parent_platform_id: Option.getOrNull(comment.parentPlatformId),
@@ -318,6 +325,15 @@ const filtered = (workspaceId: WorkspaceId, filter: ThreadFilter) =>
 const encoder = new TextEncoder();
 
 const decodeReplyId = Schema.decodeUnknownEffect(ReplyIdSchema);
+
+const decodeExpiring = Schema.decodeUnknownEffect(
+  Schema.Array(
+    Schema.Struct({
+      refreshBy: Schema.DateTimeUtcFromDate,
+      threadId: ThreadIdSchema,
+    })
+  )
+);
 
 export const DrizzleEngagementStore = Layer.effect(
   EngagementStore,
@@ -503,13 +519,15 @@ export const DrizzleEngagementStore = Layer.effect(
           SET next_collection_at = saved.next_collection_at,
               ended_at = saved.ended_at,
               end_reason = saved.end_reason,
-              last_collected_at = saved.last_collected_at
+              last_collected_at = saved.last_collected_at,
+              refresh_by = saved.refresh_by
           FROM jsonb_to_recordset(${schedulesOf(saved)}::jsonb) AS saved(
             id uuid,
             next_collection_at timestamptz,
             ended_at timestamptz,
             end_reason text,
-            last_collected_at timestamptz
+            last_collected_at timestamptz,
+            refresh_by timestamptz
           )
           WHERE thread.id = saved.id
             -- A thread whose post was removed while it was read stays
@@ -552,7 +570,7 @@ export const DrizzleEngagementStore = Layer.effect(
                   id, thread_id, workspace_id, channel_id, platform_comment_id,
                   parent_platform_id, author_platform_id, author_handle,
                   author_display_name, text, written_at, received_at, state,
-                  answered_at, liked, permalink
+                  answered_at, liked, permalink, expired_at
                 )
                 SELECT saved.id, saved.thread_id, saved.workspace_id,
                        saved.channel_id, saved.platform_comment_id,
@@ -560,7 +578,7 @@ export const DrizzleEngagementStore = Layer.effect(
                        saved.author_handle, saved.author_display_name,
                        saved.text, saved.written_at, saved.received_at,
                        saved.state, saved.answered_at, saved.liked,
-                       saved.permalink
+                       saved.permalink, saved.expired_at
                 FROM jsonb_to_recordset(${commentsOfJson(saved)}::jsonb) AS saved(
                   id uuid,
                   thread_id uuid,
@@ -577,7 +595,8 @@ export const DrizzleEngagementStore = Layer.effect(
                   state text,
                   answered_at timestamptz,
                   liked boolean,
-                  permalink text
+                  permalink text,
+                  expired_at timestamptz
                 )
                 JOIN engagement.threads AS thread ON thread.id = saved.thread_id
                 ON CONFLICT (thread_id, platform_comment_id) DO UPDATE
@@ -589,7 +608,8 @@ export const DrizzleEngagementStore = Layer.effect(
                     state = excluded.state,
                     answered_at = excluded.answered_at,
                     liked = excluded.liked,
-                    permalink = excluded.permalink
+                    permalink = excluded.permalink,
+                    expired_at = excluded.expired_at
               `;
 
               yield* sql`
@@ -912,6 +932,53 @@ export const DrizzleEngagementStore = Layer.effect(
       return deleted.length;
     });
 
+    const expiring = Effect.fn("EngagementStore.expiring")(function* expiring(
+      at: DateTime.Utc,
+      limit: number,
+      after: Option.Option<ExpiringThread>
+    ) {
+      const rows = yield* db
+        .select({ refreshBy: threads.refreshBy, threadId: threads.id })
+        .from(threads)
+        .where(
+          and(
+            isNotNull(threads.refreshBy),
+            lte(threads.refreshBy, date(at)),
+            after.pipe(
+              Option.map(
+                (last) =>
+                  drizzleSql`(${threads.refreshBy}, ${threads.id}) > (${DateTime.formatIso(last.refreshBy)}::timestamptz, ${last.threadId}::uuid)`
+              ),
+              Option.getOrUndefined
+            )
+          )
+        )
+        .orderBy(asc(threads.refreshBy), asc(threads.id))
+        .limit(limit)
+        .pipe(Effect.mapError(failed));
+
+      return yield* decodeExpiring(rows).pipe(Effect.orDie);
+    });
+
+    const clearRefresh = Effect.fn("EngagementStore.clearRefresh")(
+      function* clearRefresh(threadId: string, at: DateTime.Utc) {
+        const cleared = yield* db
+          .update(threads)
+          .set({ refreshBy: null })
+          .where(
+            and(
+              eq(threads.id, threadId),
+              isNotNull(threads.refreshBy),
+              lte(threads.refreshBy, date(at))
+            )
+          )
+          .returning({ id: threads.id })
+          .pipe(Effect.mapError(failed));
+
+        return cleared.length === 1;
+      }
+    );
+
     const lockThread = (threadId: string) =>
       sql`
         SELECT 1 FROM engagement.threads WHERE id = ${threadId} FOR UPDATE
@@ -920,11 +987,13 @@ export const DrizzleEngagementStore = Layer.effect(
     return EngagementStore.of({
       advanceReply,
       claimCall,
+      clearRefresh,
       comment,
       commentsOf,
       countDue,
       dueChannels,
       dueOn,
+      expiring,
       follow,
       journalReply,
       latestFollowed,

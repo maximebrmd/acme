@@ -77,6 +77,23 @@ describe(entitlementsOf, () => {
     );
   });
 
+  // Per-account pricing is held to the free plan's allowances until it is
+  // wired to the rate card: it must never win over a legacy plan.
+  it("keeps a legacy plan over per-account pricing, before it is wired", () => {
+    const agency = subscription("agency", "active");
+    const payAsYouGo = subscription("payAsYouGo", "active");
+
+    for (const held of [
+      [agency, payAsYouGo],
+      [payAsYouGo, agency],
+    ]) {
+      const entitlements = entitlementsOf(held);
+
+      expect(entitlements.plan).toStrictEqual(Option.some("agency"));
+      expect(entitlements.allowances).toStrictEqual(planAllowances.agency);
+    }
+  });
+
   it("keeps a new subscription's plan when an old one ended", () => {
     expect(
       entitlementsOf([

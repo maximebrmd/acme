@@ -12,13 +12,40 @@ import { instagramAppConfig, metaAppConfig } from "./platforms/meta-apps.ts";
 
 const decodePlatform = Schema.decodeUnknownOption(OptionalInboxPlatformSchema);
 
+// The names the setting takes, as a sentence: "a, b and c".
+const takenNames = (() => {
+  const names = [...OptionalInboxPlatformSchema.literals];
+  const last = names.pop();
+
+  return names.length === 0
+    ? String(last)
+    : `${names.join(", ")} and ${String(last)}`;
+})();
+
+const nonBlank = (name: string) =>
+  Config.option(Config.String(name)).pipe(
+    Config.map(Option.filter((value) => value.trim() !== ""))
+  );
+
+// Whether YouTube's OAuth client is set, its secret with it: the channels
+// context reads it (`YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`), and
+// refuses one without the other.
+const youtubeClientSet = Effect.gen(function* youtubeClient() {
+  const id = yield* nonBlank("YOUTUBE_CLIENT_ID");
+  const secret = yield* nonBlank("YOUTUBE_CLIENT_SECRET");
+
+  return Option.isSome(id) && Option.isSome(secret);
+});
+
 /**
  * `PEAL_INBOX_PLATFORMS`: the optional platforms the inbox reads comments
- * on, comma-separated among `facebook` and `instagram`; none when unset or
- * blank. Any other name stops the server, as does a platform without the
- * app it signs in with: Facebook Pages need Meta's main app
- * (`META_APP_ID`, `META_APP_SECRET`), Instagram either of its ways in
- * (Meta's main app, or `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET`).
+ * on, comma-separated among `facebook`, `instagram` and `youtube`; none
+ * when unset or blank. Any other name stops the server, as does a
+ * platform without the app it signs in with: Facebook Pages need Meta's
+ * main app (`META_APP_ID`, `META_APP_SECRET`), Instagram either of its
+ * ways in (Meta's main app, or `INSTAGRAM_APP_ID` and
+ * `INSTAGRAM_APP_SECRET`), YouTube its OAuth client (`YOUTUBE_CLIENT_ID`,
+ * `YOUTUBE_CLIENT_SECRET`).
  */
 export const inboxPlatformsConfig = Effect.gen(function* inboxPlatforms() {
   const written = yield* Config.option(Config.String("PEAL_INBOX_PLATFORMS"));
@@ -35,7 +62,7 @@ export const inboxPlatformsConfig = Effect.gen(function* inboxPlatforms() {
 
     if (Option.isNone(platform)) {
       return yield* new InvalidInboxSettings({
-        reason: "PEAL_INBOX_PLATFORMS takes facebook and instagram only",
+        reason: `PEAL_INBOX_PLATFORMS takes ${takenNames} only`,
       });
     }
 
@@ -59,6 +86,13 @@ export const inboxPlatformsConfig = Effect.gen(function* inboxPlatforms() {
     return yield* new InvalidInboxSettings({
       reason:
         "instagram in PEAL_INBOX_PLATFORMS needs META_APP_ID and META_APP_SECRET, or INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET",
+    });
+  }
+
+  if (platforms.has("youtube") && !(yield* youtubeClientSet)) {
+    return yield* new InvalidInboxSettings({
+      reason:
+        "youtube in PEAL_INBOX_PLATFORMS needs YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET",
     });
   }
 

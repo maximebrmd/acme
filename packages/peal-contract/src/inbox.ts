@@ -55,7 +55,17 @@ export const inboxStandardPlatforms = ["mastodon", "bluesky"] as const;
  * turned them on: their comment permissions are granted to an app after
  * the platform's review.
  */
-export const inboxOptionalPlatforms = ["facebook", "instagram"] as const;
+export const inboxOptionalPlatforms = [
+  "facebook",
+  "instagram",
+  "youtube",
+] as const;
+
+// Names as a sentence lists them: "a", "a and b", "a, b and c".
+const listed = (names: readonly string[]): string =>
+  names.length < 2
+    ? names.join("")
+    : `${names.slice(0, -1).join(", ")} and ${String(names.at(-1))}`;
 
 /** The platforms Peal reads comments on, those its operator turns on included. */
 export const inboxPlatforms = [
@@ -64,7 +74,7 @@ export const inboxPlatforms = [
 ] as const;
 
 /** Where Peal reads comments, as the descriptions say it. */
-export const inboxPlatformsText = `${inboxStandardPlatforms.join(" and ")}, and on ${inboxOptionalPlatforms.join(" and ")} where the server's operator turned them on`;
+export const inboxPlatformsText = `${listed(inboxStandardPlatforms)}, and on ${listed(inboxOptionalPlatforms)} where the server's operator turned them on`;
 
 /**
  * What a channel's account can do about comments: `read` them, `reply` in
@@ -124,6 +134,18 @@ export const InboxCommentStateSchema = Schema.Literals([
 export type InboxCommentState = typeof InboxCommentStateSchema.Type;
 
 /**
+ * Why Peal keeps nothing of a `deleted` comment, when it is not that its
+ * platform no longer shows it: `expired`, its platform lets Peal keep a
+ * comment for a limited time without reading it again, and no read found
+ * it in that time. A later read that finds it shows it again.
+ */
+export const InboxCommentForgottenSchema = Schema.Literal("expired").annotate({
+  identifier: "InboxCommentForgotten",
+});
+
+export type InboxCommentForgotten = typeof InboxCommentForgottenSchema.Type;
+
+/**
  * Who wrote a comment, as their platform shows them publicly: nothing
  * else of them is read or kept.
  */
@@ -146,6 +168,9 @@ export const InboxCommentSchema = Schema.Struct({
   // when it does not show who wrote it (Facebook may not). Its `handle` is
   // empty where the platform gives none (Facebook).
   author: Schema.NullOr(InboxAuthorSchema),
+  // Present on a `deleted` comment Peal forgot for its age
+  // (`InboxCommentForgotten`), absent otherwise.
+  forgotten: Schema.optionalKey(InboxCommentForgottenSchema),
   id: Schema.String,
   // Whether the channel's account likes it.
   liked: Schema.Boolean,
@@ -188,7 +213,9 @@ export type InboxReplyStatus = typeof InboxReplyStatusSchema.Type;
  * channel was disconnected or turned off), `reconnectNeeded` (the platform
  * refuses its token), `rateLimited`, `platformUnavailable`, `commentGone`
  * (the comment is no longer there), `refused` (the platform refused the
- * reply), `notSent` (a member found an unconfirmed reply never went out).
+ * reply), `notSent` (a member found an unconfirmed reply never went out),
+ * `tooLong` (the platform refused the reply as too long, past a limit it
+ * does not state).
  *
  * Unconfirmed: `noResponse` (the request left and no answer came),
  * `interrupted` (the server stopped during the call, and the platform
@@ -203,6 +230,7 @@ export const InboxReplyReasonSchema = Schema.Literals([
   "commentGone",
   "refused",
   "notSent",
+  "tooLong",
   "noResponse",
   "interrupted",
   "adapterFailure",

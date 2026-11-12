@@ -53,11 +53,15 @@ import type { Published } from "#shared/domain/publish-result.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { googleReasonOf } from "#shared/infrastructure/platforms/google-refusal.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
+import {
+  quotaDayOf,
+  untilQuotaReset,
+} from "#shared/infrastructure/platforms/youtube-quota-day.ts";
 
-import { quotaDayOf, untilQuotaReset } from "./quota-day.ts";
-import { reasonOf, refusalOf } from "./youtube-refusal.ts";
+import { refusalOf } from "./youtube-refusal.ts";
 import type { Refused } from "./youtube-refusal.ts";
 import { defaultDailyThumbnails } from "./youtube-settings.ts";
 
@@ -876,7 +880,7 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
                       return Effect.fail(new TokenRejected());
                     }
 
-                    return reasonOf(response).pipe(
+                    return googleReasonOf(response).pipe(
                       Effect.tap((reason) =>
                         reason.pipe(
                           Option.filter(

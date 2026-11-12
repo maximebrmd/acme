@@ -95,6 +95,7 @@ import {
   LookupsApiLive,
   MediaInPostsLive,
   PostAttentionLive,
+  PlatformQuotaLive,
   PostsApiLive,
   PublishingLive,
   QueuesApiLive,
@@ -253,8 +254,10 @@ const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
   // A connect link's connections go to the workspace's activity log.
   Layer.provide(ConnectLinkJournalLive),
-  // A channel gone or back is told to analytics, in its transaction.
+  // A channel gone or back is told to analytics, and a channel gone to
+  // engagement, in its transaction.
   Layer.provide(AnalyticsRecordsLive),
+  Layer.provide(EngagementRecordsLive),
   // Meta's requests about a Facebook user reach their sign-ins to its ad
   // network too, which the ads context holds.
   Layer.provide(AdsPlatformUserGrants),
@@ -587,7 +590,12 @@ const HttpServerLive = Layer.unwrap(
 // gates publish, read analytics' counts with the platforms' readers, and
 // read and answer comments with engagement's.
 const WorkersLive = Layer.mergeAll(
-  publishingWorkersReading(PlatformMetricsReaderLive, PlatformEngagementLive),
+  publishingWorkersReading(
+    PlatformMetricsReaderLive,
+    // YouTube's comment reads count their units in the server's ledger of
+    // the project's day, which publishing keeps.
+    PlatformEngagementLive.pipe(Layer.provide(PlatformQuotaLive))
+  ),
   NotificationsWorkersLive,
   EngagementWorkersLive,
   WebhooksWorkersLive,

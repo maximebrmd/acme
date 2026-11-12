@@ -18,7 +18,7 @@ import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
-import type { PaidPlan } from "#shared/domain/plan.ts";
+import type { LegacyPaidPlan } from "#shared/domain/plan.ts";
 
 import { BillingAccounts } from "./billing-accounts.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
@@ -32,7 +32,7 @@ import type { StripeUnreachable } from "./stripe-unreachable.ts";
 /** What a member orders. */
 export interface OrderRequest {
   readonly interval: BillingInterval;
-  readonly plan: PaidPlan;
+  readonly plan: LegacyPaidPlan;
   /** The trial of `trialPlan`, monthly, rather than a paid order. */
   readonly trial: boolean;
 }

@@ -225,6 +225,7 @@ export const english: EmailCatalog = {
   plans: {
     agency: "Agency",
     business: "Business",
+    payAsYouGo: "Per-account pricing",
     pro: "Pro",
     starter: "Starter",
   },

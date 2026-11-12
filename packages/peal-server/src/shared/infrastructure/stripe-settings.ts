@@ -1,6 +1,6 @@
 import { Config, Option, Redacted, Schema } from "effect";
 
-import type { PaidPlan } from "#shared/domain/plan.ts";
+import type { LegacyPaidPlan } from "#shared/domain/plan.ts";
 
 /** The lookup keys of a plan's Stripe prices, monthly and yearly. */
 export interface PlanLookupKeys {
@@ -22,7 +22,7 @@ export interface StripeSettings {
    * rather than ids, so the same settings work in every Stripe account and
    * a price can be replaced at Stripe by moving its key.
    */
-  readonly prices: Readonly<Record<PaidPlan, PlanLookupKeys>>;
+  readonly prices: Readonly<Record<LegacyPaidPlan, PlanLookupKeys>>;
   readonly secretKey: Redacted.Redacted;
   /** Checks that webhooks come from Stripe (their `stripe-signature`). */
   readonly webhookSecret: Redacted.Redacted;
@@ -43,11 +43,11 @@ const LookupKeyPrefixSchema = Schema.String.check(
   Schema.isPattern(/^[a-z0-9_]{1,160}$/u)
 );
 
-/** The lookup keys of each plan's prices, under `prefix`. */
+/** The lookup keys of each legacy plan's prices, under `prefix`. */
 export const lookupKeysOf = (
   prefix: string
-): Readonly<Record<PaidPlan, PlanLookupKeys>> => {
-  const keys = (plan: PaidPlan): PlanLookupKeys => ({
+): Readonly<Record<LegacyPaidPlan, PlanLookupKeys>> => {
+  const keys = (plan: LegacyPaidPlan): PlanLookupKeys => ({
     month: `${prefix}_${plan}_monthly`,
     year: `${prefix}_${plan}_yearly`,
   });

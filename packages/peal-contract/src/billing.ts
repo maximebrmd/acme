@@ -5,6 +5,7 @@ import { Authentication } from "./authentication.ts";
 import {
   BillingIntervalSchema,
   MoneySchema,
+  OrderablePlanSchema,
   PaidPlanSchema,
   PlanSchema,
 } from "./billing-plans.ts";
@@ -275,7 +276,7 @@ export type Reduction = typeof ReductionSchema.Type;
  */
 export const OrderPayloadSchema = Schema.Struct({
   interval: BillingIntervalSchema,
-  plan: PaidPlanSchema,
+  plan: OrderablePlanSchema,
   startNow: Schema.Literal(true),
   trial: Schema.Boolean,
 }).annotate({ identifier: "OrderPayload" });

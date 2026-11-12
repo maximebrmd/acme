@@ -33,7 +33,12 @@ import type {
 import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodon/mastodon-engagement.ts";
 import { facebookEngagement } from "#engagement/infrastructure/platforms/meta/facebook-engagement.ts";
 import { instagramEngagement } from "#engagement/infrastructure/platforms/meta/instagram-engagement.ts";
+import { keptWithoutRefresh } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { maxThreadBytes } from "#engagement/infrastructure/platforms/thread-body.ts";
+import {
+  youtubeCommentUnitsConfig,
+  youtubeEngagement,
+} from "#engagement/infrastructure/platforms/youtube/youtube-engagement.ts";
 import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
@@ -60,6 +65,10 @@ export interface EngagementSettings {
   readonly metaAppSecret: Option.Option<Redacted.Redacted>;
   /** Where Meta's Graph hosts are. */
   readonly metaHosts: MetaHosts;
+  /** The YouTube Data API's origin. */
+  readonly youtubeApi: URL;
+  /** The units comment reads may spend a day (`YOUTUBE_DAILY_COMMENT_UNITS`). */
+  readonly youtubeCommentUnits: number;
 }
 
 const failedWith = (reason: ReplyFailure): SendOutcome => ({
@@ -85,7 +94,8 @@ const notClaimed: SendOutcome = { _tag: "unconfirmed", reason: "interrupted" };
  * (ChannelAccess). Every request goes through the public HTTP client, so
  * the outbound guard checks the servers users chose. Needs the
  * EngagementStore, ChannelAccess, an HttpClient, the OutboundGuard, Digest,
- * Mac and SecureRandom; Facebook Pages and Instagram are read where
+ * Mac, SecureRandom and publishing's PlatformQuota, the server's ledger
+ * of YouTube's day; Facebook Pages, Instagram and YouTube are read where
  * CurrentInboxPlatforms names them.
  *
  * A platform not built yet has no entry in the registry below, which does
@@ -106,9 +116,9 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         timeout: "20 seconds",
       });
 
-      // Facebook Pages and Instagram are read only where the operator
-      // turned them on: a channel of a platform that is off is never
-      // called, as one Peal reads no comments on.
+      // Facebook Pages, Instagram and YouTube are read only where the
+      // operator turned them on: a channel of a platform that is off is
+      // never called, as one Peal reads no comments on.
       const inbox = yield* CurrentInboxPlatforms;
 
       const meta = {
@@ -131,6 +141,12 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
           reader,
           scheme: settings.mastodonScheme,
         }),
+        youtube: yield* youtubeEngagement({
+          api: settings.youtubeApi,
+          dailyUnits: settings.youtubeCommentUnits,
+          http,
+          reader,
+        }),
       };
 
       const readHere = (platform: Platform): platform is EngagedPlatform =>
@@ -151,10 +167,15 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
           return yield* new ChannelUnreadable({ reason: "unsupported" });
         }
 
-        return yield* platforms[account.platform].read(
+        const batch = yield* platforms[account.platform].read(
           account,
           request.threads
         );
+
+        return Option.match(keptWithoutRefresh[account.platform], {
+          onNone: () => batch,
+          onSome: (refreshWithin) => ({ ...batch, refreshWithin }),
+        });
       });
 
       // The channel's account and its platform's adapter, or why nothing
@@ -356,19 +377,25 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
   );
 
 /**
- * The platforms as production reaches them, Facebook Pages and Instagram
- * where PEAL_INBOX_PLATFORMS names them, with Meta's main app's secret for
- * Facebook Login's proofs. Needs the EngagementStore, ChannelAccess and
- * Dns, which the composition root provides.
+ * The platforms as production reaches them, Facebook Pages, Instagram and
+ * YouTube where PEAL_INBOX_PLATFORMS names them, with Meta's main app's
+ * secret for Facebook Login's proofs. Needs the EngagementStore,
+ * ChannelAccess, publishing's PlatformQuota and Dns, which the
+ * composition root provides.
  */
 export const PlatformEngagementLive = Layer.unwrap(
-  metaAppConfig.pipe(
-    Effect.map((app) =>
+  Effect.all({
+    app: metaAppConfig,
+    youtubeCommentUnits: youtubeCommentUnitsConfig,
+  }).pipe(
+    Effect.map(({ app, youtubeCommentUnits }) =>
       platformEngagementWith({
         blueskyAppView: new URL("https://public.api.bsky.app"),
         mastodonScheme: "https:",
         metaAppSecret: app.pipe(Option.map(({ appSecret }) => appSecret)),
         metaHosts,
+        youtubeApi: new URL("https://www.googleapis.com"),
+        youtubeCommentUnits,
       })
     )
   )

@@ -27,6 +27,8 @@ public final class InboxReplyReason {
 
     public static final InboxReplyReason COMMENT_GONE = new InboxReplyReason(Value.COMMENT_GONE, "commentGone");
 
+    public static final InboxReplyReason TOO_LONG = new InboxReplyReason(Value.TOO_LONG, "tooLong");
+
     public static final InboxReplyReason RATE_LIMITED = new InboxReplyReason(Value.RATE_LIMITED, "rateLimited");
 
     public static final InboxReplyReason INTERRUPTED = new InboxReplyReason(Value.INTERRUPTED, "interrupted");
@@ -79,6 +81,8 @@ public final class InboxReplyReason {
                 return visitor.visitPlatformUnavailable();
             case COMMENT_GONE:
                 return visitor.visitCommentGone();
+            case TOO_LONG:
+                return visitor.visitTooLong();
             case RATE_LIMITED:
                 return visitor.visitRateLimited();
             case INTERRUPTED:
@@ -108,6 +112,8 @@ public final class InboxReplyReason {
                 return PLATFORM_UNAVAILABLE;
             case "commentGone":
                 return COMMENT_GONE;
+            case "tooLong":
+                return TOO_LONG;
             case "rateLimited":
                 return RATE_LIMITED;
             case "interrupted":
@@ -132,6 +138,8 @@ public final class InboxReplyReason {
 
         NOT_SENT,
 
+        TOO_LONG,
+
         NO_RESPONSE,
 
         INTERRUPTED,
@@ -155,6 +163,8 @@ public final class InboxReplyReason {
         T visitRefused();
 
         T visitNotSent();
+
+        T visitTooLong();
 
         T visitNoResponse();
 

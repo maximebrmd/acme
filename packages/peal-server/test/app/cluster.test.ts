@@ -246,7 +246,10 @@ const ChannelJobsTest = Layer.mergeAll(
   ),
   Layer.succeed(
     PurgeEngagement,
-    PurgeEngagement.of({ purge: Effect.succeed(0) })
+    PurgeEngagement.of({
+      forgetExpired: Effect.succeed(0),
+      purge: Effect.succeed(0),
+    })
   ),
   Layer.succeed(
     RefreshChannelTokens,

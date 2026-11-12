@@ -4,6 +4,8 @@ pub use crate::prelude::*;
 pub struct InboxComment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author: Option<InboxAuthor>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub forgotten: Option<InboxCommentForgotten>,
     #[serde(default)]
     pub id: String,
     #[serde(default)]
@@ -37,6 +39,7 @@ impl InboxComment {
 #[non_exhaustive]
 pub struct InboxCommentBuilder {
     author: Option<InboxAuthor>,
+    forgotten: Option<InboxCommentForgotten>,
     id: Option<String>,
     liked: Option<bool>,
     parent_id: Option<String>,
@@ -51,6 +54,11 @@ pub struct InboxCommentBuilder {
 impl InboxCommentBuilder {
     pub fn author(mut self, value: InboxAuthor) -> Self {
         self.author = Some(value);
+        self
+    }
+
+    pub fn forgotten(mut self, value: InboxCommentForgotten) -> Self {
+        self.forgotten = Some(value);
         self
     }
 
@@ -111,6 +119,7 @@ impl InboxCommentBuilder {
     pub fn build(self) -> Result<InboxComment, BuildError> {
         Ok(InboxComment {
             author: self.author,
+            forgotten: self.forgotten,
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             liked: self
                 .liked

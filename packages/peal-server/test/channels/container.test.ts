@@ -16,6 +16,7 @@ import { ChannelsLive } from "#channels/container.ts";
 import { platforms } from "#channels/domain/platform.ts";
 import { platformRegistrations } from "#channels/infrastructure/platforms/platform-addresses.ts";
 import type { PlatformRegistration } from "#channels/infrastructure/platforms/platform-addresses.ts";
+import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { Notify } from "#notifications/application/notify.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { AloneInAccountsTest, UnmeteredTest } from "#test/billing/support.ts";
@@ -46,7 +47,8 @@ const Neighbours = Layer.mergeAll(
   AloneInAccountsTest,
   PartnerOwnership.layerNone,
   ConnectLinkJournal.none,
-  DrizzleAnalyticsRecords.pipe(Layer.provide(DatabaseTest))
+  DrizzleAnalyticsRecords.pipe(Layer.provide(DatabaseTest)),
+  DrizzleEngagementRecords.pipe(Layer.provide(DatabaseTest))
 );
 
 // The channels context as the server builds it, with these settings. A blank

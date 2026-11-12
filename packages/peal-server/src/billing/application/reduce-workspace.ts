@@ -96,6 +96,7 @@ export class ReduceWorkspace extends Context.Service<
           );
 
         const channelsOver = excessOf("channels");
+
         const membersAllowed = excessOf("members").pipe(
           Option.map(({ allowed }) => allowed)
         );

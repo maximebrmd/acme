@@ -549,7 +549,9 @@ describe(CollectComments, () => {
           thread,
           after("719 hours"),
           after("719 hours"),
-          Duration.days(30)
+          Duration.days(30),
+          Option.none(),
+          true
         )
       );
 

@@ -53,10 +53,16 @@ export type ThreadReading = typeof ThreadReadingSchema.Type;
 /**
  * What a read found, thread by thread. A thread it says nothing about was
  * not read: the platform asked to slow down, which `halted` tells.
+ * `refreshWithin` is how long the platform lets Peal keep what it gave
+ * without reading it again, absent where only the thread's own retention
+ * bounds it: comments not read again within it are forgotten
+ * (`PurgeEngagement`). Optional, so a gate of the release before answers
+ * a batch this one reads.
  */
 export const CommentsBatchSchema = Schema.Struct({
   halted: Schema.Boolean,
   readings: Schema.Array(ThreadReadingSchema),
+  refreshWithin: Schema.optionalKey(Schema.Duration),
 });
 
 export type CommentsBatch = typeof CommentsBatchSchema.Type;
