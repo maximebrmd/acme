@@ -5,11 +5,12 @@ import os from "node:os";
 import path from "node:path";
 
 import { assert, describe, it } from "@effect/vitest";
-import { ConfigProvider, Effect, Exit, Layer } from "effect";
+import { ConfigProvider, Effect, Layer } from "effect";
 
 import { PrivacyDeclaration } from "#workspace/application/privacy-declaration.ts";
 import { undeclared } from "#workspace/domain/operator-declaration.ts";
 import { PrivacyDeclarationLive } from "#workspace/infrastructure/privacy-declaration-file.ts";
+import { PrivacyDeclarationUnreadable } from "#workspace/infrastructure/privacy-declaration-unreadable.ts";
 
 const withSettings = (settings: Readonly<Record<string, string>>) =>
   PrivacyDeclaration.use((declaration) => Effect.succeed(declaration)).pipe(
@@ -96,16 +97,19 @@ describe("the operator's privacy declaration", () => {
     Effect.gen(function* refuses() {
       const { file, remove } = written('{"recipients": "everyone"}');
 
-      const malformed = yield* Effect.exit(
+      const malformed = yield* Effect.flip(
         withSettings({ PEAL_PRIVACY_DECLARATION_FILE: file })
       ).pipe(Effect.ensuring(Effect.sync(remove)));
 
-      const missing = yield* Effect.exit(
+      const missing = yield* Effect.flip(
         withSettings({ PEAL_PRIVACY_DECLARATION_FILE: `${file}.absent` })
       );
 
-      assert.isTrue(Exit.isFailure(malformed));
-      assert.isTrue(Exit.isFailure(missing));
+      assert.instanceOf(malformed, PrivacyDeclarationUnreadable);
+      assert.strictEqual(malformed.file, file);
+      assert.instanceOf(missing, PrivacyDeclarationUnreadable);
+      assert.strictEqual(missing.file, `${file}.absent`);
+      assert.include(missing.message, `${file}.absent`);
     })
   );
 });
