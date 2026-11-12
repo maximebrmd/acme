@@ -4,16 +4,9 @@ import typing
 
 import pydantic
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
-from .overview_refusal import OverviewRefusal
-from .permission import Permission
 
 
-class CredentialBoundWorkspace(UniversalBaseModel):
-    id: str
-    name: str
-    permissions: typing.List[Permission]
-    refused: typing.Optional[OverviewRefusal] = None
-
+class CredentialBindingUnbound(UniversalBaseModel):
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
     else:

@@ -4,5 +4,6 @@ import * as Peal from "../index.js";
 
 export interface CredentialUser {
     application: Peal.CredentialApplication | null;
+    impersonatedBy: string | null;
     userId: string;
 }

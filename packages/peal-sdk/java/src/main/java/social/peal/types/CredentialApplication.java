@@ -5,7 +5,6 @@ package social.peal.types;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -17,32 +16,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
-import social.peal.core.Nullable;
-import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = CredentialApplication.Builder.class)
 public final class CredentialApplication {
+    private final CredentialBinding binding;
+
     private final String clientId;
 
     private final List<String> scopes;
 
-    private final Optional<CredentialBoundWorkspace> workspace;
-
     private final Map<String, Object> additionalProperties;
 
     private CredentialApplication(
-            String clientId,
-            List<String> scopes,
-            Optional<CredentialBoundWorkspace> workspace,
-            Map<String, Object> additionalProperties) {
+            CredentialBinding binding, String clientId, List<String> scopes, Map<String, Object> additionalProperties) {
+        this.binding = binding;
         this.clientId = clientId;
         this.scopes = scopes;
-        this.workspace = workspace;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("binding")
+    public CredentialBinding getBinding() {
+        return binding;
     }
 
     @JsonProperty("clientId")
@@ -53,20 +51,6 @@ public final class CredentialApplication {
     @JsonProperty("scopes")
     public List<String> getScopes() {
         return scopes;
-    }
-
-    @JsonIgnore
-    public Optional<CredentialBoundWorkspace> getWorkspace() {
-        if (workspace == null) {
-            return Optional.empty();
-        }
-        return workspace;
-    }
-
-    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
-    @JsonProperty("workspace")
-    private Optional<CredentialBoundWorkspace> _getWorkspace() {
-        return workspace;
     }
 
     @java.lang.Override
@@ -81,12 +65,12 @@ public final class CredentialApplication {
     }
 
     private boolean equalTo(CredentialApplication other) {
-        return clientId.equals(other.clientId) && scopes.equals(other.scopes) && workspace.equals(other.workspace);
+        return binding.equals(other.binding) && clientId.equals(other.clientId) && scopes.equals(other.scopes);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.clientId, this.scopes, this.workspace);
+        return Objects.hash(this.binding, this.clientId, this.scopes);
     }
 
     @java.lang.Override
@@ -94,14 +78,18 @@ public final class CredentialApplication {
         return ObjectMappers.stringify(this);
     }
 
-    public static ClientIdStage builder() {
+    public static BindingStage builder() {
         return new Builder();
+    }
+
+    public interface BindingStage {
+        ClientIdStage binding(@NotNull CredentialBinding binding);
+
+        Builder from(CredentialApplication other);
     }
 
     public interface ClientIdStage {
         _FinalStage clientId(@NotNull String clientId);
-
-        Builder from(CredentialApplication other);
     }
 
     public interface _FinalStage {
@@ -116,19 +104,13 @@ public final class CredentialApplication {
         _FinalStage addScopes(String scopes);
 
         _FinalStage addAllScopes(List<String> scopes);
-
-        _FinalStage workspace(Optional<CredentialBoundWorkspace> workspace);
-
-        _FinalStage workspace(CredentialBoundWorkspace workspace);
-
-        _FinalStage workspace(Nullable<CredentialBoundWorkspace> workspace);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements ClientIdStage, _FinalStage {
-        private String clientId;
+    public static final class Builder implements BindingStage, ClientIdStage, _FinalStage {
+        private CredentialBinding binding;
 
-        private Optional<CredentialBoundWorkspace> workspace = Optional.empty();
+        private String clientId;
 
         private List<String> scopes = new ArrayList<>();
 
@@ -138,9 +120,16 @@ public final class CredentialApplication {
 
         @java.lang.Override
         public Builder from(CredentialApplication other) {
+            binding(other.getBinding());
             clientId(other.getClientId());
             scopes(other.getScopes());
-            workspace(other.getWorkspace());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("binding")
+        public ClientIdStage binding(@NotNull CredentialBinding binding) {
+            this.binding = Objects.requireNonNull(binding, "binding must not be null");
             return this;
         }
 
@@ -148,31 +137,6 @@ public final class CredentialApplication {
         @JsonSetter("clientId")
         public _FinalStage clientId(@NotNull String clientId) {
             this.clientId = Objects.requireNonNull(clientId, "clientId must not be null");
-            return this;
-        }
-
-        @java.lang.Override
-        public _FinalStage workspace(Nullable<CredentialBoundWorkspace> workspace) {
-            if (workspace.isNull()) {
-                this.workspace = null;
-            } else if (workspace.isEmpty()) {
-                this.workspace = Optional.empty();
-            } else {
-                this.workspace = Optional.of(workspace.get());
-            }
-            return this;
-        }
-
-        @java.lang.Override
-        public _FinalStage workspace(CredentialBoundWorkspace workspace) {
-            this.workspace = Optional.ofNullable(workspace);
-            return this;
-        }
-
-        @java.lang.Override
-        @JsonSetter(value = "workspace", nulls = Nulls.SKIP)
-        public _FinalStage workspace(Optional<CredentialBoundWorkspace> workspace) {
-            this.workspace = workspace;
             return this;
         }
 
@@ -202,14 +166,12 @@ public final class CredentialApplication {
 
         @java.lang.Override
         public CredentialApplication build() {
-            return new CredentialApplication(clientId, scopes, workspace, additionalProperties);
+            return new CredentialApplication(binding, clientId, scopes, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("clientId")
-                    || key.equalsIgnoreCase("scopes")
-                    || key.equalsIgnoreCase("workspace")) {
+            if (key.equalsIgnoreCase("binding") || key.equalsIgnoreCase("clientId") || key.equalsIgnoreCase("scopes")) {
                 return;
             }
             this.additionalProperties.put(key, value);

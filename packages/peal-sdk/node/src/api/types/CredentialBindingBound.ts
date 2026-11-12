@@ -2,7 +2,7 @@
 
 import * as Peal from "../index.js";
 
-export interface CredentialBoundWorkspace {
+export interface CredentialBindingBound {
     id: string;
     name: string;
     permissions: Peal.Permission[];

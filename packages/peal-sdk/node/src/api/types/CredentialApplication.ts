@@ -3,7 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface CredentialApplication {
+    binding: Peal.CredentialBinding;
     clientId: string;
     scopes: string[];
-    workspace: Peal.CredentialBoundWorkspace | null;
 }

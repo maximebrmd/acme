@@ -6,7 +6,7 @@ use Peal\Core\Json\JsonSerializableType;
 use Peal\Core\Json\JsonProperty;
 use Peal\Core\Types\ArrayType;
 
-class CredentialBoundWorkspace extends JsonSerializableType
+class CredentialBindingBound extends JsonSerializableType
 {
     /**
      * @var string $id

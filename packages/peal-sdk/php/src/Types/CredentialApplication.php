@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class CredentialApplication extends JsonSerializableType
 {
     /**
+     * @var CredentialBinding $binding
+     */
+    #[JsonProperty('binding')]
+    public CredentialBinding $binding;
+
+    /**
      * @var string $clientId
      */
     #[JsonProperty('clientId')]
@@ -21,24 +27,18 @@ class CredentialApplication extends JsonSerializableType
     public array $scopes;
 
     /**
-     * @var ?CredentialBoundWorkspace $workspace
-     */
-    #[JsonProperty('workspace')]
-    public ?CredentialBoundWorkspace $workspace;
-
-    /**
      * @param array{
+     *   binding: CredentialBinding,
      *   clientId: string,
      *   scopes: array<string>,
-     *   workspace?: ?CredentialBoundWorkspace,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->binding = $values['binding'];
         $this->clientId = $values['clientId'];
         $this->scopes = $values['scopes'];
-        $this->workspace = $values['workspace'] ?? null;
     }
 
     /**

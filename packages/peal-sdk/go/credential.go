@@ -339,26 +339,28 @@ func (c *CredentialAPIKey) String() string {
 }
 
 var (
-	credentialApplicationFieldClientID  = big.NewInt(1 << 0)
-	credentialApplicationFieldScopes    = big.NewInt(1 << 1)
-	credentialApplicationFieldWorkspace = big.NewInt(1 << 2)
+	credentialApplicationFieldBinding  = big.NewInt(1 << 0)
+	credentialApplicationFieldClientID = big.NewInt(1 << 1)
+	credentialApplicationFieldScopes   = big.NewInt(1 << 2)
 )
 
-// credentialApplicationNullableFields maps the wire names of CredentialApplication's nullable fields (required or optional) to their field bits.
-var credentialApplicationNullableFields = map[string]*big.Int{
-	"workspace": credentialApplicationFieldWorkspace,
-}
-
 type CredentialApplication struct {
-	ClientID  string                    `json:"clientId" url:"clientId"`
-	Scopes    []string                  `json:"scopes" url:"scopes"`
-	Workspace *CredentialBoundWorkspace `json:"workspace,omitempty" url:"workspace,omitempty"`
+	Binding  *CredentialBinding `json:"binding" url:"binding"`
+	ClientID string             `json:"clientId" url:"clientId"`
+	Scopes   []string           `json:"scopes" url:"scopes"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (c *CredentialApplication) GetBinding() *CredentialBinding {
+	if c == nil {
+		return nil
+	}
+	return c.Binding
 }
 
 func (c *CredentialApplication) GetClientID() string {
@@ -373,13 +375,6 @@ func (c *CredentialApplication) GetScopes() []string {
 		return nil
 	}
 	return c.Scopes
-}
-
-func (c *CredentialApplication) GetWorkspace() *CredentialBoundWorkspace {
-	if c == nil {
-		return nil
-	}
-	return c.Workspace
 }
 
 func (c *CredentialApplication) GetExtraProperties() map[string]interface{} {
@@ -398,6 +393,13 @@ func (c *CredentialApplication) require(field *big.Int) {
 	c.explicitFields = next
 }
 
+// SetBinding sets the Binding field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CredentialApplication) SetBinding(binding *CredentialBinding) {
+	c.Binding = binding
+	c.require(credentialApplicationFieldBinding)
+}
+
 // SetClientID sets the ClientID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *CredentialApplication) SetClientID(clientID string) {
@@ -412,13 +414,6 @@ func (c *CredentialApplication) SetScopes(scopes []string) {
 	c.require(credentialApplicationFieldScopes)
 }
 
-// SetWorkspace sets the Workspace field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CredentialApplication) SetWorkspace(workspace *CredentialBoundWorkspace) {
-	c.Workspace = workspace
-	c.require(credentialApplicationFieldWorkspace)
-}
-
 func (c *CredentialApplication) UnmarshalJSON(data []byte) error {
 	type unmarshaler CredentialApplication
 	var value unmarshaler
@@ -431,13 +426,6 @@ func (c *CredentialApplication) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	c.extraProperties = extraProperties
-	presentFields, err := internal.ExplicitFieldsFromJSON(data, credentialApplicationNullableFields)
-	if err != nil {
-		return err
-	}
-	if presentFields != nil {
-		c.require(presentFields)
-	}
 	c.rawJSON = json.RawMessage(data)
 	return nil
 }
@@ -468,19 +456,169 @@ func (c *CredentialApplication) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
-var (
-	credentialBoundWorkspaceFieldID          = big.NewInt(1 << 0)
-	credentialBoundWorkspaceFieldName        = big.NewInt(1 << 1)
-	credentialBoundWorkspaceFieldPermissions = big.NewInt(1 << 2)
-	credentialBoundWorkspaceFieldRefused     = big.NewInt(1 << 3)
-)
+type CredentialBinding struct {
+	Type    string
+	Unbound *CredentialBindingUnbound
+	Bound   *CredentialBindingBound
+	Left    *CredentialBindingLeft
 
-// credentialBoundWorkspaceNullableFields maps the wire names of CredentialBoundWorkspace's nullable fields (required or optional) to their field bits.
-var credentialBoundWorkspaceNullableFields = map[string]*big.Int{
-	"refused": credentialBoundWorkspaceFieldRefused,
+	rawJSON json.RawMessage
 }
 
-type CredentialBoundWorkspace struct {
+func (c *CredentialBinding) GetType() string {
+	if c == nil {
+		return ""
+	}
+	return c.Type
+}
+
+func (c *CredentialBinding) GetUnbound() *CredentialBindingUnbound {
+	if c == nil {
+		return nil
+	}
+	return c.Unbound
+}
+
+func (c *CredentialBinding) GetBound() *CredentialBindingBound {
+	if c == nil {
+		return nil
+	}
+	return c.Bound
+}
+
+func (c *CredentialBinding) GetLeft() *CredentialBindingLeft {
+	if c == nil {
+		return nil
+	}
+	return c.Left
+}
+
+func (c *CredentialBinding) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"_tag"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	c.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant _tag", c)
+	}
+	switch unmarshaler.Type {
+	case "unbound":
+		value := new(CredentialBindingUnbound)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Unbound = value
+	case "bound":
+		value := new(CredentialBindingBound)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Bound = value
+	case "left":
+		value := new(CredentialBindingLeft)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Left = value
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c CredentialBinding) MarshalJSON() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	if c.Unbound != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Unbound, "_tag", "unbound")
+	}
+	if c.Bound != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Bound, "_tag", "bound")
+	}
+	if c.Left != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Left, "_tag", "left")
+	}
+	if len(c.rawJSON) > 0 {
+		return c.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+type CredentialBindingVisitor interface {
+	VisitUnbound(*CredentialBindingUnbound) error
+	VisitBound(*CredentialBindingBound) error
+	VisitLeft(*CredentialBindingLeft) error
+}
+
+func (c *CredentialBinding) Accept(visitor CredentialBindingVisitor) error {
+	if c.Unbound != nil {
+		return visitor.VisitUnbound(c.Unbound)
+	}
+	if c.Bound != nil {
+		return visitor.VisitBound(c.Bound)
+	}
+	if c.Left != nil {
+		return visitor.VisitLeft(c.Left)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+func (c *CredentialBinding) validate() error {
+	if c == nil {
+		return fmt.Errorf("type %T is nil", c)
+	}
+	var fields []string
+	if c.Unbound != nil {
+		fields = append(fields, "unbound")
+	}
+	if c.Bound != nil {
+		fields = append(fields, "bound")
+	}
+	if c.Left != nil {
+		fields = append(fields, "left")
+	}
+	if len(fields) == 0 {
+		if c.Type != "" {
+			if len(c.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Type)
+		}
+		return fmt.Errorf("type %T is empty", c)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
+	}
+	if c.Type != "" {
+		field := fields[0]
+		if c.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				c,
+				c.Type,
+				c,
+			)
+		}
+	}
+	return nil
+}
+
+var (
+	credentialBindingBoundFieldID          = big.NewInt(1 << 0)
+	credentialBindingBoundFieldName        = big.NewInt(1 << 1)
+	credentialBindingBoundFieldPermissions = big.NewInt(1 << 2)
+	credentialBindingBoundFieldRefused     = big.NewInt(1 << 3)
+)
+
+// credentialBindingBoundNullableFields maps the wire names of CredentialBindingBound's nullable fields (required or optional) to their field bits.
+var credentialBindingBoundNullableFields = map[string]*big.Int{
+	"refused": credentialBindingBoundFieldRefused,
+}
+
+type CredentialBindingBound struct {
 	ID          string           `json:"id" url:"id"`
 	Name        string           `json:"name" url:"name"`
 	Permissions []Permission     `json:"permissions" url:"permissions"`
@@ -493,42 +631,42 @@ type CredentialBoundWorkspace struct {
 	rawJSON         json.RawMessage
 }
 
-func (c *CredentialBoundWorkspace) GetID() string {
+func (c *CredentialBindingBound) GetID() string {
 	if c == nil {
 		return ""
 	}
 	return c.ID
 }
 
-func (c *CredentialBoundWorkspace) GetName() string {
+func (c *CredentialBindingBound) GetName() string {
 	if c == nil {
 		return ""
 	}
 	return c.Name
 }
 
-func (c *CredentialBoundWorkspace) GetPermissions() []Permission {
+func (c *CredentialBindingBound) GetPermissions() []Permission {
 	if c == nil {
 		return nil
 	}
 	return c.Permissions
 }
 
-func (c *CredentialBoundWorkspace) GetRefused() *OverviewRefusal {
+func (c *CredentialBindingBound) GetRefused() *OverviewRefusal {
 	if c == nil {
 		return nil
 	}
 	return c.Refused
 }
 
-func (c *CredentialBoundWorkspace) GetExtraProperties() map[string]interface{} {
+func (c *CredentialBindingBound) GetExtraProperties() map[string]interface{} {
 	if c == nil {
 		return nil
 	}
 	return c.extraProperties
 }
 
-func (c *CredentialBoundWorkspace) require(field *big.Int) {
+func (c *CredentialBindingBound) require(field *big.Int) {
 	next := new(big.Int)
 	if c.explicitFields != nil {
 		next.Set(c.explicitFields)
@@ -539,45 +677,45 @@ func (c *CredentialBoundWorkspace) require(field *big.Int) {
 
 // SetID sets the ID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CredentialBoundWorkspace) SetID(id string) {
+func (c *CredentialBindingBound) SetID(id string) {
 	c.ID = id
-	c.require(credentialBoundWorkspaceFieldID)
+	c.require(credentialBindingBoundFieldID)
 }
 
 // SetName sets the Name field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CredentialBoundWorkspace) SetName(name string) {
+func (c *CredentialBindingBound) SetName(name string) {
 	c.Name = name
-	c.require(credentialBoundWorkspaceFieldName)
+	c.require(credentialBindingBoundFieldName)
 }
 
 // SetPermissions sets the Permissions field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CredentialBoundWorkspace) SetPermissions(permissions []Permission) {
+func (c *CredentialBindingBound) SetPermissions(permissions []Permission) {
 	c.Permissions = permissions
-	c.require(credentialBoundWorkspaceFieldPermissions)
+	c.require(credentialBindingBoundFieldPermissions)
 }
 
 // SetRefused sets the Refused field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *CredentialBoundWorkspace) SetRefused(refused *OverviewRefusal) {
+func (c *CredentialBindingBound) SetRefused(refused *OverviewRefusal) {
 	c.Refused = refused
-	c.require(credentialBoundWorkspaceFieldRefused)
+	c.require(credentialBindingBoundFieldRefused)
 }
 
-func (c *CredentialBoundWorkspace) UnmarshalJSON(data []byte) error {
-	type unmarshaler CredentialBoundWorkspace
+func (c *CredentialBindingBound) UnmarshalJSON(data []byte) error {
+	type unmarshaler CredentialBindingBound
 	var value unmarshaler
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*c = CredentialBoundWorkspace(value)
+	*c = CredentialBindingBound(value)
 	extraProperties, err := internal.ExtractExtraProperties(data, *c)
 	if err != nil {
 		return err
 	}
 	c.extraProperties = extraProperties
-	presentFields, err := internal.ExplicitFieldsFromJSON(data, credentialBoundWorkspaceNullableFields)
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, credentialBindingBoundNullableFields)
 	if err != nil {
 		return err
 	}
@@ -588,8 +726,8 @@ func (c *CredentialBoundWorkspace) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *CredentialBoundWorkspace) MarshalJSON() ([]byte, error) {
-	type embed CredentialBoundWorkspace
+func (c *CredentialBindingBound) MarshalJSON() ([]byte, error) {
+	type embed CredentialBindingBound
 	var marshaler = struct {
 		embed
 	}{
@@ -599,7 +737,160 @@ func (c *CredentialBoundWorkspace) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
-func (c *CredentialBoundWorkspace) String() string {
+func (c *CredentialBindingBound) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	credentialBindingLeftFieldID = big.NewInt(1 << 0)
+)
+
+type CredentialBindingLeft struct {
+	ID string `json:"id" url:"id"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CredentialBindingLeft) GetID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ID
+}
+
+func (c *CredentialBindingLeft) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CredentialBindingLeft) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CredentialBindingLeft) SetID(id string) {
+	c.ID = id
+	c.require(credentialBindingLeftFieldID)
+}
+
+func (c *CredentialBindingLeft) UnmarshalJSON(data []byte) error {
+	type unmarshaler CredentialBindingLeft
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CredentialBindingLeft(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CredentialBindingLeft) MarshalJSON() ([]byte, error) {
+	type embed CredentialBindingLeft
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CredentialBindingLeft) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CredentialBindingUnbound struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CredentialBindingUnbound) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CredentialBindingUnbound) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+func (c *CredentialBindingUnbound) UnmarshalJSON(data []byte) error {
+	type unmarshaler CredentialBindingUnbound
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CredentialBindingUnbound(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CredentialBindingUnbound) MarshalJSON() ([]byte, error) {
+	type embed CredentialBindingUnbound
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CredentialBindingUnbound) String() string {
 	if c == nil {
 		return "<nil>"
 	}
@@ -911,18 +1202,21 @@ func (c *CredentialPartnerKey) String() string {
 }
 
 var (
-	credentialUserFieldApplication = big.NewInt(1 << 0)
-	credentialUserFieldUserID      = big.NewInt(1 << 1)
+	credentialUserFieldApplication    = big.NewInt(1 << 0)
+	credentialUserFieldImpersonatedBy = big.NewInt(1 << 1)
+	credentialUserFieldUserID         = big.NewInt(1 << 2)
 )
 
 // credentialUserNullableFields maps the wire names of CredentialUser's nullable fields (required or optional) to their field bits.
 var credentialUserNullableFields = map[string]*big.Int{
-	"application": credentialUserFieldApplication,
+	"application":    credentialUserFieldApplication,
+	"impersonatedBy": credentialUserFieldImpersonatedBy,
 }
 
 type CredentialUser struct {
-	Application *CredentialApplication `json:"application,omitempty" url:"application,omitempty"`
-	UserID      string                 `json:"userId" url:"userId"`
+	Application    *CredentialApplication `json:"application,omitempty" url:"application,omitempty"`
+	ImpersonatedBy *string                `json:"impersonatedBy,omitempty" url:"impersonatedBy,omitempty"`
+	UserID         string                 `json:"userId" url:"userId"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -936,6 +1230,13 @@ func (c *CredentialUser) GetApplication() *CredentialApplication {
 		return nil
 	}
 	return c.Application
+}
+
+func (c *CredentialUser) GetImpersonatedBy() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ImpersonatedBy
 }
 
 func (c *CredentialUser) GetUserID() string {
@@ -966,6 +1267,13 @@ func (c *CredentialUser) require(field *big.Int) {
 func (c *CredentialUser) SetApplication(application *CredentialApplication) {
 	c.Application = application
 	c.require(credentialUserFieldApplication)
+}
+
+// SetImpersonatedBy sets the ImpersonatedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CredentialUser) SetImpersonatedBy(impersonatedBy *string) {
+	c.ImpersonatedBy = impersonatedBy
+	c.require(credentialUserFieldImpersonatedBy)
 }
 
 // SetUserID sets the UserID field and marks it as non-optional;

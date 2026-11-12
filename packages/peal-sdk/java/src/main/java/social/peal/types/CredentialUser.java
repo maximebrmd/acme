@@ -26,13 +26,19 @@ import social.peal.core.ObjectMappers;
 public final class CredentialUser {
     private final Optional<CredentialApplication> application;
 
+    private final Optional<String> impersonatedBy;
+
     private final String userId;
 
     private final Map<String, Object> additionalProperties;
 
     private CredentialUser(
-            Optional<CredentialApplication> application, String userId, Map<String, Object> additionalProperties) {
+            Optional<CredentialApplication> application,
+            Optional<String> impersonatedBy,
+            String userId,
+            Map<String, Object> additionalProperties) {
         this.application = application;
+        this.impersonatedBy = impersonatedBy;
         this.userId = userId;
         this.additionalProperties = additionalProperties;
     }
@@ -45,6 +51,14 @@ public final class CredentialUser {
         return application;
     }
 
+    @JsonIgnore
+    public Optional<String> getImpersonatedBy() {
+        if (impersonatedBy == null) {
+            return Optional.empty();
+        }
+        return impersonatedBy;
+    }
+
     @JsonProperty("userId")
     public String getUserId() {
         return userId;
@@ -54,6 +68,12 @@ public final class CredentialUser {
     @JsonProperty("application")
     private Optional<CredentialApplication> _getApplication() {
         return application;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("impersonatedBy")
+    private Optional<String> _getImpersonatedBy() {
+        return impersonatedBy;
     }
 
     @java.lang.Override
@@ -68,12 +88,14 @@ public final class CredentialUser {
     }
 
     private boolean equalTo(CredentialUser other) {
-        return application.equals(other.application) && userId.equals(other.userId);
+        return application.equals(other.application)
+                && impersonatedBy.equals(other.impersonatedBy)
+                && userId.equals(other.userId);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.application, this.userId);
+        return Objects.hash(this.application, this.impersonatedBy, this.userId);
     }
 
     @java.lang.Override
@@ -103,11 +125,19 @@ public final class CredentialUser {
         _FinalStage application(CredentialApplication application);
 
         _FinalStage application(Nullable<CredentialApplication> application);
+
+        _FinalStage impersonatedBy(Optional<String> impersonatedBy);
+
+        _FinalStage impersonatedBy(String impersonatedBy);
+
+        _FinalStage impersonatedBy(Nullable<String> impersonatedBy);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements UserIdStage, _FinalStage {
         private String userId;
+
+        private Optional<String> impersonatedBy = Optional.empty();
 
         private Optional<CredentialApplication> application = Optional.empty();
 
@@ -118,6 +148,7 @@ public final class CredentialUser {
         @java.lang.Override
         public Builder from(CredentialUser other) {
             application(other.getApplication());
+            impersonatedBy(other.getImpersonatedBy());
             userId(other.getUserId());
             return this;
         }
@@ -126,6 +157,31 @@ public final class CredentialUser {
         @JsonSetter("userId")
         public _FinalStage userId(@NotNull String userId) {
             this.userId = Objects.requireNonNull(userId, "userId must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage impersonatedBy(Nullable<String> impersonatedBy) {
+            if (impersonatedBy.isNull()) {
+                this.impersonatedBy = null;
+            } else if (impersonatedBy.isEmpty()) {
+                this.impersonatedBy = Optional.empty();
+            } else {
+                this.impersonatedBy = Optional.of(impersonatedBy.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage impersonatedBy(String impersonatedBy) {
+            this.impersonatedBy = Optional.ofNullable(impersonatedBy);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "impersonatedBy", nulls = Nulls.SKIP)
+        public _FinalStage impersonatedBy(Optional<String> impersonatedBy) {
+            this.impersonatedBy = impersonatedBy;
             return this;
         }
 
@@ -156,12 +212,14 @@ public final class CredentialUser {
 
         @java.lang.Override
         public CredentialUser build() {
-            return new CredentialUser(application, userId, additionalProperties);
+            return new CredentialUser(application, impersonatedBy, userId, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("application") || key.equalsIgnoreCase("userId")) {
+            if (key.equalsIgnoreCase("application")
+                    || key.equalsIgnoreCase("impersonatedBy")
+                    || key.equalsIgnoreCase("userId")) {
                 return;
             }
             this.additionalProperties.put(key, value);

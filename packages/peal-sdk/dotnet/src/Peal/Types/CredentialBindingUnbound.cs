@@ -5,23 +5,11 @@ using Peal.Core;
 namespace Peal;
 
 [Serializable]
-public record CredentialBoundWorkspace : IJsonOnDeserialized
+public record CredentialBindingUnbound : IJsonOnDeserialized
 {
     [JsonExtensionData]
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
-
-    [JsonPropertyName("id")]
-    public required string Id { get; set; }
-
-    [JsonPropertyName("name")]
-    public required string Name { get; set; }
-
-    [JsonPropertyName("permissions")]
-    public IEnumerable<Permission> Permissions { get; set; } = new List<Permission>();
-
-    [JsonPropertyName("refused")]
-    public OverviewRefusal? Refused { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

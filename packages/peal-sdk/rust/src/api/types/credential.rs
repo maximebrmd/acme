@@ -9,6 +9,9 @@ pub enum Credential {
     User {
         #[serde(skip_serializing_if = "Option::is_none")]
         application: Option<CredentialApplication>,
+        #[serde(rename = "impersonatedBy")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        impersonated_by: Option<String>,
         #[serde(rename = "userId")]
         #[serde(default)]
         user_id: String,
@@ -63,6 +66,7 @@ impl Credential {
     pub fn user(user_id: String) -> Self {
         Self::User {
             application: None,
+            impersonated_by: None,
             user_id,
         }
     }
@@ -102,9 +106,26 @@ impl Credential {
         }
     }
 
-    pub fn user_with_application(application: CredentialApplication, user_id: String) -> Self {
+    pub fn user_with_application(
+        application: CredentialApplication,
+        impersonated_by: Option<String>,
+        user_id: String,
+    ) -> Self {
         Self::User {
             application: Some(application),
+            impersonated_by,
+            user_id,
+        }
+    }
+
+    pub fn user_with_impersonated_by(
+        application: Option<CredentialApplication>,
+        impersonated_by: String,
+        user_id: String,
+    ) -> Self {
+        Self::User {
+            application,
+            impersonated_by: Some(impersonated_by),
             user_id,
         }
     }

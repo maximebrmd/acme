@@ -127,7 +127,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"application\": {\n    \"clientId\": \"clientId\",\n    \"scopes\": [\n      \"scopes\"\n    ],\n    \"workspace\": {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"permissions\": [\n        \"activity:read\"\n      ],\n      \"refused\": \"twoStepRequired\"\n    }\n  },\n  \"userId\": \"userId\",\n  \"_tag\": \"user\"\n}",
+        "body": "{\n  \"application\": {\n    \"binding\": {\n      \"_tag\": \"unbound\"\n    },\n    \"clientId\": \"clientId\",\n    \"scopes\": [\n      \"scopes\"\n    ]\n  },\n  \"impersonatedBy\": \"impersonatedBy\",\n  \"userId\": \"userId\",\n  \"_tag\": \"user\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }

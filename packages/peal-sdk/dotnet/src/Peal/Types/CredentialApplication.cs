@@ -11,14 +11,14 @@ public record CredentialApplication : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("binding")]
+    public required CredentialBinding Binding { get; set; }
+
     [JsonPropertyName("clientId")]
     public required string ClientId { get; set; }
 
     [JsonPropertyName("scopes")]
     public IEnumerable<string> Scopes { get; set; } = new List<string>();
-
-    [JsonPropertyName("workspace")]
-    public CredentialBoundWorkspace? Workspace { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

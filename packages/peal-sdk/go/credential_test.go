@@ -556,6 +556,14 @@ func TestSettersMarkExplicitCredentialAPIKey(t *testing.T) {
 }
 
 func TestSettersCredentialApplication(t *testing.T) {
+	t.Run("SetBinding", func(t *testing.T) {
+		obj := &CredentialApplication{}
+		var fernTestValueBinding *CredentialBinding
+		obj.SetBinding(fernTestValueBinding)
+		assert.Equal(t, fernTestValueBinding, obj.Binding)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetClientID", func(t *testing.T) {
 		obj := &CredentialApplication{}
 		var fernTestValueClientID string
@@ -572,17 +580,42 @@ func TestSettersCredentialApplication(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
-	t.Run("SetWorkspace", func(t *testing.T) {
-		obj := &CredentialApplication{}
-		var fernTestValueWorkspace *CredentialBoundWorkspace
-		obj.SetWorkspace(fernTestValueWorkspace)
-		assert.Equal(t, fernTestValueWorkspace, obj.Workspace)
-		assert.NotNil(t, obj.explicitFields)
-	})
-
 }
 
 func TestGettersCredentialApplication(t *testing.T) {
+	t.Run("GetBinding", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialApplication{}
+		var expected *CredentialBinding
+		obj.Binding = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetBinding(), "getter should return the property value")
+	})
+
+	t.Run("GetBinding_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialApplication{}
+		obj.Binding = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetBinding(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetBinding_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialApplication
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetBinding() // Should return zero value
+	})
+
 	t.Run("GetClientID", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -639,42 +672,40 @@ func TestGettersCredentialApplication(t *testing.T) {
 		_ = obj.GetScopes() // Should return zero value
 	})
 
-	t.Run("GetWorkspace", func(t *testing.T) {
-		t.Parallel()
-		// Arrange
-		obj := &CredentialApplication{}
-		var expected *CredentialBoundWorkspace
-		obj.Workspace = expected
-
-		// Act & Assert
-		assert.Equal(t, expected, obj.GetWorkspace(), "getter should return the property value")
-	})
-
-	t.Run("GetWorkspace_NilValue", func(t *testing.T) {
-		t.Parallel()
-		// Arrange
-		obj := &CredentialApplication{}
-		obj.Workspace = nil
-
-		// Act & Assert
-		assert.Nil(t, obj.GetWorkspace(), "getter should return nil when property is nil")
-	})
-
-	t.Run("GetWorkspace_NilReceiver", func(t *testing.T) {
-		t.Parallel()
-		var obj *CredentialApplication
-		// Should not panic - getters should handle nil receiver gracefully
-		defer func() {
-			if r := recover(); r != nil {
-				t.Errorf("Getter panicked on nil receiver: %v", r)
-			}
-		}()
-		_ = obj.GetWorkspace() // Should return zero value
-	})
-
 }
 
 func TestSettersMarkExplicitCredentialApplication(t *testing.T) {
+	t.Run("SetBinding_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialApplication{}
+		var fernTestValueBinding *CredentialBinding
+
+		// Act
+		obj.SetBinding(fernTestValueBinding)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetClientID_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -737,42 +768,136 @@ func TestSettersMarkExplicitCredentialApplication(t *testing.T) {
 		// It verifies that setting a field via setter allows successful JSON round-trip
 	})
 
-	t.Run("SetWorkspace_MarksExplicit", func(t *testing.T) {
+}
+
+func TestGettersCredentialBinding(t *testing.T) {
+	t.Run("GetType", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialApplication{}
-		var fernTestValueWorkspace *CredentialBoundWorkspace
+		obj := &CredentialBinding{}
+		var expected string
+		obj.Type = expected
 
-		// Act
-		obj.SetWorkspace(fernTestValueWorkspace)
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetType(), "getter should return the property value")
+	})
 
-		// Assert - object with explicitly set field can be marshaled/unmarshaled
-		bytes, err := json.Marshal(obj)
-		require.NoError(t, err, "marshaling should succeed for test setup")
+	t.Run("GetType_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialBinding
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetType() // Should return zero value
+	})
 
-		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
-		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
-		if len(bytes) > 0 && bytes[0] == '{' {
-			// JSON object - unmarshal into map
-			var unmarshaled map[string]interface{}
-			err = json.Unmarshal(bytes, &unmarshaled)
-			require.NoError(t, err, "unmarshaling should succeed for test verification")
-		} else {
-			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
-			var unmarshaled interface{}
-			err = json.Unmarshal(bytes, &unmarshaled)
-			require.NoError(t, err, "unmarshaling should succeed for test verification")
-		}
+	t.Run("GetUnbound", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialBinding{}
+		var expected *CredentialBindingUnbound
+		obj.Unbound = expected
 
-		// Note: This does not explicitly assert the presence of a specific JSON field
-		// It verifies that setting a field via setter allows successful JSON round-trip
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetUnbound(), "getter should return the property value")
+	})
+
+	t.Run("GetUnbound_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialBinding{}
+		obj.Unbound = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetUnbound(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetUnbound_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialBinding
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetUnbound() // Should return zero value
+	})
+
+	t.Run("GetBound", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialBinding{}
+		var expected *CredentialBindingBound
+		obj.Bound = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetBound(), "getter should return the property value")
+	})
+
+	t.Run("GetBound_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialBinding{}
+		obj.Bound = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetBound(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetBound_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialBinding
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetBound() // Should return zero value
+	})
+
+	t.Run("GetLeft", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialBinding{}
+		var expected *CredentialBindingLeft
+		obj.Left = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetLeft(), "getter should return the property value")
+	})
+
+	t.Run("GetLeft_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialBinding{}
+		obj.Left = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetLeft(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetLeft_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialBinding
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetLeft() // Should return zero value
 	})
 
 }
 
-func TestSettersCredentialBoundWorkspace(t *testing.T) {
+func TestSettersCredentialBindingBound(t *testing.T) {
 	t.Run("SetID", func(t *testing.T) {
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var fernTestValueID string
 		obj.SetID(fernTestValueID)
 		assert.Equal(t, fernTestValueID, obj.ID)
@@ -780,7 +905,7 @@ func TestSettersCredentialBoundWorkspace(t *testing.T) {
 	})
 
 	t.Run("SetName", func(t *testing.T) {
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var fernTestValueName string
 		obj.SetName(fernTestValueName)
 		assert.Equal(t, fernTestValueName, obj.Name)
@@ -788,7 +913,7 @@ func TestSettersCredentialBoundWorkspace(t *testing.T) {
 	})
 
 	t.Run("SetPermissions", func(t *testing.T) {
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var fernTestValuePermissions []Permission
 		obj.SetPermissions(fernTestValuePermissions)
 		assert.Equal(t, fernTestValuePermissions, obj.Permissions)
@@ -796,7 +921,7 @@ func TestSettersCredentialBoundWorkspace(t *testing.T) {
 	})
 
 	t.Run("SetRefused", func(t *testing.T) {
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var fernTestValueRefused *OverviewRefusal
 		obj.SetRefused(fernTestValueRefused)
 		assert.Equal(t, fernTestValueRefused, obj.Refused)
@@ -805,11 +930,11 @@ func TestSettersCredentialBoundWorkspace(t *testing.T) {
 
 }
 
-func TestGettersCredentialBoundWorkspace(t *testing.T) {
+func TestGettersCredentialBindingBound(t *testing.T) {
 	t.Run("GetID", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var expected string
 		obj.ID = expected
 
@@ -819,7 +944,7 @@ func TestGettersCredentialBoundWorkspace(t *testing.T) {
 
 	t.Run("GetID_NilReceiver", func(t *testing.T) {
 		t.Parallel()
-		var obj *CredentialBoundWorkspace
+		var obj *CredentialBindingBound
 		// Should not panic - getters should handle nil receiver gracefully
 		defer func() {
 			if r := recover(); r != nil {
@@ -832,7 +957,7 @@ func TestGettersCredentialBoundWorkspace(t *testing.T) {
 	t.Run("GetName", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var expected string
 		obj.Name = expected
 
@@ -842,7 +967,7 @@ func TestGettersCredentialBoundWorkspace(t *testing.T) {
 
 	t.Run("GetName_NilReceiver", func(t *testing.T) {
 		t.Parallel()
-		var obj *CredentialBoundWorkspace
+		var obj *CredentialBindingBound
 		// Should not panic - getters should handle nil receiver gracefully
 		defer func() {
 			if r := recover(); r != nil {
@@ -855,7 +980,7 @@ func TestGettersCredentialBoundWorkspace(t *testing.T) {
 	t.Run("GetPermissions", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var expected []Permission
 		obj.Permissions = expected
 
@@ -866,7 +991,7 @@ func TestGettersCredentialBoundWorkspace(t *testing.T) {
 	t.Run("GetPermissions_NilValue", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		obj.Permissions = nil
 
 		// Act & Assert
@@ -875,7 +1000,7 @@ func TestGettersCredentialBoundWorkspace(t *testing.T) {
 
 	t.Run("GetPermissions_NilReceiver", func(t *testing.T) {
 		t.Parallel()
-		var obj *CredentialBoundWorkspace
+		var obj *CredentialBindingBound
 		// Should not panic - getters should handle nil receiver gracefully
 		defer func() {
 			if r := recover(); r != nil {
@@ -888,7 +1013,7 @@ func TestGettersCredentialBoundWorkspace(t *testing.T) {
 	t.Run("GetRefused", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var expected *OverviewRefusal
 		obj.Refused = expected
 
@@ -899,7 +1024,7 @@ func TestGettersCredentialBoundWorkspace(t *testing.T) {
 	t.Run("GetRefused_NilValue", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		obj.Refused = nil
 
 		// Act & Assert
@@ -908,7 +1033,7 @@ func TestGettersCredentialBoundWorkspace(t *testing.T) {
 
 	t.Run("GetRefused_NilReceiver", func(t *testing.T) {
 		t.Parallel()
-		var obj *CredentialBoundWorkspace
+		var obj *CredentialBindingBound
 		// Should not panic - getters should handle nil receiver gracefully
 		defer func() {
 			if r := recover(); r != nil {
@@ -920,11 +1045,11 @@ func TestGettersCredentialBoundWorkspace(t *testing.T) {
 
 }
 
-func TestSettersMarkExplicitCredentialBoundWorkspace(t *testing.T) {
+func TestSettersMarkExplicitCredentialBindingBound(t *testing.T) {
 	t.Run("SetID_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var fernTestValueID string
 
 		// Act
@@ -955,7 +1080,7 @@ func TestSettersMarkExplicitCredentialBoundWorkspace(t *testing.T) {
 	t.Run("SetName_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var fernTestValueName string
 
 		// Act
@@ -986,7 +1111,7 @@ func TestSettersMarkExplicitCredentialBoundWorkspace(t *testing.T) {
 	t.Run("SetPermissions_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var fernTestValuePermissions []Permission
 
 		// Act
@@ -1017,11 +1142,82 @@ func TestSettersMarkExplicitCredentialBoundWorkspace(t *testing.T) {
 	t.Run("SetRefused_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		var fernTestValueRefused *OverviewRefusal
 
 		// Act
 		obj.SetRefused(fernTestValueRefused)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersCredentialBindingLeft(t *testing.T) {
+	t.Run("SetID", func(t *testing.T) {
+		obj := &CredentialBindingLeft{}
+		var fernTestValueID string
+		obj.SetID(fernTestValueID)
+		assert.Equal(t, fernTestValueID, obj.ID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersCredentialBindingLeft(t *testing.T) {
+	t.Run("GetID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialBindingLeft{}
+		var expected string
+		obj.ID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetID(), "getter should return the property value")
+	})
+
+	t.Run("GetID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialBindingLeft
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetID() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitCredentialBindingLeft(t *testing.T) {
+	t.Run("SetID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialBindingLeft{}
+		var fernTestValueID string
+
+		// Act
+		obj.SetID(fernTestValueID)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -1672,6 +1868,14 @@ func TestSettersCredentialUser(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetImpersonatedBy", func(t *testing.T) {
+		obj := &CredentialUser{}
+		var fernTestValueImpersonatedBy *string
+		obj.SetImpersonatedBy(fernTestValueImpersonatedBy)
+		assert.Equal(t, fernTestValueImpersonatedBy, obj.ImpersonatedBy)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetUserID", func(t *testing.T) {
 		obj := &CredentialUser{}
 		var fernTestValueUserID string
@@ -1716,6 +1920,39 @@ func TestGettersCredentialUser(t *testing.T) {
 		_ = obj.GetApplication() // Should return zero value
 	})
 
+	t.Run("GetImpersonatedBy", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialUser{}
+		var expected *string
+		obj.ImpersonatedBy = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetImpersonatedBy(), "getter should return the property value")
+	})
+
+	t.Run("GetImpersonatedBy_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialUser{}
+		obj.ImpersonatedBy = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetImpersonatedBy(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetImpersonatedBy_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialUser
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetImpersonatedBy() // Should return zero value
+	})
+
 	t.Run("GetUserID", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -1750,6 +1987,37 @@ func TestSettersMarkExplicitCredentialUser(t *testing.T) {
 
 		// Act
 		obj.SetApplication(fernTestValueApplication)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetImpersonatedBy_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialUser{}
+		var fernTestValueImpersonatedBy *string
+
+		// Act
+		obj.SetImpersonatedBy(fernTestValueImpersonatedBy)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -2005,11 +2273,11 @@ func TestJSONMarshalingCredentialApplication(t *testing.T) {
 	})
 }
 
-func TestJSONMarshalingCredentialBoundWorkspace(t *testing.T) {
+func TestJSONMarshalingCredentialBindingBound(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 
 		// Act - Marshal to JSON
 		data, err := json.Marshal(obj)
@@ -2018,21 +2286,87 @@ func TestJSONMarshalingCredentialBoundWorkspace(t *testing.T) {
 		assert.NotEmpty(t, data, "marshaled data should not be empty")
 
 		// Unmarshal back and verify round-trip
-		var unmarshaled CredentialBoundWorkspace
+		var unmarshaled CredentialBindingBound
 		err = json.Unmarshal(data, &unmarshaled)
 		assert.NoError(t, err, "round-trip unmarshal should succeed")
 	})
 
 	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
 		t.Parallel()
-		var obj CredentialBoundWorkspace
+		var obj CredentialBindingBound
 		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
 		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
 	})
 
 	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
 		t.Parallel()
-		var obj CredentialBoundWorkspace
+		var obj CredentialBindingBound
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingCredentialBindingLeft(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialBindingLeft{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled CredentialBindingLeft
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj CredentialBindingLeft
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj CredentialBindingLeft
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingCredentialBindingUnbound(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CredentialBindingUnbound{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled CredentialBindingUnbound
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj CredentialBindingUnbound
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj CredentialBindingUnbound
 		err := json.Unmarshal([]byte(`{}`), &obj)
 		assert.NoError(t, err, "unmarshaling empty object should succeed")
 	})
@@ -2214,54 +2548,11 @@ func TestRequiredNullableRoundTripCredentialAPIKey(t *testing.T) {
 	})
 }
 
-func TestRequiredNullableRoundTripCredentialApplication(t *testing.T) {
-	requiredNullableKeys := []string{
-		"workspace",
-	}
-	marshalToMap := func(t *testing.T, obj *CredentialApplication) map[string]json.RawMessage {
-		data, err := json.Marshal(obj)
-		require.NoError(t, err, "marshaling should succeed")
-		var result map[string]json.RawMessage
-		require.NoError(t, json.Unmarshal(data, &result), "marshaled data should be a JSON object")
-		return result
-	}
-
-	t.Run("NullPreserved", func(t *testing.T) {
-		t.Parallel()
-		var obj CredentialApplication
-		require.NoError(t, json.Unmarshal([]byte(`{"workspace":null}`), &obj))
-		result := marshalToMap(t, &obj)
-		for _, key := range requiredNullableKeys {
-			value, ok := result[key]
-			require.True(t, ok, "required nullable field %q received as null should be present in the output", key)
-			assert.Equal(t, "null", string(value), "required nullable field %q received as null should be null in the output", key)
-		}
-	})
-
-	t.Run("AbsentStaysAbsent", func(t *testing.T) {
-		t.Parallel()
-		var obj CredentialApplication
-		require.NoError(t, json.Unmarshal([]byte(`{}`), &obj))
-		result := marshalToMap(t, &obj)
-		for _, key := range requiredNullableKeys {
-			assert.NotContains(t, result, key, "required nullable field %q absent from the input should be absent from the output", key)
-		}
-	})
-
-	t.Run("FreshValueOmits", func(t *testing.T) {
-		t.Parallel()
-		result := marshalToMap(t, &CredentialApplication{})
-		for _, key := range requiredNullableKeys {
-			assert.NotContains(t, result, key, "required nullable field %q should be omitted from a freshly constructed value", key)
-		}
-	})
-}
-
-func TestRequiredNullableRoundTripCredentialBoundWorkspace(t *testing.T) {
+func TestRequiredNullableRoundTripCredentialBindingBound(t *testing.T) {
 	requiredNullableKeys := []string{
 		"refused",
 	}
-	marshalToMap := func(t *testing.T, obj *CredentialBoundWorkspace) map[string]json.RawMessage {
+	marshalToMap := func(t *testing.T, obj *CredentialBindingBound) map[string]json.RawMessage {
 		data, err := json.Marshal(obj)
 		require.NoError(t, err, "marshaling should succeed")
 		var result map[string]json.RawMessage
@@ -2271,7 +2562,7 @@ func TestRequiredNullableRoundTripCredentialBoundWorkspace(t *testing.T) {
 
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
-		var obj CredentialBoundWorkspace
+		var obj CredentialBindingBound
 		require.NoError(t, json.Unmarshal([]byte(`{"refused":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
@@ -2283,7 +2574,7 @@ func TestRequiredNullableRoundTripCredentialBoundWorkspace(t *testing.T) {
 
 	t.Run("AbsentStaysAbsent", func(t *testing.T) {
 		t.Parallel()
-		var obj CredentialBoundWorkspace
+		var obj CredentialBindingBound
 		require.NoError(t, json.Unmarshal([]byte(`{}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
@@ -2293,7 +2584,7 @@ func TestRequiredNullableRoundTripCredentialBoundWorkspace(t *testing.T) {
 
 	t.Run("FreshValueOmits", func(t *testing.T) {
 		t.Parallel()
-		result := marshalToMap(t, &CredentialBoundWorkspace{})
+		result := marshalToMap(t, &CredentialBindingBound{})
 		for _, key := range requiredNullableKeys {
 			assert.NotContains(t, result, key, "required nullable field %q should be omitted from a freshly constructed value", key)
 		}
@@ -2346,6 +2637,7 @@ func TestRequiredNullableRoundTripCredentialPartnerKey(t *testing.T) {
 func TestRequiredNullableRoundTripCredentialUser(t *testing.T) {
 	requiredNullableKeys := []string{
 		"application",
+		"impersonatedBy",
 	}
 	marshalToMap := func(t *testing.T, obj *CredentialUser) map[string]json.RawMessage {
 		data, err := json.Marshal(obj)
@@ -2358,7 +2650,7 @@ func TestRequiredNullableRoundTripCredentialUser(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj CredentialUser
-		require.NoError(t, json.Unmarshal([]byte(`{"application":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"application":null,"impersonatedBy":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]
@@ -2418,17 +2710,49 @@ func TestStringCredentialApplication(t *testing.T) {
 	})
 }
 
-func TestStringCredentialBoundWorkspace(t *testing.T) {
+func TestStringCredentialBindingBound(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		result := obj.String()
 		assert.NotEmpty(t, result, "String() should return a non-empty representation")
 	})
 
 	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
 		t.Parallel()
-		var obj *CredentialBoundWorkspace
+		var obj *CredentialBindingBound
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringCredentialBindingLeft(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &CredentialBindingLeft{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialBindingLeft
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringCredentialBindingUnbound(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &CredentialBindingUnbound{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialBindingUnbound
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
 	})
@@ -2544,10 +2868,10 @@ func TestExtraPropertiesCredentialApplication(t *testing.T) {
 	})
 }
 
-func TestExtraPropertiesCredentialBoundWorkspace(t *testing.T) {
+func TestExtraPropertiesCredentialBindingBound(t *testing.T) {
 	t.Run("GetExtraProperties", func(t *testing.T) {
 		t.Parallel()
-		obj := &CredentialBoundWorkspace{}
+		obj := &CredentialBindingBound{}
 		// Should not panic when calling GetExtraProperties()
 		defer func() {
 			if r := recover(); r != nil {
@@ -2561,7 +2885,53 @@ func TestExtraPropertiesCredentialBoundWorkspace(t *testing.T) {
 
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
-		var obj *CredentialBoundWorkspace
+		var obj *CredentialBindingBound
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesCredentialBindingLeft(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &CredentialBindingLeft{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialBindingLeft
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesCredentialBindingUnbound(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &CredentialBindingUnbound{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *CredentialBindingUnbound
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

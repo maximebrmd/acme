@@ -4,7 +4,7 @@ require_relative "../../peal"
 
 module Peal
   module Types
-    class CredentialBoundWorkspace < Internal::Types::Model
+    class CredentialBindingBound < Internal::Types::Model
       field :id, -> { String }, optional: false, nullable: false
 
       field :name, -> { String }, optional: false, nullable: false

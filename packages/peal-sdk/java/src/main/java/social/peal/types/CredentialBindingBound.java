@@ -24,8 +24,8 @@ import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
-@JsonDeserialize(builder = CredentialBoundWorkspace.Builder.class)
-public final class CredentialBoundWorkspace {
+@JsonDeserialize(builder = CredentialBindingBound.Builder.class)
+public final class CredentialBindingBound {
     private final String id;
 
     private final String name;
@@ -36,7 +36,7 @@ public final class CredentialBoundWorkspace {
 
     private final Map<String, Object> additionalProperties;
 
-    private CredentialBoundWorkspace(
+    private CredentialBindingBound(
             String id,
             String name,
             List<Permission> permissions,
@@ -81,7 +81,7 @@ public final class CredentialBoundWorkspace {
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
-        return other instanceof CredentialBoundWorkspace && equalTo((CredentialBoundWorkspace) other);
+        return other instanceof CredentialBindingBound && equalTo((CredentialBindingBound) other);
     }
 
     @JsonAnyGetter
@@ -89,7 +89,7 @@ public final class CredentialBoundWorkspace {
         return this.additionalProperties;
     }
 
-    private boolean equalTo(CredentialBoundWorkspace other) {
+    private boolean equalTo(CredentialBindingBound other) {
         return id.equals(other.id)
                 && name.equals(other.name)
                 && permissions.equals(other.permissions)
@@ -113,7 +113,7 @@ public final class CredentialBoundWorkspace {
     public interface IdStage {
         NameStage id(@NotNull String id);
 
-        Builder from(CredentialBoundWorkspace other);
+        Builder from(CredentialBindingBound other);
     }
 
     public interface NameStage {
@@ -121,7 +121,7 @@ public final class CredentialBoundWorkspace {
     }
 
     public interface _FinalStage {
-        CredentialBoundWorkspace build();
+        CredentialBindingBound build();
 
         _FinalStage additionalProperty(String key, Object value);
 
@@ -155,7 +155,7 @@ public final class CredentialBoundWorkspace {
         private Builder() {}
 
         @java.lang.Override
-        public Builder from(CredentialBoundWorkspace other) {
+        public Builder from(CredentialBindingBound other) {
             id(other.getId());
             name(other.getName());
             permissions(other.getPermissions());
@@ -227,8 +227,8 @@ public final class CredentialBoundWorkspace {
         }
 
         @java.lang.Override
-        public CredentialBoundWorkspace build() {
-            return new CredentialBoundWorkspace(id, name, permissions, refused, additionalProperties);
+        public CredentialBindingBound build() {
+            return new CredentialBindingBound(id, name, permissions, refused, additionalProperties);
         }
 
         @JsonAnySetter

@@ -20,6 +20,9 @@ class Credential_User(UniversalBaseModel):
         typing.Literal["user"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "user"
     application: typing.Optional[CredentialApplication] = None
+    impersonated_by: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="impersonatedBy"), pydantic.Field(alias="impersonatedBy")
+    ] = None
     user_id: typing_extensions.Annotated[str, FieldMetadata(alias="userId"), pydantic.Field(alias="userId")]
 
     if IS_PYDANTIC_V2:

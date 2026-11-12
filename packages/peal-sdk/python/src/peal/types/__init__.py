@@ -295,7 +295,15 @@ if typing.TYPE_CHECKING:
     from .credential import Credential, Credential_ApiKey, Credential_PartnerKey, Credential_User
     from .credential_api_key import CredentialApiKey
     from .credential_application import CredentialApplication
-    from .credential_bound_workspace import CredentialBoundWorkspace
+    from .credential_binding import (
+        CredentialBinding,
+        CredentialBinding_Bound,
+        CredentialBinding_Left,
+        CredentialBinding_Unbound,
+    )
+    from .credential_binding_bound import CredentialBindingBound
+    from .credential_binding_left import CredentialBindingLeft
+    from .credential_binding_unbound import CredentialBindingUnbound
     from .credential_partner import CredentialPartner
     from .credential_partner_key import CredentialPartnerKey
     from .credential_user import CredentialUser
@@ -1207,7 +1215,13 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Credential": ".credential",
     "CredentialApiKey": ".credential_api_key",
     "CredentialApplication": ".credential_application",
-    "CredentialBoundWorkspace": ".credential_bound_workspace",
+    "CredentialBinding": ".credential_binding",
+    "CredentialBindingBound": ".credential_binding_bound",
+    "CredentialBindingLeft": ".credential_binding_left",
+    "CredentialBindingUnbound": ".credential_binding_unbound",
+    "CredentialBinding_Bound": ".credential_binding",
+    "CredentialBinding_Left": ".credential_binding",
+    "CredentialBinding_Unbound": ".credential_binding",
     "CredentialPartner": ".credential_partner",
     "CredentialPartnerKey": ".credential_partner_key",
     "CredentialUser": ".credential_user",
@@ -2133,7 +2147,13 @@ __all__ = [
     "Credential",
     "CredentialApiKey",
     "CredentialApplication",
-    "CredentialBoundWorkspace",
+    "CredentialBinding",
+    "CredentialBindingBound",
+    "CredentialBindingLeft",
+    "CredentialBindingUnbound",
+    "CredentialBinding_Bound",
+    "CredentialBinding_Left",
+    "CredentialBinding_Unbound",
     "CredentialPartner",
     "CredentialPartnerKey",
     "CredentialUser",

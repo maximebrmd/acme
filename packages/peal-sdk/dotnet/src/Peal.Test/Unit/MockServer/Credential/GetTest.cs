@@ -15,21 +15,16 @@ public class GetTest : BaseMockServerTest
             {
               "_tag": "user",
               "application": {
+                "binding": {
+                  "_tag": "unbound"
+                },
                 "clientId": "clientId",
                 "scopes": [
                   "scopes",
                   "scopes"
-                ],
-                "workspace": {
-                  "id": "id",
-                  "name": "name",
-                  "permissions": [
-                    "activity:read",
-                    "activity:read"
-                  ],
-                  "refused": "twoStepRequired"
-                }
+                ]
               },
+              "impersonatedBy": "impersonatedBy",
               "userId": "userId"
             }
             """;
@@ -54,19 +49,15 @@ public class GetTest : BaseMockServerTest
             {
               "_tag": "user",
               "application": {
+                "binding": {
+                  "_tag": "unbound"
+                },
                 "clientId": "clientId",
                 "scopes": [
                   "scopes"
-                ],
-                "workspace": {
-                  "id": "id",
-                  "name": "name",
-                  "permissions": [
-                    "activity:read"
-                  ],
-                  "refused": "twoStepRequired"
-                }
+                ]
               },
+              "impersonatedBy": "impersonatedBy",
               "userId": "userId"
             }
             """;

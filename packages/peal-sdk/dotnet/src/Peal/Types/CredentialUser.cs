@@ -14,6 +14,9 @@ public record CredentialUser : IJsonOnDeserialized
     [JsonPropertyName("application")]
     public CredentialApplication? Application { get; set; }
 
+    [JsonPropertyName("impersonatedBy")]
+    public string? ImpersonatedBy { get; set; }
+
     [JsonPropertyName("userId")]
     public required string UserId { get; set; }
 
