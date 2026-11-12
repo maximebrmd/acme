@@ -30,7 +30,8 @@ swap_size_mb: 8192
 # role stops and masks (its defaults say why masked, not removed):
 system_masked_units:
   # BIND, listening on the public address; nothing resolves through it
-  # (systemd-resolved uses the provider's servers, Docker resolved's).
+  # (systemd-resolved asks the provider's servers, and Docker reads
+  # resolved's).
   - named.service
   # Modems, and disks hot-plugged on a desktop: a server has neither.
   - ModemManager.service
