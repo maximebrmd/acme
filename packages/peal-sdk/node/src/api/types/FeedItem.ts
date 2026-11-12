@@ -3,6 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface FeedItem {
+    digest: string;
     itemAt: string | null;
     outcome: Peal.FeedItemOutcome;
     pictureSkipped: Peal.FeedPictureSkip | null;

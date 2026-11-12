@@ -11,6 +11,9 @@ public record FeedItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("digest")]
+    public required string Digest { get; set; }
+
     [JsonPropertyName("itemAt")]
     public string? ItemAt { get; set; }
 

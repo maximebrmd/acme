@@ -8,6 +8,12 @@ use Peal\Core\Json\JsonProperty;
 class FeedItem extends JsonSerializableType
 {
     /**
+     * @var string $digest
+     */
+    #[JsonProperty('digest')]
+    public string $digest;
+
+    /**
      * @var ?string $itemAt
      */
     #[JsonProperty('itemAt')]
@@ -45,6 +51,7 @@ class FeedItem extends JsonSerializableType
 
     /**
      * @param array{
+     *   digest: string,
      *   outcome: value-of<FeedItemOutcome>,
      *   seenAt: string,
      *   itemAt?: ?string,
@@ -56,6 +63,7 @@ class FeedItem extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->digest = $values['digest'];
         $this->itemAt = $values['itemAt'] ?? null;
         $this->outcome = $values['outcome'];
         $this->pictureSkipped = $values['pictureSkipped'] ?? null;

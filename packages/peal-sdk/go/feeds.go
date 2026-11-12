@@ -911,12 +911,13 @@ func (f FeedFailure) Ptr() *FeedFailure {
 }
 
 var (
-	feedItemFieldItemAt         = big.NewInt(1 << 0)
-	feedItemFieldOutcome        = big.NewInt(1 << 1)
-	feedItemFieldPictureSkipped = big.NewInt(1 << 2)
-	feedItemFieldPostID         = big.NewInt(1 << 3)
-	feedItemFieldReason         = big.NewInt(1 << 4)
-	feedItemFieldSeenAt         = big.NewInt(1 << 5)
+	feedItemFieldDigest         = big.NewInt(1 << 0)
+	feedItemFieldItemAt         = big.NewInt(1 << 1)
+	feedItemFieldOutcome        = big.NewInt(1 << 2)
+	feedItemFieldPictureSkipped = big.NewInt(1 << 3)
+	feedItemFieldPostID         = big.NewInt(1 << 4)
+	feedItemFieldReason         = big.NewInt(1 << 5)
+	feedItemFieldSeenAt         = big.NewInt(1 << 6)
 )
 
 // feedItemNullableFields maps the wire names of FeedItem's nullable fields (required or optional) to their field bits.
@@ -928,6 +929,7 @@ var feedItemNullableFields = map[string]*big.Int{
 }
 
 type FeedItem struct {
+	Digest         string           `json:"digest" url:"digest"`
 	ItemAt         *string          `json:"itemAt,omitempty" url:"itemAt,omitempty"`
 	Outcome        FeedItemOutcome  `json:"outcome" url:"outcome"`
 	PictureSkipped *FeedPictureSkip `json:"pictureSkipped,omitempty" url:"pictureSkipped,omitempty"`
@@ -940,6 +942,13 @@ type FeedItem struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (f *FeedItem) GetDigest() string {
+	if f == nil {
+		return ""
+	}
+	return f.Digest
 }
 
 func (f *FeedItem) GetItemAt() *string {
@@ -998,6 +1007,13 @@ func (f *FeedItem) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	f.explicitFields = next
+}
+
+// SetDigest sets the Digest field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedItem) SetDigest(digest string) {
+	f.Digest = digest
+	f.require(feedItemFieldDigest)
 }
 
 // SetItemAt sets the ItemAt field and marks it as non-optional;

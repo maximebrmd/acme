@@ -24,6 +24,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = FeedItem.Builder.class)
 public final class FeedItem {
+    private final String digest;
+
     private final Optional<String> itemAt;
 
     private final FeedItemOutcome outcome;
@@ -39,6 +41,7 @@ public final class FeedItem {
     private final Map<String, Object> additionalProperties;
 
     private FeedItem(
+            String digest,
             Optional<String> itemAt,
             FeedItemOutcome outcome,
             Optional<FeedPictureSkip> pictureSkipped,
@@ -46,6 +49,7 @@ public final class FeedItem {
             Optional<FeedItemReason> reason,
             String seenAt,
             Map<String, Object> additionalProperties) {
+        this.digest = digest;
         this.itemAt = itemAt;
         this.outcome = outcome;
         this.pictureSkipped = pictureSkipped;
@@ -53,6 +57,11 @@ public final class FeedItem {
         this.reason = reason;
         this.seenAt = seenAt;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("digest")
+    public String getDigest() {
+        return digest;
     }
 
     @JsonIgnore
@@ -133,7 +142,8 @@ public final class FeedItem {
     }
 
     private boolean equalTo(FeedItem other) {
-        return itemAt.equals(other.itemAt)
+        return digest.equals(other.digest)
+                && itemAt.equals(other.itemAt)
                 && outcome.equals(other.outcome)
                 && pictureSkipped.equals(other.pictureSkipped)
                 && postId.equals(other.postId)
@@ -143,7 +153,8 @@ public final class FeedItem {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.itemAt, this.outcome, this.pictureSkipped, this.postId, this.reason, this.seenAt);
+        return Objects.hash(
+                this.digest, this.itemAt, this.outcome, this.pictureSkipped, this.postId, this.reason, this.seenAt);
     }
 
     @java.lang.Override
@@ -151,14 +162,18 @@ public final class FeedItem {
         return ObjectMappers.stringify(this);
     }
 
-    public static OutcomeStage builder() {
+    public static DigestStage builder() {
         return new Builder();
+    }
+
+    public interface DigestStage {
+        OutcomeStage digest(@NotNull String digest);
+
+        Builder from(FeedItem other);
     }
 
     public interface OutcomeStage {
         SeenAtStage outcome(@NotNull FeedItemOutcome outcome);
-
-        Builder from(FeedItem other);
     }
 
     public interface SeenAtStage {
@@ -198,7 +213,9 @@ public final class FeedItem {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements OutcomeStage, SeenAtStage, _FinalStage {
+    public static final class Builder implements DigestStage, OutcomeStage, SeenAtStage, _FinalStage {
+        private String digest;
+
         private FeedItemOutcome outcome;
 
         private String seenAt;
@@ -217,12 +234,20 @@ public final class FeedItem {
 
         @java.lang.Override
         public Builder from(FeedItem other) {
+            digest(other.getDigest());
             itemAt(other.getItemAt());
             outcome(other.getOutcome());
             pictureSkipped(other.getPictureSkipped());
             postId(other.getPostId());
             reason(other.getReason());
             seenAt(other.getSeenAt());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("digest")
+        public OutcomeStage digest(@NotNull String digest) {
+            this.digest = Objects.requireNonNull(digest, "digest must not be null");
             return this;
         }
 
@@ -342,12 +367,13 @@ public final class FeedItem {
 
         @java.lang.Override
         public FeedItem build() {
-            return new FeedItem(itemAt, outcome, pictureSkipped, postId, reason, seenAt, additionalProperties);
+            return new FeedItem(digest, itemAt, outcome, pictureSkipped, postId, reason, seenAt, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("itemAt")
+            if (key.equalsIgnoreCase("digest")
+                    || key.equalsIgnoreCase("itemAt")
                     || key.equalsIgnoreCase("outcome")
                     || key.equalsIgnoreCase("pictureSkipped")
                     || key.equalsIgnoreCase("postId")

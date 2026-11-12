@@ -5,6 +5,8 @@ require_relative "../../peal"
 module Peal
   module Types
     class FeedItem < Internal::Types::Model
+      field :digest, -> { String }, optional: false, nullable: false
+
       field :item_at, -> { String }, optional: false, nullable: true, api_name: "itemAt"
 
       field :outcome, -> { Peal::Types::FeedItemOutcome }, optional: false, nullable: false

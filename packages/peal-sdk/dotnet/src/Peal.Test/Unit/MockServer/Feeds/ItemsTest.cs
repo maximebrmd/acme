@@ -16,6 +16,7 @@ public class ItemsTest : BaseMockServerTest
             {
               "items": [
                 {
+                  "digest": "digest",
                   "itemAt": "itemAt",
                   "outcome": "made",
                   "pictureSkipped": "notPublic",
@@ -24,6 +25,7 @@ public class ItemsTest : BaseMockServerTest
                   "seenAt": "seenAt"
                 },
                 {
+                  "digest": "digest",
                   "itemAt": "itemAt",
                   "outcome": "made",
                   "pictureSkipped": "notPublic",
@@ -62,6 +64,7 @@ public class ItemsTest : BaseMockServerTest
             {
               "items": [
                 {
+                  "digest": "digest",
                   "itemAt": "itemAt",
                   "outcome": "made",
                   "pictureSkipped": "notPublic",

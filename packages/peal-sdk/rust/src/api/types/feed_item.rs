@@ -2,6 +2,8 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct FeedItem {
+    #[serde(default)]
+    pub digest: String,
     #[serde(rename = "itemAt")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub item_at: Option<String>,
@@ -28,6 +30,7 @@ impl FeedItem {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct FeedItemBuilder {
+    digest: Option<String>,
     item_at: Option<String>,
     outcome: Option<FeedItemOutcome>,
     picture_skipped: Option<FeedPictureSkip>,
@@ -37,6 +40,11 @@ pub struct FeedItemBuilder {
 }
 
 impl FeedItemBuilder {
+    pub fn digest(mut self, value: impl Into<String>) -> Self {
+        self.digest = Some(value.into());
+        self
+    }
+
     pub fn item_at(mut self, value: impl Into<String>) -> Self {
         self.item_at = Some(value.into());
         self
@@ -69,10 +77,14 @@ impl FeedItemBuilder {
 
     /// Consumes the builder and constructs a [`FeedItem`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`digest`](FeedItemBuilder::digest)
     /// - [`outcome`](FeedItemBuilder::outcome)
     /// - [`seen_at`](FeedItemBuilder::seen_at)
     pub fn build(self) -> Result<FeedItem, BuildError> {
         Ok(FeedItem {
+            digest: self
+                .digest
+                .ok_or_else(|| BuildError::missing_field("digest"))?,
             item_at: self.item_at,
             outcome: self
                 .outcome

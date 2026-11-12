@@ -12,6 +12,7 @@ from .feed_picture_skip import FeedPictureSkip
 
 
 class FeedItem(UniversalBaseModel):
+    digest: str
     item_at: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="itemAt"), pydantic.Field(alias="itemAt")
     ] = None
