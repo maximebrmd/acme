@@ -11,6 +11,7 @@ enum InboxReplyReason: string
     case CommentGone = "commentGone";
     case Refused = "refused";
     case NotSent = "notSent";
+    case TooLong = "tooLong";
     case NoResponse = "noResponse";
     case Interrupted = "interrupted";
     case AdapterFailure = "adapterFailure";

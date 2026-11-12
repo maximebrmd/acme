@@ -11,6 +11,7 @@ InboxReplyReason = typing.Union[
         "commentGone",
         "refused",
         "notSent",
+        "tooLong",
         "noResponse",
         "interrupted",
         "adapterFailure",

@@ -14,6 +14,7 @@ module Peal
       COMMENT_GONE = "commentGone"
       REFUSED = "refused"
       NOT_SENT = "notSent"
+      TOO_LONG = "tooLong"
       NO_RESPONSE = "noResponse"
       INTERRUPTED = "interrupted"
       ADAPTER_FAILURE = "adapterFailure"

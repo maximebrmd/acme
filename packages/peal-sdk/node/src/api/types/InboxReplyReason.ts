@@ -8,6 +8,7 @@ export const InboxReplyReason = {
         CommentGone: "commentGone",
         Refused: "refused",
         NotSent: "notSent",
+        TooLong: "tooLong",
         NoResponse: "noResponse",
         Interrupted: "interrupted",
         AdapterFailure: "adapterFailure"
