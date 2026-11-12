@@ -286,6 +286,19 @@ export const DrizzleFeedStore = Layer.effect(
           .orderBy(asc(feeds.id))
           .limit(limit)
           .pipe(Effect.mapError(failed), Effect.flatMap(feedsFrom)),
+      listed: (feedId, digests, at) =>
+        digests.length === 0
+          ? Effect.void
+          : db
+              .update(feedItems)
+              .set({ lastSeenAt: date(at) })
+              .where(
+                and(
+                  eq(feedItems.feedId, feedId),
+                  inArray(feedItems.itemDigest, [...digests])
+                )
+              )
+              .pipe(Effect.asVoid, Effect.mapError(failed)),
       lock: (workspaceId, feedId) =>
         db
           .select()
@@ -343,19 +356,6 @@ export const DrizzleFeedStore = Layer.effect(
           Effect.map((rows) => rows.length),
           Effect.mapError(failed)
         ),
-      listed: (feedId, digests, at) =>
-        digests.length === 0
-          ? Effect.void
-          : db
-              .update(feedItems)
-              .set({ lastSeenAt: date(at) })
-              .where(
-                and(
-                  eq(feedItems.feedId, feedId),
-                  inArray(feedItems.itemDigest, [...digests])
-                )
-              )
-              .pipe(Effect.asVoid, Effect.mapError(failed)),
       record: (feedId, items) =>
         items.length === 0
           ? Effect.succeed(new Set<ItemDigest>())
