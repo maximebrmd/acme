@@ -390,6 +390,7 @@ if typing.TYPE_CHECKING:
     from .inbox_author import InboxAuthor
     from .inbox_collection_end import InboxCollectionEnd
     from .inbox_comment import InboxComment
+    from .inbox_comment_forgotten import InboxCommentForgotten
     from .inbox_comment_gone_encoded import InboxCommentGoneEncoded
     from .inbox_comment_gone_encoded_tag import InboxCommentGoneEncodedTag
     from .inbox_comment_not_found_encoded import InboxCommentNotFoundEncoded
@@ -1290,6 +1291,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "InboxAuthor": ".inbox_author",
     "InboxCollectionEnd": ".inbox_collection_end",
     "InboxComment": ".inbox_comment",
+    "InboxCommentForgotten": ".inbox_comment_forgotten",
     "InboxCommentGoneEncoded": ".inbox_comment_gone_encoded",
     "InboxCommentGoneEncodedTag": ".inbox_comment_gone_encoded_tag",
     "InboxCommentNotFoundEncoded": ".inbox_comment_not_found_encoded",
@@ -2205,6 +2207,7 @@ __all__ = [
     "InboxAuthor",
     "InboxCollectionEnd",
     "InboxComment",
+    "InboxCommentForgotten",
     "InboxCommentGoneEncoded",
     "InboxCommentGoneEncodedTag",
     "InboxCommentNotFoundEncoded",

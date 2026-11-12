@@ -7,6 +7,8 @@ module Peal
     class InboxComment < Internal::Types::Model
       field :author, -> { Peal::Types::InboxAuthor }, optional: false, nullable: true
 
+      field :forgotten, -> { Peal::Types::InboxCommentForgotten }, optional: true, nullable: false
+
       field :id, -> { String }, optional: false, nullable: false
 
       field :liked, -> { Internal::Types::Boolean }, optional: false, nullable: false

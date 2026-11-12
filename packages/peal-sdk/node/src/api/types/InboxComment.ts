@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface InboxComment {
     author: Peal.InboxAuthor | null;
+    forgotten?: Peal.InboxCommentForgotten | undefined;
     id: string;
     liked: boolean;
     parentId: string | null;

@@ -780,15 +780,16 @@ func (i InboxCollectionEnd) Ptr() *InboxCollectionEnd {
 
 var (
 	inboxCommentFieldAuthor     = big.NewInt(1 << 0)
-	inboxCommentFieldID         = big.NewInt(1 << 1)
-	inboxCommentFieldLiked      = big.NewInt(1 << 2)
-	inboxCommentFieldParentID   = big.NewInt(1 << 3)
-	inboxCommentFieldPermalink  = big.NewInt(1 << 4)
-	inboxCommentFieldReceivedAt = big.NewInt(1 << 5)
-	inboxCommentFieldState      = big.NewInt(1 << 6)
-	inboxCommentFieldText       = big.NewInt(1 << 7)
-	inboxCommentFieldThreadID   = big.NewInt(1 << 8)
-	inboxCommentFieldWrittenAt  = big.NewInt(1 << 9)
+	inboxCommentFieldForgotten  = big.NewInt(1 << 1)
+	inboxCommentFieldID         = big.NewInt(1 << 2)
+	inboxCommentFieldLiked      = big.NewInt(1 << 3)
+	inboxCommentFieldParentID   = big.NewInt(1 << 4)
+	inboxCommentFieldPermalink  = big.NewInt(1 << 5)
+	inboxCommentFieldReceivedAt = big.NewInt(1 << 6)
+	inboxCommentFieldState      = big.NewInt(1 << 7)
+	inboxCommentFieldText       = big.NewInt(1 << 8)
+	inboxCommentFieldThreadID   = big.NewInt(1 << 9)
+	inboxCommentFieldWrittenAt  = big.NewInt(1 << 10)
 )
 
 // inboxCommentNullableFields maps the wire names of InboxComment's nullable fields (required or optional) to their field bits.
@@ -799,16 +800,17 @@ var inboxCommentNullableFields = map[string]*big.Int{
 }
 
 type InboxComment struct {
-	Author     *InboxAuthor      `json:"author,omitempty" url:"author,omitempty"`
-	ID         string            `json:"id" url:"id"`
-	Liked      bool              `json:"liked" url:"liked"`
-	ParentID   *string           `json:"parentId,omitempty" url:"parentId,omitempty"`
-	Permalink  *string           `json:"permalink,omitempty" url:"permalink,omitempty"`
-	ReceivedAt string            `json:"receivedAt" url:"receivedAt"`
-	State      InboxCommentState `json:"state" url:"state"`
-	Text       string            `json:"text" url:"text"`
-	ThreadID   string            `json:"threadId" url:"threadId"`
-	WrittenAt  string            `json:"writtenAt" url:"writtenAt"`
+	Author     *InboxAuthor           `json:"author,omitempty" url:"author,omitempty"`
+	Forgotten  *InboxCommentForgotten `json:"forgotten,omitempty" url:"forgotten,omitempty"`
+	ID         string                 `json:"id" url:"id"`
+	Liked      bool                   `json:"liked" url:"liked"`
+	ParentID   *string                `json:"parentId,omitempty" url:"parentId,omitempty"`
+	Permalink  *string                `json:"permalink,omitempty" url:"permalink,omitempty"`
+	ReceivedAt string                 `json:"receivedAt" url:"receivedAt"`
+	State      InboxCommentState      `json:"state" url:"state"`
+	Text       string                 `json:"text" url:"text"`
+	ThreadID   string                 `json:"threadId" url:"threadId"`
+	WrittenAt  string                 `json:"writtenAt" url:"writtenAt"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -822,6 +824,13 @@ func (i *InboxComment) GetAuthor() *InboxAuthor {
 		return nil
 	}
 	return i.Author
+}
+
+func (i *InboxComment) GetForgotten() *InboxCommentForgotten {
+	if i == nil {
+		return nil
+	}
+	return i.Forgotten
 }
 
 func (i *InboxComment) GetID() string {
@@ -908,6 +917,13 @@ func (i *InboxComment) require(field *big.Int) {
 func (i *InboxComment) SetAuthor(author *InboxAuthor) {
 	i.Author = author
 	i.require(inboxCommentFieldAuthor)
+}
+
+// SetForgotten sets the Forgotten field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *InboxComment) SetForgotten(forgotten *InboxCommentForgotten) {
+	i.Forgotten = forgotten
+	i.require(inboxCommentFieldForgotten)
 }
 
 // SetID sets the ID field and marks it as non-optional;
@@ -1020,6 +1036,25 @@ func (i *InboxComment) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", i)
+}
+
+type InboxCommentForgotten string
+
+const (
+	InboxCommentForgottenExpired InboxCommentForgotten = "expired"
+)
+
+func NewInboxCommentForgottenFromString(s string) (InboxCommentForgotten, error) {
+	switch s {
+	case "expired":
+		return InboxCommentForgottenExpired, nil
+	}
+	var t InboxCommentForgotten
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i InboxCommentForgotten) Ptr() *InboxCommentForgotten {
+	return &i
 }
 
 type InboxCommentState string

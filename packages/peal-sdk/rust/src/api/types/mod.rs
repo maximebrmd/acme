@@ -271,6 +271,7 @@ pub mod inbox_action_unavailable_encoded_standing;
 pub mod inbox_author;
 pub mod inbox_collection_end;
 pub mod inbox_comment;
+pub mod inbox_comment_forgotten;
 pub mod inbox_comment_gone_encoded;
 pub mod inbox_comment_gone_encoded_tag;
 pub mod inbox_comment_not_found_encoded;
@@ -963,6 +964,7 @@ pub use inbox_action_unavailable_encoded_standing::InboxActionUnavailableEncoded
 pub use inbox_author::InboxAuthor;
 pub use inbox_collection_end::InboxCollectionEnd;
 pub use inbox_comment::InboxComment;
+pub use inbox_comment_forgotten::InboxCommentForgotten;
 pub use inbox_comment_gone_encoded::InboxCommentGoneEncoded;
 pub use inbox_comment_gone_encoded_tag::InboxCommentGoneEncodedTag;
 pub use inbox_comment_not_found_encoded::InboxCommentNotFoundEncoded;

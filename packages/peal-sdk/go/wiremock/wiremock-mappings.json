@@ -3731,7 +3731,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"abilities\": {\n    \"delete\": \"available\",\n    \"hide\": \"available\",\n    \"like\": \"available\",\n    \"read\": \"available\",\n    \"reply\": \"available\",\n    \"withdraw\": \"available\"\n  },\n  \"comments\": [\n    {\n      \"author\": {\n        \"displayName\": null,\n        \"handle\": \"handle\",\n        \"platformId\": \"platformId\"\n      },\n      \"id\": \"id\",\n      \"liked\": true,\n      \"parentId\": \"parentId\",\n      \"permalink\": \"permalink\",\n      \"receivedAt\": \"receivedAt\",\n      \"state\": \"new\",\n      \"text\": \"text\",\n      \"threadId\": \"threadId\",\n      \"writtenAt\": \"writtenAt\"\n    }\n  ],\n  \"platform\": \"x\",\n  \"replies\": [\n    {\n      \"authorId\": \"authorId\",\n      \"commentId\": \"commentId\",\n      \"createdAt\": \"createdAt\",\n      \"id\": \"id\",\n      \"permalink\": \"permalink\",\n      \"reason\": \"channelUnavailable\",\n      \"settledAt\": \"settledAt\",\n      \"status\": \"sending\",\n      \"text\": \"text\",\n      \"threadId\": \"threadId\"\n    }\n  ],\n  \"thread\": {\n    \"channelId\": \"channelId\",\n    \"collectionEnded\": \"window\",\n    \"comments\": 1,\n    \"id\": \"id\",\n    \"lastCollectedAt\": \"lastCollectedAt\",\n    \"lastCommentAt\": \"lastCommentAt\",\n    \"permalink\": \"permalink\",\n    \"postId\": \"postId\",\n    \"publishedAt\": \"publishedAt\",\n    \"targetId\": \"targetId\",\n    \"unanswered\": 1\n  }\n}",
+        "body": "{\n  \"abilities\": {\n    \"delete\": \"available\",\n    \"hide\": \"available\",\n    \"like\": \"available\",\n    \"read\": \"available\",\n    \"reply\": \"available\",\n    \"withdraw\": \"available\"\n  },\n  \"comments\": [\n    {\n      \"author\": {\n        \"displayName\": null,\n        \"handle\": \"handle\",\n        \"platformId\": \"platformId\"\n      },\n      \"forgotten\": \"expired\",\n      \"id\": \"id\",\n      \"liked\": true,\n      \"parentId\": \"parentId\",\n      \"permalink\": \"permalink\",\n      \"receivedAt\": \"receivedAt\",\n      \"state\": \"new\",\n      \"text\": \"text\",\n      \"threadId\": \"threadId\",\n      \"writtenAt\": \"writtenAt\"\n    }\n  ],\n  \"platform\": \"x\",\n  \"replies\": [\n    {\n      \"authorId\": \"authorId\",\n      \"commentId\": \"commentId\",\n      \"createdAt\": \"createdAt\",\n      \"id\": \"id\",\n      \"permalink\": \"permalink\",\n      \"reason\": \"channelUnavailable\",\n      \"settledAt\": \"settledAt\",\n      \"status\": \"sending\",\n      \"text\": \"text\",\n      \"threadId\": \"threadId\"\n    }\n  ],\n  \"thread\": {\n    \"channelId\": \"channelId\",\n    \"collectionEnded\": \"window\",\n    \"comments\": 1,\n    \"id\": \"id\",\n    \"lastCollectedAt\": \"lastCollectedAt\",\n    \"lastCommentAt\": \"lastCommentAt\",\n    \"permalink\": \"permalink\",\n    \"postId\": \"postId\",\n    \"publishedAt\": \"publishedAt\",\n    \"targetId\": \"targetId\",\n    \"unanswered\": 1\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -3848,7 +3848,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"author\": {\n    \"displayName\": \"displayName\",\n    \"handle\": \"handle\",\n    \"platformId\": \"platformId\"\n  },\n  \"id\": \"id\",\n  \"liked\": true,\n  \"parentId\": \"parentId\",\n  \"permalink\": \"permalink\",\n  \"receivedAt\": \"receivedAt\",\n  \"state\": \"new\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\",\n  \"writtenAt\": \"writtenAt\"\n}",
+        "body": "{\n  \"author\": {\n    \"displayName\": \"displayName\",\n    \"handle\": \"handle\",\n    \"platformId\": \"platformId\"\n  },\n  \"forgotten\": \"expired\",\n  \"id\": \"id\",\n  \"liked\": true,\n  \"parentId\": \"parentId\",\n  \"permalink\": \"permalink\",\n  \"receivedAt\": \"receivedAt\",\n  \"state\": \"new\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\",\n  \"writtenAt\": \"writtenAt\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -3887,7 +3887,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"author\": {\n    \"displayName\": \"displayName\",\n    \"handle\": \"handle\",\n    \"platformId\": \"platformId\"\n  },\n  \"id\": \"id\",\n  \"liked\": true,\n  \"parentId\": \"parentId\",\n  \"permalink\": \"permalink\",\n  \"receivedAt\": \"receivedAt\",\n  \"state\": \"new\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\",\n  \"writtenAt\": \"writtenAt\"\n}",
+        "body": "{\n  \"author\": {\n    \"displayName\": \"displayName\",\n    \"handle\": \"handle\",\n    \"platformId\": \"platformId\"\n  },\n  \"forgotten\": \"expired\",\n  \"id\": \"id\",\n  \"liked\": true,\n  \"parentId\": \"parentId\",\n  \"permalink\": \"permalink\",\n  \"receivedAt\": \"receivedAt\",\n  \"state\": \"new\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\",\n  \"writtenAt\": \"writtenAt\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }

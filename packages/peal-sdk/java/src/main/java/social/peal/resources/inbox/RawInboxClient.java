@@ -54,28 +54,28 @@ public class RawInboxClient {
     }
 
     /**
-     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, and on facebook and instagram where the server's operator turned them on, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
+     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, and on facebook, instagram and youtube where the server's operator turned them on, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
      */
     public PealClientHttpResponse<InboxThreadPage> listThreads(String workspaceId) {
         return listThreads(workspaceId, ListThreadsInboxRequest.builder().build());
     }
 
     /**
-     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, and on facebook and instagram where the server's operator turned them on, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
+     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, and on facebook, instagram and youtube where the server's operator turned them on, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
      */
     public PealClientHttpResponse<InboxThreadPage> listThreads(String workspaceId, RequestOptions requestOptions) {
         return listThreads(workspaceId, ListThreadsInboxRequest.builder().build(), requestOptions);
     }
 
     /**
-     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, and on facebook and instagram where the server's operator turned them on, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
+     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, and on facebook, instagram and youtube where the server's operator turned them on, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
      */
     public PealClientHttpResponse<InboxThreadPage> listThreads(String workspaceId, ListThreadsInboxRequest request) {
         return listThreads(workspaceId, request, null);
     }
 
     /**
-     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, and on facebook and instagram where the server's operator turned them on, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
+     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, and on facebook, instagram and youtube where the server's operator turned them on, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
      */
     public PealClientHttpResponse<InboxThreadPage> listThreads(
             String workspaceId, ListThreadsInboxRequest request, RequestOptions requestOptions) {

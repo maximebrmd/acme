@@ -751,6 +751,7 @@ module Peal
     autoload :InboxActionUnavailableEncoded, ::File.join(__dir__, "peal/types/inbox_action_unavailable_encoded")
     autoload :InboxAuthor, ::File.join(__dir__, "peal/types/inbox_author")
     autoload :InboxCollectionEnd, ::File.join(__dir__, "peal/types/inbox_collection_end")
+    autoload :InboxCommentForgotten, ::File.join(__dir__, "peal/types/inbox_comment_forgotten")
     autoload :InboxCommentState, ::File.join(__dir__, "peal/types/inbox_comment_state")
     autoload :InboxComment, ::File.join(__dir__, "peal/types/inbox_comment")
     autoload :InboxCommentGoneEncodedTag, ::File.join(__dir__, "peal/types/inbox_comment_gone_encoded_tag")

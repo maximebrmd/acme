@@ -26,6 +26,8 @@ import social.peal.core.ObjectMappers;
 public final class InboxComment {
     private final Optional<InboxAuthor> author;
 
+    private final Optional<InboxCommentForgotten> forgotten;
+
     private final String id;
 
     private final boolean liked;
@@ -48,6 +50,7 @@ public final class InboxComment {
 
     private InboxComment(
             Optional<InboxAuthor> author,
+            Optional<InboxCommentForgotten> forgotten,
             String id,
             boolean liked,
             Optional<String> parentId,
@@ -59,6 +62,7 @@ public final class InboxComment {
             String writtenAt,
             Map<String, Object> additionalProperties) {
         this.author = author;
+        this.forgotten = forgotten;
         this.id = id;
         this.liked = liked;
         this.parentId = parentId;
@@ -77,6 +81,11 @@ public final class InboxComment {
             return Optional.empty();
         }
         return author;
+    }
+
+    @JsonProperty("forgotten")
+    public Optional<InboxCommentForgotten> getForgotten() {
+        return forgotten;
     }
 
     @JsonProperty("id")
@@ -161,6 +170,7 @@ public final class InboxComment {
 
     private boolean equalTo(InboxComment other) {
         return author.equals(other.author)
+                && forgotten.equals(other.forgotten)
                 && id.equals(other.id)
                 && liked == other.liked
                 && parentId.equals(other.parentId)
@@ -176,6 +186,7 @@ public final class InboxComment {
     public int hashCode() {
         return Objects.hash(
                 this.author,
+                this.forgotten,
                 this.id,
                 this.liked,
                 this.parentId,
@@ -239,6 +250,10 @@ public final class InboxComment {
 
         _FinalStage author(Nullable<InboxAuthor> author);
 
+        _FinalStage forgotten(Optional<InboxCommentForgotten> forgotten);
+
+        _FinalStage forgotten(InboxCommentForgotten forgotten);
+
         _FinalStage parentId(Optional<String> parentId);
 
         _FinalStage parentId(String parentId);
@@ -280,6 +295,8 @@ public final class InboxComment {
 
         private Optional<String> parentId = Optional.empty();
 
+        private Optional<InboxCommentForgotten> forgotten = Optional.empty();
+
         private Optional<InboxAuthor> author = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -289,6 +306,7 @@ public final class InboxComment {
         @java.lang.Override
         public Builder from(InboxComment other) {
             author(other.getAuthor());
+            forgotten(other.getForgotten());
             id(other.getId());
             liked(other.getLiked());
             parentId(other.getParentId());
@@ -401,6 +419,19 @@ public final class InboxComment {
         }
 
         @java.lang.Override
+        public _FinalStage forgotten(InboxCommentForgotten forgotten) {
+            this.forgotten = Optional.ofNullable(forgotten);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "forgotten", nulls = Nulls.SKIP)
+        public _FinalStage forgotten(Optional<InboxCommentForgotten> forgotten) {
+            this.forgotten = forgotten;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage author(Nullable<InboxAuthor> author) {
             if (author.isNull()) {
                 this.author = null;
@@ -429,6 +460,7 @@ public final class InboxComment {
         public InboxComment build() {
             return new InboxComment(
                     author,
+                    forgotten,
                     id,
                     liked,
                     parentId,
@@ -444,6 +476,7 @@ public final class InboxComment {
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("author")
+                    || key.equalsIgnoreCase("forgotten")
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("liked")
                     || key.equalsIgnoreCase("parentId")

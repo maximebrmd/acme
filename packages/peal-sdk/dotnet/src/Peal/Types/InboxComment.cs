@@ -14,6 +14,9 @@ public record InboxComment : IJsonOnDeserialized
     [JsonPropertyName("author")]
     public InboxAuthor? Author { get; set; }
 
+    [JsonPropertyName("forgotten")]
+    public InboxCommentForgotten? Forgotten { get; set; }
+
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
