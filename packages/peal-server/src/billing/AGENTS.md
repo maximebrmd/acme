@@ -105,8 +105,8 @@
   built with the group: handlers take services when the group is built,
   never per request), the assistant's `AssistantQuotaExceeded` carries the
   same plan fields (null on a server that does not bill), Better Auth's
-  `MEMBER_LIMIT_REACHED` and `FREE_WORKSPACE_LIMIT_REACHED` bodies too
-  (`memberUpgrade`, `freeWorkspace` hooks), MCP tools refuse with
+  `MEMBER_LIMIT_REACHED` body too (`memberUpgrade` hook; the web app
+  still reads the `FREE_WORKSPACE_LIMIT_REACHED` older servers sent), MCP tools refuse with
   `planRefusal` (`app/mcp/refusals.ts`, after what the call left undone:
   inviting, `import_media`, and every tool that schedules) and the CLI
   explains with `planLimitReason`. Change them together. `securityTest` provides
@@ -150,10 +150,44 @@
   `prices.ts`, tax-exclusive, or the server stops listing what differs
   (`StripePricesMismatch`). Stripe not answering is a warning, and the
   server starts.
-- An account owns one workspace on the free plan at most: Better Auth's
-  `beforeCreateOrganization` (`checkFreeWorkspace`) refuses another with
-  402 `FREE_WORKSPACE_LIMIT_REACHED` while one it owns is on the free plan
-  or in its trial, which ends on it.
+- Every workspace belongs to one billing account (`BillingAccounts`,
+  `billing.accounts`, `account_workspaces`, `account_transfers`), on a
+  server that bills or not (nothing refuses by them off): its creator's,
+  made with their first workspace (`afterCreateOrganization`, the
+  `workspaceCreated` hook), one per person (unique `payer_user_id` but
+  standalone ones); a workspace made before is resolved the first time it
+  is read (`of`, under the payer's hold), or by the daily snapshot's sweep
+  (`accountsIn` per batch), to its oldest owner's account, the oldest
+  workspace billing. The partner rule comes first: a partner's home and
+  the workspaces it owns are the partner's account, billed on the home.
+  A workspace a plan subscription of its own entitles is `standalone`
+  until it ends (`subscriptionChanged`, from `RecordSubscription`). The
+  account's workspaces share its billing workspace's plan (`PlanHolders`,
+  `AccountPlanHoldersLive`) and count their channels together
+  (`AccountChannelAllowanceLive`: the partner's pool and hold first, else
+  the account's, `poolOf` holding `holdAccount` where the partner's hold
+  is taken, in the same place of the lock order); reports read
+  `poolsIn`, holding nothing. Holds go payer, then accounts by id. Only the
+  billing workspace orders (`BilledElsewhere`); `GET …/billing` and
+  `…/standing` answer `account` (`AccountViews`: the billing workspace
+  named only to its members). Its payer stays among its owners
+  (`PAYER_MUST_STAY` on Better Auth's leave, remove and role routes,
+  `payerRequired` in a reduction) until they hand it over
+  (`TransferWorkspace`, in `billingActions`: offered to another owner, taken
+  in person within 7 days into their account, refused into a plan without
+  room or for a billing workspace Stripe may still bill). Erasing the
+  billing workspace bills on the oldest left; closing the payer's account
+  forgets its accounts, and the workspaces left go to their oldest owner
+  when next read. A reduction is taken when it brings the account within
+  its plan or disconnects every channel of the workspace. Staff's
+  `BillingAccountDesk` (`billingAccountsDesk` under `/api/admin`, the
+  console's `admin/billing-accounts`) lists platform accounts connected
+  under two free accounts or more (the channels context's
+  `SharedPlatformAccounts`, through `AccountChannels`), merges one account
+  into another (`mergeBillingAccounts`) and requires a payment method
+  (`requirePaymentMethod`, `restoreFreeTier`: `free_tier`, read by the
+  limits once the rate card applies), each audited first
+  (`BillingAccountAudit`), ids only.
 - Billing counts the posts each workspace makes on platforms that bill the
   server per post (`meteredPlatforms` in `billing/domain/metered-posts.ts`:
   X, where a post with a link costs about 13 times more), and those with a
