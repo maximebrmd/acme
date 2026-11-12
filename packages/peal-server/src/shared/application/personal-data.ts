@@ -197,6 +197,8 @@ export interface SavedItemsRecord {
 
 /** A media asset of a workspace: what is known of the file, not the file. */
 export interface MediaRecord {
+  /** Whether the writing assistant made the file. */
+  readonly aiGenerated: boolean;
   readonly altText: string | null;
   readonly byteSize: number;
   readonly contentType: string;

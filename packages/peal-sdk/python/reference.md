@@ -5309,7 +5309,7 @@ client.notification_preferences.update()
 </details>
 
 ## assistant
-<details><summary><code>client.assistant.<a href="src/peal/assistant/client.py#L31-L59">status</a>(...) -> AssistantStatus</code></summary>
+<details><summary><code>client.assistant.<a href="src/peal/assistant/client.py#L33-L61">status</a>(...) -> AssistantStatus</code></summary>
 <dl>
 <dd>
 
@@ -5321,7 +5321,7 @@ client.notification_preferences.update()
 <dl>
 <dd>
 
-Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (`images`), and how many requests the workspace has left today. Needs assistant:use.
 </dd>
 </dl>
 </dd>
@@ -5382,7 +5382,7 @@ client.assistant.status(
 </dl>
 </details>
 
-<details><summary><code>client.assistant.<a href="src/peal/assistant/client.py#L61-L104">suggest</a>(...) -> Suggestion</code></summary>
+<details><summary><code>client.assistant.<a href="src/peal/assistant/client.py#L63-L106">suggest</a>(...) -> Suggestion</code></summary>
 <dl>
 <dd>
 
@@ -5394,7 +5394,7 @@ client.assistant.status(
 <dl>
 <dd>
 
-Asks the language model to rewrite, shorten or translate a post's text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
 </dd>
 </dl>
 </dd>
@@ -5456,6 +5456,97 @@ client.assistant.suggest(
 <dd>
 
 **text:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.assistant.<a href="src/peal/assistant/client.py#L108-L151">generate_image</a>(...) -> Media</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the server has an image model.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.assistant.generate_image(
+    workspace_id="workspaceId",
+    aspect="square",
+    prompt="prompt",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**aspect:** `ImageAspect` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**prompt:** `str` 
     
 </dd>
 </dl>

@@ -80,6 +80,7 @@ const coverage = {
   "apiKeys.revoke": exempt(
     "Keys are managed where they are created and revoked, in the web app's settings."
   ),
+  "assistant.generateImage": by("media generate"),
   "assistant.status": exempt(
     "The writing assistant serves the web app's composer; an agent writes its own text."
   ),

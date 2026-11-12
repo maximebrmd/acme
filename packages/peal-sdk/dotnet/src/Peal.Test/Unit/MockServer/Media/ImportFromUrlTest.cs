@@ -20,6 +20,7 @@ public class ImportFromUrlTest : BaseMockServerTest
 
         const string mockResponse = """
             {
+              "aiGenerated": true,
               "altText": "altText",
               "byteSize": 1000000,
               "codec": "codec",
@@ -79,6 +80,7 @@ public class ImportFromUrlTest : BaseMockServerTest
 
         const string mockResponse = """
             {
+              "aiGenerated": true,
               "altText": "altText",
               "byteSize": 1000000,
               "codec": "codec",

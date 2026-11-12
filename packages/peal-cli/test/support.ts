@@ -229,12 +229,6 @@ const signedInGroupsLive = (
     HttpApiBuilder.group(Api, "notificationPreferences", (handlers) =>
       handlers.handleAll({ get: () => refusing, update: () => refusing })
     ),
-    HttpApiBuilder.group(Api, "assistant", (handlers) =>
-      handlers.handleAll({
-        status: () => refusing,
-        suggest: () => refusing,
-      })
-    ),
     HttpApiBuilder.group(Api, "workspaces", (handlers) =>
       handlers.handleAll({
         delete: () => refusing,

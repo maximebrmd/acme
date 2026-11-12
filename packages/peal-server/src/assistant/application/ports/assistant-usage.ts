@@ -12,20 +12,26 @@ export class AssistantUsage extends Context.Service<
   AssistantUsage,
   {
     /**
-     * Counts one request of the workspace on the day if fewer than
-     * `dailyLimit` were counted, and returns the count after it; none, and
-     * nothing counted, once the limit is reached. Requests sent at the same
-     * time are counted one after the other, so none slips past the limit.
+     * Counts a request of the workspace on the day as `cost` requests (one
+     * for a suggestion, `imageRequestCost` for an image) if the count stays
+     * within `dailyLimit`, and returns the count after it; none, and
+     * nothing counted, when it would not. Requests sent at the same time
+     * are counted one after the other, so none slips past the limit.
      */
     readonly claim: (
       workspaceId: WorkspaceId,
       day: LocalDate,
-      dailyLimit: number
+      dailyLimit: number,
+      cost: number
     ) => Effect.Effect<Option.Option<number>>;
-    /** Takes back a request counted on the day that never ran. */
+    /**
+     * Takes back a request of `cost` counted on the day that never ran,
+     * never below zero.
+     */
     readonly release: (
       workspaceId: WorkspaceId,
-      day: LocalDate
+      day: LocalDate,
+      cost: number
     ) => Effect.Effect<void>;
     /** How many requests the workspace sent on the day. */
     readonly used: (

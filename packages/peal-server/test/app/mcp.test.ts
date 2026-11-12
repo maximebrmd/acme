@@ -267,6 +267,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "edit_published_post",
           "enable_channel",
           "find_tools",
+          "generate_image",
           "get_ad_account",
           "get_ad_insights",
           "get_ads_status",

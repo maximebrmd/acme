@@ -207,7 +207,8 @@ self-hoster needs only Postgres and an S3-compatible store:
 - captcha: Turnstile, off when no key is set;
 - AI: an Anthropic key, or any OpenAI-compatible endpoint that serves
   `/chat/completions`; the writing assistant is off until `PEAL_AI_PROVIDER`
-  is set;
+  is set, and its images until `PEAL_AI_IMAGE_PROVIDER` names an
+  OpenAI-compatible endpoint that serves `/images/generations`;
 - rate limit: `PEAL_API_REQUESTS_PER_MINUTE` per key and per application
   (600), on Postgres;
 - documentation links: `PEAL_DOCS_URL`, unset by default, for the links the

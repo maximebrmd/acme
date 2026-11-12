@@ -9,3 +9,9 @@ export const assistantStatus = (workspaceId: string) =>
   PealApi.query("assistant", "status", { params: { workspaceId } });
 
 export const suggestChange = PealApi.mutation("assistant", "suggest");
+
+/**
+ * Makes an image into the workspace's media library; send it with the
+ * media list's reactivity key, so the library shows the new image.
+ */
+export const generateImage = PealApi.mutation("assistant", "generateImage");

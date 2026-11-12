@@ -22,6 +22,7 @@ public class CreateTest : BaseMockServerTest
         const string mockResponse = """
             {
               "media": {
+                "aiGenerated": true,
                 "altText": "altText",
                 "byteSize": 1000000,
                 "codec": "codec",
@@ -96,6 +97,7 @@ public class CreateTest : BaseMockServerTest
         const string mockResponse = """
             {
               "media": {
+                "aiGenerated": true,
                 "altText": "altText",
                 "byteSize": 1000000,
                 "codec": "codec",

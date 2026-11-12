@@ -2,6 +2,9 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Media {
+    #[serde(rename = "aiGenerated")]
+    #[serde(default)]
+    pub ai_generated: bool,
     #[serde(rename = "altText")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alt_text: Option<String>,
@@ -43,6 +46,7 @@ impl Media {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct MediaBuilder {
+    ai_generated: Option<bool>,
     alt_text: Option<String>,
     byte_size: Option<i64>,
     codec: Option<String>,
@@ -59,6 +63,11 @@ pub struct MediaBuilder {
 }
 
 impl MediaBuilder {
+    pub fn ai_generated(mut self, value: bool) -> Self {
+        self.ai_generated = Some(value);
+        self
+    }
+
     pub fn alt_text(mut self, value: impl Into<String>) -> Self {
         self.alt_text = Some(value.into());
         self
@@ -126,6 +135,7 @@ impl MediaBuilder {
 
     /// Consumes the builder and constructs a [`Media`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`ai_generated`](MediaBuilder::ai_generated)
     /// - [`byte_size`](MediaBuilder::byte_size)
     /// - [`content_type`](MediaBuilder::content_type)
     /// - [`created_at`](MediaBuilder::created_at)
@@ -135,6 +145,9 @@ impl MediaBuilder {
     /// - [`updated_at`](MediaBuilder::updated_at)
     pub fn build(self) -> Result<Media, BuildError> {
         Ok(Media {
+            ai_generated: self
+                .ai_generated
+                .ok_or_else(|| BuildError::missing_field("ai_generated"))?,
             alt_text: self.alt_text,
             byte_size: self
                 .byte_size

@@ -632,6 +632,7 @@ CREATE TABLE "legal"."identification_holds" (
 );
 --> statement-breakpoint
 CREATE TABLE "media"."media_assets" (
+	"ai_generated" boolean DEFAULT false NOT NULL,
 	"alt_text" text,
 	"byte_size" bigint NOT NULL,
 	"codec" text,

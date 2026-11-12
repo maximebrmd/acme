@@ -36,6 +36,7 @@ const stateColumns = (asset: MediaAsset): Omit<NewRow, "altText"> => {
       : null;
 
   return {
+    aiGenerated: asset.aiGenerated,
     byteSize: asset.byteSize,
     codec: Option.getOrNull(metadata.codec),
     contentType: asset.contentType,
@@ -100,6 +101,7 @@ const dimensionsOf = (row: Row) =>
 // repository: a bug, not a failure callers can handle.
 const fromRow = (row: Row): Effect.Effect<MediaAsset> =>
   decodeAsset({
+    aiGenerated: row.aiGenerated,
     altText: Option.fromNullOr(row.altText),
     byteSize: row.byteSize,
     contentType: row.contentType,

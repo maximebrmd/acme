@@ -374,6 +374,19 @@ Each workspace may send it 100 requests per UTC day
 Peal never logs it, nor the suggestion. The server calls the provider
 directly, so a model server on this machine or your network works.
 
+Images ("Generate an image" in the media library and the composer's
+picker, `peal media generate`, MCP's `generate_image`) need an image model
+of their own, on any OpenAI-compatible server that serves
+`/images/generations`:
+
+```sh
+export PEAL_AI_IMAGE_PROVIDER=openai-compatible \
+  PEAL_AI_IMAGE_BASE_URL=http://127.0.0.1:8100/v1 PEAL_AI_IMAGE_MODEL=<its model>
+```
+
+An image costs 5 of the day's requests. The tests never call a real
+provider: they answer from a loopback fake.
+
 ### Billing and captcha
 
 Billing and the captcha are off until the server has their keys. To try
@@ -504,6 +517,10 @@ In development, these are the ones you may want:
 | `PEAL_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server           |
 | `PEAL_AI_MODEL`               | `claude-opus-5-5` with Anthropic | The model: required for an OpenAI-compatible server                    |
 | `PEAL_AI_DAILY_REQUESTS`      | `100`                            | Assistant requests each workspace may send per UTC day                 |
+| `PEAL_AI_IMAGE_PROVIDER`      | unset: no images                 | `openai-compatible`: the model the assistant makes images with         |
+| `PEAL_AI_IMAGE_BASE_URL`      | unset                            | The image API's base URL: required with a provider                     |
+| `PEAL_AI_IMAGE_MODEL`         | unset                            | The image model: required with a provider                              |
+| `PEAL_AI_IMAGE_API_KEY`       | unset                            | The image provider's key, if it takes one                              |
 | `PEAL_ADS`                    | `off`                            | `read` connects Meta ad accounts, `spend` also boosts posts            |
 | `STRIPE_SECRET_KEY`           | unset: no billing, no limits     | Bills workspaces through Stripe, with the variables it needs           |
 | `TURNSTILE_SITE_KEY`          | unset: no captcha                | With `TURNSTILE_SECRET_KEY`, Turnstile on sign-up and resets           |

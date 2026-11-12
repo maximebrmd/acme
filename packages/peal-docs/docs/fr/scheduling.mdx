@@ -292,16 +292,19 @@ Déplacer une publication ne revérifie ni son texte ni ses médias auprès de s
 
 Quand l’instance Peal dispose d’un fournisseur d’IA, la section **Texte** de l’éditeur propose un menu **Assistant**. Il travaille sur le texte pour tous les canaux, et propose :
 
+- **Rédiger une publication…** : dites de quoi parle la publication, avec vos mots, et l’assistant rédige un premier texte, dans la langue du sujet. Choisissez un ton si vous le souhaitez et, quand la publication part sur une plateforme à la limite courte (X, Bluesky, Threads ou Mastodon), celle dont elle doit respecter la limite. Il est proposé que le texte soit vide ou non, et utiliser son texte remplace celui que vous aviez. Il a pour consigne de n’ajouter ni fait, ni chiffre, ni nom, ni date, ni lien que le sujet ne donne pas, et de n’ajouter des hashtags que si le sujet en demande. Pour une autre idée, redemandez : chacune est une demande ;
 - **Réécrire sur un ton** : professionnel, chaleureux, décontracté, enthousiaste ou spirituel, en gardant le sens, la langue et à peu près la longueur ;
 - **Raccourcir pour** : l’une des plateformes des canaux choisis ou, tant qu’aucun ne l’est, chaque plateforme dont Peal connaît la limite ;
 - **Traduire en** : anglais, français, allemand, espagnol, italien, portugais, néerlandais, polonais, japonais ou chinois (simplifié) ;
 - **Suggérer des hashtags** : jusqu’à 8, que le texte n’a pas encore.
 
+Quand l’instance a aussi un modèle d’images, **Choisir dans la médiathèque** propose **Générer une image**, qui crée une image à partir d’une description dans la médiathèque, choisie pour la publication : [Générer une image](/media#generate). Une image coûte 5 des demandes du jour.
+
 La suggestion s’ouvre dans un aperçu, et rien ne change tant que vous ne choisissez pas **Utiliser ce texte** ou **Ajouter ces hashtags**, qui les ajoute sur une ligne à part ; **Ignorer** l’écarte. Relisez-la avant de l’utiliser : l’assistant garde les mentions, les hashtags et les liens, et a pour consigne de n’ajouter aucun fait, mais il peut encore se tromper.
 
-L’assistant accepte des textes de 5 000 caractères au plus. Chaque espace de travail peut lui envoyer un certain nombre de demandes par jour, 100 sauf si l’instance en fixe un autre, comptées depuis minuit UTC ; le menu indique combien il en reste aujourd’hui. Une demande qui n’a pas pu joindre le fournisseur d’IA ne compte pas. Une demande restée plus de 90 secondes sans réponse compte, car le fournisseur a pu la traiter.
+L’assistant accepte des textes, et des sujets, de 5 000 caractères au plus. Chaque espace de travail peut lui envoyer un certain nombre de demandes par jour, 100 sauf si l’instance en fixe un autre, comptées depuis minuit UTC ; le menu indique combien il en reste aujourd’hui. Une demande qui n’a pas pu joindre le fournisseur d’IA ne compte pas. Une demande restée plus de 90 secondes sans réponse compte, car le fournisseur a pu la traiter.
 
-Votre texte part chez le fournisseur d’IA qu’a choisi l’administrateur de l’instance, et nulle part ailleurs. Peal n’enregistre ni le texte envoyé ni la suggestion, et ne les écrit jamais dans ses journaux.
+Votre texte, ou le sujet, part chez le fournisseur d’IA qu’a choisi l’administrateur de l’instance, et nulle part ailleurs. Peal n’enregistre ni le texte envoyé ni la suggestion, et ne les écrit jamais dans ses journaux.
 
 ## Le calendrier [#calendar]
 

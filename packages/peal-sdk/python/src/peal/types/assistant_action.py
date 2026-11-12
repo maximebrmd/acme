@@ -76,7 +76,31 @@ class AssistantAction_Hashtags(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class AssistantAction_Write(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["write"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "write"
+    language: typing.Optional[TranslationLanguage] = None
+    platform: typing.Optional[Platform] = None
+    tone: typing.Optional[AssistantTone] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 AssistantAction = typing_extensions.Annotated[
-    typing.Union[AssistantAction_Rewrite, AssistantAction_Shorten, AssistantAction_Translate, AssistantAction_Hashtags],
+    typing.Union[
+        AssistantAction_Rewrite,
+        AssistantAction_Shorten,
+        AssistantAction_Translate,
+        AssistantAction_Hashtags,
+        AssistantAction_Write,
+    ],
     pydantic.Field(discriminator="type"),
 ]

@@ -13,6 +13,7 @@ class AssistantAction extends JsonSerializableType
      *   |'shorten'
      *   |'translate'
      *   |'hashtags'
+     *   |'write'
      *   |'_unknown'
      * ) $type
      */
@@ -24,6 +25,7 @@ class AssistantAction extends JsonSerializableType
      *   |AssistantActionShorten
      *   |AssistantActionTranslate
      *   |AssistantActionHashtags
+     *   |AssistantActionWrite
      *   |mixed
      * ) $value
      */
@@ -36,6 +38,7 @@ class AssistantAction extends JsonSerializableType
      *   |'shorten'
      *   |'translate'
      *   |'hashtags'
+     *   |'write'
      *   |'_unknown'
      * ),
      *   value: (
@@ -43,6 +46,7 @@ class AssistantAction extends JsonSerializableType
      *   |AssistantActionShorten
      *   |AssistantActionTranslate
      *   |AssistantActionHashtags
+     *   |AssistantActionWrite
      *   |mixed
      * ),
      * } $values
@@ -99,6 +103,18 @@ class AssistantAction extends JsonSerializableType
         return new AssistantAction([
             'type' => 'hashtags',
             'value' => $hashtags,
+        ]);
+    }
+
+    /**
+     * @param AssistantActionWrite $write
+     * @return AssistantAction
+     */
+    public static function write(AssistantActionWrite $write): AssistantAction
+    {
+        return new AssistantAction([
+            'type' => 'write',
+            'value' => $write,
         ]);
     }
 
@@ -191,6 +207,28 @@ class AssistantAction extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isWrite(): bool
+    {
+        return $this->value instanceof AssistantActionWrite && $this->type === 'write';
+    }
+
+    /**
+     * @return AssistantActionWrite
+     */
+    public function asWrite(): AssistantActionWrite
+    {
+        if (!($this->value instanceof AssistantActionWrite && $this->type === 'write')) {
+            throw new Exception(
+                "Expected write; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -224,6 +262,10 @@ class AssistantAction extends JsonSerializableType
                 break;
             case 'hashtags':
                 $value = $this->asHashtags()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'write':
+                $value = $this->asWrite()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -273,6 +315,9 @@ class AssistantAction extends JsonSerializableType
                 break;
             case 'hashtags':
                 $args['value'] = AssistantActionHashtags::jsonDeserialize($data);
+                break;
+            case 'write':
+                $args['value'] = AssistantActionWrite::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

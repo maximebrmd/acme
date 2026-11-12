@@ -54,6 +54,15 @@
   pictures take images): another is refused from its first bytes
   (`UnsupportedMediaType`), before anything is stored.
   Tests reach a loopback host with `mediaWith` and an open guard.
+- An image the writing assistant made is the third way a file arrives
+  (`storeGenerated`, media:upload): the import and it share the second half
+  (`use-cases/arrived-file.ts`: `roomIn`, `storeArriving`, `recordArrived`),
+  never a copy of it. Only an image is taken; the bytes are stored as the
+  provider gave them, never re-encoded, the asset is marked
+  (`aiGenerated`, `media.assets.ai_generated`, set at creation only) and
+  gets no description, and bytes the probe cannot make `ready` are deleted
+  (`GeneratedImageUnusable`). `roomForImage` checks the plan's storage for
+  the largest image beforehand, so a full plan spends nothing.
 - Deleting an asset asks the `MediaUsage` port first, which publishing's
   `MediaInPosts` backs (`PublishingMediaUsage`; the composition root
   provides `MediaInPostsLive`): a post scheduled or publishing that shows it

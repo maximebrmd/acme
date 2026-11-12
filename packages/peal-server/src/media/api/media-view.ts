@@ -22,6 +22,7 @@ export const toView = (
   asset: MediaAsset,
   url: Option.Option<string>
 ): MediaView => ({
+  aiGenerated: asset.aiGenerated,
   altText: Option.getOrNull(asset.altText),
   byteSize: asset.byteSize,
   codec: Option.getOrNull(asset.metadata.codec),

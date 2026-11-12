@@ -57,6 +57,13 @@
   `PostTools` and `MediaTools` that change something are `contentTools`,
   whose calls the ConnectionJournal keeps. The account's own
   data (its export, its applications) has no tool.
+- `generate_image` (`MediaTools`, a content tool, open world, never
+  idempotent) calls the assistant's `generateImage`: its description says
+  the prompt goes to the operator's image provider, what it spends of the
+  day's requests, that the file is marked as made by AI, and that the
+  caller sets the platforms' AI labels; it refuses in words on a server
+  without an image model. The journal keeps the call by name, never the
+  prompt. The text assistant has no tool: an agent writes its own text.
 - `get_usage` (`reports-tools.ts`) answers the usage endpoint's view
   (`#billing/api/usage-view.ts`), with `from` and `to` as text days;
   `get_billing` stays as it is. The CLI's is `peal usage`.

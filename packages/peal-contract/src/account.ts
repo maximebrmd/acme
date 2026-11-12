@@ -295,6 +295,9 @@ const ExportedAboutSchema = Schema.Struct({
 });
 
 const ExportedMediaSchema = Schema.Struct({
+  // Whether the writing assistant made the file, rather than a member
+  // uploading or importing it.
+  aiGenerated: Schema.Boolean,
   altText: nullable(Schema.String),
   byteSize: ByteCountSchema,
   contentType: Schema.String,

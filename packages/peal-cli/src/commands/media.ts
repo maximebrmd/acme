@@ -1,6 +1,13 @@
 import { Console, Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
-import { maxMediaPageSize, MediaPageSchema, MediaSchema } from "peal-contract";
+import {
+  ImageAspectSchema,
+  imageRequestCost,
+  maxImagePromptLength,
+  maxMediaPageSize,
+  MediaPageSchema,
+  MediaSchema,
+} from "peal-contract";
 import type { Media } from "peal-contract";
 
 import { explain } from "#explain.ts";
@@ -80,6 +87,50 @@ const importMedia = Command.make(
 ).pipe(
   Command.withDescription(
     "Have the server fetch an image or a video from a public https address into the workspace's media. Upload larger or slower files instead."
+  )
+);
+
+const generate = Command.make(
+  "generate",
+  {
+    aspect: Flag.Literals("aspect", ImageAspectSchema.literals).pipe(
+      Flag.withDescription(
+        "The image's aspect: square, landscape (wider than tall) or portrait (taller than wide)."
+      ),
+      Flag.withDefault("square" as const)
+    ),
+    json: jsonFlag,
+    prompt: Flag.String("prompt").pipe(
+      Flag.withMetavar("<text>"),
+      Flag.withDescription(
+        `What the image should show, 1 to ${String(maxImagePromptLength)} characters: it is sent as it is to the image provider the server's operator chose.`
+      )
+    ),
+    workspace: workspaceFlag,
+  },
+  Effect.fn("media.generate")(function* generate(input) {
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+
+    const made = yield* client.assistant
+      .generateImage({
+        params: { workspaceId: workspace.id },
+        payload: { aspect: input.aspect, prompt: input.prompt },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(MediaSchema, made);
+
+      return;
+    }
+
+    yield* Console.log(
+      `Made an image as media ${made.id} in ${workspace.name} (${made.contentType}, ${String(made.byteSize)} bytes): ${statusOf(made)}. It is marked as made by AI: set the platform's AI label in the post's options where it has one, and describe it with --alt when you attach it.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    `Have the server's image model make an image into the workspace's media, marked as made by AI. It costs ${String(imageRequestCost)} of the workspace's daily assistant requests; servers without an image model refuse it.`
   )
 );
 
@@ -198,7 +249,7 @@ const list = Command.make(
 
 export const media = Command.make("media").pipe(
   Command.withDescription(
-    "A workspace's images and videos: uploading files, importing them from an address, listing them and showing one."
+    "A workspace's images and videos: uploading files, importing them from an address, having the assistant make an image, listing them and showing one."
   ),
-  Command.withSubcommands([upload, importMedia, list, show])
+  Command.withSubcommands([upload, importMedia, generate, list, show])
 );

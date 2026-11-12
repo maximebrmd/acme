@@ -202,6 +202,11 @@ interface MediaAttachmentsProps {
   readonly attached: readonly AttachedMedia[];
   /** The member may pick from the library (media:read). */
   readonly canBrowse: boolean;
+  /**
+   * The member may have the assistant make an image into the library
+   * (assistant:use and media:upload), from the library's picker.
+   */
+  readonly canGenerate?: boolean;
   /** The member may upload (media:upload). */
   readonly canUpload: boolean;
   /** Nothing changes for now, as while the post is being saved. */
@@ -241,6 +246,7 @@ interface MediaAttachmentsProps {
 export const MediaAttachments = ({
   attached,
   canBrowse,
+  canGenerate = false,
   canUpload,
   disabled,
   editable = !disabled,
@@ -368,6 +374,7 @@ export const MediaAttachments = ({
             <div>
               <MediaPicker
                 attached={attached.map(({ mediaId }) => mediaId)}
+                canGenerate={canGenerate}
                 disabled={disabled}
                 room={room}
                 workspaceId={workspaceId}

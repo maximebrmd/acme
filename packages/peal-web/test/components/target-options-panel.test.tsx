@@ -968,6 +968,7 @@ describe("fields that follow the post's media", () => {
 const created = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
 
 const cover: Media = {
+  aiGenerated: false,
   altText: "A synthetic cover",
   byteSize: 200_000,
   codec: null,

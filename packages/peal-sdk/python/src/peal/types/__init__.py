@@ -101,14 +101,17 @@ if typing.TYPE_CHECKING:
         AssistantAction_Rewrite,
         AssistantAction_Shorten,
         AssistantAction_Translate,
+        AssistantAction_Write,
     )
     from .assistant_action_hashtags import AssistantActionHashtags
     from .assistant_action_rewrite import AssistantActionRewrite
     from .assistant_action_shorten import AssistantActionShorten
     from .assistant_action_translate import AssistantActionTranslate
+    from .assistant_action_write import AssistantActionWrite
     from .assistant_failed_encoded import AssistantFailedEncoded
     from .assistant_failed_encoded_reason import AssistantFailedEncodedReason
     from .assistant_failed_encoded_tag import AssistantFailedEncodedTag
+    from .assistant_images_status import AssistantImagesStatus
     from .assistant_input_rejected_encoded import AssistantInputRejectedEncoded
     from .assistant_input_rejected_encoded_reason import AssistantInputRejectedEncodedReason
     from .assistant_input_rejected_encoded_tag import AssistantInputRejectedEncodedTag
@@ -338,6 +341,7 @@ if typing.TYPE_CHECKING:
     from .held_limit import HeldLimit
     from .hosted_connect_failure import HostedConnectFailure
     from .idempotency_key_reused_encoded import IdempotencyKeyReusedEncoded
+    from .image_aspect import ImageAspect
     from .import_cell_problem import ImportCellProblem
     from .import_cell_problem_problem import ImportCellProblemProblem
     from .import_column import ImportColumn
@@ -965,13 +969,16 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AssistantActionRewrite": ".assistant_action_rewrite",
     "AssistantActionShorten": ".assistant_action_shorten",
     "AssistantActionTranslate": ".assistant_action_translate",
+    "AssistantActionWrite": ".assistant_action_write",
     "AssistantAction_Hashtags": ".assistant_action",
     "AssistantAction_Rewrite": ".assistant_action",
     "AssistantAction_Shorten": ".assistant_action",
     "AssistantAction_Translate": ".assistant_action",
+    "AssistantAction_Write": ".assistant_action",
     "AssistantFailedEncoded": ".assistant_failed_encoded",
     "AssistantFailedEncodedReason": ".assistant_failed_encoded_reason",
     "AssistantFailedEncodedTag": ".assistant_failed_encoded_tag",
+    "AssistantImagesStatus": ".assistant_images_status",
     "AssistantInputRejectedEncoded": ".assistant_input_rejected_encoded",
     "AssistantInputRejectedEncodedReason": ".assistant_input_rejected_encoded_reason",
     "AssistantInputRejectedEncodedTag": ".assistant_input_rejected_encoded_tag",
@@ -1200,6 +1207,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "HeldLimit": ".held_limit",
     "HostedConnectFailure": ".hosted_connect_failure",
     "IdempotencyKeyReusedEncoded": ".idempotency_key_reused_encoded",
+    "ImageAspect": ".image_aspect",
     "ImportCellProblem": ".import_cell_problem",
     "ImportCellProblemProblem": ".import_cell_problem_problem",
     "ImportColumn": ".import_column",
@@ -1840,13 +1848,16 @@ __all__ = [
     "AssistantActionRewrite",
     "AssistantActionShorten",
     "AssistantActionTranslate",
+    "AssistantActionWrite",
     "AssistantAction_Hashtags",
     "AssistantAction_Rewrite",
     "AssistantAction_Shorten",
     "AssistantAction_Translate",
+    "AssistantAction_Write",
     "AssistantFailedEncoded",
     "AssistantFailedEncodedReason",
     "AssistantFailedEncodedTag",
+    "AssistantImagesStatus",
     "AssistantInputRejectedEncoded",
     "AssistantInputRejectedEncodedReason",
     "AssistantInputRejectedEncodedTag",
@@ -2075,6 +2086,7 @@ __all__ = [
     "HeldLimit",
     "HostedConnectFailure",
     "IdempotencyKeyReusedEncoded",
+    "ImageAspect",
     "ImportCellProblem",
     "ImportCellProblemProblem",
     "ImportColumn",

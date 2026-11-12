@@ -11,6 +11,9 @@ public record Media : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("aiGenerated")]
+    public required bool AiGenerated { get; set; }
+
     [JsonPropertyName("altText")]
     public string? AltText { get; set; }
 

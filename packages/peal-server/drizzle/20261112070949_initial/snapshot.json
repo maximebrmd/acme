@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "0325641f-7f1f-436b-ac3b-c2db540fe6b4",
+  "id": "f92be1de-b5ce-4299-be7d-914a6fe3461b",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -12856,6 +12856,19 @@
       "notNull": true,
       "dimensions": 0,
       "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "ai_generated",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
       "generated": null,
       "identity": null,
       "entityType": "columns"

@@ -13,6 +13,9 @@ from .media_status import MediaStatus
 
 
 class Media(UniversalBaseModel):
+    ai_generated: typing_extensions.Annotated[
+        bool, FieldMetadata(alias="aiGenerated"), pydantic.Field(alias="aiGenerated")
+    ]
     alt_text: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="altText"), pydantic.Field(alias="altText")
     ] = None
