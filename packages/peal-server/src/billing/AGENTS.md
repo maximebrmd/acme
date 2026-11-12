@@ -6,10 +6,25 @@
   limit, and the assistant keeps `PEAL_AI_DAILY_REQUESTS`. Keep it so: a
   self-hosted server limits nothing, and its billing routes answer
   `BillingNotEnabled`.
-- Plans are priced by connected channels, in tiers: free, starter, pro,
-  business, agency, each a monthly and a yearly price (ten months). Their
-  allowances are `billing/domain/plans.ts` and their prices, euro cents
-  excluding VAT, `prices.ts`; their ids (`#shared/domain/plan.ts`), the
+- Per-account pricing's every number is the rate card
+  (`billing/domain/rate-card.ts`, keyed by currency: US dollars only):
+  the graduated account ladder, account-days at one thirtieth (the 31st
+  free), each meter's monthly allowance with and without a payment method
+  (per billing account, across the workspaces it pays for) and price,
+  storage, the API's rate limits and X's rates, with the placeholders still
+  awaiting the owner's decision together in `awaitingDecision`. Prices are
+  computed by its pure functions (`accountsCharge`, `meterCharge`,
+  `stripeTiersOf`…), never written by hand. The contract copies it
+  (`peal-contract/rate-card`), kept equal by
+  `test/billing/api/contract.test.ts`: change both, never one. The plan
+  `payAsYouGo` is per-account pricing; nothing records or offers it yet
+  (`allowancesOf` holds it to the free plan; Better Auth's plans, the price
+  check and the contract's `OrderablePlan` leave it out).
+- The legacy plans are priced by connected channels, in tiers: free,
+  starter, pro, business, agency (`LegacyPlan`, `LegacyPaidPlan`), each a
+  monthly and a yearly price (ten months), kept for the subscriptions that
+  still hold one. Their allowances are `billing/domain/plans.ts` and their
+  prices, euro cents excluding VAT, `prices.ts`; their ids (`#shared/domain/plan.ts`), the
   limits' names (`plan-limit.ts`: channels, members, scheduledPosts,
   assistantRequests, mediaStorage in decimal bytes), `PlanLimitReached`
   and `roomFor`/`roomForOneMore`/`withinAllowance` (`allowance.ts`) are in
@@ -21,11 +36,10 @@
   (`peal-site/src/pricing.ts`) and the docs' variables
   (`peal-docs/pricing-variables.ts`, `{{starter-month-en}}`…) read that
   catalogue: never write a price by hand. `GET …/billing` answers it too.
-- Each paid tier must stay strictly cheaper than the comparable tier of
-  the per-account schedulers Peal is measured against, monthly and yearly,
-  with or without VAT, by a margin a 25% move of the EUR/USD rate does not
-  undo; recheck before any price change. The comparison lives outside the
-  repository: never name another product here.
+- Before any change to the ladder, compare its monthly totals at 10, 20,
+  100 and 1,000 accounts (`accountsMonthly`) with those of the
+  per-account schedulers Peal is measured against. The comparison lives
+  outside the repository: never name another product here.
 - Stripe prices are tax-exclusive EUR prices found by lookup key,
   `<prefix>_<plan>_monthly` and `_yearly` (`STRIPE_LOOKUP_KEY_PREFIX`,
   `peal`), never by id: Better Auth's plans carry `lookupKey` and
