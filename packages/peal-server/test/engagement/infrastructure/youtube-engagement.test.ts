@@ -383,6 +383,27 @@ describe("YouTube's comments", () => {
       }).pipe(Effect.scoped)
   );
 
+  it.effect(
+    "fails, never ends, a thread whose listing answers 404 for another reason",
+    () =>
+      Effect.gen(function* otherNotFound() {
+        const { account, api, platform } = yield* onYouTube();
+
+        api.add(comment(1));
+        api.script.push("GET /youtube/v3/commentThreads", [
+          json({ error: "synthetic" }, 404),
+          youtubeError(404, "commentThreadNotFound"),
+        ]);
+
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          assert.deepStrictEqual(
+            readingOf(yield* platform.read(account, [thread(1)])),
+            { _tag: "failed", threadId: threadId(1) }
+          );
+        }
+      }).pipe(Effect.scoped)
+  );
+
   it.effect("ends a thread whose video is gone", () =>
     Effect.gen(function* gone() {
       const { account, platform } = yield* onYouTube();

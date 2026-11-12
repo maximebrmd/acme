@@ -189,7 +189,8 @@ const isSuccess = (response: HttpClientResponse.HttpClientResponse) =>
  * - `rateLimited`: 429, `rateLimitExceeded`, `userRateLimitExceeded`.
  * - `unavailable`: 5xx.
  * - `disabled`: `commentsDisabled`, the video's comments are off.
- * - `gone`: 404, the video or the comment no longer exists.
+ * - `gone`: `videoNotFound`, `commentNotFound` or `parentCommentNotFound`,
+ *   the video or the comment no longer exists.
  * - `refused`: anything else.
  */
 type YouTubeRefusal =
@@ -205,6 +206,15 @@ type YouTubeRefusal =
 const rateReasons: ReadonlySet<string> = new Set([
   "rateLimitExceeded",
   "userRateLimitExceeded",
+]);
+
+// What YouTube answers when the video, a comment or its parent is gone
+// (commentThreads.list, comments.list, comments.insert, comments.delete,
+// comments.setModerationStatus, each read 2026-11-12).
+const goneReasons: ReadonlySet<string> = new Set([
+  "commentNotFound",
+  "parentCommentNotFound",
+  "videoNotFound",
 ]);
 
 const refusalOf = (
@@ -242,7 +252,9 @@ const refusalOf = (
       return "disabled" as const;
     }
 
-    return status === 404 ? ("gone" as const) : ("refused" as const);
+    // Only the documented reasons say the video, or the comment, is gone:
+    // any other 404, or one without Google's error, proves nothing.
+    return goneReasons.has(reason) ? ("gone" as const) : ("refused" as const);
   });
 
 /** Why an act was not done, from YouTube's refusal of it. */
