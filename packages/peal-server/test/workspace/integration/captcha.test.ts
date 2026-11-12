@@ -59,6 +59,7 @@ layer(appWithTurnstile(passingSecretKey), { timeout: "120 seconds" })(
     it.effect("tells clients the site key to show the widget with", () =>
       Effect.gen(function* siteKey() {
         assert.deepStrictEqual(yield* captchaSettings, {
+          signUp: "open",
           turnstileSiteKey: passingSiteKey,
         });
       })
@@ -120,6 +121,7 @@ layer(TestApp.layerWith(unconfirmedEmails), { timeout: "120 seconds" })(
     it.effect("asks for no token", () =>
       Effect.gen(function* off() {
         assert.deepStrictEqual(yield* captchaSettings, {
+          signUp: "open",
           turnstileSiteKey: null,
         });
         assert.strictEqual((yield* signUp()).status, 200);

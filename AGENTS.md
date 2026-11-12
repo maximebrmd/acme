@@ -205,6 +205,8 @@ self-hoster needs only Postgres and an S3-compatible store:
   Meta app holding the ads permissions (see
   [`src/ads/AGENTS.md`](packages/peal-server/src/ads/AGENTS.md));
 - captcha: Turnstile, off when no key is set;
+- sign-up: anyone, unless `PEAL_SIGN_UP=invitation` (an invitation's link
+  with its address, and the first account only);
 - AI: an Anthropic key, or any OpenAI-compatible endpoint that serves
   `/chat/completions`; the writing assistant is off until `PEAL_AI_PROVIDER`
   is set, and its images until `PEAL_AI_IMAGE_PROVIDER` names an

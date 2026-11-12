@@ -339,7 +339,7 @@ The composer's writing assistant rewrites a post in a tone, shortens it to fit a
 
 A provider named without the settings it needs stops the server at startup, and the error names the variable missing. The server calls the provider directly, not through the guard that keeps platform calls on public addresses, so the endpoint may run on the same machine or your private network.
 
-Each workspace may send the assistant `PEAL_AI_DAILY_REQUESTS` requests per UTC day, 100 unless set; `0` lets none through. With [billing](#billing) on, each plan sets its own instead. Without it, every workspace gets that many: on an instance where anyone may sign up, each new workspace adds to what your provider can bill. A request the provider could not be reached for does not count. One that gets no answer within 90 seconds fails and counts, as the provider may have run it.
+Each workspace may send the assistant `PEAL_AI_DAILY_REQUESTS` requests per UTC day, 100 unless set; `0` lets none through. With [billing](#billing) on, each plan sets its own instead. Without it, every workspace gets that many: on an instance where anyone may sign up, each new workspace adds to what your provider can bill ([Who may sign up](#sign-up) says how to close it). A request the provider could not be reached for does not count. One that gets no answer within 90 seconds fails and counts, as the provider may have run it.
 
 What members send is the post's text, or the subject of a post to write, up to 5,000 characters, and answers are capped at 4,096 tokens. The text is sent as data, with instructions the text cannot change. The server never logs or traces the text or the answer, saves neither, and sends the provider no trace context: its logs and traces name the provider, the model, the token counts and the kind of failure only.
 
@@ -368,6 +368,24 @@ Anyone cancels a contract or withdraws from one without signing in, from **Cance
 ## Captcha [#captcha]
 
 With `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`, signing up and asking for a password reset need a Cloudflare Turnstile token: the forms show the widget, and the server checks each token with Cloudflare before going on. Signing in relies on its rate limits. Add your public address to the widget's hostnames in Cloudflare. Cloudflare's test keys let you try it without a real widget.
+
+## Who may sign up [#sign-up]
+
+Anyone who reaches your instance may make an account, then a workspace, which uses your platform apps and your writing assistant's requests. To run Peal for your own people only, set `PEAL_SIGN_UP=invitation`: an account is then made only from an invitation's link, the one its email carries or **Copy link** gives, with the address the invitation went to, while it is pending. Knowing an invited address is not enough. The sign-up page says accounts are made by invitation to anyone else, and the server refuses any other sign-up the same way, so its answer never tells whether an address was invited.
+
+Each person you let in may then make a workspace of their own and invite anyone to it, who may do the same: invitation mode trusts everyone it lets in to invite.
+
+While the server has no account, the first one may be made without an invitation, so a new server can be set up: the sign-up page shows its form until then. Make it, then your workspace, before the address is public; two sign-ups at the same moment on an empty server could both pass, and the rule opens again should every account be deleted. Signing in, password resets, accepting an invitation, the [staff console](/staff), [partner accounts](/embedding) and connect links work as before.
+
+An account counts as the first even before its address is confirmed. If the first account cannot be confirmed (a mistyped address, email that does not work yet, or a stranger who took the slot first), nobody can sign in to invite anyone. Delete the accounts no one confirmed, as long as none is, then sign up again:
+
+```bash
+docker compose --project-name peal --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/peal/peal.env exec postgres \
+  psql -U peal -d peal -c 'DELETE FROM auth."user" WHERE NOT email_verified AND NOT EXISTS (SELECT 1 FROM auth."user" WHERE email_verified);'
+```
+
+It deletes nothing once an account is confirmed.
 
 ## The command line and MCP clients [#mcp]
 

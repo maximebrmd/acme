@@ -16,6 +16,28 @@ The staff context follows these rules too. What the law has a host keep is in
   shows the widget only then. Tests check tokens with Cloudflare's test keys
   against the fake siteverify in `test/workspace/fakes/fake-turnstile.ts`,
   through `TURNSTILE_VERIFY_URL`.
+- `PEAL_SIGN_UP` (`sign-up-settings.ts`, `SignUpSettings`): `open`, the
+  default, or `invitation`, where `refuseUnadmittedSignUps`
+  (`auth/sign-up-gate.ts`, in `beforeEveryRoute`, after the impersonation
+  guard) refuses `/sign-up/email` with 403 `SIGN_UP_BY_INVITATION` unless
+  `SignUpGate` admits it: the invitation named in `x-peal-invitation`
+  (`signUpInvitationHeader`, a UUID only its link carries) is pending,
+  unexpired and went to the address given, lower-cased as Better Auth
+  stores it and nothing more (`DrizzleSignUpStore`, by id); or the server
+  has no account at all, the first one. An address alone never passes, and
+  every refusal answers the same, so nothing tells an invited address from
+  another; an admitted address with an account still gets Better Auth's
+  made-up user. Two first sign-ups at once may both pass, and the rule
+  opens again should every account be deleted: the docs tell the operator
+  to sign up before the address is public. An unconfirmed account counts
+  (failing closed); the docs give the SQL that deletes unconfirmed accounts
+  while none is confirmed. The captcha plugin checks its
+  token first (`onRequest`). `GET /api/captcha` answers `signUp` from
+  `SignUpGate.modeNow`: `open` while a server by invitation has no
+  account, so the web app shows the first account its form. An invited
+  person may make workspaces and invite in turn: the mode limits who signs
+  up, not who invites. Everything else (signing in, resets, accepting,
+  staff, partners, connect and review links) is the same in both modes.
 - Workspaces are Better Auth organizations. The five roles (owner, admin,
   editor, contributor, viewer) and their grants are in
   `workspace/domain/roles.ts`, translated for Better Auth in
