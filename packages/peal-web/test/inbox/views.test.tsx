@@ -345,6 +345,38 @@ describe(CommentView, () => {
     );
   });
 
+  it("says a comment forgotten for its age is no longer kept, naming its platform", async () => {
+    const forgotten: InboxComment = {
+      ...comment,
+      author: null,
+      forgotten: "expired",
+      state: "deleted",
+      text: "",
+    };
+
+    const view = (platform: "youtube" | null) => (
+      <ul>
+        <CommentView comment={forgotten} platform={platform} />
+      </ul>
+    );
+
+    const html = await render("en", view("youtube"));
+
+    expect(
+      missingFrom(html, [
+        "No longer kept: YouTube lets Peal keep a comment for a limited time.",
+        ">No longer kept<",
+      ])
+    ).toStrictEqual([]);
+    expect(html).not.toContain("This comment is no longer on the platform");
+    await expect(render("fr", view("youtube"))).resolves.toContain(
+      "Plus conservé : YouTube ne laisse Peal conserver un commentaire que pour un temps limité."
+    );
+    await expect(render("en", view(null))).resolves.toContain(
+      "No longer kept: the platform lets Peal keep a comment for a limited time."
+    );
+  });
+
   it("nests the replies, the actions, the box and the answers under it", async () => {
     const html = await render(
       "en",

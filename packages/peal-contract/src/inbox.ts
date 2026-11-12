@@ -124,6 +124,18 @@ export const InboxCommentStateSchema = Schema.Literals([
 export type InboxCommentState = typeof InboxCommentStateSchema.Type;
 
 /**
+ * Why Peal keeps nothing of a `deleted` comment, when it is not that its
+ * platform no longer shows it: `expired`, its platform lets Peal keep a
+ * comment for a limited time without reading it again, and no read found
+ * it in that time. A later read that finds it shows it again.
+ */
+export const InboxCommentForgottenSchema = Schema.Literals([
+  "expired",
+]).annotate({ identifier: "InboxCommentForgotten" });
+
+export type InboxCommentForgotten = typeof InboxCommentForgottenSchema.Type;
+
+/**
  * Who wrote a comment, as their platform shows them publicly: nothing
  * else of them is read or kept.
  */
@@ -146,6 +158,9 @@ export const InboxCommentSchema = Schema.Struct({
   // when it does not show who wrote it (Facebook may not). Its `handle` is
   // empty where the platform gives none (Facebook).
   author: Schema.NullOr(InboxAuthorSchema),
+  // Present on a `deleted` comment Peal forgot for its age
+  // (`InboxCommentForgotten`), absent otherwise.
+  forgotten: Schema.optionalKey(InboxCommentForgottenSchema),
   id: Schema.String,
   // Whether the channel's account likes it.
   liked: Schema.Boolean,

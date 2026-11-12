@@ -63,9 +63,13 @@ const authorOf = (comment: InboxComment): string => {
   const { author } = comment;
 
   if (author === null) {
-    return comment.state === "deleted"
-      ? "(no longer on the platform)"
-      : "(someone the platform does not show)";
+    if (comment.state !== "deleted") {
+      return "(someone the platform does not show)";
+    }
+
+    return comment.forgotten === "expired"
+      ? "(no longer kept: the platform lets Peal keep a comment for a limited time)"
+      : "(no longer on the platform)";
   }
 
   const name =

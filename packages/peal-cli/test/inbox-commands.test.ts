@@ -138,6 +138,51 @@ describe("peal inbox", () => {
   );
 
   it.effect(
+    "tells a comment forgotten for its age from one gone from the platform",
+    () =>
+      Effect.gen(function* forgottenComments() {
+        const session = yield* signedIn();
+
+        yield* Ref.update(session.studio.inbox, (inbox) => ({
+          ...inbox,
+          comments: inbox.comments.map((comment) => {
+            if (comment.id === waitingCommentId) {
+              return {
+                ...comment,
+                author: null,
+                forgotten: "expired" as const,
+                state: "deleted" as const,
+                text: "",
+              };
+            }
+
+            return comment.id === answeredCommentId
+              ? {
+                  ...comment,
+                  author: null,
+                  state: "deleted" as const,
+                  text: "",
+                }
+              : comment;
+          }),
+        }));
+
+        const shown = yield* session.printed([
+          "inbox",
+          "thread",
+          inboxThreadId,
+          ...inStudio,
+        ]);
+
+        assert.include(
+          shown,
+          "(no longer kept: the platform lets Peal keep a comment for a limited time)"
+        );
+        assert.include(shown, "(no longer on the platform)");
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
     "answers a comment, and says the reply is on its way in public",
     () =>
       Effect.gen(function* replies() {
