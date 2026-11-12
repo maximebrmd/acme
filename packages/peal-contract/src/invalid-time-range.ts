@@ -8,7 +8,7 @@ export class InvalidTimeRange extends Schema.TaggedError<InvalidTimeRange>()(
   { ...errorEnvelope },
   {
     description:
-      "The range ends before it starts, or spans more than the list takes: 62 days for the posts scheduled in a range.",
+      "The range ends before it starts, or spans more than the list takes: 62 days for the posts scheduled in a range, 31 for the agenda across workspaces.",
     httpApiStatus: 400,
   }
 ) {}

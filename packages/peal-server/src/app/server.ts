@@ -52,6 +52,7 @@ import {
 } from "#billing/container.ts";
 import {
   ChannelOAuthApiLive,
+  ChannelOverviewLive,
   ChannelsApiLive,
   ChannelsLive,
   ConnectLinkJournalLive,
@@ -64,6 +65,7 @@ import {
   InboxApiLive,
   EngagementRecordsLive,
   EngagementWorkersLive,
+  InboxWaitingLive,
   PlatformEngagementLive,
 } from "#engagement/container.ts";
 import {
@@ -89,6 +91,7 @@ import {
   UnreadComments,
   LookupsApiLive,
   MediaInPostsLive,
+  PostAttentionLive,
   PostsApiLive,
   PublishingLive,
   QueuesApiLive,
@@ -133,6 +136,8 @@ import {
   AuthRoutesLive,
   CredentialNamesLive,
   ErasureReplayLive,
+  OverviewApiLive,
+  OverviewLive,
   PartnerOwnershipLive,
   PartnerTenantsLive,
   StripeCheckoutsLive,
@@ -151,6 +156,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   MediaApiLive,
   NoticesApiLive,
   NotificationPreferencesApiLive,
+  OverviewApiLive,
   AssistantApiLive,
   BillingApiLive,
   BillingActionsApiLive,
@@ -439,6 +445,22 @@ const BillingContextLive = BillingOverviewLive.pipe(
   )
 );
 
+// What a person reads across their workspaces: each decided as the
+// workspace context decides any request, with the posts publishing counts
+// and lists, the channels and their platforms, the inbox's waiting threads
+// and each workspace's standing against its plan, as billing tells it.
+const OverviewContextLive = OverviewLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      BillingContextLive,
+      PostAttentionLive,
+      ChannelOverviewLive,
+      InboxWaitingLive
+    )
+  )
+);
+
 // The cancel and withdraw functions anyone reaches, which find the account
 // an address signs in to in the workspace context, tell members and write
 // acknowledgements through the notifications, and record what staff do
@@ -489,7 +511,8 @@ const ServicesLive = Layer.mergeAll(
   ReviewContextLive,
   ContractRequestsContextLive,
   AdsRoutesContextLive,
-  ShortLinksContextLive
+  ShortLinksContextLive,
+  OverviewContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -562,7 +585,8 @@ const ContextsLive = Layer.mergeAll(
   ContractRequestsContextLive,
   // On the cluster, every call to an ad account goes through its gate.
   adsContext(GatedAds),
-  ShortLinksContextLive
+  ShortLinksContextLive,
+  OverviewContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

@@ -30,6 +30,7 @@ import { MediaApi } from "./media.ts";
 import { MembersApi } from "./members.ts";
 import { NoticesApi } from "./notices.ts";
 import { NotificationPreferencesApi } from "./notification-preferences.ts";
+import { OverviewApi } from "./overview.ts";
 import { PartnerAccountApi } from "./partner-account.ts";
 import { PartnerUsageApi } from "./partner-usage.ts";
 import { PartnerApi } from "./partner.ts";
@@ -964,6 +965,34 @@ export type {
   UnreadNotices,
   WebhookTurnOffReason,
 } from "./notices.ts";
+
+export {
+  agendaExcerptLength,
+  AgendaItemSchema,
+  AgendaPageSchema,
+  defaultAgendaPageSize,
+  maxAgendaDays,
+  maxAgendaPageSize,
+  maxOverviewPageSize,
+  OverviewApi,
+  OverviewChannelsSchema,
+  OverviewInboxSchema,
+  OverviewPostsSchema,
+  OverviewRefusalSchema,
+  OverviewSchema,
+  WorkspaceOverviewSchema,
+} from "./overview.ts";
+
+export type {
+  AgendaItem,
+  AgendaPage,
+  Overview,
+  OverviewChannels,
+  OverviewInbox,
+  OverviewPosts,
+  OverviewRefusal,
+  WorkspaceOverview,
+} from "./overview.ts";
 
 export {
   NotificationPreferencesApi,
@@ -1969,6 +1998,7 @@ export class Api extends HttpApi.make("peal")
   .add(MediaApi)
   .add(NoticesApi)
   .add(NotificationPreferencesApi)
+  .add(OverviewApi)
   .add(AssistantApi)
   .add(WorkspacesApi)
   .add(MembersApi)

@@ -30,6 +30,7 @@ import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { MeterPartnerUsage } from "#workspace/application/meter-partner-usage.ts";
 import { OffboardWorkspace } from "#workspace/application/offboard-workspace.ts";
+import { Overview } from "#workspace/application/overview.ts";
 import { PartnerAccounts } from "#workspace/application/partner-accounts.ts";
 import { PartnerKeys } from "#workspace/application/partner-keys.ts";
 import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
@@ -54,6 +55,7 @@ import { PasswordCheckLive } from "#workspace/infrastructure/auth/password-check
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
 import { WorkspacePeopleLive } from "#workspace/infrastructure/auth/workspace-people.ts";
 import { ContextChannelCountsLive } from "#workspace/infrastructure/context-channel-counts.ts";
+import { ContextOverviewSourcesLive } from "#workspace/infrastructure/context-overview-sources.ts";
 import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts";
 import { CountedRequestLimits } from "#workspace/infrastructure/counted-request-limits.ts";
 import {
@@ -245,6 +247,25 @@ export const PartnerTenantsLive = PartnerTenants.layer.pipe(
   Layer.provide(PartnerWorkspaces.layer),
   Layer.provide(Layer.mergeAll(PartnerStoresLive, ContextChannelCountsLive))
 );
+
+/**
+ * What a person reads across the workspaces they belong to (Overview):
+ * each workspace decided through ResolveMember, as every request into it
+ * is, and its figures read from the other contexts. Needs what
+ * WorkspaceLive provides, publishing's PostAttention, the channels
+ * context's ChannelOverview, the engagement context's InboxWaiting and
+ * billing's WorkspaceStanding, which the composition root brings.
+ */
+export const OverviewLive = Overview.layer.pipe(
+  Layer.provide(ContextOverviewSourcesLive)
+);
+
+/**
+ * The endpoints across a person's workspaces, under /api/me. They need
+ * OverviewLive, and the Authentication middleware WorkspaceApiLive
+ * provides.
+ */
+export { OverviewHandlers as OverviewApiLive } from "#workspace/api/overview.ts";
 
 /**
  * Applying the erasure ledger again after a restore (ReplayErasures), over

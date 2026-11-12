@@ -25,6 +25,7 @@ import { pacedLookups } from "#publishing/application/paced-lookups.ts";
 import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
+import { PostAttention } from "#publishing/application/post-attention.ts";
 import { PostBatches } from "#publishing/application/post-batches.ts";
 import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
@@ -73,6 +74,7 @@ import { DrizzleFeedStore } from "#publishing/infrastructure/drizzle-feed-store.
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzleLivePostChangeStore } from "#publishing/infrastructure/drizzle-live-post-change-store.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
+import { DrizzlePostAttentionReads } from "#publishing/infrastructure/drizzle-post-attention-reads.ts";
 import { DrizzlePostOversight } from "#publishing/infrastructure/drizzle-post-oversight.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
@@ -426,6 +428,15 @@ export const PublishingLive = publishingOver(
  */
 export const MediaInPostsLive = MediaInPosts.layer.pipe(
   Layer.provide(DrizzlePostRepository)
+);
+
+/**
+ * The posts of several workspaces at once, counted and by time, for the
+ * view across a person's workspaces (PostAttention). Needs the database
+ * (Drizzle).
+ */
+export const PostAttentionLive = PostAttention.layer.pipe(
+  Layer.provide(DrizzlePostAttentionReads)
 );
 
 // The posts endpoints. They need the use cases PublishingLive provides, and

@@ -3,6 +3,7 @@ import { Layer } from "effect";
 import { CollectComments } from "#engagement/application/collect-comments.ts";
 import { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
+import { InboxWaiting } from "#engagement/application/inbox-waiting.ts";
 import type { CommentSource } from "#engagement/application/ports/comment-source.ts";
 import type { ReplySender } from "#engagement/application/ports/reply-sender.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
@@ -11,6 +12,7 @@ import { AccessEngagementChannels } from "#engagement/infrastructure/access-enga
 import { CommentsPaceLive } from "#engagement/infrastructure/collection-pace.ts";
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
+import { DrizzleInboxWaitingReads } from "#engagement/infrastructure/drizzle-inbox-waiting-reads.ts";
 import { PublishingFollowedPosts } from "#engagement/infrastructure/publishing-followed-posts.ts";
 import { PublishingReplyLimits } from "#engagement/infrastructure/publishing-reply-limits.ts";
 import { ToldEngagementOutcomes } from "#engagement/infrastructure/told-engagement-outcomes.ts";
@@ -91,3 +93,12 @@ export { SendReplyV1Live as EngagementWorkersLive } from "#engagement/infrastruc
 
 /** The comments collection, every ten minutes, and the daily retention. */
 export { EngagementCronsLive } from "#engagement/infrastructure/crons.ts";
+
+/**
+ * How many threads of several workspaces wait for an answer, for the view
+ * across a person's workspaces (InboxWaiting). Needs the database
+ * (Drizzle).
+ */
+export const InboxWaitingLive = InboxWaiting.layer.pipe(
+  Layer.provide(DrizzleInboxWaitingReads)
+);
