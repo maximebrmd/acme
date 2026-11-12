@@ -1,6 +1,7 @@
 // The rules the stacks and the images keep, checked without Docker: ports on
-// 127.0.0.1 only, exact image versions, a health check on every service,
-// production services that restart, run read-only and gain no privileges, a
+// 127.0.0.1 only, exact image versions, no image mounts, a health check on
+// every service but the one-shot ones, production services that restart (the
+// one-shot ones never), run read-only and gain no privileges, a
 // server that gets 75 seconds to stop and every setting the docs list, and
 // images on the workspace's Bun and Node versions that run without
 // privileges.
@@ -20,10 +21,16 @@ const Mount = Schema.Struct({ source: Schema.String, type: Schema.String });
 
 const isMount = Schema.is(Mount);
 
+// `volume:target[:options]`.
+const isShortVolume = Schema.is(Schema.String);
+
 const Volume = Schema.Union([Schema.String, Mount]);
 
 const ServiceSchema = Schema.Struct({
   build: Schema.optionalKey(Schema.Struct({ dockerfile: Schema.String })),
+  depends_on: Schema.optionalKey(
+    Schema.Record(Schema.String, Schema.Struct({ condition: Schema.String }))
+  ),
   // `NAME:` with no value passes NAME through from Compose's environment.
   environment: Schema.optionalKey(
     Schema.Record(Schema.String, Schema.NullOr(Schema.String))
@@ -32,6 +39,7 @@ const ServiceSchema = Schema.Struct({
     Schema.Struct({ test: Schema.NonEmptyArray(Schema.String) })
   ),
   image: Schema.String,
+  network_mode: Schema.optionalKey(Schema.String),
   ports: Schema.optionalKey(Schema.Array(Schema.String)),
   read_only: Schema.optionalKey(Schema.Boolean),
   restart: Schema.optionalKey(Schema.String),
@@ -90,11 +98,61 @@ const isPinned = (image: string): boolean => {
 const isPinnedByDigest = (image: string): boolean =>
   /^[^@\s]+:[^@\s]+@sha256:[\da-f]{64}$/u.test(image);
 
+// Docker mounts an image's files when it creates the container, and not
+// again when the daemon restarts: the container then restarts on an empty
+// folder (Engine 29.9, both architectures).
 const mountedImages = (service: Service): string[] =>
   (service.volumes ?? [])
     .filter(isMount)
     .filter((mount) => mount.type === "image")
     .map((mount) => mount.source);
+
+// A one-shot service runs to completion before the services that wait for
+// it start, so it has no health check to pass and never restarts.
+const oneShotNames = (services: [string, Service][]): Set<string> =>
+  new Set(
+    services.flatMap(([, service]) =>
+      Object.entries(service.depends_on ?? {}).flatMap(([name, dependency]) =>
+        dependency.condition === "service_completed_successfully" ? [name] : []
+      )
+    )
+  );
+
+const longRunning = (services: [string, Service][]): [string, Service][] =>
+  services.filter(([name]) => !oneShotNames(services).has(name));
+
+const oneShot = (services: [string, Service][]): [string, Service][] =>
+  services.filter(([name]) => oneShotNames(services).has(name));
+
+// The collector's image has no shell or HTTP client: its health check runs
+// busybox's wget from a read-only volume a one-shot service fills.
+const collectorProbe = (services: [string, Service][]) => {
+  const collector = services.find(([name]) => name === "otel-collector")?.[1];
+  const program = collector?.healthcheck?.test.at(1) ?? "";
+
+  const volume = (collector?.volumes ?? [])
+    .filter(isShortVolume)
+    .map((mount) => mount.split(":"))
+    .find(
+      ([, target]) => target !== undefined && program.startsWith(`${target}/`)
+    );
+
+  const filler = services.find(
+    ([name, service]) =>
+      collector?.depends_on?.[name]?.condition ===
+        "service_completed_successfully" &&
+      (service.volumes ?? []).some(
+        (mount) =>
+          isShortVolume(mount) && mount.startsWith(`${volume?.at(0) ?? ""}:`)
+      )
+  );
+
+  return {
+    filler: filler?.[0],
+    readOnly: volume?.at(2) === "ro",
+    volume: volume?.at(0),
+  };
+};
 
 const publicPorts = (service: Service): string[] =>
   (service.ports ?? []).filter((port) => !port.startsWith("127.0.0.1:"));
@@ -111,10 +169,8 @@ describe("compose.yaml", () => {
     expect(service.image).toSatisfy(isPinned);
   });
 
-  it.each(development)("%s pins the images it mounts", (_name, service) => {
-    expect(
-      mountedImages(service).filter((image) => !isPinned(image))
-    ).toStrictEqual([]);
+  it.each(development)("%s mounts no image", (_name, service) => {
+    expect(mountedImages(service)).toStrictEqual([]);
   });
 
   it.each(development)(
@@ -124,8 +180,19 @@ describe("compose.yaml", () => {
     }
   );
 
-  it.each(development)("%s has a health check", (_name, service) => {
-    expect(healthTest(service)).toMatch(/^CMD(?:-SHELL)?$/u);
+  it.each(longRunning(development))(
+    "%s has a health check",
+    (_name, service) => {
+      expect(healthTest(service)).toMatch(/^CMD(?:-SHELL)?$/u);
+    }
+  );
+
+  it("probes the collector with a wget a one-shot service copies", () => {
+    expect(collectorProbe(development)).toStrictEqual({
+      filler: "collector-wget",
+      readOnly: true,
+      volume: "collector-wget",
+    });
   });
 });
 
@@ -150,14 +217,9 @@ describe("compose.production.yaml", () => {
     }
   );
 
-  it.each(production)(
-    "%s pins the images it mounts by digest",
-    (_name, service) => {
-      expect(
-        mountedImages(service).filter((image) => !isPinnedByDigest(image))
-      ).toStrictEqual([]);
-    }
-  );
+  it.each(production)("%s mounts no image", (_name, service) => {
+    expect(mountedImages(service)).toStrictEqual([]);
+  });
 
   // So production runs the versions the development stack is used with.
   it.each(production.filter(([, service]) => service.build === undefined))(
@@ -176,12 +238,43 @@ describe("compose.production.yaml", () => {
     }
   );
 
-  it.each(production)("%s has a health check", (_name, service) => {
-    expect(healthTest(service)).toMatch(/^CMD(?:-SHELL)?$/u);
+  it.each(longRunning(production))(
+    "%s has a health check",
+    (_name, service) => {
+      expect(healthTest(service)).toMatch(/^CMD(?:-SHELL)?$/u);
+    }
+  );
+
+  it.each(longRunning(production))(
+    "%s restarts unless stopped",
+    (_name, service) => {
+      expect(service.restart).toBe("unless-stopped");
+    }
+  );
+
+  // It would otherwise run again each time the daemon starts, for nothing.
+  it.each(oneShot(production))(
+    "%s runs once, without a network",
+    (_name, service) => {
+      expect([service.restart, service.network_mode]).toStrictEqual([
+        "no",
+        "none",
+      ]);
+    }
+  );
+
+  it("has the one-shot services it names", () => {
+    expect(oneShot(production).map(([name]) => name)).toStrictEqual([
+      "collector-wget",
+    ]);
   });
 
-  it.each(production)("%s restarts unless stopped", (_name, service) => {
-    expect(service.restart).toBe("unless-stopped");
+  it("probes the collector with a wget a one-shot service copies", () => {
+    expect(collectorProbe(production)).toStrictEqual({
+      filler: "collector-wget",
+      readOnly: true,
+      volume: "collector-wget",
+    });
   });
 
   // The server waits up to 60 seconds for platform calls in flight.
