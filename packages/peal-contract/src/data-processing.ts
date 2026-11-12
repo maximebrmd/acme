@@ -329,8 +329,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: `Les commentaires sont lus pendant ${p.inboxWindow.days} jours après la mise en ligne d’une publication, sauf autre durée fixée par l’exploitant (90 jours au plus). Les commentaires d’une publication et les réponses envoyées : ${p.inboxAfterCollection.days} jours de plus, puis supprimés dans la journée ; plus tôt avec l’espace de travail. Un commentaire que sa plateforme ne montre plus perd son texte et son auteur à la lecture suivante. La fermeture d’un compte le retire comme auteur des réponses qu’il a envoyées, qui restent à leur espace de travail`,
     },
     source: {
-      en: "The platforms, for the comments, which their authors published there; the members of your workspaces, for the replies",
-      fr: "Les plateformes, pour les commentaires, que leurs auteurs y ont publiés ; les membres de vos espaces de travail, pour les réponses",
+      en: "The platforms, for the comments, which their authors published there (on Facebook Pages and Instagram, where the operator turned them on, through the permissions the connected account granted); the members of your workspaces, for the replies",
+      fr: "Les plateformes, pour les commentaires, que leurs auteurs y ont publiés (sur les Pages Facebook et Instagram, là où l’exploitant les a activés, grâce aux autorisations accordées par le compte connecté) ; les membres de vos espaces de travail, pour les réponses",
     },
   },
   {
