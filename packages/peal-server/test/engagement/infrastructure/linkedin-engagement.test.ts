@@ -20,7 +20,10 @@ import {
   linkedinError,
   linkedinPageUrn,
 } from "#test/engagement/fakes/fake-linkedin-comments.ts";
-import type { FakeLinkedInComment } from "#test/engagement/fakes/fake-linkedin-comments.ts";
+import type {
+  FakeLinkedInComment,
+  FakeLinkedInCommentsOptions,
+} from "#test/engagement/fakes/fake-linkedin-comments.ts";
 import { replyId, threadId } from "#test/engagement/support.ts";
 import { dropped, json } from "#test/publishing/fakes/platform-server.ts";
 
@@ -85,9 +88,10 @@ const firstReading = (batch: CommentsBatch) => {
 
 // The adapter on a fake API, as the page.
 const onLinkedIn = Effect.fnUntraced(function* onLinkedIn(
-  account: Partial<ChannelAccount> = {}
+  account: Partial<ChannelAccount> = {},
+  fake: FakeLinkedInCommentsOptions = {}
 ) {
-  const api = yield* fakeLinkedInComments(["li-token-1"]);
+  const api = yield* fakeLinkedInComments(["li-token-1"], fake);
 
   const page: ChannelAccount = {
     accountId: linkedinPageUrn,
@@ -228,6 +232,60 @@ describe("LinkedIn pages' comments", () => {
             )
         );
       }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "reads every page of a list LinkedIn caps at 10, until its total",
+    () =>
+      Effect.gen(function* capped() {
+        const { account, api, platform } = yield* onLinkedIn(
+          {},
+          {
+            maxCount: 10,
+          }
+        );
+
+        api.addPost(share, activity);
+
+        for (let n = 1; n <= 35; n += 1) {
+          api.add(comment(n));
+        }
+
+        const reading = firstReading(
+          yield* platform.read(account, [thread(1)])
+        );
+
+        assert.strictEqual(reading?._tag, "read");
+        assert.strictEqual(
+          reading?._tag === "read" ? reading.comments.length : 0,
+          35
+        );
+        assert.isTrue(reading?._tag === "read" && reading.complete);
+        // The summary, then four pages.
+        assert.lengthOf(api.requests(), 5);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect("never takes a list without a total for all of it", () =>
+    Effect.gen(function* untotalled() {
+      const { account, api, platform } = yield* onLinkedIn(
+        {},
+        {
+          maxCount: 10,
+          withoutTotal: true,
+        }
+      );
+
+      api.addPost(share, activity);
+
+      for (let n = 1; n <= 5; n += 1) {
+        api.add(comment(n));
+      }
+
+      const reading = firstReading(yield* platform.read(account, [thread(1)]));
+
+      assert.isTrue(reading?._tag === "read" && !reading.complete);
+    }).pipe(Effect.scoped)
   );
 
   it.effect("reads past a page of comments", () =>

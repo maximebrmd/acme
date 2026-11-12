@@ -48,6 +48,13 @@ export type LinkedInCommentsRoute =
   | "delete"
   | "summary";
 
+export interface FakeLinkedInCommentsOptions {
+  /** The longest page the fake gives, whatever `count` asks. */
+  readonly maxCount?: number;
+  /** Pages without `paging.total`. */
+  readonly withoutTotal?: boolean;
+}
+
 /** An error as LinkedIn's REST API writes one: its status repeated. */
 export const linkedinError = (status: number, message = "synthetic") =>
   json({ message, status }, status);
@@ -111,7 +118,10 @@ const pathPattern =
  * `lose` makes the next comment, then drops the connection.
  */
 export const fakeLinkedInComments = Effect.fnUntraced(
-  function* fakeLinkedInComments(tokens: readonly string[]) {
+  function* fakeLinkedInComments(
+    tokens: readonly string[],
+    options: FakeLinkedInCommentsOptions = {}
+  ) {
     const script = scripted<PlatformAnswer>();
     const lost = scripted<true>();
     // Each post's URN, with the thread its comments are on.
@@ -183,12 +193,20 @@ export const fakeLinkedInComments = Effect.fnUntraced(
       }
 
       const start = Number(query.get("start") ?? "0");
-      const count = Number(query.get("count") ?? "10");
 
-      return json({
-        elements: found.slice(start, start + count).map(commentJson),
-        paging: { count, start, total: found.length },
-      });
+      // A page as long as asked, or as LinkedIn caps it.
+      const count = Math.min(
+        Number(query.get("count") ?? "10"),
+        options.maxCount ?? Number.POSITIVE_INFINITY
+      );
+
+      const elements = found.slice(start, start + count).map(commentJson);
+
+      return json(
+        options.withoutTotal === true
+          ? { elements, paging: { count, start } }
+          : { elements, paging: { count, start, total: found.length } }
+      );
     };
 
     const create = (target: string, request: PlatformRequest) => {

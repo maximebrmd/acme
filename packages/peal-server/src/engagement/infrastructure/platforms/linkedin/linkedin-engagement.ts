@@ -86,8 +86,9 @@ export const linkedinRefreshWithin = Duration.hours(24);
 /** The comments one page of a read asks for, under LinkedIn's 200. */
 const pageSize = 100;
 
-// The pages a read takes of one list, and a resume of the replies.
-const listPages = 10;
+// The pages a read takes of one list, and a resume of the replies: as
+// many as `commentsPerThread` needs at LinkedIn's sample page of 10.
+const listPages = 50;
 
 /** How long a read keeps the channel's gate unless told. */
 const defaultDeadline = Duration.seconds(30);
@@ -127,9 +128,33 @@ type LinkedInComment = typeof CommentSchema.Type;
 const PageSchema = Schema.Struct({
   elements: Schema.Array(CommentSchema),
   paging: Schema.optionalKey(
-    Schema.Struct({ total: Schema.optionalKey(Schema.Number) })
+    Schema.Struct({
+      links: Schema.optionalKey(
+        Schema.Array(Schema.Struct({ rel: Schema.optionalKey(Schema.String) }))
+      ),
+      total: Schema.optionalKey(Schema.Number),
+    })
   ),
 });
+
+type Paging = (typeof PageSchema.Type)["paging"];
+
+/**
+ * Whether LinkedIn says a list ends with what was read up to `read`
+ * elements: its `paging.total` reached, or its `links` naming no next
+ * page. A page shorter than asked proves nothing, as LinkedIn may answer
+ * fewer than `count` (its samples show 10).
+ */
+const listEnds = (paging: Paging | undefined, read: number): boolean => {
+  if (paging?.total !== undefined) {
+    return read >= paging.total;
+  }
+
+  return (
+    paging?.links !== undefined &&
+    !paging.links.some(({ rel }) => rel === "next")
+  );
+};
 
 const SummarySchema = Schema.Struct({
   commentsSummary: Schema.optionalKey(
@@ -367,6 +392,8 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
       first: boolean,
       nested: string[]
     ) {
+      let start = 0;
+
       for (let page = 0; page < listPages; page += 1) {
         if (
           at.comments.length >= commentsPerThread ||
@@ -380,7 +407,7 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
             get(
               actionsOf(target, "comments"),
               token,
-              `start=${String(page * pageSize)}&count=${String(pageSize)}`
+              `start=${String(start)}&count=${String(pageSize)}`
             )
           )
           .pipe(Effect.result);
@@ -423,13 +450,15 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
           return Option.some(at.read(false));
         }
 
-        const seen = (page + 1) * pageSize;
+        start += elements.length;
 
-        if (
-          elements.length < pageSize ||
-          (paging?.total !== undefined && seen >= paging.total)
-        ) {
+        if (listEnds(paging, start)) {
           return Option.none<Step>();
+        }
+
+        // Nothing more came, and LinkedIn did not say the list ended.
+        if (elements.length === 0) {
+          return Option.some(at.read(false));
         }
       }
 
@@ -698,7 +727,7 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
               get(
                 actionsOf(parent, "comments"),
                 token,
-                `start=${String(page * pageSize)}&count=${String(pageSize)}`
+                `start=${String(listed.length)}&count=${String(pageSize)}`
               )
             )
             .pipe(Effect.result);
@@ -735,8 +764,13 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
             });
           }
 
-          if (body.value.elements.length < pageSize) {
+          if (listEnds(body.value.paging, listed.length)) {
             return Option.some<readonly ListedReply[]>(listed);
+          }
+
+          // Nothing more, and no word that the list ended: not proof.
+          if (body.value.elements.length === 0) {
+            return Option.none<readonly ListedReply[]>();
           }
         }
 
