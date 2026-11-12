@@ -146,7 +146,7 @@ const approximateClicks = `Clicks are counted by UTC day and kept ${String(short
 export const GetShortLinkStatus = Tool.make("get_short_link_status", {
   dependencies: [CurrentMember],
   description:
-    "Answers whether this server shortens links (`available`: off unless its operator set where short links live), what a short address starts with (`base`) and how long it is (`shortLength`), and whether the workspace's new posts ask for short links by default (`byDefault`, which the web app's composer starts from). A post that asks (`shortenLinks` on create_draft, update_draft, create_post, create_posts) goes out with each link written with http:// or https:// and longer than a short address replaced, per channel; the text kept stays as written, and Pinterest keeps links as written.",
+    "Answers whether this server shortens links (`available`: off unless its operator set where short links live), what a short address starts with (`base`) and how long it is (`shortLength`), and whether the workspace's new posts ask for short links by default (`byDefault`, which the web app's composer starts from). A post that asks (`shortenLinks` on create_draft, update_draft, create_post, create_posts) goes out with each link written with http:// or https:// and longer than a short address replaced, per channel; the text kept stays as written, and Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform.",
   failure: ToolRefused,
   parameters: Tool.EmptyParams,
   success: ShortLinkStatusSchema,

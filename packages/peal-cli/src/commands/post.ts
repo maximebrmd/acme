@@ -378,7 +378,7 @@ export const post = Command.make(
     ),
     shortenLinks: Flag.Boolean("shorten-links").pipe(
       Flag.withDescription(
-        "Send the post's links shortened, where the server has short links (peal short-links status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks (peal short-links list); the text kept stays as written, and Pinterest keeps links as written."
+        "Send the post's links shortened, where the server has short links (peal short-links status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks (peal short-links list); the text kept stays as written, and Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform."
       ),
       Flag.withDefault(false)
     ),

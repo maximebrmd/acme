@@ -3435,7 +3435,7 @@
       "label": "Raccourcir les liens",
       "count": "{count, plural, =0 {Aucun lien de la publication n’est assez long pour être raccourci.} one {# lien part sous une adresse courte, qui compte ses clics, sur chaque canal.} other {# liens partent sous des adresses courtes, qui comptent leurs clics, sur chaque canal.}}",
       "off": "Les liens partent tels qu’écrits.",
-      "pinterest": "Pinterest garde les liens tels qu’écrits."
+      "keptAsWritten": "Pinterest, Instagram et TikTok gardent les liens tels qu’écrits, et un lien vers la plateforme d’un canal y reste tel qu’écrit."
     },
     "post": {
       "title": "Liens",
@@ -3452,7 +3452,7 @@
     },
     "settings": {
       "title": "Liens courts",
-      "description": "Une publication qui demande des liens courts part avec ses liens longs remplacés par des adresses courtes, une par canal, qui comptent leurs clics. Le texte conservé reste tel qu’écrit, Pinterest garde les liens tels qu’écrits, et les adresses courtes cessent de fonctionner quand l’espace de travail est supprimé.",
+      "description": "Une publication qui demande des liens courts part avec ses liens longs remplacés par des adresses courtes, une par canal, qui comptent leurs clics. Le texte conservé reste tel qu’écrit, Pinterest, Instagram et TikTok gardent les liens tels qu’écrits, comme un lien vers la plateforme du canal, et les adresses courtes cessent de fonctionner quand l’espace de travail est supprimé.",
       "unavailable": "Ce serveur n’a pas de liens courts : son exploitant n’a pas indiqué où ils se trouvent.",
       "label": "Raccourcir les liens des nouvelles publications par défaut",
       "hint": "Chaque publication peut toujours choisir dans l’éditeur.",

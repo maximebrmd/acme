@@ -1,7 +1,11 @@
 import { Config, Effect, Layer, Option } from "effect";
+import { xLinksIn } from "peal-contract/post-text";
 
 import { isProduction } from "#shared/infrastructure/environment.ts";
-import { ShortLinkBase } from "#shortlinks/application/short-link-base.ts";
+import {
+  ShortLinkBase,
+  shortCodeLength,
+} from "#shortlinks/application/short-link-base.ts";
 
 import { InvalidShortLinkSettings } from "./invalid-short-link-settings.ts";
 
@@ -43,7 +47,29 @@ export const shortLinkBaseConfig = Effect.gen(function* shortLinkBaseConfig() {
     url.username === "" &&
     url.password === "";
 
-  return allowed ? Option.some(url) : yield* invalid;
+  if (!allowed) {
+    return yield* invalid;
+  }
+
+  // X and Mastodon count a link they recognise as 23 characters, whatever
+  // its length: a short address they do not take for a link (on
+  // localhost, an IP address, a name without a known top-level domain)
+  // would be counted whole, and could push a post past their limit.
+  const sample = `${url.href}${"A".repeat(shortCodeLength)}`;
+  const [found, ...others] = xLinksIn(sample);
+
+  if (
+    found === undefined ||
+    others.length > 0 ||
+    found.start !== 0 ||
+    found.end !== sample.length
+  ) {
+    return yield* new InvalidShortLinkSettings({
+      reason: `PEAL_SHORT_LINK_BASE must be on a public domain the platforms recognise as a link (not localhost, an IP address or a name without a known top-level domain): ${url.host} is not one`,
+    });
+  }
+
+  return Option.some(url);
 });
 
 /** ShortLinkBase from `PEAL_SHORT_LINK_BASE`, read when the server starts. */

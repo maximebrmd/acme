@@ -15,14 +15,54 @@ export const shortLengthOf = (addresses: ShortAddresses): number =>
   addresses.base.length + addresses.codeLength;
 
 /**
- * Whether a platform takes its links as written, never shortened:
- * Pinterest alone. Its help page "Blocked links and websites"
+ * The platforms whose posts take their links as written, never shortened:
+ * Pinterest, whose help page "Blocked links and websites"
  * (https://help.pinterest.com/en/articles/blocked-links-and-websites,
  * read 2026-11-12) says "we don't allow certain redirects or URL
- * shorteners".
+ * shorteners"; Instagram and TikTok, whose captions make no link
+ * clickable, so a short address would only be less readable and could
+ * count no click.
  */
+const linksAsWritten: ReadonlySet<Platform> = new Set([
+  "pinterest",
+  "instagram",
+  "tiktok",
+]);
+
+/** Whether a platform's posts take their links as written. */
 export const keepsLinksAsWritten = (platform: Platform): boolean =>
-  platform === "pinterest";
+  linksAsWritten.has(platform);
+
+/**
+ * The hosts of each platform's own pages: a link to one is left as
+ * written on a channel of that platform, which shows it natively (a post
+ * of X quoted, a video of YouTube played), where a short address would
+ * hide it. Mastodon's servers are many, and Google Business Profile's
+ * local posts link out: neither has hosts here.
+ */
+const ownHosts: Readonly<Record<Platform, readonly string[]>> = {
+  bluesky: ["bsky.app"],
+  facebook: ["facebook.com", "fb.com", "fb.me", "fb.watch"],
+  googleBusiness: [],
+  instagram: ["instagram.com"],
+  linkedin: ["linkedin.com", "lnkd.in"],
+  mastodon: [],
+  pinterest: ["pinterest.com", "pin.it"],
+  threads: ["threads.net", "threads.com"],
+  tiktok: ["tiktok.com"],
+  x: ["x.com", "twitter.com"],
+  youtube: ["youtube.com", "youtu.be"],
+};
+
+// Whether the address is on one of the platform's own hosts, or under one.
+const isOwnLink = (address: string, platform: Platform): boolean => {
+  const host = URL.parse(address)?.hostname.toLowerCase();
+
+  return (
+    host !== undefined &&
+    ownHosts[platform].some((own) => host === own || host.endsWith(`.${own}`))
+  );
+};
 
 /** The longest address shortened, as the shortlinks context keeps it. */
 const maxDestinationLength = 2048;
@@ -88,6 +128,7 @@ export const linksToShorten = (
     if (
       hasScheme(address) &&
       address.length > shortLength &&
+      !isOwnLink(address, platform) &&
       isShortenable(address, addresses)
     ) {
       found.set(address, [...(found.get(address) ?? []), { end, start }]);

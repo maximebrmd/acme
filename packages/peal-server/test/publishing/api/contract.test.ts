@@ -819,6 +819,7 @@ describe("the contract's short links rule", () => {
     "User https://someone:secret@example.com/a/long/path/with/a/user",
     "🎉 HTTP://EXAMPLE.COM/AN/UPPER/CASE/ADDRESS/WRITTEN/LOUDLY 👋",
     "Cyrillic https://example.com/путь/к/странице/длиннее/короткой/ссылки",
+    "Own https://x.com/synthetic/status/1234567890123456789/photo/1 and https://www.youtube.com/watch?v=synthetic12345&t=42s",
     `Too long once written https://example.com/${"ж".repeat(400)}`,
   ];
 

@@ -86,3 +86,23 @@ describe("a link written outside ASCII", () => {
     expect(linksToShorten(tooLong, "x", addresses)).toStrictEqual([]);
   });
 });
+
+describe("the links a platform treats natively", () => {
+  it("are kept as written on Instagram and TikTok, whose captions make no link clickable", () => {
+    expect(keepsLinksAsWritten("instagram")).toBeTruthy();
+    expect(keepsLinksAsWritten("tiktok")).toBeTruthy();
+    expect(linksToShorten(long, "instagram", addresses)).toStrictEqual([]);
+  });
+
+  it("leave a link to the channel's own platform as written", () => {
+    const own = "https://x.com/synthetic/status/1234567890123456789/photo/1";
+
+    const youtube =
+      "https://www.youtube.com/watch?v=synthetic12345&t=42s&list=x";
+
+    expect(linksToShorten(own, "x", addresses)).toStrictEqual([]);
+    expect(linksToShorten(youtube, "youtube", addresses)).toStrictEqual([]);
+    // Elsewhere they are shortened as any other.
+    expect(linksToShorten(own, "linkedin", addresses)).toHaveLength(1);
+  });
+});

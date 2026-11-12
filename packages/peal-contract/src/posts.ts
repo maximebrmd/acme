@@ -397,7 +397,7 @@ export const PostDraftSchema = Schema.Struct({
   // True to send its links shortened, where the server has short links
   // (`shortLinks.status`): each link written with http:// or https:// and
   // longer than a short address goes out as one, per channel; the text
-  // kept stays as written, Pinterest gets links as written, and an edit of
+  // kept stays as written, Pinterest, Instagram and TikTok get links as written, as does a link to a channel's own platform, and an edit of
   // a live post sends the text as written. Left out, false on a new draft; on an update, the draft keeps its own.
   shortenLinks: Schema.optionalKey(Schema.Boolean),
   signatureId: Schema.optionalKey(Schema.String),
@@ -487,7 +487,7 @@ export const NewPostSchema = Schema.Struct({
   // True to send its links shortened, where the server has short links
   // (`shortLinks.status`): each link written with http:// or https:// and
   // longer than a short address goes out as one, per channel; the text
-  // kept stays as written, Pinterest gets links as written, and an edit of
+  // kept stays as written, Pinterest, Instagram and TikTok get links as written, as does a link to a channel's own platform, and an edit of
   // a live post sends the text as written. Left out, false.
   shortenLinks: Schema.optionalKey(Schema.Boolean),
   signatureId: Schema.optionalKey(Schema.String),

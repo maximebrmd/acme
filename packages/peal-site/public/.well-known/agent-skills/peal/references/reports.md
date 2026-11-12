@@ -56,8 +56,9 @@ curl -sS -H "Authorization: Bearer $PEAL_PARTNER_KEY" \
 On a server that has short links (`peal short-links status`), a post can
 ask for its links to go out shortened: each link written with `http://`
 or `https://` and longer than a short address becomes one, per channel,
-which counts its clicks. The text kept stays as written, Pinterest keeps
-links as written, and an edit of a live post sends the text as written.
+which counts its clicks. The text kept stays as written, Pinterest, Instagram
+and TikTok keep links as written, as does a link to a channel's own
+platform, and an edit of a live post sends the text as written.
 Ask only when the user wants clicks counted:
 
 ```sh

@@ -14,7 +14,7 @@ describe("the composer's count of links to shorten", () => {
         ["mastodon", "x"],
         addresses
       )
-    ).toStrictEqual({ links: 1, pinterest: false });
+    ).toStrictEqual({ keptAsWritten: false, links: 1 });
   });
 
   it("counts on a platform that shortens before any channel is chosen", () => {
@@ -23,12 +23,12 @@ describe("the composer's count of links to shorten", () => {
 
   it("says Pinterest keeps links as written, and counts none there alone", () => {
     expect(shortenedCount([landing], ["pinterest"], addresses)).toStrictEqual({
+      keptAsWritten: true,
       links: 0,
-      pinterest: true,
     });
     expect(
       shortenedCount([landing], ["pinterest", "bluesky"], addresses)
-    ).toStrictEqual({ links: 1, pinterest: true });
+    ).toStrictEqual({ keptAsWritten: true, links: 1 });
   });
 
   it("leaves out links without a scheme and short ones", () => {

@@ -3435,7 +3435,7 @@
       "label": "Shorten links",
       "count": "{count, plural, =0 {No link of the post is long enough to shorten.} one {# link goes out as a short address, which counts its clicks, on each channel.} other {# links go out as short addresses, which count their clicks, on each channel.}}",
       "off": "Links go out as written.",
-      "pinterest": "Pinterest keeps links as written."
+      "keptAsWritten": "Pinterest, Instagram and TikTok keep links as written, and a link to a channel's own platform stays as written there."
     },
     "post": {
       "title": "Links",
@@ -3452,7 +3452,7 @@
     },
     "settings": {
       "title": "Short links",
-      "description": "A post that asks for short links goes out with its long links replaced by short addresses, one per channel, which count their clicks. The text kept stays as written, Pinterest keeps links as written, and the short addresses stop working when the workspace is deleted.",
+      "description": "A post that asks for short links goes out with its long links replaced by short addresses, one per channel, which count their clicks. The text kept stays as written, Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform, and the short addresses stop working when the workspace is deleted.",
       "unavailable": "This server has no short links: its operator has not set where they live.",
       "label": "Shorten links in new posts by default",
       "hint": "Each post can still choose for itself in the composer.",

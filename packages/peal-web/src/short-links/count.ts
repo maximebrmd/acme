@@ -6,8 +6,11 @@ import type { ShortAddresses } from "peal-contract/post-text";
 export interface ShortenedCount {
   /** The distinct links that go out shortened on some channel. */
   readonly links: number;
-  /** Whether a Pinterest channel is chosen, which keeps links as written. */
-  readonly pinterest: boolean;
+  /**
+   * Whether a channel is chosen whose platform keeps links as written
+   * (Pinterest, Instagram, TikTok).
+   */
+  readonly keptAsWritten: boolean;
 }
 
 // A platform that shortens, for a post with no channel chosen yet.
@@ -37,5 +40,8 @@ export const shortenedCount = (
     )
   );
 
-  return { links: links.size, pinterest: platforms.some(keepsLinksAsWritten) };
+  return {
+    keptAsWritten: platforms.some(keepsLinksAsWritten),
+    links: links.size,
+  };
 };

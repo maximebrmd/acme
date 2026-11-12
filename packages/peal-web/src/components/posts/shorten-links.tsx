@@ -115,7 +115,7 @@ export const ShortenLinks = ({
           className="text-muted-foreground text-xs"
         >
           {linking.wanted ? t("count", { count: counted.links }) : t("off")}{" "}
-          {counted.pinterest ? t("pinterest") : null}
+          {counted.keptAsWritten ? t("keptAsWritten") : null}
         </p>
       </div>
     </div>

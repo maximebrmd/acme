@@ -61,7 +61,7 @@ const approximate = `Counts are approximate: automated readers and link previews
 const statusLines = (status: ShortLinkStatus): string[] =>
   status.available
     ? [
-        `This server shortens links under ${status.base ?? ""} (${String(status.shortLength ?? 0)} characters): only longer links are replaced, and Pinterest keeps links as written.`,
+        `This server shortens links under ${status.base ?? ""} (${String(status.shortLength ?? 0)} characters): only longer links are replaced, and Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform.`,
         status.byDefault
           ? "New posts ask for short links unless their author says not."
           : "New posts ask for short links only when their author says so (--shorten-links).",

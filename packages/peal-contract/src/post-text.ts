@@ -5,6 +5,10 @@ import type { Platform } from "./platform.ts";
 import type { TargetOptions } from "./target-options.ts";
 import { xLinksIn } from "./x-links.ts";
 
+export { xLinksIn } from "./x-links.ts";
+
+export type { XLink } from "./x-links.ts";
+
 // The rules the API applies to a post's text and media before it schedules
 // it, so clients count as the server does: a composer shows how much room is
 // left on each platform, and which images or videos it would refuse. The
@@ -706,11 +710,54 @@ export interface LinkToShorten {
 export const maxShortenedLinkLength = 2048;
 
 /**
- * Whether a platform takes its links as written, never shortened:
- * Pinterest, whose help page refuses link shorteners.
+ * The platforms whose posts take their links as written, never shortened:
+ * Pinterest, whose help page "Blocked links and websites"
+ * (https://help.pinterest.com/en/articles/blocked-links-and-websites,
+ * read 2026-11-12) says "we don't allow certain redirects or URL
+ * shorteners"; Instagram and TikTok, whose captions make no link
+ * clickable, so a short address would only be less readable and could
+ * count no click.
  */
+const linksAsWritten: ReadonlySet<Platform> = new Set([
+  "pinterest",
+  "instagram",
+  "tiktok",
+]);
+
+/** Whether a platform's posts take their links as written. */
 export const keepsLinksAsWritten = (platform: Platform): boolean =>
-  platform === "pinterest";
+  linksAsWritten.has(platform);
+
+/**
+ * The hosts of each platform's own pages: a link to one is left as
+ * written on a channel of that platform, which shows it natively (a post
+ * of X quoted, a video of YouTube played), where a short address would
+ * hide it. Mastodon's servers are many, and Google Business Profile's
+ * local posts link out: neither has hosts here.
+ */
+const ownHosts: Readonly<Record<Platform, readonly string[]>> = {
+  bluesky: ["bsky.app"],
+  facebook: ["facebook.com", "fb.com", "fb.me", "fb.watch"],
+  googleBusiness: [],
+  instagram: ["instagram.com"],
+  linkedin: ["linkedin.com", "lnkd.in"],
+  mastodon: [],
+  pinterest: ["pinterest.com", "pin.it"],
+  threads: ["threads.net", "threads.com"],
+  tiktok: ["tiktok.com"],
+  x: ["x.com", "twitter.com"],
+  youtube: ["youtube.com", "youtu.be"],
+};
+
+// Whether the address is on one of the platform's own hosts, or under one.
+const isOwnLink = (address: string, platform: Platform): boolean => {
+  const host = URL.parse(address)?.hostname.toLowerCase();
+
+  return (
+    host !== undefined &&
+    ownHosts[platform].some((own) => host === own || host.endsWith(`.${own}`))
+  );
+};
 
 const hasLinkScheme = (address: string) => /^https?:\/\//iu.test(address);
 
@@ -758,6 +805,7 @@ export const linksToShorten = (
     if (
       hasLinkScheme(address) &&
       address.length > shortLength &&
+      !isOwnLink(address, platform) &&
       isShortenable(address, addresses)
     ) {
       found.set(address, [...(found.get(address) ?? []), { end, start }]);

@@ -73,7 +73,7 @@ const options = PostDraftSchema.fields.options.schema.annotate({
 const { shortenLinks } = NewPostSchema.fields;
 
 const shortened =
-  "Pass `shortenLinks: true` to send its links shortened where the server has short links (get_short_link_status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks, approximately and with nothing kept about visitors (list_short_links); the text kept stays as written, and Pinterest keeps links as written.";
+  "Pass `shortenLinks: true` to send its links shortened where the server has short links (get_short_link_status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks, approximately and with nothing kept about visitors (list_short_links); the text kept stays as written, and Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform.";
 
 const tagIds = PostDraftSchema.fields.tagIds.schema.annotate({
   description:
