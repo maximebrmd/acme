@@ -5,6 +5,7 @@ import {
   Effect,
   Layer,
   Option,
+  Result,
   Schema,
 } from "effect";
 
@@ -18,6 +19,7 @@ import type { WorkspaceMembership } from "#workspace/domain/account.ts";
 import { isBanned } from "#workspace/domain/ban.ts";
 import { BannedUser } from "#workspace/domain/banned-user.ts";
 import { answerAccessDenied } from "#workspace/domain/membership.ts";
+import type { AccessDenied } from "#workspace/domain/membership.ts";
 import {
   overviewReader,
   sectionsFor,
@@ -205,6 +207,29 @@ const figureOf = <A>(
 ): Option.Option<A> =>
   readable ? Option.some(found.get(workspaceId) ?? nothing) : Option.none();
 
+// How the person stands in a workspace, by what `actorFor` decided.
+const standingOf = (
+  decided: Result.Result<Actor, AccessDenied> | undefined
+): Effect.Effect<Standing, BannedUser> =>
+  decided === undefined
+    ? Effect.succeed<Standing>({ _tag: "gone" })
+    : Result.match(decided, {
+        onFailure: answerAccessDenied({
+          BannedUser: (banned) => Effect.fail(banned),
+          // Left since the account was read, or another workspace
+          // than a token's: nothing of it is shown.
+          NotAMember: () => Effect.succeed<Standing>({ _tag: "gone" }),
+          TwoStepRequired: () =>
+            Effect.succeed<Standing>({
+              _tag: "refused",
+              refusal: "twoStepRequired",
+            }),
+          WorkspaceMismatch: () => Effect.succeed<Standing>({ _tag: "gone" }),
+        }),
+        onSuccess: (actor) =>
+          Effect.succeed<Standing>({ _tag: "member", actor }),
+      });
+
 // A source is not asked about no workspace.
 const ask = <A>(
   ids: readonly WorkspaceId[],
@@ -283,44 +308,24 @@ export class Overview extends Context.Service<
         }
       );
 
-      const standingIn = (principal: UserPrincipal, workspaceId: WorkspaceId) =>
-        members.resolve(principal, workspaceId).pipe(
-          Effect.map((actor): Standing => ({ _tag: "member", actor })),
-          Effect.catchTag(
-            [
-              "BannedUser",
-              "NotAMember",
-              "TwoStepRequired",
-              "WorkspaceMismatch",
-            ],
-            answerAccessDenied({
-              BannedUser: (banned) => Effect.fail(banned),
-              // Left since the account was read, or another workspace than
-              // a token's: nothing of it is shown.
-              NotAMember: () => Effect.succeed<Standing>({ _tag: "gone" }),
-              TwoStepRequired: () =>
-                Effect.succeed<Standing>({
-                  _tag: "refused",
-                  refusal: "twoStepRequired",
-                }),
-              WorkspaceMismatch: () =>
-                Effect.succeed<Standing>({ _tag: "gone" }),
-            })
-          )
-        );
-
-      const resolveAll = (
+      // Every workspace decided from one read of the memberships.
+      const resolveAll = Effect.fn("Overview.resolveAll")(function* resolveAll(
         principal: UserPrincipal,
         workspaces: readonly WorkspaceMembership[]
-      ) =>
-        Effect.forEach(
-          workspaces,
-          (workspace) =>
-            standingIn(principal, workspace.id).pipe(
-              Effect.map((standing): Resolved => ({ ...workspace, standing }))
-            ),
-          { concurrency }
+      ) {
+        const decided = yield* members.resolveMany(
+          principal,
+          workspaces.map(({ id }) => id)
         );
+
+        return yield* Effect.all(
+          workspaces.map((workspace) =>
+            standingOf(decided.get(workspace.id)).pipe(
+              Effect.map((standing): Resolved => ({ ...workspace, standing }))
+            )
+          )
+        );
+      });
 
       const page = Effect.fn("Overview.page")(function* page(
         principal: UserPrincipal,

@@ -125,6 +125,15 @@ export const overviewOver = (
       ? Option.some({ expiresAt: Option.none() })
       : Option.none();
 
+  const membershipOf = (workspaceId: WorkspaceId) =>
+    Option.fromUndefinedOr(places.find(({ id }) => id === workspaceId)).pipe(
+      Option.map((place): Membership => ({
+        ban,
+        role: place.role,
+        twoStep: { ...noTwoStep, required: place.twoStepRequired === true },
+      }))
+    );
+
   const directory = MemberDirectory.of({
     account: () =>
       Effect.succeed(
@@ -160,6 +169,17 @@ export const overviewOver = (
               required: place.twoStepRequired === true,
             },
           }))
+        )
+      ),
+    memberships: (_, ids) =>
+      Effect.succeed(
+        new Map(
+          ids.flatMap((id) =>
+            Option.match(membershipOf(id), {
+              onNone: () => [],
+              onSome: (found) => [[id, found] as const],
+            })
+          )
         )
       ),
   });

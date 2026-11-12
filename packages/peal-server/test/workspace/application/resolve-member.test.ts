@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option } from "effect";
+import { DateTime, Effect, Layer, Option, Result } from "effect";
 import { TestClock } from "effect/testing";
 
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -29,6 +29,15 @@ const directoryWith = (membership: Option.Option<Membership>) =>
         MemberDirectory.of({
           account: () => Effect.succeedNone,
           membership: () => Effect.succeed(membership),
+          memberships: (_, ids) =>
+            Effect.succeed(
+              new Map(
+                Option.match(membership, {
+                  onNone: () => [],
+                  onSome: (found) => ids.map((id) => [id, found] as const),
+                })
+              )
+            ),
         })
       )
     ),
@@ -130,5 +139,74 @@ describe(ResolveMember, () => {
 
       assert.strictEqual(failure._tag, "NotAMember");
     })
+  );
+
+  it.effect(
+    "decides several workspaces from one read, as it decides each",
+    () =>
+      Effect.gen(function* many() {
+        const other = WorkspaceIdSchema.make(
+          "5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f61"
+        );
+
+        let reads = 0;
+
+        const memberOf: ReadonlyMap<string, Membership> = new Map([
+          [
+            workspaceId,
+            { ban: Option.none(), role: "viewer", twoStep: noTwoStep },
+          ],
+        ]);
+
+        const decided = yield* ResolveMember.use((members) =>
+          members.resolveMany(user, [workspaceId, other])
+        ).pipe(
+          Effect.provide(
+            ResolveMember.layer.pipe(
+              Layer.provide(
+                Layer.succeed(
+                  MemberDirectory,
+                  MemberDirectory.of({
+                    account: () => Effect.succeedNone,
+                    membership: () => Effect.die("read one at a time"),
+                    memberships: (_, ids) =>
+                      Effect.sync(() => {
+                        reads += 1;
+
+                        return new Map(
+                          ids.flatMap((id) => {
+                            const found = memberOf.get(id);
+
+                            return found === undefined
+                              ? []
+                              : [[id, found] as const];
+                          })
+                        );
+                      }),
+                  })
+                )
+              ),
+              Layer.provide(PartnerOwnership.layerNone)
+            )
+          )
+        );
+
+        assert.strictEqual(reads, 1);
+        assert.deepStrictEqual(
+          decided
+            .get(workspaceId)
+            ?.pipe(Result.map(({ permissions }) => permissions.length)),
+          Result.succeed(5)
+        );
+        assert.strictEqual(
+          decided.get(other)?.pipe(
+            Result.match({
+              onFailure: ({ _tag }) => _tag,
+              onSuccess: () => "member",
+            })
+          ),
+          "NotAMember"
+        );
+      })
   );
 });

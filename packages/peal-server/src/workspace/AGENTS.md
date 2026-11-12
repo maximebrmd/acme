@@ -32,6 +32,10 @@ The staff context follows these rules too. What the law has a host keep is in
   plan's room) and sharing its constants and link (`invitationLifetime`,
   `pendingInvitationLimit`, `invitationUrl` in `options.ts`): change both
   together. The web app still invites through Better Auth's route.
+- `ResolveMember.resolveMany` decides several workspaces for one user from
+  one read of the memberships (`MemberDirectory.memberships`), each through
+  `actorFor` as `resolve` decides one: anything that reads across
+  workspaces uses it, never one query a membership.
 - `Overview` (`application/overview.ts`, `GET /api/me/overview` and
   `/api/me/agenda`) reads across the workspaces a person belongs to, for
   a user only (`overviewReader`: an OAuth token bound to one workspace is

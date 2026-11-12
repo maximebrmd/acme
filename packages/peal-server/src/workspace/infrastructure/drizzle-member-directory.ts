@@ -4,11 +4,13 @@ import { DateTime, Effect, Layer, Option } from "effect";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { defaultLocale } from "#shared/domain/locale.ts";
+import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { DirectoryUnavailable } from "#workspace/application/directory-unavailable.ts";
 import { MemberDirectory } from "#workspace/application/member-directory.ts";
 import { Account } from "#workspace/domain/account.ts";
 import type { Ban } from "#workspace/domain/ban.ts";
+import type { Membership } from "#workspace/domain/membership.ts";
 
 import { member, organization, user } from "./auth-schema.generated.ts";
 import { securityPolicies } from "./schema.ts";
@@ -40,42 +42,73 @@ export const MemberDirectoryLive = Layer.effect(
       (cause: unknown) => new DirectoryUnavailable({ cause })
     );
 
+    // The workspace's requirement comes with the membership, in the same
+    // query: a workspace without a policy requires nothing.
+    const membershipsWhere = (
+      userId: UserId,
+      workspaces: ReturnType<typeof eq>
+    ) =>
+      db
+        .select({
+          banExpires: user.banExpires,
+          banned: user.banned,
+          role: member.role,
+          twoStepEnabled: user.twoFactorEnabled,
+          twoStepRequired: securityPolicies.twoStepRequired,
+          workspaceId: member.organizationId,
+        })
+        .from(member)
+        .innerJoin(user, eq(user.id, member.userId))
+        .leftJoin(
+          securityPolicies,
+          eq(securityPolicies.workspaceId, member.organizationId)
+        )
+        .where(and(eq(member.userId, userId), workspaces))
+        .pipe(unavailable);
+
+    type MembershipRow = Effect.Success<
+      ReturnType<typeof membershipsWhere>
+    >[number];
+
+    const membershipOf = (row: MembershipRow): Membership => ({
+      ban: banOf(row.banned, row.banExpires),
+      role: row.role,
+      twoStep: {
+        enabled: row.twoStepEnabled === true,
+        required: row.twoStepRequired === true,
+      },
+    });
+
     const membership = Effect.fn("MemberDirectory.membership")(
       function* membership(userId: UserId, workspaceId: WorkspaceId) {
-        // The workspace's requirement comes with the membership, in the
-        // same query: a workspace without a policy requires nothing.
-        const rows = yield* db
-          .select({
-            banExpires: user.banExpires,
-            banned: user.banned,
-            role: member.role,
-            twoStepEnabled: user.twoFactorEnabled,
-            twoStepRequired: securityPolicies.twoStepRequired,
-          })
-          .from(member)
-          .innerJoin(user, eq(user.id, member.userId))
-          .leftJoin(
-            securityPolicies,
-            eq(securityPolicies.workspaceId, member.organizationId)
-          )
-          .where(
-            and(
-              eq(member.userId, userId),
-              eq(member.organizationId, workspaceId)
-            )
-          )
-          .limit(1)
-          .pipe(unavailable);
+        const rows = yield* membershipsWhere(
+          userId,
+          eq(member.organizationId, workspaceId)
+        );
 
-        return Option.fromNullishOr(rows[0]).pipe(
-          Option.map((row) => ({
-            ban: banOf(row.banned, row.banExpires),
-            role: row.role,
-            twoStep: {
-              enabled: row.twoStepEnabled === true,
-              required: row.twoStepRequired === true,
-            },
-          }))
+        return Option.fromNullishOr(rows[0]).pipe(Option.map(membershipOf));
+      }
+    );
+
+    const memberships = Effect.fn("MemberDirectory.memberships")(
+      function* memberships(
+        userId: UserId,
+        workspaceIds: readonly WorkspaceId[]
+      ) {
+        if (workspaceIds.length === 0) {
+          return new Map<WorkspaceId, Membership>();
+        }
+
+        const rows = yield* membershipsWhere(
+          userId,
+          anyUuid(member.organizationId, workspaceIds)
+        );
+
+        return new Map(
+          rows.map((row) => [
+            WorkspaceIdSchema.make(row.workspaceId),
+            membershipOf(row),
+          ])
         );
       }
     );
@@ -125,6 +158,6 @@ export const MemberDirectoryLive = Layer.effect(
       );
     });
 
-    return MemberDirectory.of({ account, membership });
+    return MemberDirectory.of({ account, membership, memberships });
   })
 );

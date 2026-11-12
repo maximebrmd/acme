@@ -134,6 +134,7 @@ const run = <A, E>(
           Effect.succeed(
             Option.some({ ban: Option.none(), role, twoStep: noTwoStep })
           ),
+        memberships: () => Effect.die("not read in this test"),
       })
     );
 
