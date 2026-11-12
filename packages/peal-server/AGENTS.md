@@ -274,6 +274,15 @@ and no socket, for tests.
   drain it. Keep the fixtures in
   `test/publishing/infrastructure/fixtures/persisted` and
   `test/notifications/infrastructure/fixtures/persisted` decoding.
+- Tests build their cluster with `clusterOver`
+  (`test/publishing/infrastructure/harness.ts`), whose own timers run once
+  an hour. Moving `TestClock` wakes every timer due within the jump, one
+  after the other, at a real cost: the entity reaper's ten seconds, which
+  the cluster sets itself, still make a day of virtual time about 8,600
+  wakes. Jump only as far as the behaviour needs (a daily rule and days,
+  not weeks), and never raise a timeout for a jump. Test a budget of time
+  on `TestClock`, with the calls it waits on let go by the test, never on
+  the real clock, which a loaded machine spends on its own.
 
 ### Database
 
