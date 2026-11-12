@@ -14,13 +14,19 @@ export const SignUpModeSchema = Schema.Literals([
 export type SignUpMode = typeof SignUpModeSchema.Type;
 
 /**
+ * The header a sign-up names its invitation in, on a server where accounts
+ * are made by invitation: the id its emailed or copied link carries.
+ */
+export const signUpInvitationHeader = "x-peal-invitation";
+
+/**
  * Whether signing up and asking for a password reset need a Cloudflare
  * Turnstile token, and the site key the widget is shown with. Clients send
  * the widget's token in the `x-captcha-response` header. It also says who
  * may sign up.
  */
 export const CaptchaSchema = Schema.Struct({
-  // Who may sign up; a server that leaves it out lets anyone.
+  // Who may sign up now; a server that leaves it out lets anyone.
   signUp: Schema.optionalKey(SignUpModeSchema),
   // Null when the server asks for no captcha.
   turnstileSiteKey: Schema.NullOr(Schema.String),
@@ -35,7 +41,7 @@ export class CaptchaApi extends HttpApiGroup.make("captcha").add(
   }).annotateMerge(
     OpenApi.annotations({
       description:
-        "Tells whether signing up and requesting a password reset need a Cloudflare Turnstile token, sent as the `x-captcha-response` header of Better Auth's requests, and the site key to show the widget with; and who may sign up (`signUp`): anyone (`open`), or only an address a workspace invited and the first account (`invitation`), where Better Auth refuses any other sign-up with 403 `SIGN_UP_BY_INVITATION`. Needs no credentials.",
+        "Tells whether signing up and requesting a password reset need a Cloudflare Turnstile token, sent as the `x-captcha-response` header of Better Auth's requests, and the site key to show the widget with; and who may sign up (`signUp`): anyone (`open`), or only an address a workspace invited and the first account (`invitation`), where a sign-up names its invitation's id in the `x-peal-invitation` header and must give the address it went to, and Better Auth refuses any other with 403 `SIGN_UP_BY_INVITATION`. A server by invitation that has no account yet answers `open`: its first account may be made. Needs no credentials.",
       summary: "Get the captcha settings",
     })
   )
