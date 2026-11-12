@@ -4,13 +4,21 @@
 # changes; a second run reports no change:
 #   ansible-playbook playbooks/uptime.yml --check --diff
 #   ansible-playbook playbooks/uptime.yml --diff
+# On a shared host (uptime_shared_host), a server the owner already uses for
+# other sites, the baseline is the owner's: the play skips every task of
+# system, ssh, docker and firewall, and the uptime role runs Gatus beside
+# the host's own sites (README.md, "On a shared host").
 - name: Configure the uptime server
   hosts: uptime
   become: true
   roles:
     - peal_preflight
-    - system
-    - ssh
-    - docker
-    - firewall
+    - role: system
+      when: not (uptime_shared_host | bool)
+    - role: ssh
+      when: not (uptime_shared_host | bool)
+    - role: docker
+      when: not (uptime_shared_host | bool)
+    - role: firewall
+      when: not (uptime_shared_host | bool)
     - uptime

@@ -1,0 +1,19 @@
+# Managed by Ansible (peal-infra), from the uptime role: the uptime server's
+# names on this shared host's Caddy, whose configuration
+# ({{ uptime_caddy_config }}) imports this file. Each name gets its
+# certificate as the host's other sites do. The heartbeats go to the uptime
+# Gatus, on {{ uptime_gatus_upstream }}, as routes.caddy says.
+{% if uptime_public_status %}
+# The status page goes to its own Gatus, on {{ uptime_status_upstream }}, as
+# status.caddy says.
+{% endif %}
+
+{{ uptime_hostname }} {
+{{ uptime_caddy_routes | trim | indent(width='\t', first=true) }}
+}
+{% if uptime_public_status %}
+
+{{ uptime_status_hostname }} {
+{{ uptime_caddy_status | trim | indent(width='\t', first=true) }}
+}
+{% endif %}

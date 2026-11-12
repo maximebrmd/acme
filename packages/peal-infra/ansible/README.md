@@ -86,7 +86,7 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 | `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`                                                        |
 | `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days                                                              |
 | `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                                                                          |
-| `uptime`         | Gatus and Caddy on the uptime server, their configuration from the inventory (`uptime.yml`)                                                            |
+| `uptime`         | Gatus and Caddy on the uptime server, or Gatus behind a shared host's Caddy, their configuration from the inventory (`uptime.yml`)                     |
 
 ### Playbooks
 
@@ -723,7 +723,9 @@ the inventory.
 `uptime.yml` sets it up with the same roles (`ops`, key-only SSH, ufw,
 unattended upgrades, Docker), then the `uptime` role runs Gatus and Caddy in
 Docker, each pinned by digest, as the Compose project `uptime` in
-`/srv/uptime`.
+`/srv/uptime`. It can also run on a host the owner already uses for other
+sites, beside them, with that host's own Caddy in front ([On a shared
+host](#on-a-shared-host)).
 
 ### What it checks
 
@@ -894,6 +896,120 @@ record can go.
 
 `uptime-compose` runs Docker Compose on the stack: `sudo uptime-compose ps`,
 `sudo uptime-compose logs --tail 50 gatus`.
+
+### On a shared host
+
+The uptime server can be a host the owner already runs other sites on,
+with Docker and a Caddy of its own (a systemd `caddy.service` on ports 80
+and 443), instead of a server of its own. `uptime_shared_host: true` says
+so, in the host's `inventory/host_vars/peal-uptime/local.yml`, which Git
+ignores, beside its address. Then `uptime.yml` runs the preflight and the
+`uptime` role alone: it skips every task of `system`, `ssh`, `docker` and
+`firewall`, so SSH, the accounts and their keys, apt and its sources,
+Docker's packages and daemon settings, ufw and sysctl stay as the owner has
+them, and `bootstrap.yml` refuses the host. The role:
+
+- checks, before it changes anything, that Docker Compose runs there, that
+  the host's Caddy has its configuration and the folder it imports site
+  files from, and that no container but the `uptime` project's publishes
+  `uptime_gatus_port` or `uptime_status_port`, and nothing else listens on
+  them;
+- runs Gatus, and the status page's Gatus, pinned by digest as on a server
+  of its own, as the Compose project `uptime` in `/srv/uptime`, with the
+  `gatus` system user, and publishes each on 127.0.0.1 alone: the stack has
+  no Caddy, and publishes nothing to the world;
+- writes `/etc/caddy/sites/peal-uptime.caddy` (`uptime_caddy_site_file`),
+  with a block for `uptime_hostname` and one for `uptime_status_hostname`,
+  the same routes as on a server of its own, sent to those loopback ports,
+  and no global option, so each name gets its certificate as the host's
+  other sites do;
+- runs `caddy validate` and `caddy adapt` on the whole configuration, as
+  the `caddy` user, and requires each name in it; a file Caddy refuses or
+  does not import comes out again, or goes back to what it was, so Caddy's
+  next start finds the configuration that runs;
+- reloads `caddy.service` when the file changed, or when the configuration
+  Caddy runs (read from its admin API, `127.0.0.1:2019`) lacks a name: the
+  reload swaps the configuration without dropping connections, and Caddy
+  keeps the old one if it refuses the new.
+
+The heartbeat token and the credentials are kept as on a server of its own,
+in `/srv/uptime`, on the host alone.
+
+#### Set up a shared host
+
+1. In the `peal.social` zone, the records of [The status
+   page](#the-status-page) and step 1 of [Set it up](#set-it-up), not
+   proxied: `uptime` A to the host's IPv4 address, `uptime` AAAA only if
+   the host has an IPv6 address its Caddy answers on, and `status` CNAME to
+   `uptime.peal.social`.
+2. On the host, once: the folder for site files, and the line that imports
+   it, at the top level of `/etc/caddy/Caddyfile`, outside any site block.
+   When the Caddyfile already imports a folder of site files, set
+   `uptime_caddy_site_file` to a file in it instead.
+
+   ```sh
+   sudo install -d -m 755 /etc/caddy/sites
+   echo 'import /etc/caddy/sites/*.caddy' | sudo tee -a /etc/caddy/Caddyfile
+   sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && sudo systemctl reload caddy
+   ```
+
+3. `inventory/host_vars/peal-uptime/local.yml`, with two loopback ports
+   nothing on the host uses:
+
+   ```yaml
+   ansible_host: <the host's address>
+   uptime_shared_host: true
+   uptime_gatus_port: 18080
+   uptime_status_port: 18081
+   hosting_provider: <provider>
+   hosting_location: <city>
+   # Read by the preflight alone: nothing writes it on a shared host.
+   admin_ssh_public_keys: [ssh-ed25519 AAAA… ops]
+   ```
+
+   `ansible_user` stays `ops`, which must have sudo without a password
+   there; it need not be in the `docker` group. Check the host's key on the
+   first connection against the one the owner has.
+
+4. The credentials, as in step 2 of [Set it up](#set-it-up): the vault, or
+   `/srv/uptime/credentials.env` written on the host.
+5. `uv run ansible-playbook playbooks/uptime.yml --check --diff`, then
+   without `--check`. No `bootstrap.yml`.
+6. Production's heartbeat token, as in [The heartbeat](#the-heartbeat).
+   The dashboard: `ssh -N -L 8080:127.0.0.1:18080 ops@uptime.peal.social`,
+   while the host's sshd allows TCP forwarding.
+
+#### What sharing costs
+
+- **The host's other sites reach the uptime server's secrets.** Whoever
+  gets root, or the Docker socket, through any of them reads the Telegram
+  bot's token, the sandbox's Access service token, which lets its holder
+  through the sandbox's Access, and the heartbeat token, which can keep the
+  heartbeat green. None of them is production's. Rotate the three if the
+  host is ever compromised.
+- **Anything on the host reaches the private dashboard** on 127.0.0.1: the
+  sandbox's names and every check's errors. SSH no longer limits who
+  forwards a port to it.
+- **The owner's Caddy is Peal's.** A broken Caddyfile, or a Caddy that
+  stops, takes the heartbeats and the status page down with the other
+  sites; the role validates the whole configuration before each reload,
+  but cannot stop a change made by hand.
+- **The host's upkeep is the owner's.** Ansible sets no unattended upgrade,
+  reboot time, swap or journal size there, and no Docker pin: a reboot or a
+  Docker upgrade at the hour production's servers reboot (03:30 UTC)
+  silences both at once.
+- **Shared resources.** A busy host slows the checks, which then fail for
+  slow answers (`max_ms`), and alert for nothing.
+- **The host's firewall is the owner's.** The stack opens nothing, but the
+  uptime Gatus checks its own names' certificates through the host's public
+  address, from Docker's network: a firewall that refuses that fails those
+  two checks.
+- The rule stands: the host's provider and city must differ from
+  production's and the sandbox's, which the role refuses otherwise.
+
+To leave the host: `sudo uptime-compose down`, remove the site file and
+reload Caddy, then remove `/srv/uptime`, `/usr/local/bin/uptime-compose`
+and the `gatus` user.
 
 ## Docker Engine
 
