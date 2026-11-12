@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class Billing extends JsonSerializableType
 {
     /**
+     * @var BillingAccount $account
+     */
+    #[JsonProperty('account')]
+    public BillingAccount $account;
+
+    /**
      * @var PlanAllowances $allowances
      */
     #[JsonProperty('allowances')]
@@ -70,6 +76,7 @@ class Billing extends JsonSerializableType
 
     /**
      * @param array{
+     *   account: BillingAccount,
      *   allowances: PlanAllowances,
      *   currency: string,
      *   enabled: bool,
@@ -85,6 +92,7 @@ class Billing extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->account = $values['account'];
         $this->allowances = $values['allowances'];
         $this->currency = $values['currency'];
         $this->enabled = $values['enabled'];

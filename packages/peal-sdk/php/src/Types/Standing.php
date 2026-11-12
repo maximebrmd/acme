@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class Standing extends JsonSerializableType
 {
     /**
+     * @var BillingAccount $account
+     */
+    #[JsonProperty('account')]
+    public BillingAccount $account;
+
+    /**
      * @var bool $mustReduce
      */
     #[JsonProperty('mustReduce')]
@@ -40,6 +46,7 @@ class Standing extends JsonSerializableType
 
     /**
      * @param array{
+     *   account: BillingAccount,
      *   mustReduce: bool,
      *   over: array<Excess>,
      *   scheduledPosts: int,
@@ -50,6 +57,7 @@ class Standing extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->account = $values['account'];
         $this->mustReduce = $values['mustReduce'];
         $this->over = $values['over'];
         $this->plan = $values['plan'] ?? null;

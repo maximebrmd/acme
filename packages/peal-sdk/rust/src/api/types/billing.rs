@@ -3,6 +3,8 @@ pub use crate::prelude::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct Billing {
     #[serde(default)]
+    pub account: BillingAccount,
+    #[serde(default)]
     pub allowances: PlanAllowances,
     #[serde(default)]
     pub currency: String,
@@ -35,6 +37,7 @@ impl Billing {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct BillingBuilder {
+    account: Option<BillingAccount>,
     allowances: Option<PlanAllowances>,
     currency: Option<String>,
     enabled: Option<bool>,
@@ -48,6 +51,11 @@ pub struct BillingBuilder {
 }
 
 impl BillingBuilder {
+    pub fn account(mut self, value: BillingAccount) -> Self {
+        self.account = Some(value);
+        self
+    }
+
     pub fn allowances(mut self, value: PlanAllowances) -> Self {
         self.allowances = Some(value);
         self
@@ -100,6 +108,7 @@ impl BillingBuilder {
 
     /// Consumes the builder and constructs a [`Billing`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`account`](BillingBuilder::account)
     /// - [`allowances`](BillingBuilder::allowances)
     /// - [`currency`](BillingBuilder::currency)
     /// - [`enabled`](BillingBuilder::enabled)
@@ -108,6 +117,9 @@ impl BillingBuilder {
     /// - [`vat_rate`](BillingBuilder::vat_rate)
     pub fn build(self) -> Result<Billing, BuildError> {
         Ok(Billing {
+            account: self
+                .account
+                .ok_or_else(|| BuildError::missing_field("account"))?,
             allowances: self
                 .allowances
                 .ok_or_else(|| BuildError::missing_field("allowances"))?,

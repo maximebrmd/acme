@@ -11,6 +11,9 @@ public record Standing : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("account")]
+    public required BillingAccount Account { get; set; }
+
     [JsonPropertyName("mustReduce")]
     public required bool MustReduce { get; set; }
 

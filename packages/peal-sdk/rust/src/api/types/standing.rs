@@ -2,6 +2,8 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct Standing {
+    #[serde(default)]
+    pub account: BillingAccount,
     #[serde(rename = "mustReduce")]
     #[serde(default)]
     pub must_reduce: bool,
@@ -26,6 +28,7 @@ impl Standing {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct StandingBuilder {
+    account: Option<BillingAccount>,
     must_reduce: Option<bool>,
     over: Option<Vec<Excess>>,
     plan: Option<Plan>,
@@ -34,6 +37,11 @@ pub struct StandingBuilder {
 }
 
 impl StandingBuilder {
+    pub fn account(mut self, value: BillingAccount) -> Self {
+        self.account = Some(value);
+        self
+    }
+
     pub fn must_reduce(mut self, value: bool) -> Self {
         self.must_reduce = Some(value);
         self
@@ -61,11 +69,15 @@ impl StandingBuilder {
 
     /// Consumes the builder and constructs a [`Standing`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`account`](StandingBuilder::account)
     /// - [`must_reduce`](StandingBuilder::must_reduce)
     /// - [`over`](StandingBuilder::over)
     /// - [`scheduled_posts`](StandingBuilder::scheduled_posts)
     pub fn build(self) -> Result<Standing, BuildError> {
         Ok(Standing {
+            account: self
+                .account
+                .ok_or_else(|| BuildError::missing_field("account"))?,
             must_reduce: self
                 .must_reduce
                 .ok_or_else(|| BuildError::missing_field("must_reduce"))?,

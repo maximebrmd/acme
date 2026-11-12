@@ -64,16 +64,119 @@ func (s *StandingBillingRequest) SetWorkspaceID(workspaceID string) {
 }
 
 var (
-	billingFieldAllowances        = big.NewInt(1 << 0)
-	billingFieldCurrency          = big.NewInt(1 << 1)
-	billingFieldEnabled           = big.NewInt(1 << 2)
-	billingFieldPlan              = big.NewInt(1 << 3)
-	billingFieldPlans             = big.NewInt(1 << 4)
-	billingFieldSubscription      = big.NewInt(1 << 5)
-	billingFieldTrial             = big.NewInt(1 << 6)
-	billingFieldUsage             = big.NewInt(1 << 7)
-	billingFieldVatRate           = big.NewInt(1 << 8)
-	billingFieldWithdrawableUntil = big.NewInt(1 << 9)
+	accountWorkspaceFieldName        = big.NewInt(1 << 0)
+	accountWorkspaceFieldWorkspaceID = big.NewInt(1 << 1)
+)
+
+type AccountWorkspace struct {
+	Name        string `json:"name" url:"name"`
+	WorkspaceID string `json:"workspaceId" url:"workspaceId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AccountWorkspace) GetName() string {
+	if a == nil {
+		return ""
+	}
+	return a.Name
+}
+
+func (a *AccountWorkspace) GetWorkspaceID() string {
+	if a == nil {
+		return ""
+	}
+	return a.WorkspaceID
+}
+
+func (a *AccountWorkspace) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *AccountWorkspace) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AccountWorkspace) SetName(name string) {
+	a.Name = name
+	a.require(accountWorkspaceFieldName)
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AccountWorkspace) SetWorkspaceID(workspaceID string) {
+	a.WorkspaceID = workspaceID
+	a.require(accountWorkspaceFieldWorkspaceID)
+}
+
+func (a *AccountWorkspace) UnmarshalJSON(data []byte) error {
+	type unmarshaler AccountWorkspace
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AccountWorkspace(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AccountWorkspace) MarshalJSON() ([]byte, error) {
+	type embed AccountWorkspace
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *AccountWorkspace) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+var (
+	billingFieldAccount           = big.NewInt(1 << 0)
+	billingFieldAllowances        = big.NewInt(1 << 1)
+	billingFieldCurrency          = big.NewInt(1 << 2)
+	billingFieldEnabled           = big.NewInt(1 << 3)
+	billingFieldPlan              = big.NewInt(1 << 4)
+	billingFieldPlans             = big.NewInt(1 << 5)
+	billingFieldSubscription      = big.NewInt(1 << 6)
+	billingFieldTrial             = big.NewInt(1 << 7)
+	billingFieldUsage             = big.NewInt(1 << 8)
+	billingFieldVatRate           = big.NewInt(1 << 9)
+	billingFieldWithdrawableUntil = big.NewInt(1 << 10)
 )
 
 // billingNullableFields maps the wire names of Billing's nullable fields (required or optional) to their field bits.
@@ -85,6 +188,7 @@ var billingNullableFields = map[string]*big.Int{
 }
 
 type Billing struct {
+	Account           *BillingAccount      `json:"account" url:"account"`
 	Allowances        *PlanAllowances      `json:"allowances" url:"allowances"`
 	Currency          string               `json:"currency" url:"currency"`
 	Enabled           bool                 `json:"enabled" url:"enabled"`
@@ -101,6 +205,13 @@ type Billing struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (b *Billing) GetAccount() *BillingAccount {
+	if b == nil {
+		return nil
+	}
+	return b.Account
 }
 
 func (b *Billing) GetAllowances() *PlanAllowances {
@@ -187,6 +298,13 @@ func (b *Billing) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	b.explicitFields = next
+}
+
+// SetAccount sets the Account field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetAccount(account *BillingAccount) {
+	b.Account = account
+	b.require(billingFieldAccount)
 }
 
 // SetAllowances sets the Allowances field and marks it as non-optional;
@@ -294,6 +412,217 @@ func (b *Billing) MarshalJSON() ([]byte, error) {
 }
 
 func (b *Billing) String() string {
+	if b == nil {
+		return "<nil>"
+	}
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
+var (
+	billingAccountFieldBillingWorkspaceID   = big.NewInt(1 << 0)
+	billingAccountFieldBillingWorkspaceName = big.NewInt(1 << 1)
+	billingAccountFieldID                   = big.NewInt(1 << 2)
+	billingAccountFieldOtherWorkspaces      = big.NewInt(1 << 3)
+	billingAccountFieldPartner              = big.NewInt(1 << 4)
+	billingAccountFieldPayer                = big.NewInt(1 << 5)
+	billingAccountFieldTransfer             = big.NewInt(1 << 6)
+	billingAccountFieldWorkspaces           = big.NewInt(1 << 7)
+)
+
+// billingAccountNullableFields maps the wire names of BillingAccount's nullable fields (required or optional) to their field bits.
+var billingAccountNullableFields = map[string]*big.Int{
+	"billingWorkspaceName": billingAccountFieldBillingWorkspaceName,
+	"transfer":             billingAccountFieldTransfer,
+}
+
+type BillingAccount struct {
+	BillingWorkspaceID   string              `json:"billingWorkspaceId" url:"billingWorkspaceId"`
+	BillingWorkspaceName *string             `json:"billingWorkspaceName,omitempty" url:"billingWorkspaceName,omitempty"`
+	ID                   string              `json:"id" url:"id"`
+	OtherWorkspaces      []*AccountWorkspace `json:"otherWorkspaces" url:"otherWorkspaces"`
+	Partner              bool                `json:"partner" url:"partner"`
+	Payer                bool                `json:"payer" url:"payer"`
+	Transfer             *BillingTransfer    `json:"transfer,omitempty" url:"transfer,omitempty"`
+	Workspaces           int                 `json:"workspaces" url:"workspaces"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BillingAccount) GetBillingWorkspaceID() string {
+	if b == nil {
+		return ""
+	}
+	return b.BillingWorkspaceID
+}
+
+func (b *BillingAccount) GetBillingWorkspaceName() *string {
+	if b == nil {
+		return nil
+	}
+	return b.BillingWorkspaceName
+}
+
+func (b *BillingAccount) GetID() string {
+	if b == nil {
+		return ""
+	}
+	return b.ID
+}
+
+func (b *BillingAccount) GetOtherWorkspaces() []*AccountWorkspace {
+	if b == nil {
+		return nil
+	}
+	return b.OtherWorkspaces
+}
+
+func (b *BillingAccount) GetPartner() bool {
+	if b == nil {
+		return false
+	}
+	return b.Partner
+}
+
+func (b *BillingAccount) GetPayer() bool {
+	if b == nil {
+		return false
+	}
+	return b.Payer
+}
+
+func (b *BillingAccount) GetTransfer() *BillingTransfer {
+	if b == nil {
+		return nil
+	}
+	return b.Transfer
+}
+
+func (b *BillingAccount) GetWorkspaces() int {
+	if b == nil {
+		return 0
+	}
+	return b.Workspaces
+}
+
+func (b *BillingAccount) GetExtraProperties() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
+	return b.extraProperties
+}
+
+func (b *BillingAccount) require(field *big.Int) {
+	next := new(big.Int)
+	if b.explicitFields != nil {
+		next.Set(b.explicitFields)
+	}
+	next.Or(next, field)
+	b.explicitFields = next
+}
+
+// SetBillingWorkspaceID sets the BillingWorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccount) SetBillingWorkspaceID(billingWorkspaceID string) {
+	b.BillingWorkspaceID = billingWorkspaceID
+	b.require(billingAccountFieldBillingWorkspaceID)
+}
+
+// SetBillingWorkspaceName sets the BillingWorkspaceName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccount) SetBillingWorkspaceName(billingWorkspaceName *string) {
+	b.BillingWorkspaceName = billingWorkspaceName
+	b.require(billingAccountFieldBillingWorkspaceName)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccount) SetID(id string) {
+	b.ID = id
+	b.require(billingAccountFieldID)
+}
+
+// SetOtherWorkspaces sets the OtherWorkspaces field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccount) SetOtherWorkspaces(otherWorkspaces []*AccountWorkspace) {
+	b.OtherWorkspaces = otherWorkspaces
+	b.require(billingAccountFieldOtherWorkspaces)
+}
+
+// SetPartner sets the Partner field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccount) SetPartner(partner bool) {
+	b.Partner = partner
+	b.require(billingAccountFieldPartner)
+}
+
+// SetPayer sets the Payer field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccount) SetPayer(payer bool) {
+	b.Payer = payer
+	b.require(billingAccountFieldPayer)
+}
+
+// SetTransfer sets the Transfer field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccount) SetTransfer(transfer *BillingTransfer) {
+	b.Transfer = transfer
+	b.require(billingAccountFieldTransfer)
+}
+
+// SetWorkspaces sets the Workspaces field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingAccount) SetWorkspaces(workspaces int) {
+	b.Workspaces = workspaces
+	b.require(billingAccountFieldWorkspaces)
+}
+
+func (b *BillingAccount) UnmarshalJSON(data []byte) error {
+	type unmarshaler BillingAccount
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BillingAccount(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, billingAccountNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		b.require(presentFields)
+	}
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BillingAccount) MarshalJSON() ([]byte, error) {
+	type embed BillingAccount
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*b),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (b *BillingAccount) String() string {
 	if b == nil {
 		return "<nil>"
 	}
@@ -507,6 +836,140 @@ func (b *BillingSubscription) MarshalJSON() ([]byte, error) {
 }
 
 func (b *BillingSubscription) String() string {
+	if b == nil {
+		return "<nil>"
+	}
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
+var (
+	billingTransferFieldExpiresAt = big.NewInt(1 << 0)
+	billingTransferFieldOfferedAt = big.NewInt(1 << 1)
+	billingTransferFieldOfferedBy = big.NewInt(1 << 2)
+	billingTransferFieldToUserID  = big.NewInt(1 << 3)
+)
+
+type BillingTransfer struct {
+	ExpiresAt string `json:"expiresAt" url:"expiresAt"`
+	OfferedAt string `json:"offeredAt" url:"offeredAt"`
+	OfferedBy string `json:"offeredBy" url:"offeredBy"`
+	ToUserID  string `json:"toUserId" url:"toUserId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BillingTransfer) GetExpiresAt() string {
+	if b == nil {
+		return ""
+	}
+	return b.ExpiresAt
+}
+
+func (b *BillingTransfer) GetOfferedAt() string {
+	if b == nil {
+		return ""
+	}
+	return b.OfferedAt
+}
+
+func (b *BillingTransfer) GetOfferedBy() string {
+	if b == nil {
+		return ""
+	}
+	return b.OfferedBy
+}
+
+func (b *BillingTransfer) GetToUserID() string {
+	if b == nil {
+		return ""
+	}
+	return b.ToUserID
+}
+
+func (b *BillingTransfer) GetExtraProperties() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
+	return b.extraProperties
+}
+
+func (b *BillingTransfer) require(field *big.Int) {
+	next := new(big.Int)
+	if b.explicitFields != nil {
+		next.Set(b.explicitFields)
+	}
+	next.Or(next, field)
+	b.explicitFields = next
+}
+
+// SetExpiresAt sets the ExpiresAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingTransfer) SetExpiresAt(expiresAt string) {
+	b.ExpiresAt = expiresAt
+	b.require(billingTransferFieldExpiresAt)
+}
+
+// SetOfferedAt sets the OfferedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingTransfer) SetOfferedAt(offeredAt string) {
+	b.OfferedAt = offeredAt
+	b.require(billingTransferFieldOfferedAt)
+}
+
+// SetOfferedBy sets the OfferedBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingTransfer) SetOfferedBy(offeredBy string) {
+	b.OfferedBy = offeredBy
+	b.require(billingTransferFieldOfferedBy)
+}
+
+// SetToUserID sets the ToUserID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingTransfer) SetToUserID(toUserID string) {
+	b.ToUserID = toUserID
+	b.require(billingTransferFieldToUserID)
+}
+
+func (b *BillingTransfer) UnmarshalJSON(data []byte) error {
+	type unmarshaler BillingTransfer
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BillingTransfer(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BillingTransfer) MarshalJSON() ([]byte, error) {
+	type embed BillingTransfer
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*b),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (b *BillingTransfer) String() string {
 	if b == nil {
 		return "<nil>"
 	}
@@ -754,11 +1217,12 @@ func (p *PlanPrice) String() string {
 }
 
 var (
-	standingFieldMustReduce     = big.NewInt(1 << 0)
-	standingFieldOver           = big.NewInt(1 << 1)
-	standingFieldPlan           = big.NewInt(1 << 2)
-	standingFieldPlanWithRoom   = big.NewInt(1 << 3)
-	standingFieldScheduledPosts = big.NewInt(1 << 4)
+	standingFieldAccount        = big.NewInt(1 << 0)
+	standingFieldMustReduce     = big.NewInt(1 << 1)
+	standingFieldOver           = big.NewInt(1 << 2)
+	standingFieldPlan           = big.NewInt(1 << 3)
+	standingFieldPlanWithRoom   = big.NewInt(1 << 4)
+	standingFieldScheduledPosts = big.NewInt(1 << 5)
 )
 
 // standingNullableFields maps the wire names of Standing's nullable fields (required or optional) to their field bits.
@@ -768,17 +1232,25 @@ var standingNullableFields = map[string]*big.Int{
 }
 
 type Standing struct {
-	MustReduce     bool      `json:"mustReduce" url:"mustReduce"`
-	Over           []*Excess `json:"over" url:"over"`
-	Plan           *Plan     `json:"plan,omitempty" url:"plan,omitempty"`
-	PlanWithRoom   *PaidPlan `json:"planWithRoom,omitempty" url:"planWithRoom,omitempty"`
-	ScheduledPosts int       `json:"scheduledPosts" url:"scheduledPosts"`
+	Account        *BillingAccount `json:"account" url:"account"`
+	MustReduce     bool            `json:"mustReduce" url:"mustReduce"`
+	Over           []*Excess       `json:"over" url:"over"`
+	Plan           *Plan           `json:"plan,omitempty" url:"plan,omitempty"`
+	PlanWithRoom   *PaidPlan       `json:"planWithRoom,omitempty" url:"planWithRoom,omitempty"`
+	ScheduledPosts int             `json:"scheduledPosts" url:"scheduledPosts"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (s *Standing) GetAccount() *BillingAccount {
+	if s == nil {
+		return nil
+	}
+	return s.Account
 }
 
 func (s *Standing) GetMustReduce() bool {
@@ -830,6 +1302,13 @@ func (s *Standing) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	s.explicitFields = next
+}
+
+// SetAccount sets the Account field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *Standing) SetAccount(account *BillingAccount) {
+	s.Account = account
+	s.require(standingFieldAccount)
 }
 
 // SetMustReduce sets the MustReduce field and marks it as non-optional;

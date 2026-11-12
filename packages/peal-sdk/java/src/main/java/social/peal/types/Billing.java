@@ -26,6 +26,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = Billing.Builder.class)
 public final class Billing {
+    private final BillingAccount account;
+
     private final PlanAllowances allowances;
 
     private final String currency;
@@ -49,6 +51,7 @@ public final class Billing {
     private final Map<String, Object> additionalProperties;
 
     private Billing(
+            BillingAccount account,
             PlanAllowances allowances,
             String currency,
             boolean enabled,
@@ -60,6 +63,7 @@ public final class Billing {
             int vatRate,
             Optional<String> withdrawableUntil,
             Map<String, Object> additionalProperties) {
+        this.account = account;
         this.allowances = allowances;
         this.currency = currency;
         this.enabled = enabled;
@@ -71,6 +75,11 @@ public final class Billing {
         this.vatRate = vatRate;
         this.withdrawableUntil = withdrawableUntil;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("account")
+    public BillingAccount getAccount() {
+        return account;
     }
 
     @JsonProperty("allowances")
@@ -171,7 +180,8 @@ public final class Billing {
     }
 
     private boolean equalTo(Billing other) {
-        return allowances.equals(other.allowances)
+        return account.equals(other.account)
+                && allowances.equals(other.allowances)
                 && currency.equals(other.currency)
                 && enabled == other.enabled
                 && plan.equals(other.plan)
@@ -186,6 +196,7 @@ public final class Billing {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
+                this.account,
                 this.allowances,
                 this.currency,
                 this.enabled,
@@ -203,14 +214,18 @@ public final class Billing {
         return ObjectMappers.stringify(this);
     }
 
-    public static AllowancesStage builder() {
+    public static AccountStage builder() {
         return new Builder();
+    }
+
+    public interface AccountStage {
+        AllowancesStage account(@NotNull BillingAccount account);
+
+        Builder from(Billing other);
     }
 
     public interface AllowancesStage {
         CurrencyStage allowances(@NotNull PlanAllowances allowances);
-
-        Builder from(Billing other);
     }
 
     public interface CurrencyStage {
@@ -269,7 +284,15 @@ public final class Billing {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements AllowancesStage, CurrencyStage, EnabledStage, UsageStage, VatRateStage, _FinalStage {
+            implements AccountStage,
+                    AllowancesStage,
+                    CurrencyStage,
+                    EnabledStage,
+                    UsageStage,
+                    VatRateStage,
+                    _FinalStage {
+        private BillingAccount account;
+
         private PlanAllowances allowances;
 
         private String currency;
@@ -296,6 +319,7 @@ public final class Billing {
 
         @java.lang.Override
         public Builder from(Billing other) {
+            account(other.getAccount());
             allowances(other.getAllowances());
             currency(other.getCurrency());
             enabled(other.getEnabled());
@@ -306,6 +330,13 @@ public final class Billing {
             usage(other.getUsage());
             vatRate(other.getVatRate());
             withdrawableUntil(other.getWithdrawableUntil());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("account")
+        public AllowancesStage account(@NotNull BillingAccount account) {
+            this.account = Objects.requireNonNull(account, "account must not be null");
             return this;
         }
 
@@ -471,6 +502,7 @@ public final class Billing {
         @java.lang.Override
         public Billing build() {
             return new Billing(
+                    account,
                     allowances,
                     currency,
                     enabled,
@@ -486,7 +518,8 @@ public final class Billing {
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("allowances")
+            if (key.equalsIgnoreCase("account")
+                    || key.equalsIgnoreCase("allowances")
                     || key.equalsIgnoreCase("currency")
                     || key.equalsIgnoreCase("enabled")
                     || key.equalsIgnoreCase("plan")

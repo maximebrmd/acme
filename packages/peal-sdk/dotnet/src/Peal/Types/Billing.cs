@@ -11,6 +11,9 @@ public record Billing : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("account")]
+    public required BillingAccount Account { get; set; }
+
     [JsonPropertyName("allowances")]
     public required PlanAllowances Allowances { get; set; }
 

@@ -6,12 +6,14 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .billing_account import BillingAccount
 from .excess import Excess
 from .paid_plan import PaidPlan
 from .plan import Plan
 
 
 class Standing(UniversalBaseModel):
+    account: BillingAccount
     must_reduce: typing_extensions.Annotated[
         bool, FieldMetadata(alias="mustReduce"), pydantic.Field(alias="mustReduce")
     ]
