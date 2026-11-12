@@ -544,7 +544,8 @@ uv run python scripts/cloudflare_from_pulumi.py \
   --vault-id sandbox@scripts/vault-keychain-client.py      # or production@…
 ```
 
-then `site.yml`. Steps 2 to 4 of [Before the first run](#before-the-first-run)
+then `site.yml`. With `--vault-id uptime@…`, it writes the uptime server's
+vault alone, from the sandbox's stack ([Set it up](#set-it-up)). Steps 2 to 4 of [Before the first run](#before-the-first-run)
 are then Pulumi's for that environment, the lifecycle and CORS rules
 included, but for the Zero Trust team.
 
@@ -810,24 +811,37 @@ resource. Then:
    Give it a name, `uptime_hostname`, with A and AAAA records that Cloudflare
    does not proxy, so it answers even when Cloudflare does not, and the
    status page its own, `uptime_status_hostname` ([The status
-   page](#the-status-page)).
-2. Make its credentials, which are its own:
+   page](#the-status-page)): the account's Pulumi stack makes the three,
+   once its `peal:uptime` setting names the server's addresses
+   ([`../pulumi`](../pulumi/README.md#the-uptime-server)). Run its
+   `preview --diff`, then `up`.
+2. Its credentials, which are its own:
    - its Telegram bot, and the id of the channel it writes to, which may be
      the one production's alerts go to ([Telegram](#telegram)):
      `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`;
-   - a Cloudflare Access service token for the sandbox's checks (Zero Trust ›
-     Access › Service credentials), valid a year: its client id and secret,
-     shown once, are `SANDBOX_ACCESS_CLIENT_ID` and
-     `SANDBOX_ACCESS_CLIENT_SECRET`, named after the environment. Add a
-     policy with the action Service Auth that includes that token alone,
-     not any service token of the account, to the sandbox's Access
-     application, the one that covers its app, site and docs, and to no
-     other. When the token expires, every check of the sandbox fails at
-     once: refresh it before, which keeps its id and secret.
+   - the Cloudflare Access service token of the sandbox's checks,
+     `SANDBOX_ACCESS_CLIENT_ID` and `SANDBOX_ACCESS_CLIENT_SECRET`, named
+     after the environment. The sandbox's Pulumi stack makes it, valid a
+     year, with a policy with the action Service Auth that includes that
+     token alone, not any service token of the account, on the sandbox's
+     Access application, the one that covers its app, site, docs and short
+     links, and no other. Run the sandbox stack's `preview --diff`, then
+     `up`. When the token expires, every check of the sandbox fails at
+     once: refresh it before, which keeps its id and secret
+     ([`../pulumi`](../pulumi/README.md#the-uptime-server)).
 
    Put them in `inventory/group_vars/uptime/vault.yml`, from
-   `inventory/vault.uptime.example.yml` and encrypted like the others, or
-   write them on the server, as `NAME='value'` lines, after step 3 (the
+   `inventory/vault.uptime.example.yml` and encrypted like the others: fill
+   in the Telegram bot's, then let the script write the service token's
+   from the sandbox's stack, naming what it changed, never a value:
+
+   ```sh
+   uv run python scripts/cloudflare_from_pulumi.py --vault-id uptime@scripts/vault-keychain-client.py
+   ```
+
+   Or write them all on the server, as `NAME='value'` lines, after step 3
+   (read the token's with `bun scripts/pulumi.ts environment stack output
+   uptimeAccessToken --show-secrets --stack sandbox` in `../pulumi`; the
    folder is the one `uptime.yml` makes, with the same owner and mode):
 
    ```sh
@@ -907,7 +921,9 @@ dashboard. The uptime Gatus checks the page's certificate hourly, as it
 does `uptime_hostname`'s.
 
 It needs one DNS record in the `peal.social` zone, made before `uptime.yml`
-runs, or Caddy gets no certificate for it:
+runs, or Caddy gets no certificate for it. The account's Pulumi stack
+makes it, `status-cname`, with the server's own (step 1 of [Set it
+up](#set-it-up)):
 
 | Type  | Name     | Content              | Proxy status                         |
 | ----- | -------- | -------------------- | ------------------------------------ |
@@ -978,9 +994,10 @@ in `/srv/uptime`, on the host alone.
 
 1. In the `peal.social` zone, the records of [The status
    page](#the-status-page) and step 1 of [Set it up](#set-it-up), not
-   proxied: `uptime` A to the host's IPv4 address, `uptime` AAAA only if
-   the host has an IPv6 address its Caddy answers on, and `status` CNAME to
-   `uptime.peal.social`.
+   proxied, from the account's Pulumi stack: `uptime` A to the host's IPv4
+   address, `uptime` AAAA only if the host has an IPv6 address its Caddy
+   answers on (leave `peal:uptime.ipv6` unset otherwise), and `status`
+   CNAME to `uptime.peal.social`.
 2. On the host, once: the folder for site files, and the line that imports
    it, at the top level of `/etc/caddy/Caddyfile`, outside any site block.
    When the Caddyfile already imports a folder of site files, set

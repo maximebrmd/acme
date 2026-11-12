@@ -37,4 +37,13 @@ credentials and how to adopt what exists.
   application covers its app, site, docs or short links. Its admin
   application's paths (`adminPaths`) are the Ansible project's
   `peal_access_paths`: change both together.
+- The uptime server's part (README.md, "The uptime server"): its records
+  in the account's stack, from the optional `peal:uptime` setting, never
+  proxied, its addresses a secret setting and secret in the state, so no
+  server's address is in Git in clear; the sandbox's service token for its
+  checks, let into `access-app` alone by a Service Auth policy that
+  includes that token alone, after the owner's. Production has none: its
+  checks are public. The token's client id and secret reach the uptime
+  server's vault through `scripts/cloudflare_from_pulumi.py --vault-id
+  uptime@…`.
 - Pin `@pulumi/pulumi` and `@pulumi/cloudflare` exactly, as everything else.

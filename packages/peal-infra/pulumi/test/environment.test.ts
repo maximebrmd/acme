@@ -108,7 +108,13 @@ describe("the sandbox at Cloudflare", () => {
         PoliciesSchema
       );
 
-    for (const name of ["access-app", "access-grafana", "access-ssh"]) {
+    // The app's second policy is the uptime server's, below.
+    expect(policyOf("access-app")[0]).toStrictEqual({
+      id: "owner-policy",
+      precedence: 1,
+    });
+
+    for (const name of ["access-grafana", "access-ssh"]) {
       expect(policyOf(name)).toStrictEqual([
         { id: "owner-policy", precedence: 1 },
       ]);
@@ -141,6 +147,83 @@ describe("the sandbox at Cloudflare", () => {
       { type: "public", uri: "sandbox.example.test/api/auth/stripe/webhook" },
       { type: "public", uri: "sandbox.example.test/api/data-deletion" },
     ]);
+  });
+
+  it("lets the uptime server's checks into the app, the site and the docs alone", async () => {
+    await valueOf(pulumi.output(result.accessAud));
+
+    const applications = ofType(
+      "cloudflare:index/zeroTrustAccessApplication:ZeroTrustAccessApplication"
+    );
+
+    const app = applications.find(
+      (application) => application.name === "access-app"
+    );
+
+    // The owner's policy first, as before: adding the second updates the
+    // application in place, whose name and destinations stay.
+    expect(input(app, "policies", PoliciesSchema)).toStrictEqual([
+      { id: "owner-policy", precedence: 1 },
+      { id: "uptime-service-auth-id", precedence: 2 },
+    ]);
+    expect(app?.inputs).toMatchObject({
+      domain: "sandbox.example.test",
+      name: "Peal sandbox",
+    });
+
+    for (const application of applications.filter(
+      (other) => other.name !== "access-app"
+    )) {
+      expect(
+        input(application, "policies", PoliciesSchema).map(
+          (policy) => policy.id
+        )
+      ).not.toContain("uptime-service-auth-id");
+    }
+
+    // Service Auth, for the one token, by its id: never any service token.
+    const policies = ofType(
+      "cloudflare:index/zeroTrustAccessPolicy:ZeroTrustAccessPolicy"
+    );
+
+    expect(policies.map((policy) => policy.name)).toStrictEqual([
+      "uptime-service-auth",
+    ]);
+    expect(policies[0]?.inputs).toMatchObject({
+      decision: "non_identity",
+      includes: [{ serviceToken: { tokenId: "uptime-token-id" } }],
+    });
+
+    const tokens = ofType(
+      "cloudflare:index/zeroTrustAccessServiceToken:ZeroTrustAccessServiceToken"
+    );
+
+    expect(tokens.map((token) => token.inputs)).toStrictEqual([
+      {
+        accountId: "account-synthetic",
+        duration: "8760h",
+        name: "Peal sandbox uptime checks",
+      },
+    ]);
+  });
+
+  it("gives the uptime server's token as secrets", async () => {
+    const { uptimeAccessToken } = result;
+    expect(uptimeAccessToken).toBeDefined();
+
+    const token = uptimeAccessToken ?? {
+      clientId: pulumi.output(""),
+      clientSecret: pulumi.output(""),
+    };
+
+    await expect(valueOf(token.clientId)).resolves.toBe(
+      "uptime-token-client-id.access"
+    );
+    await expect(valueOf(token.clientSecret)).resolves.toBe(
+      "uptime-token-client-secret-synthetic"
+    );
+    await expect(pulumi.isSecret(token.clientId)).resolves.toBeTruthy();
+    await expect(pulumi.isSecret(token.clientSecret)).resolves.toBeTruthy();
   });
 
   it("keeps the buckets in the EU, and never expires a backup", async () => {

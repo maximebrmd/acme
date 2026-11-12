@@ -13,10 +13,11 @@ uptime_credentials:
   # be the one production's Grafana writes to.
   TELEGRAM_BOT_TOKEN: REPLACE
   TELEGRAM_CHAT_ID: REPLACE
-  # A Cloudflare Access service token (Zero Trust › Access › Service
-  # credentials), which the sandbox's Access application lets in with a
-  # Service Auth policy for that token alone: its client id, which ends in
-  # .access, and its secret, shown once. The names follow the environment's
+  # The Cloudflare Access service token the sandbox's Pulumi stack makes,
+  # which the sandbox's Access application lets in with a Service Auth
+  # policy for that token alone: its client id, which ends in .access, and
+  # its secret. scripts/cloudflare_from_pulumi.py --vault-id uptime@… writes
+  # both from the stack. The names follow the environment's
   # (uptime_environments), in upper case. It lasts a year: refresh it before
   # it ends, or every check of the sandbox fails.
   SANDBOX_ACCESS_CLIENT_ID: REPLACE

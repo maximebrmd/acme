@@ -51,4 +51,15 @@ describe("what the account shares", () => {
       "sandbox@example.test",
     ]);
   });
+
+  it("makes no record of the uptime server without its setting", async () => {
+    await valueOf(result.ownerPolicyId);
+
+    expect(result.uptimeRecords).toStrictEqual([]);
+    expect(
+      made.filter(
+        (resource) => resource.type === "cloudflare:index/dnsRecord:DnsRecord"
+      )
+    ).toStrictEqual([]);
+  });
 });

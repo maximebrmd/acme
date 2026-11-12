@@ -74,7 +74,11 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   (production; never one behind Access), with no alert or secret, and
   hides URLs, conditions and errors; Caddy serves it by GET and HEAD alone
   (`status.caddy`), and the heartbeats never go through its name. Both names have DNS
-  records Cloudflare does not proxy (the infra README's "The status page").
+  records Cloudflare does not proxy (the infra README's "The status page"),
+  which the account's Pulumi stack makes; the sandbox's Pulumi stack makes
+  the service token its checks of the sandbox carry, and
+  `scripts/cloudflare_from_pulumi.py --vault-id uptime@…` writes it into
+  `group_vars/uptime/vault.yml`, and nothing else of a stack.
 - The uptime server may be a host the owner uses for other sites
   (`uptime_shared_host: true`, in its Git-ignored `local.yml`): `uptime.yml`
   skips every task of `system`, `ssh`, `docker` and `firewall` there, and
