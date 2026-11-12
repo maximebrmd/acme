@@ -595,4 +595,37 @@ describe("Facebook Pages' comments", () => {
         );
       }).pipe(Effect.scoped)
   );
+
+  it.effect(
+    "stops reading once Meta says half the account's calls are used, for publishing",
+    () =>
+      Effect.gen(function* budget() {
+        const { account, graph, platform } = yield* onGraph();
+        const second = `${facebookPageId}_1002`;
+
+        graph.script.push(`GET /v27.0/${postId}/comments`, [
+          json({ data: [] }, 200, {
+            "x-business-use-case-usage": JSON.stringify({
+              [facebookPageId]: [{ call_count: 55, type: "pages" }],
+            }),
+          }),
+        ]);
+
+        const batch = yield* platform.read(account, [
+          ...toRead,
+          {
+            platformPostId: PlatformPostIdSchema.make(second),
+            threadId: threadId(2),
+          },
+        ]);
+
+        // The first thread was read; the second waits with the rest.
+        assert.isTrue(batch.halted);
+        assert.deepStrictEqual(
+          batch.readings.map(({ _tag, threadId: id }) => [_tag, id]),
+          [["read", threadId(1)]]
+        );
+        assert.lengthOf(graph.requests(), 1);
+      }).pipe(Effect.scoped)
+  );
 });

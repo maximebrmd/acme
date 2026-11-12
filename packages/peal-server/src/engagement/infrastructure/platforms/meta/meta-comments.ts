@@ -14,6 +14,7 @@ import type {
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import { graphRefusalOf } from "#shared/infrastructure/platforms/graph-refusal.ts";
 import type { GraphRefusal } from "#shared/infrastructure/platforms/graph-refusal.ts";
+import { graphUsageOf } from "#shared/infrastructure/platforms/graph-usage.ts";
 import {
   appSecretProof,
   graphUrl,
@@ -45,6 +46,21 @@ export interface MetaEngagementOptions {
 
 /** How long a read keeps the channel's gate unless told. */
 export const defaultDeadline = Duration.seconds(30);
+
+/**
+ * The share of Meta's rate limits (its usage headers, as a percentage)
+ * past which a read stops for the run: the Page's or account's calls are
+ * shared with its publishing, which keeps the rest. The threads left wait
+ * half an hour, as when Meta asks to slow down.
+ */
+export const commentsUsageCeiling = 50;
+
+/** Whether an answer says the account's calls are past `commentsUsageCeiling`. */
+export const pastUsageCeiling = (response: Response.HttpClientResponse) =>
+  Option.exists(
+    graphUsageOf(response.headers),
+    ({ highestPercent }) => highestPercent >= commentsUsageCeiling
+  );
 
 /** The comments one page of a read asks for. */
 export const commentsPerPage = 25;

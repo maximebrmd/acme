@@ -48,6 +48,7 @@ import {
   notDone,
   pageAfter,
   PagingSchema,
+  pastUsageCeiling,
   requestsWith,
   unanswered,
   undecided,
@@ -456,6 +457,23 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
         const repliesWhole = listed.whole;
 
         after = nextCursor(page.value.body.paging);
+
+        // Past the share of Meta's limits a read may use, the read stops
+        // with what it has, and the batch with it.
+        if (pastUsageCeiling(response)) {
+          const halt: Step = {
+            _tag: "halt",
+            reading: Option.some({
+              _tag: "read",
+              comments,
+              complete:
+                page.value.whole && Option.isNone(after) && listed.whole,
+              threadId: thread.threadId,
+            }),
+          };
+
+          return halt;
+        }
 
         // Every comment was read only when every page came whole.
         if (page.value.whole && repliesWhole && Option.isNone(after)) {
