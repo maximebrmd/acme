@@ -33,6 +33,14 @@ import {
   QueueReshuffleSchema,
   TargetConfirmationSchema,
   TikTokAccountSchema,
+  CalendarDaySchema,
+  maxOccurrences,
+  maxRecyclingInterval,
+  maxRecyclingVariants,
+  minOccurrences,
+  RecyclingIntervalSchema,
+  RecyclingRuleSchema,
+  RecyclingVariantSchema,
 } from "peal-contract";
 
 import { changing, reading } from "#app/mcp/annotations.ts";
@@ -337,7 +345,7 @@ const waitsForOutcome = `It answers while the post publishes, unless \`waitSecon
 
 export const ListPosts = Tool.make("list_posts", {
   dependencies: [CurrentMember],
-  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application), \`authorId\`, \`tagId\` (the posts filed under that tag), \`queueId\` (the posts that queue placed) and \`removed\` (the posts removed from a channel's platform, or from none). \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
+  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application), \`authorId\`, \`tagId\` (the posts filed under that tag), \`queueId\` (the posts that queue placed), \`recyclingId\` (the posts that recycling rule made) and \`removed\` (the posts removed from a channel's platform, or from none). \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     authorId: Schema.optionalKey(Schema.String),
@@ -356,6 +364,12 @@ export const ListPosts = Tool.make("list_posts", {
       Schema.String.annotate({
         description:
           "Only the posts this queue placed, as list_queues answers its id.",
+      })
+    ),
+    recyclingId: Schema.optionalKey(
+      Schema.String.annotate({
+        description:
+          "Only the posts this recycling rule made, as list_recycling_rules answers its id.",
       })
     ),
     removed: Schema.optionalKey(
@@ -577,6 +591,87 @@ export const AwaitPost = Tool.make("await_post", {
   .annotateMerge(reading)
   .annotate(Tool.Title, "Wait for a post's outcome");
 
+const variants = Schema.Array(RecyclingVariantSchema)
+  .check(Schema.isMaxLength(maxRecyclingVariants))
+  .annotate({
+    description: `Texts the posts say instead of the source's, in turn after it: each replaces the first part's text and, given \`overrides\`, its texts on some channels; media, later parts and options stay the source's. ${String(maxRecyclingVariants)} at most, each checked as the source saying it would be. Platforms may refuse the same text published twice: variants are for that.`,
+  });
+
+const ruleCount = Schema.Int.check(
+  Schema.isBetween({ maximum: maxOccurrences, minimum: minOccurrences })
+).annotate({
+  description: `How many posts in all, the source counted: ${String(minOccurrences)} to ${String(maxOccurrences)}. Left out, at most ${String(maxOccurrences)}.`,
+});
+
+const ruleUntil = CalendarDaySchema.annotate({
+  description:
+    "The last day a post is made for, as YYYY-MM-DD in the source's time zone.",
+});
+
+const repeatsInPublic =
+  "It publishes again, in public, on the source's channels, without anyone being asked each time (unless the workspace's approvals hold the starter's posts: then each waits for an approval), until it ends or stop_recycling_rule stops it.";
+
+export const RecyclePost = Tool.make("recycle_post", {
+  dependencies: [CurrentMember],
+  description: `Makes a post repeat: a recycling rule makes a new post from it every \`every\` (1 to ${String(maxRecyclingInterval.days)} days, ${String(maxRecyclingInterval.weeks)} weeks or ${String(maxRecyclingInterval.months)} months), at the same wall-clock time in its zone or on a queue's first free slot from then (\`queueId\`), until \`count\` posts or the day \`until\`. The post must be scheduled, publishing or already out; one rule at a time repeats it. Each new post is copied from the source with what the workspace still has, checked and sent as any post, and acts as you, with what you may do when it is made. ${repeatsInPublic} Do it only when the user asked for this post to repeat. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    count: Schema.optionalKey(ruleCount),
+    every: RecyclingIntervalSchema,
+    postId,
+    queueId: Schema.optionalKey(
+      Schema.String.annotate({
+        description:
+          "A queue the posts take the first free slot of, from each due time, as list_queues answers its id.",
+      })
+    ),
+    until: Schema.optionalKey(ruleUntil),
+    variants: Schema.optionalKey(variants),
+  }),
+  success: RecyclingRuleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Make a post repeat");
+
+const recyclingRuleId = Schema.String.annotate({
+  description: "The recycling rule's id, as list_recycling_rules answers it.",
+});
+
+export const UpdateRecyclingRule = Tool.make("update_recycling_rule", {
+  dependencies: [CurrentMember],
+  description: `Changes a recycling rule: its \`variants\` (all replaced), its \`count\` or \`until\` (null takes it away), or pauses it (\`paused\` true) or sets it going again (false). What is left out stays; posts it made keep what they say. An ended rule changes no more: resume_recycling_rule. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    count: Schema.optionalKey(Schema.NullOr(ruleCount)),
+    paused: Schema.optionalKey(Schema.Boolean),
+    ruleId: recyclingRuleId,
+    until: Schema.optionalKey(Schema.NullOr(ruleUntil)),
+    variants: Schema.optionalKey(variants),
+  }),
+  success: RecyclingRuleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: true })
+  )
+  .annotate(Tool.Title, "Update a recycling rule");
+
+export const ResumeRecyclingRule = Tool.make("resume_recycling_rule", {
+  dependencies: [CurrentMember],
+  description: `Sets a paused recycling rule going again, or one that ended for a reason that can be put right (\`planLimit\`, \`contentRejected\` with other \`variants\`, \`noChannels\`, \`queueFull\`): its next post is due at the first due time from now. ${repeatsInPublic} ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    ruleId: recyclingRuleId,
+    variants: Schema.optionalKey(variants),
+  }),
+  success: RecyclingRuleSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: true })
+  )
+  .annotate(Tool.Title, "Resume a recycling rule");
+
 /** The tools that read and change the workspace's posts. */
 export const PostTools = Toolkit.make(
   ListDrafts,
@@ -602,5 +697,8 @@ export const PostTools = Toolkit.make(
   RepostTarget,
   ConfirmTarget,
   UnpublishPost,
-  ListPostChanges
+  ListPostChanges,
+  RecyclePost,
+  UpdateRecyclingRule,
+  ResumeRecyclingRule
 );
