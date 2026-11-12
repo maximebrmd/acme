@@ -12,7 +12,7 @@
   allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `tags`, `signatures`, `sets`, `queues`, `media`, `approvals`,
+  `post`, `tags`, `signatures`, `sets`, `queues`, `recycling`, `media`, `approvals`,
   `review`, `analytics`, `inbox`, `billing`, `usage`, `members`,
   `invitations`, `webhooks` and `ads`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
@@ -106,6 +106,11 @@
   `queues.reshuffle` and says why it stopped (`reshuffleLines`). The
   studio's queues are in `test/studio-queues.ts`, built over what
   `studio.ts` hands them.
+- `peal recycling` (list, show, start, update, pause, resume, end) keeps
+  the rules that repeat posts (`--every 2w`, `intervalOf`; `--count`,
+  `--until`, `--variant` repeated, `--queue`), and `peal posts list
+  --recycling` lists a rule's posts. The studio's rules are in
+  `test/studio-recycling.ts`.
 - `peal channels rename`, `disable` and `enable`
   (`commands/channel-settings.ts`) name a channel and turn it off or back
   on, and `peal posts duplicate` makes a draft of a post, reading it first

@@ -469,6 +469,23 @@ Enregistrer les créneaux d’une file ne déplace aucune publication. `POST …
 
 `remaining` compte les publications pas encore placées quand le déplacement s’est arrêté, et `stoppedBy` dit pourquoi : `planLimit` (un mois sans place), `full` (plus de créneau dans les 366 jours) ou `changed` (la file a été enregistrée, ou une publication y a été ajoutée sur un créneau pas encore atteint, entre-temps). Rappelez-le pour continuer ; appelé deux fois, le second appel ne déplace rien. Une file sans créneau répond 409 `queue_has_no_room` (`noSlots`).
 
+## Répéter une publication [#recycling]
+
+`POST …/recycling`, avec `{ "postId", "every": { "count", "unit" }, "count"?, "until"?, "variants"?, "queueId"? }`, répète une publication programmée, en cours d’envoi ou en ligne ([comment](/scheduling#recycling)) : `unit` vaut `days` (1 à 365), `weeks` (1 à 52) ou `months` (1 à 12) ; `count` est le nombre de publications en tout, la source comprise (2 à 100) ; `until` le dernier jour, en `YYYY-MM-DD` dans le fuseau de la source ; chaque variante est `{ "text", "overrides"? }`, 10 au plus. La réponse 201 donne la règle, dont `coming` liste les trois prochaines publications et la variante de chacune. Lancer, modifier, mettre en pause, reprendre et arrêter une règle demande post:schedule (ou post:create là où les publications attendent une approbation, pour la lancer), jamais un membre du personnel agissant comme un membre ; la lire, post:read.
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"postId": "'$POST_ID'", "every": {"count": 2, "unit": "weeks"}, "count": 6, "variants": [{"text": "Ouvert tout l’été, comme avant."}]}'
+```
+
+`GET …/recycling` liste les règles, de la plus ancienne à la plus récente (`status`, `limit`, `cursor`), `GET …/recycling/{ruleId}` en lit une, `PATCH` change ses `variants`, son `count` ou son `until` (null les retire) ou la met en pause (`paused`), `POST …/recycling/{ruleId}/resume` avec `{ "variants"? }` relance une règle en pause, ou terminée pour `planLimit`, `contentRejected`, `noChannels` ou `queueFull`, et `DELETE` l’arrête : les publications créées restent. Chaque publication créée par une règle porte `recyclingId` et `occurrence` (sa place, la source étant 1), et `GET …/posts/search?recyclingId=…` les liste. Chacune agit au nom de qui a lancé la règle, tel qu’il est alors : la règle d’une clé s’arrête une fois la clé révoquée.
+
+- Une publication qui ne peut pas se répéter répond 409 `post_not_recyclable`, avec `reason` : `draft`, `awaitingApproval`, `cancelled`, `repeating` (une autre règle la répète), `occurrence` (une règle l’a créée) ou `noChannels`.
+- Des variantes qui enfreignent les règles des canaux de la source répondent 422 `recycling_variants_invalid`, chacune par sa place à partir de 1 avec ses violations ; une fin qui ne laisse aucune publication à créer, 422 `recycling_ends_too_soon`.
+- 100 règles en cours répondent 409 `too_many_recycling_rules` ; une modification d’une règle terminée, 409 `recycling_rule_ended`.
+
 ## Dépublier une publication [#unpublish]
 
 `POST …/posts/{postId}/targets/{targetId}/unpublish` supprime une publication partie de la plateforme d’un canal, pour tout le monde, toutes les parties d’un fil, la dernière d’abord ([Dépublier une publication](/scheduling#unpublish)) ; `POST …/posts/{postId}/unpublish` le demande pour chaque canal de la publication, et répond le changement de chaque canal (`changes`) à côté de la raison pour laquelle les autres n’ont pas pu l’être (`refused`) : un canal qui ne peut pas ne fait jamais échouer toute la requête. Les deux demandent post:publish, et un client OAuth le scope `workspace:publish`. C’est définitif.

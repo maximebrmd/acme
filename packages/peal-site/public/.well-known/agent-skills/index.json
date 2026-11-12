@@ -3,7 +3,7 @@
   "skills": [
     {
       "description": "Draft, schedule and publish social media posts through a Peal server, with the peal command line or its HTTP API, and read how they went. Use when a task writes, schedules, publishes, moves, cancels or checks posts in Peal, uploads media to it, reads its analytics, ad accounts or activity log, boosts a published post as an ad, or sets up a script or an agent that does. Covers signing in or using a workspace API key, finding channel and media ids, idempotent sending, reading outcomes, errors and rate limits.",
-      "digest": "sha256:95e724af59f325830d45cbe90fa25b9ef86232a15ebfc37fdd050d862763f85f",
+      "digest": "sha256:4c9216ed76501c19de2d3b752edd80eedcf84e03a2d389e0e7a4bf88bdade8ef",
       "name": "peal",
       "type": "skill-md",
       "url": "/.well-known/agent-skills/peal/SKILL.md"
