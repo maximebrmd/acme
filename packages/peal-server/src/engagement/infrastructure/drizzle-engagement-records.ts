@@ -105,7 +105,61 @@ export const DrizzleEngagementRecords = Layer.effect(
         .where(and(eq(threads.targetId, targetId), isNull(threads.endedAt)))
         .pipe(Effect.asVoid, Effect.mapError(failed));
 
+    // Each bounded thread of the channel is taken first, as every writer
+    // of a thread's comments takes it; its comments then keep their ids
+    // and nothing their authors wrote or are, as `expireComment` leaves
+    // them, and its counts follow.
+    const channelGone = Effect.fn("EngagementRecords.channelGone")(
+      function* channelGone(channelId: string, at: DateTime.Utc) {
+        const instant = DateTime.formatIso(at);
+
+        yield* sql
+          .withTransaction(
+            Effect.gen(function* forgetting() {
+              const held = yield* sql<{ readonly id: string }>`
+                SELECT id FROM engagement.threads
+                WHERE channel_id = ${channelId}::uuid
+                  AND refresh_by IS NOT NULL
+                ORDER BY id
+                FOR UPDATE
+              `;
+
+              if (held.length === 0) {
+                return;
+              }
+
+              const ids = held.map(({ id }) => id).join(",");
+
+              yield* sql`
+                UPDATE engagement.comments
+                SET text = '',
+                    author_platform_id = NULL,
+                    author_handle = NULL,
+                    author_display_name = NULL,
+                    permalink = NULL,
+                    liked = false,
+                    state = 'deleted',
+                    expired_at = ${instant}::timestamptz
+                WHERE thread_id = ANY(string_to_array(${ids}, ',')::uuid[])
+                  AND state <> 'deleted'
+              `;
+
+              yield* sql`
+                UPDATE engagement.threads
+                SET comment_count = 0,
+                    unanswered_count = 0,
+                    last_comment_at = NULL,
+                    refresh_by = NULL
+                WHERE id = ANY(string_to_array(${ids}, ',')::uuid[])
+              `;
+            })
+          )
+          .pipe(Effect.mapError(failed));
+      }
+    );
+
     return EngagementRecords.of({
+      channelGone,
       eraseWorkspace,
       exportUser,
       forgetUser,

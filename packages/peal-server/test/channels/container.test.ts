@@ -5,6 +5,7 @@ import { Base64Url } from "effect/encoding";
 import { Dns } from "effect/net";
 
 import { DrizzleAnalyticsRecords } from "#analytics/infrastructure/drizzle-analytics-records.ts";
+import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ConnectLinkJournal } from "#channels/application/connect-link-journal.ts";
@@ -45,7 +46,8 @@ const Neighbours = Layer.mergeAll(
   UnmeteredTest,
   PartnerOwnership.layerNone,
   ConnectLinkJournal.none,
-  DrizzleAnalyticsRecords.pipe(Layer.provide(DatabaseTest))
+  DrizzleAnalyticsRecords.pipe(Layer.provide(DatabaseTest)),
+  DrizzleEngagementRecords.pipe(Layer.provide(DatabaseTest))
 );
 
 // The channels context as the server builds it, with these settings. A blank

@@ -11,6 +11,7 @@ import {
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
+import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
 import { CommentIdSchema } from "#engagement/domain/comment-id.ts";
@@ -20,6 +21,7 @@ import { writeReply } from "#engagement/domain/reply.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { followPost, recordCollection } from "#engagement/domain/thread.ts";
 import type { Thread } from "#engagement/domain/thread.ts";
+import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
@@ -64,7 +66,9 @@ const SqlTransactions = Layer.effect(
 );
 
 const PurgeTest = PurgeEngagement.layer.pipe(
-  Layer.provideMerge(DrizzleEngagementStore),
+  Layer.provideMerge(
+    Layer.merge(DrizzleEngagementStore, DrizzleEngagementRecords)
+  ),
   Layer.provideMerge(SqlTransactions),
   Layer.provideMerge(DatabaseTest)
 );
@@ -300,6 +304,108 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
             })),
             [{ state: "answered", text: "Comment 1" }]
           );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      }),
+    { timeout: 20_000 }
+  );
+
+  it.effect(
+    "forgets at once what a disconnected channel's bounded threads hold, and nothing else",
+    () =>
+      Effect.gen(function* disconnected() {
+        yield* TestClock.setTime(
+          DateTime.toEpochMillis(utc("1923-04-01T09:00:00.000Z"))
+        );
+
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* EngagementStore;
+        const records = yield* EngagementRecords;
+        const channelId = yield* newId(ChannelIdSchema);
+        const otherChannel = yield* newId(ChannelIdSchema);
+
+        const bounded = yield* threadOn(
+          workspaceId,
+          channelId,
+          "1923-04-01T10:00:00.000Z"
+        );
+
+        const unbounded = yield* threadOn(
+          workspaceId,
+          channelId,
+          "1923-04-01T10:00:00.000Z"
+        );
+
+        const elsewhere = yield* threadOn(
+          workspaceId,
+          otherChannel,
+          "1923-04-01T10:00:00.000Z"
+        );
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([bounded, unbounded, elsewhere]);
+
+          const first = yield* commentOn(bounded, 1);
+
+          yield* store.saveComments([
+            first,
+            yield* commentOn(unbounded, 2),
+            yield* commentOn(elsewhere, 3),
+          ]);
+          yield* store.saveCollections([
+            readAt(bounded, "1923-04-01T10:10:00.000Z", Option.some(day)),
+            readAt(unbounded, "1923-04-01T10:10:00.000Z", Option.none()),
+            readAt(elsewhere, "1923-04-01T10:10:00.000Z", Option.some(day)),
+          ]);
+
+          const reply = writeReply(
+            yield* newId(ReplyIdSchema),
+            first,
+            Option.none(),
+            "Thank you, synthetic reader!",
+            utc("1923-04-01T10:15:00.000Z")
+          );
+
+          yield* store.journalReply(reply, Option.none());
+          yield* records.channelGone(
+            channelId,
+            utc("1923-04-01T11:00:00.000Z")
+          );
+
+          const forgotten = yield* store.commentsOf(bounded.id);
+
+          assert.deepStrictEqual(
+            forgotten.map(({ author, expiredAt, state, text }) => ({
+              author: Option.isSome(author),
+              expiredAt,
+              state,
+              text,
+            })),
+            [
+              {
+                author: false,
+                expiredAt: Option.some(utc("1923-04-01T11:00:00.000Z")),
+                state: "deleted",
+                text: "",
+              },
+            ]
+          );
+          assert.strictEqual(
+            Option.getOrUndefined(yield* store.thread(bounded.id))?.comments,
+            0
+          );
+          assert.strictEqual(
+            Option.getOrUndefined(yield* store.reply(reply.id))?.text,
+            "Thank you, synthetic reader!"
+          );
+
+          // A thread its platform does not bound, and another channel's,
+          // keep theirs for their retention.
+          for (const kept of [unbounded, elsewhere]) {
+            assert.deepStrictEqual(
+              (yield* store.commentsOf(kept.id)).map(({ state }) => state),
+              ["new"]
+            );
+          }
         }).pipe(Effect.ensuring(forget(workspaceId)));
       }),
     { timeout: 20_000 }

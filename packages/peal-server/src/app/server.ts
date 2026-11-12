@@ -242,8 +242,10 @@ const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
   // A connect link's connections go to the workspace's activity log.
   Layer.provide(ConnectLinkJournalLive),
-  // A channel gone or back is told to analytics, in its transaction.
+  // A channel gone or back is told to analytics, and a channel gone to
+  // engagement, in its transaction.
   Layer.provide(AnalyticsRecordsLive),
+  Layer.provide(EngagementRecordsLive),
   // Meta's requests about a Facebook user reach their sign-ins to its ad
   // network too, which the ads context holds.
   Layer.provide(AdsPlatformUserGrants),
