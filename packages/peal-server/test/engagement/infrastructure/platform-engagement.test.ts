@@ -30,6 +30,7 @@ import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platfor
 import { youtubeCommentScope } from "#shared/domain/inbox-platform.ts";
 import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
+import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { AccountFailure } from "#test/analytics/access-log.ts";
 import { channelAccessOf } from "#test/analytics/access-log.ts";
@@ -188,6 +189,7 @@ const onServer = Effect.fnUntraced(function* onServer(
             ),
             FetchHttpClient.layer,
             OpenOutboundGuard,
+            KeyedPseudonymsLive,
             Digest.layerWebCrypto,
             Mac.layerWebCrypto.pipe(
               Layer.provideMerge(SecureRandom.layerWebCrypto)

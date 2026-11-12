@@ -14,6 +14,7 @@ import {
 } from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
+import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import { channelAccessOf } from "#test/analytics/access-log.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
@@ -134,6 +135,7 @@ const onLinkedIn = Effect.fnUntraced(function* onLinkedIn(
         channelAccessOf(page, ["li-token-1"]),
         FetchHttpClient.layer,
         OpenOutboundGuard,
+        KeyedPseudonymsLive,
         quota.layer
       )
     )
@@ -504,6 +506,7 @@ describe("LinkedIn pages' comments", () => {
                 channelAccessOf(page, ["li-token-1"]),
                 FetchHttpClient.layer,
                 OpenOutboundGuard,
+                KeyedPseudonymsLive,
                 quota.layer
               )
             )
@@ -517,6 +520,21 @@ describe("LinkedIn pages' comments", () => {
         assert.isFalse((yield* reads(1)).halted);
         assert.isTrue((yield* reads(2)).halted);
         assert.lengthOf(api.requests(), 3);
+
+        // The ledger counts the member under a keyed digest, never by
+        // their identifier.
+        const buckets = [...quota.spent.keys()];
+
+        assert.isTrue(
+          buckets.some((key) =>
+            /^comments:linkedin:member:[0-9a-f]{64}:\d/u.test(key)
+          ),
+          buckets.join(", ")
+        );
+        assert.isFalse(
+          buckets.some((key) => key.includes("syntheticMember1")),
+          buckets.join(", ")
+        );
       }).pipe(Effect.scoped)
   );
 

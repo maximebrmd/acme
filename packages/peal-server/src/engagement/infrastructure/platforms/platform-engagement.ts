@@ -48,6 +48,7 @@ import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platfor
 import type { ChannelId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { InboxPlatformsLive } from "#shared/infrastructure/inbox-platforms.ts";
+import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
 import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
@@ -105,7 +106,8 @@ const notClaimed: SendOutcome = { _tag: "unconfirmed", reason: "interrupted" };
  * (ChannelAccess). Every request goes through the public HTTP client, so
  * the outbound guard checks the servers users chose. Needs the
  * EngagementStore, ChannelAccess, an HttpClient, the OutboundGuard, Digest,
- * Mac, SecureRandom and publishing's PlatformQuota, the server's ledger
+ * Mac, SecureRandom, Pseudonyms (LinkedIn's members, counted under a keyed
+ * digest) and publishing's PlatformQuota, the server's ledger
  * of YouTube's day; Facebook Pages, Instagram and YouTube are read where
  * CurrentInboxPlatforms names them.
  *
@@ -425,6 +427,7 @@ export const PlatformEngagementLive = Layer.unwrap(
   )
 ).pipe(
   Layer.provide(InboxPlatformsLive),
+  Layer.provide(KeyedPseudonymsLive),
   Layer.provide(OutboundGuard.layer),
   Layer.provide(FetchHttpClient.layer),
   Layer.provide(

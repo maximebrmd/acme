@@ -34,6 +34,7 @@ import {
 import type { ListedReply } from "#engagement/infrastructure/platforms/resumed-reply.ts";
 import { threadBodyOf } from "#engagement/infrastructure/platforms/thread-body.ts";
 import { PlatformQuota } from "#publishing/application/platform-quota.ts";
+import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import { connectionOf } from "#shared/domain/channel-connection.ts";
 import { linkedinCommentScopes } from "#shared/domain/inbox-platform.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -348,6 +349,7 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
   function* linkedinEngagement(options: LinkedInEngagementOptions) {
     const access = yield* ChannelAccess;
     const quota = yield* PlatformQuota;
+    const pseudonyms = yield* Pseudonyms;
     const { api, dailyCalls, http, version } = options;
     const reader = options.reader ?? http;
     const deadlineAfter = options.deadline ?? defaultDeadline;
@@ -365,22 +367,34 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
         token
       );
 
-    // A call of the day's reads, of the app's and of the page's, if both
+    // The ledger's bucket of a read's member: a keyed digest of the
+    // member, so the ledger names nobody; the page's own for a page whose
+    // member was not kept.
+    const memberBucketOf = (account: ReadingAccount) =>
+      Option.match(Option.fromUndefinedOr(account.tokenOwner), {
+        onNone: () =>
+          Effect.succeed(`${linkedinCommentsBucket}:page:${account.channelId}`),
+        onSome: (member) =>
+          pseudonyms
+            .ofPlatformMember("linkedin", member)
+            .pipe(
+              Effect.map(
+                (digest) => `${linkedinCommentsBucket}:member:${digest}`
+              )
+            ),
+      });
+
+    // A call of the day's reads, of the app's and of the member's, if both
     // are left: whether it was. The ledger being down reads nothing more.
     const spendCall = (account: ReadingAccount) =>
-      DateTime.now.pipe(
-        Effect.flatMap((now) => {
+      Effect.all({ bucket: memberBucketOf(account), now: DateTime.now }).pipe(
+        Effect.flatMap(({ bucket, now }) => {
           const day = localDateOf(now, utc);
 
           return quota
             .spend({
               allowance: dailyCalls.perMember,
-              bucket: Option.match(Option.fromUndefinedOr(account.tokenOwner), {
-                onNone: () =>
-                  `${linkedinCommentsBucket}:page:${account.channelId}`,
-                onSome: (member) =>
-                  `${linkedinCommentsBucket}:member:${member}`,
-              }),
+              bucket,
               day,
               units: 1,
             })
