@@ -408,6 +408,43 @@ const reasonOf =
         ),
       // The server says what is missing and how to get it; one older than
       // that says nothing.
+      FeedAddressRefused: ({ reason }) =>
+        refused(
+          `Peal does not read this address: ${
+            {
+              credentials: "it carries a user name or a password",
+              malformed:
+                "it is not an address, or is longer than 2048 characters",
+              notHttps: "Peal reads HTTPS addresses on the default port only",
+              notPublic: "its host is not on the public internet",
+            }[reason]
+          }. Nothing was changed.`
+        ),
+      FeedNotFound: () =>
+        refused(
+          "The workspace follows no such feed: peal feeds list shows them."
+        ),
+      FeedReadsLimited: ({ retryAfterSeconds }) =>
+        refused(
+          `The workspace had Peal read 30 addresses this hour, the most it may: try again in ${String(retryAfterSeconds)} seconds. Nothing was changed.`
+        ),
+      FeedTemplateInvalid: ({ placeholder, reason }) =>
+        refused(
+          reason === "unknownPlaceholder"
+            ? `The template names {${placeholder ?? ""}}: only {title}, {link} and {summary} are replaced. Nothing was changed.`
+            : `The template is ${reason === "empty" ? "empty" : "longer than 1000 characters"}. Nothing was changed.`
+        ),
+      FeedUnreadable: ({ reason }) =>
+        refused(
+          `Peal read the address and could not take it as a feed: ${
+            {
+              notAFeed:
+                "what it gives is not RSS 2.0, Atom 1.0 or JSON Feed 1.1",
+              tooLarge: "it is larger than the 2 MiB Peal reads",
+              unreachable: "it gave no answer Peal could use",
+            }[reason]
+          }. Nothing was changed.`
+        ),
       Forbidden: ({ message, permission, reason, scope }) => {
         // Nothing the command line does turns it on: the person does, in
         // the web app, and the command works again at once.
@@ -641,6 +678,10 @@ const reasonOf =
       TooManyConnectLinks: ({ allowed }) =>
         refused(
           `The workspace has ${String(allowed)} connect links waiting, the most it may: revoke some with peal links revoke.`
+        ),
+      TooManyFeeds: ({ allowed }) =>
+        refused(
+          `The workspace follows ${String(allowed)} feeds, the most it may: peal feeds remove one first.`
         ),
       TooManyInvitations: () =>
         refused(
