@@ -38,8 +38,12 @@ layer(Test)("the posts the inbox follows", (it) => {
             2
           );
 
+          // The listing is every workspace's: a page goes on to the posts
+          // other suites write after this one's day, at the same time.
           assert.deepStrictEqual(
-            page.map(({ targetId }) => targetId),
+            page
+              .filter(({ workspaceId }) => workspaceId === written.workspaceId)
+              .map(({ targetId }) => targetId),
             [written.feed]
           );
         }).pipe(Effect.ensuring(deletePublished(written.postId)));
