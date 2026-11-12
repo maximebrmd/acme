@@ -8,15 +8,15 @@ Date d’entrée en vigueur : [Date]
 
 ## À propos de cette politique
 
-Cette politique explique comment [Nom de l’entité juridique] (« nous ») traite les données personnelles lorsque vous utilisez le service Peal hébergé à l’adresse app.peal.social et ce site. Elle suit les exigences de transparence du règlement général sur la protection des données (RGPD), articles 13 et 14.
+Cette politique explique comment Maxime Bourmaud EI (« nous ») traite les données personnelles lorsque vous utilisez le service Peal hébergé à l’adresse app.peal.social et ce site. Elle suit les exigences de transparence du règlement général sur la protection des données (RGPD), articles 13 et 14.
 
 Elle ne couvre pas les instances auto-hébergées de Peal. Quiconque exploite une instance auto-hébergée est responsable du traitement de ses données et rédige sa propre politique de confidentialité.
 
 ## Responsable du traitement
 
-- Responsable du traitement : [Nom de l’entité juridique]
-- Adresse : [Adresse du siège]
-- Numéro d’immatriculation : [Numéro d’immatriculation]
+- Responsable du traitement : Maxime Bourmaud EI
+- Adresse : 15 rue Paul Verlaine, 85710 La Garnache, France
+- Numéro d’immatriculation : SIREN 991 631 607
 - Contact confidentialité : privacy@peal.social
 - Délégué à la protection des données : [Nom et coordonnées du délégué, ou mention qu’aucun n’est désigné]
 - Représentant dans l’UE : [Uniquement si le responsable est établi hors de l’UE]
@@ -167,4 +167,4 @@ Vous avez aussi le droit d’introduire une réclamation auprès d’une autorit
 
 ## Contact
 
-privacy@peal.social, [Adresse du siège]
+privacy@peal.social, 15 rue Paul Verlaine, 85710 La Garnache, France

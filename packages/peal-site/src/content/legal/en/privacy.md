@@ -8,15 +8,15 @@ Effective date: [Date]
 
 ## About this policy
 
-This policy explains how [Legal entity name] ("we") processes personal data when you use the hosted Peal service at app.peal.social and this website. It follows the transparency requirements of the EU General Data Protection Regulation (GDPR), Articles 13 and 14.
+This policy explains how Maxime Bourmaud EI ("we") processes personal data when you use the hosted Peal service at app.peal.social and this website. It follows the transparency requirements of the EU General Data Protection Regulation (GDPR), Articles 13 and 14.
 
 It does not cover self-hosted instances of Peal. Whoever runs a self-hosted instance is the controller of the data it processes and is responsible for its own privacy notice.
 
 ## Controller
 
-- Controller: [Legal entity name]
-- Address: [Registered address]
-- Registration number: [Company registration number]
+- Controller: Maxime Bourmaud EI
+- Address: 15 rue Paul Verlaine, 85710 La Garnache, France
+- Registration number: SIREN 991 631 607
 - Privacy contact: privacy@peal.social
 - Data protection officer: [Name and contact of the data protection officer, or a statement that none is appointed]
 - Representative in the EU: [Only if the controller is established outside the EU]
@@ -167,4 +167,4 @@ You also have the right to lodge a complaint with a supervisory authority, in pa
 
 ## Contact
 
-privacy@peal.social, [Registered address]
+privacy@peal.social, 15 rue Paul Verlaine, 85710 La Garnache, France

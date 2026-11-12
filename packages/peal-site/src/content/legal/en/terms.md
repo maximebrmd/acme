@@ -8,7 +8,7 @@ Effective date: [Date]
 
 ## About these terms
 
-These terms govern the use of the hosted Peal service at app.peal.social, provided by [Legal entity name] ("we"), [Registered address], [Company registration number]. [State how the terms are accepted, for example when an account is created.]
+These terms govern the use of the hosted Peal service at app.peal.social, provided by Maxime Bourmaud EI ("we"), 15 rue Paul Verlaine, 85710 La Garnache, France, SIREN 991 631 607. [State how the terms are accepted, for example when an account is created.]
 
 They do not cover the Peal source code. The source code is licensed separately under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), which governs self-hosting, modifying and redistributing it, except for the SDKs and the API contract they are generated from, which are licensed under the Apache License, Version 2.0.
 
@@ -64,7 +64,7 @@ Where an organisation connects an ad account, Peal can read that account's campa
 
 ## Plans, prices and payment
 
-Each organisation is on a plan. The plans, their prices and what each one allows (connected channels, members, posts a month, writing assistant requests a day and media storage) are listed on the [pricing page](/pricing/), and on the organisation's billing page before any order. Prices are in euros and include VAT at France's rate; a consumer in another EU country pays the VAT of their country, which checkout computes before payment, and a business with a valid EU VAT number pays the price excluding VAT, the VAT being reverse-charged. Payments are processed by Stripe. [Legal entity name], [VAT number].
+Each organisation is on a plan. The plans, their prices and what each one allows (connected channels, members, posts a month, writing assistant requests a day and media storage) are listed on the [pricing page](/pricing/), and on the organisation's billing page before any order. Prices are in euros and include VAT at France's rate; a consumer in another EU country pays the VAT of their country, which checkout computes before payment, and a business with a valid EU VAT number pays the price excluding VAT, the VAT being reverse-charged. Payments are processed by Stripe. Maxime Bourmaud EI, [VAT number].
 
 **Free plan.** An organisation without a subscription is on the free plan, with its limits. An account owns one organisation on the free plan at most.
 
@@ -78,13 +78,13 @@ Each organisation is on a plan. The plans, their prices and what each one allows
 
 To make sure a stranger who knows your address cannot end your contract, a request that gives the contract number, or is sent by a member who manages billing while signed in, is applied at once; one that gives neither is applied once you follow the link in the acknowledgement we email you, or once we have made sure it comes from the contract's holder.
 
-**Right of withdrawal.** A consumer has the right to withdraw from the contract within 14 days without giving any reason. The withdrawal period expires 14 days after the day of the conclusion of the contract. To exercise the right of withdrawal, you must inform us ([Legal entity name], [Registered address], [Contact email]) of your decision to withdraw from the contract by an unequivocal statement (for example a letter sent by post or an email). You may use the model withdrawal form below, but it is not obligatory. You can also exercise your right of withdrawal online with "Withdraw from contract here", at the foot of every page of the app and of this site and on the billing page, without signing in, then "Confirm withdrawal". If you use this online function, we will send you an acknowledgement of receipt of the withdrawal on a durable medium (by email), including its content and the date and time of its submission, without undue delay. To meet the withdrawal deadline, it is sufficient for you to send your communication before the withdrawal period has expired.
+**Right of withdrawal.** A consumer has the right to withdraw from the contract within 14 days without giving any reason. The withdrawal period expires 14 days after the day of the conclusion of the contract. To exercise the right of withdrawal, you must inform us (Maxime Bourmaud EI, 15 rue Paul Verlaine, 85710 La Garnache, France, hello@peal.social) of your decision to withdraw from the contract by an unequivocal statement (for example a letter sent by post or an email). You may use the model withdrawal form below, but it is not obligatory. You can also exercise your right of withdrawal online with "Withdraw from contract here", at the foot of every page of the app and of this site and on the billing page, without signing in, then "Confirm withdrawal". If you use this online function, we will send you an acknowledgement of receipt of the withdrawal on a durable medium (by email), including its content and the date and time of its submission, without undue delay. To meet the withdrawal deadline, it is sufficient for you to send your communication before the withdrawal period has expired.
 
 If you withdraw from the contract, we will reimburse all payments received from you, without undue delay and in any event not later than 14 days from the day on which we are informed of your decision to withdraw. We will carry out the reimbursement using the same means of payment as you used for the initial transaction, unless you have expressly agreed otherwise; in any event, you will not incur any fees as a result. As you asked for the service to begin during the withdrawal period, you pay us an amount in proportion to what was provided until you told us of your withdrawal, in comparison with the full coverage of the contract: we refund the rest of what you paid for the period. The right of withdrawal does not apply to a customer acting for business purposes.
 
 Model withdrawal form (complete and return this form only if you wish to withdraw from the contract):
 
-> To [Legal entity name], [Registered address], [Contact email]:
+> To Maxime Bourmaud EI, 15 rue Paul Verlaine, 85710 La Garnache, France, hello@peal.social:
 >
 > I/We (\*) hereby give notice that I/We (\*) withdraw from my/our (\*) contract for the provision of the following service: a Peal subscription.
 >
@@ -160,4 +160,4 @@ The [privacy policy](/privacy/) explains how we process personal data. [The data
 
 ## Contact
 
-[Contact email], [Registered address]
+hello@peal.social, 15 rue Paul Verlaine, 85710 La Garnache, France

@@ -8,7 +8,7 @@ Date d’entrée en vigueur : [Date]
 
 ## À propos de ces conditions
 
-Ces conditions encadrent l’utilisation du service Peal hébergé à l’adresse app.peal.social, fourni par [Nom de l’entité juridique] (« nous »), [Adresse du siège], [Numéro d’immatriculation]. [Indiquer comment les conditions sont acceptées, par exemple à la création d’un compte.]
+Ces conditions encadrent l’utilisation du service Peal hébergé à l’adresse app.peal.social, fourni par Maxime Bourmaud EI (« nous »), 15 rue Paul Verlaine, 85710 La Garnache, France, SIREN 991 631 607. [Indiquer comment les conditions sont acceptées, par exemple à la création d’un compte.]
 
 Elles ne couvrent pas le code source de Peal. Le code source fait l’objet d’une licence distincte, la Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), qui encadre son auto-hébergement, sa modification et sa redistribution, à l’exception des SDK et du contrat de l’API à partir duquel ils sont générés, qui relèvent de la licence Apache, version 2.0.
 
@@ -64,7 +64,7 @@ Lorsqu’une organisation connecte un compte publicitaire, Peal peut lire les ca
 
 ## Offres, prix et paiement
 
-Chaque organisation a un abonnement. Les abonnements, leurs prix et ce que chacun permet (canaux connectés, membres, publications par mois, demandes à l’assistant de rédaction par jour et stockage des médias) figurent sur la [page des tarifs](/fr/pricing/), et sur la page de facturation de l’organisation avant toute commande. Les prix sont en euros, toutes taxes comprises au taux de TVA français ; un consommateur d’un autre pays de l’UE paie la TVA de son pays, calculée au paiement avant qu’il ne règle, et une entreprise disposant d’un numéro de TVA intracommunautaire valide paie le prix hors taxes, la TVA étant autoliquidée. Les paiements sont traités par Stripe. [Nom de l’entité juridique], [Numéro de TVA].
+Chaque organisation a un abonnement. Les abonnements, leurs prix et ce que chacun permet (canaux connectés, membres, publications par mois, demandes à l’assistant de rédaction par jour et stockage des médias) figurent sur la [page des tarifs](/fr/pricing/), et sur la page de facturation de l’organisation avant toute commande. Les prix sont en euros, toutes taxes comprises au taux de TVA français ; un consommateur d’un autre pays de l’UE paie la TVA de son pays, calculée au paiement avant qu’il ne règle, et une entreprise disposant d’un numéro de TVA intracommunautaire valide paie le prix hors taxes, la TVA étant autoliquidée. Les paiements sont traités par Stripe. Maxime Bourmaud EI, [Numéro de TVA].
 
 **Offre gratuite.** Une organisation sans abonnement bénéficie de l’offre gratuite, avec ses limites. Un compte possède au plus une organisation sur l’offre gratuite.
 
@@ -78,13 +78,13 @@ Chaque organisation a un abonnement. Les abonnements, leurs prix et ce que chacu
 
 Pour qu’un tiers qui connaît votre adresse ne puisse pas mettre fin à votre contrat, une demande qui indique le numéro de contrat, ou qu’un membre qui gère la facturation envoie en étant connecté, est appliquée immédiatement ; une demande qui n’indique ni l’un ni l’autre est appliquée une fois que vous avez suivi le lien de l’accusé de réception que nous vous envoyons par e-mail, ou une fois que nous nous sommes assurés qu’elle émane du titulaire du contrat.
 
-**Droit de rétractation.** Un consommateur a le droit de se rétracter du contrat sans donner de motif dans un délai de quatorze jours. Le délai de rétractation expire quatorze jours après le jour de la conclusion du contrat. Pour exercer le droit de rétractation, vous devez nous notifier ([Nom de l’entité juridique], [Adresse du siège], [E-mail de contact]) votre décision de rétractation du contrat au moyen d’une déclaration dénuée d’ambiguïté (par exemple, lettre envoyée par la poste ou courrier électronique). Vous pouvez utiliser le modèle de formulaire de rétractation ci-dessous, mais ce n’est pas obligatoire. Vous pouvez également exercer votre droit de rétractation en ligne avec « Renoncer au contrat ici », au pied de chaque page de l’application et de ce site ainsi que sur la page de facturation, sans vous connecter, puis « Confirmer la rétractation ». Si vous utilisez cette fonctionnalité en ligne, nous vous enverrons, dans les meilleurs délais, un accusé de réception de la rétractation sur un support durable (par courriel), y compris son contenu ainsi que la date et l’heure de sa soumission. Pour que le délai de rétractation soit respecté, il suffit que vous transmettiez votre communication relative à l’exercice du droit de rétractation avant l’expiration du délai de rétractation.
+**Droit de rétractation.** Un consommateur a le droit de se rétracter du contrat sans donner de motif dans un délai de quatorze jours. Le délai de rétractation expire quatorze jours après le jour de la conclusion du contrat. Pour exercer le droit de rétractation, vous devez nous notifier (Maxime Bourmaud EI, 15 rue Paul Verlaine, 85710 La Garnache, France, hello@peal.social) votre décision de rétractation du contrat au moyen d’une déclaration dénuée d’ambiguïté (par exemple, lettre envoyée par la poste ou courrier électronique). Vous pouvez utiliser le modèle de formulaire de rétractation ci-dessous, mais ce n’est pas obligatoire. Vous pouvez également exercer votre droit de rétractation en ligne avec « Renoncer au contrat ici », au pied de chaque page de l’application et de ce site ainsi que sur la page de facturation, sans vous connecter, puis « Confirmer la rétractation ». Si vous utilisez cette fonctionnalité en ligne, nous vous enverrons, dans les meilleurs délais, un accusé de réception de la rétractation sur un support durable (par courriel), y compris son contenu ainsi que la date et l’heure de sa soumission. Pour que le délai de rétractation soit respecté, il suffit que vous transmettiez votre communication relative à l’exercice du droit de rétractation avant l’expiration du délai de rétractation.
 
 En cas de rétractation de votre part, nous vous rembourserons tous les paiements reçus de vous, sans retard excessif et, en tout état de cause, au plus tard quatorze jours à compter du jour où nous sommes informés de votre décision de rétractation. Nous procéderons au remboursement en utilisant le même moyen de paiement que celui que vous aurez utilisé pour la transaction initiale, sauf si vous convenez expressément d’un moyen différent ; en tout état de cause, ce remboursement n’occasionnera pas de frais pour vous. Comme vous avez demandé de commencer la prestation de services pendant le délai de rétractation, vous devrez nous payer un montant proportionnel à ce qui vous a été fourni jusqu’au moment où vous nous avez informés de votre rétractation, par rapport à l’ensemble des prestations prévues par le contrat : nous vous remboursons le reste de ce que vous avez payé pour la période. Le droit de rétractation ne s’applique pas à un client qui agit à des fins professionnelles.
 
 Modèle de formulaire de rétractation (veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous rétracter du contrat) :
 
-> À l’attention de [Nom de l’entité juridique], [Adresse du siège], [E-mail de contact] :
+> À l’attention de Maxime Bourmaud EI, 15 rue Paul Verlaine, 85710 La Garnache, France, hello@peal.social :
 >
 > Je/nous (\*) vous notifie/notifions (\*) par la présente ma/notre (\*) rétractation du contrat pour la prestation de services ci-dessous : un abonnement Peal.
 >
@@ -160,4 +160,4 @@ La [politique de confidentialité](/fr/privacy/) explique comment nous traitons 
 
 ## Contact
 
-[Adresse e-mail de contact], [Adresse du siège]
+hello@peal.social, 15 rue Paul Verlaine, 85710 La Garnache, France
