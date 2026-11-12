@@ -423,8 +423,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`signUpSettings()`, the same answer's `signUp`, `open` when it says
   nothing). By invitation, the sign-up page shows the form only to a
   visitor the invitation page sent (`?invitation=<id>`,
-  `signUpFormShown`), `SignUpByInvitation` otherwise, and the sign-in page
-  hides its link to sign up (`offersSignUp`). The server decides: its
+  `signUpFormShown`), whose form sends the id in `signUpInvitationHeader`
+  (`invitationOf`), `SignUpByInvitation` otherwise, and the sign-in page
+  hides its link to sign up (`offersSignUp`). The server answers `open`
+  while it has no account, so the first one can be made. The server decides: its
   `SIGN_UP_BY_INVITATION` reads from `Auth.errors`.
 - `src/proxy.ts` rewrites `/api/*` and `/.well-known/oauth-*` to
   `PEAL_API_URL`, read per request. Keep it there, not in `next.config.ts`:

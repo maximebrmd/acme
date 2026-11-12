@@ -18,5 +18,10 @@ export const signUpFormShown = (
   invitation: string | readonly string[] | undefined
 ): boolean => mode === "open" || isInvitationId(invitation);
 
+/** The invitation a visitor came from, which their sign-up sends. */
+export const invitationOf = (
+  invitation: string | readonly string[] | undefined
+): string | null => (isInvitationId(invitation) ? invitation : null);
+
 /** Whether the sign-in page links to the sign-up page. */
 export const offersSignUp = (mode: SignUpMode): boolean => mode === "open";

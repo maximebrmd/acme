@@ -1,6 +1,10 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { offersSignUp, signUpFormShown } from "#auth/sign-up-mode.ts";
+import {
+  invitationOf,
+  offersSignUp,
+  signUpFormShown,
+} from "#auth/sign-up-mode.ts";
 
 describe(signUpFormShown, () => {
   it("shows the form to anyone on an open server", () => {
@@ -24,5 +28,16 @@ describe(offersSignUp, () => {
   it("links to the sign-up page only on an open server", () => {
     expect(offersSignUp("open")).toBeTruthy();
     expect(offersSignUp("invitation")).toBeFalsy();
+  });
+});
+
+describe(invitationOf, () => {
+  it("sends the invitation the visitor came from, and nothing else", () => {
+    expect(invitationOf("0190f3a0-0000-7000-8000-00000000e001")).toBe(
+      "0190f3a0-0000-7000-8000-00000000e001"
+    );
+    expect(invitationOf(undefined)).toBeNull();
+    expect(invitationOf("")).toBeNull();
+    expect(invitationOf(["a", "b"])).toBeNull();
   });
 });
