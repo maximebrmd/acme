@@ -36,15 +36,35 @@ export class MeterPartnerUsage extends Context.Service<
 
       const run = Effect.gen(function* run() {
         // The purge runs whatever became of the count, so days past their
-        // time go even on a day the count fails.
+        // time go even on a day the count fails; each step that fails
+        // says so on its own line.
         const counted = yield* Effect.all({
           keys: workspaces.purgeKeys,
           partners: workspaces.meter,
-        }).pipe(Effect.exit);
-
-        const days = yield* partners.purgeUsageBefore(
-          partnerUsageCutoff(yield* DateTime.now)
+        }).pipe(
+          Effect.tapCause((cause) =>
+            Effect.logWarning(
+              "Counting what partner accounts hold failed",
+              cause
+            )
+          ),
+          Effect.exit
         );
+
+        const days = yield* partners
+          .purgeUsageBefore(partnerUsageCutoff(yield* DateTime.now))
+          .pipe(
+            Effect.tapCause((cause) =>
+              Effect.logWarning(
+                "Deleting the partners' daily counts past their days failed",
+                cause
+              )
+            )
+          );
+
+        yield* Effect.logInfo(
+          "Deleted the partners' daily counts past their days"
+        ).pipe(Effect.annotateLogs({ days }));
 
         const done: PartnerUsageRun = { ...(yield* counted), days };
 
