@@ -19,6 +19,8 @@ peal_hostnames:
   docs: sandbox-docs.peal.social
   grafana: sandbox-grafana.peal.social
   ssh: sandbox-ssh.peal.social
+# Short links, behind Access as the rest (its Pulumi stack's shortLinkHost).
+peal_short_link_hostname: sandbox.peal.link
 
 # The audience tags of the sandbox's Access applications (one covers its
 # app, site and docs), its buckets and their endpoints come from its Pulumi
