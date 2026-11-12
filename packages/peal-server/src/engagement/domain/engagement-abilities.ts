@@ -1,5 +1,14 @@
 import { Schema } from "effect";
 
+import {
+  facebookCommentScopes,
+  instagramLoginCommentScope,
+  instagramPageCommentScope,
+} from "#shared/domain/inbox-platform.ts";
+import type {
+  InboxPlatforms,
+  OptionalInboxPlatform,
+} from "#shared/domain/inbox-platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 /**
@@ -58,35 +67,87 @@ const none: EngagementAbilities = {
   withdraw: "unsupported",
 };
 
-/**
- * The abilities whose scopes Peal's sign-in asks for today, on every
- * platform it reads comments on: a channel without them was connected
- * before, and gets them by connecting again. A like and a hidden reply
- * take scopes the sign-ins do not ask for yet (Mastodon's
- * `write:favourites`; Bluesky's `repo:app.bsky.feed.like` and
- * `repo:app.bsky.feed.threadgate`): a channel has them only when its
- * grant happens to hold them, and is `unsupported` otherwise, since
- * reconnecting would change nothing. An ability joins this list in the
- * change that adds its scope to the platform's authorizer.
- */
-export const askedAtSignIn: readonly EngagementAbility[] = [
+// What the sign-ins of Mastodon and Bluesky ask for. A like and a hidden
+// reply take scopes they do not ask for yet (Mastodon's `write:favourites`;
+// Bluesky's `repo:app.bsky.feed.like` and `repo:app.bsky.feed.threadgate`):
+// a channel has them only when its grant happens to hold them, and is
+// `unsupported` otherwise, since reconnecting would change nothing.
+const postingAbilities: readonly EngagementAbility[] = [
   "read",
   "reply",
   "withdraw",
 ];
 
-// Whether the grant holds one of the scopes that allow an ability.
-const granted = (
-  ability: EngagementAbility,
-  scopes: readonly string[],
-  allowing: (scope: string) => boolean
-): AbilityStanding => {
-  if (scopes.some(allowing)) {
-    return "available";
+// What the sign-ins of Facebook Pages and Instagram ask for, as optional
+// scopes, where the server reads them.
+const metaAbilities: readonly EngagementAbility[] = [
+  ...postingAbilities,
+  "hide",
+];
+
+/**
+ * The platforms Peal reads comments on. A platform joins the list with its
+ * reader, in the same change. Facebook Pages and Instagram are read only
+ * where the server's operator turned them on (`PEAL_INBOX_PLATFORMS`,
+ * `InboxPlatforms`).
+ */
+export const engagedPlatforms = [
+  "mastodon",
+  "bluesky",
+  "facebook",
+  "instagram",
+] as const satisfies readonly Platform[];
+
+export type EngagedPlatform = (typeof engagedPlatforms)[number];
+
+export const isEngaged = (platform: Platform): platform is EngagedPlatform =>
+  engagedPlatforms.some((engaged) => engaged === platform);
+
+const isOptional = (platform: Platform): platform is OptionalInboxPlatform =>
+  platform === "facebook" || platform === "instagram";
+
+/**
+ * Whether this server reads comments on `platform`: Mastodon and Bluesky
+ * always, Facebook Pages and Instagram where `inbox` names them.
+ */
+export const readsCommentsOn = (
+  platform: Platform,
+  inbox: InboxPlatforms
+): platform is EngagedPlatform =>
+  isEngaged(platform) && (!isOptional(platform) || inbox.has(platform));
+
+/**
+ * The abilities whose scopes this server's sign-in for `platform` asks
+ * for: a channel without them was connected before, and gets them by
+ * connecting again. None on a platform the server reads no comments on.
+ * An ability joins a platform's list in the change that adds its scope to
+ * the platform's authorizer.
+ */
+export const askedAtSignIn = (
+  platform: Platform,
+  inbox: InboxPlatforms
+): readonly EngagementAbility[] => {
+  if (!readsCommentsOn(platform, inbox)) {
+    return [];
   }
 
-  return askedAtSignIn.includes(ability) ? "reconnect" : "unsupported";
+  return isOptional(platform) ? metaAbilities : postingAbilities;
 };
+
+// Whether the grant holds one of the scopes that allow an ability.
+const grantedOn =
+  (asked: readonly EngagementAbility[]) =>
+  (
+    ability: EngagementAbility,
+    scopes: readonly string[],
+    allowing: (scope: string) => boolean
+  ): AbilityStanding => {
+    if (scopes.some(allowing)) {
+      return "available";
+    }
+
+    return asked.includes(ability) ? "reconnect" : "unsupported";
+  };
 
 const oneOf =
   (...names: readonly string[]) =>
@@ -101,22 +162,8 @@ const repo = (collection: string) => (scope: string) =>
   scope.startsWith(`repo:${collection}?`);
 
 /**
- * The platforms Peal reads comments on. A platform joins the list with its
- * reader, in the same change.
- */
-export const engagedPlatforms = [
-  "mastodon",
-  "bluesky",
-] as const satisfies readonly Platform[];
-
-export type EngagedPlatform = (typeof engagedPlatforms)[number];
-
-export const isEngaged = (platform: Platform): platform is EngagedPlatform =>
-  engagedPlatforms.some((engaged) => engaged === platform);
-
-/**
- * What a channel can do, from its platform and the scopes its account
- * granted:
+ * What a channel can do, from its platform, the scopes its account
+ * granted, and the optional platforms the server reads (`inbox`):
  *
  * - Mastodon: replies to a public status are read without a token; a
  *   reply is a status (`write:statuses`), which its author can delete; a
@@ -126,11 +173,27 @@ export const isEngaged = (platform: Platform): platform is EngagedPlatform =>
  *   record the account creates and deletes; a like is a record of its
  *   own, and hiding a reply writes the post's thread gate, each with its
  *   own permission. Nobody deletes another account's record.
+ * - Facebook Pages: comments are read with `pages_read_user_content`;
+ *   answering, withdrawing an answer and hiding a comment take
+ *   `pages_manage_engagement`. Likes and deleting someone's comment are
+ *   not done yet.
+ * - Instagram: reading, answering, withdrawing and hiding take the
+ *   comments permission of the account's way in
+ *   (`instagram_manage_comments` through a Page,
+ *   `instagram_business_manage_comments` through Instagram Login). The API
+ *   has no like; deleting someone's comment is not done yet.
  */
 export const abilitiesOf = (
   platform: Platform,
-  scopes: readonly string[]
+  scopes: readonly string[],
+  inbox: InboxPlatforms
 ): EngagementAbilities => {
+  if (!readsCommentsOn(platform, inbox)) {
+    return none;
+  }
+
+  const granted = grantedOn(askedAtSignIn(platform, inbox));
+
   if (platform === "mastodon") {
     const posting = oneOf("write", "write:statuses");
 
@@ -157,5 +220,30 @@ export const abilitiesOf = (
     };
   }
 
-  return none;
+  if (platform === "facebook") {
+    const managing = oneOf(facebookCommentScopes.manage);
+
+    return {
+      delete: "unsupported",
+      hide: granted("hide", scopes, managing),
+      like: "unsupported",
+      read: granted("read", scopes, oneOf(facebookCommentScopes.read)),
+      reply: granted("reply", scopes, managing),
+      withdraw: granted("withdraw", scopes, managing),
+    };
+  }
+
+  const commenting = oneOf(
+    instagramPageCommentScope,
+    instagramLoginCommentScope
+  );
+
+  return {
+    delete: "unsupported",
+    hide: granted("hide", scopes, commenting),
+    like: "unsupported",
+    read: granted("read", scopes, commenting),
+    reply: granted("reply", scopes, commenting),
+    withdraw: granted("withdraw", scopes, commenting),
+  };
 };

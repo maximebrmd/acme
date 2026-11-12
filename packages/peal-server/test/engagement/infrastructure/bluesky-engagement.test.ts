@@ -243,7 +243,7 @@ describe("Bluesky's comments", () => {
           [
             {
               fromAccount: false,
-              hidden: true,
+              hidden: Option.some(true),
               id: first,
               parent: Option.none(),
               permalink: Option.some(
@@ -252,7 +252,7 @@ describe("Bluesky's comments", () => {
             },
             {
               fromAccount: true,
-              hidden: false,
+              hidden: Option.some(false),
               id: second,
               parent: Option.some(first),
               permalink: Option.some(

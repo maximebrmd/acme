@@ -134,15 +134,16 @@ const readingOf = (
 ): Option.Option<CommentReading> =>
   DateTime.make(status.created_at).pipe(
     Option.map((writtenAt): CommentReading => ({
-      author: {
+      author: Option.some({
         displayName: Option.fromNullishOr(status.account.display_name).pipe(
           Option.filter((name) => name !== "")
         ),
         handle: status.account.acct,
         platformId: status.account.id,
-      },
+      }),
       fromAccount: status.account.id === accountId,
-      hidden: false,
+      // Mastodon lets no account hide a reply.
+      hidden: Option.some(false),
       liked: Option.fromNullishOr(status.favourited),
       parentPlatformId: Option.fromNullishOr(status.in_reply_to_id).pipe(
         Option.filter((parent) => parent !== postId)

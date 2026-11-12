@@ -5,6 +5,7 @@ import { abilitiesOf } from "#engagement/domain/engagement-abilities.ts";
 import type { EngagementAbilities } from "#engagement/domain/engagement-abilities.ts";
 import type { Reply } from "#engagement/domain/reply.ts";
 import type { ThreadId } from "#engagement/domain/thread-id.ts";
+import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
@@ -41,7 +42,7 @@ export interface ThreadDetail {
   readonly summary: ThreadSummary;
 }
 
-const nothing = abilitiesOf("x", []);
+const nothing = abilitiesOf("x", [], new Set());
 
 /** The cursor that starts the page after `summary`. */
 export const cursorAfter = (
@@ -90,6 +91,7 @@ export class EngagementInbox extends Context.Service<
     Effect.gen(function* EngagementInboxLive() {
       const store = yield* EngagementStore;
       const channels = yield* EngagementChannels;
+      const inbox = yield* CurrentInboxPlatforms;
 
       const described = (channelId: ChannelId) =>
         channels.describe(channelId).pipe(
@@ -156,7 +158,8 @@ export class EngagementInbox extends Context.Service<
         const detail: ThreadDetail = {
           abilities: Option.match(channel, {
             onNone: () => nothing,
-            onSome: ({ platform, scopes }) => abilitiesOf(platform, scopes),
+            onSome: ({ platform, scopes }) =>
+              abilitiesOf(platform, scopes, inbox),
           }),
           comments: yield* store.commentsOf(threadId),
           platform: channel.pipe(Option.map(({ platform }) => platform)),
@@ -178,7 +181,8 @@ export class EngagementInbox extends Context.Service<
 
           return Option.match(yield* described(channelId), {
             onNone: () => nothing,
-            onSome: ({ platform, scopes }) => abilitiesOf(platform, scopes),
+            onSome: ({ platform, scopes }) =>
+              abilitiesOf(platform, scopes, inbox),
           });
         }
       );

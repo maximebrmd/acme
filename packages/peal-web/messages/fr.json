@@ -3240,7 +3240,7 @@
     "openLabel": "Boîte de réception de {workspace}",
     "title": "Boîte de réception",
     "description": "Les commentaires laissés sous les publications de {workspace}, là où elles sont en ligne.",
-    "collected": "Peal lit les commentaires sur {platforms}, pendant {windowDays, number} jours après la mise en ligne d’une publication sauf si la personne qui exploite Peal a fixé une autre fenêtre, et les conserve {retentionDays, number} jours de plus.",
+    "collected": "Peal lit les commentaires sur {platforms}, et sur {optionalPlatforms} là où la personne qui exploite Peal les a activés, pendant {windowDays, number} jours après la mise en ligne d’une publication sauf si la personne qui exploite Peal a fixé une autre fenêtre, et les conserve {retentionDays, number} jours de plus.",
     "loading": "Chargement des commentaires…",
     "loadFailed": "Les commentaires n’ont pas pu être chargés.",
     "retry": "Réessayer",

@@ -26,6 +26,7 @@ import {
   writeReply,
 } from "#engagement/domain/reply.ts";
 import type { Reply } from "#engagement/domain/reply.ts";
+import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
@@ -155,6 +156,7 @@ export class EngagementReplies extends Context.Service<
       const jobs = yield* ReplyJobs;
       const sender = yield* ReplySender;
       const outcomes = yield* EngagementOutcomes;
+      const inbox = yield* CurrentInboxPlatforms;
       const { transaction } = yield* TransactionRunner;
       const ids = yield* Ids;
 
@@ -237,7 +239,8 @@ export class EngagementReplies extends Context.Service<
 
         const standing = abilitiesOf(
           channel.value.platform,
-          channel.value.scopes
+          channel.value.scopes,
+          inbox
         )[ability];
 
         if (standing !== "available") {

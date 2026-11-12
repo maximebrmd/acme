@@ -1,5 +1,6 @@
 import { DateTime, Effect, Layer, Option } from "effect";
-import { Digest, SecureRandom } from "effect/crypto";
+import type { Redacted } from "effect";
+import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import { ChannelAccess } from "#channels/application/channel-access.ts";
@@ -14,7 +15,7 @@ import type {
   ModerationRequest,
   SendRequest,
 } from "#engagement/application/ports/reply-sender.ts";
-import { isEngaged } from "#engagement/domain/engagement-abilities.ts";
+import { readsCommentsOn } from "#engagement/domain/engagement-abilities.ts";
 import type { EngagedPlatform } from "#engagement/domain/engagement-abilities.ts";
 import { withdrawable } from "#engagement/domain/reply.ts";
 import type { ReplyFailure, SendOutcome } from "#engagement/domain/reply.ts";
@@ -30,8 +31,16 @@ import type {
   OutgoingReply,
 } from "#engagement/infrastructure/platforms/engagement-platform.ts";
 import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodon/mastodon-engagement.ts";
+import { facebookEngagement } from "#engagement/infrastructure/platforms/meta/facebook-engagement.ts";
+import { instagramEngagement } from "#engagement/infrastructure/platforms/meta/instagram-engagement.ts";
 import { maxThreadBytes } from "#engagement/infrastructure/platforms/thread-body.ts";
+import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
+import type { Platform } from "#shared/domain/platform.ts";
+import { InboxPlatformsLive } from "#shared/infrastructure/inbox-platforms.ts";
+import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
+import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
+import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 import {
   publicHttpClient,
@@ -44,6 +53,13 @@ export interface EngagementSettings {
   readonly blueskyAppView: URL;
   /** `https:`; `http:` only for tests against local fakes. */
   readonly mastodonScheme: "http:" | "https:";
+  /**
+   * Meta's main app's secret, whose proof Facebook Login's calls carry;
+   * none on a server without that app.
+   */
+  readonly metaAppSecret: Option.Option<Redacted.Redacted>;
+  /** Where Meta's Graph hosts are. */
+  readonly metaHosts: MetaHosts;
 }
 
 const failedWith = (reason: ReplyFailure): SendOutcome => ({
@@ -68,8 +84,9 @@ const notClaimed: SendOutcome = { _tag: "unconfirmed", reason: "interrupted" };
  * with a call. Each channel is found through the channels context
  * (ChannelAccess). Every request goes through the public HTTP client, so
  * the outbound guard checks the servers users chose. Needs the
- * EngagementStore, ChannelAccess, an HttpClient, the OutboundGuard, Digest
- * and SecureRandom.
+ * EngagementStore, ChannelAccess, an HttpClient, the OutboundGuard, Digest,
+ * Mac and SecureRandom; Facebook Pages and Instagram are read where
+ * CurrentInboxPlatforms names them.
  *
  * A platform not built yet has no entry in the registry below, which does
  * not compile without one for each of `engagedPlatforms`.
@@ -89,18 +106,35 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         timeout: "20 seconds",
       });
 
+      // Facebook Pages and Instagram are read only where the operator
+      // turned them on: a channel of a platform that is off is never
+      // called, as one Peal reads no comments on.
+      const inbox = yield* CurrentInboxPlatforms;
+
+      const meta = {
+        appSecret: settings.metaAppSecret,
+        hosts: settings.metaHosts,
+        http,
+        reader,
+      };
+
       const platforms: Readonly<Record<EngagedPlatform, EngagementPlatform>> = {
         bluesky: yield* blueskyEngagement({
           appView: settings.blueskyAppView,
           http,
           reader,
         }),
+        facebook: yield* facebookEngagement(meta),
+        instagram: yield* instagramEngagement(meta),
         mastodon: yield* mastodonEngagement({
           http,
           reader,
           scheme: settings.mastodonScheme,
         }),
       };
+
+      const readHere = (platform: Platform): platform is EngagedPlatform =>
+        readsCommentsOn(platform, inbox);
 
       const read = Effect.fn("CommentSource.read")(function* read(
         request: CommentsRequest
@@ -113,7 +147,7 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
           })
         );
 
-        if (!isEngaged(account.platform)) {
+        if (!readHere(account.platform)) {
           return yield* new ChannelUnreadable({ reason: "unsupported" });
         }
 
@@ -131,7 +165,7 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
             (
               account
             ): Option.Option<readonly [ChannelAccount, EngagementPlatform]> =>
-              isEngaged(account.platform)
+              readHere(account.platform)
                 ? Option.some([account, platforms[account.platform]])
                 : Option.none()
           ),
@@ -302,16 +336,29 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
   );
 
 /**
- * The platforms as production reaches them. Needs the EngagementStore,
- * ChannelAccess and Dns, which the composition root provides.
+ * The platforms as production reaches them, Facebook Pages and Instagram
+ * where PEAL_INBOX_PLATFORMS names them, with Meta's main app's secret for
+ * Facebook Login's proofs. Needs the EngagementStore, ChannelAccess and
+ * Dns, which the composition root provides.
  */
-export const PlatformEngagementLive = platformEngagementWith({
-  blueskyAppView: new URL("https://public.api.bsky.app"),
-  mastodonScheme: "https:",
-}).pipe(
+export const PlatformEngagementLive = Layer.unwrap(
+  metaAppConfig.pipe(
+    Effect.map((app) =>
+      platformEngagementWith({
+        blueskyAppView: new URL("https://public.api.bsky.app"),
+        mastodonScheme: "https:",
+        metaAppSecret: app.pipe(Option.map(({ appSecret }) => appSecret)),
+        metaHosts,
+      })
+    )
+  )
+).pipe(
+  Layer.provide(InboxPlatformsLive),
   Layer.provide(OutboundGuard.layer),
   Layer.provide(FetchHttpClient.layer),
   Layer.provide(
-    Layer.mergeAll(Digest.layerWebCrypto, SecureRandom.layerWebCrypto)
+    Layer.mergeAll(Digest.layerWebCrypto, Mac.layerWebCrypto).pipe(
+      Layer.provideMerge(SecureRandom.layerWebCrypto)
+    )
   )
 );

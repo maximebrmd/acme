@@ -5,7 +5,7 @@ import {
   InboxAbilitiesSchema,
   InboxCommentSchema,
   InboxModerationActionSchema,
-  inboxPlatforms,
+  inboxPlatformsText,
   InboxReplySchema,
   inboxRetentionDays,
   InboxThreadDetailSchema,
@@ -152,7 +152,7 @@ const threads = Command.make(
 
     if (page.items.length === 0) {
       yield* Console.log(
-        `No comments in ${workspace.name}'s inbox. Peal reads comments on ${inboxPlatforms.join(" and ")}, for ${String(inboxWindowDays)} days after a post went live unless whoever runs the server set another window, and keeps them ${String(inboxRetentionDays)} days after that.`
+        `No comments in ${workspace.name}'s inbox. Peal reads comments on ${inboxPlatformsText}, for ${String(inboxWindowDays)} days after a post went live unless whoever runs the server set another window, and keeps them ${String(inboxRetentionDays)} days after that.`
       );
 
       return;
@@ -498,7 +498,7 @@ const abilities = Command.make(
 
 export const inbox = Command.make("inbox").pipe(
   Command.withDescription(
-    `The comments people leave under a workspace's published posts, on ${inboxPlatforms.join(" and ")}: read them, and answer in public as the channel's account.`
+    `The comments people leave under a workspace's published posts, on ${inboxPlatformsText}: read them, and answer in public as the channel's account.`
   ),
   Command.withSubcommands([
     threads,

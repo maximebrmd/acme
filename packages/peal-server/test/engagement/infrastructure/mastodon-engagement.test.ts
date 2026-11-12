@@ -187,7 +187,7 @@ describe("Mastodon's comments", () => {
         assert.deepStrictEqual(
           reading.comments.map((comment) => ({
             fromAccount: comment.fromAccount,
-            handle: comment.author.handle,
+            handle: comment.author.pipe(Option.map(({ handle }) => handle)),
             liked: comment.liked,
             parent: comment.parentPlatformId,
             text: comment.text,
@@ -195,14 +195,14 @@ describe("Mastodon's comments", () => {
           [
             {
               fromAccount: false,
-              handle: "reader@social.example",
+              handle: Option.some("reader@social.example"),
               liked: Option.some(true),
               parent: Option.none(),
               text: "Is it open & free?\nThanks\n\n<b>",
             },
             {
               fromAccount: true,
-              handle: "studio",
+              handle: Option.some("studio"),
               liked: Option.none(),
               parent: Option.some("2001"),
               text: "Comment 2002",

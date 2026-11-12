@@ -3,8 +3,9 @@
 import { DateTime, Option } from "effect";
 import { useFormatter, useTranslations } from "next-intl";
 import {
-  inboxPlatforms,
+  inboxOptionalPlatforms,
   inboxRetentionDays,
+  inboxStandardPlatforms,
   inboxWindowDays,
 } from "peal-contract";
 import type {
@@ -119,8 +120,16 @@ export const CollectionNote = () => {
   return (
     <p className="text-muted-foreground text-sm">
       {t("collected", {
+        optionalPlatforms: format.list(
+          inboxOptionalPlatforms.map((platform) =>
+            tPosts("platform", { platform })
+          ),
+          { type: "conjunction" }
+        ),
         platforms: format.list(
-          inboxPlatforms.map((platform) => tPosts("platform", { platform })),
+          inboxStandardPlatforms.map((platform) =>
+            tPosts("platform", { platform })
+          ),
           { type: "conjunction" }
         ),
         retentionDays: inboxRetentionDays,
@@ -310,7 +319,13 @@ export const handleOf = ({ handle }: InboxAuthor): string =>
 const AuthorLine = ({ author }: { readonly author: InboxAuthor | null }) => {
   const t = useTranslations("Inbox.comment");
 
-  if (author === null) {
+  // A missing author, or one their platform names by neither name nor
+  // handle.
+  if (
+    author === null ||
+    ((author.displayName === null || author.displayName === "") &&
+      author.handle === "")
+  ) {
     return <span className="font-medium">{t("unknownAuthor")}</span>;
   }
 
@@ -319,9 +334,12 @@ const AuthorLine = ({ author }: { readonly author: InboxAuthor | null }) => {
       {author.displayName === null || author.displayName === "" ? null : (
         <bdi className="font-medium break-words">{author.displayName}</bdi>
       )}
-      <bdi className="text-muted-foreground text-sm break-all">
-        {handleOf(author)}
-      </bdi>
+      {/* Facebook shows a name and no handle. */}
+      {author.handle === "" ? null : (
+        <bdi className="text-muted-foreground text-sm break-all">
+          {handleOf(author)}
+        </bdi>
+      )}
     </span>
   );
 };

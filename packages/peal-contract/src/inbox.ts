@@ -47,8 +47,24 @@ export const inboxWindowDays = 30;
 /** How many days a thread is kept once Peal stopped reading its post's comments. */
 export const inboxRetentionDays = 30;
 
-/** The platforms Peal reads comments on. */
-export const inboxPlatforms = ["mastodon", "bluesky"] as const;
+/** The platforms every Peal server reads comments on. */
+export const inboxStandardPlatforms = ["mastodon", "bluesky"] as const;
+
+/**
+ * The platforms a Peal server reads comments on only where its operator
+ * turned them on: their comment permissions are granted to an app after
+ * the platform's review.
+ */
+export const inboxOptionalPlatforms = ["facebook", "instagram"] as const;
+
+/** The platforms Peal reads comments on, those its operator turns on included. */
+export const inboxPlatforms = [
+  ...inboxStandardPlatforms,
+  ...inboxOptionalPlatforms,
+] as const;
+
+/** Where Peal reads comments, as the descriptions say it. */
+export const inboxPlatformsText = `${inboxStandardPlatforms.join(" and ")}, and on ${inboxOptionalPlatforms.join(" and ")} where the server's operator turned them on`;
 
 /**
  * What a channel's account can do about comments: `read` them, `reply` in
@@ -336,7 +352,7 @@ export class InboxApi extends HttpApiGroup.make("inbox")
       success: InboxThreadPageSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, ${defaultInboxPageSize} a page unless \`limit\` (at most ${maxInboxPageSize}) says otherwise. \`channelId\`, \`postId\` and \`unanswered\` narrow the list. Pass the page's \`nextCursor\` as \`cursor\` for the next one. Peal reads comments on ${inboxPlatforms.join(" and ")}, for ${inboxWindowDays} days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread ${inboxRetentionDays} days after that. ${reading}`,
+        description: `Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, ${defaultInboxPageSize} a page unless \`limit\` (at most ${maxInboxPageSize}) says otherwise. \`channelId\`, \`postId\` and \`unanswered\` narrow the list. Pass the page's \`nextCursor\` as \`cursor\` for the next one. Peal reads comments on ${inboxPlatformsText}, for ${inboxWindowDays} days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread ${inboxRetentionDays} days after that. ${reading}`,
         summary: "List the inbox's threads",
       })
     ),

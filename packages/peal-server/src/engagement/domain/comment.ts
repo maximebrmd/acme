@@ -85,10 +85,13 @@ export class Comment extends Schema.Class<Comment>(
  * answers was answered, on the platform or from Peal.
  */
 export const CommentReadingSchema = Schema.Struct({
-  author: CommentAuthorSchema,
+  // None when the platform does not show who wrote it (Facebook shows a
+  // commenter only to an app they authorized, or a Page that may see them).
+  author: Schema.Option(CommentAuthorSchema),
   fromAccount: Schema.Boolean,
-  // Whether the account hid it on the platform.
-  hidden: Schema.Boolean,
+  // Whether the account hid it on the platform; none when the read cannot
+  // tell, and what Peal knows stands.
+  hidden: Schema.Option(Schema.Boolean),
   // Whether the account likes it; none when the read cannot tell.
   liked: Schema.Option(Schema.Boolean),
   parentPlatformId: Schema.Option(PlatformCommentIdSchema),
@@ -158,22 +161,24 @@ export const storableReading = (
     maxPlatformIdLength
   );
 
-  const platformId = storableLine(
-    reading.author.platformId,
-    maxPlatformIdLength
+  const author = reading.author.pipe(
+    Option.map((given) => ({
+      displayName: given.displayName.pipe(
+        Option.map((name) => storableLine(name, maxAuthorNameLength)),
+        Option.filter((name) => name !== "")
+      ),
+      handle: storableLine(given.handle, maxAuthorHandleLength),
+      platformId: storableLine(given.platformId, maxPlatformIdLength),
+    }))
   );
 
-  return platformCommentId === "" || platformId === ""
+  // An author given with an id that cleans to nothing is no reading: a
+  // missing author is none, never an empty one.
+  return platformCommentId === "" ||
+    Option.exists(author, ({ platformId }) => platformId === "")
     ? Option.none()
     : Option.some({
-        author: {
-          displayName: reading.author.displayName.pipe(
-            Option.map((name) => storableLine(name, maxAuthorNameLength)),
-            Option.filter((name) => name !== "")
-          ),
-          handle: storableLine(reading.author.handle, maxAuthorHandleLength),
-          platformId,
-        },
+        author,
         fromAccount: reading.fromAccount,
         hidden: reading.hidden,
         liked: reading.liked,
@@ -193,11 +198,7 @@ export const storableReading = (
 const cleaned = (reading: CommentReading): CommentReading =>
   Option.getOrElse(storableReading(reading), () => ({
     ...reading,
-    author: {
-      displayName: Option.none(),
-      handle: storableLine(reading.author.handle, maxAuthorHandleLength),
-      platformId: storableLine(reading.author.platformId, maxPlatformIdLength),
-    },
+    author: Option.none(),
     parentPlatformId: Option.none(),
     permalink: Option.none(),
     platformCommentId: storableLine(
@@ -222,7 +223,7 @@ export const receiveComment = (
 
   return new Comment({
     answeredAt: Option.none(),
-    author: Option.some(reading.author),
+    author: reading.author,
     channelId: thread.channelId,
     id,
     liked: Option.getOrElse(reading.liked, () => false),
@@ -230,7 +231,7 @@ export const receiveComment = (
     permalink: reading.permalink,
     platformCommentId: reading.platformCommentId,
     receivedAt: now,
-    state: reading.hidden ? "hidden" : "new",
+    state: Option.getOrElse(reading.hidden, () => false) ? "hidden" : "new",
     text: reading.text,
     threadId: thread.id,
     workspaceId: thread.workspaceId,
@@ -241,8 +242,8 @@ export const receiveComment = (
 /**
  * A comment Peal already keeps, as a later read found it: its text and its
  * author's name follow the platform, where both can be edited, and so does
- * whether it is hidden. A comment back after Peal thought it deleted is
- * shown again.
+ * whether it is hidden, when the read tells. A comment back after Peal
+ * thought it deleted is shown again.
  */
 export const refreshComment = (
   comment: Comment,
@@ -251,10 +252,12 @@ export const refreshComment = (
   const reading = cleaned(given);
 
   return withFields(comment, {
-    author: Option.some(reading.author),
+    author: reading.author,
     liked: Option.getOrElse(reading.liked, () => comment.liked),
     permalink: reading.permalink,
-    state: reading.hidden ? "hidden" : standing(comment.answeredAt),
+    state: Option.getOrElse(reading.hidden, () => comment.state === "hidden")
+      ? "hidden"
+      : standing(comment.answeredAt),
     text: reading.text,
   });
 };
