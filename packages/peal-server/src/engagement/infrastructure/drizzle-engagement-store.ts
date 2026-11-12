@@ -20,6 +20,7 @@ import { SqlClient } from "effect/sql";
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import type {
   DueChannel,
+  ExpiringThread,
   Journalled,
   LatestFollowed,
   ReplyKey,
@@ -325,8 +326,13 @@ const encoder = new TextEncoder();
 
 const decodeReplyId = Schema.decodeUnknownEffect(ReplyIdSchema);
 
-const decodeThreadIds = Schema.decodeUnknownEffect(
-  Schema.Array(ThreadIdSchema)
+const decodeExpiring = Schema.decodeUnknownEffect(
+  Schema.Array(
+    Schema.Struct({
+      refreshBy: Schema.DateTimeUtcFromDate,
+      threadId: ThreadIdSchema,
+    })
+  )
 );
 
 export const DrizzleEngagementStore = Layer.effect(
@@ -928,21 +934,30 @@ export const DrizzleEngagementStore = Layer.effect(
 
     const expiring = Effect.fn("EngagementStore.expiring")(function* expiring(
       at: DateTime.Utc,
-      limit: number
+      limit: number,
+      after: Option.Option<ExpiringThread>
     ) {
       const rows = yield* db
-        .select({ id: threads.id })
+        .select({ refreshBy: threads.refreshBy, threadId: threads.id })
         .from(threads)
         .where(
-          and(isNotNull(threads.refreshBy), lte(threads.refreshBy, date(at)))
+          and(
+            isNotNull(threads.refreshBy),
+            lte(threads.refreshBy, date(at)),
+            after.pipe(
+              Option.map(
+                (last) =>
+                  drizzleSql`(${threads.refreshBy}, ${threads.id}) > (${DateTime.formatIso(last.refreshBy)}::timestamptz, ${last.threadId}::uuid)`
+              ),
+              Option.getOrUndefined
+            )
+          )
         )
         .orderBy(asc(threads.refreshBy), asc(threads.id))
         .limit(limit)
         .pipe(Effect.mapError(failed));
 
-      return yield* decodeThreadIds(rows.map(({ id }) => id)).pipe(
-        Effect.orDie
-      );
+      return yield* decodeExpiring(rows).pipe(Effect.orDie);
     });
 
     const clearRefresh = Effect.fn("EngagementStore.clearRefresh")(

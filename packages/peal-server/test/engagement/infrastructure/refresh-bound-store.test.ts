@@ -317,6 +317,9 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
           DateTime.toEpochMillis(utc("1923-04-01T09:00:00.000Z"))
         );
 
+        // Ended after the store's purge test's instants (2031), which
+        // would delete threads ended before them.
+        const gone = utc("2037-04-01T11:00:00.000Z");
         const workspaceId = yield* freshWorkspace;
         const store = yield* EngagementStore;
         const records = yield* EngagementRecords;
@@ -365,17 +368,9 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
           );
 
           yield* store.journalReply(reply, Option.none());
-          yield* records.channelGone(
-            channelId,
-            "youtube",
-            utc("1923-04-01T11:00:00.000Z")
-          );
+          yield* records.channelGone(channelId, "youtube", gone);
           // A platform that bounds nothing keeps its threads as they are.
-          yield* records.channelGone(
-            otherChannel,
-            "mastodon",
-            utc("1923-04-01T11:00:00.000Z")
-          );
+          yield* records.channelGone(otherChannel, "mastodon", gone);
 
           const forgotten = yield* store.commentsOf(bounded.id);
 
@@ -389,7 +384,7 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
             [
               {
                 author: false,
-                expiredAt: Option.some(utc("1923-04-01T11:00:00.000Z")),
+                expiredAt: Option.some(gone),
                 state: "deleted",
                 text: "",
               },
@@ -401,7 +396,7 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
           // Ended at once, so a read on its way keeps nothing it found.
           assert.deepStrictEqual(after?.thread.collection, {
             _tag: "ended",
-            at: utc("1923-04-01T11:00:00.000Z"),
+            at: gone,
             reason: "disconnected",
           });
           assert.deepStrictEqual(after?.thread.refreshBy, Option.none());
@@ -416,7 +411,7 @@ layer(PurgeTest)("the refresh bound on Postgres", (it) => {
 
           assert.deepStrictEqual(notRead?.thread.collection, {
             _tag: "ended",
-            at: utc("1923-04-01T11:00:00.000Z"),
+            at: gone,
             reason: "disconnected",
           });
           assert.deepStrictEqual(

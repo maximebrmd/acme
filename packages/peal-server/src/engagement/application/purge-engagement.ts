@@ -1,4 +1,4 @@
-import { Context, DateTime, Effect, Layer, Metric } from "effect";
+import { Context, DateTime, Effect, Layer, Metric, Option } from "effect";
 
 import { expireComment, isOnPlatform } from "#engagement/domain/comment.ts";
 import { purgedBefore } from "#engagement/domain/engagement-retention.ts";
@@ -7,6 +7,7 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 
 import { EngagementStore } from "./ports/engagement-store.ts";
+import type { ExpiringThread } from "./ports/engagement-store.ts";
 
 // Threads deleted, or listed to forget, per statement, so one run never
 // holds long locks.
@@ -118,34 +119,38 @@ export class PurgeEngagement extends Context.Service<
 
       // Each listed thread's bound is gone or moved past `now` once it is
       // handled, so the next page lists others.
+      // Page after page in the listing's order, from after the last
+      // thread listed: one that failed stays behind, and the threads past
+      // it are still forgotten; the next run tries it again.
       const forgetFrom = (
         now: DateTime.Utc,
+        after: Option.Option<ExpiringThread>,
         total: number
       ): Effect.Effect<number, DatabaseError> =>
-        store.expiring(now, batchSize).pipe(
-          Effect.flatMap((threadIds) =>
+        store.expiring(now, batchSize, after).pipe(
+          Effect.flatMap((listed) =>
             Effect.all(
-              threadIds.map((threadId) => forgetOne(threadId, now))
+              listed.map(({ threadId }) => forgetOne(threadId, now))
             ).pipe(
               Effect.flatMap((outcomes) => {
                 const forgotten = outcomes.filter(
                   (outcome) => outcome === "forgotten"
                 ).length;
 
-                // A page of threads that all failed is listed again as it
-                // was: the run stops there, and the next one tries again.
-                const moved = outcomes.some((outcome) => outcome !== "failed");
-
-                return threadIds.length < batchSize || !moved
+                return listed.length < batchSize
                   ? Effect.succeed(total + forgotten)
-                  : forgetFrom(now, total + forgotten);
+                  : forgetFrom(
+                      now,
+                      Option.fromUndefinedOr(listed.at(-1)),
+                      total + forgotten
+                    );
               })
             )
           )
         );
 
       const forgetExpired = DateTime.now.pipe(
-        Effect.flatMap((now) => forgetFrom(now, 0)),
+        Effect.flatMap((now) => forgetFrom(now, Option.none(), 0)),
         Effect.withSpan("PurgeEngagement.forgetExpired")
       );
 

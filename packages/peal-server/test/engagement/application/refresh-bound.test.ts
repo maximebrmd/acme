@@ -14,16 +14,23 @@ import {
 import { expireComment } from "#engagement/domain/comment.ts";
 import type { CommentReading } from "#engagement/domain/comment.ts";
 import { writeReply } from "#engagement/domain/reply.ts";
-import { endCollection, withoutRefresh } from "#engagement/domain/thread.ts";
+import {
+  endCollection,
+  recordCollection,
+  withoutRefresh,
+} from "#engagement/domain/thread.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
 import type { World } from "#test/engagement/fakes/world.ts";
 import {
+  comment,
+  commentId,
   followedPost,
   memberId,
   publishedAt,
   reading,
   replyId,
+  thread,
 } from "#test/engagement/support.ts";
 
 // A platform that bounds how long Peal keeps what it gave without reading
@@ -69,11 +76,11 @@ const showing =
     });
 
 const onlyThread = (world: World) => {
-  const [thread] = [...world.state.threads.values()];
+  const [only] = [...world.state.threads.values()];
 
-  assert.isDefined(thread);
+  assert.isDefined(only);
 
-  return thread;
+  return only;
 };
 
 const comments = (world: World) =>
@@ -349,12 +356,12 @@ describe("the refresh bound", () => {
         // The channel is disconnected while the next read is on its way:
         // its comments are forgotten and its thread ended at once.
         world.state.read = (request) => {
-          const thread = onlyThread(world);
+          const current = onlyThread(world);
 
           world.state.threads.set(
-            thread.id,
+            current.id,
             withoutRefresh(
-              endCollection(thread, "disconnected", after("15 minutes"))
+              endCollection(current, "disconnected", after("15 minutes"))
             )
           );
 
@@ -415,4 +422,42 @@ describe("the refresh bound", () => {
       }).pipe(Effect.provide(world.layer));
     }
   );
+
+  it.effect("goes past a whole page of threads that fail at every run", () => {
+    const world = makeWorld();
+    const bound = Option.some(Duration.hours(24));
+    const failing = new Set<string>();
+
+    // 200 threads that fail, read first, then one that does not.
+    for (let n = 1; n <= 201; n += 1) {
+      const read = recordCollection(
+        thread(n),
+        after(Duration.minutes(n)),
+        after(Duration.minutes(n)),
+        Duration.days(30),
+        bound,
+        true
+      );
+
+      world.state.threads.set(read.id, read);
+      world.state.comments.set(commentId(n), comment(n, {}, read));
+
+      if (n <= 200) {
+        failing.add(read.id);
+      }
+    }
+
+    world.state.saving = (saved) =>
+      saved.some(({ threadId }) => failing.has(threadId))
+        ? Effect.fail(new DatabaseError({ cause: "synthetic refusal" }))
+        : Effect.void;
+
+    return Effect.gen(function* pastFailures() {
+      assert.strictEqual(yield* forgetAt(after("3 days")), 1);
+      assert.strictEqual(
+        world.state.comments.get(commentId(201))?.state,
+        "deleted"
+      );
+    }).pipe(Effect.provide(world.layer));
+  });
 });
