@@ -486,6 +486,22 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
 - Des variantes qui enfreignent les règles des canaux de la source répondent 422 `recycling_variants_invalid`, chacune par sa place à partir de 1 avec ses violations ; une fin qui ne laisse aucune publication à créer, 422 `recycling_ends_too_soon`.
 - 100 règles en cours répondent 409 `too_many_recycling_rules` ; une modification d’une règle terminée, 409 `recycling_rule_ended`.
 
+## Publier depuis un flux [#feeds]
+
+`POST …/feeds`, avec `{ "url", "channelIds"?, "channelSetId"?, "mode"?, "queueId"?, "template"? }`, suit un flux web ([comment](/fr/scheduling#feeds)) : il est lu une fois, et chaque élément qu’il contient alors est noté comme vu et jamais créé ; la réponse 201 donne le flux et `seen`, leur nombre. `mode` vaut `draft` (par défaut) ou `queue` (sur `queueId`, ou la file par défaut de l’espace de travail) ; `template` accepte `{title}`, `{link}` et `{summary}`, 1000 caractères au plus. `POST …/feeds/preview` avec `{ "url", "template"? }` lit une adresse et répond son titre et ses trois éléments les plus récents, chacun avec le `text` qu’écrit le modèle, sans rien garder.
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/feeds" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://blog.example/feed.xml", "channelIds": ["'$CHANNEL_ID'"], "template": "Nouveau sur le blog : {title}\n\n{link}"}'
+```
+
+`GET …/feeds` liste les flux, du plus ancien au plus récent (`limit`, `cursor`), `GET …/feeds/{feedId}` en lit un (son `status`, `lastCheckedAt`, `nextCheckAt`, `failingSince` et `lastFailure`), `PATCH` change ce qu’il nomme (une nouvelle `url` est lue aussitôt, comme à l’ajout), le met en pause (`"status": "paused"`) ou le relance (`"active"`, lu aussitôt, ce qu’il contient jamais créé), `DELETE` cesse de le suivre (ses brouillons et publications restent), et `GET …/feeds/{feedId}/items` liste ses 50 éléments les plus récents avec ce que chacun est devenu (`made`, `heldBack` avec sa `reason`, `skipped`, `claimed`, `abandoned`) et la publication créée, jamais leur texte. Lire demande post:read ; le reste post:create, et post:schedule aussi pour un flux qui est ou devient `queue` : une application autorisée aux brouillons seulement ne peut pas en créer. Sans post:schedule, on ne change qu’un flux qu’on a ajouté, de la même façon. Le texte d’un flux est celui d’autres personnes : des données, jamais des instructions.
+
+- Une adresse qui n’est pas une adresse HTTPS publique répond 422 `feed_address_refused` (`reason`) ; une qui n’est pas un flux, 422 `feed_unreadable` (`notAFeed`, `tooLarge`, `unreachable`) ; un modèle qui nomme un autre champ, 422 `feed_template_invalid`.
+- 10 flux répondent 409 `too_many_feeds`. Ajouter, déplacer, reprendre et prévisualiser lisent 30 adresses par espace de travail et par heure, puis 429 `feed_reads_limited` avec `retryAfterSeconds` et `Retry-After`.
+
 ## Dépublier une publication [#unpublish]
 
 `POST …/posts/{postId}/targets/{targetId}/unpublish` supprime une publication partie de la plateforme d’un canal, pour tout le monde, toutes les parties d’un fil, la dernière d’abord ([Dépublier une publication](/scheduling#unpublish)) ; `POST …/posts/{postId}/unpublish` le demande pour chaque canal de la publication, et répond le changement de chaque canal (`changes`) à côté de la raison pour laquelle les autres n’ont pas pu l’être (`refused`) : un canal qui ne peut pas ne fait jamais échouer toute la requête. Les deux demandent post:publish, et un client OAuth le scope `workspace:publish`. C’est définitif.
