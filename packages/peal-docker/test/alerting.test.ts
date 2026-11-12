@@ -72,10 +72,12 @@ describe("the production alert rules", () => {
   ])("alert from %s on the host's last %s", (uid, gauge) => {
     const rule = ruleOf(uid);
 
-    expect(rule?.noDataState).toBe("OK");
-    expect(rule?.execErrState).toBe("Error");
-    expect(rule?.for).toBe("0s");
-    expect(rule?.labels.severity).toBe("critical");
+    expect(rule).toMatchObject({
+      execErrState: "Error",
+      for: "0s",
+      labels: { severity: "critical" },
+      noDataState: "OK",
+    });
     expect(rule?.annotations.summary).toContain("runbooks/failed-disk.md");
     expect(rule?.data.find((step) => step.refId === "A")?.model.expr).toBe(
       `max(last_over_time(${gauge}[45m]))`
