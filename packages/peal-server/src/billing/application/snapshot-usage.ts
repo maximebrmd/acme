@@ -4,6 +4,7 @@ import { usageCutoff, usageDayOf } from "#billing/domain/usage-meter.ts";
 import type { UsageRecord } from "#billing/domain/usage-meter.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 
+import { BillingAccounts } from "./billing-accounts.ts";
 import { UsageLedger } from "./ports/usage-ledger.ts";
 import type { WorkspaceUsageRecord } from "./ports/usage-ledger.ts";
 import { UsageStates } from "./ports/usage-states.ts";
@@ -51,7 +52,9 @@ const recordsOf = (
  * statement, and replaces what a run before wrote, so a second run, or a
  * second server, changes nothing. A day it never ran for keeps no state:
  * none is written for it later. A workspace erased while its batch was
- * written has those rows deleted again. Then, whether the snapshot went
+ * written has those rows deleted again. Each batch's workspaces are given
+ * their billing account, those nobody read yet included (the sweep). Then,
+ * whether the snapshot went
  * through or not, it deletes the rows past their 400 days.
  */
 export class SnapshotUsage extends Context.Service<
@@ -65,6 +68,7 @@ export class SnapshotUsage extends Context.Service<
       Effect.gen(function* SnapshotUsageLive() {
         const states = yield* UsageStates;
         const ledger = yield* UsageLedger;
+        const accounts = yield* BillingAccounts;
 
         // Every workspace's states, batch by batch: how many it wrote.
         const snapshot = Effect.fn("SnapshotUsage.snapshot")(function* snapshot(
@@ -96,6 +100,19 @@ export class SnapshotUsage extends Context.Service<
               ({ workspaceId }) => ledger.eraseWorkspace(workspaceId),
               { discard: true }
             );
+
+            // The sweep: each workspace nobody read is given its billing
+            // account. A failure leaves it to the next read, or run.
+            yield* accounts
+              .accountsIn(page.map(({ workspaceId }) => workspaceId))
+              .pipe(
+                Effect.catchCause((cause) =>
+                  Effect.logWarning(
+                    "Giving workspaces their billing accounts failed",
+                    cause
+                  )
+                )
+              );
 
             workspaces += page.length;
             more = page.length === batchSize;

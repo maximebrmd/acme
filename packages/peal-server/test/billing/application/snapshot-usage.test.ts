@@ -4,6 +4,7 @@ import { assert, layer } from "@effect/vitest";
 import { Clock, DateTime, Effect, Layer, Option, Ref } from "effect";
 import { TestClock } from "effect/testing";
 
+import { BillingAccounts } from "#billing/application/billing-accounts.ts";
 import { UsageLedger } from "#billing/application/ports/usage-ledger.ts";
 import { UsageStates } from "#billing/application/ports/usage-states.ts";
 import type {
@@ -104,8 +105,20 @@ const RecordingLedger = Layer.effect(
   })
 ).pipe(Layer.provide(DrizzleUsageLedgerLive));
 
+// The workspaces the snapshot gave a billing account, batch by batch.
+const resolved = Ref.makeUnsafe<readonly (readonly WorkspaceId[])[]>([]);
+
+const AccountsResolvedTest = Layer.mock(BillingAccounts, {
+  accountsIn: (workspaceIds) =>
+    Ref.update(resolved, (all) => [...all, workspaceIds]).pipe(
+      Effect.as(new Map())
+    ),
+});
+
 const SnapshotTest = SnapshotUsage.make(2).pipe(
-  Layer.provide(Layer.mergeAll(StatesTest, RecordingLedger)),
+  Layer.provide(
+    Layer.mergeAll(StatesTest, RecordingLedger, AccountsResolvedTest)
+  ),
   Layer.provideMerge(DrizzleUsageLedgerLive),
   Layer.provideMerge(DatabaseTest)
 );
@@ -212,6 +225,10 @@ layer(SnapshotTest)("the daily usage snapshot", (it) => {
         );
 
         assert.deepStrictEqual(written, expected);
+
+        // Every workspace it went through has its billing account, the
+        // ones nobody read given theirs then.
+        assert.includeMembers((yield* Ref.get(resolved)).flat(), existing);
         assert.lengthOf(
           yield* ledger.ofWorkspace(first, {
             from: day("2025-10-06"),

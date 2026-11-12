@@ -204,4 +204,68 @@ layer(accountsTest)("billing accounts", (it) => {
         yield* cleanUpAccounts([free, paid]);
       })
   );
+  it.effect(
+    "hand a closed account's workspaces to their oldest other owner",
+    () =>
+      Effect.gen(function* closed() {
+        const accounts = yield* BillingAccounts;
+        const leaving = yield* person;
+        const staying = yield* person;
+        const own = yield* workspaceOwnedBy([staying]);
+        const shared = yield* workspaceOwnedBy([leaving, staying]);
+
+        assert.deepStrictEqual(
+          (yield* accounts.of(shared)).payer,
+          Option.some(leaving)
+        );
+
+        // Closing the account: its accounts are forgotten, its memberships
+        // deleted, in one transaction.
+        yield* accounts.forgetPayer(leaving);
+        yield* SqlClient.SqlClient.use(
+          (sql) => sql`DELETE FROM auth.member WHERE user_id = ${leaving}`
+        ).pipe(Effect.orDie);
+
+        const after = yield* accounts.of(shared);
+
+        assert.deepStrictEqual(after.payer, Option.some(staying));
+        assert.strictEqual(after.id, (yield* accounts.of(own)).id);
+        assert.lengthOf(yield* accountsPaidBy(leaving), 0);
+
+        yield* cleanUpAccounts([own, shared]);
+      })
+  );
+
+  it.effect(
+    "bill on the oldest workspace left once the billing workspace is erased",
+    () =>
+      Effect.gen(function* erased() {
+        const accounts = yield* BillingAccounts;
+        const payer = yield* person;
+        const first = yield* workspaceOwnedBy([payer]);
+        const second = yield* workspaceOwnedBy([payer]);
+        const third = yield* workspaceOwnedBy([payer]);
+        const account = yield* accounts.of(third);
+
+        assert.strictEqual(account.holder, first);
+
+        yield* accounts.eraseWorkspace(first);
+
+        const after = yield* accounts.of(third);
+
+        assert.strictEqual(after.id, account.id);
+        assert.strictEqual(after.holder, second);
+        assert.deepStrictEqual((yield* accounts.poolOf(second)).others, [
+          third,
+        ]);
+
+        // The last one erased takes the account with it.
+        yield* accounts.eraseWorkspace(second);
+        yield* accounts.eraseWorkspace(third);
+
+        assert.lengthOf(yield* accountsPaidBy(payer), 0);
+
+        yield* cleanUpAccounts([first, second, third]);
+      })
+  );
 });

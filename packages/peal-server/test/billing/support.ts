@@ -96,6 +96,8 @@ export const aloneAccountOf = (
   });
 
 export const AloneInAccountsTest = Layer.mock(BillingAccounts, {
+  accountsIn: (workspaceIds) =>
+    Effect.succeed(new Map(workspaceIds.map((id) => [id, aloneAccountOf(id)]))),
   eraseWorkspace: () => Effect.void,
   forgetPayer: () => Effect.void,
   of: (workspaceId) => Effect.succeed(aloneAccountOf(workspaceId)),
