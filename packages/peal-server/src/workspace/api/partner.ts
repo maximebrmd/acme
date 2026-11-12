@@ -19,6 +19,8 @@ import {
 } from "#shared/api/partner-key.ts";
 import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { OffboardWorkspace } from "#workspace/application/offboard-workspace.ts";
+import { PartnerHealth } from "#workspace/application/partner-health.ts";
+import type { HealthRequest } from "#workspace/application/partner-health.ts";
 import { PartnerWorkspaces } from "#workspace/application/partner-workspaces.ts";
 import type { WorkspaceListRequest } from "#workspace/application/partner-workspaces.ts";
 
@@ -26,6 +28,7 @@ import { recordMade } from "./activity-recording.ts";
 import {
   customerWorkspacePageView,
   customerWorkspaceView,
+  partnerHealthView,
   partnerUsageView,
   partnerView,
 } from "./partner-view.ts";
@@ -50,6 +53,15 @@ export const listRequestOf = (query: {
   name: Option.fromUndefinedOr(query.name),
 });
 
+/** The page of the partner's customers' health a request asks for. */
+export const healthRequestOf = (query: {
+  readonly before?: string;
+  readonly limit?: number;
+}): HealthRequest => ({
+  before: Option.fromUndefinedOr(query.before),
+  limit: Option.fromUndefinedOr(query.limit),
+});
+
 // A request as its idempotency key keeps it: the same request gives the
 // same text, whatever order its fields came in.
 const fingerprintOf = (payload: {
@@ -66,6 +78,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
   "partner",
   Effect.fn(function* partnerHandlers(handlers) {
     const workspaces = yield* PartnerWorkspaces;
+    const health = yield* PartnerHealth;
     const offboarding = yield* OffboardWorkspace;
     const activity = yield* ActivityJournal;
 
@@ -195,6 +208,23 @@ export const PartnerHandlers = HttpApiBuilder.group(
           );
 
           return customerWorkspacePageView(page);
+        }),
+      overview: ({ query }) =>
+        Effect.gen(function* overview() {
+          const key = yield* currentKey;
+
+          const page = yield* health.forKey(key, healthRequestOf(query)).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              InvalidWorkspaceCursor: () =>
+                Effect.fail(new HttpApiError.BadRequest()),
+              MissingPartnerScope: withoutPartnerScope,
+              // The key's account went between its check and this read.
+              PartnerNotFound: partnerClosed,
+            })
+          );
+
+          return partnerHealthView(page);
         }),
       updateWorkspace: ({ params, payload }) =>
         Effect.gen(function* updateWorkspace() {

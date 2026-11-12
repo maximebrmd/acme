@@ -1,5 +1,6 @@
 import { Option } from "effect";
 import type {
+  PartnerHealth,
   CustomerWorkspace as CustomerWorkspaceView,
   CustomerWorkspacePage as CustomerWorkspacePageView,
   Partner as PartnerView,
@@ -7,6 +8,7 @@ import type {
   PartnerUsage as PartnerUsageView,
 } from "peal-contract";
 
+import type { HealthPage } from "#workspace/application/partner-health.ts";
 import type {
   CountedWorkspace,
   CountedWorkspacePage,
@@ -59,4 +61,23 @@ export const customerWorkspacePageView = (
   next: Option.getOrNull(page.next),
   total: page.total,
   workspaces: page.workspaces.map(customerWorkspaceView),
+});
+
+/** A page of the partner's customers' health, as the contract answers it. */
+export const partnerHealthView = (page: HealthPage): PartnerHealth => ({
+  account: Option.getOrNull(
+    page.account.pipe(
+      Option.map(({ overPlan }) => ({ overPlan: Option.getOrNull(overPlan) }))
+    )
+  ),
+  next: Option.getOrNull(page.next),
+  total: page.total,
+  workspaces: page.workspaces.map(({ channels, inbox, posts, workspace }) => ({
+    channels: Option.getOrNull(channels),
+    externalId: Option.getOrNull(workspace.externalId),
+    id: workspace.id,
+    inbox: Option.getOrNull(inbox),
+    name: workspace.name,
+    posts: Option.getOrNull(posts),
+  })),
 });

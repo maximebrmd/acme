@@ -11,6 +11,7 @@ import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
 import { PartnerAccountsClosed } from "./partner-accounts-closed.ts";
 import { PartnerDetailsInvalid } from "./partner-details-invalid.ts";
+import { PartnerHealthSchema } from "./partner-health.ts";
 import { PartnerKeyNotFound } from "./partner-key-not-found.ts";
 import { PartnerNotFound } from "./partner-not-found.ts";
 import { PartnerOwnsWorkspaces } from "./partner-owns-workspaces.ts";
@@ -24,6 +25,8 @@ import {
   maxWorkspacePageSize,
   PartnerSchema,
   PartnerUsageSchema,
+  partnerHealthDescription,
+  partnerHealthQuery,
   workspaceListQuery,
 } from "./partner.ts";
 import { PermissionSchema } from "./permission.ts";
@@ -217,6 +220,17 @@ export class PartnerAccountApi extends HttpApiGroup.make("partnerAccount")
         description:
           "Revokes a partner key: it stops working at once. Needs partner:manage.",
         summary: "Revoke a partner key",
+      })
+    ),
+    HttpApiEndpoint.get("overview", "/overview", {
+      error: [Forbidden, PartnerNotFound, HttpApiError.BadRequest],
+      params: workspace,
+      query: partnerHealthQuery,
+      success: PartnerHealthSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `${partnerHealthDescription} For the home workspace's owners and admins: the sections are those a partner key may read, as the workspaces have no member of their own. Needs partner:read.`,
+        summary: "See which of the partner's customers need attention",
       })
     ),
     HttpApiEndpoint.get("listWorkspaces", "/workspaces", {

@@ -32,6 +32,7 @@ import { MeterPartnerUsage } from "#workspace/application/meter-partner-usage.ts
 import { OffboardWorkspace } from "#workspace/application/offboard-workspace.ts";
 import { Overview } from "#workspace/application/overview.ts";
 import { PartnerAccounts } from "#workspace/application/partner-accounts.ts";
+import { PartnerHealth } from "#workspace/application/partner-health.ts";
 import { PartnerKeys } from "#workspace/application/partner-keys.ts";
 import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
 import { PartnerTenants } from "#workspace/application/partner-tenants.ts";
@@ -256,9 +257,15 @@ export const PartnerTenantsLive = PartnerTenants.layer.pipe(
  * context's ChannelOverview, the engagement context's InboxWaiting and
  * billing's WorkspaceStanding, which the composition root brings.
  */
-export const OverviewLive = Overview.layer.pipe(
-  Layer.provide(ContextOverviewSourcesLive)
-);
+export const OverviewLive = Layer.mergeAll(
+  Overview.layer,
+  // What needs attention in a partner's customers' workspaces, from the
+  // same sources, on a page of the partner's own list.
+  PartnerHealth.layer.pipe(
+    Layer.provide(PartnerWorkspaces.layer),
+    Layer.provide(Layer.mergeAll(PartnerStoresLive, ContextChannelCountsLive))
+  )
+).pipe(Layer.provide(ContextOverviewSourcesLive));
 
 /**
  * The endpoints across a person's workspaces, under /api/me. They need

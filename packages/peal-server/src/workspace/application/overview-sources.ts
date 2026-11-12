@@ -148,6 +148,8 @@ export class OverviewSources extends Context.Service<
     readonly overPlan: (
       workspaceIds: readonly WorkspaceId[]
     ) => Effect.Effect<ReadonlySet<WorkspaceId>, DatabaseError>;
+    /** Whether the server bills, without which nothing is over a plan. */
+    readonly bills: boolean;
     /**
      * The posts with a time in the range, by time then id, after the
      * position: `limit` of them at most.

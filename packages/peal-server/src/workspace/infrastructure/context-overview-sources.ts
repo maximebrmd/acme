@@ -53,6 +53,7 @@ export const ContextOverviewSourcesLive = Layer.effect(
           };
         });
       }),
+      bills: standing.bills,
       channels: (workspaceIds) => channels.statesIn(workspaceIds),
       overPlan: (workspaceIds) => standing.overPlanIn(workspaceIds),
       posts: (workspaceIds, now) => posts.countsIn(workspaceIds, now),
