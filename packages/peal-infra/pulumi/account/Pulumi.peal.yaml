@@ -7,3 +7,10 @@ config:
   peal:ownerName: Maxime
   peal:ownerEmail:
     secure: v1:NC6ki64aryh/nA0/:/MBg/QWRISg6HKtPOLNeTbu9SiD2GPT0qGzAximWU6P+aw+OBQ==
+  peal:uptime:
+    hostname: uptime
+    statusHostname: status
+    ipv4:
+      secure: v1:U44ApPSzfm7PfE8e:9O+MaaxCepu70sUa688LH0K1/2oAaHmcTwA=
+    ipv6:
+      secure: v1:U3+oXEdhpuRSrBVB:dyQjSeqFSVmU+0180/HjIt0RVVmg2HqGe7+VO3JIaiZB/4VRAw==

@@ -37,7 +37,8 @@ ssh_via_tunnel: true
 # only when the file is made.
 swap_file: /swapfile
 swap_size_mb: 2048
-# Security updates install daily; a kernel update reboots at this time (UTC).
+# Security updates install daily; a kernel update reboots at this time (UTC),
+# unless an md array is degraded (peal-reboot).
 unattended_reboot_time: "03:30"
 
 # cloudflared, from its GitHub release, checked against these digests.

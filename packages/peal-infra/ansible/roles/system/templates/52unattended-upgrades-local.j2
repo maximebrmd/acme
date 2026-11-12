@@ -1,5 +1,8 @@
 // Managed by Ansible (peal-infra). Overrides 50unattended-upgrades.
+// The reboot a kernel update needs is peal-reboot's, at
+// unattended_reboot_time, which holds it while an md array is degraded:
+// unattended-upgrades would hand it to systemd hours ahead, with no hook
+// to look at the arrays when the time comes.
 Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
-Unattended-Upgrade::Automatic-Reboot "true";
-Unattended-Upgrade::Automatic-Reboot-Time "{{ unattended_reboot_time }}";
+Unattended-Upgrade::Automatic-Reboot "false";

@@ -22,7 +22,7 @@ self-hosting page, and [`peal-docker`](../../peal-docker)).
 | Access    | Cloudflare Zero Trust Access guards Grafana, SSH, the admin and the whole sandbox                                                           |
 | Stack     | [`compose.production.yaml`](../../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1               |
 | Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                                              |
-| Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                                              |
+| Alerts    | Grafana's alert rules, sent to a Telegram chat, on the stack's telemetry and on what the host reports: backups and disks                    |
 | Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                                              |
 | Uptime    | Gatus on a server of its own checks the public endpoints, hears Grafana's heartbeat and serves the status page ([Uptime](#uptime))          |
 
@@ -76,18 +76,19 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 
 ### Roles
 
-| Role             | What it does                                                                                                                                                                                                                                          |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `peal_preflight` | Stops every playbook while the inventory holds placeholders                                                                                                                                                                                           |
-| `system`         | Host name (kept across boots where cloud-init manages the hosts file), UTC, the clock kept by chrony, updates, unattended upgrades with reboots at 03:30 UTC, the units the image runs for nothing masked (`system_masked_units`), swap, journal size |
-| `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone, without port forwarding; the image's own account removed                                                                                                                       |
-| `docker`         | Docker Engine and Compose from Docker's repository, at exact versions, with rotated logs                                                                                                                                                              |
-| `cloudflared`    | cloudflared from its GitHub release (checked by digest), the tunnel's routes and its systemd service                                                                                                                                                  |
-| `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                                                                                                                                                                         |
-| `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`                                                                                                                                                       |
-| `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days                                                                                                                                                             |
-| `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                                                                                                                                                                         |
-| `uptime`         | Gatus and Caddy on the uptime server, or Gatus behind a shared host's Caddy, their configuration from the inventory (`uptime.yml`)                                                                                                                    |
+| Role             | What it does                                                                                                                                                                                                                                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `peal_preflight` | Stops every playbook while the inventory holds placeholders                                                                                                                                                                                                                                                |
+| `system`         | Host name (kept across boots where cloud-init manages the hosts file), UTC, the clock kept by chrony, updates, unattended upgrades with reboots at 03:30 UTC (`peal-reboot`, held while a RAID array is degraded), the units the image runs for nothing masked (`system_masked_units`), swap, journal size |
+| `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone, without port forwarding; the image's own account removed                                                                                                                                                                            |
+| `docker`         | Docker Engine and Compose from Docker's repository, at exact versions, with rotated logs                                                                                                                                                                                                                   |
+| `cloudflared`    | cloudflared from its GitHub release (checked by digest), the tunnel's routes and its systemd service                                                                                                                                                                                                       |
+| `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                                                                                                                                                                                                                              |
+| `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`                                                                                                                                                                                                            |
+| `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days                                                                                                                                                                                                                  |
+| `peal_disks`     | smartmontools, and `peal-disk-health` and its timer: the RAID arrays' and the disks' health reported to the collector every 15 minutes ([Disks](#disks))                                                                                                                                                   |
+| `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                                                                                                                                                                                                                              |
+| `uptime`         | Gatus and Caddy on the uptime server, or Gatus behind a shared host's Caddy, their configuration from the inventory (`uptime.yml`)                                                                                                                                                                         |
 
 ### Playbooks
 
@@ -544,7 +545,8 @@ uv run python scripts/cloudflare_from_pulumi.py \
   --vault-id sandbox@scripts/vault-keychain-client.py      # or production@…
 ```
 
-then `site.yml`. Steps 2 to 4 of [Before the first run](#before-the-first-run)
+then `site.yml`. With `--vault-id uptime@…`, it writes the uptime server's
+vault alone, from the sandbox's stack ([Set it up](#set-it-up)). Steps 2 to 4 of [Before the first run](#before-the-first-run)
 are then Pulumi's for that environment, the lifecycle and CORS rules
 included, but for the Zero Trust team.
 
@@ -747,6 +749,46 @@ says what that costs.
 [`runbooks/restore-database.md`](runbooks/restore-database.md) restores the
 database, to its latest state or to a time.
 
+## Disks
+
+A server's disks may be mirrored with Linux software RAID (md), as
+production's two SSDs are: `md0` for `/boot`, `md1` for `/`. A mirror buys
+time, not a repair: on production's offer the provider does not replace a
+disk, so a degraded array means moving to another server while this one
+still runs.
+
+Every 15 minutes, `peal-disk-health` (the `peal_disks` role) counts the md
+arrays, those missing a device (`/sys/block/md*/md/degraded`) and the whole
+disks smartctl says are failing (its exit status: SMART's verdict, or a
+prefail attribute at its threshold), and reports the three numbers to the
+collector, as `peal-backup` reports each backup. Grafana alerts on Telegram
+when an array is degraded (`peal-raid-degraded`) and when a disk is failing
+(`peal-disk-failing`). A server without arrays reports none, and a disk
+without SMART, as a virtual machine's, is not failing, so the sandbox stays
+quiet. No rule sees the timer stop reporting, as a server without the role
+never reports at all: read the three series once after setting a server up
+([the runbook's check](runbooks/failed-disk.md#check-it-reports)).
+
+A reboot is the riskiest moment for a mirror running on one disk, so none
+happens by itself then: the `system` role turns unattended-upgrades' own
+reboot off, and `peal-reboot.timer`, at `unattended_reboot_time`, reboots
+when an update asked for it (`/var/run/reboot-required`) and every array is
+whole. While one is degraded it writes why to the journal and leaves the
+reboot pending for the next night (`tests/test_reboot.py`).
+
+Ubuntu's own timers do the rest: `mdcheck_start.timer` reads both halves of
+each mirror once a month, which is how a disk's unreadable sectors are found
+before the other one is needed, and `fstrim.timer` trims the SSDs weekly,
+through md. mdadm and smartd would mail `root` on a problem; the server has
+no mail transport, which is why the alerts go through the collector.
+
+Never fail a disk to test this: on a mirror whose disks cannot be replaced,
+`mdadm --fail` is an incident. The script is tested on a made-up `/sys` in
+`tests/test_disks.py`.
+
+[`runbooks/failed-disk.md`](runbooks/failed-disk.md) says what to do when
+either alert fires.
+
 ## Uptime
 
 A separate server watches production and the sandbox from outside, as
@@ -810,24 +852,37 @@ resource. Then:
    Give it a name, `uptime_hostname`, with A and AAAA records that Cloudflare
    does not proxy, so it answers even when Cloudflare does not, and the
    status page its own, `uptime_status_hostname` ([The status
-   page](#the-status-page)).
-2. Make its credentials, which are its own:
+   page](#the-status-page)): the account's Pulumi stack makes the three,
+   once its `peal:uptime` setting names the server's addresses
+   ([`../pulumi`](../pulumi/README.md#the-uptime-server)). Run its
+   `preview --diff`, then `up`.
+2. Its credentials, which are its own:
    - its Telegram bot, and the id of the channel it writes to, which may be
      the one production's alerts go to ([Telegram](#telegram)):
      `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`;
-   - a Cloudflare Access service token for the sandbox's checks (Zero Trust ›
-     Access › Service credentials), valid a year: its client id and secret,
-     shown once, are `SANDBOX_ACCESS_CLIENT_ID` and
-     `SANDBOX_ACCESS_CLIENT_SECRET`, named after the environment. Add a
-     policy with the action Service Auth that includes that token alone,
-     not any service token of the account, to the sandbox's Access
-     application, the one that covers its app, site and docs, and to no
-     other. When the token expires, every check of the sandbox fails at
-     once: refresh it before, which keeps its id and secret.
+   - the Cloudflare Access service token of the sandbox's checks,
+     `SANDBOX_ACCESS_CLIENT_ID` and `SANDBOX_ACCESS_CLIENT_SECRET`, named
+     after the environment. The sandbox's Pulumi stack makes it, valid a
+     year, with a policy with the action Service Auth that includes that
+     token alone, not any service token of the account, on the sandbox's
+     Access application, the one that covers its app, site, docs and short
+     links, and no other. Run the sandbox stack's `preview --diff`, then
+     `up`. When the token expires, every check of the sandbox fails at
+     once: refresh it before, which keeps its id and secret
+     ([`../pulumi`](../pulumi/README.md#the-uptime-server)).
 
    Put them in `inventory/group_vars/uptime/vault.yml`, from
-   `inventory/vault.uptime.example.yml` and encrypted like the others, or
-   write them on the server, as `NAME='value'` lines, after step 3 (the
+   `inventory/vault.uptime.example.yml` and encrypted like the others: fill
+   in the Telegram bot's, then let the script write the service token's
+   from the sandbox's stack, naming what it changed, never a value:
+
+   ```sh
+   uv run python scripts/cloudflare_from_pulumi.py --vault-id uptime@scripts/vault-keychain-client.py
+   ```
+
+   Or write them all on the server, as `NAME='value'` lines, after step 3
+   (read the token's with `bun scripts/pulumi.ts environment stack output
+   uptimeAccessToken --show-secrets --stack sandbox` in `../pulumi`; the
    folder is the one `uptime.yml` makes, with the same owner and mode):
 
    ```sh
@@ -907,7 +962,9 @@ dashboard. The uptime Gatus checks the page's certificate hourly, as it
 does `uptime_hostname`'s.
 
 It needs one DNS record in the `peal.social` zone, made before `uptime.yml`
-runs, or Caddy gets no certificate for it:
+runs, or Caddy gets no certificate for it. The account's Pulumi stack
+makes it, `status-cname`, with the server's own (step 1 of [Set it
+up](#set-it-up)):
 
 | Type  | Name     | Content              | Proxy status                         |
 | ----- | -------- | -------------------- | ------------------------------------ |
@@ -978,9 +1035,10 @@ in `/srv/uptime`, on the host alone.
 
 1. In the `peal.social` zone, the records of [The status
    page](#the-status-page) and step 1 of [Set it up](#set-it-up), not
-   proxied: `uptime` A to the host's IPv4 address, `uptime` AAAA only if
-   the host has an IPv6 address its Caddy answers on, and `status` CNAME to
-   `uptime.peal.social`.
+   proxied, from the account's Pulumi stack: `uptime` A to the host's IPv4
+   address, `uptime` AAAA only if the host has an IPv6 address its Caddy
+   answers on (leave `peal:uptime.ipv6` unset otherwise), and `status`
+   CNAME to `uptime.peal.social`.
 2. On the host, once: the folder for site files, and the line that imports
    it, at the top level of `/etc/caddy/Caddyfile`, outside any site block.
    When the Caddyfile already imports a folder of site files, set

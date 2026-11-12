@@ -277,6 +277,11 @@
     uptime_caddyfile: "{{ lookup('ansible.builtin.template', 'Caddyfile.j2') }}"
     uptime_caddy_routes: "{{ lookup('ansible.builtin.template', 'routes.caddy.j2') }}"
     uptime_caddy_status: "{{ lookup('ansible.builtin.template', 'status.caddy.j2') }}"
+
+# A task of its own: the site file inlines the routes, and a fact set in a
+# task is not defined for the other values of that same task.
+- name: Render a shared host's site file
+  ansible.builtin.set_fact:
     uptime_caddy_site: "{{ lookup('ansible.builtin.template', 'site.caddy.j2') }}"
 
 - name: Write Gatus's configurations

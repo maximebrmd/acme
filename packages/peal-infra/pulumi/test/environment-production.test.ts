@@ -156,6 +156,20 @@ describe("production at Cloudflare", () => {
     expect(destinationsOf("access-ssh")).toStrictEqual(["ssh.example.test"]);
   });
 
+  it("makes no service token: the uptime server's checks of it are public", async () => {
+    await settled;
+
+    expect(result.uptimeAccessToken).toBeUndefined();
+    expect(
+      made.filter((resource) =>
+        [
+          "cloudflare:index/zeroTrustAccessPolicy:ZeroTrustAccessPolicy",
+          "cloudflare:index/zeroTrustAccessServiceToken:ZeroTrustAccessServiceToken",
+        ].includes(resource.type)
+      )
+    ).toStrictEqual([]);
+  });
+
   it("guards the admin's paths on the app, as the tunnel routes them", async () => {
     await settled;
 
