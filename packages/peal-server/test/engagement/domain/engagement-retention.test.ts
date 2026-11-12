@@ -52,7 +52,8 @@ describe("the refresh bound", () => {
       after("12 minutes"),
       after("10 minutes"),
       defaultWindow,
-      Option.some(Duration.days(29))
+      Option.some(Duration.days(29)),
+      true
     );
 
     expect(first.refreshBy).toStrictEqual(
@@ -64,7 +65,8 @@ describe("the refresh bound", () => {
       after("1 hour"),
       after("1 hour"),
       defaultWindow,
-      Option.some(Duration.days(29))
+      Option.some(Duration.days(29)),
+      true
     );
 
     expect(second.refreshBy).toStrictEqual(
@@ -78,7 +80,8 @@ describe("the refresh bound", () => {
       after("12 minutes"),
       after("10 minutes"),
       defaultWindow,
-      Option.none()
+      Option.none(),
+      true
     );
 
     expect(thread(1).refreshBy).toStrictEqual(Option.none());

@@ -468,14 +468,15 @@ export class CollectComments extends Context.Service<
           );
         }
 
-        // Read, whole or not: what it found may be kept as long as its
-        // platform allows from now.
+        // Read: a complete read starts its platform's bound again from
+        // now; an incomplete one leaves it where it was.
         const read = recordCollection(
           thread,
           now,
           at,
           pace.window,
-          refreshWithin
+          refreshWithin,
+          reading.complete
         );
 
         // The comments are read under the thread's lock, which a member's

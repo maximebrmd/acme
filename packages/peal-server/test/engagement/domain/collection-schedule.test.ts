@@ -64,7 +64,8 @@ describe("a thread's collection", () => {
       after("12 minutes"),
       after("10 minutes"),
       defaultWindow,
-      Option.none()
+      Option.none(),
+      true
     );
 
     expect(read.collection).toStrictEqual({
@@ -82,7 +83,8 @@ describe("a thread's collection", () => {
       after("30 days"),
       after("30 days"),
       defaultWindow,
-      Option.none()
+      Option.none(),
+      true
     );
 
     expect(read.collection).toStrictEqual({

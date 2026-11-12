@@ -114,7 +114,7 @@ const readAt = (
   thread: Thread,
   at: string,
   bound: Option.Option<Duration.Duration>
-) => recordCollection(thread, utc(at), utc(at), Duration.days(30), bound);
+) => recordCollection(thread, utc(at), utc(at), Duration.days(30), bound, true);
 
 const forgetAt = (at: string) =>
   TestClock.setTime(DateTime.toEpochMillis(utc(at))).pipe(

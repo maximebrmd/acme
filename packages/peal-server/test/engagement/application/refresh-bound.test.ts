@@ -44,7 +44,8 @@ const forgetAt = (instant: DateTime.Utc) =>
 const showing =
   (
     comments: readonly CommentReading[],
-    refreshWithin: Option.Option<Duration.Duration>
+    refreshWithin: Option.Option<Duration.Duration>,
+    complete = true
   ) =>
   (request: CommentsRequest): Effect.Effect<CommentsBatch> =>
     Effect.succeed({
@@ -52,7 +53,7 @@ const showing =
       readings: request.threads.map(({ threadId }) => ({
         _tag: "read" as const,
         comments,
-        complete: true,
+        complete,
         threadId,
       })),
       ...Option.match(refreshWithin, {
@@ -198,6 +199,63 @@ describe("the refresh bound", () => {
       assert.deepStrictEqual(
         comments(world).map(({ state, text }) => ({ state, text })),
         [{ state: "new", text: "Comment 1" }]
+      );
+    }).pipe(Effect.provide(world.layer));
+  });
+
+  it.effect(
+    "is moved by a complete read only: a comment an incomplete read did not return is forgotten at the bound",
+    () => {
+      const world = makeWorld();
+      const day = Option.some(Duration.hours(24));
+
+      world.state.posts.push(followedPost(1));
+      world.state.read = showing([reading(1), reading(2)], day);
+
+      return Effect.gen(function* incomplete() {
+        yield* runAt(after("10 minutes"));
+
+        const stamped = onlyThread(world).refreshBy;
+
+        // Comments turned off, a cap, a deadline: a read that returns
+        // only some of them, or none, never extends the bound.
+        world.state.read = showing([reading(2)], day, false);
+        yield* runAt(after("1 hour"));
+
+        assert.deepStrictEqual(onlyThread(world).refreshBy, stamped);
+
+        world.state.read = showing([], day, false);
+        yield* runAt(after("2 hours"));
+
+        assert.deepStrictEqual(onlyThread(world).refreshBy, stamped);
+        assert.strictEqual(yield* forgetAt(after("1450 minutes")), 1);
+        assert.isTrue(
+          comments(world).every(
+            ({ author, expired, text }) => !author && expired && text === ""
+          )
+        );
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect("is first stamped by an incomplete read when none was", () => {
+    const world = makeWorld();
+
+    world.state.posts.push(followedPost(1));
+    world.state.read = showing(
+      [reading(1)],
+      Option.some(Duration.hours(24)),
+      false
+    );
+
+    return Effect.gen(function* first() {
+      yield* runAt(after("10 minutes"));
+
+      assert.deepStrictEqual(
+        onlyThread(world).refreshBy,
+        Option.some(
+          after(Duration.sum(Duration.hours(24), Duration.minutes(10)))
+        )
       );
     }).pipe(Effect.provide(world.layer));
   });
