@@ -410,6 +410,18 @@ The staff context follows these rules too. What the law has a host keep is in
   people answer it 403, and `/api/partner` answers 403 to anything else.
   `test/workspace/integration/partners.test.ts` holds the matrix: add a
   new workspace group to it.
+- `PartnerHealth` (`forKey`, a partner key with `workspaces:read`;
+  `forMember`, partner:read in the home workspace) answers
+  `GET /api/partner/overview` and `…/partner/overview` of the home
+  workspace: a page of `PartnerWorkspaces.listingOf` (its order and
+  cursor, the home workspace left out) with the overview's own sources
+  (`OverviewSources`, one read each for the page), each section only
+  where the key holds its permission (`sectionsHeld`), a member reading
+  what `partnerKeyPermissions` holds, and on the first page alone the
+  account's `overPlan`, asked of one customer (they share the pool's plan
+  and channels and have no member), none when the server does not bill
+  (`OverviewSources.bills`). No filter on what needs attention: it would
+  read every workspace; a product pages through.
 - `PartnerWorkspaces` creates, lists (counts, `externalId`, `name`,
   `before`), changes and offboards. Creation is idempotent twice over:
   `externalId` taken answers `ExternalIdTaken` with the workspace's id, and
