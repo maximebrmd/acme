@@ -235,6 +235,11 @@
     "tag": "Forbidden"
   },
   {
+    "code": "gone",
+    "status": 410,
+    "tag": "Gone"
+  },
+  {
     "code": "hosted_connect_failed",
     "status": 422,
     "tag": "HostedConnectFailed"

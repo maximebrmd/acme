@@ -50,3 +50,24 @@
 # 	encode zstd gzip
 # 	reverse_proxy static:8081
 # }
+
+# Short links on a domain of their own (PEAL_SHORT_LINK_BASE set to
+# https://{$PEAL_SHORT_LINK_DOMAIN}/): Caddy sends each /<code> to the
+# server's /api/l/<code>, and nothing else. Set the domain in
+# compose.self-host.yaml's caddy service, and uncomment. With
+# PEAL_SHORT_LINK_BASE set to https://{$PEAL_DOMAIN}/api/l/ instead, the
+# block above serves them and nothing here is needed.
+#
+# {$PEAL_SHORT_LINK_DOMAIN} {
+# 	header -Server
+#
+# 	@code path_regexp code ^/([0-9A-Za-z]{7})$
+# 	handle @code {
+# 		rewrite * /api/l/{re.code.1}
+# 		reverse_proxy server:3000
+# 	}
+#
+# 	handle {
+# 		respond 404
+# 	}
+# }

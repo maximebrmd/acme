@@ -1,0 +1,233 @@
+// Following a short link through the routes: the redirect, its headers,
+// what it counts, and what it answers for a code it does not know, a link
+// turned off and an address that asks too often.
+import { randomUUID } from "node:crypto";
+
+import { assert, layer } from "@effect/vitest";
+import { ConfigProvider, Effect, Layer } from "effect";
+import { SqlClient } from "effect/sql";
+
+import { redirectsPerMinute } from "#app/short-links/redirects.ts";
+import { newId } from "#shared/application/ids.ts";
+import {
+  ChannelIdSchema,
+  PostIdSchema,
+  PostTargetIdSchema,
+} from "#shared/domain/ids.ts";
+import { ShortLinks } from "#shortlinks/application/short-links.ts";
+import { ShortLinksLive } from "#shortlinks/container.ts";
+import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
+import {
+  TestApp,
+  unconfirmedEmails,
+} from "#test/workspace/integration/harness.ts";
+
+const base = "http://localhost:3001/api/l/";
+
+const settings = { ...unconfirmedEmails, PEAL_SHORT_LINK_BASE: base };
+
+// The app, and the context beside it on the same database, to issue
+// links as publishing does.
+const Test = Layer.mergeAll(
+  TestApp.layerWith(settings),
+  ShortLinksLive.pipe(
+    Layer.provide(
+      ConfigProvider.layerAdd(ConfigProvider.fromUnknown(settings), {
+        asPrimary: true,
+      })
+    ),
+    Layer.provideMerge(DatabaseTest)
+  )
+);
+
+const browser = "Mozilla/5.0 (synthetic browser)";
+
+// A link newly issued to `destination`, and its path on the server.
+const issued = Effect.fn("issued")(function* issued(destination: string) {
+  const links = yield* ShortLinks;
+
+  const [shortUrl = ""] = yield* links.issue({
+    channelId: yield* newId(ChannelIdSchema),
+    destinations: [destination],
+    part: 0,
+    postId: yield* newId(PostIdSchema),
+    targetId: yield* newId(PostTargetIdSchema),
+    workspaceId: yield* freshWorkspace,
+  });
+
+  return {
+    code: shortUrl.slice(base.length),
+    path: new URL(shortUrl).pathname,
+  };
+});
+
+const clicksOf = (code: string) =>
+  SqlClient.SqlClient.use(
+    (sql) =>
+      sql<{
+        readonly clicks: number;
+      }>`SELECT coalesce(sum(c.clicks), 0)::int AS clicks FROM shortlinks.clicks c JOIN shortlinks.links l ON l.id = c.link_id WHERE l.code = ${code}`
+  ).pipe(
+    Effect.orDie,
+    Effect.map((rows) => rows[0]?.clicks ?? 0)
+  );
+
+// Each test its own address, so the limit counts it alone.
+const fromAddress = () => ({
+  "x-forwarded-for": `198.51.100.${String(Math.floor(Math.random() * 250) + 1)}-${randomUUID()}`,
+});
+
+layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
+  "a short link's redirect",
+  (it) => {
+    it.effect(
+      "answers a 302 to its destination, never cached, and counts it",
+      () =>
+        Effect.gen(function* found() {
+          const app = yield* TestApp;
+
+          const { code, path } = yield* issued(
+            "https://example.test/landing?campaign=synthetic"
+          );
+
+          const reply = yield* app.request(path, {
+            headers: { ...fromAddress(), "user-agent": browser },
+          });
+
+          assert.strictEqual(reply.status, 302);
+          assert.strictEqual(
+            reply.headers.get("location"),
+            "https://example.test/landing?campaign=synthetic"
+          );
+          assert.strictEqual(reply.headers.get("cache-control"), "no-store");
+          assert.strictEqual(
+            reply.headers.get("x-robots-tag"),
+            "noindex, nofollow"
+          );
+          assert.strictEqual(reply.body, "");
+          assert.strictEqual(yield* clicksOf(code), 1);
+        })
+    );
+
+    it.effect("answers HEAD the same, and counts nothing", () =>
+      Effect.gen(function* head() {
+        const app = yield* TestApp;
+        const { code, path } = yield* issued("https://example.test/head");
+
+        const reply = yield* app.request(path, {
+          headers: { ...fromAddress(), "user-agent": browser },
+          method: "HEAD",
+        });
+
+        assert.strictEqual(reply.status, 302);
+        assert.strictEqual(
+          reply.headers.get("location"),
+          "https://example.test/head"
+        );
+        assert.strictEqual(yield* clicksOf(code), 0);
+      })
+    );
+
+    it.effect(
+      "redirects automated readers and prefetches, counting neither",
+      () =>
+        Effect.gen(function* readers() {
+          const app = yield* TestApp;
+          const { code, path } = yield* issued("https://example.test/readers");
+
+          const crawler = yield* app.request(path, {
+            headers: { ...fromAddress(), "user-agent": "SyntheticCrawler/2.0" },
+          });
+
+          const prefetch = yield* app.request(path, {
+            headers: {
+              ...fromAddress(),
+              "sec-purpose": "prefetch",
+              "user-agent": browser,
+            },
+          });
+
+          const anonymous = yield* app.request(path, {
+            headers: fromAddress(),
+          });
+
+          assert.deepStrictEqual(
+            [crawler.status, prefetch.status, anonymous.status],
+            [302, 302, 302]
+          );
+          assert.strictEqual(yield* clicksOf(code), 0);
+        })
+    );
+
+    it.effect(
+      "answers 404 in the error envelope for a code it does not know",
+      () =>
+        Effect.gen(function* unknown() {
+          const app = yield* TestApp;
+
+          const reply = yield* app.request("/api/l/Unknown", {
+            headers: { ...fromAddress(), "user-agent": browser },
+          });
+
+          assert.strictEqual(reply.status, 404);
+          assert.deepInclude(reply.body, {
+            _tag: "NotFound",
+            code: "not_found",
+          });
+        })
+    );
+
+    it.effect("answers 410 for a link turned off", () =>
+      Effect.gen(function* disabled() {
+        const app = yield* TestApp;
+        const { code, path } = yield* issued("https://example.test/off");
+
+        yield* SqlClient.SqlClient.use(
+          (sql) =>
+            sql`UPDATE shortlinks.links SET disabled_at = now() WHERE code = ${code}`
+        ).pipe(Effect.orDie);
+
+        const reply = yield* app.request(path, {
+          headers: { ...fromAddress(), "user-agent": browser },
+        });
+
+        assert.strictEqual(reply.status, 410);
+        assert.deepInclude(reply.body, { _tag: "Gone", code: "gone" });
+        assert.isNull(reply.headers.get("location"));
+      })
+    );
+  }
+);
+
+layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
+  "an address following short links too often",
+  (it) => {
+    it.effect(`is refused past ${String(redirectsPerMinute)} a minute`, () =>
+      Effect.gen(function* limited() {
+        const app = yield* TestApp;
+        const headers = { ...fromAddress(), "user-agent": browser };
+
+        const replies = yield* Effect.forEach(
+          Array.from(
+            { length: redirectsPerMinute + 1 },
+            () => "/api/l/Missing"
+          ),
+          (path) => app.request(path, { headers })
+        );
+
+        assert.strictEqual(replies.at(-2)?.status, 404);
+        assert.strictEqual(replies.at(-1)?.status, 429);
+        assert.deepInclude(replies.at(-1)?.body, {
+          _tag: "TooManyRequests",
+          code: "too_many_requests",
+        });
+
+        const other = yield* app.request("/api/l/Missing", {
+          headers: { ...fromAddress(), "user-agent": browser },
+        });
+
+        assert.strictEqual(other.status, 404);
+      })
+    );
+  }
+);

@@ -34,6 +34,7 @@ import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { countRequests } from "#app/request-metrics.ts";
 import { SystemHandlers } from "#app/system.ts";
+import { ShortLinkRedirectsLive } from "#app/short-links/redirects.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
   BillingApiLive,
@@ -188,6 +189,7 @@ export const RoutesLive = Layer.mergeAll(
   AuthRoutesLive,
   McpLive,
   DiscoveryLive,
+  ShortLinkRedirectsLive,
   ApiAnswersLive
 );
 
