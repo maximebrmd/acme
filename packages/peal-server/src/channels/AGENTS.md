@@ -162,7 +162,9 @@
   stored in `channels.token_owner`, never in `granted_by`, which Meta's
   data deletion requests match; the authorizer's refresh gives the kept
   one back, a reconnection by another member replaces it, and tokens
-  saved without one (the inbox off) forget it. `ChannelToken.tokenOwner`
+  saved without one (the inbox off) forget it, as does a daily run
+  (`channels.token-owners`, `ForgetTokenOwners`) on a server whose inbox
+  does not read LinkedIn, for tokens that never renew. `ChannelToken.tokenOwner`
   hands it to the adapters for LinkedIn's limits per member. It is
   personal data of the member, maybe someone without an account (a
   connect link): it leaves Peal with the channel (disconnect, workspace

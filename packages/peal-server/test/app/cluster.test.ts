@@ -29,6 +29,7 @@ import { ReceiveContractRequest } from "#billing/application/receive-contract-re
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { SnapshotUsage } from "#billing/application/snapshot-usage.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
+import { ForgetTokenOwners } from "#channels/application/forget-token-owners.ts";
 import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
@@ -146,6 +147,10 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     PurgeConnectLinks,
     PurgeConnectLinks.of({ run: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    ForgetTokenOwners,
+    ForgetTokenOwners.of({ run: Effect.succeed(0) })
   ),
   Layer.succeed(
     MeterPartnerUsage,

@@ -1,4 +1,15 @@
-import { and, asc, count, eq, gt, ilike, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gt,
+  ilike,
+  isNotNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import {
   DateTime,
   Duration,
@@ -329,6 +340,15 @@ export const DrizzleChannelRepository = Layer.effect(
           .from(channels)
           .where(byId(workspaceId, channelId))
           .pipe(Effect.mapError(failed), Effect.flatMap(firstChannel)),
+      forgetTokenOwners: db
+        .update(channels)
+        .set({ tokenOwner: null })
+        .where(isNotNull(channels.tokenOwner))
+        .returning({ id: channels.id })
+        .pipe(
+          Effect.mapError(failed),
+          Effect.map((rows) => rows.length)
+        ),
       get: (channelId) =>
         db
           .select()

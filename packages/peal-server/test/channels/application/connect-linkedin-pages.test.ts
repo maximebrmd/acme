@@ -4,6 +4,7 @@ import { DateTime, Duration, Effect, Layer, Option, Redacted } from "effect";
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { decryptTokens } from "#channels/application/channel-tokens.ts";
+import { ForgetTokenOwners } from "#channels/application/forget-token-owners.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type {
   AuthorizationCallback,
@@ -12,6 +13,7 @@ import type {
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { renewToken } from "#channels/domain/channel.ts";
 import type { Channel } from "#channels/domain/channel.ts";
+import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
@@ -145,6 +147,16 @@ const storedOwner = (channel: Channel) =>
 
 // A server whose inbox reads LinkedIn pages' comments.
 const readsLinkedIn: InboxPlatforms = new Set(["linkedin"]);
+
+// The daily run that forgets owners, on a server whose inbox reads `inbox`.
+const forgetOwners = (inbox: InboxPlatforms) =>
+  ForgetTokenOwners.use((forget) => forget.run).pipe(
+    Effect.provide(
+      ForgetTokenOwners.layer.pipe(
+        Layer.provide(Layer.succeed(CurrentInboxPlatforms, inbox))
+      )
+    )
+  );
 
 // Makes the channel's token due for the sweep: five minutes left.
 const makeDue = (channel: Channel) =>
@@ -348,6 +360,21 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
           "refreshed"
         );
         assert.isUndefined(yield* storedOwner(renewed));
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "forgets every owner kept, daily, once the inbox no longer reads LinkedIn",
+    () =>
+      Effect.gen(function* forgets() {
+        const on = yield* onLinkedIn(undefined, readsLinkedIn);
+        const channel = yield* connectedPage(on, yield* freshWorkspace);
+
+        assert.strictEqual(yield* forgetOwners(readsLinkedIn), 0);
+        assert.isDefined(yield* storedOwner(channel));
+
+        assert.isAtLeast(yield* forgetOwners(new Set()), 1);
+        assert.isUndefined(yield* storedOwner(channel));
       }).pipe(Effect.scoped)
   );
 
