@@ -94,6 +94,9 @@ const AclSchema = Schema.Struct({
   organization: Schema.optionalKey(Schema.String),
   organizationTarget: Schema.optionalKey(Schema.String),
   role: Schema.String,
+  // The member the role is theirs: the one signed in, as `q=roleAssignee`
+  // lists the signed-in member's roles.
+  roleAssignee: Schema.optionalKey(Schema.String),
   state: Schema.String,
 });
 
@@ -324,7 +327,7 @@ export const linkedinPagesAuthorizer = Effect.fn(
 
       const roles = yield* rolesOf(token.access_token);
 
-      const tokens: IssuedTokens = {
+      const issued: IssuedTokens = {
         accessToken: Redacted.make(token.access_token),
         expiresAt: expiryOf(token, issuedAt),
         refreshToken: Option.fromUndefinedOr(token.refresh_token).pipe(
@@ -333,6 +336,15 @@ export const linkedinPagesAuthorizer = Effect.fn(
         renewable: token.refresh_token !== undefined,
         scopes,
       };
+
+      // The member the token is theirs, whose calls LinkedIn counts: the
+      // roles' assignee, a `urn:li:person:…`.
+      const owner = roles.find(({ roleAssignee }) =>
+        (roleAssignee ?? "").startsWith("urn:li:person:")
+      )?.roleAssignee;
+
+      const tokens: IssuedTokens =
+        owner === undefined ? issued : { ...issued, tokenOwner: owner };
 
       const administered = [
         ...new Set(

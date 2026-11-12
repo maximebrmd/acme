@@ -248,7 +248,7 @@
   429 and 426 (logged) halt, 5xx waits. A reply goes under the top-level
   comment as the page; a resume never sends (`foundAmong`); a withdrawal
   deletes by the comment's id, inside its URN, and a 404 is done. The
-  reads spend a call of `linkedinCommentsDailyCalls` (200 of the app's 500 and 40 of a page's, by UTC day, `LINKEDIN_DAILY_COMMENT_CALLS` and `_PER_PAGE`) in `PlatformQuota` before each call, and halt when either is spent, so publishing keeps the rest of the Development tier; Peal keeps no member for a page, so the per-member 100 is counted by page. A list ends only where LinkedIn says (`paging.total` or `links`), never on a short page. Never
+  reads spend a call of `linkedinCommentsDailyCalls` (200 of the app's 500 and 40 of a member's, by UTC day, `LINKEDIN_DAILY_COMMENT_CALLS` and `_PER_MEMBER`) in `PlatformQuota` before each call, and halt when either is spent, so publishing keeps the rest of the Development tier; the member is the token's owner (`ChannelToken.tokenOwner`, the ACLs' `roleAssignee` kept in `channels.token_owner`), and a page connected before it was kept is counted by page. A list ends at `paging.total`, or without one at the summary's first-level count or an empty page, never on a short page or `links` alone. Never
   run against LinkedIn: before the setting is turned on anywhere, the
   pages app holds the Standard tier and both scopes (a pages sign-in fails
   without them), the privacy policy names LinkedIn, and one comment is

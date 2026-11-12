@@ -155,7 +155,12 @@
   `r_organization_social_feed` and `w_organization_social_feed` after its
   own (`linkedinPagesScopesFor`); LinkedIn grants all or nothing, so an
   answer that lists no scope records what was asked. The profile's sign-in
-  never changes (`linkedin-comment-scopes.test.ts`).
+  never changes (`linkedin-comment-scopes.test.ts`). The pages' sign-in
+  keeps the member the token is theirs (the ACLs' `roleAssignee`) as
+  `IssuedTokens.tokenOwner`, stored in `channels.token_owner`, never in
+  `granted_by`, which Meta's data deletion requests match; a renewal
+  leaves it as it was, and `ChannelToken.tokenOwner` hands it to the
+  adapters for LinkedIn's limits per member.
 - Instagram has two ways in, one platform with a connection kind
   (`InstagramConnectionSchema` in `#shared/domain/instagram-connection.ts`,
   copied by the contract): `instagramLogin`, the default, and

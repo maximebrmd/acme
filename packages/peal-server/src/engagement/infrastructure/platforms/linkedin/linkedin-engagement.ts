@@ -88,26 +88,29 @@ export const linkedinRefreshWithin = Duration.hours(24);
 
 /**
  * The calls comment reads may make a day, by UTC day: of the app's, and of
- * each page's. LinkedIn's Development tier allows "500 API calls for an
+ * each member's. LinkedIn's Development tier allows "500 API calls for an
  * app for 24 hrs" and "100 API calls per member of an App for 24 hrs" for
  * every call, posting included (…/marketing/increasing-access, read
- * 2026-11-12): reads take 200 of the app's and 40 a page by default, so
- * publishing keeps the rest. A Standard-tier server raises them
- * (`LINKEDIN_DAILY_COMMENT_CALLS`, `LINKEDIN_DAILY_COMMENT_CALLS_PER_PAGE`).
- * Peal keeps no member for a page, so the second is counted by page: a
- * member who administers several pages shares their 100 across them.
+ * 2026-11-12), and resets them "at midnight UTC every day"
+ * (…/shared/api-guide/concepts/rate-limits, read 2026-11-12): reads take
+ * 200 of the app's and 40 of a member's by default, so publishing keeps
+ * the rest. A member is the one whose token a page's is (its
+ * `tokenOwner`), so every page they administer shares their 40; a page
+ * connected before Peal kept that is counted alone. A Standard-tier server
+ * raises them (`LINKEDIN_DAILY_COMMENT_CALLS`,
+ * `LINKEDIN_DAILY_COMMENT_CALLS_PER_MEMBER`).
  */
-export const linkedinCommentsDailyCalls = { app: 200, perPage: 40 } as const;
+export const linkedinCommentsDailyCalls = { app: 200, perMember: 40 } as const;
 
-/** The daily calls reads may make, of the app's and of each page's. */
+/** The daily calls reads may make, of the app's and of each member's. */
 export interface LinkedInReadCalls {
   readonly app: number;
-  readonly perPage: number;
+  readonly perMember: number;
 }
 
 /**
- * `LINKEDIN_DAILY_COMMENT_CALLS` and `LINKEDIN_DAILY_COMMENT_CALLS_PER_PAGE`:
- * what comment reads may call a day, across the app and for one page. A
+ * `LINKEDIN_DAILY_COMMENT_CALLS` and `LINKEDIN_DAILY_COMMENT_CALLS_PER_MEMBER`:
+ * what comment reads may call a day, across the app and for one member. A
  * value that is not a whole number stops the server.
  */
 export const linkedinReadCallsConfig = Config.all({
@@ -115,13 +118,16 @@ export const linkedinReadCallsConfig = Config.all({
     Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
     "LINKEDIN_DAILY_COMMENT_CALLS"
   ).pipe(Config.withDefault(linkedinCommentsDailyCalls.app)),
-  perPage: Config.schema(
+  perMember: Config.schema(
     Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-    "LINKEDIN_DAILY_COMMENT_CALLS_PER_PAGE"
-  ).pipe(Config.withDefault(linkedinCommentsDailyCalls.perPage)),
+    "LINKEDIN_DAILY_COMMENT_CALLS_PER_MEMBER"
+  ).pipe(Config.withDefault(linkedinCommentsDailyCalls.perMember)),
 });
 
-/** The ledger bucket of the app's read calls; a page's adds its channel. */
+/**
+ * The ledger bucket of the app's read calls; a member's adds `member:` and
+ * their URN, a page without one `page:` and its channel.
+ */
 export const linkedinCommentsBucket = "comments:linkedin";
 
 const utc = TimeZoneIdSchema.make("UTC");
@@ -282,6 +288,9 @@ const readingOf = (
   );
 };
 
+// The page read, with the member its token belongs to, if Peal keeps it.
+type ReadingAccount = ChannelAccount & { readonly tokenOwner?: string };
+
 // LinkedIn has two levels: an answer to a nested comment goes under the
 // top-level comment it answers.
 const topLevelOf = (reply: OutgoingReply) =>
@@ -346,15 +355,20 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
 
     // A call of the day's reads, of the app's and of the page's, if both
     // are left: whether it was. The ledger being down reads nothing more.
-    const spendCall = (account: ChannelAccount) =>
+    const spendCall = (account: ReadingAccount) =>
       DateTime.now.pipe(
         Effect.flatMap((now) => {
           const day = localDateOf(now, utc);
 
           return quota
             .spend({
-              allowance: dailyCalls.perPage,
-              bucket: `${linkedinCommentsBucket}:${account.channelId}`,
+              allowance: dailyCalls.perMember,
+              bucket: Option.match(Option.fromUndefinedOr(account.tokenOwner), {
+                onNone: () =>
+                  `${linkedinCommentsBucket}:page:${account.channelId}`,
+                onSome: (member) =>
+                  `${linkedinCommentsBucket}:member:${member}`,
+              }),
               day,
               units: 1,
             })
@@ -469,7 +483,7 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
     // A list of comments under `target`, page by page, into `at`: none
     // when it was read whole, or the step the read ends with.
     const listInto = Effect.fn("LinkedInEngagement.list")(function* listInto(
-      account: ChannelAccount,
+      account: ReadingAccount,
       token: Redacted.Redacted,
       target: string,
       at: Progress,
@@ -592,7 +606,7 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
         );
 
     const readOne = Effect.fn("LinkedInEngagement.thread")(function* readOne(
-      account: ChannelAccount,
+      account: ReadingAccount,
       token: Redacted.Redacted,
       thread: ThreadToRead,
       deadline: DateTime.Utc,
@@ -693,7 +707,7 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
     });
 
     const readAll = Effect.fn("LinkedInEngagement.readAll")(function* readAll(
-      account: ChannelAccount,
+      account: ReadingAccount,
       token: Redacted.Redacted,
       threads: readonly ThreadToRead[]
     ) {
@@ -743,8 +757,8 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
       }
 
       return access
-        .withToken(account.channelId, ({ accessToken }) =>
-          readAll(account, accessToken, threads)
+        .withToken(account.channelId, (given) =>
+          readAll(given, given.accessToken, threads)
         )
         .pipe(
           Effect.catchTags({

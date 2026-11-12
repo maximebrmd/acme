@@ -65,6 +65,12 @@ export interface ChannelToken extends ChannelAccount {
    * key sign each call.
    */
   readonly accessToken: Redacted.Redacted;
+  /**
+   * The platform member the token belongs to, when the account is not
+   * theirs (a LinkedIn page's administrator); none when the channel was
+   * connected before Peal kept it, or for a token just renewed.
+   */
+  readonly tokenOwner?: string;
 }
 
 /** Why no usable token could be given. */
@@ -107,14 +113,20 @@ const isDue = (channel: Channel, now: DateTime.Utc): boolean =>
 const sameToken = (left: Redacted.Redacted, right: Redacted.Redacted) =>
   Redacted.value(left) === Redacted.value(right);
 
-const tokenOf = (channel: Channel, tokens: StoredTokens): ChannelToken => ({
-  accessToken: tokens.accessToken,
-  accountId: channel.accountId,
-  channelId: channel.id,
-  connection: channel.connection,
-  platform: channel.platform,
-  scopes: channel.scopes,
-});
+const tokenOf = (channel: Channel, tokens: StoredTokens): ChannelToken => {
+  const token: ChannelToken = {
+    accessToken: tokens.accessToken,
+    accountId: channel.accountId,
+    channelId: channel.id,
+    connection: channel.connection,
+    platform: channel.platform,
+    scopes: channel.scopes,
+  };
+
+  return tokens.tokenOwner === undefined
+    ? token
+    : { ...token, tokenOwner: tokens.tokenOwner };
+};
 
 /**
  * Hands publishing and analytics a token that works: decrypted, renewed through the

@@ -84,6 +84,18 @@ const outgoing = (changed: Partial<OutgoingReply> = {}): OutgoingReply => ({
   ...changed,
 });
 
+// A page, by its number, of the one synthetic member.
+const memberPage = (n: number) => ({
+  accountId: `urn:li:organization:900000000${String(n)}`,
+  channelId: ChannelIdSchema.make(
+    `01900000-0000-7000-8000-0000000000f${String(n)}`
+  ),
+  connection: Option.some("linkedinPage" as const),
+  platform: "linkedin" as const,
+  scopes: granted,
+  tokenOwner: "urn:li:person:syntheticMember1",
+});
+
 const firstReading = (batch: CommentsBatch) => {
   const [reading] = batch.readings;
 
@@ -94,7 +106,7 @@ const firstReading = (batch: CommentsBatch) => {
 const onLinkedIn = Effect.fnUntraced(function* onLinkedIn(
   account: Partial<ChannelAccount> = {},
   fake: FakeLinkedInCommentsOptions & {
-    readonly dailyCalls?: { readonly app: number; readonly perPage: number };
+    readonly dailyCalls?: { readonly app: number; readonly perMember: number };
   } = {}
 ) {
   const api = yield* fakeLinkedInComments(["li-token-1"], fake);
@@ -344,7 +356,7 @@ describe("LinkedIn pages' comments", () => {
         const { account, api, platform, quota } = yield* onLinkedIn(
           {},
           {
-            dailyCalls: { app: 100, perPage: 3 },
+            dailyCalls: { app: 100, perMember: 3 },
           }
         );
 
@@ -371,8 +383,49 @@ describe("LinkedIn pages' comments", () => {
       }).pipe(Effect.scoped)
   );
 
+  it.effect(
+    "counts two pages of one member against that member's one allowance",
+    () =>
+      Effect.gen(function* oneMember() {
+        const api = yield* fakeLinkedInComments(["li-token-1"]);
+        const quota = memoryQuota();
+
+        api.addPost(share, activity);
+
+        const reads = Effect.fnUntraced(function* reads(n: number) {
+          const page = memberPage(n);
+
+          const platform = yield* Effect.gen(function* building() {
+            return yield* linkedinEngagement({
+              api: new URL(api.url),
+              dailyCalls: { app: 100, perMember: 3 },
+              http: yield* publicHttpClient,
+              version: linkedinCommentsVersion,
+            });
+          }).pipe(
+            Effect.provide(
+              Layer.mergeAll(
+                channelAccessOf(page, ["li-token-1"]),
+                FetchHttpClient.layer,
+                OpenOutboundGuard,
+                quota.layer
+              )
+            )
+          );
+
+          return yield* platform.read(page, [thread(n)]);
+        });
+
+        // The first page takes two of the member's three calls; the
+        // second has one left, for its summary only.
+        assert.isFalse((yield* reads(1)).halted);
+        assert.isTrue((yield* reads(2)).halted);
+        assert.lengthOf(api.requests(), 3);
+      }).pipe(Effect.scoped)
+  );
+
   it("leaves most of LinkedIn's Development tier to publishing by default", () => {
-    assert.isAtMost(linkedinCommentsDailyCalls.perPage, 40);
+    assert.isAtMost(linkedinCommentsDailyCalls.perMember, 40);
     assert.isAtMost(linkedinCommentsDailyCalls.app, 250);
   });
 

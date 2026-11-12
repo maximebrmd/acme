@@ -112,16 +112,23 @@ const channelColumns = (channel: Channel) => {
   };
 };
 
+// A token without its owner (a renewal, an older sign-in) leaves the one
+// kept in place.
 const credentialColumns = ({
   accessToken,
   grantedBy,
   refreshToken,
-}: ChannelCredentials) => ({
-  accessToken,
-  grantedBy: grantedBy ?? null,
-  refreshToken: Option.getOrNull(refreshToken),
-  tokenKeyId: tokenKeyIdOf(accessToken),
-});
+  tokenOwner,
+}: ChannelCredentials) => {
+  const columns = {
+    accessToken,
+    grantedBy: grantedBy ?? null,
+    refreshToken: Option.getOrNull(refreshToken),
+    tokenKeyId: tokenKeyIdOf(accessToken),
+  };
+
+  return tokenOwner === undefined ? columns : { ...columns, tokenOwner };
+};
 
 // Whether the channel already asks for a reconnect.
 const isMarked = sql<boolean>`(${channels.status} = 'refreshNeeded')`;
@@ -264,6 +271,7 @@ export const DrizzleChannelRepository = Layer.effect(
           .select({
             accessToken: channels.accessToken,
             refreshToken: channels.refreshToken,
+            tokenOwner: channels.tokenOwner,
           })
           .from(channels)
           .where(eq(channels.id, channelId))
@@ -275,6 +283,10 @@ export const DrizzleChannelRepository = Layer.effect(
                 : decodeCredentials({
                     accessToken: row.accessToken,
                     refreshToken: Option.fromNullOr(row.refreshToken),
+                    ...Option.match(Option.fromNullOr(row.tokenOwner), {
+                      onNone: () => ({}),
+                      onSome: (tokenOwner) => ({ tokenOwner }),
+                    }),
                   }).pipe(Effect.orDie, Effect.map(Option.some))
             )
           ),

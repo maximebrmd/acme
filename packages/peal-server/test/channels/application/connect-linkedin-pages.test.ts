@@ -186,6 +186,34 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
       }).pipe(Effect.scoped)
   );
 
+  it.effect(
+    "keeps who the page's token belongs to, and keeps it through a reconnect that does not say",
+    () =>
+      Effect.gen(function* owner() {
+        const on = yield* onLinkedIn();
+        const workspaceId = yield* freshWorkspace;
+        const channel = yield* connectedPage(on, workspaceId);
+
+        const stored = yield* ChannelRepository.use((channels) =>
+          channels.credentials(channel.id)
+        ).pipe(Effect.map(Option.getOrThrow));
+
+        assert.strictEqual(
+          stored.tokenOwner,
+          `urn:li:person:${linkedinMember.sub}`
+        );
+
+        const token = yield* ChannelAccess.use((access) =>
+          access.withToken(channel.id, (given) => Effect.succeed(given))
+        ).pipe(Effect.provide(tokenJobs(workspaceId, on.authorizer)));
+
+        assert.strictEqual(
+          token.tokenOwner,
+          `urn:li:person:${linkedinMember.sub}`
+        );
+      })
+  );
+
   it.effect("connects the only page the member may post to, at once", () =>
     Effect.gen(function* connects() {
       const on = yield* onLinkedIn();

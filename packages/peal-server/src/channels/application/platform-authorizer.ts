@@ -79,6 +79,12 @@ export interface IssuedTokens {
    * user's data finds the channel by it. A refresh gives the same again.
    */
   readonly grantedBy?: string;
+  /**
+   * The platform member the token belongs to, when the account is not
+   * theirs: a LinkedIn page's administrator, whose calls LinkedIn counts
+   * per member. A refresh gives none, and the one kept stays.
+   */
+  readonly tokenOwner?: string;
 }
 
 /** An account the platform handed over: who it is, and its tokens. */
@@ -137,6 +143,8 @@ export const storableAuthorized = (authorized: Authorized): Authorized =>
 export interface StoredTokens {
   readonly accessToken: Redacted.Redacted;
   readonly refreshToken: Option.Option<Redacted.Redacted>;
+  /** The member the token belongs to, as `IssuedTokens.tokenOwner`. */
+  readonly tokenOwner?: string;
 }
 
 export type BeginFailure =
