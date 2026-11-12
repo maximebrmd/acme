@@ -325,6 +325,45 @@ layer(ImagesTest, { timeout: "60 seconds" })(
     );
 
     it.effect(
+      "gives the cost back when the plan has no room left to keep it",
+      () =>
+        Effect.gen(function* full() {
+          const workspaceId = yield* freshWorkspace;
+
+          const refused = yield* ask(
+            workspaceId,
+            image(new Uint8Array(8))
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "PlanLimitReached");
+          assert.strictEqual(yield* remainingIn(workspaceId), 10);
+        }).pipe(Effect.provide(imagesTest({ library: "full" })))
+    );
+
+    it.effect("makes no image while the workspace's plan is on trial", () =>
+      Effect.gen(function* trial() {
+        const workspaceId = yield* freshWorkspace;
+
+        const status = yield* WritingAssistant.use((assistant) =>
+          assistant.status(actorIn(workspaceId))
+        );
+
+        assert.strictEqual(status.images.dailyLimit, 0);
+
+        const refused = yield* ask(workspaceId, image(new Uint8Array(8))).pipe(
+          Effect.flip
+        );
+
+        assert.deepInclude(refused, {
+          _tag: "AssistantQuotaExceeded",
+          dailyLimit: 0,
+        });
+        assert.lengthOf(yield* sentRequests, 0);
+        assert.strictEqual(yield* remainingIn(workspaceId), 10);
+      }).pipe(Effect.provide(imagesTest({ imageRequests: 0 })))
+    );
+
+    it.effect(
       "counts bytes that are not an image, and keeps none of them",
       () =>
         Effect.gen(function* unusable() {
