@@ -6,7 +6,7 @@ import { YouTubeOptions } from "#publishing/domain/youtube-options.ts";
 import {
   quotaDayOf,
   untilQuotaReset,
-} from "#publishing/infrastructure/platforms/youtube/quota-day.ts";
+} from "#shared/infrastructure/platforms/youtube-quota-day.ts";
 import {
   thumbnailsBucket,
   uploadsBucket,

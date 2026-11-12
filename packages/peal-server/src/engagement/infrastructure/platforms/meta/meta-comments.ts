@@ -7,10 +7,8 @@ import type { HttpClientResponse as Response } from "effect/http";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import type { ActionOutcome } from "#engagement/application/ports/reply-sender.ts";
 import type { ReplyFailure, SendOutcome } from "#engagement/domain/reply.ts";
-import type {
-  OutgoingReply,
-  PlatformHttp,
-} from "#engagement/infrastructure/platforms/engagement-platform.ts";
+import type { PlatformHttp } from "#engagement/infrastructure/platforms/engagement-platform.ts";
+import { unanswered } from "#engagement/infrastructure/platforms/resumed-reply.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import { graphRefusalOf } from "#shared/infrastructure/platforms/graph-refusal.ts";
 import type { GraphRefusal } from "#shared/infrastructure/platforms/graph-refusal.ts";
@@ -176,18 +174,6 @@ export const notDone = (reason: ReplyFailure): ActionOutcome => ({
   reason,
 });
 
-/** A resumed reply nobody can tell the fate of: a person checks. */
-export const undecided: SendOutcome = {
-  _tag: "unconfirmed",
-  reason: "interrupted",
-};
-
-/** A reply that may have reached Meta without an answer coming back. */
-export const unanswered: SendOutcome = {
-  _tag: "unconfirmed",
-  reason: "noResponse",
-};
-
 /**
  * An instant as Meta writes it, ISO 8601 with an offset of four digits
  * (`2026-11-12T09:05:53+0000`) or with a colon; none otherwise.
@@ -276,53 +262,6 @@ export const madeOf = (response: Response.HttpClientResponse) =>
     // Made, and answered in a shape Peal cannot read.
     Effect.orElseSucceed(() => unanswered)
   );
-
-/**
- * How far Meta's clock and Peal's may differ when a reply's time on Meta
- * is compared with when Peal wrote it.
- */
-const clockSkew = Duration.minutes(1);
-
-/** A reply the account made under a comment, as Meta lists it. */
-export interface ListedReply {
-  readonly fromAccount: boolean;
-  readonly id: string;
-  readonly text: string;
-  readonly writtenAt: Option.Option<DateTime.Utc>;
-}
-
-/**
- * What a resumed reply is, from the replies Meta lists under its comment
- * (all of them: a list that may miss some proves nothing): sent when
- * exactly one by the account, written since the reply was (give or take
- * `clockSkew`), has its text and is none of the thread's other replies
- * (`takenIds`); otherwise unconfirmed, for a person to
- * settle. None found may be one Meta has not listed yet, and two alike
- * cannot be told apart: neither is sent again.
- */
-export const foundAmong = (
-  reply: OutgoingReply,
-  listed: readonly ListedReply[]
-): SendOutcome => {
-  const since = DateTime.subtractDuration(reply.createdAt, clockSkew);
-  const text = reply.text.trim();
-
-  const matching = listed.filter(
-    (candidate) =>
-      candidate.fromAccount &&
-      !reply.takenIds.includes(candidate.id) &&
-      candidate.text.trim() === text &&
-      Option.exists(candidate.writtenAt, (at) =>
-        DateTime.isGreaterThanOrEqualTo(at, since)
-      )
-  );
-
-  const [only] = matching;
-
-  return matching.length === 1 && only !== undefined
-    ? { _tag: "sent", permalink: Option.none(), platformCommentId: only.id }
-    : undecided;
-};
 
 /** The parameters of the page after `after`, if any. */
 export const pageAfter = (after: Option.Option<string>): Params =>
