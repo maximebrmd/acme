@@ -67,6 +67,9 @@
 - `get_usage` (`reports-tools.ts`) answers the usage endpoint's view
   (`#billing/api/usage-view.ts`), with `from` and `to` as text days;
   `get_billing` stays as it is. The CLI's is `peal usage`.
+  `get_partner_usage` (`connect-tools.ts`, reading, partner:read) answers
+  `GET …/usage/partner`'s view; a partner key on the MCP endpoint acts in
+  one workspace and uses `get_usage` there.
 - `get_channel_capabilities` and `run_channel_lookup`
   (`capabilities-tools.ts`) answer the views of the capabilities and lookups
   endpoints; they read, and are open world, as they may ask the platform.

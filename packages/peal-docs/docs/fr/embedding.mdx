@@ -280,17 +280,42 @@ Sur une instance qui facture, les espaces de travail que possède votre compte p
 - **Les autres limites s’appliquent à chaque espace de travail**, telles que l’abonnement les donne : les publications programmées dans le mois, les médias stockés, les demandes à l’assistant de rédaction par jour.
 - **Au-delà de l’abonnement.** Si votre abonnement devient plus petit que ce que vous détenez, rien n’est supprimé, mais tant que les canaux détenus n’y sont pas revenus, en en déconnectant ou en prenant un abonnement plus grand, vos espaces de travail ne programment et ne publient rien ([Un espace de travail au-delà de son abonnement](/billing#over)).
 
-Un Peal auto-hébergé sans facturation ne limite rien. `GET /api/partner` répond ce que le compte détient chaque jour : ce que compterait un prix à l’espace de travail ou au canal connecté.
+Un Peal auto-hébergé sans facturation ne limite rien. `GET /api/partner` répond ce que le compte détient chaque jour, et [son utilisation par client](#usage) ce que chaque espace de travail a utilisé : ce que compterait un prix à l’espace de travail ou au canal connecté.
+
+## Utilisation par client [#usage]
+
+Un seul appel répond ce que votre compte partenaire a utilisé dans les espaces de travail qu’il détient, par client avec votre propre identifiant pour chacun, sur une période de jours UTC : pour votre propre facturation et vos tableaux de bord.
+
+```bash
+curl "https://api.example.com/api/partner/usage?from=2026-11-01&to=2026-11-30&limit=50" \
+  -H "Authorization: Bearer $PEAL_PARTNER_KEY"
+```
+
+```typescript
+const usage = await peal.partnerUsage.get({
+  from: "2026-11-01",
+  to: "2026-11-30",
+});
+// usage.workspaces.workspaces : votre espace principal d’abord, puis celui de chaque client
+```
+
+- **Qui le lit.** Une clé partenaire avec la portée `workspaces:read` sur `GET /api/partner/usage`, ou les propriétaires et administrateurs de votre espace principal (`partner:read`) sur `GET /api/workspaces/{workspaceId}/usage/partner`, qui répond la même chose ; tout autre espace de travail répond 404 `PartnerNotFound`.
+- **La période.** `from` et `to` sont des jours UTC, tous deux inclus, 92 jours au plus ; par défaut les 30 jours qui se terminent aujourd’hui.
+- **Ce qu’il répond.** `current` : les espaces de travail que vous possédez aujourd’hui et les canaux connectés dans ceux-ci et dans votre espace principal, que compte la limite de canaux de votre abonnement. `days` : pour chaque jour, les espaces de travail et les canaux tels que le décompte quotidien les a trouvés à 23 h 41 UTC (null pour un jour sans décompte), et les publications mises en ligne. `totals` : les publications de la période par plateforme, ses jours-canal et, pour chaque mois civil qu’elle touche, les publications sur les plateformes qui facturent chaque publication.
+- **Par espace de travail.** `workspaces` en est une page, du plus récent au plus ancien, dans l’ordre et avec le curseur de [`GET /api/partner/workspaces`](#workspaces), 50 par page sauf si `limit` (au plus 100) en dit autrement : passez `next` comme `before` pour la page suivante. Votre espace principal vient en premier, sur la première page seulement, un de plus que demandé, avec `home: true`. `current`, `days` et `totals`, qui couvrent tout le compte, viennent avec la première page seulement, et valent `null` sur les pages suivantes, qui ne lisent que leurs propres espaces de travail. Chacun donne son `externalId`, les canaux qu’il a lui-même connectés aujourd’hui, et sur la période ses jours-canal, ses publications par plateforme, ses demandes à l’assistant de rédaction, son dernier stockage de médias et ses publications décomptées.
+- **Un client retiré pendant la période** n’est plus listé, et ses publications quittent les sommes, puisque ses décomptes ont été effacés avec lui ; les `workspaces` et `channels` quotidiens le comptent encore pour les jours où il existait.
+- Les décomptes quotidiens sont conservés {{keep-partner-usage-fr}}. Des comptes seulement : rien n’est facturé ici, et un Peal auto-hébergé sans facturation répond `plan` et `allowances` à null.
 
 ## Où sont les choses [#surfaces]
 
-| Pour                                                      | Utilisez                                                                                                                     |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Configurer le compte, créer et révoquer des clés          | L’application web : **Paramètres**, puis **Partenaire**                                                                      |
-| Créer, retrouver, modifier et supprimer des espaces       | `/api/partner`, avec une clé partenaire ; `partner` dans les SDK                                                             |
-| Agir dans un espace de travail                            | `/api/workspaces/{workspaceId}/…`, avec la même clé ; `connectLinks`, `channels`, `media`, `posts`, `analytics` dans les SDK |
-| Lire le compte et ses espaces en tant que personne        | `peal partner show`, `peal partner keys`, `peal partner workspaces` ([ligne de commande](/cli#partner))                      |
-| Créer un lien à la main pour un de vos espaces de travail | `peal links create` ([ligne de commande](/cli#links)), ou l’outil MCP `create_connect_link` ([MCP](/mcp#tools))              |
+| Pour                                                      | Utilisez                                                                                                                                                                                 |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Configurer le compte, créer et révoquer des clés          | L’application web : **Paramètres**, puis **Partenaire**                                                                                                                                  |
+| Créer, retrouver, modifier et supprimer des espaces       | `/api/partner`, avec une clé partenaire ; `partner` dans les SDK                                                                                                                         |
+| Agir dans un espace de travail                            | `/api/workspaces/{workspaceId}/…`, avec la même clé ; `connectLinks`, `channels`, `media`, `posts`, `analytics` dans les SDK                                                             |
+| Lire le compte et ses espaces en tant que personne        | `peal partner show`, `peal partner keys`, `peal partner workspaces` ([ligne de commande](/cli#partner))                                                                                  |
+| Lire l’utilisation par client                             | `GET /api/partner/usage`, avec la clé ; `partnerUsage` dans les SDK ; `peal partner usage`, l’outil MCP `get_partner_usage` et **Paramètres**, puis **Partenaire**, en tant que personne |
+| Créer un lien à la main pour un de vos espaces de travail | `peal links create` ([ligne de commande](/cli#links)), ou l’outil MCP `create_connect_link` ([MCP](/mcp#tools))                                                                          |
 
 La [référence de l’API](/reference) liste chaque point d’accès avec ses erreurs. Les SDK sont générés depuis le même contrat, dans huit langages.
 

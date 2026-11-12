@@ -1,9 +1,9 @@
 pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct InvalidDateRangeEncoded {
+pub struct InvalidTimeRangeEncoded {
     #[serde(rename = "_tag")]
-    pub tag: InvalidDateRangeEncodedTag,
+    pub tag: InvalidTimeRangeEncodedTag,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -13,23 +13,23 @@ pub struct InvalidDateRangeEncoded {
     pub request_id: Option<String>,
 }
 
-impl InvalidDateRangeEncoded {
-    pub fn builder() -> InvalidDateRangeEncodedBuilder {
-        <InvalidDateRangeEncodedBuilder as Default>::default()
+impl InvalidTimeRangeEncoded {
+    pub fn builder() -> InvalidTimeRangeEncodedBuilder {
+        <InvalidTimeRangeEncodedBuilder as Default>::default()
     }
 }
 
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
-pub struct InvalidDateRangeEncodedBuilder {
-    tag: Option<InvalidDateRangeEncodedTag>,
+pub struct InvalidTimeRangeEncodedBuilder {
+    tag: Option<InvalidTimeRangeEncodedTag>,
     code: Option<String>,
     message: Option<String>,
     request_id: Option<String>,
 }
 
-impl InvalidDateRangeEncodedBuilder {
-    pub fn tag(mut self, value: InvalidDateRangeEncodedTag) -> Self {
+impl InvalidTimeRangeEncodedBuilder {
+    pub fn tag(mut self, value: InvalidTimeRangeEncodedTag) -> Self {
         self.tag = Some(value);
         self
     }
@@ -49,11 +49,11 @@ impl InvalidDateRangeEncodedBuilder {
         self
     }
 
-    /// Consumes the builder and constructs a [`InvalidDateRangeEncoded`].
+    /// Consumes the builder and constructs a [`InvalidTimeRangeEncoded`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`tag`](InvalidDateRangeEncodedBuilder::tag)
-    pub fn build(self) -> Result<InvalidDateRangeEncoded, BuildError> {
-        Ok(InvalidDateRangeEncoded {
+    /// - [`tag`](InvalidTimeRangeEncodedBuilder::tag)
+    pub fn build(self) -> Result<InvalidTimeRangeEncoded, BuildError> {
+        Ok(InvalidTimeRangeEncoded {
             tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
             code: self.code,
             message: self.message,

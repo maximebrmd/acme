@@ -1517,6 +1517,7 @@ CREATE INDEX "manual_sends_window_start" ON "webhooks"."manual_sends" ("window_s
 CREATE INDEX "partner_idempotency_keys_created" ON "workspace"."partner_idempotency_keys" ("created_at");--> statement-breakpoint
 CREATE INDEX "partner_keys_partner" ON "workspace"."partner_keys" ("partner_id","id");--> statement-breakpoint
 CREATE INDEX "partner_keys_created_by" ON "workspace"."partner_keys" ("created_by");--> statement-breakpoint
+CREATE INDEX "partner_usage_days_day" ON "workspace"."partner_usage_days" ("day");--> statement-breakpoint
 CREATE INDEX "partner_workspaces_partner" ON "workspace"."partner_workspaces" ("partner_id","created_at");--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "auth"."account" ("user_id");--> statement-breakpoint
 CREATE INDEX "apikey_configId_idx" ON "auth"."apikey" ("config_id");--> statement-breakpoint

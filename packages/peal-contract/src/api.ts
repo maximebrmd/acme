@@ -30,6 +30,7 @@ import { MembersApi } from "./members.ts";
 import { NoticesApi } from "./notices.ts";
 import { NotificationPreferencesApi } from "./notification-preferences.ts";
 import { PartnerAccountApi } from "./partner-account.ts";
+import { PartnerUsageApi } from "./partner-usage.ts";
 import { PartnerApi } from "./partner.ts";
 import { PostsApi } from "./posts.ts";
 import { QueuesApi } from "./queues.ts";
@@ -535,7 +536,12 @@ export {
   defaultUsageRangeDays,
   maxUsageRangeDays,
   MeteredPostsSchema,
+  PartnerHoldingsSchema,
+  PartnerUsageReportDaySchema,
+  PartnerUsageReportSchema,
   PlatformPostsSchema,
+  TenantUsagePageSchema,
+  TenantUsageSchema,
   UsageApi,
   UsageDaySchema,
   UsagePeriodSchema,
@@ -545,9 +551,16 @@ export {
   WorkspaceUsageReportSchema,
 } from "./usage.ts";
 
+export { PartnerUsageApi } from "./partner-usage.ts";
+
 export type {
   MeteredPosts,
+  PartnerHoldings,
+  PartnerUsageReport,
+  PartnerUsageReportDay,
   PlatformPosts,
+  TenantUsage,
+  TenantUsagePage,
   UsageDay,
   UsagePeriod,
   UsageSharing,
@@ -1868,6 +1881,7 @@ export class Api extends HttpApi.make("peal")
   .add(AdsApi)
   .add(ActivityApi)
   .add(PartnerApi)
+  .add(PartnerUsageApi)
   .add(PartnerAccountApi)
   .add(ConnectLinksApi)
   .add(HostedConnectApi)

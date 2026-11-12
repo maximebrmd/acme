@@ -24,6 +24,7 @@ public partial interface IPealClient
     public IAdsClient Ads { get; }
     public IActivityClient Activity { get; }
     public IPartnerClient Partner { get; }
+    public IPartnerUsageClient PartnerUsage { get; }
     public IPartnerAccountClient PartnerAccount { get; }
     public IConnectLinksClient ConnectLinks { get; }
     public IReviewClient Review { get; }

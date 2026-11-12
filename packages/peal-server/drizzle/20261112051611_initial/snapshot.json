@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "d9ec696e-1e3d-43a4-a061-6341877db532",
+  "id": "ac77f6a8-d591-4179-a920-c47840e63dc3",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -4794,6 +4794,26 @@
         "n|tbl|workspace.partner_keys",
         "n|sch|workspace",
         "n|col|workspace.partner_keys.created_by"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "workspace",
+        "partner_usage_days",
+        "partner_usage_days_day"
+      ],
+      "writes": [
+        "s|idx|workspace.partner_usage_days_day",
+        "n|idx|workspace.partner_usage_days_day",
+        "e|idx|workspace.partner_usage_days_day",
+        "n|rel|workspace.partner_usage_days_day"
+      ],
+      "reads": [
+        "n|tbl|workspace.partner_usage_days",
+        "n|sch|workspace",
+        "n|col|workspace.partner_usage_days.day"
       ]
     },
     {
@@ -23269,6 +23289,27 @@
       "columns": [
         {
           "value": "created_by",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_usage_days",
+      "name": "partner_usage_days_day",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "day",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,

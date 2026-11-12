@@ -5,7 +5,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum BadRequestErrorBody {
     #[non_exhaustive]
-    InvalidTimeRange {
+    InvalidDateRange {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -26,8 +26,8 @@ pub enum BadRequestErrorBody {
 }
 
 impl BadRequestErrorBody {
-    pub fn invalid_time_range() -> Self {
-        Self::InvalidTimeRange {
+    pub fn invalid_date_range() -> Self {
+        Self::InvalidDateRange {
             code: None,
             message: None,
             request_id: None,
@@ -38,36 +38,36 @@ impl BadRequestErrorBody {
         Self::BadRequest {}
     }
 
-    pub fn invalid_time_range_with_code(
+    pub fn invalid_date_range_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
     ) -> Self {
-        Self::InvalidTimeRange {
+        Self::InvalidDateRange {
             code: Some(code),
             message,
             request_id,
         }
     }
 
-    pub fn invalid_time_range_with_message(
+    pub fn invalid_date_range_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
     ) -> Self {
-        Self::InvalidTimeRange {
+        Self::InvalidDateRange {
             code,
             message: Some(message),
             request_id,
         }
     }
 
-    pub fn invalid_time_range_with_request_id(
+    pub fn invalid_date_range_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
     ) -> Self {
-        Self::InvalidTimeRange {
+        Self::InvalidDateRange {
             code,
             message,
             request_id: Some(request_id),

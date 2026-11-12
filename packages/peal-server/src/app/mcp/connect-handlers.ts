@@ -1,8 +1,11 @@
 import { DateTime, Effect, Option, Redacted } from "effect";
 import { CurrentMember } from "peal-contract";
+import type { CalendarDay } from "peal-contract";
 
 import { ConnectTools } from "#app/mcp/connect-tools.ts";
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";
+import { partnerUsageView as partnerUsageReportView } from "#billing/api/usage-view.ts";
+import { UsageReports } from "#billing/application/usage-reports.ts";
 import { toConnectLinkView } from "#channels/api/connect-link-view.ts";
 import { ConnectLinks } from "#channels/application/connect-links.ts";
 import { actorOf } from "#shared/api/actor.ts";
@@ -21,15 +24,23 @@ const noPartner = () =>
     "The workspace has no partner account. An owner or an admin opens one in the web app's settings, where the server lets them; otherwise the people who run the server do."
   );
 
+// A day the tool's schema checked, as its first instant (UTC).
+const dayFrom = (day: CalendarDay | undefined) =>
+  Option.fromUndefinedOr(day).pipe(
+    Option.flatMap((given) => DateTime.make(`${given}T00:00:00Z`))
+  );
+
 /**
  * What the connect tools do, through the channels context's connect links
- * and the workspace context's partner accounts.
+ * the workspace context's partner accounts, and billing's report of a
+ * partner's usage per customer.
  */
 export const ConnectToolsLive = ConnectTools.toLayer(
   Effect.gen(function* connectTools() {
     const links = yield* ConnectLinks;
     const accounts = yield* PartnerAccounts;
     const workspaces = yield* PartnerWorkspaces;
+    const reports = yield* UsageReports;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
@@ -114,6 +125,33 @@ export const ConnectToolsLive = ConnectTools.toLayer(
             partner: partnerView(account.value),
             usage: Option.getOrNull(usage.pipe(Option.map(partnerUsageView))),
           };
+        }),
+      get_partner_usage: ({ before, from, limit, to }) =>
+        Effect.gen(function* partnerUsage() {
+          const found = yield* reports
+            .ofPartner(yield* actor, {
+              before: Option.fromUndefinedOr(before),
+              from: dayFrom(from),
+              limit: Option.fromUndefinedOr(limit),
+              to: dayFrom(to),
+            })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                InvalidTenantCursor: () =>
+                  refuse(
+                    "That `before` is not what a page gave as its workspaces' `next`: pass it as it is, or leave it out for the first page."
+                  ),
+                InvalidUsageRange: ({ maxDays }) =>
+                  refuse(
+                    `The range must end on or after the day it starts, and span ${String(maxDays)} days at most.`
+                  ),
+                MissingPermission: notAllowed("read the partner account"),
+                NoPartnerAccount: noPartner,
+              })
+            );
+
+          return partnerUsageReportView(found);
         }),
       list_connect_links: () =>
         Effect.gen(function* list() {

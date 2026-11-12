@@ -62,6 +62,7 @@ Sous l’abonnement, la page **Facturation** de l’espace de travail montre ce 
 - `current` est ce que compte chaque limite maintenant, comme sur la page Facturation. Un espace de travail qu’un partenaire possède compte ses canaux dans l’abonnement du partenaire : `sharedWith` nomme l’espace de travail du partenaire.
 - Les décomptes sont conservés {{keep-usage-fr}}, puis supprimés ; une plage qui commence plus tôt répond ce qui est conservé. Ils sont supprimés avec l’espace de travail, et son export de données les contient.
 - Ce ne sont que des décomptes : rien n’est facturé, prélevé ou limité d’après eux. Un serveur qui ne facture pas conserve et répond les mêmes décomptes, avec `plan` et `allowances` à null.
+- Un compte partenaire lit la même chose pour tous les espaces de travail qu’il détient, par client : [Utilisation par client](/embedding#usage).
 
 ## Commander [#ordering]
 

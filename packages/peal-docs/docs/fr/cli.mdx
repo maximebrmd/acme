@@ -610,9 +610,10 @@ peal links revoke <link-id>
 peal partner show
 peal partner keys
 peal partner workspaces --external-id cus_42
+peal partner usage --from 2026-11-01 --to 2026-11-30
 ```
 
-Pour les propriétaires et administrateurs d’un espace de travail qui a un [compte partenaire](/embedding) : `show` affiche ce que voient ses clients, les origines vers lesquelles les pages hébergées peuvent les renvoyer, et ce qu’il détient ; `keys` liste ses clés, jamais les clés elles-mêmes ; `workspaces` liste les espaces de travail qu’il possède, du plus récent au plus ancien, avec leurs identifiants externes et leurs canaux, `--external-id` en trouvant un exactement et `--name` cherchant. Créer et supprimer ces espaces revient à l’API partenaire, avec une clé partenaire, et créer une clé aux **Paramètres** de l’espace de travail.
+Pour les propriétaires et administrateurs d’un espace de travail qui a un [compte partenaire](/embedding) : `show` affiche ce que voient ses clients, les origines vers lesquelles les pages hébergées peuvent les renvoyer, et ce qu’il détient ; `keys` liste ses clés, jamais les clés elles-mêmes ; `workspaces` liste les espaces de travail qu’il possède, du plus récent au plus ancien, avec leurs identifiants externes et leurs canaux, `--external-id` en trouvant un exactement et `--name` cherchant ; `usage` affiche ce que le compte a utilisé par client sur une période de jours UTC (`--from`, `--to`, les 30 derniers par défaut, 92 au plus) : sur la première page, ce qu’il détient aujourd’hui et les totaux ; puis une ligne par espace de travail, l’identifiant externe en premier, son espace principal en tête de la première page, `--limit` et `--before` paginant comme l’[API](/embedding#usage), et la commande de la page suivante, sur les mêmes jours. Créer et supprimer ces espaces revient à l’API partenaire, avec une clé partenaire, et créer une clé aux **Paramètres** de l’espace de travail.
 
 ## Publicités [#ads]
 

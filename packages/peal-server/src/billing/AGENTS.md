@@ -156,7 +156,24 @@
   usage`; the contract copies its constants, which
   `test/billing/api/contract.test.ts` keeps equal, as the privacy
   registry's `usageDays` (category `usage`) is kept by
-  `data-processing.test.ts`. Nothing prices or
+  `data-processing.test.ts`. `UsageReports.ofPartner` (a member with
+  partner:read, `GET …/usage/partner`) and `ofPartnerKey` (a partner key
+  with `workspaces:read`, `GET /api/partner/usage`, `PartnerUsageApi`,
+  refused in the partner API's words from `#shared/api/partner-key.ts`)
+  answer a partner's usage per customer: what the workspace context's
+  `PartnerTenants` says it holds, through billing's port `PartnerTenancy`
+  (`WorkspacePartnerTenancyLive`, which maps its refusals to billing's
+  own), checked before the period, then set-based reads, their ids one
+  array parameter (`anyUuid`, `#shared/infrastructure/any-uuid.ts`: a
+  statement takes 65,535 parameters, so never `inArray` over a partner's
+  workspaces): `UsageLedger.ofWorkspaces` for the page, grouped by
+  workspace once, and, on the first page only, `postsAcross`,
+  `MeteredPostLedger.ofWorkspaces` over every workspace it holds and the
+  partner's daily counts for `current`, `days` and `totals`, which are
+  null on the pages after it. An empty list asks nothing. An offboarded workspace's rows went
+  with it: it leaves the list and the sums, never the daily counts. The
+  MCP tool is `get_partner_usage`, the CLI's `peal partner usage`.
+  Nothing prices or
   limits by it: the priced half (a partner's unit, platform costs per
   call) is undecided, and goes in as new meters and use cases. The ledger
   goes with the workspace's export (`usage`) and erasure.

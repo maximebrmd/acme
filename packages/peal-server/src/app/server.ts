@@ -41,6 +41,7 @@ import {
   BillingActionsApiLive,
   BillingLive,
   BillingOverviewLive,
+  PartnerUsageApiLive,
   UsageApiLive,
   ContractRequestsDeskApiLive,
   ContractRequestsLive as ContractRequestsUseCasesLive,
@@ -122,6 +123,7 @@ import {
   CredentialNamesLive,
   ErasureReplayLive,
   PartnerOwnershipLive,
+  PartnerTenantsLive,
   StripeCheckoutsLive,
   WorkspaceApiLive,
   WorkspaceLive,
@@ -142,6 +144,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   BillingApiLive,
   BillingActionsApiLive,
   UsageApiLive,
+  PartnerUsageApiLive,
   AnalyticsApiLive,
   TikTokApiLive,
   CapabilitiesApiLive,
@@ -387,8 +390,10 @@ const LegalRequestsContextLive = LegalRequestsLive.pipe(
 
 // The billing page, which counts what each context holds, and its
 // orders, cancellations and withdrawals, which tell members through the
-// notices.
+// notices; and a partner's usage per customer, from the workspaces the
+// workspace context says it holds.
 const BillingContextLive = BillingOverviewLive.pipe(
+  Layer.provide(PartnerTenantsLive),
   Layer.provide(
     Layer.mergeAll(
       ChannelsWithNoticesLive,
