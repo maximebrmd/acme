@@ -12,8 +12,9 @@ import { mediaAssets } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
-// A copy of the data holds a link to each file the user uploaded, as
-// portability asks for what they provided: presigned, even when the bucket
+// A copy of the data holds a link to each file of the workspace's media,
+// those the assistant made marked as such, as portability asks for what
+// members provided: presigned, even when the bucket
 // is served publicly, for the longest a presigned GET works.
 export const downloadLifetime = Duration.days(7);
 
@@ -60,6 +61,7 @@ export const DrizzleMediaRecords = Layer.effect(
         function* exportWorkspace(workspaceId) {
           const rows = yield* db
             .select({
+              aiGenerated: mediaAssets.aiGenerated,
               altText: mediaAssets.altText,
               byteSize: mediaAssets.byteSize,
               contentType: mediaAssets.contentType,
