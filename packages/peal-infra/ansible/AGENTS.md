@@ -65,6 +65,17 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   hides URLs, conditions and errors; Caddy serves it by GET and HEAD alone
   (`status.caddy`), and the heartbeats never go through its name. Both names have DNS
   records Cloudflare does not proxy (the infra README's "The status page").
+- The uptime server may be a host the owner uses for other sites
+  (`uptime_shared_host: true`, in its Git-ignored `local.yml`): `uptime.yml`
+  skips every task of `system`, `ssh`, `docker` and `firewall` there, and
+  `bootstrap.yml` refuses it. On it the `uptime` role changes nothing of
+  the host's own (no package, setting, firewall rule, or account but
+  `gatus`), publishes Gatus on 127.0.0.1 alone, on ports it checks are
+  free, and serves the names through the host's Caddy from one site file,
+  validated with the whole configuration as Caddy's user before a reload
+  and taken out when Caddy refuses it. A change to the role leaves the
+  dedicated server's rendered files as they were unless it means to change
+  them; `tests/test_uptime_shared_host.py` covers the shared host.
 - Postgres archives its write-ahead log and is backed up to R2 with
   pgBackRest; the backup passphrase is the one secret kept outside the server
   too. R2 buckets are in its EU jurisdiction (`<account>.eu.r2…`).
