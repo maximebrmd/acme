@@ -16,6 +16,21 @@ The staff context follows these rules too. What the law has a host keep is in
   shows the widget only then. Tests check tokens with Cloudflare's test keys
   against the fake siteverify in `test/workspace/fakes/fake-turnstile.ts`,
   through `TURNSTILE_VERIFY_URL`.
+- `PEAL_SIGN_UP` (`sign-up-settings.ts`, `SignUpSettings`): `open`, the
+  default, or `invitation`, where `refuseUnadmittedSignUps`
+  (`auth/sign-up-gate.ts`, in `beforeEveryRoute`, after the impersonation
+  guard) refuses `/sign-up/email` with 403 `SIGN_UP_BY_INVITATION` unless
+  `SignUpGate` admits the address: a pending, unexpired invitation to it
+  (lower-cased, as Better Auth stores and compares them; one read on the
+  invitation's address index, `DrizzleSignUpStore`), or a server with no
+  account at all, the first one. The refusal is the same for every address
+  it refuses, with an account or not, and an admitted address with an
+  account still gets Better Auth's made-up user. Two first sign-ups at once
+  may both pass: the docs tell the operator to sign up before the address
+  is public. The captcha plugin checks its token first (`onRequest`).
+  `GET /api/captcha` tells the web app the mode (`signUp`). Everything else
+  (signing in, resets, accepting, staff, partners, connect and review
+  links) is the same in both modes.
 - Workspaces are Better Auth organizations. The five roles (owner, admin,
   editor, contributor, viewer) and their grants are in
   `workspace/domain/roles.ts`, translated for Better Auth in
