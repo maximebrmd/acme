@@ -118,15 +118,20 @@ export const LivePostActions = ({
 
   // Once a change ends, the post says something new (an edit's text, the
   // channel removed): read it again, so an editor opens on the new text.
-  const lastListed = useRef(listed);
+  const loaded = AsyncResult.isSuccess(changes);
+  const lastListed = useRef(Option.none<readonly LivePostChange[]>());
 
   useEffect(() => {
-    if (endedSince(lastListed.current, listed)) {
+    if (!loaded) {
+      return;
+    }
+
+    if (endedSince(lastListed.current, listed, target.id)) {
       refreshPost();
     }
 
-    lastListed.current = listed;
-  }, [listed, refreshPost]);
+    lastListed.current = Option.some(listed);
+  }, [listed, loaded, refreshPost, target.id]);
 
   const refresh = useCallback(() => {
     if (removing) {

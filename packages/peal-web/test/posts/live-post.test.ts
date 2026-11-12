@@ -93,29 +93,37 @@ describe("where a channel of a live post stands", () => {
   });
 });
 
-describe("a change that ended since the page last read the changes", () => {
+// The changes as a read of them answered them.
+const read = (changes: readonly LivePostChange[]) => Option.some(changes);
+
+describe("a change of the channel that ended since the page last read the changes", () => {
   it("is one that was pending and no longer is, whatever its kind", () => {
-    const before = [change("1", "pending", null, "edit")];
+    const before = read([change("1", "pending", null, "edit")]);
 
     expect(
-      endedSince(before, [change("1", "done", null, "edit")])
+      endedSince(before, [change("1", "done", null, "edit")], "t1")
     ).toBeTruthy();
     expect(
-      endedSince(before, [change("1", "failed", "postGone", "edit")])
+      endedSince(before, [change("1", "failed", "postGone", "edit")], "t1")
     ).toBeTruthy();
     expect(
-      endedSince([change("2", "pending")], [change("2", "done")])
+      endedSince(read([change("2", "pending")]), [change("2", "done")], "t1")
     ).toBeTruthy();
   });
 
-  it("is none while it is pending, or when nothing was pending before", () => {
+  it("is one that ended before the page ever saw it pending", () => {
+    expect(endedSince(read([]), [change("1", "done")], "t1")).toBeTruthy();
+  });
+
+  it("is none while it is pending, before the first read, or on another channel", () => {
     expect(
-      endedSince([change("1", "pending")], [change("1", "pending")])
+      endedSince(read([change("1", "pending")]), [change("1", "pending")], "t1")
     ).toBeFalsy();
-    expect(endedSince([], [change("1", "done")])).toBeFalsy();
+    expect(endedSince(Option.none(), [change("1", "done")], "t1")).toBeFalsy();
     expect(
-      endedSince([change("1", "done")], [change("1", "done")])
+      endedSince(read([change("1", "done")]), [change("1", "done")], "t1")
     ).toBeFalsy();
+    expect(endedSince(read([]), [change("1", "done")], "t2")).toBeFalsy();
   });
 });
 

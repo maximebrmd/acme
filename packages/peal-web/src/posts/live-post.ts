@@ -177,20 +177,35 @@ export const isRemoving = (changes: readonly LivePostChange[]): boolean =>
   changes.some(({ status }) => status === "pending");
 
 /**
- * Whether a change that was pending in `before` has ended in `now`: the
- * post then says something new (an edit's text, a removal), so the page
- * reads it again.
+ * Whether a change of the target `targetId` ended between two reads of the
+ * post's changes: one pending before and no longer, or one that ended
+ * before the page ever saw it pending (absent from the read before). None
+ * before the first read (`before` none). The post then says something new
+ * (an edit's text, a removal), so the page reads it again, once for the
+ * channel whose change it is.
  */
 export const endedSince = (
-  before: readonly LivePostChange[],
-  now: readonly LivePostChange[]
-): boolean => {
-  const pending = new Set(
-    before.flatMap(({ id, status }) => (status === "pending" ? [id] : []))
-  );
+  before: Option.Option<readonly LivePostChange[]>,
+  now: readonly LivePostChange[],
+  targetId: string
+): boolean =>
+  Option.match(before, {
+    onNone: () => false,
+    onSome: (earlier) => {
+      const pending = new Set(
+        earlier.flatMap(({ id, status }) => (status === "pending" ? [id] : []))
+      );
 
-  return now.some(({ id, status }) => pending.has(id) && status !== "pending");
-};
+      const seen = new Set(earlier.map(({ id }) => id));
+
+      return now.some(
+        (change) =>
+          change.targetId === targetId &&
+          change.status !== "pending" &&
+          (pending.has(change.id) || !seen.has(change.id))
+      );
+    },
+  });
 
 /**
  * Whether Peal removed the post from every channel it went live on: the
