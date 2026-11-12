@@ -13,6 +13,8 @@ public final class PaidPlan {
 
     public static final PaidPlan PRO = new PaidPlan(Value.PRO, "pro");
 
+    public static final PaidPlan PAY_AS_YOU_GO = new PaidPlan(Value.PAY_AS_YOU_GO, "payAsYouGo");
+
     public static final PaidPlan BUSINESS = new PaidPlan(Value.BUSINESS, "business");
 
     private final Value value;
@@ -52,6 +54,8 @@ public final class PaidPlan {
                 return visitor.visitAgency();
             case PRO:
                 return visitor.visitPro();
+            case PAY_AS_YOU_GO:
+                return visitor.visitPayAsYouGo();
             case BUSINESS:
                 return visitor.visitBusiness();
             case UNKNOWN:
@@ -69,6 +73,8 @@ public final class PaidPlan {
                 return AGENCY;
             case "pro":
                 return PRO;
+            case "payAsYouGo":
+                return PAY_AS_YOU_GO;
             case "business":
                 return BUSINESS;
             default:
@@ -85,6 +91,8 @@ public final class PaidPlan {
 
         AGENCY,
 
+        PAY_AS_YOU_GO,
+
         UNKNOWN
     }
 
@@ -96,6 +104,8 @@ public final class PaidPlan {
         T visitBusiness();
 
         T visitAgency();
+
+        T visitPayAsYouGo();
 
         T visitUnknown(String unknownType);
     }

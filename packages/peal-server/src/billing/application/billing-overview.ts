@@ -3,7 +3,7 @@ import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
 import type { Entitlements } from "#billing/domain/entitlements.ts";
 import {
   planAllowances,
-  plans,
+  legacyPlans,
   trialDays,
   trialPlan,
 } from "#billing/domain/plans.ts";
@@ -16,7 +16,7 @@ import type { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
-import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
+import type { LegacyPlan, PaidPlan, Plan } from "#shared/domain/plan.ts";
 
 import { trialOffered } from "./place-order.ts";
 import type { MemberAddresses } from "./ports/member-addresses.ts";
@@ -56,11 +56,11 @@ export interface Overview {
   readonly withdrawableUntil: Option.Option<DateTime.Utc>;
 }
 
-const priceOfPlan = (plan: Plan): Option.Option<PlanPrice> =>
+const priceOfPlan = (plan: LegacyPlan): Option.Option<PlanPrice> =>
   plan === "free" ? Option.none() : Option.some(planPrices[plan]);
 
 /** Every plan, with its allowances and prices. */
-export const catalogue: readonly PlanOffer[] = plans.map((plan) => ({
+export const catalogue: readonly PlanOffer[] = legacyPlans.map((plan) => ({
   allowances: planAllowances[plan],
   plan,
   price: priceOfPlan(plan),

@@ -17,8 +17,8 @@ import type { Allowance } from "#shared/domain/allowance.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { LocaleSchema } from "#shared/domain/locale.ts";
-import { PaidPlanSchema } from "#shared/domain/plan.ts";
-import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
+import { LegacyPaidPlanSchema } from "#shared/domain/plan.ts";
+import type { LegacyPaidPlan, PaidPlan, Plan } from "#shared/domain/plan.ts";
 import type { CaptchaSettings } from "#shared/infrastructure/captcha-settings.ts";
 import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import type { StripeSettings } from "#shared/infrastructure/stripe-settings.ts";
@@ -30,7 +30,7 @@ export interface CheckoutStart {
   readonly email: string;
   readonly interval: "month" | "year";
   readonly orderId: string;
-  readonly plan: PaidPlan;
+  readonly plan: LegacyPaidPlan;
   readonly userId: UserId;
   readonly workspaceId: WorkspaceId;
 }
@@ -99,6 +99,10 @@ export const turnstile = (settings: CaptchaSettings) =>
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
 
 const decodeUserId = Schema.decodeUnknownOption(UserIdSchema);
+
+// Better Auth's plans are the legacy ones: per-account pricing is not
+// offered at checkout yet.
+const decodeLegacyPlan = Schema.decodeUnknownOption(LegacyPaidPlanSchema);
 
 const stripeInstant = Schema.optionalKey(Schema.NullOr(Schema.Number));
 
@@ -175,7 +179,7 @@ const workspaceOfCustomer = async (
 // plan's, by its lookup key.
 interface PricedPlan {
   readonly interval: "month" | "year";
-  readonly plan: PaidPlan;
+  readonly plan: LegacyPaidPlan;
 }
 
 const planOf = (
@@ -183,7 +187,7 @@ const planOf = (
   lookupKeys: readonly (string | null | undefined)[]
 ): Option.Option<PricedPlan> =>
   Option.fromUndefinedOr(
-    PaidPlanSchema.literals
+    LegacyPaidPlanSchema.literals
       .flatMap((plan): PricedPlan[] => [
         ...(lookupKeys.includes(prices[plan].month)
           ? [{ interval: "month" as const, plan }]
@@ -427,7 +431,7 @@ export const checkoutParams =
     const body = decodeUpgradeBody(ctx?.body).pipe(Option.getOrUndefined);
     const workspaceId = decodeWorkspaceId(subscription.referenceId);
     const userId = decodeUserId(user.id);
-    const paidPlan = Schema.decodeUnknownOption(PaidPlanSchema)(plan.name);
+    const paidPlan = decodeLegacyPlan(plan.name);
     const orderId = body?.metadata?.orderId;
 
     if (
@@ -566,7 +570,7 @@ const checkoutDuringTrial = async (
     readonly interval: "month" | "year";
     readonly locale: Option.Option<"en" | "fr">;
     readonly orderId: string;
-    readonly plan: PaidPlan;
+    readonly plan: LegacyPaidPlan;
     readonly successUrl: string;
     readonly userId: UserId;
     readonly workspaceId: WorkspaceId;
@@ -656,7 +660,7 @@ const checkoutInstead = async (
   }
 
   const workspaceId = decodeWorkspaceId(request.value.referenceId);
-  const plan = Schema.decodeUnknownOption(PaidPlanSchema)(request.value.plan);
+  const plan = decodeLegacyPlan(request.value.plan);
 
   if (Option.isNone(workspaceId) || Option.isNone(plan)) {
     return Option.none();
@@ -760,7 +764,7 @@ export const stripeBilling = (
 ) => {
   const client = stripeClientOf(settings);
 
-  const plans: StripePlan[] = PaidPlanSchema.literals.map((name) => ({
+  const plans: StripePlan[] = LegacyPaidPlanSchema.literals.map((name) => ({
     annualDiscountLookupKey: settings.prices[name].year,
     lookupKey: settings.prices[name].month,
     name,

@@ -1963,7 +1963,7 @@
       "recyclingEnded": "A post stops repeating",
       "feedStopped": "A feed stops making posts"
     },
-    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
+    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Per-account pricing} other {{plan}}}",
     "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
     "excessStorage": "{used} of media, {allowed} allowed",
     "boostReason": "{reason, select, accountUnusable {the ad account cannot run ads at the moment.} accountSpendCap {the ad account’s own spend cap leaves too little room.} ceilingExceeded {the monthly ceiling leaves too little room.} spendingOff {spending was turned off for the ad account.} currencyMismatch {its currency is not the ad account’s.} budgetTooLow {the budget is under the ad network’s minimum.} postNotPromotable {the post cannot be shown as an ad.} permissionMissing {the sign-in to the ad network lacks a permission ads need.} reconnectNeeded {the ad network refused the sign-in, which its person renews by signing in again.} networkUnavailable {the ad network did not answer for too long.} spendingUnavailable {this server no longer offers spending on ads.} other {the ad network refused it.}}",
@@ -1977,7 +1977,7 @@
     "description": "The plan of {workspace}, and how much of it the workspace uses.",
     "loadFailed": "The billing could not be loaded.",
     "retry": "Try again",
-    "plan": "{plan, select, free {Free} starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
+    "plan": "{plan, select, free {Free} starter {Starter} pro {Pro} business {Business} agency {Agency} payAsYouGo {Per-account pricing} other {{plan}}}",
     "off": {
       "title": "Nothing is limited",
       "description": "This server does not bill workspaces: there is no plan, and every feature is available without limits."

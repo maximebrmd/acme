@@ -6,7 +6,7 @@ import { Config, ConfigProvider, Effect, Layer } from "effect";
 
 import { priceOf } from "#billing/domain/prices.ts";
 import { StripePricesCheckedLive } from "#billing/infrastructure/stripe-prices-checked.ts";
-import { PaidPlanSchema } from "#shared/domain/plan.ts";
+import { LegacyPaidPlanSchema } from "#shared/domain/plan.ts";
 import {
   empty,
   json,
@@ -21,7 +21,7 @@ import type {
 const prices = (
   change: (price: Record<string, JsonValue>) => Record<string, JsonValue>
 ): JsonValue[] =>
-  PaidPlanSchema.literals.flatMap((plan) =>
+  LegacyPaidPlanSchema.literals.flatMap((plan) =>
     (["month", "year"] as const).map((interval) =>
       change({
         active: true,
@@ -72,7 +72,7 @@ layer(Layer.empty)("Stripe's prices when the server starts", (it) => {
         [...(stripe.requests()[0]?.query.entries() ?? [])].flatMap(
           ([name, value]) => (name.startsWith("lookup_keys") ? [value] : [])
         ),
-        PaidPlanSchema.literals.flatMap((plan) => [
+        LegacyPaidPlanSchema.literals.flatMap((plan) => [
           `peal_${plan}_monthly`,
           `peal_${plan}_yearly`,
         ])

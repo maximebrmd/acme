@@ -232,6 +232,7 @@ export const french: EmailCatalog = {
   plans: {
     agency: "Agency",
     business: "Business",
+    payAsYouGo: "Tarif par compte",
     pro: "Pro",
     starter: "Starter",
   },

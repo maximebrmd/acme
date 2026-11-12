@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Duration, Option } from "effect";
+import { Duration, Option, Schema } from "effect";
 import {
   billingCurrency,
   defaultUsageRangeDays as contractDefaultRange,
@@ -8,6 +8,7 @@ import {
   usageRetentionDays as contractRetention,
   BillingIntervalSchema as ContractIntervalSchema,
   displayVatRate as contractVatRate,
+  OrderablePlanSchema as ContractOrderablePlanSchema,
   planCatalogue,
   trialOffer,
   PaidPlanSchema as ContractPaidPlanSchema,
@@ -15,11 +16,20 @@ import {
   PlanSchema as ContractPlanSchema,
   SubscriptionStatusSchema as ContractStatusSchema,
 } from "peal-contract";
+import {
+  accountsCharge as contractAccountsCharge,
+  accountsMonthly as contractAccountsMonthly,
+  meterCharge as contractMeterCharge,
+  MeterSchema as ContractMeterSchema,
+  rateCard as contractRateCard,
+  RateCardSchema,
+} from "peal-contract/rate-card";
 
 import { BillingIntervalSchema } from "#billing/domain/billing-interval.ts";
 import { desiredDayHorizon } from "#billing/domain/desired-day.ts";
 import {
   planAllowances,
+  legacyPlans,
   plans,
   trialDays,
   trialPlan,
@@ -29,6 +39,13 @@ import {
   displayVatRate,
   planPrices,
 } from "#billing/domain/prices.ts";
+import {
+  accountsCharge,
+  accountsMonthly,
+  meterCharge,
+  MeterSchema,
+  rateCard,
+} from "#billing/domain/rate-card.ts";
 import { SubscriptionStatusSchema } from "#billing/domain/subscription.ts";
 import {
   defaultUsageRangeDays,
@@ -36,7 +53,29 @@ import {
   usageRetentionDays,
 } from "#billing/domain/usage-meter.ts";
 import { PlanLimitSchema } from "#shared/domain/plan-limit.ts";
-import { PaidPlanSchema, PlanSchema } from "#shared/domain/plan.ts";
+import {
+  LegacyPaidPlanSchema,
+  PaidPlanSchema,
+  PlanSchema,
+} from "#shared/domain/plan.ts";
+
+const decodeObjectSchema = Schema.decodeUnknownSync(
+  Schema.Struct({
+    properties: Schema.Record(
+      Schema.String,
+      Schema.Struct({ format: Schema.optional(Schema.String) })
+    ),
+  })
+);
+
+const decodeDocument = Schema.decodeUnknownSync(
+  Schema.Struct({
+    definitions: Schema.Record(
+      Schema.String,
+      Schema.Struct({ description: Schema.optional(Schema.String) })
+    ),
+  })
+);
 
 describe("the contract", () => {
   it("states the usage reports' ranges and retention the server keeps", () => {
@@ -59,6 +98,12 @@ describe("the contract", () => {
     );
   });
 
+  it("takes orders for the legacy plans only, as the server does", () => {
+    expect(ContractOrderablePlanSchema.literals).toStrictEqual(
+      LegacyPaidPlanSchema.literals
+    );
+  });
+
   it("lists the intervals the server bills", () => {
     expect(ContractIntervalSchema.literals).toStrictEqual(
       BillingIntervalSchema.literals
@@ -66,8 +111,8 @@ describe("the contract", () => {
   });
 
   // The site and the web app show these before anyone signs in.
-  it("publishes the plans' limits and prices the server bills", () => {
-    for (const plan of plans) {
+  it("publishes the legacy plans' limits and prices the server bills", () => {
+    for (const plan of legacyPlans) {
       const { limits, price } = planCatalogue[plan];
 
       expect(limits).toStrictEqual(
@@ -82,7 +127,7 @@ describe("the contract", () => {
     }
 
     expect(Object.keys(planCatalogue).toSorted()).toStrictEqual(
-      [...plans].toSorted()
+      [...legacyPlans].toSorted()
     );
   });
 
@@ -90,6 +135,64 @@ describe("the contract", () => {
     expect(billingCurrency).toBe(currency);
     expect(contractVatRate).toBe(displayVatRate);
     expect(trialOffer).toStrictEqual({ days: trialDays, plan: trialPlan });
+  });
+
+  it("publishes the rate card the server bills with", () => {
+    expect(contractRateCard).toStrictEqual(rateCard);
+    expect(ContractMeterSchema.literals).toStrictEqual(MeterSchema.literals);
+    expect(Schema.decodeUnknownSync(RateCardSchema)(rateCard)).toStrictEqual(
+      rateCard
+    );
+  });
+
+  // Clients generated from the API read a plain integer into 32 bits.
+  it("states the rate card's storage sizes as 64-bit integers", () => {
+    const { properties } = decodeObjectSchema(
+      Schema.toJsonSchemaDocument(RateCardSchema.fields.storage).schema
+    );
+
+    expect(Object.values(properties).map(({ format }) => format)).toStrictEqual(
+      ["int64", "int64", "int64"]
+    );
+  });
+
+  it("shows prices with VAT at the rate card's rate", () => {
+    expect(rateCard.displayVatRate).toBe(displayVatRate);
+    expect(contractRateCard.displayVatRate).toBe(contractVatRate);
+  });
+
+  it.each([-1, 2.5, Number.NaN])(
+    "refuses %s in the contract's prices, as the server does",
+    (count) => {
+      expect(() => contractAccountsMonthly(count)).toThrow(RangeError);
+      expect(() => contractAccountsCharge(count)).toThrow(RangeError);
+      expect(() => contractMeterCharge("managedAds", count)).toThrow(
+        RangeError
+      );
+    }
+  );
+
+  // The API reference reads the plans' descriptions.
+  it.each([
+    ["Plan", ContractPlanSchema],
+    ["PaidPlan", ContractPaidPlanSchema],
+  ] as const)("describes per-account pricing in %s", (name, schema) => {
+    const { definitions } = decodeDocument(Schema.toJsonSchemaDocument(schema));
+
+    expect(definitions[name]?.description).toContain("payAsYouGo");
+  });
+
+  it("prices the rate card as the server does", () => {
+    for (const count of [0, 2, 3, 10, 61, 300, 3001, 30_000]) {
+      expect(contractAccountsMonthly(count)).toBe(accountsMonthly(count));
+      expect(contractAccountsCharge(count)).toBe(accountsCharge(count));
+    }
+
+    for (const meter of MeterSchema.literals) {
+      expect(contractMeterCharge(meter, 12_345)).toBe(
+        meterCharge(meter, 12_345)
+      );
+    }
   });
 
   it("publishes how far ahead a cancellation may ask its contract to end", () => {

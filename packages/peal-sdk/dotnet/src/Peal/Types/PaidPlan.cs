@@ -16,6 +16,8 @@ public readonly record struct PaidPlan : IStringEnum
 
     public static readonly PaidPlan Agency = new(Values.Agency);
 
+    public static readonly PaidPlan PayAsYouGo = new(Values.PayAsYouGo);
+
     public PaidPlan(string value)
     {
         Value = value;
@@ -117,5 +119,7 @@ public readonly record struct PaidPlan : IStringEnum
         public const string Business = "business";
 
         public const string Agency = "agency";
+
+        public const string PayAsYouGo = "payAsYouGo";
     }
 }

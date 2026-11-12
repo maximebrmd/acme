@@ -1,7 +1,7 @@
 import { Option } from "effect";
 
-import { PaidPlanSchema } from "#shared/domain/plan.ts";
-import type { PaidPlan } from "#shared/domain/plan.ts";
+import { LegacyPaidPlanSchema } from "#shared/domain/plan.ts";
+import type { LegacyPaidPlan } from "#shared/domain/plan.ts";
 
 import type { BillingInterval } from "./billing-interval.ts";
 import { currency, priceOf } from "./prices.ts";
@@ -12,7 +12,7 @@ export interface PublishedPrice {
   readonly amount: number;
   readonly interval: BillingInterval;
   readonly lookupKey: string;
-  readonly plan: PaidPlan;
+  readonly plan: LegacyPaidPlan;
 }
 
 /** What Stripe holds of an active price. */
@@ -31,9 +31,11 @@ const intervals: readonly BillingInterval[] = ["month", "year"];
 
 /** Every price Peal publishes, under the lookup keys the server reads. */
 export const publishedPrices = (
-  keys: Readonly<Record<PaidPlan, Readonly<Record<BillingInterval, string>>>>
+  keys: Readonly<
+    Record<LegacyPaidPlan, Readonly<Record<BillingInterval, string>>>
+  >
 ): readonly PublishedPrice[] =>
-  PaidPlanSchema.literals.flatMap((plan) =>
+  LegacyPaidPlanSchema.literals.flatMap((plan) =>
     intervals.map((interval) => ({
       amount: priceOf(plan, interval),
       interval,

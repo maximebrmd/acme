@@ -695,6 +695,7 @@ export {
   BillingIntervalSchema,
   displayVatRate,
   MoneySchema,
+  OrderablePlanSchema,
   PaidPlanSchema,
   planCatalogue,
   PlanLimitSchema,
@@ -703,9 +704,36 @@ export {
   withDisplayVat,
 } from "./billing-plans.ts";
 
+export {
+  AccountBandSchema,
+  accountsCharge,
+  accountsMonthly,
+  meterCharge,
+  MeterSchema,
+  MeterTermsSchema,
+  PriceCurrencySchema,
+  PricesSchema,
+  rateCard,
+  RateCardSchema,
+  UnitPriceSchema,
+} from "./rate-card.ts";
+
+export type {
+  AccountBand,
+  Meter,
+  MeterTerms,
+  PriceCurrency,
+  Prices,
+  RateCard,
+  UnitPrice,
+} from "./rate-card.ts";
+
 export type {
   BillingInterval,
+  LegacyPaidPlan,
+  LegacyPlan,
   Money,
+  OrderablePlan,
   PaidPlan,
   Plan,
   PlanLimit,

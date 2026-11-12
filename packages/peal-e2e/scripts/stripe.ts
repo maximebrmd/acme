@@ -10,13 +10,19 @@ import type { Server } from "node:http";
 
 import { Schema } from "effect";
 import { billingCurrency, PaidPlanSchema, planCatalogue } from "peal-contract";
+import type { LegacyPaidPlan } from "peal-contract";
 
 const intervals = [
   { key: "monthly", name: "month" },
   { key: "yearly", name: "year" },
 ] as const;
 
-const prices = PaidPlanSchema.literals.flatMap((plan) =>
+// The legacy plans' prices: per-account pricing has none yet.
+const legacyPlans = PaidPlanSchema.literals.filter(
+  (plan): plan is LegacyPaidPlan => plan !== "payAsYouGo"
+);
+
+const prices = legacyPlans.flatMap((plan) =>
   intervals.map(({ key, name }) => ({
     active: true,
     currency: billingCurrency,

@@ -3,7 +3,7 @@
 import { useAtomSet } from "@effect/atom-react";
 import { Cause, Exit, Option, Schema } from "effect";
 import { useLocale } from "next-intl";
-import { PlanTooSmall } from "peal-contract";
+import { OrderablePlanSchema, PlanTooSmall } from "peal-contract";
 import type { BillingInterval, Excess, PaidPlan } from "peal-contract";
 
 import { billingClient } from "#auth/billing-client.ts";
@@ -17,6 +17,8 @@ const decodeRedirect = Schema.decodeUnknownOption(
 );
 
 const isTooSmall = Schema.is(PlanTooSmall);
+
+const isOrderable = Schema.is(OrderablePlanSchema);
 
 /** What a Better Auth client call answers. */
 export interface AuthResult {
@@ -93,6 +95,11 @@ export const useCheckout = (workspaceId: string) => {
     trial,
   }: CheckoutRequest): Promise<Option.Option<CheckoutFailure>> => {
     const yearly = !trial && interval === "year";
+
+    // Per-account pricing cannot be ordered yet.
+    if (!isOrderable(plan)) {
+      return Option.some<CheckoutFailure>({ error: "generic", tooSmall: null });
+    }
 
     const placed = await order({
       params: { workspaceId },
