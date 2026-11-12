@@ -76,6 +76,47 @@ describe("the overview's pages", () => {
     })
   );
 
+  it.effect(
+    "stop once the home's whole budget is spent, keeping the pages read by then",
+    () =>
+      Effect.gen(function* budget() {
+        // Every page answers, each in 3 seconds: the third starts with 2
+        // seconds left of the 8, and is cut short.
+        const fiber = yield* overviewPages((cursor) =>
+          Effect.succeed(pageOf(indexOf(cursor), 10)).pipe(
+            Effect.delay("3 seconds")
+          )
+        ).pipe(Effect.forkChild);
+
+        yield* TestClock.adjust("8 seconds");
+
+        const read = yield* Fiber.join(fiber);
+
+        assert.deepStrictEqual([...read.keys()], ["w0", "w1"]);
+      })
+  );
+
+  it.effect("start no page once the budget is spent", () =>
+    Effect.gen(function* spent() {
+      // Two pages of 4 seconds use the whole budget: no third is asked.
+      const asked: number[] = [];
+
+      const fiber = yield* overviewPages((cursor) =>
+        Effect.sync(() => asked.push(indexOf(cursor))).pipe(
+          Effect.andThen(Effect.succeed(pageOf(indexOf(cursor), 10))),
+          Effect.delay("4 seconds")
+        )
+      ).pipe(Effect.forkChild);
+
+      yield* TestClock.adjust("8 seconds");
+
+      const read = yield* Fiber.join(fiber);
+
+      assert.deepStrictEqual([...read.keys()], ["w0", "w1"]);
+      assert.deepStrictEqual(asked, [0, 1]);
+    })
+  );
+
   it.effect("stop after the most pages they hold", () =>
     Effect.gen(function* most() {
       const read = yield* overviewPages((cursor) =>
