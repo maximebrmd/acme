@@ -76,8 +76,27 @@ def test_it_checks_the_host_names_each_environment_has(environment: str) -> None
     hostnames = settings(environment)["peal_hostnames"]
 
     assert ENVIRONMENTS[environment]["hostnames"] == {
-        surface: hostnames[surface] for surface in ("app", "site", "docs")
+        **{surface: hostnames[surface] for surface in ("app", "site", "docs")},
+        "short_links": settings(environment)["peal_short_link_hostname"],
     }
+
+
+def test_it_follows_a_short_link_to_the_server(rendered: Path) -> None:
+    """An unknown code passes the edge's rewrite and the tunnel to reach the
+    server, which alone answers 404 with its error's code: cloudflared's own
+    404, for a path the rewrite missed, has no body."""
+    check = next(check for check in DEFAULTS["uptime_checks"] if check["host"] == "short_links")
+    code = check["path"].removeprefix("/")
+
+    assert re.fullmatch(r"[0-9A-Za-z]{7}", code)
+    for environment in ENVIRONMENTS.values():
+        endpoint = next(
+            endpoint
+            for endpoint in _config(rendered)["endpoints"]
+            if endpoint["group"] == environment["name"] and endpoint["name"] == check["name"]
+        )
+        assert endpoint["url"] == f"https://{environment['hostnames']['short_links']}/{code}"
+        assert endpoint["conditions"][:2] == ["[STATUS] == 404", "[BODY].code == not_found"]
 
 
 @pytest.mark.parametrize("environment", ["production", "sandbox"])

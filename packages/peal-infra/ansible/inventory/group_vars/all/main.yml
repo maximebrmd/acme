@@ -43,6 +43,12 @@ cloudflared_deb_sha256:
 
 peal_root: /srv/peal
 peal_compose_project: peal
+# The host name short links are on, a domain of their own (peal.link, its
+# zone in packages/peal-infra/pulumi), where Cloudflare's edge rewrites
+# /<code> to /api/l/<code>: the tunnel sends that path alone to the server,
+# and the server issues links on https://<this name>/ (PEAL_SHORT_LINK_BASE).
+# Empty: no route, and short links are off.
+peal_short_link_hostname: ""
 # Docker Compose on the release that runs (peal_runtime writes it).
 peal_compose_bin: /usr/local/bin/peal-compose
 # Compose profiles the stack runs with: the marketing site and the docs.

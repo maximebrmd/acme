@@ -56,7 +56,8 @@ uptime_public_status: true
 uptime_status_hostname: status.peal.social
 
 # What it checks: each environment's public host names, as its
-# group_vars/<environment>/main.yml has them (tests/test_uptime.py keeps them
+# group_vars/<environment>/main.yml has them (peal_hostnames, and
+# peal_short_link_hostname as short_links; tests/test_uptime.py keeps them
 # equal), for the checks the uptime role lists.
 uptime_environments:
   - name: production
@@ -64,6 +65,7 @@ uptime_environments:
       app: app.peal.social
       site: peal.social
       docs: docs.peal.social
+      short_links: peal.link
     # Its Grafana sends a heartbeat (peal_heartbeat_url), with the token
     # PRODUCTION_HEARTBEAT_TOKEN generated here.
     heartbeat: true
@@ -74,6 +76,7 @@ uptime_environments:
       app: sandbox.peal.social
       site: sandbox-site.peal.social
       docs: sandbox-docs.peal.social
+      short_links: sandbox.peal.link
     # Behind Cloudflare Access throughout: each check carries the service
     # token SANDBOX_ACCESS_CLIENT_ID and SANDBOX_ACCESS_CLIENT_SECRET.
     access: true

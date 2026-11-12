@@ -18,6 +18,15 @@ credentials and how to adopt what exists.
 - Resources live in components (`src/account.ts`, `src/environment.ts`).
   What holds data or routes traffic is `protect`ed, and buckets are
   `retainOnDelete`.
+- The short-link domain (peal.link) is a zone of its own, in the account
+  project (`src/link-domain.ts`): a zone has one ruleset per phase, so its
+  redirect and rewrite rules stay there, for every environment's host name
+  on it; each environment's stack makes its own record, to its tunnel.
+  Short links in production are public, with no Access application; the
+  tunnel lets `/api/l/` and a code alone through (the Ansible project's
+  cloudflared role): keep the rewrite and that route in step. The rewrite
+  leaves `/cdn-cgi/` and `/api/l/` paths alone, and relies on the zone's
+  URL normalisation, which stays on, in code.
 - Resource names (the first argument) are what the state knows a resource
   by: renaming one makes Pulumi delete it and make it again. Use an alias.
 - Pin `@pulumi/pulumi` and `@pulumi/cloudflare` exactly, as everything else.

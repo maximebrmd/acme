@@ -23,6 +23,11 @@ peal_hostnames:
   docs: docs.peal.social
   grafana: grafana.peal.social
   ssh: ssh.peal.social
+# Short links, public: https://peal.link/<code> (group_vars/all says how it
+# is routed). Its DNS record points to this tunnel (README.md, "Before the
+# first run"), through which cf-connecting-ip (AUTH_IP_HEADERS) comes, so
+# each visitor has a redirect limit of their own.
+peal_short_link_hostname: peal.link
 
 # Cloudflare Zero Trust: the team (<team>.cloudflareaccess.com) and the
 # audience tag of each Access application (Access > Applications > the
@@ -68,11 +73,6 @@ peal_settings:
   # allows, a page or a mailto: address. Unset, it tells them to write to
   # whoever runs the server: set it once the address exists.
   # PEAL_CONTACT_URL: https://peal.social/contact/
-  # Where short links live: off until the owner has a domain for them
-  # (a paid resource), with its tunnel route to the server's /api/l/:
-  # through the same tunnel as the app, which sets cf-connecting-ip
-  # (AUTH_IP_HEADERS), or every visitor shares one redirect limit.
-  # PEAL_SHORT_LINK_BASE: https://<short domain>/
   # Refuses the staff console to staff whose own account does not have
   # two-step verification on: set once every staff account has it on.
   # PEAL_STAFF_TWO_STEP: "true"

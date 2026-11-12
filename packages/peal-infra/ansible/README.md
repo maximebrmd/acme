@@ -36,9 +36,18 @@ The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`
 | `app.peal.social`     | anything else                                                           | the web app, 127.0.0.1:3001 | public    |
 | `peal.social`         | any                                                                     | the site, 127.0.0.1:4321    | public    |
 | `docs.peal.social`    | any                                                                     | the docs, 127.0.0.1:4322    | public    |
+| `peal.link`           | `/api/l/<code>`, which the edge rewrote from `/<code>`                  | the server, 127.0.0.1:3000  | public    |
+| `peal.link`           | anything else                                                           | 404                         | public    |
+
+Short links are on a domain of their own (`peal_short_link_hostname`), whose
+zone the Pulumi project holds with the rules that send the bare domain to
+the site and rewrite `/<code>` to `/api/l/<code>` ([`../pulumi`](../pulumi/README.md#the-short-link-domain)):
+a code is seven letters and digits, and no other path on the host reaches
+the stack. The server issues links on it (`PEAL_SHORT_LINK_BASE`, which
+`peal_runtime` derives from the host name).
 
 The sandbox has the same routes on its own names (`sandbox.peal.social`,
-`sandbox-grafana.peal.social`…), all behind Access but for what outside
+`sandbox-grafana.peal.social`, `sandbox.peal.link`…), all behind Access but for what outside
 services call: `/api/channels/oauth/*`, which Bluesky's servers fetch, and
 Stripe's webhook (`/api/auth/stripe/webhook`) and Meta's data deletion and
 deauthorize requests (`/api/data-deletion/<app>` and
@@ -277,7 +286,8 @@ These are made by hand, by the owner, on free plans. Anything that costs
 money, the server and the domain first, or R2 beyond its free tier, needs
 the owner's approval.
 
-1. **The zone** on Cloudflare, for the domain.
+1. **The zone** on Cloudflare, for the domain, and the short-link domain's
+   (peal.link), which the Pulumi project's account stack holds.
 2. **Zero Trust**: a team (`<team>.cloudflareaccess.com`) and these Access
    applications, each with a policy that lets in the team's emails. Copy each
    application's audience tag (AUD) into `cloudflare_access_aud`.
@@ -303,6 +313,20 @@ the owner's approval.
    cloudflared tunnel create peal-production
    cloudflared tunnel route dns peal-production app.peal.social   # and each other name
    cloudflared tunnel token peal-production              # the token for the vault
+   ```
+
+   Not `peal.link`: `cloudflared tunnel login` gives a certificate for one
+   zone, peal.social, and `route dns` can make the record in that zone
+   (`peal.link.peal.social`) while it reports success. Make production's
+   short-link record in the dashboard instead (peal.link › DNS › Records):
+   a CNAME named `@` to `<tunnel id>.cfargotunnel.com`, proxied, the id
+   `cloudflared tunnel list` gives; or with Pulumi, once production has its
+   stack (`shortLinkHost`). Then check that it landed in the right zone:
+
+   ```sh
+   dig +short peal.link @bella.ns.cloudflare.com            # Cloudflare's addresses: the record is there
+   dig +short peal.link.peal.social @bella.ns.cloudflare.com # nothing: no stray record
+   curl -s https://peal.link/0000000                         # once the server runs: {"_tag":"NotFound",...,"code":"not_found"}
    ```
 
 4. **Object storage in the EU** ([Object storage](#object-storage) says what
@@ -696,18 +720,25 @@ Docker, each pinned by digest, as the Compose project `uptime` in
 
 Gatus's configuration is generated from the inventory: `uptime_environments`
 in `group_vars/uptime/main.yml` lists each environment's public host names
-(kept equal to its `peal_hostnames` by `tests/test_uptime.py`), and the
-role's defaults the checks, every minute unless said otherwise:
+(kept equal to its `peal_hostnames` and its `peal_short_link_hostname` by
+`tests/test_uptime.py`), and the role's defaults the checks, every minute
+unless said otherwise:
 
-| Check                    | Passes when                                                           |
-| ------------------------ | --------------------------------------------------------------------- |
-| The site (`/`)           | 200 within 1 second                                                   |
-| The docs (`/`)           | 200 within 1 second                                                   |
-| The web app (`/sign-in`) | 200 within 2 seconds                                                  |
-| The API (`/api/ready`)   | 204 within 1 second: the server answers, and its database too         |
-| Each host's certificate  | Valid for 14 more days, the uptime server's own included (hourly)     |
-| Each host's DNS          | An A record through Quad9 (`9.9.9.9`), outside Cloudflare (5 minutes) |
-| Each Grafana heartbeat   | One in the last 15 minutes ([The heartbeat](#the-heartbeat))          |
+| Check                    | Passes when                                                            |
+| ------------------------ | ---------------------------------------------------------------------- |
+| The site (`/`)           | 200 within 1 second                                                    |
+| The docs (`/`)           | 200 within 1 second                                                    |
+| The web app (`/sign-in`) | 200 within 2 seconds                                                   |
+| The API (`/api/ready`)   | 204 within 1 second: the server answers, and its database too          |
+| Short links (`/0000000`) | The server's 404 (`not_found`) within 1 second, on the short-link host |
+| Each host's certificate  | Valid for 14 more days, the uptime server's own included (hourly)      |
+| Each host's DNS          | An A record through Quad9 (`9.9.9.9`), outside Cloudflare (5 minutes)  |
+| Each Grafana heartbeat   | One in the last 15 minutes ([The heartbeat](#the-heartbeat))           |
+
+The short-link check asks for a code no link has: the edge rewrites it to
+`/api/l/<code>`, the tunnel sends it to the server, and only the server
+answers a 404 with its error's code, so the check fails when the record,
+the rewrite, the route or the server is missing, and counts no visit.
 
 A redirect fails a check, so a page that sends people to Cloudflare Access's
 sign-in never passes for the page. The sandbox is behind Access throughout:

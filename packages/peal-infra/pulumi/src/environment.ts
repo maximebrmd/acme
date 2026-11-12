@@ -77,11 +77,19 @@ export class PealEnvironment extends pulumi.ComponentResource {
     name: string,
     settings: EnvironmentSettings,
     policies: AccessPolicies,
+    linkZoneId: pulumi.Input<string>,
     options?: pulumi.ComponentResourceOptions
   ) {
     super("peal:cloudflare:Environment", name, {}, options);
 
-    const { accountId, domain, environment: env, hostnames, zoneId } = settings;
+    const {
+      accountId,
+      domain,
+      environment: env,
+      hostnames,
+      shortLinkHost,
+      zoneId,
+    } = settings;
 
     if (env !== "sandbox") {
       // Production is public, with Access on its admin paths alone: its
@@ -117,21 +125,32 @@ export class PealEnvironment extends pulumi.ComponentResource {
         .apply((result) => result.token)
     );
 
-    this.records = Object.entries(hostnames).map(
-      ([key, subdomain]) =>
-        new cloudflare.DnsRecord(
-          `hostname-${key}`,
-          {
-            content: pulumi.interpolate`${this.tunnel.id}.cfargotunnel.com`,
-            name: host(subdomain),
-            proxied: true,
-            ttl: 1,
-            type: "CNAME",
-            zoneId,
-          },
-          child(true)
-        )
-    );
+    const toTunnel = (
+      key: string,
+      hostname: string,
+      zone: pulumi.Input<string>
+    ) =>
+      new cloudflare.DnsRecord(
+        `hostname-${key}`,
+        {
+          content: pulumi.interpolate`${this.tunnel.id}.cfargotunnel.com`,
+          name: hostname,
+          proxied: true,
+          ttl: 1,
+          type: "CNAME",
+          zoneId: zone,
+        },
+        child(true)
+      );
+
+    // Short links are on a zone of their own, whose rules (src/link-domain.ts)
+    // rewrite /<code> to the server's /api/l/<code> on the way.
+    this.records = [
+      ...Object.entries(hostnames).map(([key, subdomain]) =>
+        toTunnel(key, host(subdomain), zoneId)
+      ),
+      toTunnel("short-links", shortLinkHost, linkZoneId),
+    ];
 
     const application = (
       resourceName: string,
@@ -156,7 +175,14 @@ export class PealEnvironment extends pulumi.ComponentResource {
     const app = application(
       "access-app",
       title,
-      [host(hostnames.app), host(hostnames.site), host(hostnames.docs)],
+      [
+        host(hostnames.app),
+        host(hostnames.site),
+        host(hostnames.docs),
+        // The sandbox's short links stay behind Access with the rest of it:
+        // a tester signed in follows them.
+        shortLinkHost,
+      ],
       policies.owner
     );
 

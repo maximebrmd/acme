@@ -252,8 +252,8 @@ def test_matching_agrees_with_cloudflared(rendered: Path, environment: str) -> N
     config = rendered / environment / "cloudflared.yml"
     requests = [
         (host, path)
-        for host in settings["peal_hostnames"].values()
-        for path in [*SANDBOX_GUARDED, *SANDBOX_OPEN]
+        for host in [*settings["peal_hostnames"].values(), settings["peal_short_link_hostname"]]
+        for path in [*SANDBOX_GUARDED, *SANDBOX_OPEN, SHORT_CODE, *SHORT_REFUSED]
     ]
 
     for host, path in requests:
@@ -267,3 +267,74 @@ def test_matching_agrees_with_cloudflared(rendered: Path, environment: str) -> N
 
         assert matched is not None, answer
         assert int(matched.group(1)) == _match(rules, host, path), (host, path)
+
+
+# Short links: the edge rewrites /<code> to /api/l/<code> on the short-link
+# domain (packages/peal-infra/pulumi, src/link-domain.ts), and the tunnel
+# serves that path alone, to the server. Nothing else on the host reaches
+# the stack: not the admin, not the API, however its path is written.
+SHORT_CODE = "/api/l/Ab3dE9z"
+
+SHORT_REFUSED = [
+    "/",
+    "/Ab3dE9z",
+    "/api/l/Ab3dE9",
+    "/api/l/Ab3dE9zz",
+    "/api/l/Ab3dE9z/",
+    "/api/l/Ab3dE9z/x",
+    "/api/l/Ab-dE9z",
+    "/api/l/Ab3%2E9z",
+    "/api/l/../admin/users",
+    "/api/l/Ab3dE9z/../../admin/users",
+    "/api/health",
+    "/api/me",
+    "/.well-known/oauth-authorization-server",
+    *[s for p in ADMIN_PATHS for s in _spellings(p)],
+]
+
+
+def _short_host(environment: str) -> str:
+    host = _settings(environment)["peal_short_link_hostname"]
+    assert host
+    return host
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_short_links_reach_the_server(rendered: Path, environment: str) -> None:
+    settings = _settings(environment)
+    rules = _rules(rendered, environment)
+    rule = rules[_match(rules, _short_host(environment), SHORT_CODE)]
+
+    assert rule["service"] == f"http://127.0.0.1:{settings['peal_ports']['server']}", rule
+
+
+def test_production_short_links_are_public(rendered: Path) -> None:
+    rules = _rules(rendered, "peal-production")
+    rule = rules[_match(rules, _short_host("peal-production"), SHORT_CODE)]
+
+    assert _audience(rule) == [], rule
+
+
+def test_sandbox_short_links_stay_behind_access(rendered: Path) -> None:
+    settings = _settings("peal-sandbox")
+    rules = _rules(rendered, "peal-sandbox")
+    rule = rules[_match(rules, _short_host("peal-sandbox"), SHORT_CODE)]
+
+    assert _guarded(rule, settings["cloudflare_access_aud"]["sandbox"]), rule
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+@pytest.mark.parametrize("path", SHORT_REFUSED)
+def test_short_link_host_answers_nothing_else(rendered: Path, environment: str, path: str) -> None:
+    rules = _rules(rendered, environment)
+    rule = rules[_match(rules, _short_host(environment), path)]
+
+    assert rule["service"] == "http_status:404", (path, rule)
+
+
+def test_the_sandbox_short_link_host_is_the_pulumi_stacks() -> None:
+    """The sandbox's Pulumi stack makes the record and the Access
+    destination of the host name the tunnel routes."""
+    stack = yaml.safe_load((INFRA.parent / "pulumi" / "environment" / "Pulumi.sandbox.yaml").read_text())
+
+    assert stack["config"]["peal:shortLinkHost"] == _short_host("peal-sandbox")

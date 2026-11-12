@@ -29,6 +29,8 @@ peal_runtime_host_settings: >-
        'PEAL_GRAFANA_PORT': peal_ports.grafana,
        'PEAL_OTLP_HTTP_PORT': peal_ports.otlp_http,
      }
+     | combine({'PEAL_SHORT_LINK_BASE': 'https://' ~ peal_short_link_hostname ~ '/'}
+               if peal_short_link_hostname else {})
      | combine({'PEAL_ERASURE_LEDGER_BUCKET': peal_erasure_ledger_bucket}
                if peal_erasure_ledger_bucket else {})
      | combine({

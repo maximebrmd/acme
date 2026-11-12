@@ -12,6 +12,7 @@ const result = new PealAccount(
   {
     accountId: "account-synthetic",
     domain: "example.test",
+    linkDomain: "short.test",
     ownerName: "Owner",
     zoneId: "zone-synthetic",
   },
