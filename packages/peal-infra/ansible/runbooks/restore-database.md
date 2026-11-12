@@ -241,3 +241,38 @@ Restore into the sandbox from its own backups now and then, with the steps
 above, so the commands and the passphrase are known to work before they are
 needed. Never restore production's backups into the sandbox: they hold
 customers' data.
+
+Before a server goes live, drill on it, with synthetic data only (an account
+signed up for the drill, while no customer uses the server), in two passes:
+
+1. **To a time, on the same server.** Sign up a test account and note the
+   time; wait for the next archive, 5 minutes at most; delete the account
+   in the app. Then [On the same server](#on-the-same-server), steps 1 to
+   8, restoring to the noted time: the account is back after step 5, and
+   [Deletions since the restore point](#deletions-since-the-restore-point)
+   prints `erased again` for it, and it is gone again. That proves the
+   archive, the passphrase, point-in-time recovery and the ledger at once.
+2. **As on a new server, without one**, since a server lost is restored
+   on another. Stop the stack, keep the data aside (step 3), then remove
+   Postgres's container and its volume, and start Postgres alone, which
+   initialises an empty database, and stop it as soon as it answers:
+
+   ```sh
+   sudo peal-compose stop
+   sudo docker run --rm --volume peal_postgres:/from:ro --volume /srv/peal/before-restore:/to \
+     busybox:1.38.0-musl cp -a /from/. /to/
+   sudo peal-compose rm --force postgres
+   sudo docker volume rm peal_postgres
+   sudo peal-compose up --detach --wait postgres
+   sudo peal-compose stop postgres
+   ```
+
+   Then [A new server](#a-new-server) from its step 3: the restore, the
+   deletions applied again, the two tables cleared, `release.yml` again
+   and a full backup. The test account signs in again. The secrets did not
+   change in this pass, so it does not show what new ones cost, which
+   [A new server](#a-new-server) says.
+
+Write each pass's date and how long it took, from stopping the stack to
+`ready`, in the owner's notes: that is how long the service is down when
+its server is lost.
