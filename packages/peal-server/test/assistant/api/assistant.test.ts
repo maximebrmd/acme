@@ -70,6 +70,12 @@ layer(DatabaseTest)("the assistant endpoints", (it) => {
         {
           available: true,
           dailyLimit: 2,
+          images: {
+            aspects: ["square", "landscape", "portrait"],
+            available: false,
+            maxPromptLength: 1000,
+            requestCost: 5,
+          },
           maxTextLength: 5000,
           remaining: 2,
           resetsAt: "1970-01-02T00:00:00.000Z",

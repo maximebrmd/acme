@@ -403,8 +403,13 @@ export type { ApiKey, NewApiKey } from "./api-keys.ts";
 
 export {
   AssistantActionSchema,
+  AssistantImagesStatusSchema,
   AssistantStatusSchema,
   AssistantToneSchema,
+  ImageAspectSchema,
+  imageRequestCost,
+  ImageRequestSchema,
+  maxImagePromptLength,
   SuggestionRequestSchema,
   SuggestionSchema,
   TranslationLanguageSchema,
@@ -412,8 +417,11 @@ export {
 
 export type {
   AssistantAction,
+  AssistantImagesStatus,
   AssistantStatus,
   AssistantTone,
+  ImageAspect,
+  ImageRequest,
   Suggestion,
   SuggestionRequest,
   TranslationLanguage,

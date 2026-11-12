@@ -2,10 +2,16 @@ import { describe, expect, it } from "@effect/vitest";
 import {
   AssistantActionSchema as ContractActionSchema,
   AssistantToneSchema,
+  ImageAspectSchema as ContractAspectSchema,
+  imageRequestCost as contractImageCost,
+  maxImagePromptLength as contractPromptLength,
   TranslationLanguageSchema,
 } from "peal-contract";
 
 import { AssistantActionSchema } from "#assistant/domain/assistant-action.ts";
+import { ImageAspectSchema } from "#assistant/domain/image-aspect.ts";
+import { imageRequestCost } from "#assistant/domain/image-limits.ts";
+import { maxImagePromptLength } from "#assistant/domain/image-prompt.ts";
 import { ToneSchema } from "#assistant/domain/tone.ts";
 import { TranslationLanguageSchema as DomainLanguageSchema } from "#assistant/domain/translation-language.ts";
 
@@ -30,5 +36,15 @@ describe("the contract", () => {
     expect(fieldsByAction(ContractActionSchema)).toStrictEqual(
       fieldsByAction(AssistantActionSchema)
     );
+  });
+
+  it("lists the aspects of images, their cost and the longest prompt", () => {
+    expect(ContractAspectSchema.literals).toStrictEqual(
+      ImageAspectSchema.literals
+    );
+    expect([contractImageCost, contractPromptLength]).toStrictEqual([
+      imageRequestCost,
+      maxImagePromptLength,
+    ]);
   });
 });

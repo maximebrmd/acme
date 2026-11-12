@@ -61,7 +61,12 @@ export const LibraryGeneratedImagesLive = Layer.effect(
         library.storeGenerated(actor, bytes).pipe(
           Effect.catchTags({
             GeneratedImageUnusable: () => Effect.fail(unusable()),
-            MediaStorageFailed: () => Effect.fail(new ImageNotStored()),
+            // Why, for whoever runs the server: the failure names the store,
+            // never the image.
+            MediaStorageFailed: (failure) =>
+              Effect.logWarning("The media store failed", failure).pipe(
+                Effect.andThen(Effect.fail(new ImageNotStored()))
+              ),
           }),
           Effect.flatMap(generatedImageOf)
         ),

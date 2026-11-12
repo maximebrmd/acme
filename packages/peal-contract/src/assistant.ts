@@ -1,5 +1,10 @@
 import { Schema } from "effect";
-import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api";
+import {
+  HttpApiEndpoint,
+  HttpApiGroup,
+  HttpApiSchema,
+  OpenApi,
+} from "effect/http-api";
 
 import { AssistantFailed } from "./assistant-failed.ts";
 import { AssistantInputRejected } from "./assistant-input-rejected.ts";
@@ -7,6 +12,10 @@ import { AssistantQuotaExceeded } from "./assistant-quota-exceeded.ts";
 import { AssistantUnavailable } from "./assistant-unavailable.ts";
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
+import { MediaImportBusy } from "./media-import-busy.ts";
+import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
+import { MediaSchema } from "./media.ts";
+import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformSchema } from "./platform.ts";
 import { maxPostTextLength } from "./post-text.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
@@ -91,6 +100,53 @@ export const SuggestionSchema = Schema.Union([
 
 export type Suggestion = typeof SuggestionSchema.Type;
 
+/**
+ * The aspects the assistant makes images in: `square`, `landscape` (wider
+ * than tall) or `portrait` (taller than wide). The server's list
+ * (src/assistant/domain/image-aspect.ts) is the source.
+ */
+export const ImageAspectSchema = Schema.Literals([
+  "square",
+  "landscape",
+  "portrait",
+]).annotate({ identifier: "ImageAspect" });
+
+export type ImageAspect = typeof ImageAspectSchema.Type;
+
+/**
+ * How many of the day's assistant requests an image costs, and the longest
+ * description one is made from. The server's values
+ * (src/assistant/domain/) are the source.
+ */
+export const imageRequestCost = 5;
+
+export const maxImagePromptLength = 1000;
+
+export const ImageRequestSchema = Schema.Struct({
+  aspect: ImageAspectSchema,
+  // What the image should show, as plain text, sent to the image provider
+  // as it is. The assistant takes 1 to the status's
+  // `images.maxPromptLength` characters; this bounds what the request can
+  // carry.
+  prompt: Schema.String.check(Schema.isMaxLength(maxPostTextLength)),
+}).annotate({ identifier: "ImageRequest" });
+
+export type ImageRequest = typeof ImageRequestSchema.Type;
+
+export const AssistantImagesStatusSchema = Schema.Struct({
+  // The aspects an image can be made in.
+  aspects: Schema.Array(ImageAspectSchema),
+  // Whether the server has an image model. Clients hide images when it
+  // does not; it is off unless the operator set one up.
+  available: Schema.Boolean,
+  // The longest description an image is made from, in UTF-16 code units.
+  maxPromptLength: Schema.Int,
+  // How many of the day's requests an image costs.
+  requestCost: Schema.Int,
+}).annotate({ identifier: "AssistantImagesStatus" });
+
+export type AssistantImagesStatus = typeof AssistantImagesStatusSchema.Type;
+
 export const AssistantStatusSchema = Schema.Struct({
   // Whether the server has a language model. Clients hide the assistant
   // when it does not.
@@ -98,6 +154,8 @@ export const AssistantStatusSchema = Schema.Struct({
   // How many requests the workspace may send each UTC day, and how many
   // are left today.
   dailyLimit: Schema.Int,
+  // Whether the assistant makes images, and on what terms.
+  images: AssistantImagesStatusSchema,
   // The longest text the assistant takes, in UTF-16 code units.
   maxTextLength: Schema.Int,
   remaining: Schema.Int,
@@ -111,9 +169,10 @@ const workspace = { workspaceId: Schema.String };
 
 /**
  * The writing assistant: suggestions on a post's text from the language
- * model the server is configured with. Nothing is saved; the person
- * accepts a suggestion or discards it. Each workspace sends a limited
- * number of requests per UTC day.
+ * model the server is configured with, and images from its image model,
+ * kept in the media library. Nothing of a suggestion is saved; the person
+ * accepts it or discards it. Each workspace sends a limited number of
+ * requests per UTC day, an image costing several.
  */
 export class AssistantApi extends HttpApiGroup.make("assistant")
   .add(
@@ -124,7 +183,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.",
+          "Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (`images`), and how many requests the workspace has left today. Needs assistant:use.",
         summary: "Get the assistant's status",
       })
     ),
@@ -144,6 +203,27 @@ export class AssistantApi extends HttpApiGroup.make("assistant")
         description:
           "Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.",
         summary: "Suggest a change to a post's text",
+      })
+    ),
+    HttpApiEndpoint.post("generateImage", "/images", {
+      error: [
+        Forbidden,
+        AssistantUnavailable,
+        AssistantInputRejected,
+        AssistantQuotaExceeded,
+        AssistantFailed,
+        PlanLimitReached,
+        MediaStoreUnavailable,
+        MediaImportBusy,
+      ],
+      params: workspace,
+      payload: ImageRequestSchema,
+      success: MediaSchema.pipe(HttpApiSchema.status(201)),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the server has an image model.",
+        summary: "Make an image into the media library",
       })
     )
   )
