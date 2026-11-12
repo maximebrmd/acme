@@ -350,7 +350,17 @@ The staff context follows these rules too. What the law has a host keep is in
   true (`PartnerSettings`); otherwise opening answers `PartnerAccountsClosed`.
   It prices nothing: `MeterPartnerUsage` (the `workspace.partner-usage`
   cron) keeps each day's workspaces and channels in
-  `workspace.partner_usage_days`, which `GET /api/partner` answers.
+  `workspace.partner_usage_days`, which `GET /api/partner` answers, and
+  deletes the days past `partnerUsageRetentionDays` (400, equal to the
+  contract's `usageRetentionDays`, by `test/workspace/api/contract.test.ts`)
+  in one statement on the `day` index, whether the count went through or
+  not. `PartnerTenants` (`forKey`, a partner id and scopes as given;
+  `forMember`, partner:read) answers billing's report per customer: the
+  page of `PartnerWorkspaces.pageOf`, its home workspace first on the
+  first page, every workspace's id, the pooled channels and the period's
+  days (`PartnerStore.usageBetween`); `PartnerTenantsLive` is provided to
+  billing at the composition root. The workspace context never imports
+  billing.
 - A partner key is `peal_partner_` and 32 random bytes, kept as its SHA-256
   (`partner_keys`), created by a person in their own session only
   (`PersonRequired` otherwise), shown once. It carries scopes
