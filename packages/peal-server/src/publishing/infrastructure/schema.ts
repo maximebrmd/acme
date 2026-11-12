@@ -621,7 +621,9 @@ export const feeds = publishing.table(
  * text): when it was first seen, the date it gave, if one, and what was
  * made of it (`outcome`, with `reason`), with the post's id (no foreign
  * key: a draft discarded since leaves the item, which is never made
- * again). Its 500 newest are kept; rows go with their feed.
+ * again). It keeps the 500 a read listed last, and every one the latest
+ * read listed, so an item still listed is never made again; rows go with
+ * their feed.
  */
 export const feedItems = publishing.table(
   "feed_items",
@@ -631,6 +633,8 @@ export const feedItems = publishing.table(
       .references(() => feeds.id, { onDelete: "cascade" }),
     itemAt: instant("item_at"),
     itemDigest: text("item_digest").notNull(),
+    // When a read last listed it: retention keeps what the latest still lists.
+    lastSeenAt: instant("last_seen_at").notNull(),
     outcome: text("outcome").notNull(),
     // Why the item's picture was not attached, when it was asked for.
     pictureSkipped: text("picture_skipped"),

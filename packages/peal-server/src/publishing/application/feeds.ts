@@ -95,7 +95,10 @@ export const itemsShown = 50;
 /** How many items a preview writes. */
 export const previewedItems = 3;
 
-/** How many items each feed keeps: its newest. */
+/**
+ * How many items each feed keeps: those a read listed last, and every one
+ * its latest read listed.
+ */
 export const itemsKept = 500;
 
 /**
@@ -534,6 +537,12 @@ export class Feeds extends Context.Service<
               existing(read.document, now)
             );
 
+            yield* store.listed(
+              feed.id,
+              read.document.items.map(({ digest }) => digest),
+              now
+            );
+
             const created: CreatedFeed = { feed, seen: seen.size };
 
             return created;
@@ -621,6 +630,11 @@ export class Feeds extends Context.Service<
               feed = resuming ? resumeFeed(feed, now, seenRead) : feed;
 
               yield* store.record(feed.id, existing(document, now));
+              yield* store.listed(
+                feed.id,
+                document.items.map(({ digest }) => digest),
+                now
+              );
             }
 
             if (request.status === "paused") {
@@ -1135,10 +1149,11 @@ export class Feeds extends Context.Service<
           }
         }
 
-        const seen = yield* store.seen(
-          feed.id,
-          document.items.map(({ digest }) => digest)
-        );
+        const listedNow = document.items.map(({ digest }) => digest);
+        const seen = yield* store.seen(feed.id, listedNow);
+
+        // What this read lists is kept by retention, made or not.
+        yield* store.listed(feed.id, listedNow, now);
 
         const fresh = newItems(
           document.items,

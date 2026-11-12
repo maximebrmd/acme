@@ -931,3 +931,50 @@ describe("a feed moved", () => {
     timeout
   );
 });
+
+describe("a feed's retention", () => {
+  it.effect(
+    "never forgets an item the latest read still lists, so none is made again",
+    () =>
+      onServer(
+        Effect.gen(function* retains() {
+          const workspaceId = yield* freshWorkspace;
+
+          const old = Array.from({ length: 500 }, (_, n) => ({
+            n: n + 1,
+            title: `Old ${String(n + 1)}`,
+          }));
+
+          yield* serveItems(blog, old);
+
+          const { feed } = yield* created(workspaceId);
+
+          // Three new items: the document lists 500, as Peal reads no
+          // more, and the three oldest fall off it.
+          yield* serveItems(blog, [
+            { n: 1001, title: "New 1" },
+            { n: 1002, title: "New 2" },
+            { n: 1003, title: "New 3" },
+            ...old.slice(0, 497),
+          ]);
+          yield* later();
+          yield* poll;
+
+          assert.lengthOf(yield* postsOf(workspaceId), 3);
+
+          yield* Feeds.use((feeds) => feeds.prune);
+          yield* later();
+          yield* poll;
+
+          assert.lengthOf(yield* postsOf(workspaceId), 3);
+
+          const kept = yield* FeedStore.use((store) =>
+            store.items(feed.id, 1000)
+          );
+
+          assert.lengthOf(kept, 500);
+        })
+      ),
+    timeout
+  );
+});

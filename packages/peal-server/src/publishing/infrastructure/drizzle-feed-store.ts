@@ -331,16 +331,31 @@ export const DrizzleFeedStore = Layer.effect(
           DELETE FROM publishing.feed_items AS item
           USING (
             SELECT feed_id, item_digest,
-              row_number() OVER (PARTITION BY feed_id ORDER BY seen_at DESC, item_digest DESC) AS place
+              row_number() OVER (PARTITION BY feed_id ORDER BY last_seen_at DESC, seen_at DESC, item_digest DESC) AS place,
+              max(last_seen_at) OVER (PARTITION BY feed_id) AS latest
             FROM publishing.feed_items
           ) AS ranked
           WHERE item.feed_id = ranked.feed_id
             AND item.item_digest = ranked.item_digest
             AND ranked.place > ${kept}
+            AND item.last_seen_at < ranked.latest
           RETURNING item.feed_id`.pipe(
           Effect.map((rows) => rows.length),
           Effect.mapError(failed)
         ),
+      listed: (feedId, digests, at) =>
+        digests.length === 0
+          ? Effect.void
+          : db
+              .update(feedItems)
+              .set({ lastSeenAt: date(at) })
+              .where(
+                and(
+                  eq(feedItems.feedId, feedId),
+                  inArray(feedItems.itemDigest, [...digests])
+                )
+              )
+              .pipe(Effect.asVoid, Effect.mapError(failed)),
       record: (feedId, items) =>
         items.length === 0
           ? Effect.succeed(new Set<ItemDigest>())
@@ -351,6 +366,7 @@ export const DrizzleFeedStore = Layer.effect(
                   feedId,
                   itemAt: item.itemAt.pipe(Option.map(date), Option.getOrNull),
                   itemDigest: item.digest,
+                  lastSeenAt: date(item.seenAt),
                   outcome: item.outcome,
                   pictureSkipped: Option.getOrNull(item.pictureSkipped),
                   postId: Option.getOrNull(item.postId),

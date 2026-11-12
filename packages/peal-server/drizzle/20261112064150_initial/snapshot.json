@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "f11faa95-d9c1-4404-8dd5-16c97fc3e28b",
+  "id": "0325641f-7f1f-436b-ac3b-c2db540fe6b4",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -13580,6 +13580,19 @@
       "table": "feed_items",
       "name": "item_digest",
       "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_items",
+      "name": "last_seen_at",
+      "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,

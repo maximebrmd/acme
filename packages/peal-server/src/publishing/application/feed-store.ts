@@ -120,6 +120,20 @@ export class FeedStore extends Context.Service<
       reason: Option.Option<FeedItemReason>,
       postId: Option.Option<PostId>
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Marks the digests a read listed as listed at `at`: retention keeps
+     * every item the latest read listed.
+     */
+    readonly listed: (
+      feedId: FeedId,
+      digests: readonly ItemDigest[],
+      at: DateTime.Utc
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Keeps each feed's `kept` items a read listed last, and every one its
+     * latest read listed; deletes the rest and says how many.
+     */
+    readonly prune: (kept: number) => Effect.Effect<number, DatabaseError>;
     /** Writes why an item's picture was not attached to its post. */
     readonly skipPicture: (
       feedId: FeedId,
@@ -135,10 +149,5 @@ export class FeedStore extends Context.Service<
       feedId: FeedId,
       limit: number
     ) => Effect.Effect<readonly FeedItemRecord[], DatabaseError>;
-    /**
-     * Keeps each feed's `kept` newest items and deletes the rest; says how
-     * many it deleted.
-     */
-    readonly prune: (kept: number) => Effect.Effect<number, DatabaseError>;
   }
 >()("peal-server/publishing/application/FeedStore") {}
