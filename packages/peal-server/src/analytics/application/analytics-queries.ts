@@ -286,11 +286,6 @@ export class AnalyticsQueries extends Context.Service<
       InvalidReportRange | MissingPermission
     >;
     /**
-     * The workspaces of these actors over the same range, each beside the
-     * range before, as its dashboard answers them: one query a kind of
-     * row for all of them. Each actor needs analytics:read in its own.
-     */
-    /**
      * When one of the workspace's channels' posts did best, by weekday and
      * hour in the zone, over the last `days`: the past of this channel,
      * never a prediction.
@@ -304,6 +299,11 @@ export class AnalyticsQueries extends Context.Service<
       ChannelBestTimes,
       ChannelNotFound | DatabaseError | MissingPermission
     >;
+    /**
+     * The workspaces of these actors over the same range, each beside the
+     * range before, as its dashboard answers them: one query a kind of
+     * row for all of them. Each actor needs analytics:read in its own.
+     */
     readonly acrossWorkspaces: (
       actors: readonly Actor[],
       asked: RangeAsked

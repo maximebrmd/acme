@@ -83,7 +83,6 @@ const dateOf = (dateTime: DateTime.DateTime): LocalDate => {
   return { day, month, year };
 };
 
-/** The date `days` days after `date`; negative counts go back. */
 const pad = (value: number, length = 2) =>
   value.toString().padStart(length, "0");
 
@@ -91,6 +90,7 @@ const pad = (value: number, length = 2) =>
 export const isoDateOf = ({ day, month, year }: LocalDate): string =>
   `${pad(year, 4)}-${pad(month)}-${pad(day)}`;
 
+/** The date `days` days after `date`; negative counts go back. */
 export const addDays = (date: LocalDate, days: number): LocalDate =>
   dateOf(DateTime.add(midnightUtc(date), { days }));
 
