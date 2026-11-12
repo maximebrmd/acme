@@ -780,7 +780,9 @@ export type {
 
 export { PlatformRateLimited } from "./platform-rate-limited.ts";
 
-export { CaptchaApi, CaptchaSchema } from "./captcha.ts";
+export { CaptchaApi, CaptchaSchema, SignUpModeSchema } from "./captcha.ts";
+
+export type { SignUpMode } from "./captcha.ts";
 
 export type { Captcha } from "./captcha.ts";
 

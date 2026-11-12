@@ -8,6 +8,7 @@ import { randomUUID } from "node:crypto";
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
+import { CaptchaSchema } from "peal-contract";
 
 import { MigratedSqlLive, newEmail, password, TestApp } from "./harness.ts";
 
@@ -75,6 +76,17 @@ layer(
   ),
   settings
 )("a server where accounts are made by invitation", (it) => {
+  it.effect("tells the sign-up page", () =>
+    Effect.gen(function* tells() {
+      const reply = yield* TestApp.use((app) => app.request("/api/captcha"));
+
+      assert.deepStrictEqual(
+        yield* Schema.decodeUnknownEffect(CaptchaSchema)(reply.body),
+        { signUp: "invitation", turnstileSiteKey: null }
+      );
+    })
+  );
+
   it.effect("refuses an address without an invitation, saying why", () =>
     Effect.gen(function* uninvited() {
       // Another workspace's invitation makes no difference.

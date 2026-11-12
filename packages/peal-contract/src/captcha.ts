@@ -2,11 +2,26 @@ import { Schema } from "effect";
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api";
 
 /**
+ * Who may make an account on the server: anyone (`open`), or only an
+ * address a workspace invited (`invitation`), and the first account of a
+ * server that has none.
+ */
+export const SignUpModeSchema = Schema.Literals([
+  "open",
+  "invitation",
+]).annotate({ identifier: "SignUpMode" });
+
+export type SignUpMode = typeof SignUpModeSchema.Type;
+
+/**
  * Whether signing up and asking for a password reset need a Cloudflare
  * Turnstile token, and the site key the widget is shown with. Clients send
- * the widget's token in the `x-captcha-response` header.
+ * the widget's token in the `x-captcha-response` header. It also says who
+ * may sign up.
  */
 export const CaptchaSchema = Schema.Struct({
+  // Who may sign up; a server that leaves it out lets anyone.
+  signUp: Schema.optionalKey(SignUpModeSchema),
   // Null when the server asks for no captcha.
   turnstileSiteKey: Schema.NullOr(Schema.String),
 }).annotate({ identifier: "Captcha" });
@@ -20,7 +35,7 @@ export class CaptchaApi extends HttpApiGroup.make("captcha").add(
   }).annotateMerge(
     OpenApi.annotations({
       description:
-        "Tells whether signing up and requesting a password reset need a Cloudflare Turnstile token, sent as the `x-captcha-response` header of Better Auth's requests, and the site key to show the widget with. Needs no credentials.",
+        "Tells whether signing up and requesting a password reset need a Cloudflare Turnstile token, sent as the `x-captcha-response` header of Better Auth's requests, and the site key to show the widget with; and who may sign up (`signUp`): anyone (`open`), or only an address a workspace invited and the first account (`invitation`), where Better Auth refuses any other sign-up with 403 `SIGN_UP_BY_INVITATION`. Needs no credentials.",
       summary: "Get the captcha settings",
     })
   )
