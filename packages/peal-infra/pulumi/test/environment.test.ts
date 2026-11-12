@@ -95,7 +95,7 @@ describe("the sandbox at Cloudflare", () => {
   });
 
   it("keeps every host name behind the owner's policy, but the callbacks", async () => {
-    await valueOf(result.accessAud.app);
+    await valueOf(pulumi.output(result.accessAud));
 
     const applications = ofType(
       "cloudflare:index/zeroTrustAccessApplication:ZeroTrustAccessApplication"
@@ -184,18 +184,6 @@ describe("the sandbox at Cloudflare", () => {
     ]);
   });
 
-  it("describes no other environment yet", () => {
-    expect(
-      () =>
-        new PealEnvironment(
-          "production",
-          { ...sandbox, environment: "production" },
-          { owner: "o", publicCallbacks: "c" },
-          "link-zone-synthetic"
-        )
-    ).toThrow("not described yet");
-  });
-
   it("gives each bucket a key that reaches it alone", async () => {
     const accessKeyId = await valueOf(result.keys.media.accessKeyId);
     const secretAccessKey = await valueOf(result.keys.media.secretAccessKey);
@@ -235,8 +223,6 @@ describe("the sandbox at Cloudflare", () => {
 
     expect(
       made
-        // The component the test of other environments makes before it throws.
-        .filter((resource) => resource.name !== "production")
         .map(({ inputs, name, type }) => ({ inputs, name, type }))
         .toSorted((left, right) => left.name.localeCompare(right.name))
     ).toStrictEqual(sandboxResources);
