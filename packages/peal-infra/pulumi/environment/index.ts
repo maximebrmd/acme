@@ -40,3 +40,16 @@ export const backupBucket = made.buckets.backups.name;
 // Ansible project writes them into the environment's vault.
 export const mediaKey = made.keys.media;
 export const backupKey = made.keys.backups;
+
+// The sandbox's alone: the service token the uptime server's checks carry,
+// secret, which scripts/cloudflare_from_pulumi.py in the Ansible project
+// writes into the uptime server's vault; and when it ends, in clear.
+export const uptimeAccessToken =
+  made.uptimeAccessToken === undefined
+    ? undefined
+    : {
+        clientId: made.uptimeAccessToken.clientId,
+        clientSecret: made.uptimeAccessToken.clientSecret,
+      };
+
+export const uptimeAccessTokenExpiresAt = made.uptimeAccessToken?.expiresAt;

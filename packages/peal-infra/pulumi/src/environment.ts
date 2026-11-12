@@ -35,6 +35,13 @@ const adminPaths = [
   "fr/admin",
 ] as const;
 
+/**
+ * How long the uptime server's service token is valid: a year, in hours.
+ * Renewed before it ends with the dashboard's Refresh, which keeps its id
+ * and secret (README.md, "The uptime server").
+ */
+const uptimeTokenDuration = "8760h";
+
 /** Cloudflare's permission group "Workers R2 Storage Bucket Item Write". */
 const bucketItemWrite = "2efd5506f9c8494dacb1fa10a3e7d5b6";
 
@@ -55,6 +62,16 @@ const abortIncompleteUploads = (days: number) => ({
   conditions: { prefix: "" },
   enabled: true,
 });
+
+/**
+ * The Access service token the uptime server's checks of an environment
+ * behind Access carry (CF-Access-Client-Id and CF-Access-Client-Secret).
+ */
+export interface ServiceToken {
+  readonly clientId: pulumi.Output<string>;
+  readonly clientSecret: pulumi.Output<string>;
+  readonly expiresAt: pulumi.Output<string>;
+}
 
 /** A bucket's S3 key: an account token limited to reading and writing it. */
 export interface BucketKey {
@@ -103,6 +120,8 @@ export class PealEnvironment extends pulumi.ComponentResource {
   readonly records: readonly cloudflare.DnsRecord[];
   readonly tunnel: cloudflare.ZeroTrustTunnelCloudflared;
   readonly tunnelToken: pulumi.Output<string>;
+  // The sandbox's alone: production's checks are public.
+  readonly uptimeAccessToken: ServiceToken | undefined;
 
   constructor(
     name: string,
@@ -185,11 +204,12 @@ export class PealEnvironment extends pulumi.ComponentResource {
       toTunnel("short-links", shortLinkHost, linkZoneId),
     ];
 
+    // The policies apply in their order: the owner's first.
     const application = (
       resourceName: string,
       applicationName: string,
       uris: readonly string[],
-      policyId: pulumi.Input<string>
+      ...policyIds: readonly [pulumi.Input<string>, ...pulumi.Input<string>[]]
     ) =>
       new cloudflare.ZeroTrustAccessApplication(
         resourceName,
@@ -198,7 +218,10 @@ export class PealEnvironment extends pulumi.ComponentResource {
           destinations: uris.map((uri) => ({ type: "public", uri })),
           domain: uris[0] ?? "",
           name: applicationName,
-          policies: [{ id: policyId, precedence: 1 }],
+          policies: policyIds.map((id, index) => ({
+            id,
+            precedence: index + 1,
+          })),
           sessionDuration: "24h",
           type: "self_hosted",
         },
@@ -222,6 +245,37 @@ export class PealEnvironment extends pulumi.ComponentResource {
       );
 
     if (behindAccess) {
+      // The uptime server's checks of the app, the site, the docs and the
+      // short links (the Ansible project's README, "Uptime"): a token of
+      // their own, and a Service Auth policy that lets it in alone, on
+      // this application and no other.
+      const uptimeToken = new cloudflare.ZeroTrustAccessServiceToken(
+        "uptime-token",
+        {
+          accountId,
+          duration: uptimeTokenDuration,
+          name: `${title} uptime checks`,
+        },
+        { parent: this }
+      );
+
+      const uptimePolicy = new cloudflare.ZeroTrustAccessPolicy(
+        "uptime-service-auth",
+        {
+          accountId,
+          decision: "non_identity",
+          includes: [{ serviceToken: { tokenId: uptimeToken.id } }],
+          name: `${title} uptime checks`,
+        },
+        { parent: this }
+      );
+
+      this.uptimeAccessToken = {
+        clientId: pulumi.secret(uptimeToken.clientId),
+        clientSecret: pulumi.secret(uptimeToken.clientSecret),
+        expiresAt: uptimeToken.expiresAt,
+      };
+
       const app = application(
         "access-app",
         title,
@@ -233,7 +287,8 @@ export class PealEnvironment extends pulumi.ComponentResource {
           // it: a tester signed in follows them.
           shortLinkHost,
         ],
-        policies.owner
+        policies.owner,
+        uptimePolicy.id
       );
 
       const callbacks = application(
@@ -262,6 +317,7 @@ export class PealEnvironment extends pulumi.ComponentResource {
 
       const [grafanaApp, sshApp] = [grafana(), ssh()];
       this.applications = [admin, grafanaApp, sshApp];
+      this.uptimeAccessToken = undefined;
       this.accessAud = {
         admin: admin.aud,
         grafana: grafanaApp.aud,

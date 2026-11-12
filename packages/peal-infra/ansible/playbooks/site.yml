@@ -18,3 +18,4 @@
     - firewall
     - peal_runtime
     - peal_backup
+    - peal_disks

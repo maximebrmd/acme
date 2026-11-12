@@ -46,8 +46,9 @@ peal_preflight_names:
   - uptime_environments
 
 # The uptime server's name, with an A (and AAAA) record to its address that
-# Cloudflare does not proxy: Caddy gets its certificate for it, and Grafana
-# sends its heartbeat to it.
+# Cloudflare does not proxy, which the account's Pulumi stack makes
+# (peal:uptime): Caddy gets its certificate for it, and Grafana sends its
+# heartbeat to it.
 uptime_hostname: uptime.peal.social
 
 # Whether Caddy also serves a public status page, read-only, at
@@ -57,8 +58,9 @@ uptime_hostname: uptime.peal.social
 # public, and shows no URL or error; the sandbox, the certificates, DNS and
 # the heartbeats stay on the private dashboard. The owner
 # chose to publish it (README.md, "Uptime"). It needs a DNS record of its
-# own, a CNAME to uptime_hostname that Cloudflare does not proxy, before
-# uptime.yml runs, or Caddy gets no certificate for it. Off, the dashboard is
+# own, a CNAME to uptime_hostname that Cloudflare does not proxy, which the
+# account's Pulumi stack makes, before uptime.yml runs, or Caddy gets no
+# certificate for it. Off, the dashboard is
 # reached through SSH alone.
 uptime_public_status: true
 uptime_status_hostname: status.peal.social

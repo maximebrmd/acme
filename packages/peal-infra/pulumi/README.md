@@ -3,13 +3,13 @@
 What Peal keeps at Cloudflare, as code: the Zero Trust Access policies and
 applications, each environment's tunnel and the host names that point to
 it, its R2 buckets with their lifecycle and CORS rules, the addresses
-Email Routing forwards, and the short-link domain, peal.link. TypeScript,
-run by Bun (`runtime: bun`).
+Email Routing forwards, the short-link domain, peal.link, and the uptime
+server's records and service token. TypeScript, run by Bun (`runtime: bun`).
 
-| Project       | Stacks                  | What it holds                                                                                   |
-| ------------- | ----------------------- | ----------------------------------------------------------------------------------------------- |
-| `account`     | `peal`                  | What the account shares: the Access policies, the forwarded addresses, the short-link domain    |
-| `environment` | `sandbox`, `production` | An environment's tunnel, host names (its short-link one included), Access applications, buckets |
+| Project       | Stacks                  | What it holds                                                                                                                                      |
+| ------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `account`     | `peal`                  | What the account shares: the Access policies, the forwarded addresses, the short-link domain, the uptime server's records                          |
+| `environment` | `sandbox`, `production` | An environment's tunnel, host names (its short-link one included), Access applications, buckets, the sandbox's service token for the uptime server |
 
 Each environment's stack reads the policies from the account's stack, so
 the account comes first. Pulumi comes before Ansible: the Ansible project
@@ -22,12 +22,13 @@ Both stacks make the same tunnel, records, buckets, keys and bucket rules,
 on their own names (`Pulumi.<stack>.yaml`). They differ by what Access
 guards, as the Ansible project's `peal_access_everything` says:
 
-| What                        | `sandbox`                                                                                                | `production`                                                                                                                                 |
-| --------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Host names                  | `sandbox`, `sandbox-site`, `sandbox-docs`, `sandbox-grafana`, `sandbox-ssh`                              | `app`, the bare domain (`@`: `peal.social`, which Cloudflare flattens), `docs`, `grafana`, `ssh`                                             |
-| Short links                 | `sandbox.peal.link`                                                                                      | `peal.link`                                                                                                                                  |
-| Access applications         | `access-app` (app, site, docs, short links), `access-callbacks` (Bypass), `access-grafana`, `access-ssh` | `access-admin` (the admin's five paths on the app), `access-grafana`, `access-ssh`: none over the app, the site, the docs or the short links |
-| Audience tags (`accessAud`) | `app`, `grafana`, `ssh`                                                                                  | `admin`, `grafana`, `ssh`                                                                                                                    |
+| What                        | `sandbox`                                                                                                               | `production`                                                                                                                                 |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Host names                  | `sandbox`, `sandbox-site`, `sandbox-docs`, `sandbox-grafana`, `sandbox-ssh`                                             | `app`, the bare domain (`@`: `peal.social`, which Cloudflare flattens), `docs`, `grafana`, `ssh`                                             |
+| Short links                 | `sandbox.peal.link`                                                                                                     | `peal.link`                                                                                                                                  |
+| Access applications         | `access-app` (app, site, docs, short links), `access-callbacks` (Bypass), `access-grafana`, `access-ssh`                | `access-admin` (the admin's five paths on the app), `access-grafana`, `access-ssh`: none over the app, the site, the docs or the short links |
+| Audience tags (`accessAud`) | `app`, `grafana`, `ssh`                                                                                                 | `admin`, `grafana`, `ssh`                                                                                                                    |
+| Uptime checks               | `uptime-token`, a service token, let into `access-app` alone by `uptime-service-auth` (Service Auth), its second policy | None: its checks are public                                                                                                                  |
 
 `access-admin`'s paths are the Ansible project's `peal_access_paths`
 (`/api/auth/admin`, `/api/admin`, `/admin`, `/en/admin`, `/fr/admin`):
@@ -46,9 +47,12 @@ token: secret outputs, encrypted in the state. The Ansible project's
 and the stack's public values (audience tags, buckets, endpoints) into its
 `group_vars/<environment>/cloudflare.yml`: run it after each `up` of the
 environment, then `site.yml`. A key is rotated by replacing its resource
-(`pulumi up --replace <urn>`), then the same two steps.
+(`pulumi up --replace <urn>`), then the same two steps. The sandbox's
+service token goes to the uptime server's vault instead ([The uptime
+server](#the-uptime-server)).
 
-The tunnel, the host names, the buckets and the policies are protected:
+The tunnel, the host names, the buckets and the account's policies are
+protected (the uptime server's records too, but not its service token):
 `up` refuses to delete them, and a bucket removed from the code stays at
 Cloudflare with its data (`retainOnDelete`). Each project's resources are
 grouped in a component (`peal:cloudflare:Account`,
@@ -90,10 +94,67 @@ forwards the one it was sent: with normalisation off, a path such as
 the server's routes, with no Access on this host. So the normalisation is
 in code (`link-url-normalization`): never turn it off in the dashboard.
 
+## The uptime server
+
+The uptime server (the Ansible project's README, "Uptime") checks
+production and the sandbox from outside Cloudflare, and serves the status
+page. Two things of it are here.
+
+**Its records**, in the account's stack: `uptime-a` and `uptime-aaaa`, its
+name's A and AAAA records, and `status-cname`, the status page's name, a
+CNAME to it, in the peal.social zone. None is proxied (`proxied: false`):
+the status page and the heartbeat's endpoint then answer when Cloudflare
+does not, and Caddy's TLS-ALPN challenge reaches the server. They come from
+the stack's optional `peal:uptime` setting; unset, the stack makes none of
+them. Set it once the server exists, its names as the Ansible project's
+`uptime_hostname` and `uptime_status_hostname` have them, as first-level
+labels, and its addresses as secrets, so they stay out of Git in clear:
+
+```sh
+bun scripts/pulumi.ts account config set --stack peal --path peal:uptime.hostname uptime
+bun scripts/pulumi.ts account config set --stack peal --path peal:uptime.statusHostname status
+bun scripts/pulumi.ts account config set --stack peal --path --secret peal:uptime.ipv4   # asks for it
+bun scripts/pulumi.ts account config set --stack peal --path --secret peal:uptime.ipv6   # asks for it
+```
+
+`ipv6` is optional: leave it out when the server's web server answers on
+IPv4 alone. The addresses are secret in the state too, so a preview shows
+the A and AAAA records' content as `[secret]`. A new address is a new
+`config set` and an `up`; the CNAME follows.
+
+**The sandbox's service token**, in the sandbox's stack: `uptime-token`,
+which the uptime server's checks of the sandbox carry, and
+`uptime-service-auth`, a policy with the action Service Auth that includes
+that token alone, by its id, added to `access-app` after the owner's
+policy and to no other application. Its client id and secret are the
+stack's secret output `uptimeAccessToken`, and when it ends is
+`uptimeAccessTokenExpiresAt`. `scripts/cloudflare_from_pulumi.py` writes
+them into the uptime server's vault, as `uptime_credentials.SANDBOX_ACCESS_CLIENT_ID`
+and `…_SECRET`, from `group_vars/uptime/vault.yml` made from
+`inventory/vault.uptime.example.yml`:
+
+```sh
+cd ../ansible
+uv run python scripts/cloudflare_from_pulumi.py --vault-id uptime@scripts/vault-keychain-client.py
+```
+
+then `uptime.yml`. The token lasts a year (`duration: 8760h`, in
+`src/environment.ts`): when it ends, every check of the sandbox fails at
+once. Renew it before, in the dashboard (Zero Trust › Access › Service
+credentials, the token, Refresh), which pushes its end a year on and keeps
+its id and secret: nothing else changes, and the next preview shows none.
+Replace it (`pulumi up --replace <its urn>`) when its secret may have
+leaked, then run the script and `uptime.yml` again.
+
+Order: the account's stack (the records) and the sandbox's (the token),
+then the script, then `uptime.yml`, whose Caddy needs the records to get its
+certificates.
+
 ## What stays manual
 
 - The rest of each environment's vault (the Ansible project's README,
-  "Credentials"): Resend, Telegram, the backup passphrase.
+  "Credentials"): Resend, Telegram, the backup passphrase; and the uptime
+  server's Telegram bot.
 - `peal-infra-state`, the bucket that holds the state, its own key, and the
   Cloudflare API token Pulumi uses: what Pulumi needs before it runs.
 - Resend's domain and keys, and the Telegram bots.
@@ -107,11 +168,11 @@ it needs, unless already set in the environment, read from one item of the
 owner's login keychain, `peal-pulumi`, and handed to Pulumi in its
 environment alone, never a file:
 
-| Variable                                     | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`                       | An account API token: Access Edit, Cloudflare One Connector: cloudflared Edit, R2 Edit, Account API Tokens Edit; on peal.social, DNS Edit, Zone Read, Email Routing Rules Edit; on peal.link, DNS Edit (DNSSEC too), Zone Read, Zone Settings Edit, Sanitize Edit (URL normalisation: the endpoint refuses an account token without it, whatever its reference lists), Dynamic URL Redirects Edit (single redirects), Zone Transform Rules Edit |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | An R2 key with Object Read & Write on `peal-infra-state` alone                                                                                                                                                                                                                                                                                                                                                                                  |
-| `PULUMI_CONFIG_PASSPHRASE`                   | The passphrase of the stacks' secrets                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Variable                                     | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`                       | An account API token: Access: Apps and Policies Edit, Access: Service Tokens Edit, Cloudflare One Connector: cloudflared Edit, R2 Edit, Account API Tokens Edit; on peal.social, DNS Edit, Zone Read, Email Routing Rules Edit; on peal.link, DNS Edit (DNSSEC too), Zone Read, Zone Settings Edit, Sanitize Edit (URL normalisation: the endpoint refuses an account token without it, whatever its reference lists), Dynamic URL Redirects Edit (single redirects), Zone Transform Rules Edit |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | An R2 key with Object Read & Write on `peal-infra-state` alone                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `PULUMI_CONFIG_PASSPHRASE`                   | The passphrase of the stacks' secrets                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 The password manager holds them; the keychain item is a copy for the
 scripts, which a password manager's own keychain does not let them read.

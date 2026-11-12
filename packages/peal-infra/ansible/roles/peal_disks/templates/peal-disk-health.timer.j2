@@ -1,0 +1,14 @@
+# Managed by Ansible (peal-infra). The disks' health every 15 minutes, from
+# 5 minutes after boot: Grafana's rules read the last 45 minutes, so one
+# lost report alerts nobody and clears nothing. A report missed while the
+# server was down is not made up for (Persistent=false).
+[Unit]
+Description=Report the disks' health every 15 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Persistent=false
+
+[Install]
+WantedBy=timers.target

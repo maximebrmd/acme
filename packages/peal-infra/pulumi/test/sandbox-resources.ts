@@ -35,6 +35,10 @@ export const sandboxResources = [
           id: "owner-policy",
           precedence: 1,
         },
+        {
+          id: "uptime-service-auth-id",
+          precedence: 2,
+        },
       ],
       sessionDuration: "24h",
       type: "self_hosted",
@@ -342,5 +346,30 @@ export const sandboxResources = [
     },
     name: "tunnel",
     type: "cloudflare:index/zeroTrustTunnelCloudflared:ZeroTrustTunnelCloudflared",
+  },
+  {
+    inputs: {
+      accountId: "account-synthetic",
+      decision: "non_identity",
+      includes: [
+        {
+          serviceToken: {
+            tokenId: "uptime-token-id",
+          },
+        },
+      ],
+      name: "Peal sandbox uptime checks",
+    },
+    name: "uptime-service-auth",
+    type: "cloudflare:index/zeroTrustAccessPolicy:ZeroTrustAccessPolicy",
+  },
+  {
+    inputs: {
+      accountId: "account-synthetic",
+      duration: "8760h",
+      name: "Peal sandbox uptime checks",
+    },
+    name: "uptime-token",
+    type: "cloudflare:index/zeroTrustAccessServiceToken:ZeroTrustAccessServiceToken",
   },
 ];

@@ -41,6 +41,8 @@ export const recordResources = async (): Promise<Made[]> => {
           state: {
             ...decodeInputs(inputs),
             aud: `${resource.name}-aud`,
+            clientId: `${resource.name}-client-id.access`,
+            clientSecret: `${resource.name}-client-secret-synthetic`,
             value: `${resource.name}-value`,
           },
         };

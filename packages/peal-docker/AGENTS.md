@@ -37,6 +37,12 @@ under Development stack.
   of their own, and the server's error-log alert leaves them out. The
   heartbeat rule (`alerting/heartbeat.yaml`) is apart: it always fires, to
   its own contact point, never to Telegram.
+- The backup and disk rules read gauges the host posts to the collector
+  (the Ansible roles `peal_backup` and `peal_disks`), not the stack's own
+  telemetry. A self-hoster's server without those roles never posts them:
+  `peal-raid-degraded` and `peal-disk-failing` take no data as `OK`, and
+  read the names the role's script posts, which
+  `packages/peal-infra/ansible/tests/test_disks.py` ties to the rules.
 - Telemetry keeps logs 31 days (Loki), traces 14 days
   (`config/production/tempo.yaml`, whose `block_retention` is set for both
   the backend scheduler and worker) and metrics 30 days, as the privacy

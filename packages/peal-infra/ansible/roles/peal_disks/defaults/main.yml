@@ -1,0 +1,6 @@
+---
+# Where peal-disk-health reads the disks' state: the server's own paths. A
+# test points them at a folder of its own.
+peal_disks_sys_block: /sys/block
+peal_disks_lsblk: /usr/bin/lsblk
+peal_disks_smartctl: /usr/sbin/smartctl
