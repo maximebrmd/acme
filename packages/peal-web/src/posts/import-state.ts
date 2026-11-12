@@ -1,3 +1,5 @@
+import { Cause, Exit, Option, Schema } from "effect";
+import { Forbidden, ImportUnreadable } from "peal-contract";
 import type {
   ImportProblem,
   ImportResult,
@@ -169,4 +171,42 @@ export const nextImport = (
       return event satisfies never;
     }
   }
+};
+
+const isUnreadable = Schema.is(ImportUnreadable);
+const isForbidden = Schema.is(Forbidden);
+
+/**
+ * The event a request's end makes: its answer, a file the server cannot
+ * read, or a failure, `forbidden` when the role changed meanwhile.
+ * `newKey` makes the key a passed check keeps.
+ */
+export const answerOf = <E>(
+  exit: Exit.Exit<ImportResult, E>,
+  step: "check" | "import",
+  newKey: () => string
+): ImportEvent => {
+  if (Exit.isSuccess(exit)) {
+    return step === "check"
+      ? { _tag: "checked", key: newKey(), result: exit.value }
+      : { _tag: "imported", result: exit.value };
+  }
+
+  return Cause.findErrorOption(exit.cause).pipe(
+    Option.map((error): ImportEvent => {
+      if (isUnreadable(error)) {
+        return {
+          _tag: "unreadable",
+          column: error.column,
+          problem: error.problem,
+        };
+      }
+
+      return {
+        _tag: "failed",
+        reason: isForbidden(error) ? "forbidden" : "unknown",
+      };
+    }),
+    Option.getOrElse((): ImportEvent => ({ _tag: "failed", reason: "unknown" }))
+  );
 };

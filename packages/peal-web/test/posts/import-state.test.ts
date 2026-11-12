@@ -1,8 +1,15 @@
 import { describe, expect, it } from "@effect/vitest";
-import { ScheduleInPast, UnknownChannels } from "peal-contract";
+import { Exit } from "effect";
+import {
+  Forbidden,
+  ImportUnreadable,
+  ScheduleInPast,
+  UnknownChannels,
+} from "peal-contract";
 import type { ImportResult, ImportRowResult } from "peal-contract";
 
 import {
+  answerOf,
   canImport,
   idleImport,
   nextImport,
@@ -234,5 +241,61 @@ describe(refusedMeanwhile, () => {
     expect(refusedMeanwhile([{ _tag: "valid", row: 1 }, late])).toStrictEqual([
       late,
     ]);
+  });
+});
+
+describe(answerOf, () => {
+  const result = answer([valid(1)]);
+
+  it("hands a check's answer over with a new key", () => {
+    expect(
+      answerOf(Exit.succeed(result), "check", () => "key-9")
+    ).toStrictEqual({ _tag: "checked", key: "key-9", result });
+  });
+
+  it("hands an import's answer over as it came", () => {
+    expect(
+      answerOf(Exit.succeed(result), "import", () => "unused")
+    ).toStrictEqual({ _tag: "imported", result });
+  });
+
+  it("reads a file the server cannot read", () => {
+    expect(
+      answerOf(
+        Exit.fail(
+          new ImportUnreadable({
+            column: null,
+            message,
+            problem: "strayQuote",
+          })
+        ),
+        "check",
+        () => "unused"
+      )
+    ).toStrictEqual({
+      _tag: "unreadable",
+      column: null,
+      problem: "strayQuote",
+    });
+  });
+
+  it("tells a role that changed from any other failure", () => {
+    expect(
+      answerOf(
+        Exit.fail(
+          new Forbidden({
+            message,
+            permission: "post:schedule",
+            reason: "missingPermission",
+          })
+        ),
+        "import",
+        () => "unused"
+      )
+    ).toStrictEqual({ _tag: "failed", reason: "forbidden" });
+
+    expect(
+      answerOf(Exit.die("offline"), "import", () => "unused")
+    ).toStrictEqual({ _tag: "failed", reason: "unknown" });
   });
 });
