@@ -23,6 +23,7 @@ import {
   writeReply,
 } from "#engagement/domain/reply.ts";
 import type { Reply } from "#engagement/domain/reply.ts";
+import { linkedinCommentsDailyCalls } from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
 import { platformEngagementWith } from "#engagement/infrastructure/platforms/platform-engagement.ts";
 import { youtubeCommentsDailyUnits } from "#engagement/infrastructure/platforms/youtube/youtube-engagement.ts";
 import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
@@ -160,6 +161,7 @@ const onServer = Effect.fnUntraced(function* onServer(
   const gate = platformEngagementWith({
     blueskyAppView: url,
     linkedinApi: url,
+    linkedinReadCalls: linkedinCommentsDailyCalls,
     linkedinVersion: "202610",
     mastodonScheme: "http:",
     metaAppSecret: Option.some(Redacted.make("synthetic-meta-secret")),

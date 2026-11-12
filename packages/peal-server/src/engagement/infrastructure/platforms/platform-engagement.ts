@@ -32,8 +32,10 @@ import type {
 } from "#engagement/infrastructure/platforms/engagement-platform.ts";
 import {
   linkedinEngagement,
+  linkedinReadCallsConfig,
   linkedinRefreshWithin,
 } from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
+import type { LinkedInReadCalls } from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
 import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodon/mastodon-engagement.ts";
 import { facebookEngagement } from "#engagement/infrastructure/platforms/meta/facebook-engagement.ts";
 import { instagramEngagement } from "#engagement/infrastructure/platforms/meta/instagram-engagement.ts";
@@ -73,6 +75,8 @@ export interface EngagementSettings {
   /** LinkedIn's REST API's origin, and the version every call names. */
   readonly linkedinApi: URL;
   readonly linkedinVersion: string;
+  /** What LinkedIn comment reads may call a day (`linkedinReadCallsConfig`). */
+  readonly linkedinReadCalls: LinkedInReadCalls;
   /** The YouTube Data API's origin. */
   readonly youtubeApi: URL;
   /** The units comment reads may spend a day (`YOUTUBE_DAILY_COMMENT_UNITS`). */
@@ -166,6 +170,7 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         instagram: yield* instagramEngagement(meta),
         linkedin: yield* linkedinEngagement({
           api: settings.linkedinApi,
+          dailyCalls: settings.linkedinReadCalls,
           http,
           reader,
           version: settings.linkedinVersion,
@@ -420,20 +425,23 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
 export const PlatformEngagementLive = Layer.unwrap(
   Effect.all({
     app: metaAppConfig,
+    linkedinReadCalls: linkedinReadCallsConfig,
     linkedinVersion: linkedinVersionConfig,
     youtubeCommentUnits: youtubeCommentUnitsConfig,
   }).pipe(
-    Effect.map(({ app, linkedinVersion, youtubeCommentUnits }) =>
-      platformEngagementWith({
-        blueskyAppView: new URL("https://public.api.bsky.app"),
-        linkedinApi: new URL("https://api.linkedin.com"),
-        linkedinVersion,
-        mastodonScheme: "https:",
-        metaAppSecret: app.pipe(Option.map(({ appSecret }) => appSecret)),
-        metaHosts,
-        youtubeApi: new URL("https://www.googleapis.com"),
-        youtubeCommentUnits,
-      })
+    Effect.map(
+      ({ app, linkedinReadCalls, linkedinVersion, youtubeCommentUnits }) =>
+        platformEngagementWith({
+          blueskyAppView: new URL("https://public.api.bsky.app"),
+          linkedinApi: new URL("https://api.linkedin.com"),
+          linkedinReadCalls,
+          linkedinVersion,
+          mastodonScheme: "https:",
+          metaAppSecret: app.pipe(Option.map(({ appSecret }) => appSecret)),
+          metaHosts,
+          youtubeApi: new URL("https://www.googleapis.com"),
+          youtubeCommentUnits,
+        })
     )
   )
 ).pipe(

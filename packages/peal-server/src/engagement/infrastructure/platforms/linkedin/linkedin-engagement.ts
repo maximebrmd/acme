@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Option, Schema } from "effect";
+import { Config, DateTime, Duration, Effect, Option, Schema } from "effect";
 import type { Redacted } from "effect";
 import { Headers, HttpClientRequest, HttpClientResponse } from "effect/http";
 
@@ -33,10 +33,13 @@ import {
 } from "#engagement/infrastructure/platforms/resumed-reply.ts";
 import type { ListedReply } from "#engagement/infrastructure/platforms/resumed-reply.ts";
 import { threadBodyOf } from "#engagement/infrastructure/platforms/thread-body.ts";
+import { PlatformQuota } from "#publishing/application/platform-quota.ts";
 import { connectionOf } from "#shared/domain/channel-connection.ts";
 import { linkedinCommentScopes } from "#shared/domain/inbox-platform.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { localDateOf } from "#shared/domain/wall-clock.ts";
 import {
   encodedUrn,
   isLinkedInError,
@@ -83,6 +86,46 @@ import {
  */
 export const linkedinRefreshWithin = Duration.hours(24);
 
+/**
+ * The calls comment reads may make a day, by UTC day: of the app's, and of
+ * each page's. LinkedIn's Development tier allows "500 API calls for an
+ * app for 24 hrs" and "100 API calls per member of an App for 24 hrs" for
+ * every call, posting included (…/marketing/increasing-access, read
+ * 2026-11-12): reads take 200 of the app's and 40 a page by default, so
+ * publishing keeps the rest. A Standard-tier server raises them
+ * (`LINKEDIN_DAILY_COMMENT_CALLS`, `LINKEDIN_DAILY_COMMENT_CALLS_PER_PAGE`).
+ * Peal keeps no member for a page, so the second is counted by page: a
+ * member who administers several pages shares their 100 across them.
+ */
+export const linkedinCommentsDailyCalls = { app: 200, perPage: 40 } as const;
+
+/** The daily calls reads may make, of the app's and of each page's. */
+export interface LinkedInReadCalls {
+  readonly app: number;
+  readonly perPage: number;
+}
+
+/**
+ * `LINKEDIN_DAILY_COMMENT_CALLS` and `LINKEDIN_DAILY_COMMENT_CALLS_PER_PAGE`:
+ * what comment reads may call a day, across the app and for one page. A
+ * value that is not a whole number stops the server.
+ */
+export const linkedinReadCallsConfig = Config.all({
+  app: Config.schema(
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+    "LINKEDIN_DAILY_COMMENT_CALLS"
+  ).pipe(Config.withDefault(linkedinCommentsDailyCalls.app)),
+  perPage: Config.schema(
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+    "LINKEDIN_DAILY_COMMENT_CALLS_PER_PAGE"
+  ).pipe(Config.withDefault(linkedinCommentsDailyCalls.perPage)),
+});
+
+/** The ledger bucket of the app's read calls; a page's adds its channel. */
+export const linkedinCommentsBucket = "comments:linkedin";
+
+const utc = TimeZoneIdSchema.make("UTC");
+
 /** The comments one page of a read asks for, under LinkedIn's 200. */
 const pageSize = 100;
 
@@ -101,6 +144,8 @@ export interface LinkedInEngagementOptions {
   readonly reader?: PlatformHttp;
   /** The API version every call names (`Linkedin-Version`). */
   readonly version: string;
+  /** What reads may call a day (`linkedinCommentsDailyCalls`). */
+  readonly dailyCalls: LinkedInReadCalls;
   readonly deadline?: Duration.Duration;
 }
 
@@ -272,7 +317,8 @@ const isPage = (account: ChannelAccount) =>
 export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
   function* linkedinEngagement(options: LinkedInEngagementOptions) {
     const access = yield* ChannelAccess;
-    const { api, http, version } = options;
+    const quota = yield* PlatformQuota;
+    const { api, dailyCalls, http, version } = options;
     const reader = options.reader ?? http;
     const deadlineAfter = options.deadline ?? defaultDeadline;
     const call = restCall(version);
@@ -287,6 +333,36 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
       call(
         HttpClientRequest.get(query === "" ? url.href : `${url.href}?${query}`),
         token
+      );
+
+    // A call of the day's reads, of the app's and of the page's, if both
+    // are left: whether it was. The ledger being down reads nothing more.
+    const spendCall = (account: ChannelAccount) =>
+      DateTime.now.pipe(
+        Effect.flatMap((now) => {
+          const day = localDateOf(now, utc);
+
+          return quota
+            .spend({
+              allowance: dailyCalls.perPage,
+              bucket: `${linkedinCommentsBucket}:${account.channelId}`,
+              day,
+              units: 1,
+            })
+            .pipe(
+              Effect.flatMap((spent) =>
+                spent
+                  ? quota.spend({
+                      allowance: dailyCalls.app,
+                      bucket: linkedinCommentsBucket,
+                      day,
+                      units: 1,
+                    })
+                  : Effect.succeed(false)
+              )
+            );
+        }),
+        Effect.orElseSucceed(() => false)
       );
 
     type Step =
@@ -402,6 +478,10 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
           return Option.some(at.read(false));
         }
 
+        if (!(yield* spendCall(account))) {
+          return Option.some(at.halt());
+        }
+
         const sent = yield* reader
           .execute(
             get(
@@ -493,6 +573,11 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
     ) {
       const at = progress(thread);
 
+      // The day's calls for reads are spent: publishing keeps the rest.
+      if (!(yield* spendCall(account))) {
+        return at.halt();
+      }
+
       const summary = yield* reader
         .execute(get(actionsOf(thread.platformPostId), token))
         .pipe(Effect.result);
@@ -506,6 +591,10 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
 
         if (Option.isSome(step)) {
           return step.value;
+        }
+
+        if (!(yield* spendCall(account))) {
+          return at.halt();
         }
 
         if (!(yield* readsOwnPage(account, token))) {

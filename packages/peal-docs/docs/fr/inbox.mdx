@@ -149,7 +149,7 @@ Sur LinkedIn :
 - Un commentaire a des commentaires imbriqués sur un niveau : une réponse à un commentaire imbriqué va sous le commentaire auquel il répond.
 - Rien n’est masqué ni aimé depuis Peal.
 - LinkedIn ne prend aucune clé qui rendrait une réponse sûre à envoyer deux fois : quand on ne sait pas comment son envoi s’est terminé, Peal la cherche parmi les commentaires sous celui auquel elle répond, comme sur [les plateformes de Meta](#meta), et ne l’envoie jamais de nouveau.
-- Le niveau Development de LinkedIn permet 500 appels par jour pour toute l’application : la lecture s’y arrête la plupart des jours dès que LinkedIn le dit, et les commentaires attendent la passe suivante. Le niveau Standard n’a pas cette limite.
+- Le niveau Development de LinkedIn permet 500 appels par jour pour toute l’application et 100 par membre, publication comprise : la lecture des commentaires en prend donc au plus 200 de l’application et 40 par page par défaut (`LINKEDIN_DAILY_COMMENT_CALLS`, `LINKEDIN_DAILY_COMMENT_CALLS_PER_PAGE`), comptés par jour UTC, puis s’arrête jusqu’au lendemain, tandis que la publication et les réponses continuent. Peal ne garde aucun membre pour une page : un membre qui administre plusieurs pages partage ses 100 entre elles ; baissez alors la part par page. Le niveau Standard n’a pas cette limite : relevez les deux.
 - Seules les publications mises en ligne après l’activation de LinkedIn sont lues.
 
 ### Autres plateformes [#other-platforms]

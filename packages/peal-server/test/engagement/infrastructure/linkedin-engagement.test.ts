@@ -8,7 +8,10 @@ import type {
   ThreadToRead,
 } from "#engagement/application/ports/comment-source.ts";
 import type { OutgoingReply } from "#engagement/infrastructure/platforms/engagement-platform.ts";
-import { linkedinEngagement } from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
+import {
+  linkedinCommentsDailyCalls,
+  linkedinEngagement,
+} from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
@@ -24,6 +27,7 @@ import type {
   FakeLinkedInComment,
   FakeLinkedInCommentsOptions,
 } from "#test/engagement/fakes/fake-linkedin-comments.ts";
+import { memoryQuota } from "#test/engagement/fakes/fake-youtube-comments.ts";
 import { replyId, threadId } from "#test/engagement/support.ts";
 import { dropped, json } from "#test/publishing/fakes/platform-server.ts";
 
@@ -89,9 +93,12 @@ const firstReading = (batch: CommentsBatch) => {
 // The adapter on a fake API, as the page.
 const onLinkedIn = Effect.fnUntraced(function* onLinkedIn(
   account: Partial<ChannelAccount> = {},
-  fake: FakeLinkedInCommentsOptions = {}
+  fake: FakeLinkedInCommentsOptions & {
+    readonly dailyCalls?: { readonly app: number; readonly perPage: number };
+  } = {}
 ) {
   const api = yield* fakeLinkedInComments(["li-token-1"], fake);
+  const quota = memoryQuota();
 
   const page: ChannelAccount = {
     accountId: linkedinPageUrn,
@@ -105,6 +112,7 @@ const onLinkedIn = Effect.fnUntraced(function* onLinkedIn(
   const platform = yield* Effect.gen(function* building() {
     return yield* linkedinEngagement({
       api: new URL(api.url),
+      dailyCalls: fake.dailyCalls ?? linkedinCommentsDailyCalls,
       http: yield* publicHttpClient,
       version: linkedinCommentsVersion,
     });
@@ -113,12 +121,13 @@ const onLinkedIn = Effect.fnUntraced(function* onLinkedIn(
       Layer.mergeAll(
         channelAccessOf(page, ["li-token-1"]),
         FetchHttpClient.layer,
-        OpenOutboundGuard
+        OpenOutboundGuard,
+        quota.layer
       )
     )
   );
 
-  return { account: page, api, platform };
+  return { account: page, api, platform, quota };
 });
 
 describe("LinkedIn pages' comments", () => {
@@ -287,6 +296,45 @@ describe("LinkedIn pages' comments", () => {
       assert.isTrue(reading?._tag === "read" && !reading.complete);
     }).pipe(Effect.scoped)
   );
+
+  it.effect(
+    "stops reading, never publishing nor answering, once the day's calls for reads are spent",
+    () =>
+      Effect.gen(function* budget() {
+        const { account, api, platform, quota } = yield* onLinkedIn(
+          {},
+          {
+            dailyCalls: { app: 100, perPage: 3 },
+          }
+        );
+
+        api.addPost(share, activity);
+        api.add(comment(1));
+
+        // Each thread takes a summary and a page: the third read call is
+        // the page's last of the day.
+        const batch = yield* platform.read(account, [thread(1), thread(2)]);
+
+        assert.isTrue(batch.halted);
+        assert.lengthOf(batch.readings, 1);
+        assert.lengthOf(api.requests(), 3);
+        assert.isTrue([...quota.spent.values()].every((spent) => spent <= 100));
+
+        // A person's reply is not held by the reads' share.
+        const sent = yield* platform.send(account, outgoing());
+
+        assert.strictEqual(sent._tag, "sent");
+
+        const later = yield* platform.read(account, [thread(1)]);
+
+        assert.deepStrictEqual(later, { halted: true, readings: [] });
+      }).pipe(Effect.scoped)
+  );
+
+  it("leaves most of LinkedIn's Development tier to publishing by default", () => {
+    assert.isAtMost(linkedinCommentsDailyCalls.perPage, 40);
+    assert.isAtMost(linkedinCommentsDailyCalls.app, 250);
+  });
 
   it.effect("reads past a page of comments", () =>
     Effect.gen(function* paged() {
