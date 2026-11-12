@@ -249,8 +249,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "How many requests each of your workspaces made each day. The text you ask it to change is sent to the AI provider, and this server does not keep it",
-      fr: "Le nombre de demandes de chacun de vos espaces de travail, par jour. Le texte que vous lui demandez de modifier est envoyé au fournisseur d’IA, et ce serveur ne le conserve pas",
+      en: "How many requests each of your workspaces made each day. The text you ask it to change, or the subject of a post you ask it to write, is sent to the AI provider, and this server does not keep it. The description of an image you ask it to make is sent to the image provider, and this server does not keep it; the image the provider returns is kept as a file of the workspace’s media, marked as made by AI, as uploaded media is",
+      fr: "Le nombre de demandes de chacun de vos espaces de travail, par jour. Le texte que vous lui demandez de modifier, ou le sujet d’une publication que vous lui demandez de rédiger, est envoyé au fournisseur d’IA, et ce serveur ne le conserve pas. La description d’une image que vous lui demandez de créer est envoyée au fournisseur d’images, et ce serveur ne la conserve pas ; l’image que renvoie le fournisseur est conservée comme un fichier des médias de l’espace de travail, marqué comme créé par IA, comme un média envoyé",
     },
     id: "assistant",
     legalBasis: contract,
@@ -260,8 +260,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
     },
     operatorSet: false,
     purposes: {
-      en: "Suggest changes to a post’s text when you ask, within a daily limit",
-      fr: "Proposer des modifications du texte d’une publication à votre demande, dans une limite quotidienne",
+      en: "Suggest changes to a post’s text, write a first post from a subject, and make images, when you ask, within a daily limit",
+      fr: "Proposer des modifications du texte d’une publication, rédiger une première publication à partir d’un sujet, et créer des images, à votre demande, dans une limite quotidienne",
     },
     retention: {
       en: "Until the workspace is deleted",

@@ -285,6 +285,8 @@ When the Peal instance has an AI provider, the composer's **Text** section has a
 - **Translate into**: English, French, German, Spanish, Italian, Portuguese, Dutch, Polish, Japanese or Chinese (simplified);
 - **Suggest hashtags**: up to 8 that the text does not have yet.
 
+When the instance also has an image model, **Choose from the library** offers **Generate an image**, which makes an image from a description into the library, picked for the post: [Generate an image](/media#generate). An image costs 5 of the day's requests.
+
 The suggestion opens in a preview, and nothing changes until you choose **Use this text** or **Add these hashtags**, which adds them on a line of their own; **Discard** drops it. Read it before you use it: the assistant keeps mentions, hashtags and links, and is told not to add facts, but it can still get things wrong.
 
 The assistant takes texts, and subjects, of up to 5,000 characters. Each workspace may send it a number of requests per day, 100 unless the instance sets another, counted from midnight UTC; the menu shows how many are left today. A request that could not reach the AI provider does not count. One that took more than 90 seconds does, as the provider may have worked on it.

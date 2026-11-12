@@ -41,3 +41,31 @@
   port, from `publishing/application/platform-text-limits.ts`. Its tones and
   languages are listed in its domain and copied in the contract, kept equal
   by `test/assistant/api/contract.test.ts`.
+- Images go through an `ImageModel` port of their own, apart from the
+  writing model, which may make none: `PEAL_AI_IMAGE_PROVIDER`
+  (`openai-compatible`, or unset for off: `UnavailableImageModelLive`),
+  `PEAL_AI_IMAGE_BASE_URL`, `PEAL_AI_IMAGE_MODEL`, `PEAL_AI_IMAGE_API_KEY`.
+  Its adapter (`openai-compatible-image-model.ts`) calls
+  `POST {base}/images/generations` itself, at the operator's host, with no
+  `response_format` (current models answer base64); a `url` answer came
+  from outside and goes through `publicHttpClientWith`. Answers are
+  bounded (`maxAnswerBytes`, then `maxImageBytes`, the library's image
+  limit), the call waits `imageAnswerTimeout` (90 seconds), 401 and 403 are
+  logged by status alone and answered `AssistantUnavailable`, another 4xx
+  is `refused`, 429 and 5xx `unreachable`. It was written to one
+  provider's reference and tested on a loopback fake only: it has never
+  called a real provider.
+- `generateImage` needs `assistant:use` and `media:upload`. Before anything
+  is spent: the model on, the prompt checked (1 to 1,000), the plan's
+  storage room for the largest image (`GeneratedImages.roomFor`), one of
+  the `imagesAtOnce` slots (two a workspace, eight a server, `ImageSlots`,
+  past them `ImagesBusy`, 429), then `imageRequestCost` (5) claimed of the
+  same daily requests a suggestion takes one of (`AssistantUsage.claim`'s
+  cost), given back only on `unreachable`. No plan or price changes, and
+  the free plan's 3 make none.
+- The image is kept through the `GeneratedImages` port, whose adapter
+  (`library-generated-images.ts`) calls the media context's
+  `storeGenerated`: stored untouched, marked `aiGenerated`, no alt text.
+  Bytes the library does not take are `ImageFailed` `unusableAnswer`, and
+  count. Never log or trace a prompt, an image or a provider's error;
+  `ImageFailed` carries no cause.
