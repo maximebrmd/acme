@@ -18,11 +18,12 @@
     - "{{ peal_root }}/releases"
     - "{{ peal_root }}/images"
 
-# Generated once on the server and never copied anywhere else: `creates`
-# skips the task once the file exists. The token key id carries the date and
-# random characters, so a server rebuilt from a backup, even on the day the
-# old one was set up, never reads tokens with a new key under an old key's
-# name: they fail as encrypted with a key it does not have.
+# Generated once on the server and never copied anywhere else, but to the
+# server that replaces it in a planned move (runbooks/restore-database.md):
+# `creates` skips the task once the file exists. The token key id carries
+# the date and random characters, so a server rebuilt from a backup, even on
+# the day the old one was set up, never reads tokens with a new key under an
+# old key's name: they fail as encrypted with a key it does not have.
 - name: Generate the secrets
   ansible.builtin.shell: |
     set -eu

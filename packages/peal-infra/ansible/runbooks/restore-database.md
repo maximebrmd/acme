@@ -90,7 +90,8 @@ Delete `/srv/peal/before-restore` once nothing in it is needed.
 ## A new server
 
 When the server is lost, its secrets are lost with it: they were generated
-there and never copied (`secrets.env`). The backups are in R2, encrypted with
+there and never copied (`secrets.env`), but in a planned move
+([A planned move](#a-planned-move)). The backups are in R2, encrypted with
 the backup passphrase, which you kept outside the server.
 
 1. Set up a new server as `README.md` says, through `site.yml`, with the same
@@ -117,6 +118,63 @@ the backup passphrase, which you kept outside the server.
 What the new secrets cost: everyone signs in again, the command line and MCP
 clients too, and the channels' tokens can no longer be read, so members
 reconnect their channels.
+
+## A planned move
+
+Moving to a new server while the old one still runs, to a larger one or to
+another provider, keeps the old server's secrets: `secrets.env` is carried
+from one to the other, the one secret ever copied off a server, and only
+this way. Nobody signs in again and the channels' tokens still read. Plan
+it as downtime, from step 2 until the new server runs the stack.
+
+The order matters: the new server joins the old one's tunnel at its first
+`site.yml`, after which `ssh.peal.social` may reach either. Until then, the
+old one is reached through the tunnel and the new one by its address.
+
+1. Create the new server, of the architecture the backups were made on, and
+   run `bootstrap.yml` on it alone (`README.md`, "A new server", steps 1 and
+   2, with its address in `host_vars/<host>/local.yml`). Not `site.yml` yet.
+2. On the old server, stop the stack, after a full backup taken with the
+   server and the web app stopped, so the restore loses nothing:
+
+   ```sh
+   sudo peal-compose stop web server
+   sudo systemctl start peal-backup@full
+   sudo peal-compose stop
+   ```
+
+   Its Postgres stays stopped from here on: two servers archiving to one
+   backup bucket would mix their write-ahead logs.
+
+3. Carry `secrets.env`, from your machine, in one pipe between two SSH
+   sessions: the file goes from the old server's disk to the new one's,
+   readable by root alone, and is never written on your machine, shown, or
+   put anywhere else (no repository, chat or file in between). Check that
+   the two digests match and that the mode is `600`:
+
+   ```sh
+   ssh ops@<new address> sudo install -d -m 0750 -o root -g root /srv/peal
+   ssh ops@ssh.peal.social sudo cat /srv/peal/secrets.env \
+     | ssh ops@<new address> 'sudo sh -c "umask 077 && cat > /srv/peal/secrets.env.new && mv /srv/peal/secrets.env.new /srv/peal/secrets.env"'
+   ssh ops@ssh.peal.social sudo sha256sum /srv/peal/secrets.env
+   ssh ops@<new address> sudo sha256sum /srv/peal/secrets.env
+   ssh ops@<new address> sudo stat -c '%a %U' /srv/peal/secrets.env
+   ```
+
+4. Delete the file on the old server, then power the old server off in its
+   provider's console, which takes its tunnel connector away. Keep the
+   server, off, until the new one is confirmed: to go back, power it on and
+   carry the file back the same way.
+
+   ```sh
+   ssh ops@ssh.peal.social sudo rm /srv/peal/secrets.env
+   ```
+
+5. Follow [A new server](#a-new-server) from step 1, without step 4: its
+   `site.yml` finds `secrets.env` and generates none, and the old secrets
+   still read what they encrypted.
+6. Once the new server serves and its first backup is taken, delete the old
+   server at its provider.
 
 ## Deletions since the restore point
 
