@@ -22,6 +22,7 @@ import {
   instagramUserId,
   metaError,
 } from "#test/publishing/fakes/fake-meta-graph.ts";
+import { json } from "#test/publishing/fakes/platform-server.ts";
 
 // An Instagram account's comments against a loopback Graph that answers as
 // Meta's references say: a media's top-level comments with their replies,
@@ -302,12 +303,42 @@ describe("Instagram's comments", () => {
       assert.isFalse(graph.comments()[0]?.hidden);
 
       for (const _ of [1, 2]) {
-        assert.deepStrictEqual(yield* platform.withdraw(account, "ig2002"), {
-          _tag: "done",
-        });
+        assert.deepStrictEqual(
+          yield* platform.withdraw(account, "ig2002", mediaId),
+          {
+            _tag: "done",
+          }
+        );
       }
 
       assert.lengthOf(graph.comments(), 1);
     }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "takes a comment Meta will not load as gone only while the post still loads",
+    () =>
+      Effect.gen(function* confirms() {
+        const { account, graph, platform } = yield* onGraph();
+
+        const gone = json(
+          { error: { code: 100, error_subcode: 33, message: "synthetic" } },
+          400
+        );
+
+        graph.add(comment(1));
+
+        assert.deepStrictEqual(
+          yield* platform.withdraw(account, "ig2999", mediaId),
+          { _tag: "done" }
+        );
+
+        graph.script.push(`GET /v27.0/${mediaId}`, [gone]);
+
+        assert.deepStrictEqual(
+          yield* platform.withdraw(account, "ig2999", mediaId),
+          { _tag: "failed", reason: "refused" }
+        );
+      }).pipe(Effect.scoped)
   );
 });

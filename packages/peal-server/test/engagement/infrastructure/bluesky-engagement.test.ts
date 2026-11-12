@@ -620,7 +620,7 @@ describe("Bluesky's comments", () => {
 
         yield* platform.moderate(account, { ...target, action: "like" });
         yield* platform.moderate(account, { ...target, action: "unlike" });
-        yield* platform.withdraw(account, second);
+        yield* platform.withdraw(account, second, target.rootPlatformPostId);
 
         const [like, unlike, withdrawn] = writes();
 

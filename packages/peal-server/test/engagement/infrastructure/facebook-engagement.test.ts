@@ -436,9 +436,12 @@ describe("Facebook Pages' comments", () => {
       assert.isFalse(graph.comments()[0]?.hidden);
 
       for (const _ of [1, 2]) {
-        assert.deepStrictEqual(yield* platform.withdraw(account, "2002"), {
-          _tag: "done",
-        });
+        assert.deepStrictEqual(
+          yield* platform.withdraw(account, "2002", postId),
+          {
+            _tag: "done",
+          }
+        );
       }
 
       assert.lengthOf(graph.comments(), 1);
@@ -447,6 +450,65 @@ describe("Facebook Pages' comments", () => {
         yield* platform.moderate(account, { ...target, action: "like" }),
         { _tag: "failed", reason: "refused" }
       );
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "takes a comment Meta will not load as gone only while the post still loads",
+    () =>
+      Effect.gen(function* confirms() {
+        const { account, graph, platform } = yield* onGraph();
+
+        const gone = json(
+          { error: { code: 100, error_subcode: 33, message: "synthetic" } },
+          400
+        );
+
+        const target = {
+          action: "hide" as const,
+          platformCommentId: "2999",
+          receivedAt: DateTime.makeUnsafe("2026-11-10T09:10:00.000Z"),
+          rootPlatformPostId: postId,
+        };
+
+        graph.add(comment(1));
+
+        // The comment is gone and the post loads: done.
+        assert.deepStrictEqual(
+          yield* platform.withdraw(account, "2999", postId),
+          { _tag: "done" }
+        );
+        assert.deepStrictEqual(yield* platform.moderate(account, target), {
+          _tag: "done",
+        });
+
+        // The token loads neither: nobody can tell, nothing is done.
+        graph.script.push(`GET /v27.0/${postId}`, [gone, gone]);
+
+        assert.deepStrictEqual(
+          yield* platform.withdraw(account, "2999", postId),
+          { _tag: "failed", reason: "refused" }
+        );
+        assert.deepStrictEqual(yield* platform.moderate(account, target), {
+          _tag: "failed",
+          reason: "refused",
+        });
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect("reads Meta's success in the answer before saying done", () =>
+    Effect.gen(function* success() {
+      const { account, graph, platform } = yield* onGraph();
+
+      graph.add(comment(1));
+      graph.add(comment(2, { from: page, parentId: "2001" }));
+      graph.script.push("DELETE /v27.0/2002", [json({ success: false })]);
+
+      assert.strictEqual(
+        (yield* platform.withdraw(account, "2002", postId))._tag,
+        "failed"
+      );
+      assert.lengthOf(graph.comments(), 2);
     }).pipe(Effect.scoped)
   );
 });

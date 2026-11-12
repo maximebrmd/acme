@@ -36,8 +36,8 @@ import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import {
   actionFailure,
   commentsPerPage,
+  confirmedAction,
   defaultDeadline,
-  done,
   foundAmong,
   instantOf,
   isSuccess,
@@ -626,40 +626,26 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
 
     // A call that sets a state on a comment: done on success, and on a
     // comment already gone.
+    // A call that sets a state on a comment (`confirmedAction`).
     const act = (
       account: ChannelAccount,
       method: "DELETE" | "POST",
       commentId: string,
+      rootPostId: string,
       params: Readonly<Record<string, string>> = {}
     ): Effect.Effect<ActionOutcome> =>
-      asAccount<ActionOutcome>(
-        account,
-        notDone,
-        Effect.fn("InstagramEngagement.act")(function* acting(token) {
-          const sent = yield* request(
-            account,
-            token,
-            method,
-            nodePath(commentId),
-            params
-          ).pipe(Effect.flatMap(http.execute), Effect.result);
-
-          if (sent._tag === "Failure") {
-            return notDone("platformUnavailable");
-          }
-
-          if (isSuccess(sent.success)) {
-            return done;
-          }
-
-          const refusal = yield* metaRefusalOf(sent.success);
-
-          if (refusal === "token") {
-            return yield* new TokenRejected();
-          }
-
-          return refusal === "gone" ? done : notDone(actionFailure(refusal));
-        })
+      asAccount<ActionOutcome>(account, notDone, (token) =>
+        confirmedAction(
+          (verb, path, given = {}) =>
+            request(account, token, verb, path, given).pipe(
+              Effect.flatMap(http.execute),
+              Effect.option
+            ),
+          method,
+          commentId,
+          rootPostId,
+          params
+        )
       );
 
     const moderate = (
@@ -667,9 +653,15 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
       target: CommentTarget
     ): Effect.Effect<ActionOutcome> => {
       if (target.action === "hide" || target.action === "unhide") {
-        return act(account, "POST", target.platformCommentId, {
-          hide: target.action === "hide" ? "true" : "false",
-        });
+        return act(
+          account,
+          "POST",
+          target.platformCommentId,
+          target.rootPlatformPostId,
+          {
+            hide: target.action === "hide" ? "true" : "false",
+          }
+        );
       }
 
       // Instagram's API has no like; deleting someone's comment is not
@@ -682,8 +674,8 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
       read,
       resume,
       send,
-      withdraw: (account, platformCommentId) =>
-        act(account, "DELETE", platformCommentId),
+      withdraw: (account, platformCommentId, rootPlatformPostId) =>
+        act(account, "DELETE", platformCommentId, rootPlatformPostId),
     };
 
     return platform;

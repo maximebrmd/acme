@@ -11,6 +11,7 @@ import type {
   OutgoingReply,
   PlatformHttp,
 } from "#engagement/infrastructure/platforms/engagement-platform.ts";
+import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import { graphRefusalOf } from "#shared/infrastructure/platforms/graph-refusal.ts";
 import type { GraphRefusal } from "#shared/infrastructure/platforms/graph-refusal.ts";
 import {
@@ -184,6 +185,69 @@ export const instantOf = (written: string): Option.Option<DateTime.Utc> =>
   );
 
 const MadeSchema = Schema.Struct({ id: Schema.NonEmptyString });
+
+// What the Comment and IG Comment references answer an update or a
+// deletion with.
+const SucceededSchema = Schema.Struct({ success: Schema.Boolean });
+
+const succeededOf = HttpClientResponse.schemaBodyJson(SucceededSchema);
+
+/** One Graph call of an action, as the account: its answer, or none. */
+export type GraphCall = (
+  method: "DELETE" | "GET" | "POST",
+  path: string,
+  params?: Readonly<Record<string, string>>
+) => Effect.Effect<Option.Option<Response.HttpClientResponse>>;
+
+/**
+ * An action that sets a state on a comment (hide, show, delete), safe to
+ * ask twice. Done only when Meta answers `{ "success": true }`. Meta's
+ * code 100, subcode 33 says the object "does not exist, cannot be loaded
+ * due to missing permissions, or does not support this operation": it
+ * means the comment is gone, and the action done, only when the same
+ * token still loads the thread's post; otherwise nobody can tell, and
+ * nothing is done.
+ */
+export const confirmedAction = Effect.fn("MetaEngagement.action")(
+  function* confirmedAction(
+    call: GraphCall,
+    method: "DELETE" | "POST",
+    commentId: string,
+    rootPostId: string,
+    params: Readonly<Record<string, string>> = {}
+  ) {
+    const answer = yield* call(method, nodePath(commentId), params);
+
+    if (Option.isNone(answer)) {
+      return notDone("platformUnavailable");
+    }
+
+    const response = answer.value;
+
+    if (isSuccess(response)) {
+      const body = yield* succeededOf(response).pipe(Effect.option);
+
+      return Option.match(body, {
+        onNone: () => notDone("platformUnavailable"),
+        onSome: ({ success }) => (success ? done : notDone("refused")),
+      });
+    }
+
+    const refusal = yield* metaRefusalOf(response);
+
+    if (refusal === "token") {
+      return yield* new TokenRejected();
+    }
+
+    if (refusal !== "gone") {
+      return notDone(actionFailure(refusal));
+    }
+
+    const post = yield* call("GET", nodePath(rootPostId), { fields: "id" });
+
+    return Option.exists(post, isSuccess) ? done : notDone("refused");
+  }
+);
 
 /** The id Meta answered a reply it made with, if it can be read. */
 export const madeOf = (response: Response.HttpClientResponse) =>

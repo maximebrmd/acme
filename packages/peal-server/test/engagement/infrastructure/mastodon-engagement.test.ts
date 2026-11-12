@@ -579,9 +579,12 @@ describe("Mastodon's comments", () => {
         { _tag: "done" }
       );
       // Already gone is done.
-      assert.deepStrictEqual(yield* platform.withdraw(account, "3001"), {
-        _tag: "done",
-      });
+      assert.deepStrictEqual(
+        yield* platform.withdraw(account, "3001", "1001"),
+        {
+          _tag: "done",
+        }
+      );
       assert.deepStrictEqual(
         yield* platform.moderate(account, { ...target, action: "hide" }),
         { _tag: "failed", reason: "refused" }

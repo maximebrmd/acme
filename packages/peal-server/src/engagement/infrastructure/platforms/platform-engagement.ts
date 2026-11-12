@@ -286,9 +286,19 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
               const reply = yield* store.reply(request.replyId);
               const platformId = reply.pipe(Option.flatMap(withdrawable));
 
-              return Option.isNone(platformId)
+              if (Option.isNone(reply) || Option.isNone(platformId)) {
+                return notDone("commentGone");
+              }
+
+              const thread = yield* store.thread(reply.value.threadId);
+
+              return Option.isNone(thread)
                 ? notDone("commentGone")
-                : yield* platform.withdraw(account, platformId.value);
+                : yield* platform.withdraw(
+                    account,
+                    platformId.value,
+                    thread.value.thread.platformPostId
+                  );
             }
           )
         );

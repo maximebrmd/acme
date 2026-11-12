@@ -326,6 +326,19 @@ export const fakeMetaComments = Effect.fnUntraced(function* fakeMetaComments(
           );
     }
 
+    // A node read: a comment, a post or media the fake has comments under,
+    // a Page's post, or the accounts.
+    if (request.method === "GET" && edge === undefined) {
+      const known =
+        comment !== undefined ||
+        comments.some((kept) => kept.objectId === id) ||
+        id.startsWith(`${facebookPageId}_`) ||
+        id === facebookPageId ||
+        id === instagramUserId;
+
+      return known ? json({ id }) : gone;
+    }
+
     if (comment === undefined) {
       return gone;
     }

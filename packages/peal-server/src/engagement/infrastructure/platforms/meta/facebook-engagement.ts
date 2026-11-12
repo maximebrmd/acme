@@ -33,8 +33,8 @@ import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import {
   actionFailure,
   commentsPerPage,
+  confirmedAction,
   defaultDeadline,
-  done,
   foundAmong,
   instantOf,
   isSuccess,
@@ -483,40 +483,26 @@ export const facebookEngagement = Effect.fn("FacebookEngagement.make")(
 
     // A call that sets a state on a comment: done on success, and on a
     // comment already gone.
+    // A call that sets a state on a comment (`confirmedAction`).
     const act = (
       account: ChannelAccount,
       method: "DELETE" | "POST",
       commentId: string,
+      rootPostId: string,
       params: Readonly<Record<string, string>> = {}
     ): Effect.Effect<ActionOutcome> =>
-      asAccount<ActionOutcome>(
-        account,
-        notDone,
-        Effect.fn("FacebookEngagement.act")(function* acting(token) {
-          const sent = yield* request(
-            account,
-            token,
-            method,
-            nodePath(commentId),
-            params
-          ).pipe(Effect.flatMap(http.execute), Effect.result);
-
-          if (sent._tag === "Failure") {
-            return notDone("platformUnavailable");
-          }
-
-          if (isSuccess(sent.success)) {
-            return done;
-          }
-
-          const refusal = yield* metaRefusalOf(sent.success);
-
-          if (refusal === "token") {
-            return yield* new TokenRejected();
-          }
-
-          return refusal === "gone" ? done : notDone(actionFailure(refusal));
-        })
+      asAccount<ActionOutcome>(account, notDone, (token) =>
+        confirmedAction(
+          (verb, path, given = {}) =>
+            request(account, token, verb, path, given).pipe(
+              Effect.flatMap(http.execute),
+              Effect.option
+            ),
+          method,
+          commentId,
+          rootPostId,
+          params
+        )
       );
 
     const moderate = (
@@ -524,9 +510,15 @@ export const facebookEngagement = Effect.fn("FacebookEngagement.make")(
       target: CommentTarget
     ): Effect.Effect<ActionOutcome> => {
       if (target.action === "hide" || target.action === "unhide") {
-        return act(account, "POST", target.platformCommentId, {
-          is_hidden: target.action === "hide" ? "true" : "false",
-        });
+        return act(
+          account,
+          "POST",
+          target.platformCommentId,
+          target.rootPlatformPostId,
+          {
+            is_hidden: target.action === "hide" ? "true" : "false",
+          }
+        );
       }
 
       // Likes and deleting someone's comment are not done here yet.
@@ -538,8 +530,8 @@ export const facebookEngagement = Effect.fn("FacebookEngagement.make")(
       read,
       resume,
       send,
-      withdraw: (account, platformCommentId) =>
-        act(account, "DELETE", platformCommentId),
+      withdraw: (account, platformCommentId, rootPlatformPostId) =>
+        act(account, "DELETE", platformCommentId, rootPlatformPostId),
     };
 
     return platform;

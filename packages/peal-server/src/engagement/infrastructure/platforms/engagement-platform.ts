@@ -62,10 +62,14 @@ export interface EngagementPlatform {
     account: ChannelAccount,
     reply: OutgoingReply
   ) => Effect.Effect<SendOutcome>;
-  /** Deletes the account's own reply; one already gone is done. */
+  /**
+   * Deletes the account's own reply, under the post `rootPlatformPostId`;
+   * one already gone is done.
+   */
   readonly withdraw: (
     account: ChannelAccount,
-    platformCommentId: string
+    platformCommentId: string,
+    rootPlatformPostId: string
   ) => Effect.Effect<ActionOutcome>;
   readonly moderate: (
     account: ChannelAccount,
