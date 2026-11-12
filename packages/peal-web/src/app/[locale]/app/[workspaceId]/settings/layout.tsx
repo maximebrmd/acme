@@ -28,6 +28,7 @@ const WorkspaceSettingsLayout = async ({
   const allowed: Readonly<Record<SettingsSection, boolean>> = {
     apiKeys: may.has("apiKey:read"),
     channelSets: may.has("post:read") && may.has("channel:read"),
+    feeds: may.has("post:read"),
     general: true,
     invitations: may.has("invitation:create"),
     members: true,
@@ -52,6 +53,7 @@ const WorkspaceSettingsLayout = async ({
       "channelSets",
       "queues",
       "recycling",
+      "feeds",
       "apiKeys",
       "webhooks",
       "partner",
