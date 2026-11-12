@@ -15,6 +15,7 @@ import { PublishingFollowedPosts } from "#engagement/infrastructure/publishing-f
 import { PublishingReplyLimits } from "#engagement/infrastructure/publishing-reply-limits.ts";
 import { ToldEngagementOutcomes } from "#engagement/infrastructure/told-engagement-outcomes.ts";
 import { WorkflowReplyJobs } from "#engagement/infrastructure/workflow-reply-jobs.ts";
+import { InboxPlatformsLive } from "#shared/infrastructure/inbox-platforms.ts";
 
 export { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
 
@@ -62,7 +63,12 @@ export const engagementLive = <E, R>(
         ToldEngagementOutcomes,
         gated
       )
-    ).pipe(Layer.provide(CommentsPaceLive)),
+    ).pipe(
+      Layer.provide(CommentsPaceLive),
+      // The operator's PEAL_INBOX_PLATFORMS, which says what a Facebook
+      // Page's or an Instagram account's channel can do.
+      Layer.provide(InboxPlatformsLive)
+    ),
     DrizzleEngagementRecords
   );
 

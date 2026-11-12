@@ -11,9 +11,11 @@ import { forgetComment, markAnswered } from "#engagement/domain/comment.ts";
 import type { CommentReading } from "#engagement/domain/comment.ts";
 import { beginSending } from "#engagement/domain/reply.ts";
 import { endCollection } from "#engagement/domain/thread.ts";
+import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
 import type { World } from "#test/engagement/fakes/world.ts";
 import {
@@ -827,6 +829,47 @@ describe("moderating a comment", () => {
           );
         })
       ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "answers and hides on a Facebook Page only where the server reads Facebook",
+    () => {
+      const run = (inbox: InboxPlatforms) => {
+        const world = worldWith();
+
+        world.state.channels.set(channelId(1), {
+          platform: "facebook",
+          scopes: ["pages_read_user_content", "pages_manage_engagement"],
+        });
+
+        return at(
+          Effect.gen(function* moderating() {
+            const hidden = yield* EngagementReplies.use((replies) =>
+              replies.moderate(editor, commentId(101), "hide")
+            ).pipe(Effect.result);
+
+            return {
+              hidden: hidden._tag === "Success" ? "done" : hidden.failure._tag,
+              moderated: world.state.moderated.length,
+            };
+          })
+        ).pipe(
+          Effect.provide(world.layer),
+          Effect.provideService(CurrentInboxPlatforms, inbox)
+        );
+      };
+
+      return Effect.gen(function* both() {
+        assert.deepStrictEqual(yield* run(new Set()), {
+          hidden: "AbilityUnavailable",
+          moderated: 0,
+        });
+        assert.deepStrictEqual(yield* run(new Set(["facebook"])), {
+          hidden: "done",
+          moderated: 1,
+        });
+      });
     }
   );
 
