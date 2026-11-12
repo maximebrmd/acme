@@ -52,8 +52,9 @@ const errorOf = (body: ErrorBody): GraphError =>
 /**
  * Why Meta refused a call, sorted for the code that acts on it:
  *
- * - `token`: the token is invalid, expired or revoked, lacks a permission,
- *   or its user lost their role on the Page. Only a new token helps.
+ * - `token`: the token is invalid, expired or revoked, lacks a permission
+ *   (`permission`: code 10 or 200 to 299, where a new token helps only once
+ *   the account grants it), or its user lost their role on the Page.
  * - `rateLimited`: a rate limit, or a temporary block; wait `retryAfter`
  *   when Meta said how long.
  * - `unavailable`: Meta failed or said to try again: the call did nothing.
@@ -62,7 +63,7 @@ const errorOf = (body: ErrorBody): GraphError =>
  *   (`graph<code>` or `graph<code>.<subcode>`, or `http<status>`).
  */
 export type GraphRefusal =
-  | { readonly _tag: "token" }
+  | { readonly _tag: "token"; readonly permission: boolean }
   | {
       readonly _tag: "rateLimited";
       readonly retryAfter: Option.Option<Duration.Duration>;
@@ -75,12 +76,11 @@ export type GraphRefusal =
 // 190 are sessions and tokens (subcodes 458 to 467 say why), 492 a user who
 // lost their role on the Page, 10 and 200 to 299 a permission the token
 // lacks.
+const isPermissionCode = (code: number) =>
+  code === 10 || (code >= 200 && code <= 299);
+
 const isTokenCode = (code: number) =>
-  code === 102 ||
-  code === 190 ||
-  code === 492 ||
-  code === 10 ||
-  (code >= 200 && code <= 299);
+  code === 102 || code === 190 || code === 492 || isPermissionCode(code);
 
 // 4 the app, 17 the user, 32 a Page with a user token, 613 a custom limit,
 // 80001 to 80014 a Page, an Instagram account and other business objects;
@@ -141,7 +141,10 @@ export const graphRefusalOf = Effect.fn("MetaGraph.refusalOf")(
       const code = error.code.value;
 
       if (isTokenCode(code)) {
-        return { _tag: "token" } satisfies GraphRefusal;
+        return {
+          _tag: "token",
+          permission: isPermissionCode(code),
+        } satisfies GraphRefusal;
       }
 
       if (
@@ -170,7 +173,7 @@ export const graphRefusalOf = Effect.fn("MetaGraph.refusalOf")(
     }
 
     if (Option.isNone(error.code) && (status === 401 || status === 403)) {
-      return { _tag: "token" } satisfies GraphRefusal;
+      return { _tag: "token", permission: false } satisfies GraphRefusal;
     }
 
     const refusal: GraphRefusal = {

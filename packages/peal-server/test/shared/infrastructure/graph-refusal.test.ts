@@ -116,6 +116,29 @@ describe(graphRefusalOf, () => {
       })
   );
 
+  it.effect(
+    "tells a permission the token lacks from a token that does not work",
+    () =>
+      Effect.gen(function* permissions() {
+        const missing = [];
+
+        for (const code of [10, 200, 299, 190, 102, 492]) {
+          const refusal = yield* refusalOf(400, graphError(code));
+
+          missing.push(refusal._tag === "token" && refusal.permission);
+        }
+
+        assert.deepStrictEqual(missing, [
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+        ]);
+      })
+  );
+
   it.effect("takes every rate limit code as one, with Meta's wait", () =>
     Effect.gen(function* limits() {
       for (const code of [4, 17, 32, 613, 368, 80_001, 80_002]) {
