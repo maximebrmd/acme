@@ -308,7 +308,10 @@ def test_the_failure_rule_fires_while_the_last_failure_is_newest(tmp_path: Path)
     (tmp_path / "tests.yml").write_text(yaml.safe_dump({"rule_files": ["rules.yml"], "evaluation_interval": "1m", "tests": tests}))
 
     ran = subprocess.run(
-        ["docker", "run", "--rm", "--volume", f"{tmp_path}:/w:ro", "--workdir", "/w", "--entrypoint", "promtool",
+        # As the test's own user: pytest's folder is 0700 on Linux, and the
+        # image's user (nobody) could not read it.
+        ["docker", "run", "--rm", "--user", f"{os.getuid()}:{os.getgid()}",
+         "--volume", f"{tmp_path}:/w:ro", "--workdir", "/w", "--entrypoint", "promtool",
          _prometheus_image(), "test", "rules", "tests.yml"],
         capture_output=True,
         text=True,
