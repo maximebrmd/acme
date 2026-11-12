@@ -392,13 +392,35 @@ describe("YouTube's comments", () => {
         api.add(comment(1));
         api.script.push("GET /youtube/v3/commentThreads", [
           json({ error: "synthetic" }, 404),
+          youtubeError(404, "commentNotFound"),
+          youtubeError(404, "parentCommentNotFound"),
+        ]);
+
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          assert.deepStrictEqual(
+            readingOf(yield* platform.read(account, [thread(1)])),
+            { _tag: "failed", threadId: threadId(1) }
+          );
+        }
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "ends a thread the listing documents as gone, its thread or its channel",
+    () =>
+      Effect.gen(function* documentedGone() {
+        const { account, api, platform } = yield* onYouTube();
+
+        api.add(comment(1));
+        api.script.push("GET /youtube/v3/commentThreads", [
           youtubeError(404, "commentThreadNotFound"),
+          youtubeError(404, "channelNotFound"),
         ]);
 
         for (let attempt = 0; attempt < 2; attempt += 1) {
           assert.deepStrictEqual(
             readingOf(yield* platform.read(account, [thread(1)])),
-            { _tag: "failed", threadId: threadId(1) }
+            { _tag: "missing", threadId: threadId(1) }
           );
         }
       }).pipe(Effect.scoped)
