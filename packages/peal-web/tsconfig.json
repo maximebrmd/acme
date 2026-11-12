@@ -4,7 +4,8 @@
     "lib": ["esnext", "dom"],
     "jsx": "react-jsx",
     "types": ["node"],
-    "plugins": [{ "name": "next" }]
+    // Replaces the base's list: Effect's language service stays in it.
+    "plugins": [{ "name": "@effect/language-service" }, { "name": "next" }]
   },
   "include": [
     "next-env.d.ts",

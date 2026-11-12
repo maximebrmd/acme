@@ -14,10 +14,11 @@
   ],
   "type": "module",
   "scripts": {
+    "prepare": "effect-tsgo patch --typescript",
     "references": "bun scripts/references.ts",
     "check": "nx run-many -t typegen && ultracite check",
     "fix": "ultracite fix",
-    "typecheck": "tsc --noEmit -p . && nx run-many -t typecheck",
+    "typecheck": "effect-tsgo patch --typescript && tsc --noEmit -p . && nx run-many -t typecheck",
     "test": "nx run-many -t test",
     "build": "nx run-many -t build",
     "sdk:generate": "nx run-many -t sdk:generate",
@@ -27,6 +28,7 @@
     "nx": "nx"
   },
   "devDependencies": {
+    "@effect/tsgo": "0.68.1",
     "@types/bun": "1.4.4",
     "@types/node": "26.6.6",
     "effect": "4.1.2",

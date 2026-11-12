@@ -1,4 +1,5 @@
 {
+  "$schema": "./node_modules/@effect/tsgo/schema.json",
   "compilerOptions": {
     "target": "ES2024",
     "lib": ["esnext"],
@@ -21,6 +22,54 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": []
+    "types": [],
+    // Effect's language service: diagnostics in the editor and in tsc,
+    // which `effect-tsgo patch` (the root package's prepare) makes Effect's.
+    // Errors and warnings fail typecheck; suggestions show in the editor.
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "includeSuggestionsInTsc": false,
+        // Effect 4 ships these modules as unstable, and Peal is built on
+        // them. A module not listed here warns until it is added.
+        "allowedUnstableApis": [
+          "@effect/ai-anthropic",
+          "@effect/ai-openai-compat",
+          "@effect/atom-react",
+          "@effect/platform-bun",
+          "@effect/platform-node-shared",
+          "@effect/sql-pg",
+          "@effect/vitest",
+          "effect/ByteSize",
+          "effect/FileSystem",
+          "effect/Path",
+          "effect/PlatformError",
+          "effect/Stdio",
+          "effect/Terminal",
+          "effect/ai",
+          "effect/cli",
+          "effect/cluster",
+          "effect/crypto",
+          "effect/http",
+          "effect/http-api",
+          "effect/net",
+          "effect/observability",
+          "effect/persistence",
+          "effect/process",
+          "effect/reactivity",
+          "effect/rpc",
+          "effect/sql",
+          "effect/testing",
+          "effect/workflow"
+        ],
+        // The outbound guard resolves names itself (Dns), and the MCP tests
+        // call the server as a client would.
+        "allowedExperimentalApis": [
+          "@effect/platform-bun/BunDns",
+          "effect/ai/McpClient",
+          "effect/net/Dns"
+        ]
+      }
+    ]
   }
 }

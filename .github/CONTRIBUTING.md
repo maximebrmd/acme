@@ -163,6 +163,16 @@ bun nx run peal-docker:up           # start the development stack, wait until he
 bun nx run peal-server:media-cors   # let browsers upload to the stack's bucket
 ```
 
+`bun install` also patches the workspace's TypeScript with Effect's language
+service (`effect-tsgo patch`), which reports mistakes in Effect code, such as
+an Effect that is never run, as type errors. To see them in your editor, use
+the workspace's TypeScript 7 rather than the editor's own. In VS Code or
+Cursor, install the TypeScript 7 extension and pick **Use Workspace Version**
+from the TypeScript version in the status bar, or put in your
+`.vscode/settings.json` (which Git ignores) what `bunx effect-tsgo setup
+--vscode` proposes: `"js/ts.experimental.useTsgo": true` and
+`"js/ts.tsdk.path": "./node_modules/typescript/bin"`.
+
 `media-cors` puts a CORS rule on the bucket for the web app's origin,
 `http://localhost:3001`, and any origins in `TRUSTED_ORIGINS`, and keeps the
 bucket's other rules. Run it once per bucket; running it again changes
