@@ -5,14 +5,22 @@ under Development stack.
 
 ## Compose files
 
-- In `packages/peal-docker/compose.yaml`, pin every image (image mounts
-  included) to an exact version, publish ports on 127.0.0.1 only, give every
-  service a health check, and use synthetic credentials.
+- In `packages/peal-docker/compose.yaml`, pin every image to an exact
+  version, publish ports on 127.0.0.1 only, give every service a health
+  check, and use synthetic credentials.
   `packages/peal-docker/test/compose.test.ts` enforces these rules, and checks
   that the server image uses the Bun in `.bun-version`, runs as nonroot, ships
   ffprobe, and pins every image it builds on or copies from by digest.
+- Mount no image (`type: image`): Docker mounts the image when it creates
+  the container and not again after its daemon restarts (a reboot, an engine
+  upgrade), so the container restarts on an empty folder. A binary an image
+  lacks, such as the collector's health-check wget, comes from a one-shot
+  service that copies it into a named volume the service mounts read-only
+  and waits for (`condition: service_completed_successfully`). A one-shot
+  service has no health check, and in production `restart: "no"` and
+  `network_mode: none`.
 - `compose.production.yaml` follows the same rules, pins every image it pulls
-  by digest at the version `compose.yaml` runs, gives every service
+  by digest at the version `compose.yaml` runs, gives every long-running service
   `restart: unless-stopped` and the server `stop_grace_period: 75s`, and tags
   the images it builds `${PEAL_VERSION:-local}` (`PEAL_POSTGRES_VERSION` for
   Postgres). It passes optional settings through by name (`NAME:` with no
