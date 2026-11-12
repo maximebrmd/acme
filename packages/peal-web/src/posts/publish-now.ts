@@ -88,9 +88,7 @@ export interface WhereItGoes {
  * Where "Publish now" sends the post, by channel name: the channels that
  * publish, and apart those turned off or to reconnect, where it would fail.
  */
-export const whereItGoes = (
-  channels: readonly Channel[]
-): WhereItGoes => ({
+export const whereItGoes = (channels: readonly Channel[]): WhereItGoes => ({
   publishing: channels.flatMap((channel) =>
     channel.status._tag === "active" ? [channelName(channel)] : []
   ),
