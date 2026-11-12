@@ -1,7 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Exit, Layer, Option, Ref } from "effect";
+import { DateTime, Effect, Layer, Option, Ref } from "effect";
 import { TestClock } from "effect/testing";
 
+import { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
@@ -77,12 +78,24 @@ const purgedBefore = Ref.makeUnsafe<Option.Option<DateTime.Utc>>(Option.none());
 
 const fail = (name: string) => () => Effect.die(`${name} is not used here`);
 
+// How many times the channels were counted, and of which workspaces.
+const counted = Ref.makeUnsafe<readonly (readonly WorkspaceId[])[]>([]);
+
+// Whether the daily count fails, to see the purge run all the same.
+const countFails = Ref.makeUnsafe(false);
+
 const StoresTest = Layer.mergeAll(
   Layer.succeed(
     PartnerStore,
     PartnerStore.of({
       addKey: fail("addKey"),
-      all: Effect.succeed([]),
+      all: Ref.get(countFails).pipe(
+        Effect.flatMap((fails) =>
+          fails
+            ? Effect.fail(new DatabaseError({ cause: "synthetic outage" }))
+            : Effect.succeed([])
+        )
+      ),
       closeOf: fail("closeOf"),
       get: (id) =>
         Effect.succeed(id === partnerId ? Option.some(partner) : Option.none()),
@@ -126,7 +139,15 @@ const StoresTest = Layer.mergeAll(
       ),
     purgeKeys: () => Effect.succeed(0),
   }),
-  WorkspaceChannelCounts.layerTest(channels),
+  Layer.succeed(
+    WorkspaceChannelCounts,
+    WorkspaceChannelCounts.of({
+      of: (ids) =>
+        Ref.update(counted, (all) => [...all, ids]).pipe(
+          Effect.as(new Map([...channels].filter(([id]) => ids.includes(id))))
+        ),
+    })
+  ),
   Layer.succeed(
     TransactionRunner,
     TransactionRunner.of({ transaction: (effect) => effect })
@@ -152,12 +173,7 @@ const actorIn = (
     workspaceId,
   });
 
-const firstPage = {
-  before: Option.none(),
-  from: day("2026-11-01"),
-  limit: Option.some(2),
-  to: day("2026-11-05"),
-};
+const firstPage = { before: Option.none(), limit: Option.some(2) };
 
 const key = { partnerId, scopes: ["workspaces:read"] };
 
@@ -210,28 +226,52 @@ describe(PartnerTenants, () => {
         );
         assert.strictEqual(found.page.total, 3);
         assert.isTrue(Option.isSome(found.page.next));
-        assert.deepStrictEqual(found.held, { channels: 7, workspaces: 3 });
-        assert.deepStrictEqual(found.workspaceIds, [
-          home,
-          ...tenants.map(({ id }) => id),
-        ]);
-        assert.deepStrictEqual(found.days, days);
-        assert.deepStrictEqual(yield* Ref.get(asked), [
-          "2026-11-01",
-          "2026-11-05",
+        // The account as a whole, on the first page, its channels counted
+        // once for the page and the account.
+        assert.deepStrictEqual(
+          found.account,
+          Option.some({
+            held: { channels: 7, workspaces: 3 },
+            workspaceIds: [home, ...tenants.map(({ id }) => id)],
+          })
+        );
+        assert.deepStrictEqual(yield* Ref.get(counted), [
+          [home, ...tenants.map(({ id }) => id)],
         ]);
 
-        // The next page holds the last customer, and no home workspace.
+        // The next page holds the last customer, no home workspace, and
+        // nothing of the account: its channels counted alone.
+        yield* Ref.set(counted, []);
+
         const next = yield* (yield* PartnerTenants).forKey(key, {
           ...firstPage,
           before: found.page.next,
         });
 
         assert.deepStrictEqual(
-          next.page.tenants.map(({ workspaceId }) => workspaceId),
-          [tenantId("01")]
+          next.page.tenants.map(({ channels: own, workspaceId }) => [
+            workspaceId,
+            own,
+          ]),
+          [[tenantId("01"), 4]]
         );
         assert.isTrue(Option.isNone(next.page.next));
+        assert.isTrue(Option.isNone(next.account));
+        assert.deepStrictEqual(yield* Ref.get(counted), [[tenantId("01")]]);
+
+        // The account's days, once its tenancy is read.
+        assert.deepStrictEqual(
+          yield* (yield* PartnerTenants).daysOf(
+            found.partnerId,
+            day("2026-11-01"),
+            day("2026-11-05")
+          ),
+          days
+        );
+        assert.deepStrictEqual(yield* Ref.get(asked), [
+          "2026-11-01",
+          "2026-11-05",
+        ]);
       }).pipe(Effect.provide(TenantsTest))
   );
 
@@ -283,11 +323,6 @@ describe(PartnerTenants, () => {
           "0190f3a0-0000-7000-8000-0000000000c9",
           "not-an-id",
         ]) {
-          const exit = yield* tenancy
-            .forKey({ partnerId: gone, scopes: ["workspaces:read"] }, firstPage)
-            .pipe(Effect.exit);
-
-          assert.isTrue(Exit.isFailure(exit));
           assert.deepInclude(
             yield* Effect.flip(
               tenancy.forKey(
@@ -322,5 +357,28 @@ describe(MeterPartnerUsage, () => {
         Option.some("2025-10-08")
       );
     }).pipe(Effect.provide(TenantsTest))
+  );
+
+  it.effect(
+    "deletes the days past their time when the count fails, then fails",
+    () =>
+      Effect.gen(function* failing() {
+        yield* TestClock.setTime(
+          DateTime.toEpochMillis(DateTime.makeUnsafe("2026-11-13T23:41:00Z"))
+        );
+        yield* Ref.set(countFails, true);
+
+        const failure = yield* (yield* MeterPartnerUsage).run.pipe(Effect.flip);
+
+        assert.strictEqual(failure._tag, "DatabaseError");
+        assert.deepStrictEqual(
+          (yield* Ref.get(purgedBefore)).pipe(
+            Option.map((before) => DateTime.formatIsoDateUtc(before))
+          ),
+          Option.some("2025-10-09")
+        );
+
+        yield* Ref.set(countFails, false);
+      }).pipe(Effect.provide(TenantsTest))
   );
 });

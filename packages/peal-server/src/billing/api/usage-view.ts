@@ -64,29 +64,40 @@ export const usageView = ({
 
 /** What clients see of a partner's usage over a period, per workspace. */
 export const partnerUsageView = ({
-  days,
+  account,
   entitlements,
-  held,
-  meteredPosts,
   page,
   period,
-  totals,
 }: PartnerUsageReport): PartnerUsageReportView => ({
   allowances: entitlements.plan.pipe(
     Option.map(() => allowancesView(entitlements.allowances)),
     Option.getOrNull
   ),
-  current: held,
-  days: days.map((day) => ({
-    byPlatform: day.byPlatform,
-    channels: Option.getOrNull(day.channels),
-    day: dayOf(day.day),
-    publishedPosts: day.publishedPosts,
-    workspaces: Option.getOrNull(day.workspaces),
-  })),
+  current: account.pipe(
+    Option.map(({ held }) => held),
+    Option.getOrNull
+  ),
+  days: account.pipe(
+    Option.map(({ days }) =>
+      days.map((day) => ({
+        byPlatform: day.byPlatform,
+        channels: Option.getOrNull(day.channels),
+        day: dayOf(day.day),
+        publishedPosts: day.publishedPosts,
+        workspaces: Option.getOrNull(day.workspaces),
+      }))
+    ),
+    Option.getOrNull
+  ),
   period: { from: dayOf(period.from), to: dayOf(period.to) },
   plan: Option.getOrNull(entitlements.plan),
-  totals: { ...totals, meteredPosts: meteredView(meteredPosts) },
+  totals: account.pipe(
+    Option.map(({ meteredPosts, totals }) => ({
+      ...totals,
+      meteredPosts: meteredView(meteredPosts),
+    })),
+    Option.getOrNull
+  ),
   workspaces: {
     next: Option.getOrNull(page.next),
     total: page.total,

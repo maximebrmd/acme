@@ -6,6 +6,7 @@ import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import type { CustomerWorkspace } from "#workspace/domain/customer-workspace.ts";
 import { MissingPartnerScope } from "#workspace/domain/missing-partner-scope.ts";
 import { PartnerIdSchema } from "#workspace/domain/partner-id.ts";
 import type { Partner } from "#workspace/domain/partner.ts";
@@ -20,14 +21,11 @@ import { WorkspaceChannelCounts } from "./workspace-channel-counts.ts";
 
 const decodePartnerId = Schema.decodeUnknownOption(PartnerIdSchema);
 
-/** Which page of the tenants, and which days, a report asks for. */
+/** Which page of the tenants a report asks for. */
 export interface TenancyRequest {
   /** The `next` of the page before, as the list of workspaces gives it. */
   readonly before: Option.Option<string>;
-  /** The period's first and last days, as their first instants (UTC). */
-  readonly from: DateTime.Utc;
   readonly limit: Option.Option<number>;
-  readonly to: DateTime.Utc;
 }
 
 /**
@@ -52,13 +50,17 @@ export interface Tenant {
 
 /** What a partner holds, for the report billing makes of it. */
 export interface Tenancy {
-  /** Each day of the period the daily count kept, oldest first. */
-  readonly days: readonly PartnerUsageDay[];
   /**
-   * What it holds now: the workspaces it owns, and the channels connected
-   * across them and its home workspace, which one plan holds together.
+   * The account as a whole, on the first page only, so that the pages
+   * after it read their own workspaces alone: what it holds now (the
+   * workspaces it owns, and the channels connected across them and its
+   * home workspace, which one plan holds together), and its home
+   * workspace's id then every workspace it owns.
    */
-  readonly held: { readonly channels: number; readonly workspaces: number };
+  readonly account: Option.Option<{
+    readonly held: { readonly channels: number; readonly workspaces: number };
+    readonly workspaceIds: readonly WorkspaceId[];
+  }>;
   readonly homeWorkspaceId: WorkspaceId;
   /**
    * A page of its workspaces, newest first, in the order and with the
@@ -71,16 +73,47 @@ export interface Tenancy {
     readonly total: number;
     readonly tenants: readonly Tenant[];
   };
-  /** Its home workspace, then every workspace it owns. */
-  readonly workspaceIds: readonly WorkspaceId[];
+  /** The partner account's id, for its days (`daysOf`). */
+  readonly partnerId: string;
 }
+
+// The page's tenants, its home first when it is the first, with the
+// channels each connected itself.
+const tenantsOf = (
+  partner: Partner,
+  name: Option.Option<string>,
+  listed: readonly CustomerWorkspace[],
+  channels: ReadonlyMap<WorkspaceId, number>
+): readonly Tenant[] => [
+  ...Option.match(name, {
+    onNone: () => [],
+    onSome: (homeName): readonly Tenant[] => [
+      {
+        channels: channels.get(partner.workspaceId) ?? 0,
+        externalId: Option.none(),
+        home: true,
+        name: homeName,
+        workspaceId: partner.workspaceId,
+      },
+    ],
+  }),
+  ...listed.map((workspace): Tenant => ({
+    channels: channels.get(workspace.id) ?? 0,
+    externalId: workspace.externalId,
+    home: false,
+    name: workspace.name,
+    workspaceId: workspace.id,
+  })),
+];
 
 /**
  * The workspaces a partner account owns, with its external ids, and what
  * it held day by day, for billing's report of a partner's usage per
  * tenant: with a partner key holding `workspaces:read`, or for the home
  * workspace's people (partner:read). Billing reads it through a port of
- * its own, so it takes and answers plain values.
+ * its own, so it takes and answers plain values. `daysOf` checks nobody:
+ * it reads the days of a partner whose tenancy was read, and answered
+ * the partner's id.
  */
 export class PartnerTenants extends Context.Service<
   PartnerTenants,
@@ -105,6 +138,12 @@ export class PartnerTenants extends Context.Service<
       | MissingPermission
       | PartnerNotFound
     >;
+    /** The partner's daily counts from `from` to `to`, oldest first. */
+    readonly daysOf: (
+      partnerId: string,
+      from: DateTime.Utc,
+      to: DateTime.Utc
+    ) => Effect.Effect<readonly PartnerUsageDay[], DatabaseError>;
   }
 >()("peal-server/workspace/application/PartnerTenants") {
   static readonly layer = Layer.effect(
@@ -119,17 +158,45 @@ export class PartnerTenants extends Context.Service<
         function* tenancyOf(partner: Partner, request: TenancyRequest) {
           const home = partner.workspaceId;
 
+          const listed = yield* listing.listingOf(partner.id, {
+            before: request.before,
+            externalId: Option.none(),
+            limit: request.limit,
+            name: Option.none(),
+          });
+
+          const page = { next: listed.next, total: listed.total };
+
+          // A page after the first counts its own workspaces' channels.
+          if (Option.isSome(request.before)) {
+            const channels = yield* counts.of(
+              listed.workspaces.map(({ id }) => id)
+            );
+
+            const later: Tenancy = {
+              account: Option.none(),
+              homeWorkspaceId: home,
+              page: {
+                ...page,
+                tenants: tenantsOf(
+                  partner,
+                  Option.none(),
+                  listed.workspaces,
+                  channels
+                ),
+              },
+              partnerId: partner.id,
+            };
+
+            return later;
+          }
+
+          // The first counts every workspace's channels once: the page's
+          // figures and the account's pooled count come from that one.
           const found = yield* Effect.all(
             {
-              days: partners.usageBetween(partner.id, request.from, request.to),
               ids: workspaces.idsOf(partner.id),
               name: workspaces.nameOf(home),
-              page: listing.pageOf(partner.id, {
-                before: request.before,
-                externalId: Option.none(),
-                limit: request.limit,
-                name: Option.none(),
-              }),
             },
             { concurrency: "unbounded" }
           );
@@ -137,49 +204,31 @@ export class PartnerTenants extends Context.Service<
           const workspaceIds = [home, ...found.ids];
           const channels = yield* counts.of(workspaceIds);
 
-          // The home workspace opens the first page, which no cursor names.
-          const homeEntry: readonly Tenant[] = Option.isNone(request.before)
-            ? [
-                {
-                  channels: channels.get(home) ?? 0,
-                  externalId: Option.none(),
-                  home: true,
-                  name: Option.getOrElse(found.name, () => partner.name),
-                  workspaceId: home,
-                },
-              ]
-            : [];
-
-          const tenancy: Tenancy = {
-            days: found.days,
-            held: {
-              channels: [...channels.values()].reduce(
-                (sum, held) => sum + held,
-                0
-              ),
-              workspaces: found.ids.length,
-            },
+          const first: Tenancy = {
+            account: Option.some({
+              held: {
+                channels: [...channels.values()].reduce(
+                  (sum, held) => sum + held,
+                  0
+                ),
+                workspaces: found.ids.length,
+              },
+              workspaceIds,
+            }),
             homeWorkspaceId: home,
             page: {
-              next: found.page.next,
-              tenants: [
-                ...homeEntry,
-                ...found.page.workspaces.map(
-                  ({ channels: own, workspace }): Tenant => ({
-                    channels: own,
-                    externalId: workspace.externalId,
-                    home: false,
-                    name: workspace.name,
-                    workspaceId: workspace.id,
-                  })
-                ),
-              ],
-              total: found.page.total,
+              ...page,
+              tenants: tenantsOf(
+                partner,
+                Option.some(Option.getOrElse(found.name, () => partner.name)),
+                listed.workspaces,
+                channels
+              ),
             },
-            workspaceIds,
+            partnerId: partner.id,
           };
 
-          return tenancy;
+          return first;
         }
       );
 
@@ -217,7 +266,17 @@ export class PartnerTenants extends Context.Service<
         }
       );
 
-      return PartnerTenants.of({ forKey, forMember });
+      const daysOf = (
+        partnerId: string,
+        from: DateTime.Utc,
+        to: DateTime.Utc
+      ) =>
+        Option.match(decodePartnerId(partnerId), {
+          onNone: () => Effect.succeed([]),
+          onSome: (id) => partners.usageBetween(id, from, to),
+        });
+
+      return PartnerTenants.of({ daysOf, forKey, forMember });
     })
   );
 }

@@ -33,23 +33,30 @@ const TenantSchema = Schema.Struct({
   workspaceId: Schema.String,
 });
 
+// The account as a whole comes with the first page only.
 const ReportSchema = Schema.Struct({
-  current: Schema.Struct({
-    channels: Schema.Number,
-    workspaces: Schema.Number,
-  }),
-  days: Schema.Array(
+  current: Schema.NullOr(
     Schema.Struct({
-      channels: Schema.NullOr(Schema.Number),
-      day: Schema.String,
-      publishedPosts: Schema.Number,
-      workspaces: Schema.NullOr(Schema.Number),
+      channels: Schema.Number,
+      workspaces: Schema.Number,
     })
   ),
-  totals: Schema.Struct({
-    channelDays: Schema.Number,
-    publishedPosts: Schema.Number,
-  }),
+  days: Schema.NullOr(
+    Schema.Array(
+      Schema.Struct({
+        channels: Schema.NullOr(Schema.Number),
+        day: Schema.String,
+        publishedPosts: Schema.Number,
+        workspaces: Schema.NullOr(Schema.Number),
+      })
+    )
+  ),
+  totals: Schema.NullOr(
+    Schema.Struct({
+      channelDays: Schema.Number,
+      publishedPosts: Schema.Number,
+    })
+  ),
   workspaces: Schema.Struct({
     next: Schema.NullOr(Schema.String),
     total: Schema.Number,
@@ -256,6 +263,10 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             [first.id]
           );
           assert.isNull(rest.workspaces.next);
+          assert.deepStrictEqual(
+            [rest.current, rest.days, rest.totals],
+            [null, null, null]
+          );
 
           // Offboarded: gone from the list and the sums, while the day's
           // count still holds it.
@@ -277,8 +288,8 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             after.workspaces.workspaces.map(({ workspaceId }) => workspaceId),
             [home, second.id, first.id]
           );
-          assert.strictEqual(after.totals.publishedPosts, 6);
-          assert.deepStrictEqual(after.days[0], {
+          assert.strictEqual(after.totals?.publishedPosts, 6);
+          assert.deepStrictEqual(after.days?.[0], {
             channels: 4,
             day: dayOf(yesterday),
             publishedPosts: 6,

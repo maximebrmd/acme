@@ -4,38 +4,13 @@ import { InvalidTenantCursor } from "#billing/application/invalid-tenant-cursor.
 import { NoPartnerAccount } from "#billing/application/no-partner-account.ts";
 import { PartnerScopeMissing } from "#billing/application/partner-scope-missing.ts";
 import { PartnerTenancy } from "#billing/application/ports/partner-tenancy.ts";
-import type {
-  TenancyAsked,
-  Tenancy,
-} from "#billing/application/ports/partner-tenancy.ts";
+import type { TenancyAsked } from "#billing/application/ports/partner-tenancy.ts";
 import { PartnerTenants } from "#workspace/application/partner-tenants.ts";
-import type {
-  Tenancy as WorkspaceTenancy,
-  TenancyRequest,
-} from "#workspace/application/partner-tenants.ts";
+import type { TenancyRequest } from "#workspace/application/partner-tenants.ts";
 
-const requestOf = ({
+const requestOf = ({ before, limit }: TenancyAsked): TenancyRequest => ({
   before,
   limit,
-  period,
-}: TenancyAsked): TenancyRequest => ({
-  before,
-  from: period.from,
-  limit,
-  to: period.to,
-});
-
-// The workspace context's days are calendar days, as `2026-11-10`.
-const tenancyOf = (found: WorkspaceTenancy): Tenancy => ({
-  days: found.days.map(({ channels, day, workspaces }) => ({
-    channels,
-    day: DateTime.makeUnsafe(`${day}T00:00:00Z`),
-    workspaces,
-  })),
-  held: found.held,
-  homeWorkspaceId: found.homeWorkspaceId,
-  page: found.page,
-  workspaceIds: found.workspaceIds,
 });
 
 const refusals = {
@@ -50,9 +25,19 @@ export const WorkspacePartnerTenancyLive = Layer.effect(
     const tenants = yield* PartnerTenants;
 
     return PartnerTenancy.of({
+      // The workspace context's days are calendar days, as `2026-11-10`.
+      daysOf: (partnerId, { from, to }) =>
+        tenants.daysOf(partnerId, from, to).pipe(
+          Effect.map((days) =>
+            days.map(({ channels, day, workspaces }) => ({
+              channels,
+              day: DateTime.makeUnsafe(`${day}T00:00:00Z`),
+              workspaces,
+            }))
+          )
+        ),
       forKey: (key, asked) =>
         tenants.forKey(key, requestOf(asked)).pipe(
-          Effect.map(tenancyOf),
           Effect.catchTags({
             ...refusals,
             MissingPartnerScope: ({ scope }) =>
@@ -62,7 +47,7 @@ export const WorkspacePartnerTenancyLive = Layer.effect(
       forMember: (actor, asked) =>
         tenants
           .forMember(actor, requestOf(asked))
-          .pipe(Effect.map(tenancyOf), Effect.catchTags(refusals)),
+          .pipe(Effect.catchTags(refusals)),
     });
   })
 );

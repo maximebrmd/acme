@@ -218,15 +218,18 @@ export const PartnerUsageReportSchema = Schema.Struct({
   // The home workspace's plan's limits; null on a server that does not
   // bill.
   allowances: Schema.NullOr(PlanAllowancesSchema),
-  current: PartnerHoldingsSchema,
-  // Every day of the period, oldest first.
-  days: Schema.Array(PartnerUsageReportDaySchema),
+  // What the account holds now; null on a page after the first, which
+  // answers its own workspaces alone, as `days` and `totals`.
+  current: Schema.NullOr(PartnerHoldingsSchema),
+  // Every day of the period, oldest first; null on a page after the first.
+  days: Schema.NullOr(Schema.Array(PartnerUsageReportDaySchema)),
   period: UsagePeriodSchema,
   // The home workspace's plan; null on a server that does not bill.
   plan: Schema.NullOr(PlanSchema),
   // The period's usage across every workspace that still exists, with
-  // `channelDays` from the partner's daily counts.
-  totals: UsageTotalsSchema,
+  // `channelDays` from the partner's daily counts; null on a page after
+  // the first.
+  totals: Schema.NullOr(UsageTotalsSchema),
   workspaces: TenantUsagePageSchema,
 }).annotate({ identifier: "PartnerUsageReport" });
 
@@ -245,7 +248,7 @@ export const partnerUsageQuery = {
 };
 
 /** What both copies of the partner's report answer. */
-export const partnerUsageDescription = `Answers what the partner account uses across the workspaces it holds, from \`from\` to \`to\` (UTC days, both included, at most ${maxUsageRangeDays}; by default the ${defaultUsageRangeDays} days that end today), and per workspace. \`current\` is what it holds now: the workspaces it owns and the channels connected across them and its home workspace, which its plan's channel limit counts. Each day gives the workspaces it owned and the channels connected across them as the daily count found them at 23:41 UTC (null for a day without a count), and the posts that went out in the workspaces that still exist. \`workspaces\` is a page of its workspaces with each one's external id, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and, for each calendar month the period touches, posts on platforms that bill the server per post: newest first, ${defaultWorkspacePageSize} a page unless \`limit\` (at most ${maxWorkspacePageSize}) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass \`next\` as \`before\`; anything else is refused, 400); the home workspace comes first, on the first page only, one more than asked. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily \`workspaces\` and \`channels\` still count it for the days it existed. Kept ${usageRetentionDays} days. Counts only: nothing here is priced or limits anything. On a server that does not bill, \`plan\` and \`allowances\` are null.`;
+export const partnerUsageDescription = `Answers what the partner account uses across the workspaces it holds, from \`from\` to \`to\` (UTC days, both included, at most ${maxUsageRangeDays}; by default the ${defaultUsageRangeDays} days that end today), and per workspace. \`current\` is what it holds now: the workspaces it owns and the channels connected across them and its home workspace, which its plan's channel limit counts. Each day gives the workspaces it owned and the channels connected across them as the daily count found them at 23:41 UTC (null for a day without a count), and the posts that went out in the workspaces that still exist. \`workspaces\` is a page of its workspaces with each one's external id, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and, for each calendar month the period touches, posts on platforms that bill the server per post: newest first, ${defaultWorkspacePageSize} a page unless \`limit\` (at most ${maxWorkspacePageSize}) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass \`next\` as \`before\`; anything else is refused, 400); the home workspace comes first, on the first page only, one more than asked. \`current\`, \`days\` and \`totals\`, which cover the whole account, come with the first page only, and are null on the pages after it, which read their own workspaces alone. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily \`workspaces\` and \`channels\` still count it for the days it existed. Kept ${usageRetentionDays} days. Counts only: nothing here is priced or limits anything. On a server that does not bill, \`plan\` and \`allowances\` are null.`;
 
 /** What a workspace has used, against its plan and day by day. */
 export class UsageApi extends HttpApiGroup.make("usage")

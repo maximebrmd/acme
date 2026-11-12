@@ -16,11 +16,10 @@ export interface PartnerKeyAsking {
   readonly scopes: readonly string[];
 }
 
-/** Which page of a partner's workspaces, and which days. */
+/** Which page of a partner's workspaces. */
 export interface TenancyAsked {
   readonly before: Option.Option<string>;
   readonly limit: Option.Option<number>;
-  readonly period: UsagePeriod;
 }
 
 /** One workspace a partner holds: its home, or a customer's. */
@@ -43,10 +42,15 @@ export interface PartnerDay {
 
 /** What the workspace context says a partner holds. */
 export interface Tenancy {
-  /** The period's days the daily count kept, oldest first. */
-  readonly days: readonly PartnerDay[];
-  /** The workspaces it owns, and the channels across them and its home. */
-  readonly held: { readonly channels: number; readonly workspaces: number };
+  /**
+   * The account as a whole, on the first page only: the workspaces it
+   * owns and the channels across them and its home; its home, then every
+   * workspace it owns.
+   */
+  readonly account: Option.Option<{
+    readonly held: { readonly channels: number; readonly workspaces: number };
+    readonly workspaceIds: readonly WorkspaceId[];
+  }>;
   /** Its home workspace, whose plan the others share. */
   readonly homeWorkspaceId: WorkspaceId;
   /** A page of its workspaces, its home first on the first page. */
@@ -55,14 +59,14 @@ export interface Tenancy {
     readonly tenants: readonly PartnerTenant[];
     readonly total: number;
   };
-  /** Its home, then every workspace it owns. */
-  readonly workspaceIds: readonly WorkspaceId[];
+  /** The partner account, to read its days with (`daysOf`). */
+  readonly partnerId: string;
 }
 
 /**
  * The partner accounts billing reports the usage of, as the workspace
  * context keeps them: a key's, which needs the scope workspaces:read, or
- * a home workspace's, for its people with partner:read.
+ * a home workspace's, for its people with partner:read; and their days.
  */
 export class PartnerTenancy extends Context.Service<
   PartnerTenancy,
@@ -84,12 +88,21 @@ export class PartnerTenancy extends Context.Service<
       Tenancy,
       DatabaseError | InvalidTenantCursor | MissingPermission | NoPartnerAccount
     >;
+    /**
+     * The days of the period the partner's daily count kept, oldest first,
+     * for a partner whose tenancy was read.
+     */
+    readonly daysOf: (
+      partnerId: string,
+      period: UsagePeriod
+    ) => Effect.Effect<readonly PartnerDay[], DatabaseError>;
   }
 >()("peal-server/billing/application/PartnerTenancy") {
   /** For tests without partners: no key or workspace has an account. */
   static readonly layerNone = Layer.succeed(
     PartnerTenancy,
     PartnerTenancy.of({
+      daysOf: () => Effect.succeed([]),
       forKey: () => Effect.fail(new NoPartnerAccount()),
       forMember: () => Effect.fail(new NoPartnerAccount()),
     })

@@ -24,6 +24,7 @@ import { MeteredPostLedger } from "./ports/metered-post-ledger.ts";
 import type { WorkspaceMeteredPosts } from "./ports/metered-post-ledger.ts";
 import { PartnerTenancy } from "./ports/partner-tenancy.ts";
 import type {
+  PartnerDay,
   PartnerKeyAsking,
   PartnerTenant,
   Tenancy,
@@ -86,24 +87,33 @@ export interface PartnerUsageDay {
   readonly workspaces: Option.Option<number>;
 }
 
+/** What a partner account used as a whole, over the period. */
+export interface PartnerAccountUsage {
+  readonly days: readonly PartnerUsageDay[];
+  readonly held: { readonly channels: number; readonly workspaces: number };
+  /** Over every workspace that still exists, oldest month first. */
+  readonly meteredPosts: readonly MeteredPostCount[];
+  readonly totals: UsageTotals;
+}
+
 /**
  * What a partner account used across the workspaces it holds, against
  * its home workspace's plan, day by day and per workspace.
  */
 export interface PartnerUsageReport {
-  readonly days: readonly PartnerUsageDay[];
+  /**
+   * The account as a whole, on the first page only: the pages after it
+   * read their own workspaces alone.
+   */
+  readonly account: Option.Option<PartnerAccountUsage>;
   /** The home workspace's plan; none on a server that does not bill. */
   readonly entitlements: Entitlements;
-  readonly held: Tenancy["held"];
-  /** Over every workspace that still exists, oldest month first. */
-  readonly meteredPosts: readonly MeteredPostCount[];
   readonly page: {
     readonly next: Option.Option<string>;
     readonly tenants: readonly TenantUsageReport[];
     readonly total: number;
   };
   readonly period: UsagePeriod;
-  readonly totals: UsageTotals;
 }
 
 // The counts of many workspaces, by month and platform, added up, oldest
@@ -144,6 +154,7 @@ const tenantReportOf = (
   metered: readonly WorkspaceMeteredPosts[],
   period: UsagePeriod
 ): TenantUsageReport => {
+  // The records and counts handed are this workspace's own.
   const { days, totals } = reportOf(records, period);
 
   const latestStorage = days
@@ -157,9 +168,7 @@ const tenantReportOf = (
       0
     ),
     mediaStorage: latestStorage ?? Option.none(),
-    meteredPosts: meteredSum(
-      metered.filter(({ workspaceId }) => workspaceId === tenant.workspaceId)
-    ),
+    meteredPosts: meteredSum(metered),
     tenant,
     totals,
   };
@@ -173,22 +182,22 @@ interface PartnerDays {
 
 // The partner's days: its daily counts, and the posts of the workspaces
 // that still exist; the totals' channel-days from those counts.
-const partnerDaysOf = (tenancy: Tenancy, posts: UsageReport) => {
+const partnerDaysOf = (kept: readonly PartnerDay[], posts: UsageReport) => {
   const counted = new Map(
-    tenancy.days.map((kept) => [DateTime.toEpochMillis(kept.day), kept])
+    kept.map((day) => [DateTime.toEpochMillis(day.day), day])
   );
 
   const days = posts.days.map((day): PartnerUsageDay => {
-    const kept = Option.fromUndefinedOr(
+    const count = Option.fromUndefinedOr(
       counted.get(DateTime.toEpochMillis(day.day))
     );
 
     return {
       byPlatform: day.byPlatform,
-      channels: kept.pipe(Option.map(({ channels }) => channels)),
+      channels: count.pipe(Option.map(({ channels }) => channels)),
       day: day.day,
       publishedPosts: day.publishedPosts,
-      workspaces: kept.pipe(Option.map(({ workspaces }) => workspaces)),
+      workspaces: count.pipe(Option.map(({ workspaces }) => workspaces)),
     };
   });
 
@@ -207,6 +216,25 @@ const partnerDaysOf = (tenancy: Tenancy, posts: UsageReport) => {
   };
 
   return partnerDays;
+};
+
+// Each workspace's entries, in one pass.
+const byWorkspace = <A extends { readonly workspaceId: WorkspaceId }>(
+  entries: readonly A[]
+): ReadonlyMap<WorkspaceId, readonly A[]> => {
+  const grouped = new Map<WorkspaceId, A[]>();
+
+  for (const entry of entries) {
+    const kept = grouped.get(entry.workspaceId);
+
+    if (kept === undefined) {
+      grouped.set(entry.workspaceId, [entry]);
+    } else {
+      kept.push(entry);
+    }
+  }
+
+  return grouped;
 };
 
 // The months a metered count falls in that the period touches.
@@ -310,19 +338,53 @@ export class UsageReports extends Context.Service<
         }
       );
 
-      // The report of what the workspace context says the partner holds:
-      // a read of the ledger for the page's workspaces, one for the posts
-      // of them all, one for their metered posts.
+      // The account as a whole, for the first page: the posts of every
+      // workspace it holds, their metered posts, and its daily counts.
+      const accountOf = Effect.fn("UsageReports.accountOf")(function* accountOf(
+        tenancy: Tenancy,
+        account: {
+          readonly held: PartnerAccountUsage["held"];
+          readonly workspaceIds: readonly WorkspaceId[];
+        },
+        period: UsagePeriod
+      ) {
+        const found = yield* Effect.all(
+          {
+            days: tenancies.daysOf(tenancy.partnerId, period),
+            metered: metered.ofWorkspaces(account.workspaceIds, period),
+            posts: ledger.postsAcross(account.workspaceIds, period),
+          },
+          { concurrency: "unbounded" }
+        );
+
+        const { days, totals } = partnerDaysOf(
+          found.days,
+          reportOf(found.posts, period)
+        );
+
+        const whole: PartnerAccountUsage = {
+          days,
+          held: account.held,
+          meteredPosts: meteredSum(found.metered),
+          totals,
+        };
+
+        return { metered: found.metered, whole };
+      });
+
+      // The report of what the workspace context says the partner holds,
+      // once it said the caller may read it: the page's records in one
+      // read, and on the first page the account as a whole.
       const partnerReport = Effect.fn("UsageReports.partnerReport")(
         function* partnerReport<E>(
           asked: PartnerUsageAsked,
-          tenancyOf: (period: UsagePeriod) => Effect.Effect<Tenancy, E>
+          tenancyOf: Effect.Effect<Tenancy, E>
         ) {
+          const tenancy = yield* tenancyOf;
+
           const period = yield* Effect.fromResult(
             usagePeriodOf(asked, yield* DateTime.now)
           );
-
-          const tenancy = yield* tenancyOf(period);
 
           const pageIds = tenancy.page.tenants.map(
             ({ workspaceId }) => workspaceId
@@ -330,62 +392,65 @@ export class UsageReports extends Context.Service<
 
           const found = yield* Effect.all(
             {
+              account: Effect.transposeOption(
+                tenancy.account.pipe(
+                  Option.map((account) => accountOf(tenancy, account, period))
+                )
+              ),
               entitled: entitlements.of(tenancy.homeWorkspaceId),
-              metered: metered.ofWorkspaces(tenancy.workspaceIds, period),
               page: ledger.ofWorkspaces(pageIds, period),
-              posts: ledger.postsAcross(tenancy.workspaceIds, period),
             },
             { concurrency: "unbounded" }
           );
 
-          const { days, totals } = partnerDaysOf(
-            tenancy,
-            reportOf(found.posts, period)
-          );
+          // The page's metered posts come with the account's on the first
+          // page; a later page reads its own.
+          const meteredOfPage = Option.isSome(found.account)
+            ? found.account.value.metered
+            : yield* metered.ofWorkspaces(pageIds, period);
+
+          const records = byWorkspace(found.page);
+          const counts = byWorkspace(meteredOfPage);
 
           const report: PartnerUsageReport = {
-            days,
+            account: found.account.pipe(Option.map(({ whole }) => whole)),
             entitlements: found.entitled,
-            held: tenancy.held,
-            meteredPosts: meteredSum(found.metered),
             page: {
               next: tenancy.page.next,
               tenants: tenancy.page.tenants.map((tenant) =>
                 tenantReportOf(
                   tenant,
-                  found.page.flatMap(({ record, workspaceId }) =>
-                    workspaceId === tenant.workspaceId ? [record] : []
+                  (records.get(tenant.workspaceId) ?? []).map(
+                    ({ record }) => record
                   ),
-                  found.metered,
+                  counts.get(tenant.workspaceId) ?? [],
                   period
                 )
               ),
               total: tenancy.page.total,
             },
             period,
-            totals,
           };
 
           return report;
         }
       );
 
+      // Who asks is checked first: a range out of bounds is told only to
+      // whoever may read the report.
       const ofPartner = (actor: Actor, asked: PartnerUsageAsked) =>
-        partnerReport(asked, (period) =>
+        partnerReport(
+          asked,
           tenancies.forMember(actor, {
             before: asked.before,
             limit: asked.limit,
-            period,
           })
         ).pipe(Effect.withSpan("UsageReports.ofPartner"));
 
       const ofPartnerKey = (key: PartnerKeyAsking, asked: PartnerUsageAsked) =>
-        partnerReport(asked, (period) =>
-          tenancies.forKey(key, {
-            before: asked.before,
-            limit: asked.limit,
-            period,
-          })
+        partnerReport(
+          asked,
+          tenancies.forKey(key, { before: asked.before, limit: asked.limit })
         ).pipe(Effect.withSpan("UsageReports.ofPartnerKey"));
 
       return UsageReports.of({ ofPartner, ofPartnerKey, ofWorkspace });

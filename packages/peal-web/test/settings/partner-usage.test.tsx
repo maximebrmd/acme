@@ -120,6 +120,19 @@ describe(PartnerUsageView, () => {
     expect(html).toContain(">Posts publiés<");
     expect(html).toContain("Les clients supprimés depuis ne sont pas listés.");
   });
+
+  it("leaves out the account as a whole when a page does not carry it", async () => {
+    const html = await render(
+      "en",
+      <PartnerUsageView
+        report={{ ...report, current: null, days: null, totals: null }}
+        more={null}
+      />
+    );
+
+    expect(html).not.toContain("posts published");
+    expect(html).toContain("Synthetic customer");
+  });
 });
 
 describe(TenantUsageRows, () => {

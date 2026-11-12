@@ -1094,46 +1094,52 @@ const tenantUsage = (
 const partnerUsageReport = (
   period: { readonly from: string; readonly to: string },
   before: string | undefined
-): PartnerUsageReport => ({
-  allowances: billing.allowances,
-  current: { channels: 5, workspaces: 2 },
-  days: [
-    {
-      byPlatform: [{ platform: "x", posts: 4 }],
-      channels: 7,
-      day: "2026-11-01",
-      publishedPosts: 4,
-      workspaces: 2,
-    },
-    {
-      byPlatform: [{ platform: "bluesky", posts: 3 }],
-      channels: 7,
-      day: "2026-11-02",
-      publishedPosts: 3,
-      workspaces: 2,
-    },
-    {
-      byPlatform: [],
-      channels: null,
-      day: "2026-11-03",
-      publishedPosts: 0,
-      workspaces: null,
-    },
-  ],
-  period,
-  plan: billing.plan,
-  totals: {
-    byPlatform: [
-      { platform: "bluesky", posts: 3 },
-      { platform: "x", posts: 4 },
-    ],
-    channelDays: 14,
-    daysCounted: 2,
-    meteredPosts: [],
-    publishedPosts: 7,
-  },
-  workspaces:
-    before === "studio-next-page"
+): PartnerUsageReport => {
+  const later = before === "studio-next-page";
+
+  return {
+    allowances: billing.allowances,
+    current: later ? null : { channels: 5, workspaces: 2 },
+    days: later
+      ? null
+      : [
+          {
+            byPlatform: [{ platform: "x", posts: 4 }],
+            channels: 7,
+            day: "2026-11-01",
+            publishedPosts: 4,
+            workspaces: 2,
+          },
+          {
+            byPlatform: [{ platform: "bluesky", posts: 3 }],
+            channels: 7,
+            day: "2026-11-02",
+            publishedPosts: 3,
+            workspaces: 2,
+          },
+          {
+            byPlatform: [],
+            channels: null,
+            day: "2026-11-03",
+            publishedPosts: 0,
+            workspaces: null,
+          },
+        ],
+    period,
+    plan: billing.plan,
+    totals: later
+      ? null
+      : {
+          byPlatform: [
+            { platform: "bluesky", posts: 3 },
+            { platform: "x", posts: 4 },
+          ],
+          channelDays: 14,
+          daysCounted: 2,
+          meteredPosts: [],
+          publishedPosts: 7,
+        },
+    workspaces: later
       ? {
           next: null,
           total: 2,
@@ -1161,7 +1167,8 @@ const partnerUsageReport = (
             ),
           ],
         },
-});
+  };
+};
 
 /** What the instance holds, and what the commands changed. */
 export interface StudioState {

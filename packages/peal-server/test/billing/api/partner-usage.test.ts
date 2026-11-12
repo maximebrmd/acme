@@ -74,33 +74,47 @@ const tenant = (
 // is refused.
 const cursor = "c3ludGhldGljLWN1cnNvcg";
 
-const tenancyOf = ({ before }: TenancyAsked): Tenancy => ({
-  days: [
-    { channels: 5, day: day("2026-10-31"), workspaces: 3 },
-    { channels: 6, day: day("2026-11-01"), workspaces: 2 },
-  ],
-  held: { channels: 6, workspaces: 2 },
-  homeWorkspaceId: home,
-  page: Option.isNone(before)
+const tenancyOf = ({ before }: TenancyAsked): Tenancy =>
+  Option.isNone(before)
     ? {
-        next: Option.some(cursor),
-        tenants: [
-          tenant(home, "Synthetic home", 2),
-          tenant(first, "First customer", 3, "customer-1"),
-        ],
-        total: 2,
+        account: Option.some({
+          held: { channels: 6, workspaces: 2 },
+          workspaceIds: [home, first, second],
+        }),
+        homeWorkspaceId: home,
+        page: {
+          next: Option.some(cursor),
+          tenants: [
+            tenant(home, "Synthetic home", 2),
+            tenant(first, "First customer", 3, "customer-1"),
+          ],
+          total: 2,
+        },
+        partnerId,
       }
     : {
-        next: Option.none(),
-        tenants: [tenant(second, "Second customer", 1)],
-        total: 2,
-      },
-  workspaceIds: [home, first, second],
-});
+        account: Option.none(),
+        homeWorkspaceId: home,
+        page: {
+          next: Option.none(),
+          tenants: [tenant(second, "Second customer", 1)],
+          total: 2,
+        },
+        partnerId,
+      };
 
 const TenancyTest = Layer.succeed(
   PartnerTenancy,
   PartnerTenancy.of({
+    daysOf: (id) =>
+      Effect.succeed(
+        id === partnerId
+          ? [
+              { channels: 5, day: day("2026-10-31"), workspaces: 3 },
+              { channels: 6, day: day("2026-11-01"), workspaces: 2 },
+            ]
+          : []
+      ),
     forKey: (key, asked) => {
       if (!key.scopes.includes("workspaces:read")) {
         return Effect.fail(
@@ -421,7 +435,15 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
             [{ home: false, workspaceId: second }]
           );
           assert.isNull(next.workspaces.next);
-          assert.deepStrictEqual(next.totals, report.totals);
+          // The account as a whole comes with the first page only.
+          assert.deepStrictEqual(
+            [next.current, next.days, next.totals],
+            [null, null, null]
+          );
+          assert.deepStrictEqual(
+            next.workspaces.workspaces[0]?.publishedPosts,
+            4
+          );
         })
     );
 
@@ -495,6 +517,31 @@ layer(reportsOn(everyWorkspaceOn("agency")))(
                 "The partner API takes a partner key, sent as a bearer token: not a session, a workspace's API key or an application's token.",
             });
           }
+        })
+    );
+
+    it.effect(
+      "tells a range out of bounds only to whoever may read the report",
+      () =>
+        Effect.gen(function* firstWho() {
+          yield* TestClock.setTime(DateTime.toEpochMillis(now));
+
+          const tooLong = { from: "2026-01-01", to: "2026-11-01" } as const;
+          const editor = yield* asMember(permissionsFor("editor"));
+
+          const refused = yield* editor.usage
+            .partner({ params: { workspaceId: home }, query: tooLong })
+            .pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "Forbidden");
+
+          const unscoped = yield* asPrincipal(partnerKey(["workspaces:write"]));
+
+          const missing = yield* unscoped.partnerUsage
+            .get({ query: tooLong })
+            .pipe(Effect.flip);
+
+          assert.deepInclude(missing, { reason: "missingScope" });
         })
     );
 

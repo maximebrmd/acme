@@ -244,9 +244,10 @@ describe("peal partner", () => {
         );
         assert.match(shown, /–\s+Studio \(home\)\s+2\s+4\s+1/u);
         assert.match(shown, /cus_002\s+Garage Dupont\s+2\s+4\s+4/u);
+        // The next page keeps the period and the page's size.
         assert.include(
           shown,
-          "More: peal partner usage --before studio-next-page"
+          "More: peal partner usage --from 2026-11-01 --to 2026-11-03 --limit 2 --before studio-next-page"
         );
         assert.include(shown, "Customers deleted since are not listed.");
 
@@ -261,6 +262,9 @@ describe("peal partner", () => {
         assert.match(rest, /cus_001\s+Boulangerie Martin\s+1\s+2\s+2/u);
         assert.notInclude(rest, "Studio (home)");
         assert.notInclude(rest, "More:");
+        // The account as a whole comes with the first page only.
+        assert.notInclude(rest, "Posts published  ");
+        assert.notMatch(rest, /Channel-days\s+\d+, over/u);
 
         const json = parsed(
           yield* session.printed(["partner", "usage", "--json", ...inStudio])

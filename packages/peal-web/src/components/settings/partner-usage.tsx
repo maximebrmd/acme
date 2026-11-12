@@ -140,9 +140,10 @@ export const TenantUsageRows = ({
 };
 
 /**
- * A partner's usage over a period: what it holds now, its days across
- * every workspace, as a chart and a table, then its workspaces' first
- * page, with `more` after them for the next pages.
+ * A partner's usage over a period: what it holds now and its days across
+ * every workspace, as a chart and a table, which the first page alone
+ * answers, then its workspaces' first page, with `more` after them for
+ * the next pages.
  */
 export const PartnerUsageView = ({
   more,
@@ -152,21 +153,26 @@ export const PartnerUsageView = ({
   readonly report: PartnerUsageReport;
 }) => {
   const t = useTranslations("WorkspaceSettings.partner.usageReport");
+  const { current, days, totals } = report;
 
   return (
     <div className="flex flex-col gap-6">
-      <p>
-        {t("now", {
-          channels: report.current.channels,
-          workspaces: report.current.workspaces,
-        })}
-      </p>
-      <UsageHistoryView
-        days={report.days}
-        period={report.period}
-        table={<PartnerDaysTable days={report.days} />}
-        totals={report.totals}
-      />
+      {current === null ? null : (
+        <p>
+          {t("now", {
+            channels: current.channels,
+            workspaces: current.workspaces,
+          })}
+        </p>
+      )}
+      {days === null || totals === null ? null : (
+        <UsageHistoryView
+          days={days}
+          period={report.period}
+          table={<PartnerDaysTable days={days} />}
+          totals={totals}
+        />
+      )}
       <Table>
         <TableCaption>{t("tenantsCaption")}</TableCaption>
         <TableHeader>

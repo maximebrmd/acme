@@ -206,23 +206,28 @@ const byPlatform = (counts: readonly PlatformPosts[]): string =>
     ? ""
     : `: ${counts.map(({ platform, posts }) => `${platform} ${String(posts)}`).join(", ")}`;
 
+// The account as a whole, which the first page alone answers.
 const usageTotalLines = ({ current, totals }: PartnerUsageReport): string[] =>
-  columns([
-    ["  Workspaces", String(current.workspaces)],
-    ["  Channels", String(current.channels)],
-    [
-      "  Posts published",
-      `${String(totals.publishedPosts)}${byPlatform(totals.byPlatform)}`,
-    ],
-    [
-      "  Channel-days",
-      `${String(totals.channelDays)}, over ${String(totals.daysCounted)} days counted`,
-    ],
-    ...totals.meteredPosts.map(({ month, platform, posts, postsWithLinks }) => [
-      `  Posts on ${platform} in ${month.slice(0, 7)}`,
-      `${String(posts)}, ${String(postsWithLinks)} with a link`,
-    ]),
-  ]);
+  current === null || totals === null
+    ? []
+    : columns([
+        ["  Workspaces", String(current.workspaces)],
+        ["  Channels", String(current.channels)],
+        [
+          "  Posts published",
+          `${String(totals.publishedPosts)}${byPlatform(totals.byPlatform)}`,
+        ],
+        [
+          "  Channel-days",
+          `${String(totals.channelDays)}, over ${String(totals.daysCounted)} days counted`,
+        ],
+        ...totals.meteredPosts.map(
+          ({ month, platform, posts, postsWithLinks }) => [
+            `  Posts on ${platform} in ${month.slice(0, 7)}`,
+            `${String(posts)}, ${String(postsWithLinks)} with a link`,
+          ]
+        ),
+      ]);
 
 // A row per workspace, the external id first, as the partner knows its
 // customers by it.
@@ -320,9 +325,15 @@ const usage = Command.make(
       yield* Console.log(line);
     }
 
+    // The next page covers the same days, a page of the same size.
     if (report.workspaces.next !== null) {
+      const limit = Option.match(input.limit, {
+        onNone: () => "",
+        onSome: (given) => ` --limit ${String(given)}`,
+      });
+
       yield* Console.log(
-        `More: peal partner usage --before ${report.workspaces.next}`
+        `More: peal partner usage --from ${report.period.from} --to ${report.period.to}${limit} --before ${report.workspaces.next}`
       );
     }
 
@@ -330,7 +341,7 @@ const usage = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Show what the partner account used across its workspaces over a period of UTC days (the last 30 by default, 92 at most): the workspaces and channels it holds now, the posts that went out, the channel-days, then a page of its workspaces, each with its external id, channels, channel-days and posts. Counts only: nothing is priced. It changes nothing. With --json, the API's answer as it came."
+    "Show what the partner account used across its workspaces over a period of UTC days (the last 30 by default, 92 at most): on the first page, the workspaces and channels it holds now, the posts that went out and the channel-days; then a page of its workspaces, each with its external id, channels, channel-days and posts. Counts only: nothing is priced. It changes nothing. With --json, the API's answer as it came."
   )
 );
 
