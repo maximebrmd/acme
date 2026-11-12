@@ -18,7 +18,7 @@ import {
   mastodonAccountId,
 } from "#test/publishing/fakes/fake-mastodon-instance.ts";
 import type { FakeMastodonOptions } from "#test/publishing/fakes/fake-mastodon-instance.ts";
-import { jsonBodyOf } from "#test/publishing/fakes/platform-server.ts";
+import { json, jsonBodyOf } from "#test/publishing/fakes/platform-server.ts";
 import type { PlatformServer } from "#test/publishing/fakes/platform-server.ts";
 
 import {
@@ -109,7 +109,7 @@ describe("editing posts on Mastodon", () => {
   });
 
   it.live(
-    "replaces the text, sending its media, warning and sensitivity again",
+    "replaces the text, sending its media, warning and sensitivity again as Mastodon has them",
     () =>
       Effect.gen(function* edits() {
         const image = testFile("image", 2048);
@@ -158,7 +158,6 @@ describe("editing posts on Mastodon", () => {
           ]
         );
         assert.deepStrictEqual(bodyOf(instance, "PUT"), {
-          language: "en",
           media_ids: [...(before?.mediaIds ?? [])],
           sensitive: true,
           spoiler_text: "A synthetic warning",
@@ -200,6 +199,72 @@ describe("editing posts on Mastodon", () => {
       assert.strictEqual(after?.language, "en");
       assert.notProperty(bodyOf(instance, "PUT"), "language");
     }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "changes the text alone, keeping the warning, sensitivity and language changed on Mastodon since",
+    () =>
+      Effect.gen(function* changedThere() {
+        const { accountId, client, instance, live } = yield* onInstance({
+          options: Option.some(warned),
+          text: "Corrected",
+        });
+
+        const platformPostId = yield* idOf(
+          yield* client.publish(
+            yield* outgoing({ accountId, options: Option.some(warned) })
+          )
+        );
+
+        instance.changeOnMastodon(platformPostId, {
+          language: "fr",
+          sensitive: false,
+          spoilerText: "",
+        });
+
+        yield* live.edit({ changeId, channelId, platformPostId });
+
+        const [after] = instance.statuses();
+
+        assert.strictEqual(after?.text, "Corrected");
+        assert.strictEqual(after?.spoilerText, "");
+        assert.isFalse(after?.sensitive);
+        assert.strictEqual(after?.language, "fr");
+        assert.notProperty(bodyOf(instance, "PUT"), "language");
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "asks Mastodon whether the token still works before taking a status as gone",
+    () =>
+      Effect.gen(function* notRecognised() {
+        const { instance, live } = yield* onInstance({
+          options: Option.none(),
+          text: "Corrected",
+        });
+
+        const platformPostId = PlatformPostIdSchema.make("110000098");
+
+        // A followers-only status answers 404 to a token Mastodon no
+        // longer recognises, as to one that never existed.
+        instance.script("GET /api/v1/statuses/:id", [
+          json({ error: "Record not found" }, 404),
+          json({ error: "Record not found" }, 404),
+        ]);
+        instance.revokeTokens();
+
+        const failure = yield* failureOf(
+          live.edit({ changeId, channelId, platformPostId })
+        );
+
+        assert.notDeepEqual(failure, new BadRequest({ code: "postGone" }));
+        assert.isTrue(
+          instance
+            .requests()
+            .some(({ path }) => path === "/api/v1/accounts/verify_credentials")
+        );
+        assert.lengthOf(callsOf(instance, "PUT"), 0);
+      }).pipe(Effect.scoped)
   );
 
   it.live("refuses a status with a poll before changing anything", () =>

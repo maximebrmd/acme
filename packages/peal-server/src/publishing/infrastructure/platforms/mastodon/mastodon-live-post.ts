@@ -1,7 +1,7 @@
+import type { Redacted } from "effect";
 import { DateTime, Duration, Effect, Option, Schema } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 
-import { MastodonOptions } from "#publishing/domain/mastodon-options.ts";
 import { postGone } from "#publishing/infrastructure/platforms/live-post-editor.ts";
 import type { LivePostEditor } from "#publishing/infrastructure/platforms/live-post-editor.ts";
 import { invalidPlatformId } from "#publishing/infrastructure/platforms/live-post-remover.ts";
@@ -128,8 +128,6 @@ export const pollNotEditable = "pollNotEditable";
 /** The code of a call the account's token is not allowed to make. */
 export const permissionDenied = "permissionDenied";
 
-const isMastodonOptions = Schema.is(MastodonOptions);
-
 // What an edit's answers mean, from the API reference
 // (https://docs.joinmastodon.org/methods/statuses/#edit and #get, read
 // 2026-11-12): 200 the status; 404 "Status does not exist, is private, or
@@ -189,9 +187,13 @@ const editRefusal = Effect.fn("MastodonLiveEdit.refusal")(function* editRefusal(
  * `app/controllers/api/v1/statuses_controller.rb` and
  * `app/services/update_status_service.rb`, 2026-11-12). So the status is
  * read first (GET, `read:statuses`), and sent again with its attachments
- * in order, the warning and the sensitivity the target's options give (the
- * status's own where they give none), and the options' language when
- * they have one (one left out is kept). A status with a poll is refused
+ * in order, its warning and its sensitivity as Mastodon has them now, not
+ * as Peal stored them at publishing: an edit changes the text alone, and
+ * its author may have changed the rest on Mastodon since. No language is
+ * sent, which Mastodon keeps. A 404 is taken as the status gone only once
+ * the token is known to work (`verify_credentials`): Mastodon answers 404
+ * to a followers-only status for a token it does not recognise. A status
+ * with a poll is refused
  * before any change (`pollNotEditable`): Peal sends no poll, and the edit
  * would destroy it. Visibility is not a parameter of an edit.
  */
@@ -209,7 +211,33 @@ export const mastodonLiveEdit = (options: {
       })
     );
 
-  return (token, { options: targetOptions, platformPostId, text }) =>
+  // After a 404 of a status: gone when the token works, its renewal when
+  // Mastodon no longer recognises it, unknown otherwise.
+  const tokenStillWorks = (instance: URL, accessToken: Redacted.Redacted) =>
+    call(
+      HttpClientRequest.get(
+        new URL("/api/v1/accounts/verify_credentials", instance)
+      ).pipe(HttpClientRequest.bearerToken(accessToken))
+    ).pipe(
+      Effect.flatMap(
+        (
+          answer
+        ): Effect.Effect<
+          never,
+          BadRequest | PlatformUnavailable | TokenRejected
+        > => {
+          if (answer.status === 200) {
+            return Effect.fail(new BadRequest({ code: postGone }));
+          }
+
+          return answer.status === 401
+            ? Effect.fail(new TokenRejected())
+            : Effect.fail(new PlatformUnavailable());
+        }
+      )
+    );
+
+  return (token, { platformPostId, text }) =>
     Effect.gen(function* edit() {
       if (!statusIdPattern.test(platformPostId)) {
         return yield* new BadRequest({ code: invalidPlatformId });
@@ -228,6 +256,10 @@ export const mastodonLiveEdit = (options: {
         )
       );
 
+      if (read.status === 404 && (yield* isJsonRefusal(read))) {
+        return yield* tokenStillWorks(instance, token.accessToken);
+      }
+
       if (read.status !== 200) {
         return yield* editRefusal(read);
       }
@@ -240,36 +272,14 @@ export const mastodonLiveEdit = (options: {
         return yield* new BadRequest({ code: pollNotEditable });
       }
 
-      const chosen = targetOptions.pipe(Option.filter(isMastodonOptions));
-
-      const warning = chosen.pipe(
-        Option.flatMap(({ contentWarning }) =>
-          Option.fromUndefinedOr(contentWarning)
-        ),
-        Option.getOrElse(() => status.spoiler_text)
-      );
-
-      const sensitive = chosen.pipe(
-        Option.flatMap((kept) => Option.fromUndefinedOr(kept.sensitive)),
-        Option.getOrElse(() => status.sensitive)
-      );
-
-      const language = chosen.pipe(
-        Option.flatMap((kept) => Option.fromUndefinedOr(kept.language))
-      );
-
       const written = yield* call(
         HttpClientRequest.put(statusUrl).pipe(
           HttpClientRequest.bearerToken(token.accessToken),
           HttpClientRequest.bodyJsonUnsafe({
             media_ids: status.media_attachments.map(({ id }) => id),
-            sensitive,
-            spoiler_text: warning,
+            sensitive: status.sensitive,
+            spoiler_text: status.spoiler_text,
             status: text,
-            ...Option.match(language, {
-              onNone: () => ({}),
-              onSome: (code) => ({ language: code }),
-            }),
           })
         )
       );

@@ -207,9 +207,13 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   blocker of the kind asked (`livePostSupport[platform].edit`, a test keeps
   both equal). Mastodon's editor reads the status first (`read:statuses`;
   a 403 with Mastodon's JSON is `permissionDenied`, the channel to
-  reconnect) and sends `media_ids`, `spoiler_text` and `sensitive` again,
-  as Mastodon clears whatever an edit leaves out, refusing a status with a
-  poll (`pollNotEditable`), which the edit would destroy; Google's patches
+  reconnect) and sends `media_ids`, `spoiler_text` and `sensitive` again
+  as the status read has them (never the target's options, which may be
+  stale: only the text changes), and no `language`, which Mastodon keeps,
+  as Mastodon clears whatever else an edit leaves out, refusing a status
+  with a poll (`pollNotEditable`), which the edit would destroy; a 404 of
+  the read is `postGone` only once `verify_credentials` accepts the token
+  (401 there is `TokenRejected`); Google's patches
   `summary` under `updateMask=summary`. A post gone from the platform is
   `BadRequest` `postGone` (a 404 counts only with the platform's own JSON).
   LinkedIn, Facebook Pages, Pinterest and X stay `unverified` for edits.

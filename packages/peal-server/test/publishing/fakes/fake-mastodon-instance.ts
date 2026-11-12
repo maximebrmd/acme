@@ -347,6 +347,10 @@ export const fakeMastodonInstance = Effect.fnUntraced(
         return upload(request);
       }
 
+      if (route === "GET /api/v1/accounts/verify_credentials") {
+        return json({ acct: "synthetic", id: "1", username: "synthetic" });
+      }
+
       if (route === "GET /api/v1/media/:id") {
         const found = media.get(mediaPath?.groups?.["id"] ?? "");
 
@@ -399,6 +403,22 @@ export const fakeMastodonInstance = Effect.fnUntraced(
       /** Makes `token` work, as after the user reconnected. */
       allowToken: (token: string) => {
         validTokens.add(token);
+      },
+      /**
+       * Changes a status's warning, sensitivity or language, as its author
+       * would on Mastodon itself.
+       */
+      changeOnMastodon: (
+        id: string,
+        change: Partial<
+          Pick<FakeStatus, "language" | "sensitive" | "spoilerText">
+        >
+      ) => {
+        const status = statuses.find((found) => found.id === id);
+
+        if (status !== undefined) {
+          Object.assign(status, change);
+        }
       },
       /** The files taken, by id. */
       media: () => [...media.values()],

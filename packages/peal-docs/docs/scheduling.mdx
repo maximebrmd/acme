@@ -347,7 +347,7 @@ A post that went out can have its text corrected on Mastodon and Google Business
 
 The new text is checked as the channel's text is when a post is scheduled: the platform's length (a Mastodon content warning counts), its characters, and the rest. Once the platform took it, it is that part's own text on that channel in Peal (other channels keep theirs), the channel reads **Edited on** with the date, and webhooks hear `post.edited`. Peal keeps no earlier text; Mastodon shows its own history of edits. The edit runs in the background, with the channel's other calls, and is tried again as a deletion is; after that it **failed**, with why, and **Try again** asks again.
 
-Mastodon is sent the post again with its media, its content warning and its sensitivity, as Mastodon clears whatever an edit leaves out; a post with a poll is refused, as the edit would remove the poll. Reading the post first needs the `read:statuses` permission, which channels connected before Peal asked for it lack: reconnect the channel. Each part of a thread is edited on its own, by its place from 0 (the post itself).
+Mastodon is sent the post again with its media, its content warning and its sensitivity as they are on Mastodon at that moment, changes made there since included, as Mastodon clears whatever an edit leaves out, and its language is left as it is; a post with a poll is refused, as the edit would remove the poll. Reading the post first needs the `read:statuses` permission, which channels connected before Peal asked for it lack: reconnect the channel. Each part of a thread is edited on its own, by its place from 0 (the post itself).
 
 ## From an agent, the command line or the API [#api]
 
