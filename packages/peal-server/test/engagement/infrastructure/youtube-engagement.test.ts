@@ -566,7 +566,7 @@ describe("YouTube's replies", () => {
 
       assert.deepStrictEqual(yield* platform.send(account, outgoing()), {
         _tag: "failed",
-        reason: "refused",
+        reason: "tooLong",
       });
       assert.deepStrictEqual(yield* platform.send(account, outgoing()), {
         _tag: "failed",

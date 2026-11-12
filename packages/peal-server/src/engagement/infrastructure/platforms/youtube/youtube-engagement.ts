@@ -203,6 +203,8 @@ const isSuccess = (response: HttpClientResponse.HttpClientResponse) =>
  * - `disabled`: `commentsDisabled`, the video's comments are off.
  * - `gone`: `videoNotFound`, `commentNotFound` or `parentCommentNotFound`,
  *   the video or the comment no longer exists.
+ * - `tooLong`: `commentTextTooLong`, a reply past a length YouTube does
+ *   not state.
  * - `refused`: anything else.
  */
 type YouTubeRefusal =
@@ -212,6 +214,7 @@ type YouTubeRefusal =
   | "quota"
   | "rateLimited"
   | "refused"
+  | "tooLong"
   | "token"
   | "unavailable";
 
@@ -264,6 +267,10 @@ const refusalOf = (
       return "disabled" as const;
     }
 
+    if (reason === "commentTextTooLong") {
+      return "tooLong" as const;
+    }
+
     // Only the documented reasons say the video, or the comment, is gone:
     // any other 404, or one without Google's error, proves nothing.
     return goneReasons.has(reason) ? ("gone" as const) : ("refused" as const);
@@ -277,6 +284,10 @@ const actionFailure = (refusal: YouTubeRefusal): ReplyFailure => {
 
   if (refusal === "unavailable") {
     return "platformUnavailable";
+  }
+
+  if (refusal === "tooLong") {
+    return "tooLong";
   }
 
   return refusal === "gone" ? "commentGone" : "refused";

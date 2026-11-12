@@ -37,6 +37,8 @@ const reasons: Readonly<Record<InboxReplyReason, string>> = {
   noResponse:
     "the request left and no answer came back: check the platform, then confirm it",
   notSent: "someone checked the platform, and it never went out",
+  tooLong:
+    "the platform found the reply too long: shorten it and send it again",
   platformUnavailable: "the platform did not answer",
   rateLimited: "the platform asked the account to slow down",
   reconnectNeeded: "the platform refuses the channel's token: reconnect it",
