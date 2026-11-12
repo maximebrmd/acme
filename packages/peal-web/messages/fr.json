@@ -2336,6 +2336,8 @@
       "noWorkspaces": "Le compte ne possède encore aucun espace de travail. Créez-les par l’API, avec une clé partenaire.",
       "workspaceLine": "{channels, plural, =0 {Aucun canal} one {# canal} other {# canaux}} · {externalId, select, none {sans identifiant externe} other {identifiant externe {externalId}}}",
       "moreWorkspaces": "Les {shown} plus récents sur {total}. L’API les liste tous.",
+      "healthToReconnect": "À reconnecter : {count}",
+      "healthFailed": "En échec, 7 jours : {count}",
       "closeTitle": "Fermer le compte partenaire",
       "closeHint": "Ses clés cessent de fonctionner aussitôt. Un compte ne se ferme qu’une fois qu’il ne possède plus aucun espace de travail : supprimez chacun par l’API d’abord.",
       "close": "Fermer le compte partenaire",

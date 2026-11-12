@@ -2336,6 +2336,8 @@
       "noWorkspaces": "The account owns no workspace yet. Create them through the API, with a partner key.",
       "workspaceLine": "{channels, plural, =0 {No channel} one {# channel} other {# channels}} · {externalId, select, none {no external id} other {external id {externalId}}}",
       "moreWorkspaces": "The {shown} newest of {total}. The API lists them all.",
+      "healthToReconnect": "To reconnect: {count}",
+      "healthFailed": "Failed, 7 days: {count}",
       "closeTitle": "Close the partner account",
       "closeHint": "Its keys stop working at once. An account closes only once it owns no workspace: delete each through the API first.",
       "close": "Close the partner account",

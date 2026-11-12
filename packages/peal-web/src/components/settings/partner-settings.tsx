@@ -6,6 +6,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useFormatter, useTranslations } from "next-intl";
 import { partnerKeyPermissions, PartnerScopeSchema } from "peal-contract";
 import type {
+  CustomerHealth,
   Partner,
   PartnerKey,
   PartnerScope,
@@ -31,6 +32,7 @@ import {
   partnerKeysChanged,
   partnerKeysOf,
   partnerOf,
+  partnerHealthOf,
   partnerWorkspacesOf,
   revokePartnerKey,
   updatePartner,
@@ -41,6 +43,7 @@ import { apiErrorKey } from "#settings/errors.ts";
 import type { SettingsErrorKey } from "#settings/errors.ts";
 
 import { CreatedKey } from "./api-keys.tsx";
+import { CustomerHealthLine } from "./partner-health.tsx";
 import { UsagePerCustomer } from "./partner-usage.tsx";
 import { SettingsError } from "./settings-error.tsx";
 import { SettingsLoadFailed, SettingsLoading } from "./settings-status.tsx";
@@ -466,6 +469,15 @@ const Workspaces = ({ workspaceId }: { readonly workspaceId: string }) => {
   const result = useAtomValue(atom);
   const reload = useAtomRefresh(atom);
 
+  // What needs attention in each, when it can be read: the list shows
+  // without it otherwise.
+  const health = AsyncResult.match(useAtomValue(partnerHealthOf(workspaceId)), {
+    onFailure: () => new Map<string, CustomerHealth>(),
+    onInitial: () => new Map<string, CustomerHealth>(),
+    onSuccess: ({ value }) =>
+      new Map(value.workspaces.map((customer) => [customer.id, customer])),
+  });
+
   return AsyncResult.match(result, {
     onFailure: () => <SettingsLoadFailed onRetry={reload} />,
     onInitial: () => <SettingsLoading />,
@@ -484,6 +496,7 @@ const Workspaces = ({ workspaceId }: { readonly workspaceId: string }) => {
                     externalId: owned.externalId ?? "none",
                   })}
                 </span>
+                <CustomerHealthLine health={health.get(owned.id)} />
                 <span className="text-muted-foreground font-mono text-xs">
                   {owned.id}
                 </span>
