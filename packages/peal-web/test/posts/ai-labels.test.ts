@@ -1,6 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { aiLabelOf, labelledFor, presetAiLabels } from "#posts/ai-labels.ts";
+import {
+  aiLabelOf,
+  labelledFor,
+  labelledIn,
+  presetAiLabels,
+} from "#posts/ai-labels.ts";
 import { initialValues } from "#posts/target-options.ts";
 
 const youtube = { id: "c-youtube", platform: "youtube" } as const;
@@ -125,5 +130,20 @@ describe(aiLabelOf, () => {
       "madeWithAi",
       undefined,
     ]);
+  });
+});
+
+describe(labelledIn, () => {
+  it("settles the labels a saved post's options already hold", () => {
+    expect([
+      ...labelledIn({
+        targets: [
+          { channelId: youtube.id, options: { containsSyntheticMedia: false } },
+          { channelId: x.id, options: null },
+          { channelId: tiktok.id, options: { disableComment: true } },
+        ],
+      }),
+    ]).toStrictEqual([youtube.id]);
+    expect(labelledIn(undefined).size).toBe(0);
   });
 });

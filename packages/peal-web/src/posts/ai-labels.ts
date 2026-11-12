@@ -19,7 +19,9 @@ export const aiLabelOf = (platform: Platform): string | undefined =>
  * The channels of a saved post whose options already say whether it shows
  * media made by AI: their label is settled, as the member left it.
  */
-export const labelledIn = (post: Post | undefined): ReadonlySet<string> =>
+export const labelledIn = (
+  post: Pick<Post, "targets"> | undefined
+): ReadonlySet<string> =>
   new Set(
     (post?.targets ?? []).flatMap(({ channelId, options }) =>
       options !== null &&
