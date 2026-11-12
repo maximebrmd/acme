@@ -121,6 +121,8 @@ module Peal
       # channel on which it gives no options takes the channel's default options, if it has some. With
       # `defaultSignatures`, each channel's default signature goes under its text, and `signatureId` puts one signature
       # under it on every channel: a signature is then text of the post, never added under a text that already ends with
+      # it. `shortenLinks: true` sends its links shortened where the server has short links (`shortLinks.status`),
+      # `false` as written; left out, the post takes the workspace's default (`byDefault`) when it is made, and keeps
       # it. Needs post:create, channel:read, and media:read when it shows media.
       #
       # @param request_options [Hash]
@@ -296,9 +298,10 @@ module Peal
       # answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target
       # `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time
       # runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET
-      # …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs
-      # post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope
-      # workspace:publish.
+      # …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. `shortenLinks:
+      # true` sends its links shortened where the server has short links (`shortLinks.status`), `false` as written; left
+      # out, the post takes the workspace's default (`byDefault`) when it is made, and keeps it. Needs post:schedule and
+      # channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
       #
       # @param request_options [Hash]
       # @param params [Peal::Posts::Types::NewPost]
@@ -467,8 +470,9 @@ module Peal
       # even when every row is valid. Otherwise the rows are then made in order as `bulk` makes its items, each
       # `created` or, when something changed since the check or a row repeats an earlier one, `refused`. The answer is
       # 200 once the file was read; a file that cannot be read at all is ImportUnreadable. An `Idempotency-Key` header
-      # works as on `bulk`, by row. Needs post:schedule, post:read and channel:read, and media:read for rows with media;
-      # an OAuth client needs the scope workspace:publish.
+      # works as on `bulk`, by row. A file has no column for short links: each post takes the workspace's default
+      # (`shortLinks.status`'s `byDefault`). Needs post:schedule, post:read and channel:read, and media:read for rows
+      # with media; an OAuth client needs the scope workspace:publish.
       #
       # @param request_options [Hash]
       # @param params [Peal::Posts::Types::PostImport]
