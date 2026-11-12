@@ -271,41 +271,62 @@ production, that is the owner's decision, never a fix for an alert.
 
 2. **Stop pgBackRest**, so no backup or archive runs while the stanza is
    deleted. Postgres keeps running; each segment it tries to archive in the
-   meantime is refused and kept, then archived after step 4:
+   meantime is refused and kept on the server's disk, then archived after
+   step 4. If the container restarts before step 3, its `/tmp` goes with
+   pgBackRest's stop file: run this step again.
 
    ```sh
    sudo peal-compose exec --user postgres postgres pgbackrest stop
    ```
 
 3. **Delete the stanza** from the bucket, with the old cluster's backups and
-   archive. `--force` because Postgres is running:
+   archive. `--force` because Postgres is running. It removes the stop file
+   when it is done, so pgBackRest runs again from here, and no `pgbackrest
+   start` is needed (it would only warn that the stop file does not exist):
 
    ```sh
    sudo peal-compose exec --user postgres postgres pgbackrest stanza-delete --force
    ```
 
-4. **Start pgBackRest again**, and take a full backup, which creates the
-   stanza for the new cluster and reports to Grafana, which clears the
-   alerts:
+4. **Create the stanza** for the new cluster. Postgres's archive is accepted
+   from now on, and it pushes the segments it kept, oldest first:
 
    ```sh
-   sudo peal-compose exec --user postgres postgres pgbackrest start
-   sudo systemctl start peal-backup@full
+   sudo peal-compose exec --user postgres postgres pgbackrest stanza-create
    ```
 
-5. **Check the backup and the archive.** `info` lists one full backup;
-   `check` archives a segment and waits for it; `last_archived_time` is
-   recent and `last_failed_time` older than it:
+5. **Wait until the archive has caught up.** `check` switches to a new
+   segment and waits up to a minute for it to be archived, behind every
+   segment kept since the database was started over. After hours of refused
+   archives, it may give up with error 082 before the backlog is pushed: watch
+   `last_archived_wal` move towards the current segment, then run `check`
+   again, until it succeeds:
+
+   ```sh
+   sudo peal-compose exec --user postgres postgres pgbackrest check
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     'SELECT last_archived_wal, last_archived_time, pg_walfile_name(pg_current_wal_lsn()) AS current_wal FROM pg_stat_archiver'
+   ```
+
+6. **Take a full backup**, which reports to Grafana and clears the alerts.
+   It waits for its own last segment the same way; if it still fails with
+   082, the archive has not caught up: `peal-backup-failed` keeps firing, go
+   back to step 5, then run it again. A failed backup leaves nothing to
+   clean up.
+
+   ```sh
+   sudo systemctl start peal-backup@full
+   sudo systemctl status --no-pager peal-backup@full
+   ```
+
+7. **Check the backup and the archive.** `info` lists one full backup, with
+   status `ok`; `last_failed_time` is older than `last_archived_time`:
 
    ```sh
    sudo peal-compose exec --user postgres postgres pgbackrest info
-   sudo peal-compose exec --user postgres postgres pgbackrest check
    sudo peal-compose exec postgres psql --username peal --dbname peal --command \
      'SELECT last_archived_time, last_failed_time FROM pg_stat_archiver'
    ```
-
-If the container restarts between steps 2 and 4, its `/tmp` goes with
-pgBackRest's stop file: run step 2 again before step 3.
 
 ## Practise
 

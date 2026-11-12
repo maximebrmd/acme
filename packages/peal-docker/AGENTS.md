@@ -48,9 +48,11 @@ under Development stack.
 - The backup and disk rules read gauges the host posts to the collector
   (the Ansible roles `peal_backup` and `peal_disks`), not the stack's own
   telemetry. A self-hoster's server without those roles never posts them:
-  `peal-raid-degraded` and `peal-disk-failing` take no data as `OK`, and
-  read the names the role's script posts, which
-  `packages/peal-infra/ansible/tests/test_disks.py` ties to the rules.
+  `peal-raid-degraded`, `peal-disk-failing` and `peal-backup-failed` take
+  no data as `OK` (`peal-backup-stale` does not: a server that never backed
+  up alerts), and read the names the roles' scripts post, which
+  `packages/peal-infra/ansible/tests/test_disks.py` and `test_backup.py` tie
+  to the rules; `test_backup.py` also runs the failure rule in promtool.
 - Telemetry keeps logs 31 days (Loki), traces 14 days
   (`config/production/tempo.yaml`, whose `block_retention` is set for both
   the backend scheduler and worker) and metrics 30 days, as the privacy

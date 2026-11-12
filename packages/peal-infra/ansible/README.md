@@ -725,8 +725,9 @@ full backups with what they need: point-in-time recovery over the last three
 weeks at least, four just before a Sunday's backup expires the oldest, with
 at most 5 minutes lost. Backups are compressed and encrypted with the backup
 passphrase before they leave the server. Each one that finishes reports to the
-collector, and each one that fails too: Grafana alerts at once when the last
-backup failed (`peal-backup-failed`), when none has finished for 30 hours,
+collector, and each one that fails too, asking the collector again for a
+minute; one backup runs at a time, the other waiting on a lock. Grafana
+alerts at once when the last backup failed (`peal-backup-failed`), when none has finished for 30 hours,
 and when the disk is 85% full, as a stuck archive would make it.
 
 pgBackRest rather than WAL-G: it comes from the PostgreSQL project's signed
