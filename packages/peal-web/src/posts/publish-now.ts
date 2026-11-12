@@ -66,9 +66,14 @@ export const publishNowOf = ({
     : { _tag: "none" };
 };
 
+// How long after its time a scheduled post's page keeps asking whether
+// it went out: a job that never starts is not waited for without end.
+const dueWindow = { minutes: 10 };
+
 /**
- * Whether a scheduled post's time has come: it goes out once its job
- * starts, which its page waits for (a post published now, for one).
+ * Whether a scheduled post's time has come, within the last ten minutes:
+ * it goes out once its job starts, which its page waits for (a post
+ * published now, for one). Once publishing, `PostDetail` takes over.
  */
 export const isDue = (
   { schedule, status }: Pick<Post, "schedule" | "status">,
@@ -76,7 +81,8 @@ export const isDue = (
 ): boolean =>
   status === "scheduled" &&
   schedule !== null &&
-  DateTime.isLessThanOrEqualTo(schedule.at, now);
+  DateTime.isLessThanOrEqualTo(schedule.at, now) &&
+  DateTime.isGreaterThan(DateTime.add(schedule.at, dueWindow), now);
 
 /** The channels a post publishes on, and those it cannot, by name. */
 export interface WhereItGoes {

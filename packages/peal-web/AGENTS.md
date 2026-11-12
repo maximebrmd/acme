@@ -242,8 +242,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   moves a scheduled post, to the instant the person confirms, through the
   same path as Schedule (save, signature pause, failures); it is never
   offered where `willWait`, as an approval after the post's time
-  publishes nothing. While a scheduled post is due (`isDue`),
-  `ComposerScreen` reads it again until it is publishing.
+  publishes nothing, nor before the workspace's approval policy is
+  known. The composer runs one action at a time (`#posts/one-at-a-time.ts`,
+  refused synchronously): a dialog's confirm button stays clickable while
+  it closes, and `posts.create` and `posts.schedule` take no idempotency
+  key. While a scheduled post is due, for ten minutes after its time
+  (`isDue`), `ComposerScreen` reads it again until it is publishing.
   `PlainTextEditor`'s `onPasteFiles` hands files pasted into a text to
   the `MediaUploader` of the post or of the part (`ref`, a
   `MediaUploaderHandle`), which refuses them while disabled. Files are

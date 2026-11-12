@@ -108,6 +108,11 @@ describe(isDue, () => {
     expect(due("scheduled", at("2026-11-12T09:59:00Z"))).toBeTruthy();
   });
 
+  it("stops ten minutes after its time, so a tab never asks without end", () => {
+    expect(due("scheduled", at("2026-11-12T09:51:00Z"))).toBeTruthy();
+    expect(due("scheduled", at("2026-11-12T09:50:00Z"))).toBeFalsy();
+  });
+
   it("does not hold before its time, or for a post that is not scheduled", () => {
     expect(due("scheduled", at("2026-11-12T10:01:00Z"))).toBeFalsy();
     expect(due("draft", null)).toBeFalsy();
