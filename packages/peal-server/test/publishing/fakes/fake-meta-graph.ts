@@ -92,6 +92,11 @@ export interface FakeMetaGraphOptions {
   readonly videoProcessingErrorAfterFinish?: boolean;
   /** A null `processing_phase.error` in every status, as no error. */
   readonly videoNullError?: boolean;
+  /**
+   * The Page's stories list a video story at its finish, before its
+   * publishing is done, as Meta's pages leave possible.
+   */
+  readonly storyListedEarly?: boolean;
   /** A video story's finish answers success without its post id. */
   readonly storyFinishWithoutPostId?: boolean;
   /** Polls a video container stays IN_PROGRESS for. */
@@ -408,7 +413,7 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
 
       posted(postId, params, "");
 
-      if (video.publishLag > 0) {
+      if (video.publishLag > 0 && options.storyListedEarly !== true) {
         video.pendingStory = made;
       } else {
         stories.push(made);

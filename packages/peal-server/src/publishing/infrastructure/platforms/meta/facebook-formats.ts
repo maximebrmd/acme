@@ -435,12 +435,21 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
           });
         }
 
+        // Published by Meta first, a story as a reel: the Page Stories API
+        // page ("Get stories", https://developers.facebook.com/docs/page-stories-api,
+        // read 2026-11-12) says the listing holds stories "published on the
+        // Page" with `status` PUBLISHED or ARCHIVED, but not whether a story
+        // whose video Meta still processes is listed, so the listing alone
+        // never confirms one.
+        if (!isPublished(status)) {
+          return Effect.succeed({ _tag: "unknown" });
+        }
+
         if (!story) {
-          return Effect.succeed(
-            isPublished(status)
-              ? { _tag: "found", published: published(videoId) }
-              : { _tag: "unknown" }
-          );
+          return Effect.succeed({
+            _tag: "found",
+            published: published(videoId),
+          });
         }
 
         return listedStory(post, videoId).pipe(

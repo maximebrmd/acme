@@ -915,6 +915,32 @@ describe("a Facebook story", () => {
   );
 
   it.live(
+    "of a video is not taken for published by its listing alone, while Meta has not published it",
+    () =>
+      Effect.gen(function* listedEarly() {
+        const clip = testFile("video", 4096);
+
+        const { client, graph } = yield* onPage({
+          files: [clip],
+          graph: { storyListedEarly: true, videoPublishLag: 50 },
+        });
+
+        graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_stories#finish`);
+
+        const result = yield* client.publish(
+          yield* outgoing({
+            accountId: facebookPageId,
+            media: [attached(clip)],
+            options: story,
+          })
+        );
+
+        assert.strictEqual(result._tag, "unconfirmed");
+        assert.lengthOf(graph.stories(), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
     "of a video is kept under its story's post id when the finish gives none",
     () =>
       Effect.gen(function* withoutPostId() {

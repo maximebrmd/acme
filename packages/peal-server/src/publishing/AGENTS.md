@@ -566,8 +566,8 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   `photo_stories`. Their `lookUp` reads what the run holds and never
   answers `absent` (Meta's samples show `not_started` after an upload, and
   `publish_status: "published"` before a story is): a reel is `found` when
-  its `publishing_phase` is done, a story when the Page's `stories` list it
-  by its `media_id`, `unknown` otherwise; a resumed run answers `unknown`,
+  its `publishing_phase` is done, a video story when that phase is done
+  and the Page's `stories` list it by its `media_id`, `unknown` otherwise; a resumed run answers `unknown`,
   so a story or a reel is never sent twice. A reel is published under its
   video's id, a story under its `post_id` only (a finish without it is
   confirmed by the listing), neither with a permalink. Meta's 30 reels a Page a day have no endpoint or
