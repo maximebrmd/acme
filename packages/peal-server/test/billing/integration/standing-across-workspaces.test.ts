@@ -90,6 +90,11 @@ interface Holding {
   readonly channels?: number;
   readonly members?: number;
   readonly subscription?: { readonly plan: string; readonly status: string };
+  // More of them, as a workspace that subscribed several times has.
+  readonly subscriptions?: readonly {
+    readonly plan: string;
+    readonly status: string;
+  }[];
 }
 
 // A workspace with these channels, members and subscription, as each
@@ -116,8 +121,13 @@ const workspaceWith = Effect.fn("workspaceWith")(function* workspaceWith(
     yield* repository.insert(channel, syntheticCredentials(channel));
   }
 
-  if (held.subscription !== undefined) {
-    yield* sql`INSERT INTO billing.subscriptions (stripe_subscription_id, stripe_customer_id, workspace_id, plan, status, interval, cancel_at_period_end, last_event_at, last_event_id, updated_at) VALUES (${`sub_synthetic_${id}`}, 'cus_synthetic', ${id}, ${held.subscription.plan}, ${held.subscription.status}, 'month', false, ${at}, ${`evt_synthetic_${id}`}, ${at})`;
+  const subscriptions = [
+    ...(held.subscription === undefined ? [] : [held.subscription]),
+    ...(held.subscriptions ?? []),
+  ];
+
+  for (const [index, { plan, status }] of subscriptions.entries()) {
+    yield* sql`INSERT INTO billing.subscriptions (stripe_subscription_id, stripe_customer_id, workspace_id, plan, status, interval, cancel_at_period_end, last_event_at, last_event_id, updated_at) VALUES (${`sub_synthetic_${id}_${String(index)}`}, 'cus_synthetic', ${id}, ${plan}, ${status}, 'month', false, ${at}, ${`evt_synthetic_${id}_${String(index)}`}, ${at})`;
   }
 
   return id;
@@ -238,6 +248,50 @@ const everyStanding = Effect.gen(function* everyStanding() {
 
   yield* partnerOf(lonelyHome, []);
 
+  // Every status a subscription can stand in: past due still gives its
+  // plan; unpaid, paused and incomplete give none, and leave the free
+  // plan.
+  const pastDue = yield* workspaceWith({
+    channels: 5,
+    members: 1,
+    subscription: { plan: "starter", status: "past_due" },
+  });
+
+  const unpaid = yield* workspaceWith({
+    channels: 4,
+    members: 1,
+    subscription: { plan: "starter", status: "unpaid" },
+  });
+
+  const paused = yield* workspaceWith({
+    channels: 4,
+    members: 1,
+    subscription: { plan: "starter", status: "paused" },
+  });
+
+  const incomplete = yield* workspaceWith({
+    channels: 2,
+    members: 1,
+    subscription: { plan: "pro", status: "incomplete" },
+  });
+
+  // Two subscriptions: the one that gives a plan decides.
+  const twice = yield* workspaceWith({
+    channels: 5,
+    members: 3,
+    subscriptions: [
+      { plan: "pro", status: "canceled" },
+      { plan: "starter", status: "active" },
+    ],
+  });
+
+  // A home over on its own members while its pool's channels fit, and its
+  // customer, which has no member, within.
+  const crowdedHome = yield* workspaceWith({ channels: 1, members: 3 });
+  const crowdedCustomer = yield* workspaceWith({ channels: 1 });
+
+  yield* partnerOf(crowdedHome, [crowdedCustomer]);
+
   heavy.add(overMediaOnly);
 
   const listed = [
@@ -254,6 +308,16 @@ const everyStanding = Effect.gen(function* everyStanding() {
     paidHome,
     paidCustomer,
     lonelyHome,
+    pastDue,
+    unpaid,
+    paused,
+    incomplete,
+    twice,
+    crowdedHome,
+    crowdedCustomer,
+    // Listed twice: answered once.
+    within,
+    overChannels,
   ];
 
   return {
@@ -266,6 +330,9 @@ const everyStanding = Effect.gen(function* everyStanding() {
       customer,
       quiet,
       lonelyHome,
+      unpaid,
+      paused,
+      crowdedHome,
     ]),
     listed,
   };
