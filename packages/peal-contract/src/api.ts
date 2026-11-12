@@ -20,6 +20,7 @@ import { ConnectedAppsApi } from "./connected-apps.ts";
 import { ContractRequestsDeskApi } from "./contract-requests-desk.ts";
 import { ContractRequestsApi } from "./contract-requests.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
+import { FeedsApi } from "./feeds.ts";
 import { HostedConnectApi } from "./hosted-connect.ts";
 import { InboxApi } from "./inbox.ts";
 import { InvitationsApi } from "./invitations.ts";
@@ -223,6 +224,72 @@ export { RecyclingRuleNotFound } from "./recycling-rule-not-found.ts";
 export { RecyclingVariantsInvalid } from "./recycling-variants-invalid.ts";
 
 export { TooManyRecyclingRules } from "./too-many-recycling-rules.ts";
+
+export {
+  CreatedFeedSchema,
+  defaultFeedPageSize,
+  defaultFeedTemplate,
+  feedCheckIntervalMinutes,
+  FeedChangeSchema,
+  FeedFailureSchema,
+  FeedItemOutcomeSchema,
+  FeedItemReasonSchema,
+  FeedItemSchema,
+  FeedItemsSchema,
+  feedItemsShown,
+  FeedModeSchema,
+  FeedPageSchema,
+  feedPlaceholders,
+  FeedPreviewItemSchema,
+  FeedPreviewRequestSchema,
+  FeedPreviewSchema,
+  feedPreviewItems,
+  feedReadsPerHour,
+  FeedSchema,
+  FeedsApi,
+  FeedStatusSchema,
+  FeedStoppedReasonSchema,
+  maxFeedBytes,
+  maxFeedFailingDays,
+  maxFeedItemsPerDay,
+  maxFeedItemsPerRun,
+  maxFeedPageSize,
+  maxFeedsPerWorkspace,
+  maxFeedSummaryLength,
+  maxFeedTemplateLength,
+  NewFeedSchema,
+} from "./feeds.ts";
+
+export type {
+  CreatedFeed,
+  Feed,
+  FeedChange,
+  FeedFailure,
+  FeedItem,
+  FeedItemOutcome,
+  FeedItemReason,
+  FeedItems,
+  FeedMode,
+  FeedPage,
+  FeedPreview,
+  FeedPreviewItem,
+  FeedPreviewRequest,
+  FeedStatus,
+  FeedStoppedReason,
+  NewFeed,
+} from "./feeds.ts";
+
+export { FeedAddressRefused } from "./feed-address-refused.ts";
+
+export { FeedNotFound } from "./feed-not-found.ts";
+
+export { FeedReadsLimited } from "./feed-reads-limited.ts";
+
+export { FeedTemplateInvalid } from "./feed-template-invalid.ts";
+
+export { FeedUnreadable } from "./feed-unreadable.ts";
+
+export { TooManyFeeds } from "./too-many-feeds.ts";
 
 export {
   ActivityActorSchema,
@@ -830,6 +897,7 @@ export {
   NoticePageSchema,
   NoticeSchema,
   NoticesApi,
+  FeedStopReasonSchema,
   RecyclingNoticeReasonSchema,
   UnreadNoticesSchema,
   WebhookTurnOffReasonSchema,
@@ -841,6 +909,7 @@ export type {
   NoticeChannel,
   NoticeEvent,
   NoticePage,
+  FeedStopReason,
   RecyclingNoticeReason,
   UnreadNotices,
   WebhookTurnOffReason,
@@ -1875,6 +1944,7 @@ export class Api extends HttpApi.make("peal")
   .add(ChannelSetsApi)
   .add(QueuesApi)
   .add(RecyclingApi)
+  .add(FeedsApi)
   .add(ChannelDefaultsApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.

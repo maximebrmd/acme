@@ -133,6 +133,19 @@ export interface SavedItemsRecord {
     /** As stored: plain JSON, options by channel. */
     readonly options: unknown;
   }[];
+  readonly feeds: readonly {
+    readonly attachPicture: boolean;
+    readonly channelIds: readonly string[];
+    readonly channelSetId: string | null;
+    readonly createdAt: DateTime.Utc;
+    readonly id: string;
+    readonly mode: string;
+    readonly queueId: string | null;
+    readonly status: string;
+    readonly stopReason: string | null;
+    readonly template: string;
+    readonly url: string;
+  }[];
   readonly queues: readonly {
     readonly channelIds: readonly string[];
     readonly channelSetId: string | null;

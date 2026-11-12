@@ -165,6 +165,14 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.channel_defaults WHERE workspace_id = ${id}`,
   "publishing.channel_sets": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.channel_sets WHERE workspace_id = ${id}`,
+  // The feeds it follows go, with what they read and the reads its
+  // members asked for.
+  "publishing.feed_items": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.feed_items i JOIN publishing.feeds f ON f.id = i.feed_id WHERE f.workspace_id = ${id}`,
+  "publishing.feed_reads": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.feed_reads WHERE workspace_id = ${id}`,
+  "publishing.feeds": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.feeds WHERE workspace_id = ${id}`,
   "publishing.idempotency_keys": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.idempotency_keys WHERE workspace_id = ${id}`,
   // The changes asked of its live posts go with them.
@@ -304,6 +312,10 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE user_id = ${id}`,
   "notifications.notification_preferences": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notification_preferences WHERE user_id = ${id}`,
+  // The feeds they added stay with the workspace, without them: the next
+  // run stops each, its starter gone.
+  "publishing.feeds": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.feeds WHERE started_by = ${id}`,
   // The changes they asked of live posts stay, without them.
   "publishing.live_post_changes": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.live_post_changes WHERE requested_by = ${id}`,
@@ -468,6 +480,18 @@ const fill = Effect.fn("fill")(function* fill(
   // A rule that repeats the post, started by the person.
   yield* sql`INSERT INTO publishing.recycling_rules (id, workspace_id, source_post_id, interval, time_zone, anchor_at, variants, status, made, last_due_at, next_due_at, started_by, started_via, created_at)
     VALUES (${uuid7()}, ${workspaceId}, ${postId}, '{"count":1,"unit":"weeks"}'::jsonb, 'Europe/Paris', now(), '[{"overrides":[],"text":"A synthetic variant"}]'::jsonb, 'active', 1, now(), now() + interval '7 days', ${person.id}, '{"_tag":"web"}'::jsonb, now())`;
+
+  // A feed the person added, with an item it read, and a read counted.
+  const feedId = uuid7();
+
+  yield* sql`INSERT INTO publishing.feeds (id, workspace_id, url, mode, template, status, started_by, started_via, since, next_check_at, created_at, updated_at)
+    VALUES (${feedId}, ${workspaceId}, 'https://blog.example/feed.xml', 'draft', '{title}', 'active', ${person.id}, '{"_tag":"web"}'::jsonb, now(), now() + interval '1 day', now(), now())`;
+
+  yield* sql`INSERT INTO publishing.feed_items (feed_id, item_digest, outcome, post_id, seen_at)
+    VALUES (${feedId}, ${"0".repeat(64)}, 'made', ${postId}, now())`;
+
+  yield* sql`INSERT INTO publishing.feed_reads (workspace_id, window_start, reads)
+    VALUES (${workspaceId}, date_trunc('hour', now()), 1)`;
 
   // The key of the request that made it, as `posts.send` keeps it.
   yield* sql`INSERT INTO publishing.idempotency_keys (workspace_id, key_digest, request_digest, post_id, created_at)
