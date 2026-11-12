@@ -9,15 +9,15 @@ Les paramètres d’un espace de travail appartiennent à ses membres, selon leu
 
 ## Paramètres de l’espace de travail [#workspace]
 
-Choisissez **Paramètres** sur la carte d’un espace de travail. Chaque membre voit **Général**, **Membres** et **Sécurité** ; les membres qui peuvent inviter voient **Invitations**, ceux qui peuvent gérer les clés voient **Clés d’API**, et ceux qui peuvent gérer les webhooks voient **Webhooks**.
+Choisissez **Paramètres** sur la carte d’un espace de travail. Chaque membre voit **Général**, **Membres** et **Sécurité** ; les membres qui peuvent inviter voient **Invitations**, ceux qui peuvent gérer les clés voient **Clés d’API**, ceux qui peuvent gérer les webhooks voient **Webhooks**, et les propriétaires et les administrateurs voient **Assistant**.
 
-| Rôle           | Dans les paramètres                                                                                                                                                                          |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Propriétaire   | Tout : renommer, les membres, propriétaires compris, les invitations, les clés d’API, les webhooks, l’exigence de la validation en deux étapes, et la suppression                            |
-| Administrateur | Renommer, les membres autres que les propriétaires, les invitations, les clés d’API et les webhooks ; jamais les propriétaires, l’exigence de la validation en deux étapes ni la suppression |
-| Éditeur        | Voit les membres                                                                                                                                                                             |
-| Contributeur   | Voit les membres                                                                                                                                                                             |
-| Lecteur        | Voit les membres                                                                                                                                                                             |
+| Rôle           | Dans les paramètres                                                                                                                                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Propriétaire   | Tout : renommer, les membres, propriétaires compris, les invitations, les clés d’API, les webhooks, le fournisseur d’images de l’assistant, l’exigence de la validation en deux étapes, et la suppression                            |
+| Administrateur | Renommer, les membres autres que les propriétaires, les invitations, les clés d’API, les webhooks et le fournisseur d’images de l’assistant ; jamais les propriétaires, l’exigence de la validation en deux étapes ni la suppression |
+| Éditeur        | Voit les membres                                                                                                                                                                                                                     |
+| Contributeur   | Voit les membres                                                                                                                                                                                                                     |
+| Lecteur        | Voit les membres                                                                                                                                                                                                                     |
 
 Sous **Général**, les propriétaires et les administrateurs choisissent aussi **Approbations** : si les publications attendent une approbation avant d’être programmées. Voyez [Relecture et approbation](/review#policy).
 
@@ -44,6 +44,16 @@ La liste indique pour chaque clé si elle **peut programmer et publier des publi
 ### Webhooks [#webhooks]
 
 Sous **Webhooks**, les propriétaires et les administrateurs ajoutent les adresses que Peal appelle quand il se passe quelque chose dans l’espace de travail, 10 au plus : chacune a les événements qu’elle veut recevoir, une description, et un secret de signature qui s’affiche une seule fois, juste après sa création ou son renouvellement. Chaque point de terminaison garde 30 jours un journal de ses livraisons, d’où une livraison peut être renvoyée, et accepte un événement de test. [Webhooks](/webhooks) liste les événements, et dit comment vérifier une livraison. L’équipe qui agit à la place d’un membre ne peut pas changer les webhooks.
+
+### Le fournisseur d’images de l’assistant [#image-provider]
+
+Sous **Assistant**, les propriétaires et les administrateurs (`assistant:configure`, qui peut aussi être donné à une [clé d’API](#api-keys) ou à une [clé partenaire](/embedding#account)) utilisent le fournisseur d’images de l’espace de travail, pour que les [images que crée l’assistant](/media#generate) viennent de votre compte chez lui plutôt que du modèle de l’instance :
+
+- **Adresse** : l’adresse de base d’un point d’accès qui parle l’API d’images d’OpenAI, celle à laquelle Peal ajoute `/images/generations`, par exemple `https://images.example.com/v1`. Beaucoup de fournisseurs en proposent une, dite « compatible OpenAI » ; Peal lui envoie une seule forme de requête, `{ model, n, prompt, size }`, et lit une image en base64 ou à une adresse. Peal ne promet pas qu’un fournisseur donné l’accepte. L’adresse doit être en HTTPS sur le port par défaut, sur un hôte public, sans nom d’utilisateur, mot de passe, requête ni fragment.
+- **Modèle** : le modèle de votre fournisseur, tel que sa documentation le nomme.
+- **Clé** : la clé de votre compte chez le fournisseur, envoyée comme jeton porteur. Peal la garde chiffrée, pour cet espace de travail et l’origine de cette adresse seulement, ne la montre plus jamais et ne l’écrit jamais dans ses journaux. Une clé enregistrée s’affiche comme enregistrée et est gardée tant que vous n’en saisissez pas une autre ; déplacer l’adresse sur un autre hôte la redemande, car Peal n’envoie jamais une clé à une adresse pour laquelle elle n’a pas été donnée.
+
+Une fois enregistré, les descriptions d’images de l’espace de travail partent à cette adresse avec cette clé, et le modèle de Peal ne leur est jamais demandé, même quand votre fournisseur refuse. Ses images ne coûtent aucune des demandes à l’assistant de l’espace de travail, quel que soit l’abonnement, gratuit et essai compris, et occupent toujours le stockage de l’abonnement. Peal n’appelle pas le fournisseur à l’enregistrement : la première image dit si les réglages fonctionnent. Quand le fournisseur refuse la clé, le compte, le modèle ou l’adresse, l’image n’est pas créée et la fenêtre le dit ; quand les clés de l’instance changent et que la clé enregistrée ne peut plus être lue, la page la redemande. **Retirer**, qui demande d’abord, supprime la clé : les images viennent de nouveau du modèle de l’instance, s’il en a un. Peal refuse, en toutes lettres, une adresse qui n’est pas en HTTPS (`notHttps`), contient des identifiants (`credentials`), une requête ou un fragment (`queryOrFragment`), est trop longue (`tooLong`) ou n’est pas une adresse (`malformed`), ou dont l’hôte n’est pas public (`notPublic`) ou ne se résout pas (`unknownHost`) ; un serveur dont l’opérateur n’a pas défini les clés qui chiffrent les secrets ne garde aucune clé (`AssistantSecretsNotConfigured`). La [ligne de commande](/cli#assistant) a `peal assistant image-provider` ; aucun outil MCP ne le lit ni ne le règle, car une clé saisie dans une conversation atteint un modèle.
 
 ### Le journal d’activité [#activity]
 

@@ -77,3 +77,34 @@
   Bytes the library does not take are `ImageFailed` `unusableAnswer`, and
   count. Never log or trace a prompt, an image or a provider's error;
   `ImageFailed` carries no cause.
+- A workspace may bring its own image provider (`ImageProviders`,
+  `assistant.image_providers`, one row a workspace): an address
+  (`checkProviderAddress`: HTTPS, HTTP outside production, no credentials,
+  query or fragment, 2,048 characters, stored without its final slashes),
+  a model (one line, `providerModelPattern`) and a key, sealed through the
+  `ProviderSecrets` port on the channels context's `TokenCipher`
+  (`CipherProviderSecrets`), bound to `assistant:<workspace>:<origin of
+  the address>`: a row moved to another origin or workspace opens without
+  its key (`keyUnreadable`), so a key never reaches a host it was not
+  typed for. No crypto here. Saving checks the address with the outbound
+  guard once (`ProviderAddressCheck`), never calls the provider, and keeps
+  the stored key only while the origin stays (`ImageProviderKeyRequired`
+  otherwise); without a keyring nothing is stored
+  (`ProviderSecretsNotConfigured`, 503). `assistant:configure` (owners,
+  admins, keys and partner keys given it; withheld from staff
+  impersonating) reads, sets and removes it; no MCP tool does.
+- With a provider, `generateImage` asks `OwnImageModel` only
+  (`openai-compatible-own-image-model.ts`, the same request and answer
+  reading as the server's adapter, `images-api.ts`): through
+  `publicHttpClientWith` (the guard on every call, no redirect, the answer
+  bounded), with the same slots and storage check, and reads and counts
+  nothing of `AssistantAllowance` or `AssistantUsage`, on any plan. Never
+  the server's `ImageModel`, not even when it fails, nor with a key that no
+  longer opens (`ImageProviderRefused` `keyUnreadable`). 401 to 404 and an
+  address the guard refuses are `ImageProviderRefused`, with no state: the
+  next call tries again. Its logs and span say `workspace`, the status and
+  the kind of failure: never the host, the model, the prompt or the key.
+  The status answers `images.source` (`workspace`, `server` or null), and
+  `requestCost` 0 for the workspace's own. Exports give the address, the
+  model and the date (`UsageRecords.exportImageProvider`), never the key;
+  erasing a workspace deletes the row, closing an account clears `set_by`.
