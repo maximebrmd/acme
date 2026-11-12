@@ -116,7 +116,9 @@ describe("the composer's comforts", { serial: true }, () => {
     // Asked a second after the last change, from the server's own check.
     await expect(previews.getByText(`${text}🚀`)).toHaveCount(handles.length);
     await expect(
-      previews.getByText("Each platform lays the post out its own way.")
+      previews.getByText("Each platform lays the post out its own way.", {
+        exact: false,
+      })
     ).toBeVisible();
   });
 
