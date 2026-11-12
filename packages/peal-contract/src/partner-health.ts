@@ -31,8 +31,9 @@ export type CustomerHealth = typeof CustomerHealthSchema.Type;
  */
 export const PartnerHealthAccountSchema = Schema.Struct({
   // Whether its workspaces schedule and publish nothing, as they hold
-  // more channels together than the plan allows; null on a server that
-  // does not bill.
+  // more channels together than the plan allows (with no customer yet,
+  // the home workspace's own standing); null on a server that does not
+  // bill.
   overPlan: Schema.NullOr(Schema.Boolean),
 }).annotate({ identifier: "PartnerHealthAccount" });
 

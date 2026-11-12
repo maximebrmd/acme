@@ -19,7 +19,6 @@ import {
   PartnerKeyIdSchema,
 } from "#workspace/domain/partner-id.ts";
 import { PartnerKeyPrincipal } from "#workspace/domain/partner-key-principal.ts";
-import { partnerKeyPermissions } from "#workspace/domain/partner-key.ts";
 import { Partner } from "#workspace/domain/partner.ts";
 
 const home = WorkspaceIdSchema.make("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d");
@@ -72,7 +71,7 @@ const asked = Ref.makeUnsafe<readonly string[]>([]);
 const askedOf = (source: string, ids: readonly WorkspaceId[]) =>
   Ref.update(asked, (all) => [...all, `${source}:${ids.join(",")}`]);
 
-const healthWith = (bills: boolean) =>
+const healthWith = (bills: boolean, customers = [busy, quiet]) =>
   PartnerHealth.layer.pipe(
     Layer.provide(
       Layer.mergeAll(
@@ -89,9 +88,12 @@ const healthWith = (bills: boolean) =>
             Effect.succeed(
               Option.isNone(request.before)
                 ? {
-                    next: Option.some("page-2"),
-                    total: 3,
-                    workspaces: [busy, quiet],
+                    next:
+                      customers.length === 0
+                        ? Option.none()
+                        : Option.some("page-2"),
+                    total: customers.length,
+                    workspaces: customers,
                   }
                 : { next: Option.none(), total: 3, workspaces: [] }
             ),
@@ -126,8 +128,16 @@ const keyWith = (
     scopes,
   });
 
+const ownerPermissions: readonly Permission[] = [
+  "partner:read",
+  "channel:read",
+  "post:read",
+  "post:approve",
+  "engagement:read",
+];
+
 const owner = new Actor({
-  permissions: ["partner:read"],
+  permissions: ownerPermissions,
   subject: {
     _tag: "user",
     impersonatedBy: Option.none(),
@@ -187,7 +197,7 @@ describe(PartnerHealth, () => {
           Option.some({ overPlan: Option.some(true) })
         );
         assert.deepStrictEqual(page.next, Option.some("page-2"));
-        assert.strictEqual(page.total, 3);
+        assert.strictEqual(page.total, 2);
         // The home workspace is no customer: no source is asked about it.
         assert.isFalse(
           (yield* Ref.get(asked)).some((call) => call.includes(home))
@@ -267,7 +277,7 @@ describe(PartnerHealth, () => {
   );
 
   it.effect(
-    "shows the home workspace's people every section a partner key could hold",
+    "shows the home workspace's people the sections their own permissions there read, and never that they may approve",
     () =>
       Effect.gen(function* member() {
         const page = yield* PartnerHealth.use((health) =>
@@ -279,10 +289,48 @@ describe(PartnerHealth, () => {
         assert.isDefined(first);
         assert.isTrue(Option.isSome(first.channels));
         assert.isTrue(Option.isSome(first.inbox));
+        // They are members of no customer's workspace: nothing to approve.
         assert.deepStrictEqual(
           first.posts.pipe(Option.map(({ mayApprove }) => mayApprove)),
-          Option.some(partnerKeyPermissions.includes("post:approve"))
+          Option.some(false)
         );
+
+        // Staff acting as the owner, or a key given partner:read alone,
+        // read what they hold, as the people's overview gives it.
+        const narrow = yield* PartnerHealth.use((health) =>
+          health.forMember(
+            new Actor({
+              permissions: ["partner:read", "channel:read"],
+              subject: owner.subject,
+              workspaceId: home,
+            }),
+            firstPage
+          )
+        ).pipe(Effect.provide(healthWith(true)));
+
+        for (const workspace of narrow.workspaces) {
+          assert.isTrue(Option.isSome(workspace.channels));
+          assert.isTrue(Option.isNone(workspace.posts));
+          assert.isTrue(Option.isNone(workspace.inbox));
+        }
+      })
+  );
+
+  it.effect(
+    "answers the home workspace's own standing for an account with no customer yet",
+    () =>
+      Effect.gen(function* lonely() {
+        yield* Ref.set(asked, []);
+
+        const page = yield* PartnerHealth.use((health) =>
+          health.forKey(keyWith(["post:read"]), firstPage)
+        ).pipe(Effect.provide(healthWith(true, [])));
+
+        assert.deepStrictEqual(
+          page.account,
+          Option.some({ overPlan: Option.some(true) })
+        );
+        assert.deepStrictEqual(yield* Ref.get(asked), [`overPlan:${home}`]);
       })
   );
 });

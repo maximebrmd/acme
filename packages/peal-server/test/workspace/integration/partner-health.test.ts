@@ -3,7 +3,7 @@
 // it holds the permission, the home workspace's people read the same, and
 // a page costs the same number of statements whatever its size.
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer, Schema, Tracer } from "effect";
+import { Config, Effect, Layer, Schema, Tracer } from "effect";
 import { SqlClient } from "effect/sql";
 import { PartnerHealthSchema } from "peal-contract";
 
@@ -12,8 +12,12 @@ import { commandLineToken } from "#test/workspace/support.ts";
 import {
   apiKeyOf,
   bodyOf,
+  confirmedAccount,
+  cookiesOf,
+  makeAdmin,
   MigratedSqlLive,
   signedUpUnconfirmed,
+  signIn,
   TestApp,
   unconfirmedEmails,
   workspaceOf,
@@ -128,7 +132,7 @@ layer(HealthLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.deepStrictEqual(answered.account, { overPlan: null });
           assert.notInclude(JSON.stringify(answered), home);
 
-          // The home workspace's owner reads the same.
+          // The home workspace's owner reads the same figures.
           const asMember = yield* bodyOf(
             HealthJsonSchema,
             yield* app.request(`/api/workspaces/${home}/partner/overview`, {
@@ -136,7 +140,18 @@ layer(HealthLive, { excludeTestServices: true, timeout: "180 seconds" })(
             })
           );
 
-          assert.deepStrictEqual(asMember, answered);
+          // The same, but that the owner approves nothing in a customer's
+          // workspace, where they are no member.
+          assert.deepStrictEqual(asMember, {
+            ...answered,
+            workspaces: answered.workspaces.map((customer) => ({
+              ...customer,
+              posts:
+                customer.posts === null
+                  ? null
+                  : { ...customer.posts, mayApprove: false },
+            })),
+          });
 
           yield* sql`DELETE FROM publishing.posts WHERE workspace_id = ${newer.id}`;
         })
@@ -289,6 +304,77 @@ layer(HealthLive, { excludeTestServices: true, timeout: "180 seconds" })(
     );
 
     it.effect(
+      "gives the home workspace's people only the sections they hold there, as the people's overview does",
+      () =>
+        Effect.gen(function* member() {
+          const app = yield* TestApp;
+          const { home, owner } = yield* partnerOf("health-member");
+          const { key } = yield* keyOf(owner, home);
+
+          yield* customerOf(key, "Member's customer", "member");
+
+          const path = `/api/workspaces/${home}/partner/overview`;
+
+          const asOwner = yield* bodyOf(
+            HealthJsonSchema,
+            yield* app.request(path, { headers: { cookie: owner.cookies } })
+          );
+
+          assert.deepStrictEqual(asOwner.workspaces[0]?.inbox, {
+            unanswered: 0,
+          });
+          // A member of no customer's workspace approves nothing there.
+          assert.isFalse(asOwner.workspaces[0]?.posts?.mayApprove);
+
+          // A key of the home workspace given partner:read alone.
+          const narrowKey = (yield* apiKeyOf(owner, home, ["partner:read"]))
+            .key;
+
+          const asKey = yield* bodyOf(
+            HealthJsonSchema,
+            yield* app.request(path, { headers: bearer(narrowKey) })
+          );
+
+          assert.deepStrictEqual(
+            asKey.workspaces.map(({ channels, inbox, posts }) => [
+              channels,
+              inbox,
+              posts,
+            ]),
+            [[null, null, null]]
+          );
+
+          // Staff acting as the owner read no inbox, as on every page.
+          const staff = yield* confirmedAccount("health-staff");
+
+          yield* makeAdmin(staff.id);
+
+          const started = yield* app.request(
+            `/api/admin/users/${owner.id}/impersonate`,
+            {
+              body: { reason: "Synthetic support request" },
+              headers: {
+                cookie: yield* signIn(staff.email),
+                "user-agent": "Synthetic browser",
+              },
+            }
+          );
+
+          assert.strictEqual(started.status, 204);
+
+          const asStaff = yield* bodyOf(
+            HealthJsonSchema,
+            yield* app.request(path, {
+              headers: { cookie: cookiesOf(started) },
+            })
+          );
+
+          assert.isNull(asStaff.workspaces[0]?.inbox);
+          assert.isNotNull(asStaff.workspaces[0]?.channels);
+        })
+    );
+
+    it.effect(
       "reads a page of 100 customers in as many statements as a page of 10",
       () =>
         Effect.gen(function* bounded() {
@@ -329,3 +415,88 @@ layer(HealthLive, { excludeTestServices: true, timeout: "180 seconds" })(
     );
   }
 );
+
+const stripeMockUrl = Config.String("STRIPE_MOCK_URL").pipe(
+  Config.withDefault("http://127.0.0.1:12111")
+);
+
+// A server that bills, against stripe-mock: the account's standing is read.
+const BillingHealthLive = Layer.mergeAll(
+  Layer.unwrap(
+    Effect.gen(function* billingApp() {
+      return TestApp.layerWith({
+        ...unconfirmedEmails,
+        PEAL_PARTNER_SELF_SERVICE: "true",
+        STRIPE_API_URL: yield* stripeMockUrl,
+        STRIPE_SECRET_KEY: "sk_test_synthetic_partner_health",
+        STRIPE_WEBHOOK_SECRET: "whsec_synthetic_partner_health",
+      });
+    })
+  ),
+  MigratedSqlLive
+);
+
+layer(BillingHealthLive, {
+  excludeTestServices: true,
+  timeout: "180 seconds",
+})("a partner's customers' health on a server that bills", (it) => {
+  it.effect(
+    "says the account is over its plan when its pool holds more channels than the free plan, on the first page alone",
+    () =>
+      Effect.gen(function* overPlan() {
+        const app = yield* TestApp;
+        const { home, owner } = yield* partnerOf("health-billing");
+        const { key } = yield* keyOf(owner, home);
+
+        // No customer yet: the home workspace's own standing.
+        yield* seedChannel(home, "@home-one@example.test");
+        yield* seedChannel(home, "@home-two@example.test");
+
+        const within = yield* bodyOf(
+          HealthJsonSchema,
+          yield* app.request("/api/partner/overview", { headers: bearer(key) })
+        );
+
+        assert.deepStrictEqual(within.account, { overPlan: false });
+
+        yield* seedChannel(home, "@home-three@example.test");
+        yield* seedChannel(home, "@home-four@example.test");
+
+        const lonelyOver = yield* bodyOf(
+          HealthJsonSchema,
+          yield* app.request("/api/partner/overview", { headers: bearer(key) })
+        );
+
+        assert.deepStrictEqual(lonelyOver.account, { overPlan: true });
+
+        // With customers, as one of them stands: the pool's four channels
+        // against the free plan's three.
+        const first = yield* customerOf(key, "First customer", "first");
+
+        yield* customerOf(key, "Second customer", "second");
+
+        const page = yield* bodyOf(
+          HealthJsonSchema,
+          yield* app.request("/api/partner/overview?limit=1", {
+            headers: bearer(key),
+          })
+        );
+
+        assert.deepStrictEqual(page.account, { overPlan: true });
+
+        const next = yield* bodyOf(
+          HealthJsonSchema,
+          yield* app.request(
+            `/api/partner/overview?limit=1&before=${encodeURIComponent(page.next ?? "")}`,
+            { headers: bearer(key) }
+          )
+        );
+
+        assert.isNull(next.account);
+        assert.deepStrictEqual(
+          next.workspaces.map(({ id }) => id),
+          [first.id]
+        );
+      })
+  );
+});

@@ -229,7 +229,7 @@ export class PartnerAccountApi extends HttpApiGroup.make("partnerAccount")
       success: PartnerHealthSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `${partnerHealthDescription} For the home workspace's owners and admins: the sections are those a partner key may read, as the workspaces have no member of their own. Needs partner:read.`,
+        description: `${partnerHealthDescription} For the home workspace's people: each section only where the caller holds its permission in the home workspace (\`channel:read\`, \`post:read\`, \`engagement:read\`), as the overview across their workspaces gives it, so staff acting as a member read no inbox; \`mayApprove\` is always false, as they are members of no customer's workspace. Needs partner:read.`,
         summary: "See which of the partner's customers need attention",
       })
     ),

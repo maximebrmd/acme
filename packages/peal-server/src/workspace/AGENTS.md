@@ -416,10 +416,12 @@ The staff context follows these rules too. What the law has a host keep is in
   workspace: a page of `PartnerWorkspaces.listingOf` (its order and
   cursor, the home workspace left out) with the overview's own sources
   (`OverviewSources`, one read each for the page), each section only
-  where the key holds its permission (`sectionsHeld`), a member reading
-  what `partnerKeyPermissions` holds, and on the first page alone the
-  account's `overPlan`, asked of one customer (they share the pool's plan
-  and channels and have no member), none when the server does not bill
+  where the key holds its permission (`sectionsHeld`), a member where they
+  hold it in the home workspace (`sectionsFor`, as the people's overview:
+  staff acting as one read no inbox) and never `mayApprove`, and on the
+  first page alone the account's `overPlan`, asked of one customer (they
+  share the pool's plan and channels and have no member), or of the home
+  workspace while there is none, none when the server does not bill
   (`OverviewSources.bills`). No filter on what needs attention: it would
   read every workspace; a product pages through.
 - `PartnerWorkspaces` creates, lists (counts, `externalId`, `name`,

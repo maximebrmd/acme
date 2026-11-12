@@ -1,16 +1,15 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { Actor, Permission } from "#shared/domain/access.ts";
+import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { CustomerWorkspace } from "#workspace/domain/customer-workspace.ts";
 import { MissingPartnerScope } from "#workspace/domain/missing-partner-scope.ts";
-import { sectionsHeld } from "#workspace/domain/overview.ts";
+import { sectionsFor, sectionsHeld } from "#workspace/domain/overview.ts";
 import type { OverviewSections } from "#workspace/domain/overview.ts";
 import type { PartnerKeyPrincipal } from "#workspace/domain/partner-key-principal.ts";
-import { partnerKeyPermissions } from "#workspace/domain/partner-key.ts";
 import type { Partner } from "#workspace/domain/partner.ts";
 
 import type { InvalidWorkspaceCursor } from "./invalid-workspace-cursor.ts";
@@ -90,9 +89,10 @@ const figureOf = <A>(
  * reconnect, posts that failed, threads waiting, for a product's backend
  * with its partner key (`workspaces:read`), each section only where the
  * key holds the permission that reads it (`channel:read`, `post:read`,
- * `engagement:read`), or for the home workspace's owners and admins
- * (`partner:read`), who read what a partner key could hold, as the
- * workspaces have no member. A page of `PartnerWorkspaces.listingOf`, its
+ * `engagement:read`), or for the home workspace's people (`partner:read`),
+ * each section only where they hold its permission there, as the people's
+ * overview gives it, and never that they may approve, as they are members
+ * of no customer's workspace. A page of `PartnerWorkspaces.listingOf`, its
  * order and cursor, the home workspace left out, its figures from the
  * overview's set-based sources: never a workspace of another partner.
  */
@@ -149,10 +149,13 @@ export class PartnerHealth extends Context.Service<
             channels: askIf(sections.channels, ids, sources.channels),
             // Its customers have no member and share the pool's plan and
             // channels: one of them stands for every one, the home
-            // workspace's members aside. No customer, nothing held back.
+            // workspace's members aside. With no customer yet, the home
+            // workspace's own standing, which its pool alone holds.
             overPlan:
-              first && sources.bills && ids.length > 0
-                ? sources.overPlan(ids.slice(0, 1))
+              first && sources.bills
+                ? sources.overPlan(
+                    ids.length > 0 ? ids.slice(0, 1) : [partner.workspaceId]
+                  )
                 : Effect.succeed<ReadonlySet<WorkspaceId>>(new Set()),
             posts: askIf(sections.posts, ids, (asked) =>
               sources.posts(asked, now)
@@ -234,11 +237,15 @@ export class PartnerHealth extends Context.Service<
             return yield* new PartnerNotFound();
           }
 
-          // What a partner key could hold: the workspaces have no member
-          // whose role would say.
-          const held: readonly Permission[] = partnerKeyPermissions;
-
-          return yield* pageOf(partner.value, sectionsHeld(held), request);
+          // What the person may read in the home workspace, as the
+          // people's overview gives it: staff acting as them, or a key or
+          // an application given less, read less. They are members of no
+          // customer's workspace, so they approve nothing there.
+          return yield* pageOf(
+            partner.value,
+            { ...sectionsFor(actor), mayApprove: false },
+            request
+          );
         }
       );
 
