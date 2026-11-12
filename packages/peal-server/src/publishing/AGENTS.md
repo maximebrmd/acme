@@ -898,3 +898,49 @@ publishing's schema, naming nobody: each goes with its workspace
   alone: the next run ends them `queueGone`. Erasure deletes rules before
   posts; `forgetAuthor` clears `started_by`, and the next run ends the
   rule.
+- A feed (`domain/feed.ts`, `Feeds`, `publishing.feeds`) is a web feed a
+  workspace follows: RSS 2.0, Atom 1.0 or JSON Feed 1.1, told from the
+  body (never the content type), read through `FeedSource`
+  (`infrastructure/feeds/http-feed-source.ts`: `publicHttpClientWith`, a
+  byte past `maxFeedBytes` read so a longer answer is `tooLarge`, three
+  redirects followed here, each through the guard, 20 seconds for the
+  whole read, no credentials, its spans off and logs by host only, the
+  validators of the last read sent back, a 304 `notModified`). XML is
+  parsed by sax in strict mode (`feeds/xml-tree.ts`): it never expands an
+  entity a DOCTYPE declares nor fetches an external one, an unknown entity
+  fails the parse, and depth and element bounds stop a hostile document;
+  each format's mapping is a pure function tested on fixtures. What an
+  item says is made storable (`storableLine`, `textOfHtml` then
+  `storableText`), its addresses absolute and HTTP(S) only, and its
+  identity kept as its SHA-256 (`feed_items`, unique per feed), never the
+  text: no log, trace, notice, webhook or cluster table holds what a feed
+  says. Adding a feed, moving it or resuming it reads it at once and
+  records what it holds as `skipped` `existing`, and `since` keeps an
+  item dated before from being made. Each read of an address a member
+  gives takes one of `feedReadsPerHour` (`FeedReads`, `feed_reads`).
+- `Feeds.poll` (cron `publishing.feeds`, every ten minutes from 6) pages
+  the due feeds by `(next_check_at, id)`, four at once, starts no read
+  past `runBudget` (eight minutes) and says what it left; it takes each
+  feed with a lease (`leaseFeed`: `next_check_at` moved `readLease` on
+  under `FOR UPDATE SKIP LOCKED`), so no transaction is held over a read.
+  The starter is resolved as a recycling rule's is (`RecyclingActors`,
+  `mayChangeStarted` in `started-by.ts`): gone stops the feed
+  `starterGone`, locked out keeps the last validators so the items come
+  back. New items (`newItems`: unseen, oldest first, `maxItemsPerRun` a
+  run, `maxItemsPerDay` a UTC day, the rest `tooMany`) become, in draft
+  mode, a draft (`PostDrafts.create`, in one transaction with the item's
+  record; a channel gone makes a draft for none), in queue mode a post
+  sent by `PostScheduling.send` after its item is recorded `claimed` in a
+  statement of its own, keyed `feed:<feed id>:<digest>` (key and
+  fingerprint), so a run that finds a claim younger than `claimLifetime`
+  (23 hours) sends it again and is answered the first post; an older claim
+  is `abandoned`. What `send` refuses becomes a draft (`heldBack` with the
+  reason); a queue gone does too, and stops the feed `queueGone`. A failed
+  read postpones the feed (the host's `Retry-After`, else as long as it
+  has failed, an hour to a day); a 410 stops it `gone`, seven days of
+  failing `unreachable` or `notAFeed`. Stopping tells `FeedStopped`
+  (`FeedNotices`, keyed by the feed and when it stopped) in the
+  transaction that stops it; the cron sets `peal.publishing.feeds.overdue`,
+  which an alert watches. A feed keeps its 500 newest items: the
+  idempotency retention's run prunes the rest and read counts a day old.
+  Erasure deletes feeds before posts; `forgetAuthor` clears `started_by`.
