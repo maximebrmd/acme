@@ -18,6 +18,17 @@
   roles:
     - peal_preflight
   tasks:
+    # A shared host's admin account is the owner's, with keys and a sudo
+    # rule that the host's other sites rely on, which the tasks below would
+    # replace: uptime.yml runs there as that account, with no bootstrap.
+    - name: Refuse to bootstrap a shared host
+      ansible.builtin.assert:
+        that: not (uptime_shared_host | default(false) | bool)
+        fail_msg: >-
+          {{ inventory_hostname }} is a shared host (uptime_shared_host): it
+          keeps its own admin account; run uptime.yml on it alone.
+        quiet: true
+
     # Locked password: the account logs in with keys only.
     - name: Create the admin user
       ansible.builtin.user:
