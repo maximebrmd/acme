@@ -9,7 +9,9 @@ import { UndoRedo } from "@tiptap/extensions";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+
+import { pasteOf } from "#posts/paste.ts";
 
 // A Tiptap editor that holds plain text only: paragraphs of text, no marks,
 // no nodes for mentions or tags. Each line is a paragraph, so the text reads
@@ -77,6 +79,11 @@ interface PlainTextEditorProps {
   readonly id: string;
   readonly labelledBy: string;
   readonly onChange: (text: string) => void;
+  /**
+   * Takes files pasted into the editor, and says whether it did: then no
+   * text is pasted. A paste without files is the editor's.
+   */
+  readonly onPasteFiles?: ((files: readonly File[]) => boolean) | undefined;
   readonly placeholder: string;
   readonly readOnly?: boolean;
   /** The text the editor starts with; later changes come from the user. */
@@ -88,6 +95,7 @@ export const PlainTextEditor = ({
   id,
   labelledBy,
   onChange,
+  onPasteFiles,
   placeholder,
   readOnly = false,
   value,
@@ -106,10 +114,30 @@ export const PlainTextEditor = ({
     role: "textbox",
   };
 
+  // The editor keeps the handlers it was made with: this one reads the
+  // latest props.
+  const pasted = useRef({ onPasteFiles, readOnly });
+
+  useEffect(() => {
+    pasted.current = { onPasteFiles, readOnly };
+  }, [onPasteFiles, readOnly]);
+
   const editor = useEditor({
     content: documentOf(value),
     editable: !readOnly,
-    editorProps: { attributes },
+    editorProps: {
+      attributes,
+      handlePaste: (_view, event) => {
+        const paste = pasteOf(event.clipboardData);
+        const { current } = pasted;
+
+        return (
+          paste._tag === "files" &&
+          !current.readOnly &&
+          (current.onPasteFiles?.(paste.files) ?? false)
+        );
+      },
+    },
     extensions,
     // Rendered on the server too: the editor mounts in the browser.
     immediatelyRender: false,

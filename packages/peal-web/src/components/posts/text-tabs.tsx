@@ -17,6 +17,8 @@ const allChannels = "all";
 
 interface TextTabsProps {
   readonly onOverride: (channelId: string, text: string | undefined) => void;
+  /** Takes files pasted into a text, as `PlainTextEditor`'s. */
+  readonly onPasteFiles?: ((files: readonly File[]) => boolean) | undefined;
   readonly onText: (text: string) => void;
   readonly overrides: Readonly<Record<string, string>>;
   readonly readOnly: boolean;
@@ -27,6 +29,7 @@ interface TextTabsProps {
 interface OverrideEditorProps {
   readonly channel: Channel;
   readonly onOverride: TextTabsProps["onOverride"];
+  readonly onPasteFiles: TextTabsProps["onPasteFiles"];
   readonly readOnly: boolean;
   readonly value: string;
 }
@@ -37,6 +40,7 @@ interface OverrideEditorProps {
 const OverrideEditor = ({
   channel,
   onOverride,
+  onPasteFiles,
   readOnly,
   value,
 }: OverrideEditorProps) => {
@@ -60,6 +64,7 @@ const OverrideEditor = ({
         onChange={(text) => {
           onOverride(channel.id, text);
         }}
+        onPasteFiles={onPasteFiles}
       />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p id={`${labelId}-hint`} className="text-muted-foreground text-xs">
@@ -86,6 +91,7 @@ const OverrideEditor = ({
 // text of its own there.
 export const TextTabs = ({
   onOverride,
+  onPasteFiles,
   onText,
   overrides,
   readOnly,
@@ -126,6 +132,7 @@ export const TextTabs = ({
             readOnly={readOnly}
             value={text}
             onChange={onText}
+            onPasteFiles={onPasteFiles}
           />
           <p id="text-hint" className="text-muted-foreground text-xs">
             {t("textHint")}
@@ -136,6 +143,7 @@ export const TextTabs = ({
         <TabsContent key={channel.id} value={channel.id}>
           <OverrideEditor
             channel={channel}
+            onPasteFiles={onPasteFiles}
             onOverride={onOverride}
             readOnly={readOnly}
             value={overrides[channel.id] ?? ""}

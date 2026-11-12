@@ -17,11 +17,13 @@ import { Label } from "peal-ui/components/label";
 import { Skeleton } from "peal-ui/components/skeleton";
 import { Textarea } from "peal-ui/components/textarea";
 import { useId, useRef, useState } from "react";
+import type { Ref } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "sonner";
 
 import { MediaThumbnail } from "#components/media/media-thumbnail.tsx";
 import { MediaUploader } from "#components/media/media-uploader.tsx";
+import type { MediaUploaderHandle } from "#components/media/media-uploader.tsx";
 import { useFileSize } from "#components/media/use-file-size.ts";
 import { MediaPicker } from "#components/posts/media-picker.tsx";
 import { mediaItem } from "#posts/attached-media.ts";
@@ -230,6 +232,8 @@ interface MediaAttachmentsProps {
    * the options it has there (`showsAltText`: a story keeps none).
    */
   readonly platforms: readonly Platform[];
+  /** Where files pasted into the post's texts are handed to the uploader. */
+  readonly uploader?: Ref<MediaUploaderHandle> | undefined;
   readonly workspaceId: string;
 }
 
@@ -253,6 +257,7 @@ export const MediaAttachments = ({
   editable = !disabled,
   onChange,
   platforms,
+  uploader,
   workspaceId,
 }: MediaAttachmentsProps) => {
   const t = useTranslations("PostMedia");
@@ -385,6 +390,7 @@ export const MediaAttachments = ({
           ) : null}
           {canUpload ? (
             <MediaUploader
+              ref={uploader}
               disabled={disabled || room === 0}
               workspaceId={workspaceId}
               onUploaded={handleUploaded}

@@ -21,6 +21,7 @@ import {
 import { useId, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
+import type { MediaUploaderHandle } from "#components/media/media-uploader.tsx";
 import { CharacterCounters } from "#components/posts/character-counters.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PlainTextEditor } from "#components/posts/plain-text-editor.tsx";
@@ -80,6 +81,11 @@ const PartEditor = ({
   const attached = useAttachedMedia(workspaceId, part.media);
   const named = { position };
   const locked = disabled || !editable;
+  // Files pasted into the part's texts join the part's own media.
+  const uploader = useRef<MediaUploaderHandle>(null);
+
+  const pasteFiles = (files: readonly File[]) =>
+    uploader.current?.add(files) ?? false;
 
   const change = (changes: Partial<Omit<PartDraft, "key">>) => {
     onParts((current) => updatePart(current, part.key, changes));
@@ -177,6 +183,7 @@ const PartEditor = ({
         onChange={(text) => {
           change({ text });
         }}
+        onPasteFiles={pasteFiles}
       />
       <p id={`${id}-hint`} className="sr-only">
         {t("textHint", named)}
@@ -209,6 +216,7 @@ const PartEditor = ({
                   ),
                 });
               }}
+              onPasteFiles={pasteFiles}
             />
             <p
               id={`${id}-own-${channel.id}-hint`}
@@ -277,6 +285,7 @@ const PartEditor = ({
           platforms={selected.flatMap(({ id: channelId, platform }) =>
             showsAltText(platform, optionsOn(channelId)) ? [platform] : []
           )}
+          uploader={uploader}
           workspaceId={workspaceId}
           onChange={changeMedia}
         />

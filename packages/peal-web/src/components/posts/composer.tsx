@@ -23,13 +23,14 @@ import {
   CardTitle,
 } from "peal-ui/components/card";
 import { Separator } from "peal-ui/components/separator";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { canGenerateImages } from "#assistant/permissions.ts";
 import { channelName } from "#channels/channel-name.ts";
 import { PostMetrics } from "#components/analytics/post-metrics.tsx";
 import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
+import type { MediaUploaderHandle } from "#components/media/media-uploader.tsx";
 import { AiLabelsNotice } from "#components/posts/ai-labels-notice.tsx";
 import { AssistantMenu } from "#components/posts/assistant-menu.tsx";
 import { ChannelPicker } from "#components/posts/channel-picker.tsx";
@@ -343,6 +344,8 @@ export const Composer = ({
   const content = contentOf(text, overrides, channelIds, media, parts);
 
   const attached = useAttachedMedia(workspaceId, media);
+  // Files pasted into the post's texts are uploaded and attached to it.
+  const uploader = useRef<MediaUploaderHandle>(null);
 
   // The kinds of the attached media, which some options follow; unknown,
   // so every option shows, while one is still being read.
@@ -865,6 +868,7 @@ export const Composer = ({
               text={text}
               overrides={overrides}
               readOnly={locked}
+              onPasteFiles={(files) => uploader.current?.add(files) ?? false}
               onText={setText}
               onOverride={(channelId, own) => {
                 setOverrides((current) =>
@@ -928,6 +932,7 @@ export const Composer = ({
               platforms={selected.flatMap(({ id, platform }) =>
                 showsAltText(platform, optionsOfChannel(id)) ? [platform] : []
               )}
+              uploader={uploader}
               workspaceId={workspaceId}
               onChange={setMedia}
             />
