@@ -46,6 +46,7 @@ export const feedView = (feed: Feed): FeedView => {
 
 /** An item of a feed, never what it says. */
 export const feedItemView = (item: FeedItemRecord): FeedItemView => ({
+  digest: item.digest,
   itemAt: Option.getOrNull(item.itemAt),
   outcome: item.outcome,
   pictureSkipped: Option.getOrNull(item.pictureSkipped),

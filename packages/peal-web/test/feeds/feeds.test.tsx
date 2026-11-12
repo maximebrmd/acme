@@ -78,6 +78,7 @@ describe("a feed", () => {
     expect(english).toContain("Posts on a queue");
     expect(english).toContain("The last read failed: its site failed.");
     expect(french).toContain("Arrêté : son site indique qu’il n’existe plus.");
+    expect(french).not.toContain("Peal réessaie plus tard");
   });
 
   it("lists what became of its items, never what they said", async () => {
@@ -86,6 +87,7 @@ describe("a feed", () => {
       <FeedItemsView
         items={[
           {
+            digest: "a".repeat(64),
             itemAt: null,
             outcome: "heldBack",
             pictureSkipped: "tooLarge",

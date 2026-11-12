@@ -145,6 +145,8 @@ describe("feeds", () => {
             items.items.map(({ outcome, reason }) => [outcome, reason]),
             [["skipped", "existing"]]
           );
+          // Each item is told apart by its identity's digest, never its text.
+          assert.match(items.items[0]?.digest ?? "", /^[0-9a-f]{64}$/u);
 
           const paused = yield* editor.feeds.update({
             params: { ...params, feedId: added.feed.id },

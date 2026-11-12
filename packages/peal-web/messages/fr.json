@@ -3405,7 +3405,6 @@
     }
   },
   "Feeds": {
-    "title": "Flux",
     "description": "Les flux web que suit l’espace de travail (RSS, Atom, JSON Feed), celui d’un blog par exemple : chaque élément qui y paraît après son ajout devient un brouillon qu’une personne termine, ou une publication sur le prochain créneau libre d’une file d’attente, écrite à partir d’un modèle. Ce que contient un flux à son ajout n’est jamais publié.",
     "readOnly": "Vous pouvez lire les flux : les ajouter ou les modifier demande un rôle qui écrit des publications.",
     "listTitle": "Flux",

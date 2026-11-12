@@ -301,6 +301,9 @@ export type FeedPictureSkip = typeof FeedPictureSkipSchema.Type;
 
 /** An item a feed read: never its text, which Peal does not keep. */
 export const FeedItemSchema = Schema.Struct({
+  // The SHA-256 of the item's identity, which tells it apart: never its
+  // text.
+  digest: Schema.String,
   // The date the item gave, if one.
   itemAt: Schema.NullOr(Schema.DateTimeUtc),
   outcome: FeedItemOutcomeSchema,

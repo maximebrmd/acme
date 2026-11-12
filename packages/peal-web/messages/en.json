@@ -3405,7 +3405,6 @@
     }
   },
   "Feeds": {
-    "title": "Feeds",
     "description": "Web feeds the workspace follows (RSS, Atom, JSON Feed), such as a blog’s: each item that appears in one after it was added becomes a draft for a person to finish, or a post on a queue’s next free slot, written from a template. What a feed holds when it is added is never posted.",
     "readOnly": "You may read the feeds: adding or changing them takes a role that writes posts.",
     "listTitle": "Feeds",

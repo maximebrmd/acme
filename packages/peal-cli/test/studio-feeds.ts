@@ -138,6 +138,7 @@ export const studioFeedsOf = (world: FeedsWorld) => {
             return {
               items: [
                 {
+                  digest: "1".repeat(64),
                   itemAt: null,
                   outcome: "made" as const,
                   pictureSkipped: null,
@@ -146,6 +147,7 @@ export const studioFeedsOf = (world: FeedsWorld) => {
                   seenAt: world.now,
                 },
                 {
+                  digest: "2".repeat(64),
                   itemAt: null,
                   outcome: "skipped" as const,
                   pictureSkipped: null,

@@ -85,7 +85,7 @@ export const FeedItemView = ({
               })}
             </p>
           ) : null}
-          {feed.lastFailure === null ? null : (
+          {feed.lastFailure === null || feed.status !== "active" ? null : (
             <p className="text-sm">
               {t("failing", { failure: feed.lastFailure })}
             </p>
@@ -124,10 +124,7 @@ export const FeedItemsView = ({
   ) : (
     <ul aria-label={t("items")} className="flex flex-col gap-1 text-sm">
       {items.map((item) => (
-        <li
-          key={`${DateTime.formatIso(item.seenAt)}-${item.postId ?? ""}-${item.outcome}-${item.reason ?? ""}`}
-          className="text-muted-foreground"
-        >
+        <li key={item.digest} className="text-muted-foreground">
           {t("item", {
             at: format.dateTime(DateTime.toDate(item.seenAt), {
               dateStyle: "medium",
