@@ -26,6 +26,7 @@ import {
   defaultTemplate,
   parseTemplate,
   writtenFrom,
+  writtenTooLong,
 } from "#publishing/domain/feed-template.ts";
 import {
   editFeed,
@@ -980,6 +981,11 @@ export class Feeds extends Context.Service<
         const now = yield* DateTime.now;
 
         if (Option.isNone(text)) {
+          // Longer than a post holds, or nothing at all.
+          const reason: FeedItemReason = writtenTooLong(feed.template, entry)
+            ? "contentRejected"
+            : "empty";
+
           // Kept as skipped, whether a run before claimed it or not.
           yield* store.record(feed.id, [
             {
@@ -988,7 +994,7 @@ export class Feeds extends Context.Service<
               outcome: "skipped",
               pictureSkipped: Option.none(),
               postId: Option.none(),
-              reason: Option.some("empty"),
+              reason: Option.some(reason),
               seenAt: now,
             },
           ]);
@@ -996,7 +1002,7 @@ export class Feeds extends Context.Service<
             feed.id,
             entry.digest,
             "skipped",
-            Option.some("empty"),
+            Option.some(reason),
             Option.none()
           );
 
@@ -1336,12 +1342,19 @@ export class Feeds extends Context.Service<
                 }
 
                 const checked = yield* checkOne(feed, now).pipe(
-                  // A feed that fails for now (the database) is left for
-                  // a later run, and said: ids and codes only.
+                  // A feed that fails for now (the database), or meets a
+                  // bug, is left for a later run, and said: ids and codes
+                  // only. The run goes on with the other feeds.
                   Effect.catchTag("DatabaseError", (failure) =>
                     Effect.logWarning("A feed could not be read", failure).pipe(
                       Effect.annotateLogs({ feedId: feed.id }),
-                      Effect.as(notRead)
+                      Effect.as({ ...notRead, failed: true })
+                    )
+                  ),
+                  Effect.catchDefect((defect) =>
+                    Effect.logError("A feed's run met a defect", defect).pipe(
+                      Effect.annotateLogs({ feedId: feed.id }),
+                      Effect.as({ ...notRead, failed: true })
                     )
                   )
                 );

@@ -166,6 +166,30 @@ describe("a feed's template", () => {
   });
 });
 
+describe("a template's room", () => {
+  it("is refused when its placeholders, filled to the most, would not fit a post", () => {
+    const links = Array.from({ length: 40 }, () => "{link}").join("\n");
+
+    expect(
+      Result.match(parseTemplate(links), {
+        onFailure: ({ reason }) => reason,
+        onSuccess: () => "taken",
+      })
+    ).toBe("tooLong");
+    expect(
+      Result.isSuccess(parseTemplate("{title} {link} {summary}"))
+    ).toBeTruthy();
+  });
+
+  it("writes nothing that would not fit a post", () => {
+    const longLink = `https://blog.example/${"a".repeat(70_000)}`;
+
+    expect(writtenFrom("{link}", entry(1, { link: longLink }))).toStrictEqual(
+      Option.none()
+    );
+  });
+});
+
 describe("which items are new", () => {
   const since = utc("2026-06-15T00:00:00Z");
 

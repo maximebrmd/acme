@@ -3452,7 +3452,7 @@
     "errors": {
       "address": "Peal ne lit pas cette adresse : {reason, select, credentials {elle contient un nom d’utilisateur ou un mot de passe.} malformed {ce n’est pas une adresse valide.} notHttps {seules les adresses HTTPS sur le port par défaut sont lues.} other {son hôte n’est pas sur l’internet public.}}",
       "unreadable": "L’adresse n’a pas pu être lue comme un flux : {reason, select, notAFeed {ce n’est ni du RSS, ni de l’Atom, ni du JSON Feed.} tooLarge {elle dépasse les 2 Mio que lit Peal.} other {elle n’a donné aucune réponse utilisable.}}",
-      "template": "{reason, select, unknownPlaceholder {Le modèle nomme {placeholder} : seuls title, link et summary sont remplacés.} tooLong {Le modèle dépasse 1 000 caractères.} other {Le modèle est vide.}}",
+      "template": "{reason, select, unknownPlaceholder {Le modèle nomme {placeholder} : seuls title, link et summary sont remplacés.} tooLong {Le modèle dépasse 1 000 caractères, ou nomme ses champs si souvent qu’une publication ne pourrait pas les contenir.} other {Le modèle est vide.}}",
       "readsLimited": "L’espace de travail a lu 30 adresses cette heure : réessayez dans {minutes, plural, one {une minute} other {# minutes}}.",
       "tooMany": "L’espace de travail suit {allowed} flux, le maximum permis : supprimez-en un d’abord.",
       "forbidden": "Votre rôle ne le permet pas.",

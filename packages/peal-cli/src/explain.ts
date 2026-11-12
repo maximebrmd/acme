@@ -432,7 +432,7 @@ const reasonOf =
         refused(
           reason === "unknownPlaceholder"
             ? `The template names {${placeholder ?? ""}}: only {title}, {link} and {summary} are replaced. Nothing was changed.`
-            : `The template is ${reason === "empty" ? "empty" : "longer than 1000 characters"}. Nothing was changed.`
+            : `The template is ${reason === "empty" ? "empty" : "longer than 1000 characters, or would write a post longer than a post holds with its placeholders filled to the most"}. Nothing was changed.`
         ),
       FeedUnreadable: ({ reason }) =>
         refused(

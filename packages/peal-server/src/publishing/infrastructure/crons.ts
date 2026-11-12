@@ -122,7 +122,23 @@ export const FeedsCron = ClusterCron.make({
     const at = yield* ClusterCron.CurrentScheduledTime;
     const started = yield* DateTime.now;
     const service = yield* Feeds;
-    const run = yield* service.poll(at);
+
+    // A run that fails still says what is left and late, below.
+    const run = yield* service.poll(at).pipe(
+      Effect.catchCause((cause) =>
+        Effect.logWarning("Reading the feeds failed", cause).pipe(
+          Effect.as({
+            failed: 0,
+            left: 0,
+            made: 0,
+            read: 0,
+            stopped: 0,
+            unfinished: true,
+          })
+        )
+      )
+    );
+
     const ended = yield* DateTime.now;
 
     yield* Metric.update(

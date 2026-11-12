@@ -978,3 +978,30 @@ describe("a feed's retention", () => {
     timeout
   );
 });
+
+describe("a run that meets a broken feed", () => {
+  it.effect(
+    "reads the other feeds all the same, and ends",
+    () =>
+      onServer(
+        Effect.gen(function* survives() {
+          const workspaceId = yield* freshWorkspace;
+          const broken = "https://broken.example/feed.xml";
+
+          yield* serveItems(broken, []);
+          yield* created(workspaceId, { url: broken });
+          yield* serveItems(blog, []);
+          yield* created(workspaceId);
+          yield* serve(broken, { _tag: "dying" });
+          yield* serveItems(blog, [{ n: 1, title: "Still made" }]);
+          yield* later();
+
+          const run = yield* poll;
+
+          assert.isAtLeast(run.failed, 1);
+          assert.lengthOf(yield* postsOf(workspaceId), 1);
+        })
+      ),
+    timeout
+  );
+});

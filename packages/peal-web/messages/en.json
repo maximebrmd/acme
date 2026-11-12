@@ -3452,7 +3452,7 @@
     "errors": {
       "address": "Peal does not read this address: {reason, select, credentials {it carries a user name or a password.} malformed {it is not a valid address.} notHttps {only HTTPS addresses on the default port are read.} other {its host is not on the public internet.}}",
       "unreadable": "The address could not be read as a feed: {reason, select, notAFeed {it is not RSS, Atom or JSON Feed.} tooLarge {it is larger than the 2 MiB Peal reads.} other {it gave no answer Peal could use.}}",
-      "template": "{reason, select, unknownPlaceholder {The template names {placeholder}: only title, link and summary are replaced.} tooLong {The template is longer than 1,000 characters.} other {The template is empty.}}",
+      "template": "{reason, select, unknownPlaceholder {The template names {placeholder}: only title, link and summary are replaced.} tooLong {The template is longer than 1,000 characters, or names its placeholders so often that a post could not hold them.} other {The template is empty.}}",
       "readsLimited": "The workspace read 30 addresses this hour: try again in {minutes, plural, one {a minute} other {# minutes}}.",
       "tooMany": "The workspace follows {allowed} feeds, the most it may: delete one first.",
       "forbidden": "Your role does not allow this.",

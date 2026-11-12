@@ -30,7 +30,9 @@ export interface ServedItem {
 /** What an address answers. */
 export type Served =
   | { readonly _tag: "feed"; readonly items: readonly ServedItem[] }
-  | { readonly _tag: "failing"; readonly failure: FeedReadFailure };
+  | { readonly _tag: "failing"; readonly failure: FeedReadFailure }
+  // A bug of the server's while it reads: a defect.
+  | { readonly _tag: "dying" };
 
 /** A stop as it was told, with the key that names it. */
 export interface ToldStop {
@@ -123,6 +125,10 @@ export const FakeFeeds = Layer.mergeAll(
           yield* Ref.update(reads, (all) => [...all, url]);
 
           const answer = (yield* Ref.get(served)).get(url);
+
+          if (answer?._tag === "dying") {
+            return yield* Effect.die(new Error("A synthetic defect"));
+          }
 
           if (answer === undefined || answer._tag === "failing") {
             return yield* new FeedReadFailed({

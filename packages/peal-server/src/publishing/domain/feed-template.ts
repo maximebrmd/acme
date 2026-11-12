@@ -1,7 +1,10 @@
 import { Option, Result } from "effect";
 
+import { maxFeedUrlLength } from "./feed-address.ts";
 import type { FeedEntry } from "./feed-entry.ts";
 import { FeedTemplateInvalid } from "./feed-template-invalid.ts";
+import { maxFeedTitleLength, maxSummaryLength } from "./feed.ts";
+import { maxPostTextLength } from "./post-text.ts";
 
 /** The longest template a feed keeps, in characters. */
 export const maxTemplateLength = 1000;
@@ -23,6 +26,13 @@ const placeholderPattern = /\{(?<name>[A-Za-z_]\w*)\}/gu;
 const codePointsIn = (text: string): number =>
   text.length - (text.match(/[\u{10000}-\u{10FFFF}]/gu)?.length ?? 0);
 
+// The most each placeholder may write.
+const longest: Readonly<Record<Placeholder, number>> = {
+  link: maxFeedUrlLength,
+  summary: maxSummaryLength,
+  title: maxFeedTitleLength,
+};
+
 const isPlaceholder = (name: string): name is Placeholder =>
   placeholders.some((known) => known === name);
 
@@ -43,6 +53,10 @@ export const parseTemplate = (
     return Result.fail(new FeedTemplateInvalid({ reason: "tooLong" }));
   }
 
+  // What the template writes when every placeholder is filled to the most
+  // an item may give: it must fit a post.
+  let filled = template.length;
+
   for (const match of template.matchAll(placeholderPattern)) {
     const name = match.groups?.["name"] ?? "";
 
@@ -54,29 +68,47 @@ export const parseTemplate = (
         })
       );
     }
+
+    filled += longest[name] - match[0].length;
   }
 
-  return Result.succeed(template);
+  return filled > maxPostTextLength
+    ? Result.fail(new FeedTemplateInvalid({ reason: "tooLong" }))
+    : Result.succeed(template);
 };
 
 const valueOf = (entry: FeedEntry, name: Placeholder): string =>
   Option.getOrElse(entry[name], () => "");
+
+// The template written from the entry, before it is made tidy.
+const filledFrom = (template: string, entry: FeedEntry): string =>
+  template.replaceAll(placeholderPattern, (whole, name: string) =>
+    isPlaceholder(name) ? valueOf(entry, name) : whole
+  );
+
+/**
+ * Whether what the template writes from `entry` is longer than a post
+ * holds: such an item is refused alone, never cut.
+ */
+export const writtenTooLong = (template: string, entry: FeedEntry): boolean =>
+  filledFrom(template, entry).length > maxPostTextLength;
 
 /**
  * What a post made from `entry` says: the template with each placeholder
  * replaced by what the item gives (nothing when it gives none), trailing
  * spaces dropped from each line, runs of blank lines made one and the
  * ends trimmed, so a missing part leaves no gap. None when nothing is
- * left.
+ * left, or when it is longer than a post holds (`writtenTooLong`).
  */
 export const writtenFrom = (
   template: string,
   entry: FeedEntry
 ): Option.Option<string> => {
-  const text = template
-    .replaceAll(placeholderPattern, (whole, name: string) =>
-      isPlaceholder(name) ? valueOf(entry, name) : whole
-    )
+  if (writtenTooLong(template, entry)) {
+    return Option.none();
+  }
+
+  const text = filledFrom(template, entry)
     .split("\n")
     .map((line) => line.trimEnd())
     .join("\n")
