@@ -895,3 +895,40 @@ describe("a feed that attaches its items' pictures", () => {
     timeout
   );
 });
+
+describe("a feed moved", () => {
+  it.effect(
+    "reads its new address at once, records what it holds, and stays paused if it was",
+    () =>
+      onServer(
+        Effect.gen(function* moves() {
+          const workspaceId = yield* freshWorkspace;
+          const moved = "https://blog.example/moved.xml";
+
+          yield* serveItems(blog, []);
+
+          const { feed } = yield* created(workspaceId);
+
+          yield* Feeds.use((feeds) =>
+            feeds.change(actorIn(workspaceId), feed.id, { status: "paused" })
+          );
+          yield* serveItems(moved, [{ n: 7, title: "At the new address" }]);
+
+          const changed = yield* Feeds.use((feeds) =>
+            feeds.change(actorIn(workspaceId), feed.id, { url: moved })
+          );
+
+          assert.deepStrictEqual(
+            [changed.url, changed.status._tag],
+            [moved, "paused"]
+          );
+          assert.deepStrictEqual(
+            (yield* itemsOf(workspaceId, feed.id)).map(({ reason }) => reason),
+            ["existing"]
+          );
+        })
+      ),
+    timeout
+  );
+});
+

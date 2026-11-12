@@ -617,10 +617,8 @@ export class Feeds extends Context.Service<
                 ? moveFeed(feed, url.value, now, seenRead)
                 : feed;
 
-              feed =
-                resuming || feed.status._tag !== "active"
-                  ? resumeFeed(feed, now, seenRead)
-                  : feed;
+              // A paused feed moved stays paused; one resumed goes again.
+              feed = resuming ? resumeFeed(feed, now, seenRead) : feed;
 
               yield* store.record(feed.id, existing(document, now));
             }
