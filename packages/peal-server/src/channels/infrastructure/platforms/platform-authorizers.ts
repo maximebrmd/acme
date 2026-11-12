@@ -3,6 +3,7 @@ import { Effect, Layer, Option, Schema } from "effect";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type { PlatformAuthorizer } from "#channels/application/platform-authorizer.ts";
 import type { Platform } from "#channels/domain/platform.ts";
+import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import { hasConnections } from "#shared/domain/channel-connection.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { InstagramConnectionSchema } from "#shared/domain/instagram-connection.ts";
@@ -185,10 +186,15 @@ export const PlatformAuthorizersLive = Layer.effect(
         )
       : Option.none<PlatformAuthorizer>();
 
+    // Where the inbox reads Facebook's or Instagram's comments, their
+    // sign-ins ask for its permissions too, as optional.
+    const inbox = yield* CurrentInboxPlatforms;
+
     const metaOptions = (app: MetaApp) => ({
       app,
       hosts: settings.metaHosts,
       http,
+      inbox,
       publicUrl: settings.publicUrl,
     });
 

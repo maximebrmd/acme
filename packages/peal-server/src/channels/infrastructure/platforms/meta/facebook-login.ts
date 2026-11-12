@@ -13,6 +13,8 @@ import { AvatarUrlSchema } from "#channels/domain/avatar-url.ts";
 import type { AvatarUrl } from "#channels/domain/avatar-url.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import type { TokenPolicy } from "#channels/domain/token-policy.ts";
+import { OptionalInboxPlatformSchema } from "#shared/domain/inbox-platform.ts";
+import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
@@ -96,6 +98,8 @@ const maxPages = 10;
 
 const decodeAvatar = Schema.decodeUnknownOption(AvatarUrlSchema);
 
+const isInboxPlatform = Schema.is(OptionalInboxPlatformSchema);
+
 /** The picture at a URL Meta gave, if it is one clients can show. */
 export const avatarOf = (url: string | undefined): Option.Option<AvatarUrl> =>
   Option.fromUndefinedOr(url).pipe(Option.flatMap(decodeAvatar));
@@ -109,6 +113,12 @@ export interface FacebookLoginProduct {
     readonly displayName: Option.Option<string>;
     readonly handle: string;
   }[];
+  /**
+   * The permissions the inbox reads and answers comments with, asked as
+   * optional only where the server reads the platform's comments
+   * (`PEAL_INBOX_PLATFORMS`).
+   */
+  readonly commentScopes?: readonly string[];
   /** The way in it is, for Instagram. */
   readonly connection?: InstagramConnection;
   /**
@@ -146,6 +156,8 @@ export const facebookLogin = Effect.fn("FacebookLogin.make")(
       readonly app: MetaApp;
       readonly hosts: MetaHosts;
       readonly http: MetaHttp;
+      /** The optional platforms the inbox reads; none when not given. */
+      readonly inbox?: InboxPlatforms;
       readonly publicUrl: string;
     }
   ) {
@@ -153,6 +165,15 @@ export const facebookLogin = Effect.fn("FacebookLogin.make")(
     const mac = yield* Mac.Mac;
     const { app, hosts, http } = options;
     const { platform, scopes } = product;
+
+    // What a member may decline and still connect: off the inbox, exactly
+    // what the sign-in asked before the inbox read Meta.
+    const optionalScopes = [
+      ...(product.optionalScopes ?? []),
+      ...(isInboxPlatform(platform) && options.inbox?.has(platform) === true
+        ? (product.commentScopes ?? [])
+        : []),
+    ];
 
     const redirectUri = new URL(
       facebookLoginCallbackPath(platform),
@@ -174,7 +195,7 @@ export const facebookLogin = Effect.fn("FacebookLogin.make")(
           client_id: app.appId,
           redirect_uri: redirectUri,
           response_type: "code",
-          scope: [...scopes, ...(product.optionalScopes ?? [])].join(","),
+          scope: [...scopes, ...optionalScopes].join(","),
           state,
         }).toString();
 

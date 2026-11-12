@@ -1,4 +1,4 @@
-import type { DateTime, Effect } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 import type { HttpClient, HttpClientError } from "effect/http";
 
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
@@ -22,11 +22,21 @@ export type PlatformHttp = HttpClient.HttpClient.With<
 export interface OutgoingReply {
   /** When it was written: with its id, what every run derives keys from. */
   readonly createdAt: DateTime.Utc;
+  /**
+   * The comment the answered comment answers, if it answers one: where
+   * Instagram puts a reply to a reply.
+   */
+  readonly grandparentPlatformId: Option.Option<string>;
   /** The comment it answers, on the platform. */
   readonly parentPlatformId: string;
   readonly replyId: ReplyId;
   /** The post the thread is under, on the platform. */
   readonly rootPlatformPostId: string;
+  /**
+   * The platform's ids of the thread's other replies sent from Peal: a
+   * resume never takes one of them for this one.
+   */
+  readonly takenIds: readonly string[];
   readonly text: string;
 }
 
@@ -62,10 +72,14 @@ export interface EngagementPlatform {
     account: ChannelAccount,
     reply: OutgoingReply
   ) => Effect.Effect<SendOutcome>;
-  /** Deletes the account's own reply; one already gone is done. */
+  /**
+   * Deletes the account's own reply, under the post `rootPlatformPostId`;
+   * one already gone is done.
+   */
   readonly withdraw: (
     account: ChannelAccount,
-    platformCommentId: string
+    platformCommentId: string,
+    rootPlatformPostId: string
   ) => Effect.Effect<ActionOutcome>;
   readonly moderate: (
     account: ChannelAccount,

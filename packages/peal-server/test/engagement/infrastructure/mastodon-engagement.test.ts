@@ -117,9 +117,11 @@ const toRead = [
 
 const outgoing = {
   createdAt: DateTime.makeUnsafe("2026-11-10T09:20:00.000Z"),
+  grandparentPlatformId: Option.none<string>(),
   parentPlatformId: "2001",
   replyId: replyId(1),
   rootPlatformPostId: "1001",
+  takenIds: [],
   text: "@reader@social.example Thank you!",
 };
 
@@ -187,7 +189,7 @@ describe("Mastodon's comments", () => {
         assert.deepStrictEqual(
           reading.comments.map((comment) => ({
             fromAccount: comment.fromAccount,
-            handle: comment.author.handle,
+            handle: comment.author.pipe(Option.map(({ handle }) => handle)),
             liked: comment.liked,
             parent: comment.parentPlatformId,
             text: comment.text,
@@ -195,14 +197,14 @@ describe("Mastodon's comments", () => {
           [
             {
               fromAccount: false,
-              handle: "reader@social.example",
+              handle: Option.some("reader@social.example"),
               liked: Option.some(true),
               parent: Option.none(),
               text: "Is it open & free?\nThanks\n\n<b>",
             },
             {
               fromAccount: true,
-              handle: "studio",
+              handle: Option.some("studio"),
               liked: Option.none(),
               parent: Option.some("2001"),
               text: "Comment 2002",
@@ -579,9 +581,12 @@ describe("Mastodon's comments", () => {
         { _tag: "done" }
       );
       // Already gone is done.
-      assert.deepStrictEqual(yield* platform.withdraw(account, "3001"), {
-        _tag: "done",
-      });
+      assert.deepStrictEqual(
+        yield* platform.withdraw(account, "3001", "1001"),
+        {
+          _tag: "done",
+        }
+      );
       assert.deepStrictEqual(
         yield* platform.moderate(account, { ...target, action: "hide" }),
         { _tag: "failed", reason: "refused" }

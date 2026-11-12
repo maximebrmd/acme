@@ -73,6 +73,13 @@ peal_settings:
   # allows, a page or a mailto: address. Unset, it tells them to write to
   # whoever runs the server: set it once the address exists.
   # PEAL_CONTACT_URL: https://peal.social/contact/
+  # Facebook Pages' and Instagram's comments in the inbox: off until Meta's
+  # App Review granted the app their permissions, the privacy policy names
+  # them (the registry's inbox entry, then the legal pages, through
+  # counsel), and one comment was read, answered, hidden and withdrawn on a
+  # test Page and a test Instagram account, a feed video's among them (the
+  # engagement context's guide).
+  # PEAL_INBOX_PLATFORMS: facebook,instagram
   # Refuses the staff console to staff whose own account does not have
   # two-step verification on: set once every staff account has it on.
   # PEAL_STAFF_TWO_STEP: "true"

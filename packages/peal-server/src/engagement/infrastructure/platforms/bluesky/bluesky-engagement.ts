@@ -220,15 +220,15 @@ const walk = (
       return;
     } else {
       into.comments.push({
-        author: {
+        author: Option.some({
           displayName: Option.fromUndefinedOr(post.author.displayName).pipe(
             Option.filter((name) => name !== "")
           ),
           handle: post.author.handle,
           platformId: post.author.did,
-        },
+        }),
         fromAccount: post.author.did === account,
-        hidden: hidden.has(post.uri),
+        hidden: Option.some(hidden.has(post.uri)),
         liked: Option.none(),
         parentPlatformId: Option.fromUndefinedOr(
           post.record.reply?.parent.uri

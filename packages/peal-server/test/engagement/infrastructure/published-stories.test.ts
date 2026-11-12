@@ -10,8 +10,10 @@ import {
   publishedFormats,
 } from "#test/publishing/published-formats.ts";
 
-// Stories have no comments Peal reads: the inbox never follows one, and
-// a run of stories never ends its discovery before the posts after them.
+// Stories have no comments Peal reads, and a Facebook reel is published
+// under its video's id, whose comments the inbox does not read yet: it
+// follows neither, and a run of them never ends its discovery before the
+// posts after them.
 
 const Test = PublishingFollowedPosts.pipe(
   Layer.provide(DrizzlePublishedTargets),
@@ -19,23 +21,28 @@ const Test = PublishingFollowedPosts.pipe(
 );
 
 layer(Test)("the posts the inbox follows", (it) => {
-  it.effect("leave stories out, in pages as long as asked", () =>
-    Effect.gen(function* stories() {
-      const written = yield* publishedFormats("2047-05-01", "1790000000000002");
-
-      yield* Effect.gen(function* checks() {
-        const published = yield* FollowedPosts;
-
-        const page = yield* published.from(
-          { publishedAt: written.since, targetId: Option.none() },
-          2
+  it.effect(
+    "leave stories and Facebook reels out, in pages as long as asked",
+    () =>
+      Effect.gen(function* stories() {
+        const written = yield* publishedFormats(
+          "2047-05-01",
+          "1790000000000002"
         );
 
-        assert.deepStrictEqual(
-          page.map(({ targetId }) => targetId),
-          [written.feed, written.reel]
-        );
-      }).pipe(Effect.ensuring(deletePublished(written.postId)));
-    })
+        yield* Effect.gen(function* checks() {
+          const published = yield* FollowedPosts;
+
+          const page = yield* published.from(
+            { publishedAt: written.since, targetId: Option.none() },
+            2
+          );
+
+          assert.deepStrictEqual(
+            page.map(({ targetId }) => targetId),
+            [written.feed]
+          );
+        }).pipe(Effect.ensuring(deletePublished(written.postId)));
+      })
   );
 });

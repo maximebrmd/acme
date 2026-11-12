@@ -32,7 +32,7 @@ describe("a comment", () => {
   });
 
   it("is hidden when the account already hid it on the platform", () => {
-    expect(comment(1, { hidden: true }).state).toBe("hidden");
+    expect(comment(1, { hidden: Option.some(true) }).state).toBe("hidden");
   });
 
   it("keeps nothing a database refuses or a screen acts on, whatever a platform gives", () => {
@@ -43,11 +43,11 @@ describe("a comment", () => {
     const replaced = String.fromCodePoint(0xff_fd);
 
     const hostile = comment(1, {
-      author: {
+      author: Option.some({
         displayName: Option.some(`Ada${nul}\n${override}Lovelace${lone}`),
         handle: ` ada${escape}@social.example\n`,
         platformId: `70${nul}01`,
-      },
+      }),
       parentPlatformId: Option.some(`20${nul}00`),
       permalink: Option.some(`https://social.example/@ada/1${nul}`),
       platformCommentId: `20${nul}01`,
@@ -71,11 +71,11 @@ describe("a comment", () => {
 
   it("bounds a name, a handle and a link", () => {
     const long = comment(2, {
-      author: {
+      author: Option.some({
         displayName: Option.some("n".repeat(1000)),
         handle: "h".repeat(1000),
         platformId: "7002",
-      },
+      }),
       permalink: Option.some(`https://social.example/${"p".repeat(5000)}`),
     });
 

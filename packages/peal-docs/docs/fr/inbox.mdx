@@ -1,26 +1,26 @@
 ---
 title: Boîte de réception
-description: Lisez les commentaires laissés sous vos publications mises en ligne sur Mastodon et Bluesky, et répondez-y depuis Peal. Ce que Peal collecte, d’où, pour combien de temps, et ce que chaque plateforme permet à un compte.
+description: Lisez les commentaires laissés sous vos publications mises en ligne sur Mastodon et Bluesky, et sur les Pages Facebook et Instagram là où le serveur les lit, et répondez-y depuis Peal. Ce que Peal collecte, d’où, pour combien de temps, et ce que chaque plateforme permet à un compte.
 sidebar:
   order: 10
 ---
 
 La boîte de réception rassemble les commentaires laissés sous les publications que Peal a mises en ligne pour un espace de travail, et permet à ses membres d’y répondre en public, au nom du compte connecté. Ouvrez un espace de travail depuis **Espaces de travail**, puis **Boîte de réception**.
 
-C’est la première partie de la boîte de réception : les commentaires des publications mises en ligne depuis Peal, sur Mastodon et Bluesky. Les messages privés, les mentions et les avis ne sont pas collectés, et Peal ne répond à rien de lui-même : chaque réponse est écrite et envoyée par une personne, ou par une application qu’une personne a connectée et autorisée à publier.
+C’est la première partie de la boîte de réception : les commentaires des publications mises en ligne depuis Peal, sur Mastodon et Bluesky, et sur les Pages Facebook et Instagram là où la personne qui exploite le serveur les a activés ([Pages Facebook et Instagram](#meta)). Les messages privés, les mentions et les avis ne sont pas collectés, et Peal ne répond à rien de lui-même : chaque réponse est écrite et envoyée par une personne, ou par une application qu’une personne a connectée et autorisée à publier.
 
 ## Ce que Peal collecte [#collected]
 
-Pour chaque publication mise en ligne sur un canal, sauf les [stories](/scheduling#formats), qui disparaissent après 24 heures et dont Peal ne lit pas les réponses, Peal lit les réponses publiques qu’elle reçoit sur la plateforme :
+Pour chaque publication mise en ligne sur un canal, sauf les [stories](/scheduling#formats), qui disparaissent après 24 heures et dont Peal ne lit pas les réponses, et les reels Facebook, dont Peal ne lit pas encore les commentaires, Peal lit les réponses publiques qu’elle reçoit sur la plateforme :
 
-| Conservé                                                                                   | D’où cela vient                                 |
-| ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| Le texte du commentaire, en texte brut                                                     | La plateforme, tel que chacun peut le lire      |
-| Sa date, et le commentaire auquel il répond                                                | La plateforme                                   |
-| L’identifiant public et le nom affiché de son auteur, et son identifiant sur la plateforme | La plateforme, tels qu’elle les montre à tous   |
-| Un lien vers le commentaire sur la plateforme                                              | La plateforme                                   |
-| Si l’espace de travail y a répondu, l’a masqué ou aimé                                     | Peal, et la plateforme pour ce qui y a été fait |
-| Les réponses envoyées depuis Peal, leur auteur et l’issue de l’envoi                       | Les membres de l’espace de travail              |
+| Conservé                                                                                   | D’où cela vient                                  |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| Le texte du commentaire, en texte brut                                                     | La plateforme, tel que chacun peut le lire       |
+| Sa date, et le commentaire auquel il répond                                                | La plateforme                                    |
+| L’identifiant public et le nom affiché de son auteur, et son identifiant sur la plateforme | La plateforme, tels qu’elle les montre au compte |
+| Un lien vers le commentaire sur la plateforme                                              | La plateforme                                    |
+| Si l’espace de travail y a répondu, l’a masqué ou aimé                                     | Peal, et la plateforme pour ce qui y a été fait  |
+| Les réponses envoyées depuis Peal, leur auteur et l’issue de l’envoi                       | Les membres de l’espace de travail               |
 
 Pour une publication en plusieurs parties, un [fil](/scheduling#threads), Peal lit les commentaires sous chaque partie et les réunit dans l’unique fil de la publication dans la boîte de réception. Les parties elles-mêmes, écrites par le compte, ne sont pas des commentaires. Les commentaires d’un fil sont lus une fois toutes ses parties en ligne : s’il s’est arrêté en chemin, à partir du moment où **Republier**, ou ce que vous avez constaté sur la plateforme, le complète.
 
@@ -74,14 +74,14 @@ Vous pouvez aussi marquer un commentaire comme traité quand il n’appelle pas 
 
 ## Ce que chaque plateforme permet [#abilities]
 
-| Possibilité                                                | Mastodon                                        | Bluesky                                                     |
-| ---------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------- |
-| Lire les commentaires d’une publication                    | Oui                                             | Oui                                                         |
-| Répondre à un commentaire                                  | Oui                                             | Oui                                                         |
-| Retirer une réponse                                        | Oui                                             | Oui                                                         |
-| Aimer un commentaire                                       | Pas encore : Peal ne demande pas l’autorisation | Pas encore : Peal ne demande pas l’autorisation             |
-| Masquer le commentaire de quelqu’un sous votre publication | Non : Mastodon ne l’offre à aucun compte        | Pas encore : Peal ne demande pas l’autorisation             |
-| Supprimer le commentaire de quelqu’un d’autre              | Non : Mastodon ne l’offre à aucun compte        | Non : personne ne supprime la publication d’un autre compte |
+| Possibilité                                                | Mastodon                                        | Bluesky                                                     | Pages Facebook ([où activées](#meta)) | Instagram ([où activé](#meta))            |
+| ---------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------- | ------------------------------------- | ----------------------------------------- |
+| Lire les commentaires d’une publication                    | Oui                                             | Oui                                                         | Oui                                   | Oui                                       |
+| Répondre à un commentaire                                  | Oui                                             | Oui                                                         | Oui                                   | Oui                                       |
+| Retirer une réponse                                        | Oui                                             | Oui                                                         | Oui                                   | Oui                                       |
+| Aimer un commentaire                                       | Pas encore : Peal ne demande pas l’autorisation | Pas encore : Peal ne demande pas l’autorisation             | Pas encore                            | Non : l’API d’Instagram n’a pas de j’aime |
+| Masquer le commentaire de quelqu’un sous votre publication | Non : Mastodon ne l’offre à aucun compte        | Pas encore : Peal ne demande pas l’autorisation             | Oui                                   | Oui                                       |
+| Supprimer le commentaire de quelqu’un d’autre              | Non : Mastodon ne l’offre à aucun compte        | Non : personne ne supprime la publication d’un autre compte | Pas encore                            | Pas encore                                |
 
 `GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` et chaque fil répondent la même chose pour un canal : `available`, `reconnect` (le compte a été connecté avant que Peal ne demande ce que la possibilité exige : [connectez de nouveau le compte](/channels), sans le déconnecter, et le canal reste avec son historique), ou `unsupported`.
 
@@ -89,20 +89,38 @@ Sur Mastodon, les réponses aux publications publiques et non listées sont lues
 
 Un fil garde ses 500 premiers commentaires. Sous une publication aux milliers de réponses, Peal lit jusque-là et pas plus loin : les commentaires suivants restent sur la plateforme, et ne sont pas affichés ici.
 
+### Pages Facebook et Instagram [#meta]
+
+Peal lit les commentaires des publications des Pages Facebook et des comptes Instagram seulement là où la personne qui exploite le serveur les a activés ([`PEAL_INBOX_PLATFORMS`](/environment-variables#core)) : les autorisations qu’ils exigent sont accordées par l’App Review de Meta, dont les comptes de l’application elle-même se passent, et non ceux des autres.
+
+| Plateforme     | Ce que le compte autorise à la connexion                                                                                      | Ce que règle l’exploitant du serveur                                                                  |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Pages Facebook | `pages_read_user_content` pour lire les commentaires, `pages_manage_engagement` pour répondre, masquer et retirer une réponse | `facebook` dans `PEAL_INBOX_PLATFORMS`, avec l’application de Meta (`META_APP_ID`, `META_APP_SECRET`) |
+| Instagram      | `instagram_manage_comments` via une Page, ou `instagram_business_manage_comments` via la connexion Instagram                  | `instagram` dans `PEAL_INBOX_PLATFORMS`, avec l’un ou l’autre des accès d’Instagram                   |
+
+La connexion demande ces autorisations là où le serveur lit la plateforme, et un membre peut les refuser : le compte se connecte et publie quand même, sans boîte de réception. Un compte connecté avant affiche `reconnect` sur ce qui lui manque : [connectez-le de nouveau](/channels), sans le déconnecter. Meta les accorde aussitôt pour les comptes que gèrent les personnes de son application (accès standard), et pour tout autre compte seulement une fois l’App Review passée, l’entreprise étant vérifiée (accès avancé) : [l’auto-hébergement](/self-hosting#meta) explique comment régler l’application.
+
+Sur ces plateformes :
+
+- Facebook montre le nom de la personne ou de la Page qui a commenté, et pas d’identifiant public ; il peut ne pas montrer du tout qui a écrit un commentaire, que la boîte de réception attribue alors à « Quelqu’un ». Il ne dit pas si un commentaire est masqué : Peal montre ce qui a été fait depuis Peal.
+- Instagram ne prend de réponses qu’aux commentaires de premier niveau : une réponse à une réponse va sous le commentaire auquel celle-ci répond. Il n’en prend aucune à un commentaire masqué.
+- Meta ne prend aucune clé qui rendrait une réponse sûre à envoyer deux fois. Quand on ne sait pas comment l’envoi d’une réponse s’est terminé, Peal la cherche parmi les réponses sous le commentaire, et ne la trouve que si exactement une, du compte, écrite depuis que vous l’avez écrite, a son texte ; sinon elle reste `unconfirmed`, à vous de trancher. Elle n’est jamais envoyée de nouveau.
+- Instagram place une réponse à une réponse sous le commentaire de premier niveau : la lecture suivante montre donc aussi ce commentaire comme répondu.
+- Peal lit les commentaires toutes les dix minutes, comme sur les autres plateformes, et s’arrête pour la passe dès que Meta indique que la moitié des appels du compte sont utilisés, pour que la publication garde le reste ; les notifications de nouveaux commentaires de Meta ne sont pas encore utilisées.
+- Seules les publications mises en ligne après l’activation de la plateforme sont lues : celles d’avant n’ont pas de boîte de réception.
+
 ### Autres plateformes [#other-platforms]
 
 Peal ne lit pas encore de commentaires sur les autres plateformes. Chacune exige une autorisation que sa plateforme accorde après un examen :
 
-| Plateforme                         | Ce qu’exigent la lecture des commentaires et les réponses                                                                       |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Pages Facebook                     | `pages_read_user_content` et `pages_manage_engagement`, accordées chacune par l’App Review de Meta, l’entreprise étant vérifiée |
-| Instagram                          | `instagram_manage_comments` (ou `instagram_business_manage_comments`), accordée par l’App Review de Meta                        |
-| Threads                            | `threads_read_replies` et `threads_manage_replies`, accordées par l’App Review de Meta                                          |
-| YouTube                            | Le scope `youtube.force-ssl`, que Google vérifie avant qu’une application puisse le demander, et un quota plus large            |
-| LinkedIn                           | La Community Management API, pour les pages d’entreprise seulement, que LinkedIn accorde sur demande                            |
-| X                                  | Un accès payant à l’API de X pour lire les réponses                                                                             |
-| TikTok                             | Les commentaires sont offerts aux comptes professionnels par un autre produit de TikTok, que Peal n’utilise pas                 |
-| Pinterest, Google Business Profile | Non prévu : l’API de Pinterest n’a pas de commentaires, et une fiche d’établissement a des avis, qui ne sont pas collectés      |
+| Plateforme                         | Ce qu’exigent la lecture des commentaires et les réponses                                                                  |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Threads                            | `threads_read_replies` et `threads_manage_replies`, accordées par l’App Review de Meta                                     |
+| YouTube                            | Le scope `youtube.force-ssl`, que Google vérifie avant qu’une application puisse le demander, et un quota plus large       |
+| LinkedIn                           | La Community Management API, pour les pages d’entreprise seulement, que LinkedIn accorde sur demande                       |
+| X                                  | Un accès payant à l’API de X pour lire les réponses                                                                        |
+| TikTok                             | Les commentaires sont offerts aux comptes professionnels par un autre produit de TikTok, que Peal n’utilise pas            |
+| Pinterest, Google Business Profile | Non prévu : l’API de Pinterest n’a pas de commentaires, et une fiche d’établissement a des avis, qui ne sont pas collectés |
 
 Si vous exploitez votre propre serveur, les mêmes examens s’appliquent à vos propres applications de plateformes.
 

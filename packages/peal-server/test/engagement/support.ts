@@ -64,13 +64,13 @@ export const reading = (
   n: number,
   changed: Partial<CommentReading> = {}
 ): CommentReading => ({
-  author: {
+  author: Option.some({
     displayName: Option.some(`Reader ${n}`),
     handle: `reader${n}@social.example`,
     platformId: `${7000 + n}`,
-  },
+  }),
   fromAccount: false,
-  hidden: false,
+  hidden: Option.some(false),
   liked: Option.none(),
   parentPlatformId: Option.none(),
   permalink: Option.some(`https://social.example/@reader${n}/${2000 + n}`),

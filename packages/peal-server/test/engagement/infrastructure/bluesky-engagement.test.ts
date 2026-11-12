@@ -140,9 +140,11 @@ const toRead = [
 
 const outgoing = {
   createdAt: DateTime.makeUnsafe("2026-11-10T09:20:00.000Z"),
+  grandparentPlatformId: Option.none<string>(),
   parentPlatformId: first,
   replyId: replyId(1),
   rootPlatformPostId: root,
+  takenIds: [],
   text: "Thank you! https://example.com",
 };
 
@@ -243,7 +245,7 @@ describe("Bluesky's comments", () => {
           [
             {
               fromAccount: false,
-              hidden: true,
+              hidden: Option.some(true),
               id: first,
               parent: Option.none(),
               permalink: Option.some(
@@ -252,7 +254,7 @@ describe("Bluesky's comments", () => {
             },
             {
               fromAccount: true,
-              hidden: false,
+              hidden: Option.some(false),
               id: second,
               parent: Option.some(first),
               permalink: Option.some(
@@ -620,7 +622,7 @@ describe("Bluesky's comments", () => {
 
         yield* platform.moderate(account, { ...target, action: "like" });
         yield* platform.moderate(account, { ...target, action: "unlike" });
-        yield* platform.withdraw(account, second);
+        yield* platform.withdraw(account, second, target.rootPlatformPostId);
 
         const [like, unlike, withdrawn] = writes();
 

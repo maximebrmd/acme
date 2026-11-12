@@ -140,11 +140,11 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             yield* newId(CommentIdSchema),
             thread,
             reading(1, {
-              author: {
+              author: Option.some({
                 displayName: Option.some(displayName),
                 handle,
                 platformId: authorId,
-              },
+              }),
               text: commentText,
               writtenAt,
             }),

@@ -5,7 +5,7 @@ import {
   InboxAbilitiesSchema,
   InboxCommentSchema,
   InboxModerationActionSchema,
-  inboxPlatforms,
+  inboxPlatformsText,
   InboxReplySchema,
   inboxRetentionDays,
   InboxThreadDetailSchema,
@@ -56,12 +56,29 @@ const replyLine = (reply: InboxReply): string => {
 const onOneLine = (text: string): string =>
   text.replaceAll(/[\n\v\f\r\u0085\u2028\u2029]+/gu, " ");
 
-const authorOf = (comment: InboxComment): string =>
-  comment.author === null
-    ? "(no longer on the platform)"
-    : onOneLine(
-        `${comment.author.displayName ?? comment.author.handle} (@${comment.author.handle})`
-      );
+// Who wrote a comment: their name and handle, a name alone where the
+// platform gives no handle (Facebook), and none where the platform does
+// not show them, or no longer shows the comment.
+const authorOf = (comment: InboxComment): string => {
+  const { author } = comment;
+
+  if (author === null) {
+    return comment.state === "deleted"
+      ? "(no longer on the platform)"
+      : "(someone the platform does not show)";
+  }
+
+  const name =
+    author.displayName === null || author.displayName === ""
+      ? undefined
+      : author.displayName;
+
+  if (author.handle === "") {
+    return onOneLine(name ?? "(someone the platform does not show)");
+  }
+
+  return onOneLine(`${name ?? author.handle} (@${author.handle})`);
+};
 
 const abilityLines = (abilities: InboxAbilities): string[] =>
   columns(
@@ -152,7 +169,7 @@ const threads = Command.make(
 
     if (page.items.length === 0) {
       yield* Console.log(
-        `No comments in ${workspace.name}'s inbox. Peal reads comments on ${inboxPlatforms.join(" and ")}, for ${String(inboxWindowDays)} days after a post went live unless whoever runs the server set another window, and keeps them ${String(inboxRetentionDays)} days after that.`
+        `No comments in ${workspace.name}'s inbox. Peal reads comments on ${inboxPlatformsText}, for ${String(inboxWindowDays)} days after a post went live unless whoever runs the server set another window, and keeps them ${String(inboxRetentionDays)} days after that.`
       );
 
       return;
@@ -498,7 +515,7 @@ const abilities = Command.make(
 
 export const inbox = Command.make("inbox").pipe(
   Command.withDescription(
-    `The comments people leave under a workspace's published posts, on ${inboxPlatforms.join(" and ")}: read them, and answer in public as the channel's account.`
+    `The comments people leave under a workspace's published posts, on ${inboxPlatformsText}: read them, and answer in public as the channel's account.`
   ),
   Command.withSubcommands([
     threads,

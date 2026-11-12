@@ -32,11 +32,11 @@ const commentOf = (n: number) =>
   comment(
     n,
     {
-      author: {
+      author: Option.some({
         displayName: Option.some("Synthetic Reader"),
         handle: "synthetic.reader@social.example",
         platformId: "7001",
-      },
+      }),
       text: secret,
     },
     post

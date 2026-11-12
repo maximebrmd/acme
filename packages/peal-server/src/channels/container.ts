@@ -39,6 +39,7 @@ import {
   WebhookChannelEvents,
   webhookChannelNotices,
 } from "#channels/infrastructure/webhook-channel-events.ts";
+import { InboxPlatformsLive } from "#shared/infrastructure/inbox-platforms.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 // Who hears of a channel connected or gone: the workspace's webhook
@@ -48,14 +49,16 @@ const ChannelEventsLive = analyticsChannelEvents(WebhookChannelEvents);
 
 // The platforms' sign-in flows, the documents that identify Peal's
 // clients, and the check of Meta's signed requests, from the settings read
-// at startup. Requests to servers a user chose go through the outbound
-// guard, which needs Dns.
+// at startup (PEAL_INBOX_PLATFORMS among them, for the comment permissions
+// Meta's sign-ins ask). Requests to servers a user chose go through the
+// outbound guard, which needs Dns.
 const PlatformsLive = Layer.mergeAll(
   PlatformAuthorizersLive,
   OAuthClientDocumentsLive,
   MetaSignedRequestsLive
 ).pipe(
   Layer.provide(ChannelPlatformsLive),
+  Layer.provide(InboxPlatformsLive),
   Layer.provide(OutboundGuard.layer),
   Layer.provide(
     Layer.mergeAll(

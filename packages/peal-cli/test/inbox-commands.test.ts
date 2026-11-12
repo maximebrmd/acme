@@ -97,6 +97,47 @@ describe("peal inbox", () => {
   );
 
   it.effect(
+    "names a commenter by name alone where the platform gives no handle, and someone a platform does not show",
+    () =>
+      Effect.gen(function* facebookNames() {
+        const session = yield* signedIn();
+
+        yield* Ref.update(session.studio.inbox, (inbox) => ({
+          ...inbox,
+          comments: inbox.comments.map((comment) => {
+            if (comment.id === waitingCommentId) {
+              return {
+                ...comment,
+                author: {
+                  displayName: "Ada Example",
+                  handle: "",
+                  platformId: "71",
+                },
+              };
+            }
+
+            return comment.id === answeredCommentId
+              ? { ...comment, author: null }
+              : comment;
+          }),
+        }));
+
+        const shown = yield* session.printed([
+          "inbox",
+          "thread",
+          inboxThreadId,
+          ...inStudio,
+        ]);
+
+        assert.include(shown, "  Ada Example\n");
+        assert.notInclude(shown, "(@)");
+        // The comment is on the platform: its author was not shown.
+        assert.include(shown, "someone the platform does not show");
+        assert.notInclude(shown, "(no longer on the platform)");
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
     "answers a comment, and says the reply is on its way in public",
     () =>
       Effect.gen(function* replies() {

@@ -401,11 +401,11 @@ layer(StoreTest)("the engagement store", (it) => {
             yield* newId(CommentIdSchema),
             thread,
             reading(1, {
-              author: {
+              author: Option.some({
                 displayName: Option.some(`Ada${nul}${lone}`),
                 handle: `ada${nul}${lone}@social.example`,
                 platformId: `70${nul}01`,
-              },
+              }),
               permalink: Option.some(`https://social.example/1${nul}`),
               platformCommentId: `20${nul}01${lone}`,
               text: textOfHtml(`<p>Hello&#xD800;&#0;${nul}${lone}</p>`),

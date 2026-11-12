@@ -131,7 +131,14 @@
   rests on, in `channels.granted_by`. Threads has its own OAuth: a 60-day
   long-lived token that renews itself. Every Graph call through Facebook
   Login carries `appsecret_proof`
-  (`#shared/infrastructure/platforms/meta-graph.ts`).
+  (`#shared/infrastructure/platforms/meta-graph.ts`). Where
+  `PEAL_INBOX_PLATFORMS` names Facebook or Instagram
+  (`CurrentInboxPlatforms`), their sign-ins also ask for the comment
+  permissions (`#shared/domain/inbox-platform.ts`) as optional
+  (`commentScopes`, Instagram Login's `instagramLoginScopes`), which a
+  member may decline and still connect; off, they ask what they asked
+  before, as `test/channels/infrastructure/meta-comment-scopes.test.ts`
+  holds.
 - Instagram has two ways in, one platform with a connection kind
   (`InstagramConnectionSchema` in `#shared/domain/instagram-connection.ts`,
   copied by the contract): `instagramLogin`, the default, and
