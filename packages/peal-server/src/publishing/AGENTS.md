@@ -568,23 +568,30 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   `videoStepTiming`), then unconfirmed `stillProcessing`, never sent
   again. A photo story uploads its
   photo unpublished in `prepare`, every run its own, and publishes it with
-  `photo_stories`. Their `commit` journals the video's or the photo's id
-  (`FacebookFormatProgressSchema`, through `PublicationProgress`) before
-  the finish or `photo_stories`, on every run; a journal it cannot write
-  sends nothing (`PlatformUnavailable`). Their `lookUp` reads what the run
-  holds, or on a resume what the journal names, and never rules a post
-  out from Meta's answers (its samples show `not_started` after an
-  upload, and `publish_status: "published"` before a story is): a reel is
-  `found` when its `publishing_phase` is done, a video story when that
-  phase is done and the Page's `stories` list it by its `media_id`, a
-  video still being made live `pending` (a resumed run reads it on over
-  the same looks, then answers unconfirmed `stillProcessing`), a photo
-  story `found` by the listing or `unknown`. A resumed run whose call was
-  begun with nothing journaled answers `absent`: the finish never went,
-  so it uploads and finishes anew (a second upload shows nowhere); a call
-  begun under another key, or a journal this release cannot read, is
-  `unknown`, unconfirmed `interrupted`. So a story or a reel is never
-  sent twice. A reel is published under its
+  `photo_stories`. Their `prepare` journals a first step
+  (`preparing`, with a random `run` id, over nothing, or over what the
+  resume that called it read) before any upload, and their `commit` the
+  video's or the photo's id (`finishing`) over that run's own first step
+  only (`PublicationProgress.replace`, a compare-and-set), before the
+  finish or `photo_stories`; a journal it cannot write sends nothing
+  (`PlatformUnavailable`), and a run whose first step another run wrote
+  over sends no finish (unconfirmed `interrupted`). Their `lookUp` reads
+  what the run holds, or on a resume what the journal names, and never
+  rules a post out from Meta's answers (its samples show `not_started`
+  after an upload, and `publish_status: "published"` before a story is):
+  a reel is `found` when its `publishing_phase` is done, a video story
+  when that phase is done and the Page's `stories` list it by its
+  `media_id`, a video still being made live `pending` (and on a resume a
+  look that failed for the moment too: a resumed run reads it on over
+  the same looks, then answers unconfirmed `stillProcessing`, which may
+  also mean a finish that never went), a photo story `found` by the
+  listing or `unknown`. A resumed call whose journal holds a `preparing`
+  step and no finish answers `absent`: the finish never went, so it
+  uploads and finishes anew (a second upload shows nowhere). A call begun
+  with nothing journaled (by a release before this one, which may have
+  sent its finish), under another key, or with a journal this release
+  cannot read, is `unknown`, unconfirmed `interrupted`. So a story or a
+  reel is never sent twice. A reel is published under its
   video's id, a story under its `post_id` only (a finish without it is
   confirmed by the listing), neither with a permalink. Meta's 30 reels a Page a day have no endpoint or
   documented code: its refusal keeps Meta's code.

@@ -476,7 +476,7 @@ export const metaHostsAt = (url: string, instagramUrl = url): MetaHosts => ({
 });
 
 const MetaCryptoTest = Mac.layerWebCrypto.pipe(
-  Layer.provide(SecureRandom.layerWebCrypto)
+  Layer.provideMerge(SecureRandom.layerWebCrypto)
 );
 
 /** Which Meta client to build against the fake Graph. */

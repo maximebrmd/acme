@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { Effect, Layer, Option, Schema } from "effect";
 
 import { PublicationProgress } from "#publishing/application/publication-progress.ts";
@@ -60,6 +60,31 @@ export const DrizzlePublicationProgress = Layer.effect(
       return progress;
     });
 
-    return PublicationProgress.of({ read, record });
+    // jsonb compares by value, whatever the order of the keys.
+    const replace = Effect.fn("PublicationProgress.replace")(function* replace(
+      idempotencyKey: string,
+      expected: Option.Option<Schema.Json>,
+      progress: Schema.Json
+    ) {
+      const updated = yield* db
+        .update(publicationCalls)
+        .set({ progress })
+        .where(
+          and(
+            eq(publicationCalls.idempotencyKey, idempotencyKey),
+            Option.match(expected, {
+              onNone: () => isNull(publicationCalls.progress),
+              onSome: (value) =>
+                sql`${publicationCalls.progress} = ${JSON.stringify(value)}::jsonb`,
+            })
+          )
+        )
+        .returning({ idempotencyKey: publicationCalls.idempotencyKey })
+        .pipe(Effect.mapError(failed));
+
+      return updated.length > 0;
+    });
+
+    return PublicationProgress.of({ read, record, replace });
   })
 );

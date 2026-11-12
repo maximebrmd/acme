@@ -1,5 +1,7 @@
 import { DateTime, Duration, Effect, Option, Schema } from "effect";
 import type { Redacted } from "effect";
+import { SecureRandom } from "effect/crypto";
+import { Base64Url } from "effect/encoding";
 
 import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
 import type { PublishableMedia } from "#publishing/application/media-for-publishing.ts";
@@ -130,6 +132,7 @@ export const facebookClient = Effect.fn("FacebookClient.make")(
   }) {
     const media = yield* MediaForPublishing;
     const progress = yield* PublicationProgress;
+    const random = yield* SecureRandom.SecureRandom;
     const { api, hosts, uploads } = options;
 
     const calls = yield* graphCalls({ appSecret: options.appSecret });
@@ -343,6 +346,11 @@ export const facebookClient = Effect.fn("FacebookClient.make")(
       hosts,
       page,
       progress,
+      // 128 random bits: no two runs share one.
+      runId: random.randomBytes(16).pipe(
+        Effect.orDie,
+        Effect.map((bytes) => Base64Url.encode(bytes))
+      ),
       uploads,
     });
 

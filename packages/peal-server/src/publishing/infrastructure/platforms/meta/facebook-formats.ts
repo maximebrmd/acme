@@ -244,15 +244,34 @@ const encodeProgress = Schema.encodeEffect(ProgressJson);
 
 const decodeProgress = Schema.decodeUnknownOption(ProgressJson);
 
+// Fails as unavailable, nothing sent, saying why.
+const unavailable = (post: OutgoingPost, message: string) =>
+  Effect.logWarning(message).pipe(
+    Effect.annotateLogs({ channelId: post.channelId }),
+    Effect.andThen(Effect.fail(new PlatformUnavailable()))
+  );
+
+const encoded = (value: FacebookFormatProgress) =>
+  encodeProgress(value).pipe(Effect.orDie);
+
 /**
- * What the journal says of a resumed call: the finish was never sent
- * (`notFinished`), it may have been, of what it names (`finishing`), or
- * nothing this release can tell (`unknown`).
+ * What the journal says of a resumed call: a run of this release began it
+ * and never sent its finish (`notFinished`, with what it journaled), the
+ * finish may have gone, of what it names (`finishing`), or nothing this
+ * release can tell (`unknown`): begun under another key, nothing journaled
+ * (a release before this one began it, and may have sent its finish), or
+ * a value it cannot read.
  */
 type Journaled =
-  | { readonly _tag: "notFinished" }
-  | { readonly _tag: "finishing"; readonly progress: FacebookFormatProgress }
+  | { readonly _tag: "notFinished"; readonly preparing: Schema.Json }
+  | { readonly _tag: "finishing"; readonly progress: Finishing }
   | { readonly _tag: "unknown" };
+
+/** The step journaled before the request that publishes. */
+type Finishing = Extract<FacebookFormatProgress, { step: "finishing" }>;
+
+/** The first step a run of this release journals, before any upload. */
+type Preparing = Extract<FacebookFormatProgress, { step: "preparing" }>;
 
 /** What the reels' and stories' steps are built with. */
 export interface FacebookFormatDeps {
@@ -273,6 +292,8 @@ export interface FacebookFormatDeps {
   readonly graph: (path: string) => URL;
   /** Where the call's steps are journaled, for a resumed run. */
   readonly progress: PublicationProgress["Service"];
+  /** A new random id for a run, which its journal's first step carries. */
+  readonly runId: Effect.Effect<string>;
   /** For the upload, which Meta makes while the request waits. */
   readonly uploads: MetaHttp;
 }
@@ -287,47 +308,103 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
   const { api, calls, hosts, progress, uploads } = deps;
   const { commit: commitCall, step } = calls;
 
-  // Journals what the request about to go publishes: when the journal
-  // cannot keep it, the request is not sent, and the attempt is tried
-  // again.
-  const journalBefore = (
-    post: OutgoingPost,
-    finishing: FacebookFormatProgress
-  ) =>
-    encodeProgress(finishing).pipe(
-      Effect.orDie,
-      Effect.flatMap((json) => progress.record(post.idempotencyKey, json)),
-      Effect.catchTag("DatabaseError", (failure) =>
-        Effect.logWarning(
-          "Could not journal a Facebook reel's or story's finish: nothing was sent",
-          failure
-        ).pipe(
-          Effect.annotateLogs({ channelId: post.channelId }),
-          Effect.andThen(Effect.fail(new PlatformUnavailable()))
-        )
-      )
-    );
+  // What each run in this process journaled first, by the call's key: its
+  // finish is journaled only over it, so a run another run took over sends
+  // none. And what a resumed run read before it publishes anew, which the
+  // new run's first step is written over, and only over.
+  const ownFirstSteps = new Map<string, Schema.Json>();
+  const takenOver = new Map<string, Schema.Json>();
+
+  // Journals that this run begins the call, before any upload, over
+  // nothing, or over what the resume that called it read. When the journal
+  // cannot keep it, or holds another run's step meanwhile, nothing is sent.
+  const journalPreparing = Effect.fn("FacebookFormats.journalPreparing")(
+    function* journalPreparing(
+      post: OutgoingPost,
+      format: Preparing["format"]
+    ) {
+      const key = post.idempotencyKey;
+
+      const json = yield* encoded({
+        format,
+        run: yield* deps.runId,
+        step: "preparing",
+      });
+
+      const expected = Option.fromUndefinedOr(takenOver.get(key));
+
+      takenOver.delete(key);
+
+      const written = yield* progress
+        .replace(key, expected, json)
+        .pipe(Effect.orElseSucceed(() => false));
+
+      if (!written) {
+        yield* unavailable(
+          post,
+          "Could not journal a Facebook reel's or story's first step: nothing was sent"
+        );
+      }
+
+      ownFirstSteps.set(key, json);
+    }
+  );
+
+  // Journals what the request about to go publishes, over this run's own
+  // first step: when the journal cannot keep it, nothing is sent and the
+  // attempt is tried again; when another run took the call over meanwhile,
+  // this run sends nothing and its outcome is not known.
+  const journalBefore = Effect.fn("FacebookFormats.journalBefore")(
+    function* journalBefore(post: OutgoingPost, finishing: Finishing) {
+      const key = post.idempotencyKey;
+      const own = Option.fromUndefinedOr(ownFirstSteps.get(key));
+
+      ownFirstSteps.delete(key);
+
+      const written = yield* progress
+        .replace(key, own, yield* encoded(finishing))
+        .pipe(
+          Effect.catchTag("DatabaseError", (failure) =>
+            Effect.logWarning(
+              "Could not journal a Facebook reel's or story's finish: nothing was sent",
+              failure
+            ).pipe(
+              Effect.annotateLogs({ channelId: post.channelId }),
+              Effect.andThen(Effect.fail(new PlatformUnavailable()))
+            )
+          )
+        );
+
+      if (!written) {
+        yield* Effect.logWarning(
+          "Another run took a Facebook reel's or story's call over: this one sent no finish"
+        ).pipe(Effect.annotateLogs({ channelId: post.channelId }));
+
+        yield* new OutcomeUnknown({ reason: "interrupted" });
+      }
+    }
+  );
 
   // What the journal holds of the attempt's call, read by a resumed run.
   const journaled = (post: OutgoingPost): Effect.Effect<Journaled> =>
     progress.read(post.idempotencyKey).pipe(
       Effect.map((found): Journaled => {
-        // Begun under another key: how far that call got is not known.
-        if (found._tag === "unknownCall") {
+        // Begun under another key, or with nothing journaled, by a release
+        // that journaled nothing: how far that call got is not known.
+        if (found._tag === "unknownCall" || Option.isNone(found.recorded)) {
           return { _tag: "unknown" };
         }
 
-        // Nothing recorded: the finish, journaled first, never went.
-        if (Option.isNone(found.recorded)) {
-          return { _tag: "notFinished" };
-        }
+        const raw = found.recorded.value;
 
-        return Option.match(decodeProgress(found.recorded.value), {
+        return Option.match(decodeProgress(raw), {
           onNone: (): Journaled => ({ _tag: "unknown" }),
-          onSome: (recorded): Journaled => ({
-            _tag: "finishing",
-            progress: recorded,
-          }),
+          // This release's run began it, and never journaled its finish:
+          // the finish, journaled first, never went.
+          onSome: (recorded): Journaled =>
+            recorded.step === "preparing"
+              ? { _tag: "notFinished", preparing: raw }
+              : { _tag: "finishing", progress: recorded },
         });
       }),
       Effect.orElseSucceed((): Journaled => ({ _tag: "unknown" }))
@@ -561,12 +638,15 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
   const resumedLookUp = (
     post: OutgoingPost,
     byId: (
-      finishing: FacebookFormatProgress
+      finishing: Finishing
     ) => Option.Option<Effect.Effect<LookUp, PublishFailure>>
   ): Effect.Effect<LookUp, PublishFailure> =>
     journaled(post).pipe(
       Effect.flatMap((found) => {
         if (found._tag === "notFinished") {
+          // The run that publishes anew writes its first step over this.
+          takenOver.set(post.idempotencyKey, found.preparing);
+
           return Effect.succeed<LookUp>({ _tag: "absent" });
         }
 
@@ -574,6 +654,20 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
           ? Option.getOrElse(byId(found.progress), () => unknown)
           : unknown;
       })
+    );
+
+  // A video the journal named, read again: a look that fails for the
+  // moment is read on, as one that finds it still processing.
+  const journaledVideo = (
+    post: OutgoingPost,
+    videoId: string,
+    story: boolean
+  ) =>
+    videoLookUp(post, videoId, story).pipe(
+      Effect.catchIf(
+        (failure) => failure._tag !== "MediaRejected",
+        () => Effect.succeed<LookUp>({ _tag: "pending" })
+      )
     );
 
   const reel: PublicationSteps<UploadedVideo> = {
@@ -600,7 +694,7 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
           onNone: () =>
             resumedLookUp(post, (finishing) =>
               finishing.format === "reel"
-                ? Option.some(videoLookUp(post, finishing.videoId, false))
+                ? Option.some(journaledVideo(post, finishing.videoId, false))
                 : Option.none()
             ),
           onSome: ({ videoId }) => videoLookUp(post, videoId, false),
@@ -616,7 +710,9 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
         // The platform rules take a video alone on a reel.
         Effect.flatMap(({ media, url }) =>
           media.kind === "video"
-            ? uploadVideo(post, "/video_reels", url)
+            ? journalPreparing(post, "reel").pipe(
+                Effect.andThen(uploadVideo(post, "/video_reels", url))
+              )
             : Effect.fail(new MediaRejected({ code: "unsupportedType" }))
         ),
         Effect.map((videoId): Readiness<UploadedVideo> => ({
@@ -674,7 +770,7 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
               }
 
               return finishing.format === "videoStory"
-                ? Option.some(videoLookUp(post, finishing.videoId, true))
+                ? Option.some(journaledVideo(post, finishing.videoId, true))
                 : Option.none();
             }),
           onSome: (made) =>
@@ -694,6 +790,11 @@ export const facebookFormatSteps = (deps: FacebookFormatDeps) => {
       post: OutgoingPost
     ) {
       const { media, url } = yield* onlyFile(post);
+
+      yield* journalPreparing(
+        post,
+        media.kind === "video" ? "videoStory" : "photoStory"
+      );
 
       if (media.kind === "video") {
         const videoId = yield* uploadVideo(post, "/video_stories", url);

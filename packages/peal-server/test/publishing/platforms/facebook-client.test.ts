@@ -4,6 +4,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Context, Duration, Effect, Layer, Option, Schema } from "effect";
 
 import type { PlatformClient } from "#publishing/application/platform-client.ts";
+import { PublicationProgress } from "#publishing/application/publication-progress.ts";
 import { defaultStepTiming } from "#publishing/application/publication-steps.ts";
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import { FacebookFormatProgressSchema } from "#publishing/infrastructure/platforms/meta/facebook-format-progress.ts";
@@ -824,7 +825,26 @@ describe("a Facebook story", () => {
   it.live("is uploaded again on a repost, never reusing a photo", () =>
     Effect.gen(function* repost() {
       const image = testFile("image", 2048, "image/jpeg");
-      const { client, graph } = yield* onPage({ files: [image] });
+
+      const graph = yield* fakeMetaGraph([pageToken]);
+      const progress = yield* Layer.build(progressInMemory);
+      const journal = Context.get(progress, ProgressLog);
+
+      // A repost is another attempt, under a key of its own.
+      yield* journal.begin(outgoingKey);
+      yield* journal.begin("a-repost-key");
+
+      const client = yield* metaClientWith({
+        appSecret: graphAppSecret,
+        credentials: credentialsOf(
+          { accountId: facebookPageId, platform: "facebook" },
+          [pageToken]
+        ),
+        files: [image],
+        platform: "facebook",
+        progress,
+        url: graph.url,
+      });
 
       const post = yield* outgoing({
         accountId: facebookPageId,
@@ -833,7 +853,7 @@ describe("a Facebook story", () => {
       });
 
       yield* client.publish(post);
-      yield* client.publish(post);
+      yield* client.publish({ ...post, idempotencyKey: "a-repost-key" });
 
       const [first, second] = graph.stories();
 
@@ -983,6 +1003,16 @@ const decodeProgress = Schema.decodeUnknownSync(
   Schema.toCodecJson(FacebookFormatProgressSchema)
 );
 
+// What the journal holds, in order, a run's own id left out.
+const journalOf = (recorded: readonly (typeof Schema.Json.Type)[]) =>
+  recorded.map((step) => {
+    const decoded = decodeProgress(step);
+
+    return decoded.step === "preparing"
+      ? { format: decoded.format, step: decoded.step }
+      : decoded;
+  });
+
 // The fake Graph API, the journal's progress with the call begun under
 // `begunAs`, and two clients sharing them: the earlier run's, cut short
 // (no confirmation after an unknown outcome, and, with `stopsUploading`,
@@ -1057,10 +1087,11 @@ describe("a Facebook reel resumed after a restart", () => {
         const [video] = graph.videos();
 
         assert.deepStrictEqual(
-          (yield* journal.recorded(outgoingKey)).map((step) =>
-            decodeProgress(step)
-          ),
-          [{ format: "reel", step: "finishing", videoId: video?.id ?? "" }]
+          journalOf(yield* journal.recorded(outgoingKey)),
+          [
+            { format: "reel", step: "preparing" },
+            { format: "reel", step: "finishing", videoId: video?.id ?? "" },
+          ]
         );
 
         assert.deepStrictEqual(yield* resumed.resume(post), {
@@ -1151,7 +1182,11 @@ describe("a Facebook reel resumed after a restart", () => {
 
         yield* Effect.flip(earlier.publish(post));
 
-        assert.deepStrictEqual(yield* journal.recorded(outgoingKey), []);
+        // The earlier run proved it began: it journaled its first step.
+        assert.deepStrictEqual(
+          journalOf(yield* journal.recorded(outgoingKey)),
+          [{ format: "reel", step: "preparing" }]
+        );
 
         const result = yield* resumed.resume(post);
         const [, second] = graph.videos();
@@ -1219,6 +1254,119 @@ describe("a Facebook reel resumed after a restart", () => {
   );
 });
 
+describe("a Facebook reel resumed while Meta's status fails once", () => {
+  it.live("reads on, rather than give up at the first look", () =>
+    Effect.gen(function* failedFirstLook() {
+      const clip = testFile("video", 4096);
+
+      const { earlier, graph, resumed } = yield* onPageResumed({
+        files: [clip],
+      });
+
+      const post = yield* outgoing({
+        accountId: facebookPageId,
+        media: [attached(clip)],
+        options: reel,
+      });
+
+      graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_reels#finish`);
+
+      yield* earlier.publish(post);
+
+      const [video] = graph.videos();
+
+      graph.script.push(`GET /v27.0/${video?.id ?? ""}`, [metaError(2, 500)]);
+
+      assert.deepStrictEqual(yield* resumed.resume(post), {
+        _tag: "published",
+        platformPostId: PlatformPostIdSchema.make(video?.id ?? "missing"),
+      });
+      assert.lengthOf(finishes(graph, "video_reels"), 1);
+    }).pipe(Effect.scoped)
+  );
+});
+
+describe("a Facebook reel begun before this release", () => {
+  it.live(
+    "is left unconfirmed, never sent again, when its call journaled nothing",
+    () =>
+      Effect.gen(function* upgraded() {
+        const clip = testFile("video", 4096);
+
+        // The release before journaled nothing: its finish may have gone.
+        const { graph, resumed } = yield* onPageResumed({ files: [clip] });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: reel,
+        });
+
+        assert.deepStrictEqual(yield* resumed.resume(post), {
+          _tag: "unconfirmed",
+          reason: "interrupted",
+        });
+        assert.lengthOf(graph.requests(), 0);
+      }).pipe(Effect.scoped)
+  );
+});
+
+describe("a Facebook reel whose call another run took over", () => {
+  it.live("sends no finish of its own, and is left unconfirmed", () =>
+    Effect.gen(function* takenOver() {
+      const clip = testFile("video", 4096);
+      const graph = yield* fakeMetaGraph([pageToken]);
+      const built = yield* Layer.build(progressInMemory);
+      const journal = Context.get(built, ProgressLog);
+      const progress = Context.get(built, PublicationProgress);
+
+      yield* journal.begin(outgoingKey);
+
+      // Another run resumes the call while this one uploads: it writes its
+      // own first step over this run's.
+      const overtaken = PublicationProgress.of({
+        read: progress.read,
+        record: progress.record,
+        replace: (key, expected, next) =>
+          progress.replace(key, expected, next).pipe(
+            Effect.tap((written) =>
+              written && JSON.stringify(next).includes("preparing")
+                ? journal.begin(key, {
+                    format: "reel",
+                    run: "another-run",
+                    step: "preparing",
+                  })
+                : Effect.void
+            )
+          ),
+      });
+
+      const client = yield* metaClientWith({
+        appSecret: graphAppSecret,
+        credentials: credentialsOf(
+          { accountId: facebookPageId, platform: "facebook" },
+          [pageToken]
+        ),
+        files: [clip],
+        platform: "facebook",
+        progress: Context.make(PublicationProgress, overtaken),
+        url: graph.url,
+      });
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: reel,
+        })
+      );
+
+      assert.strictEqual(result._tag, "unconfirmed");
+      assert.lengthOf(finishes(graph, "video_reels"), 0);
+    }).pipe(Effect.scoped)
+  );
+});
+
 describe("a Facebook story resumed after a restart", () => {
   it.live(
     "of a video reads its status on until Meta publishes it and lists it",
@@ -1244,10 +1392,9 @@ describe("a Facebook story resumed after a restart", () => {
         const [video] = graph.videos();
 
         assert.deepStrictEqual(
-          (yield* journal.recorded(outgoingKey)).map((step) =>
-            decodeProgress(step)
-          ),
+          journalOf(yield* journal.recorded(outgoingKey)),
           [
+            { format: "videoStory", step: "preparing" },
             {
               format: "videoStory",
               step: "finishing",
@@ -1400,10 +1547,9 @@ describe("a Facebook story resumed after a restart", () => {
         const [shown] = graph.stories();
 
         assert.deepStrictEqual(
-          (yield* journal.recorded(outgoingKey)).map((step) =>
-            decodeProgress(step)
-          ),
+          journalOf(yield* journal.recorded(outgoingKey)),
           [
+            { format: "photoStory", step: "preparing" },
             {
               format: "photoStory",
               photoId: shown?.mediaId ?? "",
