@@ -60,8 +60,10 @@ import { permissionsFor } from "#workspace/domain/roles.ts";
 
 const timeout = 90_000;
 
-// A Monday, 09:00 in Paris.
-const start = "2026-06-15T07:00:00Z";
+// A Monday, 09:00 in Paris. A poll reads every feed due, and the feeds
+// API's suite, which may run at the same time, adds its feeds in June
+// 2026: this one runs years before, when none of theirs is due yet.
+const start = "2001-06-18T07:00:00Z";
 const paris = TimeZoneIdSchema.make("Europe/Paris");
 const blog = "https://blog.example/feed.xml";
 
@@ -476,7 +478,7 @@ describe("a feed in queue mode", () => {
           // The queue's next slot: Monday at noon in Paris.
           assert.strictEqual(
             post?.scheduledAt?.toISOString(),
-            "2026-06-15T10:00:00.000Z"
+            "2001-06-18T10:00:00.000Z"
           );
 
           // A crash between the send and its outcome: the item is still
@@ -1202,7 +1204,7 @@ describe("a feed whose queue is gone", () => {
 const claimLeft = (feedId: FeedId, n: number) =>
   SqlClient.SqlClient.use(
     (sql) =>
-      sql`INSERT INTO publishing.feed_items (feed_id, item_digest, outcome, seen_at, last_seen_at) VALUES (${feedId}, ${digestOf(n)}, 'claimed', ${new Date("2026-06-15T07:30:00Z")}, ${new Date("2026-06-15T07:30:00Z")})`
+      sql`INSERT INTO publishing.feed_items (feed_id, item_digest, outcome, seen_at, last_seen_at) VALUES (${feedId}, ${digestOf(n)}, 'claimed', ${new Date("2001-06-18T07:30:00Z")}, ${new Date("2001-06-18T07:30:00Z")})`
   ).pipe(Effect.orDie);
 
 describe("an item a crashed run left claimed", () => {
