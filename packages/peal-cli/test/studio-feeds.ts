@@ -31,25 +31,25 @@ const readable = (url: string) =>
     ? Effect.void
     : Effect.fail(new FeedAddressRefused({ reason: "notHttps" }));
 
+const feedIn = (studio: Studio, feedId: string) =>
+  Ref.get(studio.state).pipe(
+    Effect.flatMap(({ feeds }) =>
+      Option.match(
+        Option.fromUndefinedOr(feeds.find(({ id }) => id === feedId)),
+        {
+          onNone: () => Effect.fail(new FeedNotFound()),
+          onSome: Effect.succeed,
+        }
+      )
+    )
+  );
+
 /** The studio's feeds group, over what the rest of it holds. */
 export const studioFeedsOf = (world: FeedsWorld) => {
   const inWorkspace = (workspaceId: string) =>
     workspaceId === world.workspaceId
       ? Effect.void
       : Effect.fail(new Forbidden());
-
-  const feedIn = (studio: Studio, feedId: string) =>
-    Ref.get(studio.state).pipe(
-      Effect.flatMap(({ feeds }) =>
-        Option.match(
-          Option.fromUndefinedOr(feeds.find(({ id }) => id === feedId)),
-          {
-            onNone: () => Effect.fail(new FeedNotFound()),
-            onSome: Effect.succeed,
-          }
-        )
-      )
-    );
 
   const saved = (studio: Studio, feed: Feed, change: string) =>
     Ref.update(studio.state, (current) => ({
