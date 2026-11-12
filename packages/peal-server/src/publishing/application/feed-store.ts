@@ -140,6 +140,20 @@ export class FeedStore extends Context.Service<
       digest: ItemDigest,
       reason: FeedPictureSkip
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Settles a claimed item, only while it is still claimed: true when
+     * this call settled it, false when another run or a resume did.
+     */
+    readonly settleClaim: (
+      feedId: FeedId,
+      digest: ItemDigest,
+      outcome: FeedItemOutcome,
+      reason: Option.Option<FeedItemReason>
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /** Abandons every item of the feed still claimed. */
+    readonly abandonClaims: (
+      feedId: FeedId
+    ) => Effect.Effect<void, DatabaseError>;
     /** The feed's items still `claimed`: their post's send not settled. */
     readonly claimed: (
       feedId: FeedId

@@ -183,6 +183,14 @@ export const DrizzleFeedStore = Layer.effect(
     const client = yield* SqlClient.SqlClient;
 
     return FeedStore.of({
+      abandonClaims: (feedId) =>
+        db
+          .update(feedItems)
+          .set({ outcome: "abandoned" })
+          .where(
+            and(eq(feedItems.feedId, feedId), eq(feedItems.outcome, "claimed"))
+          )
+          .pipe(Effect.asVoid, Effect.mapError(failed)),
       byId: (workspaceId, feedId) =>
         db
           .select()
@@ -427,6 +435,22 @@ export const DrizzleFeedStore = Layer.effect(
             and(eq(feedItems.feedId, feedId), eq(feedItems.itemDigest, digest))
           )
           .pipe(Effect.asVoid, Effect.mapError(failed)),
+      settleClaim: (feedId, digest, outcome, reason) =>
+        db
+          .update(feedItems)
+          .set({ outcome, reason: Option.getOrNull(reason) })
+          .where(
+            and(
+              eq(feedItems.feedId, feedId),
+              eq(feedItems.itemDigest, digest),
+              eq(feedItems.outcome, "claimed")
+            )
+          )
+          .returning({ digest: feedItems.itemDigest })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length > 0)
+          ),
       skipPicture: (feedId, digest, reason) =>
         db
           .update(feedItems)

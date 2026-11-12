@@ -665,6 +665,10 @@ export class Feeds extends Context.Service<
               });
 
               yield* store.record(feed.id, existing(document, now));
+
+              // Going again, or at a new address, makes nothing it held:
+              // a send a run before left unsettled is never taken up.
+              yield* store.abandonClaims(feed.id);
               yield* store.listed(
                 feed.id,
                 document.items.map(({ digest }) => digest),
@@ -853,6 +857,16 @@ export class Feeds extends Context.Service<
               if (!kept.has(entry.digest)) {
                 return Option.none<PostId>();
               }
+            } else if (
+              !(yield* store.settleClaim(
+                feed.id,
+                entry.digest,
+                Option.isSome(reason) ? "heldBack" : "made",
+                reason
+              ))
+            ) {
+              // Another run, or a resume, settled the claim first.
+              return Option.none<PostId>();
             }
 
             const draft = yield* drafts
@@ -1180,7 +1194,16 @@ export class Feeds extends Context.Service<
         for (const claim of claims) {
           const entry = byDigest.get(claim.digest);
 
-          if (entry !== undefined) {
+          // Only a queue's send leaves a claim: a feed that makes drafts
+          // now never makes one of it, as its post may be out already.
+          if (feed.mode !== "queue") {
+            yield* store.settleClaim(
+              feed.id,
+              claim.digest,
+              "abandoned",
+              Option.none()
+            );
+          } else if (entry !== undefined) {
             const outcome = counted(yield* makeItem(actor, feed, entry, true));
 
             if (outcome === "starterGone" || outcome === "queueGone") {

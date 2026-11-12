@@ -1158,3 +1158,81 @@ describe("a feed whose queue is gone", () => {
     timeout
   );
 });
+
+// An item a crashed run left claimed: its send may or may not have gone.
+const claimLeft = (feedId: FeedId, n: number) =>
+  SqlClient.SqlClient.use(
+    (sql) =>
+      sql`INSERT INTO publishing.feed_items (feed_id, item_digest, outcome, seen_at, last_seen_at) VALUES (${feedId}, ${digestOf(n)}, 'claimed', ${new Date("2026-06-15T07:30:00Z")}, ${new Date("2026-06-15T07:30:00Z")})`
+  ).pipe(Effect.orDie);
+
+describe("an item a crashed run left claimed", () => {
+  it.effect(
+    "is abandoned, never made a draft, once the feed makes drafts",
+    () =>
+      onServer(
+        Effect.gen(function* switched() {
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const queueId = yield* queueOn(workspaceId, channel);
+
+          yield* serveItems(blog, []);
+
+          const { feed } = yield* created(workspaceId, {
+            mode: "queue",
+            queueId: Option.some(queueId),
+          });
+
+          yield* claimLeft(feed.id, 9);
+          yield* Feeds.use((feeds) =>
+            feeds.change(actorIn(workspaceId), feed.id, { mode: "draft" })
+          );
+          yield* serveItems(blog, [{ n: 9, title: "Claimed" }]);
+          yield* later();
+          yield* poll;
+
+          assert.lengthOf(yield* postsOf(workspaceId), 0);
+          assert.deepStrictEqual(
+            (yield* itemsOf(workspaceId, feed.id)).map(
+              ({ outcome }) => outcome
+            ),
+            ["abandoned"]
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "is abandoned when the feed is resumed, which makes nothing",
+    () =>
+      onServer(
+        Effect.gen(function* resumed() {
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const queueId = yield* queueOn(workspaceId, channel);
+
+          yield* serveItems(blog, []);
+
+          const { feed } = yield* created(workspaceId, {
+            mode: "queue",
+            queueId: Option.some(queueId),
+          });
+
+          yield* claimLeft(feed.id, 9);
+          yield* Feeds.use((feeds) =>
+            feeds.change(actorIn(workspaceId), feed.id, { status: "paused" })
+          );
+          yield* serveItems(blog, [{ n: 9, title: "Claimed" }]);
+          yield* Feeds.use((feeds) =>
+            feeds.change(actorIn(workspaceId), feed.id, { status: "active" })
+          );
+          yield* later();
+          yield* poll;
+
+          assert.lengthOf(yield* postsOf(workspaceId), 0);
+        })
+      ),
+    timeout
+  );
+});
