@@ -255,7 +255,7 @@
   or author, ids as one `anyUuid` parameter, no permission checked.
 - Test use cases on the in-memory world (`test/engagement/fakes/world.ts`),
   the store on Postgres at instants no other suite uses (2043; the purge
-  in 2031; the refresh bound in 1923, before the test clock's start, as
+  in 2031; the refresh bound in 1923, before the test clock's start, a channel gone in 2037, after the purge's, as
   moving it forward past the pool's timers stalls the pool), deleting the
   workspace's rows after.
 - Every string a platform gives is cleaned before anything keeps or
