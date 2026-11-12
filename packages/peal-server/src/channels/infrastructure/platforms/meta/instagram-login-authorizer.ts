@@ -10,6 +10,8 @@ import type {
   PlatformAuthorizer,
 } from "#channels/application/platform-authorizer.ts";
 import { tokenPolicies } from "#channels/domain/token-policy.ts";
+import { instagramLoginCommentScope } from "#shared/domain/inbox-platform.ts";
+import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { instagramUrl } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
@@ -28,17 +30,25 @@ import type { MetaHttp } from "./meta-exchange.ts";
 export const instagramCallbackPath = "/connect/instagram/callback";
 
 // Reading the account and publishing for it, without which nothing can be
-// posted, and the insights analytics reads, which an account may decline.
-// Comments and messages are not asked for. Meta retired the older
-// `business_*` names on 2025-01-27.
+// posted, and the insights analytics reads, which an account may decline;
+// where the server reads Instagram's comments, the comments permission,
+// which it may decline too. Messages are not asked for. Meta retired the
+// older `business_*` names on 2025-01-27.
 const requiredScopes = [
   "instagram_business_basic",
   "instagram_business_content_publish",
 ] as const;
 
-const optionalScopes = ["instagram_business_manage_insights"] as const;
+const insightsScopes = ["instagram_business_manage_insights"] as const;
 
-const instagramScopes = [...requiredScopes, ...optionalScopes];
+/** What Instagram Login asks for on a server whose inbox reads `inbox`. */
+export const instagramLoginScopes = (
+  inbox: InboxPlatforms
+): readonly string[] => [
+  ...requiredScopes,
+  ...insightsScopes,
+  ...(inbox.has("instagram") ? [instagramLoginCommentScope] : []),
+];
 
 // From Meta's "Business Login for Instagram" page. The code (an hour, used
 // once) buys a short-lived token on api.instagram.com, whose answer lists
@@ -119,7 +129,8 @@ const codeOf = (code: string) => code.replace(/#_$/u, "");
  * day old: the refresh sweep renews it a week before it expires. A token
  * nobody renewed in 60 days cannot be renewed again, and the member
  * reconnects. Declining publishing refuses the sign-in; declining insights
- * leaves the channel posting without counts.
+ * leaves the channel posting without counts, and declining comments (asked
+ * only where the inbox reads Instagram) without an inbox.
  *
  * The channel keeps the professional account's id as its account, and the
  * app-scoped id of the app's user as the grant its token rests on, as a
@@ -131,10 +142,14 @@ export const instagramLoginAuthorizer = Effect.fn(
   readonly app: MetaApp;
   readonly hosts: MetaHosts;
   readonly http: MetaHttp;
+  /** The optional platforms the inbox reads; none when not given. */
+  readonly inbox?: InboxPlatforms;
   readonly publicUrl: string;
 }) {
   const random = yield* SecureRandom.SecureRandom;
   const { app, hosts, http } = options;
+
+  const instagramScopes = instagramLoginScopes(options.inbox ?? new Set());
   const redirectUri = new URL(instagramCallbackPath, options.publicUrl).href;
 
   const begin: PlatformAuthorizer["begin"] = () =>

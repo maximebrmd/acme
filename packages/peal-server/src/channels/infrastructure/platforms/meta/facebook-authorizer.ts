@@ -1,6 +1,7 @@
 import { Option } from "effect";
 
 import { tokenPolicies } from "#channels/domain/token-policy.ts";
+import { facebookCommentScopes } from "#shared/domain/inbox-platform.ts";
 
 import { avatarOf, facebookLogin } from "./facebook-login.ts";
 import type { FacebookLoginProduct } from "./facebook-login.ts";
@@ -33,6 +34,8 @@ export const facebookPages: FacebookLoginProduct = {
           },
         ]
       : [],
+  // Reading a Page's comments, and answering and hiding them.
+  commentScopes: [facebookCommentScopes.read, facebookCommentScopes.manage],
   platform: "facebook",
   policy: tokenPolicies.facebook,
   scopes: facebookScopes,
