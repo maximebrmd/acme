@@ -43,6 +43,8 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  *   (`webhooks/domain/delivery-policy.ts`);
  * - `usageDays`: each workspace's usage counts, day by day
  *   (`billing/domain/usage-meter.ts`);
+ * - `partnerUsageDays`: a partner account's daily counts of its workspaces
+ *   and their channels (`workspace/domain/partner-usage-retention.ts`);
  * - `reviewVisitorNames`: what people without an
  *   account leave on a review link, and the link's own record, which goes
  *   with the names (`review/domain/review-retention.ts`);
@@ -84,6 +86,7 @@ export const retentionPeriods = {
   legalDisclosures: { years: 5 },
   legalIdentity: { years: 5 },
   metrics: { days: 30 },
+  partnerUsageDays: { days: 400 },
   reviewVisitorNames: { months: 24 },
   serverLogs: { days: 31 },
   traces: { days: 14 },
@@ -374,8 +377,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Permettre à un produit d’utiliser le service pour ses propres clients : un espace de travail pour chacun, et des pages au nom du produit où ils connectent leurs comptes",
     },
     retention: {
-      en: `The account, its keys and its daily counts: until the account is closed or its workspace is deleted; a key, until it is revoked. A customer’s workspace and everything it holds: until the partner deletes it. Closing the account of the member who created a key removes them from it at once. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
-      fr: `Le compte, ses clés et ses décomptes quotidiens : jusqu’à la fermeture du compte ou la suppression de son espace de travail ; une clé, jusqu’à sa révocation. L’espace de travail d’un client et tout ce qu’il contient : jusqu’à sa suppression par le partenaire. La fermeture du compte du membre qui a créé une clé l’en retire aussitôt. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
+      en: `The account and its keys: until the account is closed or its workspace is deleted; a key, until it is revoked. Its daily counts: ${p.partnerUsageDays.days} days from each day, then deleted within a day, or earlier with the account. A customer’s workspace and everything it holds: until the partner deletes it. Closing the account of the member who created a key removes them from it at once. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
+      fr: `Le compte et ses clés : jusqu’à la fermeture du compte ou la suppression de son espace de travail ; une clé, jusqu’à sa révocation. Ses décomptes quotidiens : ${p.partnerUsageDays.days} jours à compter de chaque jour, puis supprimés dans la journée, ou plus tôt avec le compte. L’espace de travail d’un client et tout ce qu’il contient : jusqu’à sa suppression par le partenaire. La fermeture du compte du membre qui a créé une clé l’en retire aussitôt. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
     },
     source: {
       en: "The owners and admins of the workspace, for the account and its keys; the partner’s own systems, through those keys, for its customers’ workspaces",

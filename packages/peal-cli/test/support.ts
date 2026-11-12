@@ -252,6 +252,11 @@ const signedInGroupsLive = (
         updateWorkspace: () => refusing,
       })
     ),
+    // The partner API takes a partner key, which the command line never
+    // holds.
+    HttpApiBuilder.group(Api, "partnerUsage", (handlers) =>
+      handlers.handleAll({ get: () => refusing })
+    ),
     HttpApiBuilder.group(Api, "billingActions", (handlers) =>
       handlers.handleAll({
         cancel: () => refusing,

@@ -1,4 +1,5 @@
 import { Atom } from "effect/reactivity";
+import type { CalendarDay } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 
@@ -40,6 +41,24 @@ export const partnerWorkspacesOf = Atom.family((workspaceId: string) =>
     query: {},
   })
 );
+
+/**
+ * What the account and its workspaces used over a period, a page of its
+ * workspaces at a time: `before` names the page after the first.
+ */
+export const partnerUsageOf = (
+  workspaceId: string,
+  query: {
+    readonly before?: string;
+    readonly from: CalendarDay;
+    readonly to: CalendarDay;
+  }
+) =>
+  PealApi.query("usage", "partner", {
+    params: { workspaceId },
+    query,
+    reactivityKeys: [`billing:${workspaceId}`],
+  });
 
 export const openPartner = PealApi.mutation("partnerAccount", "open");
 

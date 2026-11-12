@@ -300,6 +300,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `UsageHistoryView`'s chart (posts published as bars, channels as a
   line) with `UsageDaysTable` behind the **Table** tab, a dash for a day
   without a snapshot. Its strings are `Billing.usage.history`.
+  `UsageHistoryView` takes days, totals and a table, so the partner
+  settings' **Usage per customer** (`UsagePerCustomer`,
+  `components/settings/partner-usage.tsx`, strings
+  `WorkspaceSettings.partner.usageReport`) draws `GET …/usage/partner`
+  with it, then a table of workspaces, external id first, with **Load
+  more** for the next pages; the billing page wraps it in
+  `WorkspaceUsageHistory`.
 - The sign-up and password reset pages read the Turnstile site key at
   request time (`captchaSiteKey()`, `GET /api/captcha`); `useCaptcha` shows
   the widget only with one, sends its token as `x-captcha-response`, and

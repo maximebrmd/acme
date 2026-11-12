@@ -68,6 +68,13 @@ export interface CountedWorkspacePage {
   readonly workspaces: readonly CountedWorkspace[];
 }
 
+/** A page of a partner's workspaces, newest first, uncounted. */
+export interface WorkspaceListing {
+  readonly next: Option.Option<string>;
+  readonly total: number;
+  readonly workspaces: readonly CustomerWorkspace[];
+}
+
 /** Which workspaces a partner asks for. */
 export interface WorkspaceListRequest {
   readonly before: Option.Option<string>;
@@ -222,6 +229,19 @@ export class PartnerWorkspaces extends Context.Service<
       PartnerUsage,
       DatabaseError | MissingPermission | PartnerNotFound
     >;
+    /**
+     * A page of the partner's workspaces in the order and with the cursor
+     * of `list`, without their channels, for the workspace context's use
+     * cases that have checked who asks and count the channels themselves
+     * (`PartnerTenants`).
+     */
+    readonly listingOf: (
+      partnerId: PartnerId,
+      request: WorkspaceListRequest
+    ) => Effect.Effect<
+      WorkspaceListing,
+      DatabaseError | InvalidWorkspaceCursor
+    >;
     /** Counts what every partner holds today (UTC), and keeps it. */
     readonly meter: Effect.Effect<number, DatabaseError>;
     /** Forgets the idempotency keys past their time, and says how many. */
@@ -271,48 +291,65 @@ export class PartnerWorkspaces extends Context.Service<
         return found.value;
       });
 
+      const listingOf = Effect.fn("PartnerWorkspaces.listingOf")(
+        function* listingOf(
+          partnerId: PartnerId,
+          request: WorkspaceListRequest
+        ) {
+          const limit = limitOf(request.limit);
+
+          const found = yield* workspaces.list(partnerId, {
+            before: yield* Option.match(request.before, {
+              onNone: () => Effect.succeed(Option.none()),
+              onSome: (cursor) =>
+                decodeCursor(cursor).pipe(
+                  Effect.mapError(() => new InvalidWorkspaceCursor()),
+                  Effect.asSome
+                ),
+            }),
+            externalId: request.externalId,
+            // One more than asked, to know whether another page follows.
+            limit: limit + 1,
+            name: request.name.pipe(
+              Option.map((name) => name.trim()),
+              Option.filter((name) => name !== "")
+            ),
+          });
+
+          const shown = found.workspaces.slice(0, limit);
+
+          const listed: WorkspaceListing = {
+            next:
+              found.workspaces.length > limit
+                ? yield* Effect.transposeOption(
+                    Option.fromUndefinedOr(shown.at(-1)).pipe(
+                      Option.map(({ createdAt, id }) =>
+                        encodeCursor({ createdAt, id }).pipe(Effect.orDie)
+                      )
+                    )
+                  )
+                : Option.none(),
+            total: found.total,
+            workspaces: shown,
+          };
+
+          return listed;
+        }
+      );
+
       const page = Effect.fn("PartnerWorkspaces.page")(function* page(
         partnerId: PartnerId,
         request: WorkspaceListRequest
       ) {
-        const limit = limitOf(request.limit);
+        const listed = yield* listingOf(partnerId, request);
 
-        const found = yield* workspaces.list(partnerId, {
-          before: yield* Option.match(request.before, {
-            onNone: () => Effect.succeed(Option.none()),
-            onSome: (cursor) =>
-              decodeCursor(cursor).pipe(
-                Effect.mapError(() => new InvalidWorkspaceCursor()),
-                Effect.asSome
-              ),
-          }),
-          externalId: request.externalId,
-          // One more than asked, to know whether another page follows.
-          limit: limit + 1,
-          name: request.name.pipe(
-            Option.map((name) => name.trim()),
-            Option.filter((name) => name !== "")
-          ),
-        });
-
-        const shown = found.workspaces.slice(0, limit);
-
-        const listed: CountedWorkspacePage = {
-          next:
-            found.workspaces.length > limit
-              ? yield* Effect.transposeOption(
-                  Option.fromUndefinedOr(shown.at(-1)).pipe(
-                    Option.map(({ createdAt, id }) =>
-                      encodeCursor({ createdAt, id }).pipe(Effect.orDie)
-                    )
-                  )
-                )
-              : Option.none(),
-          total: found.total,
-          workspaces: yield* counted(shown),
+        const countedPage: CountedWorkspacePage = {
+          next: listed.next,
+          total: listed.total,
+          workspaces: yield* counted(listed.workspaces),
         };
 
-        return listed;
+        return countedPage;
       });
 
       const usageOf = Effect.fn("PartnerWorkspaces.usageOf")(function* usageOf(
@@ -571,6 +608,7 @@ export class PartnerWorkspaces extends Context.Service<
         get,
         list,
         listFor,
+        listingOf,
         meter,
         purgeKeys,
         usageFor,

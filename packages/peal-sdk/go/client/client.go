@@ -26,6 +26,7 @@ import (
 	option "github.com/peal-social/peal/packages/peal-sdk/go/option"
 	partner "github.com/peal-social/peal/packages/peal-sdk/go/partner"
 	partneraccount "github.com/peal-social/peal/packages/peal-sdk/go/partneraccount"
+	partnerusage "github.com/peal-social/peal/packages/peal-sdk/go/partnerusage"
 	posts "github.com/peal-social/peal/packages/peal-sdk/go/posts"
 	queues "github.com/peal-social/peal/packages/peal-sdk/go/queues"
 	recycling "github.com/peal-social/peal/packages/peal-sdk/go/recycling"
@@ -62,6 +63,7 @@ type Client struct {
 	Ads                     *ads.Client
 	Activity                *activity.Client
 	Partner                 *partner.Client
+	PartnerUsage            *partnerusage.Client
 	PartnerAccount          *partneraccount.Client
 	ConnectLinks            *connectlinks.Client
 	Review                  *review.Client
@@ -102,6 +104,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Ads:                     ads.NewClient(options),
 		Activity:                activity.NewClient(options),
 		Partner:                 partner.NewClient(options),
+		PartnerUsage:            partnerusage.NewClient(options),
 		PartnerAccount:          partneraccount.NewClient(options),
 		ConnectLinks:            connectlinks.NewClient(options),
 		Review:                  review.NewClient(options),

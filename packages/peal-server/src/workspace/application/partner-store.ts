@@ -71,6 +71,22 @@ export class PartnerStore extends Context.Service<
       partnerId: PartnerId,
       usage: PartnerUsageDay
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * The partner's daily counts from `from` to `to`, both days included,
+     * oldest first.
+     */
+    readonly usageBetween: (
+      partnerId: PartnerId,
+      from: DateTime.Utc,
+      to: DateTime.Utc
+    ) => Effect.Effect<readonly PartnerUsageDay[], DatabaseError>;
+    /**
+     * Deletes every partner's counts of the days before `day`, in one
+     * statement, and says how many it deleted.
+     */
+    readonly purgeUsageBefore: (
+      day: DateTime.Utc
+    ) => Effect.Effect<number, DatabaseError>;
     /** The partner's daily counts since `since`, oldest first. */
     readonly usage: (
       partnerId: PartnerId,

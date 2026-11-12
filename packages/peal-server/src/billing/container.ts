@@ -48,6 +48,7 @@ import { RandomRequestTokensLive } from "#billing/infrastructure/random-request-
 import { StripeContractsLive } from "#billing/infrastructure/stripe-contracts-live.ts";
 import { usageSnapshot } from "#billing/infrastructure/usage-snapshot-cron.ts";
 import { WorkspaceContractHoldersLive } from "#billing/infrastructure/workspace-contract-holders.ts";
+import { WorkspacePartnerTenancyLive } from "#billing/infrastructure/workspace-partner-tenancy.ts";
 import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
 
 const RecordsLive = Layer.mergeAll(
@@ -122,8 +123,10 @@ const UsageAtCheckoutBound = Layer.effectDiscard(
  * reminders; and every workspace's usage, day by day, which those
  * contexts count too: its daily snapshot and its report, which says whose
  * plan a partner's workspace is on (the workspace context's
- * PartnerOwnership). The composition root provides those contexts, Ids and the
- * TransactionRunner, with BillingLive.
+ * PartnerOwnership), and a partner's per customer, from the workspaces the
+ * workspace context's PartnerTenants says it holds. The composition root
+ * provides those contexts, PartnerTenants, Ids and the TransactionRunner,
+ * with BillingLive.
  */
 export const BillingOverviewLive = Layer.mergeAll(
   BillingOverview.layer,
@@ -149,7 +152,8 @@ export const BillingOverviewLive = Layer.mergeAll(
       NotifiedBillingNoticesLive,
       ContextWorkspaceUsageLive,
       ContextMemberAddressesLive,
-      KeyedPseudonymsLive
+      KeyedPseudonymsLive,
+      WorkspacePartnerTenancyLive
     )
   )
 );
@@ -217,7 +221,10 @@ export { BillingHandlers as BillingApiLive } from "#billing/api/billing.ts";
 
 export { BillingActionsHandlers as BillingActionsApiLive } from "#billing/api/billing-actions.ts";
 
-export { UsageHandlers as UsageApiLive } from "#billing/api/usage.ts";
+export {
+  UsageHandlers as UsageApiLive,
+  PartnerUsageHandlers as PartnerUsageApiLive,
+} from "#billing/api/usage.ts";
 
 // The check of Stripe's prices a server that bills makes when it starts.
 export { StripePricesCheckedLive } from "#billing/infrastructure/stripe-prices-checked.ts";

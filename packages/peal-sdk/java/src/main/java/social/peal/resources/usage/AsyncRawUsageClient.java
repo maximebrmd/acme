@@ -30,6 +30,8 @@ import social.peal.errors.NotFoundError;
 import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.resources.usage.requests.GetUsageRequest;
+import social.peal.resources.usage.requests.PartnerUsageRequest;
+import social.peal.types.PartnerUsageReport;
 import social.peal.types.UnauthenticatedEncoded;
 import social.peal.types.WorkspaceUsageReport;
 
@@ -114,6 +116,149 @@ public class AsyncRawUsageClient {
                     if (response.isSuccessful()) {
                         future.complete(new PealClientHttpResponse<>(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, WorkspaceUsageReport.class),
+                                response));
+                        return;
+                    }
+                    try {
+                        switch (response.code()) {
+                            case 400:
+                                future.completeExceptionally(new BadRequestError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 401:
+                                future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 403:
+                                future.completeExceptionally(new ForbiddenError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 404:
+                                future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                        }
+                    } catch (JsonProcessingException ignored) {
+                        // unable to map error response, throwing generic error
+                    }
+                    Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+                    future.completeExceptionally(new PealClientApiException(
+                            "Error with status code " + response.code(), response.code(), errorBody, response));
+                    return;
+                } catch (JsonProcessingException e) {
+                    future.completeExceptionally(
+                            new PealClientException("Failed to deserialize response: " + e.getMessage(), e));
+                } catch (IOException e) {
+                    future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+            }
+        });
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                okhttpCall.cancel();
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers what the partner account uses across the workspaces it holds, from <code>from</code> to <code>to</code> (UTC days, both included, at most 92; by default the 30 days that end today), and per workspace. <code>current</code> is what it holds now: the workspaces it owns and the channels connected across them and its home workspace, which its plan's channel limit counts. Each day gives the workspaces it owned and the channels connected across them as the daily count found them at 23:41 UTC (null for a day without a count), and the posts that went out in the workspaces that still exist. <code>workspaces</code> is a page of its workspaces with each one's external id, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and, for each calendar month the period touches, posts on platforms that bill the server per post: newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400); the home workspace comes first, on the first page only, one more than asked. <code>current</code>, <code>days</code> and <code>totals</code>, which cover the whole account, come with the first page only, and are null on the pages after it, which read their own workspaces alone. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily <code>workspaces</code> and <code>channels</code> still count it for the days it existed. Kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, <code>plan</code> and <code>allowances</code> are null. For the people of the partner's home workspace: a workspace with no partner account answers 404 <code>PartnerNotFound</code>. A partner key reads the same at <code>GET /api/partner/usage</code>. Needs partner:read.
+     */
+    public CompletableFuture<PealClientHttpResponse<PartnerUsageReport>> partner(String workspaceId) {
+        return partner(workspaceId, PartnerUsageRequest.builder().build());
+    }
+
+    /**
+     * Answers what the partner account uses across the workspaces it holds, from <code>from</code> to <code>to</code> (UTC days, both included, at most 92; by default the 30 days that end today), and per workspace. <code>current</code> is what it holds now: the workspaces it owns and the channels connected across them and its home workspace, which its plan's channel limit counts. Each day gives the workspaces it owned and the channels connected across them as the daily count found them at 23:41 UTC (null for a day without a count), and the posts that went out in the workspaces that still exist. <code>workspaces</code> is a page of its workspaces with each one's external id, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and, for each calendar month the period touches, posts on platforms that bill the server per post: newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400); the home workspace comes first, on the first page only, one more than asked. <code>current</code>, <code>days</code> and <code>totals</code>, which cover the whole account, come with the first page only, and are null on the pages after it, which read their own workspaces alone. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily <code>workspaces</code> and <code>channels</code> still count it for the days it existed. Kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, <code>plan</code> and <code>allowances</code> are null. For the people of the partner's home workspace: a workspace with no partner account answers 404 <code>PartnerNotFound</code>. A partner key reads the same at <code>GET /api/partner/usage</code>. Needs partner:read.
+     */
+    public CompletableFuture<PealClientHttpResponse<PartnerUsageReport>> partner(
+            String workspaceId, RequestOptions requestOptions) {
+        return partner(workspaceId, PartnerUsageRequest.builder().build(), requestOptions);
+    }
+
+    /**
+     * Answers what the partner account uses across the workspaces it holds, from <code>from</code> to <code>to</code> (UTC days, both included, at most 92; by default the 30 days that end today), and per workspace. <code>current</code> is what it holds now: the workspaces it owns and the channels connected across them and its home workspace, which its plan's channel limit counts. Each day gives the workspaces it owned and the channels connected across them as the daily count found them at 23:41 UTC (null for a day without a count), and the posts that went out in the workspaces that still exist. <code>workspaces</code> is a page of its workspaces with each one's external id, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and, for each calendar month the period touches, posts on platforms that bill the server per post: newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400); the home workspace comes first, on the first page only, one more than asked. <code>current</code>, <code>days</code> and <code>totals</code>, which cover the whole account, come with the first page only, and are null on the pages after it, which read their own workspaces alone. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily <code>workspaces</code> and <code>channels</code> still count it for the days it existed. Kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, <code>plan</code> and <code>allowances</code> are null. For the people of the partner's home workspace: a workspace with no partner account answers 404 <code>PartnerNotFound</code>. A partner key reads the same at <code>GET /api/partner/usage</code>. Needs partner:read.
+     */
+    public CompletableFuture<PealClientHttpResponse<PartnerUsageReport>> partner(
+            String workspaceId, PartnerUsageRequest request) {
+        return partner(workspaceId, request, null);
+    }
+
+    /**
+     * Answers what the partner account uses across the workspaces it holds, from <code>from</code> to <code>to</code> (UTC days, both included, at most 92; by default the 30 days that end today), and per workspace. <code>current</code> is what it holds now: the workspaces it owns and the channels connected across them and its home workspace, which its plan's channel limit counts. Each day gives the workspaces it owned and the channels connected across them as the daily count found them at 23:41 UTC (null for a day without a count), and the posts that went out in the workspaces that still exist. <code>workspaces</code> is a page of its workspaces with each one's external id, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and, for each calendar month the period touches, posts on platforms that bill the server per post: newest first, 50 a page unless <code>limit</code> (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass <code>next</code> as <code>before</code>; anything else is refused, 400); the home workspace comes first, on the first page only, one more than asked. <code>current</code>, <code>days</code> and <code>totals</code>, which cover the whole account, come with the first page only, and are null on the pages after it, which read their own workspaces alone. A workspace offboarded during the period is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily <code>workspaces</code> and <code>channels</code> still count it for the days it existed. Kept 400 days. Counts only: nothing here is priced or limits anything. On a server that does not bill, <code>plan</code> and <code>allowances</code> are null. For the people of the partner's home workspace: a workspace with no partner account answers 404 <code>PartnerNotFound</code>. A partner key reads the same at <code>GET /api/partner/usage</code>. Needs partner:read.
+     */
+    public CompletableFuture<PealClientHttpResponse<PartnerUsageReport>> partner(
+            String workspaceId, PartnerUsageRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("usage")
+                .addPathSegments("partner");
+        if (request.getBefore().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "before", request.getBefore().get(), false);
+        }
+        if (request.getFrom().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "from", request.getFrom().get(), false);
+        }
+        if (request.getLimit().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "limit", request.getLimit().get(), false);
+        }
+        if (request.getTo().isPresent()) {
+            QueryStringMapper.addQueryParameter(httpUrl, "to", request.getTo().get(), false);
+        }
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method("GET", null)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
+        CompletableFuture<PealClientHttpResponse<PartnerUsageReport>> future = new CompletableFuture<>();
+        RetryInterceptor.AsyncCall okhttpCall = RetryInterceptor.newAsyncCall(client, okhttpRequest);
+        okhttpCall.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try (ResponseBody responseBody = response.body()) {
+                    String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                    if (response.isSuccessful()) {
+                        future.complete(new PealClientHttpResponse<>(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, PartnerUsageReport.class),
                                 response));
                         return;
                     }

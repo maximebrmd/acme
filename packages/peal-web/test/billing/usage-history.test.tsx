@@ -9,6 +9,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   UsageDaysTable,
   UsageHistoryView,
+  WorkspaceUsageHistory,
 } from "#components/billing/usage-history.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 
@@ -111,9 +112,9 @@ const empty: WorkspaceUsageReport = {
   },
 };
 
-describe(UsageHistoryView, () => {
+describe(WorkspaceUsageHistory, () => {
   it("adds up the period", async () => {
-    const html = await render("en", <UsageHistoryView report={report} />);
+    const html = await render("en", <WorkspaceUsageHistory report={report} />);
 
     expect(html).toContain("4 posts published");
     expect(html).toContain(
@@ -125,7 +126,7 @@ describe(UsageHistoryView, () => {
   });
 
   it("offers the days as a table beside the chart", async () => {
-    const html = await render("en", <UsageHistoryView report={report} />);
+    const html = await render("en", <WorkspaceUsageHistory report={report} />);
 
     expect(html).toContain(">Chart<");
     expect(html).toContain(">Table<");
@@ -139,7 +140,7 @@ describe(UsageHistoryView, () => {
   it("says so when nothing was counted, and when a partner's plan holds the channels", async () => {
     const html = await render(
       "fr",
-      <UsageHistoryView
+      <WorkspaceUsageHistory
         report={{
           ...empty,
           sharedWith: { partnerWorkspaceId: "home-workspace" },
@@ -155,6 +156,29 @@ describe(UsageHistoryView, () => {
     expect(html).toContain("0 publication mise en ligne");
     // Days are on the calendar, whatever the reader's zone.
     expect(html).toContain("du 9 nov. 2026 au 11 nov. 2026");
+  });
+});
+
+describe(UsageHistoryView, () => {
+  it("draws any days and totals, the table it is given behind its tab", async () => {
+    const html = await render(
+      "en",
+      <UsageHistoryView
+        days={report.days.map(({ channels, day, publishedPosts }) => ({
+          channels,
+          day,
+          publishedPosts,
+        }))}
+        period={report.period}
+        table={<p>A table of its own</p>}
+        totals={report.totals}
+      />
+    );
+
+    expect(html).toContain("4 posts published");
+    expect(html).toContain(">Table<");
+    // Not the workspace's table of days: the one given, behind its tab.
+    expect(html).not.toContain("Usage each UTC day");
   });
 });
 

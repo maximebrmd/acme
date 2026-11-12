@@ -1,15 +1,4 @@
-import {
-  and,
-  asc,
-  count,
-  eq,
-  gt,
-  ilike,
-  inArray,
-  lte,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, asc, count, eq, gt, ilike, lte, or, sql } from "drizzle-orm";
 import {
   DateTime,
   Duration,
@@ -35,6 +24,7 @@ import type { TokenLifetime } from "#channels/domain/channel.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { channels } from "./schema.ts";
@@ -255,7 +245,7 @@ export const DrizzleChannelRepository = Layer.effect(
                 workspaceId: channels.workspaceId,
               })
               .from(channels)
-              .where(inArray(channels.workspaceId, [...workspaceIds]))
+              .where(anyUuid(channels.workspaceId, workspaceIds))
               .groupBy(channels.workspaceId)
               .pipe(
                 Effect.mapError(failed),

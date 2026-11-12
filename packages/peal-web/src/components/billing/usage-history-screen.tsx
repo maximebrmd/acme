@@ -32,7 +32,7 @@ import {
 } from "#analytics/report.ts";
 import type { Range } from "#analytics/report.ts";
 import { usageOf } from "#billing/api.ts";
-import { UsageHistoryView } from "#components/billing/usage-history.tsx";
+import { WorkspaceUsageHistory } from "#components/billing/usage-history.tsx";
 
 const decodeRange = Schema.decodeUnknownOption(RangeSchema);
 
@@ -56,7 +56,7 @@ const Loaded = ({
   const retry = useAtomRefresh(query);
 
   if (AsyncResult.isSuccess(report)) {
-    return <UsageHistoryView report={report.value} />;
+    return <WorkspaceUsageHistory report={report.value} />;
   }
 
   return AsyncResult.isFailure(report) ? (

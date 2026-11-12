@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import {
   ConfigProvider,
   Context,
@@ -273,3 +275,14 @@ export const repositoryScopedTo = (workspaceId: WorkspaceId) => {
     })
   ).pipe(Layer.provide(DrizzleChannelRepository));
 };
+
+/**
+ * More workspace ids than a statement takes parameters (Postgres takes
+ * 65,535), for reads that must pass the ids as one array.
+ */
+export const pastParameterLimit = (
+  given: readonly WorkspaceId[]
+): readonly WorkspaceId[] => [
+  ...given,
+  ...Array.from({ length: 70_000 }, () => WorkspaceIdSchema.make(randomUUID())),
+];
