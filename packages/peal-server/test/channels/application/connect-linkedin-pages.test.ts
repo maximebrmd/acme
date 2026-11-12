@@ -302,6 +302,35 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
       }).pipe(Effect.scoped)
   );
 
+  it.effect(
+    "reads the member's roles past a page LinkedIn gives shorter than asked, to an empty one",
+    () =>
+      Effect.gen(function* cappedRoles() {
+        const on = yield* onLinkedIn();
+        const workspaceId = yield* freshWorkspace;
+
+        on.linkedin.capRolePages(2);
+        on.linkedin.grantRoles(linkedinMember.sub, [
+          { organization: 31, role: "ANALYST", state: "APPROVED" },
+          { organization: 32, role: "ANALYST", state: "APPROVED" },
+          administrator(linkedinPage),
+        ]);
+
+        const outcome = yield* signIn(on, workspaceId);
+
+        assert(outcome._tag === "connected");
+        assert.strictEqual(outcome.channel.accountId, urnOf(linkedinPage));
+        // Two roles, one, then the empty page that ends them.
+        assert.deepStrictEqual(
+          on.linkedin
+            .requests()
+            .filter(({ path }) => path === "/rest/organizationAcls")
+            .map(({ query }) => query.get("start")),
+          ["0", "2", "3"]
+        );
+      }).pipe(Effect.scoped)
+  );
+
   it.effect("has nothing to connect for a member without a page", () =>
     Effect.gen(function* none() {
       const on = yield* onLinkedIn();

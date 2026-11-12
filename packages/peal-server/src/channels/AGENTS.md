@@ -119,7 +119,8 @@
   `r_organization_social`, `rw_organization_admin`, nothing of the member's
   profile). Both redirect to `/connect/linkedin/callback`; the attempt's
   connection picks the authorizer. The pages sign-in lists the member's
-  approved roles (`organizationAcls`) and answers an `AccountChoice` of
+  approved roles (`organizationAcls`, to `paging.total` or an empty page,
+  never a page shorter than asked, which LinkedIn may cap) and answers an `AccountChoice` of
   the pages they administer or write content for (`postingRoles`), each
   with the member's token and `urn:li:organization:<id>` as its account
   id, which no profile's can equal. A page's token is renewed only when

@@ -165,6 +165,8 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
   let refreshable = false;
   // Whether the token answer lists the scopes granted.
   let listsScopes = true;
+  // The longest page of roles the fake gives, whatever `count` asks.
+  let rolesCap = Number.POSITIVE_INFINITY;
 
   const members = new Map<string, LinkedInMember>([
     [linkedinMember.sub, linkedinMember],
@@ -362,7 +364,11 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
     ) {
       const state = request.query.get("state");
       const start = Number(request.query.get("start") ?? "0");
-      const count = Number(request.query.get("count") ?? "10");
+
+      const count = Math.min(
+        Number(request.query.get("count") ?? "10"),
+        rolesCap
+      );
 
       const listed = held.filter(
         (role) => state === null || role.state === state
@@ -449,6 +455,10 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
     },
     approve,
     cancel,
+    /** Gives pages of roles no longer than `count`, whatever is asked. */
+    capRolePages: (count: number) => {
+      rolesCap = count;
+    },
     endpoints,
     /** Makes the next answers to `route` these failures, in order. */
     failNext: (route: string, answers: readonly FakeResponse[]) => {

@@ -77,10 +77,13 @@ export const postingRoles: ReadonlySet<string> = new Set([
   "CONTENT_ADMINISTRATOR",
 ]);
 
-// How many roles one call lists, and how many calls a sign-in makes at
-// most: a member with more pages than that picks among the first.
+// How many roles one call asks, and how many calls and roles a sign-in
+// reads at most: a member with more pages than that picks among the first.
+// LinkedIn may give a page shorter than asked, so a page of 10 takes as
+// many calls as it gives roles in tens.
 const rolesPerPage = 100;
-const rolePages = 3;
+const rolePages = 10;
+const mostRoles = 300;
 
 // How many pages a sign-in offers: each costs a call to read its name, out
 // of the hundred a day the Development tier gives a member.
@@ -100,7 +103,12 @@ const AclSchema = Schema.Struct({
   state: Schema.String,
 });
 
-const AclsSchema = Schema.Struct({ elements: Schema.Array(AclSchema) });
+const AclsSchema = Schema.Struct({
+  elements: Schema.Array(AclSchema),
+  paging: Schema.optionalKey(
+    Schema.Struct({ total: Schema.optionalKey(Schema.Number) })
+  ),
+});
 
 // What anyone may read of a page: its name, and the name in its address.
 const OrganizationSchema = Schema.Struct({
@@ -228,20 +236,22 @@ export const linkedinPagesAuthorizer = Effect.fn(
       };
     });
 
-  // The member's approved roles, a page of them at a time.
+  // The member's approved roles, a page of them at a time, to
+  // `paging.total`, or without one to an empty page: a page shorter than
+  // asked may be one LinkedIn caps, which proves no end.
   const rolesOf = Effect.fn("LinkedInPagesAuthorizer.rolesOf")(
     function* rolesOf(accessToken: string) {
       const roles: (typeof AclSchema.Type)[] = [];
 
       for (let page = 0; page < rolePages; page += 1) {
-        const { elements } = yield* rest(
+        const { elements, paging } = yield* rest(
           "/rest/organizationAcls",
           accessToken
         ).pipe(
           HttpClientRequest.setUrlParams({
             count: String(rolesPerPage),
             q: "roleAssignee",
-            start: String(page * rolesPerPage),
+            start: String(roles.length),
             state: "APPROVED",
           }),
           http.execute,
@@ -251,7 +261,10 @@ export const linkedinPagesAuthorizer = Effect.fn(
 
         roles.push(...elements);
 
-        if (elements.length < rolesPerPage) {
+        if (
+          elements.length === 0 ||
+          roles.length >= (paging?.total ?? mostRoles)
+        ) {
           break;
         }
       }
