@@ -43,9 +43,11 @@ const toRead = [
 
 const outgoing = {
   createdAt: DateTime.makeUnsafe("2026-11-10T09:20:00.000Z"),
+  grandparentPlatformId: Option.none<string>(),
   parentPlatformId: "ig2001",
   replyId: replyId(1),
   rootPlatformPostId: mediaId,
+  takenIds: [],
   text: "Thank you, synthetic reader!",
 };
 
@@ -369,6 +371,45 @@ describe("Instagram's comments", () => {
           read._tag === "Failure" &&
             read.failure._tag === "ChannelUnreadable" &&
             read.failure.reason === "paused"
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "answers a reply under its top-level comment, and finds it there on resume",
+    () =>
+      Effect.gen(function* nested() {
+        const { account, graph, platform } = yield* onGraph();
+
+        const toReply = {
+          ...outgoing,
+          grandparentPlatformId: Option.some("ig2001"),
+          parentPlatformId: "ig2002",
+        };
+
+        graph.add(comment(1));
+        graph.add(comment(2, { parentId: "ig2001" }));
+        graph.loseAnswer("POST /v27.0/ig2001/replies");
+
+        assert.strictEqual(
+          (yield* platform.send(account, toReply))._tag,
+          "unconfirmed"
+        );
+
+        const made = graph.comments().at(-1);
+
+        assert.strictEqual(made?.parentId, "ig2001");
+        assert.deepStrictEqual(yield* platform.resume(account, toReply), {
+          _tag: "sent",
+          permalink: Option.none(),
+          platformCommentId: made?.id ?? "",
+        });
+        assert.deepStrictEqual(
+          yield* platform.resume(account, {
+            ...toReply,
+            takenIds: [made?.id ?? ""],
+          }),
+          { _tag: "unconfirmed", reason: "interrupted" }
         );
       }).pipe(Effect.scoped)
   );

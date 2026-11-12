@@ -140,9 +140,11 @@ const toRead = [
 
 const outgoing = {
   createdAt: DateTime.makeUnsafe("2026-11-10T09:20:00.000Z"),
+  grandparentPlatformId: Option.none<string>(),
   parentPlatformId: first,
   replyId: replyId(1),
   rootPlatformPostId: root,
+  takenIds: [],
   text: "Thank you! https://example.com",
 };
 

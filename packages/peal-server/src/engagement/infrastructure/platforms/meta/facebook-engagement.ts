@@ -519,11 +519,20 @@ export const facebookEngagement = Effect.fn("FacebookEngagement.make")(
         account,
         () => undecided,
         (token) =>
-          repliesUnder(account, token, reply.parentPlatformId).pipe(
-            Effect.map(
-              Option.match({
+          // Under the comment answered, and under its own parent too when
+          // it is a reply: Facebook's pages do not say where a reply to a
+          // reply goes. More places only make a match rarer, never wrong.
+          Effect.forEach(
+            [
+              reply.parentPlatformId,
+              ...Option.toArray(reply.grandparentPlatformId),
+            ],
+            (commentId) => repliesUnder(account, token, commentId)
+          ).pipe(
+            Effect.map((lists) =>
+              Option.match(Option.all(lists), {
                 onNone: () => undecided,
-                onSome: (listed) => foundAmong(reply, listed),
+                onSome: (listed) => foundAmong(reply, listed.flat()),
               })
             )
           )

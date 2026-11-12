@@ -279,7 +279,8 @@ export interface ListedReply {
  * What a resumed reply is, from the replies Meta lists under its comment
  * (all of them: a list that may miss some proves nothing): sent when
  * exactly one by the account, written since the reply was (give or take
- * `clockSkew`), has its text; otherwise unconfirmed, for a person to
+ * `clockSkew`), has its text and is none of the thread's other replies
+ * (`takenIds`); otherwise unconfirmed, for a person to
  * settle. None found may be one Meta has not listed yet, and two alike
  * cannot be told apart: neither is sent again.
  */
@@ -293,6 +294,7 @@ export const foundAmong = (
   const matching = listed.filter(
     (candidate) =>
       candidate.fromAccount &&
+      !reply.takenIds.includes(candidate.id) &&
       candidate.text.trim() === text &&
       Option.exists(candidate.writtenAt, (at) =>
         DateTime.isGreaterThanOrEqualTo(at, since)

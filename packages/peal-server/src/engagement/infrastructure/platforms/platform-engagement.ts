@@ -186,14 +186,24 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         const comment = yield* store.comment(reply.value.commentId);
         const thread = yield* store.thread(reply.value.threadId);
 
+        // The ids the thread's other replies were given on the platform.
+        const takenIds = (yield* store.repliesOf(reply.value.threadId)).flatMap(
+          (other) =>
+            other.id !== reply.value.id && other.status._tag === "sent"
+              ? Option.toArray(other.status.platformCommentId)
+              : []
+        );
+
         return Option.all({ comment, thread }).pipe(
           Option.map((found) => ({
             reply: reply.value,
             sending: {
               createdAt: reply.value.createdAt,
+              grandparentPlatformId: found.comment.parentPlatformId,
               parentPlatformId: found.comment.platformCommentId,
               replyId: reply.value.id,
               rootPlatformPostId: found.thread.thread.platformPostId,
+              takenIds,
               text: reply.value.text,
             } satisfies OutgoingReply,
           }))

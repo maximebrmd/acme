@@ -148,6 +148,11 @@ const byAccount = (comment: InstagramComment, accountId: string) => {
   return comment.from?.id === accountId || user === accountId;
 };
 
+// Where Instagram puts a reply: "you can only reply to top-level comments;
+// replies to a reply will be added to the top-level comment".
+const topLevelOf = (reply: OutgoingReply): string =>
+  Option.getOrElse(reply.grandparentPlatformId, () => reply.parentPlatformId);
+
 const readingOf = (
   comment: InstagramComment,
   accountId: string
@@ -562,7 +567,7 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
             account,
             token,
             "POST",
-            nodePath(reply.parentPlatformId, "replies"),
+            nodePath(topLevelOf(reply), "replies"),
             { message: reply.text }
           ).pipe(Effect.flatMap(http.execute), Effect.result);
 
@@ -662,7 +667,7 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
         account,
         () => undecided,
         (token) =>
-          repliesUnder(account, token, reply.parentPlatformId).pipe(
+          repliesUnder(account, token, topLevelOf(reply)).pipe(
             Effect.map(
               Option.match({
                 onNone: () => undecided,

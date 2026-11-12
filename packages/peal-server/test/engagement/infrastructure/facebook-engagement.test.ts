@@ -48,9 +48,11 @@ const toRead = [
 
 const outgoing = {
   createdAt: DateTime.makeUnsafe("2026-11-10T09:20:00.000Z"),
+  grandparentPlatformId: Option.none<string>(),
   parentPlatformId: "2001",
   replyId: replyId(1),
   rootPlatformPostId: postId,
+  takenIds: [],
   text: "Thank you, synthetic reader!",
 };
 
@@ -523,13 +525,10 @@ describe("Facebook Pages' comments", () => {
           400
         );
 
+        // The post and the Page itself both answer as gone.
+        graph.script.push(`GET /v27.0/${postId}/comments`, [gone]);
         graph.add(comment(1));
-        graph.script.push(
-          `GET /v27.0/${postId}/comments`,
-          [gone],
-          `GET /v27.0/${facebookPageId}`,
-          [gone]
-        );
+        graph.script.push(`GET /v27.0/${facebookPageId}`, [gone]);
 
         const read = yield* platform.read(account, toRead).pipe(Effect.result);
 
@@ -565,6 +564,34 @@ describe("Facebook Pages' comments", () => {
         assert.deepStrictEqual(
           batch.readings.map(({ _tag }) => _tag),
           ["read", "failed"]
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "never takes for a resumed reply one that another reply of the thread already is",
+    () =>
+      Effect.gen(function* taken() {
+        const { account, graph, platform } = yield* onGraph();
+
+        graph.add(comment(1));
+        graph.add(
+          comment(2, {
+            createdTime: "2026-11-10T09:20:10+0000",
+            from: page,
+            parentId: "2001",
+            text: outgoing.text,
+          })
+        );
+
+        // Comment 2002 is the first reply's: this one did not go out.
+        assert.deepStrictEqual(
+          yield* platform.resume(account, { ...outgoing, takenIds: ["2002"] }),
+          { _tag: "unconfirmed", reason: "interrupted" }
+        );
+        assert.strictEqual(
+          (yield* platform.resume(account, outgoing))._tag,
+          "sent"
         );
       }).pipe(Effect.scoped)
   );
