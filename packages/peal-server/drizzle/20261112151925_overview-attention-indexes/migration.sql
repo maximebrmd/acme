@@ -1,0 +1,2 @@
+CREATE INDEX "posts_workspace_awaiting_approval" ON "publishing"."posts" ("workspace_id") WHERE "status" = 'awaitingApproval';--> statement-breakpoint
+CREATE INDEX "posts_workspace_finished_attention" ON "publishing"."posts" ("workspace_id","finished_at") WHERE "status" = 'finished' AND "outcome" IN ('failed', 'partiallyPublished', 'unconfirmed');

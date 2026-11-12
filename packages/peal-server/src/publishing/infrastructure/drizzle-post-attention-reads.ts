@@ -1,5 +1,6 @@
 import { and, asc, eq, gt, gte, inArray, lt, or, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { PostAttentionReads } from "#publishing/application/post-attention-reads.ts";
 import type { AttentionCounts } from "#publishing/application/post-attention-reads.ts";
@@ -17,12 +18,23 @@ import { posts, postTargets } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
-const at = (instant: DateTime.Utc) =>
-  sql`${DateTime.formatIso(instant)}::timestamptz`;
-
 // The outcomes that say a channel failed, as the posts' `outcome` filter
 // names them: none went out, or some did and others failed.
-const failedOutcomes = ["failed", "partiallyPublished"];
+const decodeCounts = Schema.decodeUnknownEffect(
+  Schema.Array(
+    Schema.Struct({
+      awaitingApproval: Schema.Int,
+      failedLast7Days: Schema.Int,
+      scheduledNext7Days: Schema.Int,
+      unconfirmedLast7Days: Schema.Int,
+      workspaceId: WorkspaceIdSchema,
+    })
+  )
+);
+
+// Every workspace's id in one text parameter, split in the database, as
+// `anyUuid` writes it for Drizzle.
+const idsOf = (workspaceIds: readonly WorkspaceId[]) => workspaceIds.join(",");
 
 // The statuses of a post with a time that goes out, or went out.
 const agendaStatuses = [
@@ -60,9 +72,6 @@ const decodeChannelIds = Schema.decodeUnknownEffect(
   Schema.Array(ChannelIdSchema)
 );
 
-const counted = (condition: ReturnType<typeof sql>) =>
-  sql<number>`(count(*) FILTER (WHERE ${condition}))::int`;
-
 /**
  * The counts and the agenda across workspaces, in one query each, with
  * every workspace's id in one parameter (`anyUuid`), on the index of a
@@ -72,6 +81,7 @@ export const DrizzlePostAttentionReads = Layer.effect(
   PostAttentionReads,
   Effect.gen(function* DrizzlePostAttentionReads() {
     const db = yield* Drizzle;
+    const client = yield* SqlClient.SqlClient;
 
     return PostAttentionReads.of({
       agenda: ({ after, from, limit, to, workspaceIds }) =>
@@ -124,59 +134,65 @@ export const DrizzlePostAttentionReads = Layer.effect(
             ),
             Effect.withSpan("PostAttentionReads.agenda")
           ),
+      // One read an index serves for each thing counted, put together:
+      // the posts going out by their time (`posts_workspace_scheduled_at`),
+      // those waiting for an approval (`posts_workspace_awaiting_approval`)
+      // and those that ended failed or to check by when they ended
+      // (`posts_workspace_finished_attention`), so the cost follows what
+      // is counted, never how many posts a workspace keeps.
       countsIn: (
         workspaceIds,
         { finishedFrom, scheduledFrom, scheduledTo }
       ) => {
-        const scheduledAhead = sql`${posts.status} = 'scheduled' AND ${posts.scheduledAt} >= ${at(scheduledFrom)} AND ${posts.scheduledAt} < ${at(scheduledTo)}`;
+        const ids = idsOf(workspaceIds);
 
-        const awaiting = sql`${posts.status} = 'awaitingApproval'`;
-
-        const finishedSince = sql`${posts.status} = 'finished' AND ${posts.finishedAt} >= ${at(finishedFrom)}`;
-
-        const failedSince = sql`${finishedSince} AND ${inArray(posts.outcome, failedOutcomes)}`;
-
-        const unconfirmedSince = sql`${finishedSince} AND ${posts.outcome} = 'unconfirmed'`;
-
-        return db
-          .select({
-            awaitingApproval: counted(awaiting),
-            failedLast7Days: counted(failedSince),
-            scheduledNext7Days: counted(scheduledAhead),
-            unconfirmedLast7Days: counted(unconfirmedSince),
-            workspaceId: posts.workspaceId,
-          })
-          .from(posts)
-          .where(
-            and(
-              anyUuid(posts.workspaceId, workspaceIds),
-              or(
-                sql`(${scheduledAhead})`,
-                sql`(${awaiting})`,
-                sql`(${failedSince})`,
-                sql`(${unconfirmedSince})`
-              )
-            )
-          )
-          .groupBy(posts.workspaceId)
-          .pipe(
-            Effect.mapError(failed),
-            Effect.map(
-              (rows) =>
-                new Map(
-                  rows.map(
-                    ({
-                      workspaceId,
-                      ...counts
-                    }): readonly [WorkspaceId, AttentionCounts] => [
-                      WorkspaceIdSchema.make(workspaceId),
-                      counts,
-                    ]
-                  )
+        return client`
+          SELECT
+            workspace_id AS "workspaceId",
+            (count(*) FILTER (WHERE kind = 'scheduled'))::int AS "scheduledNext7Days",
+            (count(*) FILTER (WHERE kind = 'awaiting'))::int AS "awaitingApproval",
+            (count(*) FILTER (WHERE kind = 'finished' AND outcome IN ('failed', 'partiallyPublished')))::int AS "failedLast7Days",
+            (count(*) FILTER (WHERE kind = 'finished' AND outcome = 'unconfirmed'))::int AS "unconfirmedLast7Days"
+          FROM (
+            SELECT workspace_id, 'scheduled' AS kind, NULL::text AS outcome
+            FROM publishing.posts
+            WHERE workspace_id = ANY(string_to_array(${ids}, ',')::uuid[])
+              AND status = 'scheduled'
+              AND scheduled_at >= ${DateTime.toDateUtc(scheduledFrom)}
+              AND scheduled_at < ${DateTime.toDateUtc(scheduledTo)}
+            UNION ALL
+            SELECT workspace_id, 'awaiting', NULL
+            FROM publishing.posts
+            WHERE workspace_id = ANY(string_to_array(${ids}, ',')::uuid[])
+              AND status = 'awaitingApproval'
+            UNION ALL
+            SELECT workspace_id, 'finished', outcome
+            FROM publishing.posts
+            WHERE workspace_id = ANY(string_to_array(${ids}, ',')::uuid[])
+              AND status = 'finished'
+              AND outcome IN ('failed', 'partiallyPublished', 'unconfirmed')
+              AND finished_at >= ${DateTime.toDateUtc(finishedFrom)}
+          ) AS attention
+          GROUP BY workspace_id
+        `.pipe(
+          Effect.mapError(failed),
+          Effect.flatMap((rows) => decodeCounts(rows).pipe(Effect.orDie)),
+          Effect.map(
+            (rows) =>
+              new Map(
+                rows.map(
+                  ({
+                    workspaceId,
+                    ...counts
+                  }): readonly [WorkspaceId, AttentionCounts] => [
+                    workspaceId,
+                    counts,
+                  ]
                 )
-            ),
-            Effect.withSpan("PostAttentionReads.countsIn")
-          );
+              )
+          ),
+          Effect.withSpan("PostAttentionReads.countsIn")
+        );
       },
     });
   })
