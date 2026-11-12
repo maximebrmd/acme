@@ -8,13 +8,13 @@ import { AccountSettingsSchema, readSettings } from "../src/settings.ts";
 
 importExisting();
 
-const settings = readSettings(AccountSettingsSchema, [
-  "accountId",
-  "domain",
-  "linkDomain",
-  "ownerName",
-  "zoneId",
-]);
+// `uptime` is optional: unset, the uptime server gets no record. Its
+// addresses are set as secrets (README.md, "The uptime server").
+const settings = readSettings(
+  AccountSettingsSchema,
+  ["accountId", "domain", "linkDomain", "ownerName", "zoneId"],
+  ["uptime"]
+);
 
 const shared = new PealAccount(
   "account",

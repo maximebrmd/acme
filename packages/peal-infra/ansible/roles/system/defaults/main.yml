@@ -14,3 +14,10 @@ system_masked_units: []
 # Where systemd reads units from: their packages', then the administrator's.
 # The tests name folders of their own (tests/test_units.py).
 system_unit_folders: [/usr/lib/systemd/system, /etc/systemd/system]
+
+# What peal-reboot reads and runs: where the md arrays are, the file an
+# update leaves when it needs a reboot, and the reboot. The tests name
+# their own (tests/test_reboot.py).
+system_sys_block: /sys/block
+system_reboot_required_file: /var/run/reboot-required
+system_reboot_command: /usr/bin/systemctl reboot

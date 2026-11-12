@@ -1,0 +1,72 @@
+#!/bin/sh
+# Managed by Ansible (peal-infra). Reports the disks' health to the
+# collector, as three gauges Grafana's rules read: how many md arrays the
+# server has, how many of them are degraded, and how many whole disks
+# smartctl says are failing. peal-disk-health.timer runs it every 15
+# minutes; run it by hand with `sudo systemctl start peal-disk-health`.
+# It reads the kernel's state and the disks' own verdict, and changes
+# nothing. It names no disk: the serial numbers are read on the server,
+# as runbooks/failed-disk.md says.
+set -eu
+
+# md arrays: each has an `md` folder under /sys/block. `degraded` counts the
+# devices the array is missing; a striped or linear array has no such file,
+# having no redundancy to lose.
+arrays=0
+degraded=0
+for array in "{{ peal_disks_sys_block }}"/md*/md; do
+  [ -d "$array" ] || continue
+  arrays=$((arrays + 1))
+  missing=0
+  if [ -r "$array/degraded" ]; then
+    missing="$(cat "$array/degraded")"
+  fi
+  if [ "$missing" != 0 ]; then
+    degraded=$((degraded + 1))
+  fi
+done
+
+# Whole disks, by smartctl's exit status, a bit mask (smartctl(8), "RETURN
+# VALUES"): bit 3 (8), the disk's SMART status says it is failing; bit 4
+# (16), a prefail attribute is at or below its threshold. A disk smartctl
+# cannot open or ask (bits 1 and 2), as a virtual machine's, is not counted.
+disks="$({{ peal_disks_lsblk }} --nodeps --noheadings --output NAME,TYPE)"
+failing=0
+while read -r name type; do
+  [ "$type" = disk ] || continue
+  status=0
+  {{ peal_disks_smartctl }} --health --quiet=silent "/dev/$name" < /dev/null || status=$?
+  if [ $((status & 24)) -ne 0 ]; then
+    failing=$((failing + 1))
+  fi
+done <<EOF
+$disks
+EOF
+
+# No unit on the gauges: Prometheus would add it to their names.
+now="$(date +%s)000000000"
+gauge() {
+  printf '{"name": "%s", "description": "%s", "gauge": {"dataPoints": [{"timeUnixNano": "%s", "asInt": "%s"}]}}' \
+    "$1" "$2" "$now" "$3"
+}
+metrics="$(cat <<JSON
+{"resourceMetrics": [{
+  "resource": {"attributes": [{"key": "service.name", "value": {"stringValue": "peal-disk-health"}}]},
+  "scopeMetrics": [{"scope": {"name": "peal-disk-health"}, "metrics": [
+    $(gauge peal_host_raid_arrays "The md arrays the server has" "$arrays"),
+    $(gauge peal_host_raid_degraded "The md arrays missing a device" "$degraded"),
+    $(gauge peal_host_disks_failing "The whole disks whose SMART says they are failing" "$failing")
+  ]}]
+}]}
+JSON
+)"
+
+# One line on stderr when the collector does not take it, which `systemctl
+# status peal-disk-health` shows. No rule sees a timer that stops posting:
+# the rules stay quiet without data, as on a server without this role.
+if ! refused="$(curl --fail --silent --show-error --max-time 10 \
+  --header 'Content-Type: application/json' --data "$metrics" \
+  http://127.0.0.1:{{ peal_ports.otlp_http }}/v1/metrics 2>&1 > /dev/null)"; then
+  echo "peal-disk-health: the collector did not take the disks' health: $refused" >&2
+  exit 1
+fi

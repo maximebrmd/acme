@@ -74,7 +74,11 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   (production; never one behind Access), with no alert or secret, and
   hides URLs, conditions and errors; Caddy serves it by GET and HEAD alone
   (`status.caddy`), and the heartbeats never go through its name. Both names have DNS
-  records Cloudflare does not proxy (the infra README's "The status page").
+  records Cloudflare does not proxy (the infra README's "The status page"),
+  which the account's Pulumi stack makes; the sandbox's Pulumi stack makes
+  the service token its checks of the sandbox carry, and
+  `scripts/cloudflare_from_pulumi.py --vault-id uptime@…` writes it into
+  `group_vars/uptime/vault.yml`, and nothing else of a stack.
 - The uptime server may be a host the owner uses for other sites
   (`uptime_shared_host: true`, in its Git-ignored `local.yml`): `uptime.yml`
   skips every task of `system`, `ssh`, `docker` and `firewall` there, and
@@ -98,6 +102,14 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   `PEAL_MEDIA_PUBLIC_BASE_URL` without `peal_erasure_ledger_bucket`. The server migrates when it
   starts, so write migrations that the previous release can still run
   against, and roll back by releasing the previous commit.
+- The disks' health goes to the collector as the backups' does:
+  `peal_disks` posts gauges of the md arrays and of SMART, and Grafana's
+  rules alert on them (`peal-docker`'s `rules.yaml`), with no mail
+  transport or credential on the host. Never fail a disk, on any server,
+  to test it: the script is tested on a made-up `/sys`
+  (`tests/test_disks.py`), the rules by their expressions. The nightly
+  reboot is `peal-reboot`'s (the `system` role), not unattended-upgrades':
+  it holds a pending reboot while an md array is degraded.
 - `site.yml` restarts the server when the privacy declaration changes (the
   server reads it at startup), refuses to remove the image's account while
   connected as it, and takes a storage endpoint only in the EU: R2's `.eu.`

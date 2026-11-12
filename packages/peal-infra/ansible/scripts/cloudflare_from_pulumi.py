@@ -11,6 +11,13 @@ has made them, it writes the tunnel's token and the buckets' keys into the
 group's vault, as Ansible encrypts it, and names the entries it changed,
 never their values. Run it after each `pulumi up` of the environment, then
 site.yml.
+
+With `--vault-id uptime@…`, it writes the uptime server's vault alone: the
+service token the sandbox's stack makes for the uptime server's checks,
+as uptime_credentials.SANDBOX_ACCESS_CLIENT_ID and …_SECRET in
+group_vars/uptime/vault.yml, which must exist (from
+inventory/vault.uptime.example.yml). Run it after the `pulumi up` that
+makes or replaces the token, then uptime.yml.
 """
 
 from __future__ import annotations
@@ -45,6 +52,11 @@ AUD_NAMES = {
     "sandbox": {"sandbox": "app", "grafana": "grafana", "ssh": "ssh"},
     "production": {"admin": "admin", "grafana": "grafana", "ssh": "ssh"},
 }
+
+# The environment stack whose service token the uptime server's checks of
+# it carry, by the prefix of its names in uptime_credentials: the sandbox
+# alone, as production's checks are public.
+UPTIME_TOKEN_STACKS = {"sandbox": "SANDBOX"}
 
 Outputs = dict[str, Any]
 
@@ -100,25 +112,52 @@ def write_private(path: Path, data: bytes) -> None:
     os.replace(name, path)
 
 
-def update_vault(path: Path, password: bytes, tunnel_token: str, credentials: dict[str, str]) -> list[str]:
-    """Writes the values into the vault, encrypted again with its password.
-    Returns the names whose value changed."""
+def update_vault(path: Path, password: bytes, values: dict[str, str | dict[str, str]]) -> list[str]:
+    """Writes the values into the vault, encrypted again with its password:
+    a value, or a mapping whose entries go into the vault's mapping of that
+    name. Returns the names whose value changed."""
     secret = VaultSecret(password)
     vault = VaultLib([("default", secret)])
     data = yaml.safe_load(vault.decrypt(path.read_bytes())) or {}
-    peal_credentials = data.setdefault("peal_credentials", {})
     changed = []
-    if data.get("cloudflared_tunnel_token") != tunnel_token:
-        data["cloudflared_tunnel_token"] = tunnel_token
-        changed.append("cloudflared_tunnel_token")
-    for name, value in credentials.items():
-        if peal_credentials.get(name) != value:
-            peal_credentials[name] = value
-            changed.append(f"peal_credentials.{name}")
+    for key, value in values.items():
+        if isinstance(value, dict):
+            section = data.setdefault(key, {})
+            for name, entry in value.items():
+                if section.get(name) != entry:
+                    section[name] = entry
+                    changed.append(f"{key}.{name}")
+        elif data.get(key) != value:
+            data[key] = value
+            changed.append(key)
     if changed:
         text = yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
         write_private(path, vault.encrypt(("---\n" + text).encode(), secret))
     return changed
+
+
+def uptime_values(outputs: Outputs, prefix: str) -> dict[str, str]:
+    """The service token's entries in the uptime server's vault."""
+    token = outputs.get("uptimeAccessToken")
+    if token is None:
+        raise SystemExit("The sandbox's stack has no service token for the uptime server yet: the vault is left as it is")
+    return {
+        f"{prefix}_ACCESS_CLIENT_ID": token["clientId"],
+        f"{prefix}_ACCESS_CLIENT_SECRET": token["clientSecret"],
+    }
+
+
+def write_uptime_vault(inventory: Path, source: str, outputs_of: Callable[[str], Outputs]) -> None:
+    """The uptime server's vault takes each environment's service token,
+    and nothing else of its stack."""
+    path = inventory / "group_vars" / "uptime" / "vault.yml"
+    if not path.exists():
+        raise SystemExit("Make group_vars/uptime/vault.yml from inventory/vault.uptime.example.yml, encrypted, first")
+    credentials: dict[str, str] = {}
+    for stack, prefix in UPTIME_TOKEN_STACKS.items():
+        credentials |= uptime_values(outputs_of(stack), prefix)
+    changed = update_vault(path, vault_password("uptime", source), {"uptime_credentials": credentials})
+    print("Uptime vault: " + (", ".join(changed) if changed else "nothing changed"))
 
 
 def vault_password(group: str, source: str) -> bytes:
@@ -138,6 +177,10 @@ def main(argv: list[str] | None = None, outputs_of: Callable[[str], Outputs] = s
     if not (group and at and source):
         parser.error("--vault-id takes <group>@<password file or client script>")
 
+    if group == "uptime":
+        write_uptime_vault(options.inventory, source, outputs_of)
+        return 0
+
     outputs = outputs_of(group)
     folder = options.inventory / "group_vars" / group
     values = yaml.safe_dump(inventory_values(group, outputs), sort_keys=False)
@@ -149,7 +192,11 @@ def main(argv: list[str] | None = None, outputs_of: Callable[[str], Outputs] = s
         print("The stack has no bucket keys yet: the vault is left as it is")
         return 0
     password = vault_password(group, source)
-    changed = update_vault(folder / "vault.yml", password, outputs["tunnelToken"], credentials)
+    changed = update_vault(
+        folder / "vault.yml",
+        password,
+        {"cloudflared_tunnel_token": outputs["tunnelToken"], "peal_credentials": credentials},
+    )
     print("Vault: " + (", ".join(changed) if changed else "nothing changed"))
     return 0
 

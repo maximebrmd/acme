@@ -245,6 +245,75 @@ groups:
                     type: gt
                     params: [0.85]
 
+      - uid: peal-raid-degraded
+        title: A RAID array is degraded
+        condition: B
+        for: 0s
+        # The host posts the gauge every 15 minutes (the Ansible role
+        # peal_disks); a server without the role never does.
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: An md array of the server is missing a disk, and runs on the other alone. Read `cat /proc/mdstat` and `sudo mdadm --detail /dev/md1` on the server, then follow runbooks/failed-disk.md.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 2700
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The last report of each server, over three of its 15-minute
+              # posts: it clears at the first one that says the array is
+              # whole.
+              expr: max(last_over_time(peal_host_raid_degraded[45m]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
+      - uid: peal-disk-failing
+        title: A disk reports that it is failing
+        condition: B
+        for: 0s
+        # As peal-raid-degraded: posted by the host, absent without the role,
+        # and zero on a disk without SMART, as a virtual machine's.
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: A disk's SMART says it is failing, or a prefail attribute is at its threshold. Read `sudo smartctl -a /dev/<disk>` on each disk of `lsblk` on the server, then follow runbooks/failed-disk.md.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 2700
+              to: 0
+            model:
+              refId: A
+              instant: true
+              expr: max(last_over_time(peal_host_disks_failing[45m]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+
       - uid: peal-token-refresh-behind
         title: Token refreshes fall behind
         condition: B
