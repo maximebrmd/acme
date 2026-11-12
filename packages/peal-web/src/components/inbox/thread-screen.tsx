@@ -55,6 +55,8 @@ import { useRefreshWhileVisible } from "#notices/use-refresh-while-visible.ts";
 
 import {
   CommentView,
+  isNameless,
+  namelessKey,
   handleOf,
   ReplyAbilityNotice,
   ReplyBoxView,
@@ -376,13 +378,22 @@ const ReplyBox = ({
     });
   };
 
+  // Who the box answers: their handle, their name where the platform
+  // gives no handle, or what the inbox calls someone it has no name for.
+  const named = comment.author !== null && !isNameless(comment.author);
+
+  const shown =
+    comment.author !== null && comment.author.handle === ""
+      ? (comment.author.displayName ?? "")
+      : comment.author && handleOf(comment.author);
+
+  const authorName = named
+    ? (shown ?? "")
+    : t(`comment.${namelessKey(comment.author, platform)}`);
+
   return (
     <ReplyBoxView
-      author={
-        comment.author === null
-          ? t("comment.unknownAuthor")
-          : handleOf(comment.author)
-      }
+      author={authorName}
       error={error}
       fit={fit}
       pending={pending}
