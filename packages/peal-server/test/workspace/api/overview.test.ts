@@ -292,16 +292,19 @@ describe("the overview endpoints", () => {
 
           const lines = text.split("\r\n");
 
-          assert.strictEqual(lines[0], reportColumns.join(","));
+          assert.strictEqual(
+            lines[0],
+            reportColumns.map((column) => `"${column}"`).join(",")
+          );
           assert.strictEqual(
             lines[1],
-            `${charlie},"'=Charlie, Inc",2026-11-01,2026-11-07${",".repeat(reportColumns.length - 4)}`
+            `"${charlie}","'=Charlie, Inc","2026-11-01","2026-11-07"${",".repeat(reportColumns.length - 4)}`
           );
           assert.strictEqual(
             lines[2],
-            `${alpha},Alpha,2026-11-01,2026-11-07,5,15,5,0,,500,,,,20,120,20,true,3,9,3,0,,300,,,,12,100,`
+            `"${alpha}","Alpha","2026-11-01","2026-11-07",5,15,5,0,,500,,,,20,120,20,"true",3,9,3,0,,300,,,,12,100,`
           );
-          assert.match(lines[3] ?? "", new RegExp(`^${bravo},Bravo,`, "u"));
+          assert.match(lines[3] ?? "", new RegExp(`^"${bravo}","Bravo",`, "u"));
           assert.deepStrictEqual(lines.slice(4), [""]);
         })
     );

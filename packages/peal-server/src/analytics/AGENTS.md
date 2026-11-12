@@ -175,7 +175,10 @@
   it). A range is `days` (7, 30, 90, ending today in the zone) or `from`
   and `to`. Exports stream (`exportRows`, `Stream.paginate` over keyset
   pages of 500; `HttpServerResponse.stream`), as RFC 4180 CSV whose cells
-  never start a formula, or one JSON object a line. Account days are UTC
+  never start a formula (the shared `csvLine`, `#shared/api/csv.ts`: every text
+  quoted, and an apostrophe before one a spreadsheet would take for a
+  formula, at its start or after a semicolon, full-width signs included),
+  or one JSON object a line. Account days are UTC
   days, written under the range's calendar day of the same name.
   A comparison says whether its range before is still all kept
   (`previousKept`, from `keptSince` with each platform's `retentionOf`):

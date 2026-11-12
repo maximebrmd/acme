@@ -306,7 +306,7 @@ export class OverviewApi extends HttpApiGroup.make("overview")
       success: HttpApiSchema.StreamUint8Array({ contentType: "text/csv" }),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns ${reportColumns.map((column) => `\`${column}\``).join(", ")}. A count no platform gives, a workspace whose analytics the user may not read, and the range before where \`previousKept\` is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. ${reportRange} ${refusals}`,
+        description: `Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns ${reportColumns.map((column) => `\`${column}\``).join(", ")}. A count no platform gives, a workspace whose analytics the user may not read, and the range before where \`previousKept\` is false, are empty cells; every text cell is in quotes, and one a spreadsheet would take for a formula, at its start or after a semicolon, starts with an apostrophe. ${reportRange} ${refusals}`,
         summary: "Export the report across workspaces",
       })
     )

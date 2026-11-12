@@ -437,12 +437,15 @@ layer(ApiTest)("the analytics endpoints", (it) => {
 
           const [header, ...lines] = postsCsv.trimEnd().split("\r\n");
 
-          assert.strictEqual(header, exportColumns.posts.join(","));
+          assert.strictEqual(
+            header,
+            exportColumns.posts.map((column) => `"${column}"`).join(",")
+          );
           assert.lengthOf(lines, 2);
           assert.match(
             lines[1] ?? "",
             new RegExp(
-              `^2044-03-10T08:00:00\\.000Z,[0-9a-f-]+,[0-9a-f-]+,${linkedin},linkedin,https://[^,]+,3,1,0,,400,9,250,,2044-03-10T09:07:00\\.000Z$`,
+              `^"2044-03-10T08:00:00\\.000Z","[0-9a-f-]+","[0-9a-f-]+","${linkedin}","linkedin","https://[^,]+",3,1,0,,400,9,250,,"2044-03-10T09:07:00\\.000Z"$`,
               "u"
             )
           );
