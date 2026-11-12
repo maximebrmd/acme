@@ -1,7 +1,7 @@
 ---
 title: Suppression des données
 description: Comment supprimer votre compte Peal et ses données, ce qui est supprimé, et ce qui peut être conservé.
-draft: true
+draft: false
 ---
 
 En vertu du RGPD, vous pouvez demander l’effacement de vos données personnelles (article 17) ; la [politique de confidentialité](/fr/privacy/) liste vos autres droits. Cette page explique comment supprimer votre compte et ses données sur le service Peal hébergé à l’adresse app.peal.social.
