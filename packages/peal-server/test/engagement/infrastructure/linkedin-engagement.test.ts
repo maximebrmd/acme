@@ -275,26 +275,66 @@ describe("LinkedIn pages' comments", () => {
       }).pipe(Effect.scoped)
   );
 
-  it.effect("never takes a list without a total for all of it", () =>
-    Effect.gen(function* untotalled() {
-      const { account, api, platform } = yield* onLinkedIn(
-        {},
-        {
-          maxCount: 10,
-          withoutTotal: true,
+  it.effect(
+    "takes a list without a total, capped at 10 and with no next link, for all of it only once the summary's count is read",
+    () =>
+      Effect.gen(function* untotalled() {
+        const { account, api, platform } = yield* onLinkedIn(
+          {},
+          { maxCount: 10, withoutTotal: true }
+        );
+
+        api.addPost(share, activity);
+
+        for (let n = 1; n <= 35; n += 1) {
+          api.add(comment(n));
         }
-      );
 
-      api.addPost(share, activity);
+        const reading = firstReading(
+          yield* platform.read(account, [thread(1)])
+        );
 
-      for (let n = 1; n <= 5; n += 1) {
-        api.add(comment(n));
-      }
+        assert.strictEqual(
+          reading?._tag === "read" ? reading.comments.length : 0,
+          35
+        );
+        assert.isTrue(reading?._tag === "read" && reading.complete);
+        // The summary, then four pages: the summary's 35 are read.
+        assert.lengthOf(api.requests(), 5);
+      }).pipe(Effect.scoped)
+  );
 
-      const reading = firstReading(yield* platform.read(account, [thread(1)]));
+  it.effect(
+    "reads on to an empty page when the summary's count is not reached",
+    () =>
+      Effect.gen(function* emptyPage() {
+        const { account, api, platform } = yield* onLinkedIn(
+          {},
+          { maxCount: 10, withoutTotal: true }
+        );
 
-      assert.isTrue(reading?._tag === "read" && !reading.complete);
-    }).pipe(Effect.scoped)
+        api.addPost(share, activity);
+
+        for (let n = 1; n <= 12; n += 1) {
+          api.add(comment(n));
+        }
+
+        api.script("summary", [
+          json({ commentsSummary: { totalFirstLevelComments: 20 } }),
+        ]);
+
+        const reading = firstReading(
+          yield* platform.read(account, [thread(1)])
+        );
+
+        assert.strictEqual(
+          reading?._tag === "read" ? reading.comments.length : 0,
+          12
+        );
+        assert.isTrue(reading?._tag === "read" && reading.complete);
+        // Two pages, then the empty one that says nothing more comes.
+        assert.lengthOf(api.requests(), 4);
+      }).pipe(Effect.scoped)
   );
 
   it.effect(

@@ -51,7 +51,7 @@ export type LinkedInCommentsRoute =
 export interface FakeLinkedInCommentsOptions {
   /** The longest page the fake gives, whatever `count` asks. */
   readonly maxCount?: number;
-  /** Pages without `paging.total`. */
+  /** Pages without `paging.total`, with `links: []`, as LinkedIn's sample. */
   readonly withoutTotal?: boolean;
 }
 
@@ -194,17 +194,21 @@ export const fakeLinkedInComments = Effect.fnUntraced(
 
       const start = Number(query.get("start") ?? "0");
 
+      const asked = Number(query.get("count") ?? "10");
+
       // A page as long as asked, or as LinkedIn caps it.
       const count = Math.min(
-        Number(query.get("count") ?? "10"),
+        asked,
         options.maxCount ?? Number.POSITIVE_INFINITY
       );
 
       const elements = found.slice(start, start + count).map(commentJson);
 
       return json(
+        // Without a total, as LinkedIn's sample: the count asked, and no
+        // next link.
         options.withoutTotal === true
-          ? { elements, paging: { count, start } }
+          ? { elements, paging: { count: asked, links: [], start } }
           : { elements, paging: { count, start, total: found.length } }
       );
     };

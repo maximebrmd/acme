@@ -185,21 +185,30 @@ const PageSchema = Schema.Struct({
 type Paging = (typeof PageSchema.Type)["paging"];
 
 /**
- * Whether LinkedIn says a list ends with what was read up to `read`
- * elements: its `paging.total` reached, or its `links` naming no next
- * page. A page shorter than asked proves nothing, as LinkedIn may answer
- * fewer than `count` (its samples show 10).
+ * Whether a list ends with the `read` elements read so far: its
+ * `paging.total` reached, or, without one, the first-level count its
+ * summary gave (`expected`). Neither a page shorter than asked nor
+ * `links` without a next one proves it: Rest.li adds a next link only to
+ * a page as long as the `count` asked, so a page LinkedIn caps (its
+ * samples show 10) has none. Without either, only an empty page ends it.
  */
-const listEnds = (paging: Paging | undefined, read: number): boolean => {
+const listEnds = (
+  paging: Paging | undefined,
+  read: number,
+  expected: Option.Option<number>
+): boolean => {
   if (paging?.total !== undefined) {
     return read >= paging.total;
   }
 
-  return (
-    paging?.links !== undefined &&
-    !paging.links.some(({ rel }) => rel === "next")
-  );
+  return Option.exists(expected, (count) => read >= count);
 };
+
+// How many first-level comments a summary counts, if it says.
+const firstLevelOf = (
+  summary: LinkedInComment["commentsSummary"] | undefined
+): Option.Option<number> =>
+  Option.fromUndefinedOr(summary?.totalFirstLevelComments);
 
 const SummarySchema = Schema.Struct({
   commentsSummary: Schema.optionalKey(
@@ -466,9 +475,14 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
       at: Progress,
       deadline: DateTime.Utc,
       first: boolean,
-      nested: string[],
+      nested: {
+        readonly expected: Option.Option<number>;
+        readonly urn: string;
+      }[],
       // The summary showed no comment: a 404 here confirms there is none.
-      noneShown: boolean
+      noneShown: boolean,
+      // The first-level count the summary gave this list, if any.
+      expected: Option.Option<number>
     ) {
       let start = 0;
 
@@ -529,7 +543,10 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
             comment.parentComment === undefined &&
             countOf(comment.commentsSummary) > 0
           ) {
-            nested.push(comment.commentUrn);
+            nested.push({
+              expected: firstLevelOf(comment.commentsSummary),
+              urn: comment.commentUrn,
+            });
           }
         }
 
@@ -539,13 +556,16 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
 
         start += elements.length;
 
-        if (listEnds(paging, start)) {
+        if (listEnds(paging, start, expected)) {
           return Option.none<Step>();
         }
 
-        // Nothing more came, and LinkedIn did not say the list ended.
+        // Nothing more came: the end, without a total; short of the total
+        // LinkedIn gave, not all of it.
         if (elements.length === 0) {
-          return Option.some(at.read(false));
+          return paging?.total === undefined
+            ? Option.none<Step>()
+            : Option.some(at.read(false));
         }
       }
 
@@ -630,7 +650,10 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
       // A summary that shows no comment is checked against the list: a
       // 404 there is a complete read of nothing; anything else is read,
       // so a summary that omits its count for a while forgets nothing.
-      const nested: string[] = [];
+      const nested: {
+        readonly expected: Option.Option<number>;
+        readonly urn: string;
+      }[] = [];
 
       const top = yield* listInto(
         account,
@@ -640,7 +663,8 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
         deadline,
         first,
         nested,
-        countOf(counted.value.commentsSummary) === 0
+        countOf(counted.value.commentsSummary) === 0,
+        firstLevelOf(counted.value.commentsSummary)
       );
 
       if (Option.isSome(top)) {
@@ -651,12 +675,13 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
         const under = yield* listInto(
           account,
           token,
-          parent,
+          parent.urn,
           at,
           deadline,
           first,
           [],
-          false
+          false,
+          parent.expected
         );
 
         if (Option.isSome(under)) {
@@ -865,13 +890,16 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
             });
           }
 
-          if (listEnds(body.value.paging, listed.length)) {
+          if (listEnds(body.value.paging, listed.length, Option.none())) {
             return Option.some<readonly ListedReply[]>(listed);
           }
 
-          // Nothing more, and no word that the list ended: not proof.
+          // Nothing more: the end, without a total; short of the total
+          // LinkedIn gave, not proof.
           if (body.value.elements.length === 0) {
-            return Option.none<readonly ListedReply[]>();
+            return body.value.paging?.total === undefined
+              ? Option.some<readonly ListedReply[]>(listed)
+              : Option.none<readonly ListedReply[]>();
           }
         }
 
