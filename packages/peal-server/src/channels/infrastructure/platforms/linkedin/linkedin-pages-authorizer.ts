@@ -79,8 +79,8 @@ export const postingRoles: ReadonlySet<string> = new Set([
 
 // How many roles one call asks, and how many calls and roles a sign-in
 // reads at most: a member with more pages than that picks among the first.
-// LinkedIn may give a page shorter than asked, so a page of 10 takes as
-// many calls as it gives roles in tens.
+// LinkedIn may give pages shorter than asked: at 10 a page, the calls
+// read 100 roles.
 const rolesPerPage = 100;
 const rolePages = 10;
 const mostRoles = 300;

@@ -73,12 +73,12 @@ export const ConnectLinkRetentionCron = ClusterCron.make({
 });
 
 /**
- * Every day at 04:37 UTC: where the inbox does not read LinkedIn, forgets
+ * Every day at 04:29 UTC: where the inbox does not read LinkedIn, forgets
  * the members LinkedIn pages' tokens are theirs (`ForgetTokenOwners`). A
  * failed run is logged and the next day's catches up.
  */
 export const TokenOwnersCron = ClusterCron.make({
-  cron: Cron.parseUnsafe("37 4 * * *", "UTC"),
+  cron: Cron.parseUnsafe("29 4 * * *", "UTC"),
   execute: ForgetTokenOwners.use((forget) => forget.run).pipe(
     Effect.tap((channels) =>
       channels > 0
