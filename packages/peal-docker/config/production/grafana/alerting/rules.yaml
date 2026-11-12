@@ -545,6 +545,38 @@ groups:
                     type: gt
                     params: [5.5]
 
+      - uid: peal-comments-forget-failing
+        title: Comments past their platform's bound are not forgotten
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The retention failed three times or more in three hours to forget a thread's comments at their platform's bound (peal.engagement.retention.forget_failures), as one thread that fails at every hourly run would. Peal then keeps those comments past what the platform allows (YouTube's 30 days, LinkedIn's day); the other threads are forgotten. The server's warnings name the thread by id.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The retention runs every hour.
+              expr: sum(increase(peal_engagement_retention_forget_failures_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [2.5]
+
       - uid: peal-uploads-waiting
         title: Uploads to platforms wait for a slot
         condition: B

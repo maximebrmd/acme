@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Duration, Effect, Option } from "effect";
+import { DateTime, Duration, Effect, Metric, Option } from "effect";
 import { TestClock } from "effect/testing";
 
 import { CollectComments } from "#engagement/application/collect-comments.ts";
@@ -7,9 +7,14 @@ import type {
   CommentsBatch,
   CommentsRequest,
 } from "#engagement/application/ports/comment-source.ts";
-import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
+import {
+  forgetFailures,
+  PurgeEngagement,
+} from "#engagement/application/purge-engagement.ts";
 import type { CommentReading } from "#engagement/domain/comment.ts";
 import { writeReply } from "#engagement/domain/reply.ts";
+import { endCollection } from "#engagement/domain/thread.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
 import type { World } from "#test/engagement/fakes/world.ts";
 import {
@@ -259,4 +264,72 @@ describe("the refresh bound", () => {
       );
     }).pipe(Effect.provide(world.layer));
   });
+
+  it.effect(
+    "goes on past a thread it cannot forget, counts it, and still purges what is past its retention",
+    () => {
+      const world = makeWorld();
+      world.state.posts.push(followedPost(1), followedPost(2));
+      world.state.read = (request) =>
+        Effect.succeed({
+          halted: false,
+          readings: request.threads.map(({ threadId }, index) => ({
+            _tag: "read" as const,
+            comments: [reading(10 + index)],
+            complete: true,
+            threadId,
+          })),
+          refreshWithin: Duration.hours(24),
+        });
+
+      return Effect.gen(function* failing() {
+        yield* runAt(after("10 minutes"));
+
+        const [failingThread] = [...world.state.threads.values()];
+
+        assert.isDefined(failingThread);
+
+        // The database refuses what the first thread's forgetting writes.
+        world.state.saving = (saved) =>
+          saved.some(({ threadId }) => threadId === failingThread.id)
+            ? Effect.fail(new DatabaseError({ cause: "synthetic refusal" }))
+            : Effect.void;
+
+        const before = (yield* Metric.value(forgetFailures)).count;
+
+        assert.strictEqual(yield* forgetAt(after("1450 minutes")), 1);
+        assert.strictEqual(
+          (yield* Metric.value(forgetFailures)).count,
+          before + 1
+        );
+
+        const kept = [...world.state.comments.values()];
+
+        assert.deepStrictEqual(
+          kept.map(({ state, threadId }) => [
+            threadId === failingThread.id,
+            state,
+          ]),
+          [
+            [true, "new"],
+            [false, "deleted"],
+          ]
+        );
+
+        // The daily purge still deletes what is past its retention.
+        world.state.threads.set(
+          failingThread.id,
+          endCollection(failingThread, "window", after("1 day"))
+        );
+
+        yield* at(after("40 days"));
+
+        assert.strictEqual(
+          yield* PurgeEngagement.use((purging) => purging.purge),
+          1
+        );
+        assert.isFalse(world.state.threads.has(failingThread.id));
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
 });

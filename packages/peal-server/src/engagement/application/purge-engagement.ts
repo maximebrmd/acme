@@ -1,4 +1,4 @@
-import { Context, DateTime, Effect, Layer } from "effect";
+import { Context, DateTime, Effect, Layer, Metric } from "effect";
 
 import { expireComment, isOnPlatform } from "#engagement/domain/comment.ts";
 import { purgedBefore } from "#engagement/domain/engagement-retention.ts";
@@ -11,6 +11,23 @@ import { EngagementStore } from "./ports/engagement-store.ts";
 // Threads deleted, or listed to forget, per statement, so one run never
 // holds long locks.
 const batchSize = 200;
+
+/**
+ * Threads whose comments the retention could not forget at their bound,
+ * each time one fails. One that keeps failing counts at every run: an
+ * alert watches it (`peal-comments-forget-failing`).
+ */
+export const forgetFailures = Metric.counter(
+  "peal.engagement.retention.forget_failures",
+  {
+    description:
+      "Threads whose comments could not be forgotten at their platform's bound",
+    incremental: true,
+  }
+);
+
+// How forgetting one thread ended.
+type Forgot = "failed" | "forgotten" | "kept";
 
 /**
  * Ends the retention of what other people wrote: a thread, its comments
@@ -59,13 +76,28 @@ export class PurgeEngagement extends Context.Service<
       // One thread's comments, under its lock as every writer of them
       // takes it, while its bound is still past: a read that came first
       // moved it, and what that read wrote stays.
-      const forgetOne = (threadId: ThreadId, now: DateTime.Utc) =>
-        transaction(
+      // One thread that fails never stops the others: it is counted and
+      // named by id alone, never with the failure, which may quote what
+      // people wrote, and the next run tries it again.
+      const forgetOne = (
+        threadId: ThreadId,
+        now: DateTime.Utc
+      ): Effect.Effect<Forgot> => {
+        const failed = (kind: "database" | "fault") =>
+          Effect.logWarning(
+            "A thread's comments could not be forgotten at their platform's bound: the next run tries again"
+          ).pipe(
+            Effect.annotateLogs({ kind, threadId }),
+            Effect.andThen(Metric.update(forgetFailures, 1)),
+            Effect.as<Forgot>("failed")
+          );
+
+        return transaction(
           Effect.gen(function* forgetting() {
             yield* store.lockThread(threadId);
 
             if (!(yield* store.clearRefresh(threadId, now))) {
-              return 0;
+              return "kept" as const;
             }
 
             const kept = yield* store.commentsOf(threadId);
@@ -76,9 +108,13 @@ export class PurgeEngagement extends Context.Service<
                 .map((comment) => expireComment(comment, now))
             );
 
-            return 1;
+            return "forgotten" as const;
           })
+        ).pipe(
+          Effect.catchTag("DatabaseError", () => failed("database")),
+          Effect.catchDefect(() => failed("fault"))
         );
+      };
 
       // Each listed thread's bound is gone or moved past `now` once it is
       // handled, so the next page lists others.
@@ -91,16 +127,18 @@ export class PurgeEngagement extends Context.Service<
             Effect.all(
               threadIds.map((threadId) => forgetOne(threadId, now))
             ).pipe(
-              Effect.flatMap((forgotten) => {
-                let sum = total;
+              Effect.flatMap((outcomes) => {
+                const forgotten = outcomes.filter(
+                  (outcome) => outcome === "forgotten"
+                ).length;
 
-                for (const one of forgotten) {
-                  sum += one;
-                }
+                // A page of threads that all failed is listed again as it
+                // was: the run stops there, and the next one tries again.
+                const moved = outcomes.some((outcome) => outcome !== "failed");
 
-                return threadIds.length < batchSize
-                  ? Effect.succeed(sum)
-                  : forgetFrom(now, sum);
+                return threadIds.length < batchSize || !moved
+                  ? Effect.succeed(total + forgotten)
+                  : forgetFrom(now, total + forgotten);
               })
             )
           )
@@ -111,7 +149,14 @@ export class PurgeEngagement extends Context.Service<
         Effect.withSpan("PurgeEngagement.forgetExpired")
       );
 
+      // The retention's deletion runs whatever the forgetting met: a
+      // store it could not list is logged, and the deletion goes on.
       const purge = forgetExpired.pipe(
+        Effect.catchTag("DatabaseError", () =>
+          Effect.logWarning(
+            "The comments past their platform's bound could not be listed: the deletion goes on"
+          )
+        ),
         Effect.andThen(DateTime.now),
         Effect.flatMap((now) => untilShort(purgedBefore(now), 0)),
         Effect.withSpan("PurgeEngagement.purge")
