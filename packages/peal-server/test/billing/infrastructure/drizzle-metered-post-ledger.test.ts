@@ -3,7 +3,11 @@ import { DateTime, Effect, Layer } from "effect";
 
 import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
 import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
-import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
+import {
+  DatabaseTest,
+  freshWorkspace,
+  pastParameterLimit,
+} from "#test/channels/support.ts";
 
 const LedgerTest = DrizzleMeteredPostLedgerLive.pipe(
   Layer.provideMerge(DatabaseTest)
@@ -51,5 +55,99 @@ layer(LedgerTest)("the metered posts' counts in Postgres", (it) => {
         assert.lengthOf(yield* ledger.ofWorkspace(other), 1);
         yield* ledger.eraseWorkspace(other);
       })
+  );
+
+  it.effect(
+    "reads the months a period touches of several workspaces, and nothing for none",
+    () =>
+      Effect.gen(function* several() {
+        const ledger = yield* MeteredPostLedger;
+        const first = yield* freshWorkspace;
+        const second = yield* freshWorkspace;
+        const stranger = yield* freshWorkspace;
+        const september = DateTime.makeUnsafe("2026-09-01T00:00:00Z");
+
+        for (const [workspaceId, month] of [
+          [first, september],
+          [first, october],
+          [second, november],
+          [stranger, october],
+        ] as const) {
+          yield* ledger.add({
+            month,
+            platform: "x",
+            withLink: true,
+            workspaceId,
+          });
+        }
+
+        const period = {
+          from: DateTime.makeUnsafe("2026-10-20T00:00:00Z"),
+          to: DateTime.makeUnsafe("2026-11-05T00:00:00Z"),
+        };
+
+        assert.deepStrictEqual(yield* ledger.ofWorkspaces([], period), []);
+        assert.sameDeepMembers(
+          [...(yield* ledger.ofWorkspaces([first, second], period))],
+          [
+            {
+              count: {
+                month: october,
+                platform: "x",
+                posts: 1,
+                postsWithLinks: 1,
+              },
+              workspaceId: first,
+            },
+            {
+              count: {
+                month: november,
+                platform: "x",
+                posts: 1,
+                postsWithLinks: 1,
+              },
+              workspaceId: second,
+            },
+          ]
+        );
+
+        for (const workspaceId of [first, second, stranger]) {
+          yield* ledger.eraseWorkspace(workspaceId);
+        }
+      })
+  );
+
+  it.effect("reads more workspaces than a statement takes parameters", () =>
+    Effect.gen(function* many() {
+      const ledger = yield* MeteredPostLedger;
+      const workspaceId = yield* freshWorkspace;
+
+      yield* ledger.add({
+        month: october,
+        platform: "x",
+        withLink: false,
+        workspaceId,
+      });
+
+      assert.deepStrictEqual(
+        yield* ledger.ofWorkspaces(pastParameterLimit([workspaceId]), {
+          from: october,
+          to: october,
+        }),
+        [
+          {
+            count: {
+              month: october,
+              platform: "x",
+              posts: 1,
+              postsWithLinks: 0,
+            },
+            workspaceId,
+          },
+        ]
+      );
+
+      yield* ledger.eraseWorkspace(workspaceId);
+    })
   );
 });

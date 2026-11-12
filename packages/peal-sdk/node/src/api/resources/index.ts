@@ -39,6 +39,8 @@ export * as partner from "./partner/index.js";
 export * from "./partner/client/requests/index.js";
 export * as partnerAccount from "./partnerAccount/index.js";
 export * from "./partnerAccount/client/requests/index.js";
+export * as partnerUsage from "./partnerUsage/index.js";
+export * from "./partnerUsage/client/requests/index.js";
 export * as posts from "./posts/index.js";
 export * from "./posts/client/requests/index.js";
 export * from "./posts/types/index.js";

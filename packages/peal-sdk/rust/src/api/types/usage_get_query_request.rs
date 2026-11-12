@@ -2,27 +2,27 @@ pub use crate::prelude::*;
 
 /// Query parameters for get
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
-pub struct GetQueryRequest {
+pub struct UsageGetQueryRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<CalendarDay>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<CalendarDay>,
 }
 
-impl GetQueryRequest {
-    pub fn builder() -> GetQueryRequestBuilder {
-        <GetQueryRequestBuilder as Default>::default()
+impl UsageGetQueryRequest {
+    pub fn builder() -> UsageGetQueryRequestBuilder {
+        <UsageGetQueryRequestBuilder as Default>::default()
     }
 }
 
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
-pub struct GetQueryRequestBuilder {
+pub struct UsageGetQueryRequestBuilder {
     from: Option<CalendarDay>,
     to: Option<CalendarDay>,
 }
 
-impl GetQueryRequestBuilder {
+impl UsageGetQueryRequestBuilder {
     pub fn from(mut self, value: CalendarDay) -> Self {
         self.from = Some(value);
         self
@@ -33,9 +33,9 @@ impl GetQueryRequestBuilder {
         self
     }
 
-    /// Consumes the builder and constructs a [`GetQueryRequest`].
-    pub fn build(self) -> Result<GetQueryRequest, BuildError> {
-        Ok(GetQueryRequest {
+    /// Consumes the builder and constructs a [`UsageGetQueryRequest`].
+    pub fn build(self) -> Result<UsageGetQueryRequest, BuildError> {
+        Ok(UsageGetQueryRequest {
             from: self.from,
             to: self.to,
         })

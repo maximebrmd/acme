@@ -2,7 +2,11 @@
 
 import { useFormatter, useTranslations } from "next-intl";
 import { usageRetentionDays } from "peal-contract";
-import type { WorkspaceUsageReport } from "peal-contract";
+import type {
+  UsagePeriod,
+  UsageTotals as UsageTotalsReport,
+  WorkspaceUsageReport,
+} from "peal-contract";
 import {
   ChartContainer,
   ChartLegend,
@@ -26,6 +30,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "peal-ui/components/tabs";
+import type { ReactNode } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -45,14 +50,28 @@ const colors = {
 
 const dash = "–";
 
-interface UsageHistoryViewProps {
-  readonly report: WorkspaceUsageReport;
+/** A day as the chart draws it: posts as a bar, channels as a line. */
+export interface ChartedDay {
+  /** Counted only for a workspace's own days. */
+  readonly assistantRequests?: number | null;
+  readonly channels: number | null;
+  readonly day: string;
+  readonly publishedPosts: number;
 }
 
-const UsageTotals = ({ report }: UsageHistoryViewProps) => {
+interface UsageHistoryViewProps {
+  readonly days: readonly ChartedDay[];
+  readonly period: UsagePeriod;
+  /** Whether a partner's plan holds the channels. */
+  readonly shared?: boolean;
+  /** The same figures as the chart, behind the Table tab. */
+  readonly table: ReactNode;
+  readonly totals: UsageTotalsReport;
+}
+
+const UsageTotals = ({ totals }: { readonly totals: UsageTotalsReport }) => {
   const t = useTranslations("Billing.usage.history");
   const format = useFormatter();
-  const { totals } = report;
 
   const month = (day: string) =>
     format.dateTime(dayDate(day), {
@@ -157,16 +176,22 @@ export const UsageDaysTable = ({
 };
 
 /**
- * A workspace's usage day by day (UTC): the period's totals, then each
- * day's posts published, as bars, and channels connected, as a line, with
- * the same figures as a table for anyone who does not read charts: the
- * chart is hidden from screen readers, whose users take the table. A day
- * without a snapshot has a dash, never a zero.
+ * Usage day by day (UTC): the period's totals, then each day's posts
+ * published, as bars, and channels connected, as a line, with the same
+ * figures as a table for anyone who does not read charts: the chart is
+ * hidden from screen readers, whose users take the table. A day without a
+ * count has a dash, never a zero. A workspace's (`WorkspaceUsageHistory`)
+ * or a partner's across its workspaces.
  */
-export const UsageHistoryView = ({ report }: UsageHistoryViewProps) => {
+export const UsageHistoryView = ({
+  days,
+  period,
+  shared = false,
+  table,
+  totals,
+}: UsageHistoryViewProps) => {
   const t = useTranslations("Billing.usage.history");
   const format = useFormatter();
-  const { days, period, sharedWith } = report;
 
   const dayLabel = (day: string | number | undefined) =>
     format.dateTime(dayDate(String(day)), {
@@ -185,19 +210,19 @@ export const UsageHistoryView = ({ report }: UsageHistoryViewProps) => {
   };
 
   const counted =
-    report.totals.publishedPosts > 0 ||
-    report.totals.daysCounted > 0 ||
+    totals.publishedPosts > 0 ||
+    totals.daysCounted > 0 ||
     days.some(({ assistantRequests }) => (assistantRequests ?? 0) > 0);
 
   return (
     <div className="flex flex-col gap-4">
-      {sharedWith === null ? null : (
+      {shared ? (
         <p className="text-muted-foreground text-sm">{t("shared")}</p>
-      )}
+      ) : null}
       {counted ? null : (
         <p className="text-muted-foreground text-sm">{t("nothing")}</p>
       )}
-      <UsageTotals report={report} />
+      <UsageTotals totals={totals} />
       <Tabs defaultValue="chart">
         <TabsList aria-label={t("views")}>
           <TabsTrigger value="chart">{t("chart")}</TabsTrigger>
@@ -268,9 +293,7 @@ export const UsageHistoryView = ({ report }: UsageHistoryViewProps) => {
             </figcaption>
           </figure>
         </TabsContent>
-        <TabsContent value="table">
-          <UsageDaysTable days={days} />
-        </TabsContent>
+        <TabsContent value="table">{table}</TabsContent>
       </Tabs>
       <p className="text-muted-foreground text-xs">
         {t("note", { days: usageRetentionDays })}
@@ -278,3 +301,18 @@ export const UsageHistoryView = ({ report }: UsageHistoryViewProps) => {
     </div>
   );
 };
+
+/** A workspace's usage day by day, as its billing page shows it. */
+export const WorkspaceUsageHistory = ({
+  report,
+}: {
+  readonly report: WorkspaceUsageReport;
+}) => (
+  <UsageHistoryView
+    days={report.days}
+    period={report.period}
+    shared={report.sharedWith !== null}
+    table={<UsageDaysTable days={report.days} />}
+    totals={report.totals}
+  />
+);

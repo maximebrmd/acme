@@ -10,10 +10,10 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 
 
-class BadRequestErrorBody_InvalidTimeRange(UniversalBaseModel):
+class BadRequestErrorBody_InvalidDateRange(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["InvalidTimeRange"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "InvalidTimeRange"
+        typing.Literal["InvalidDateRange"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "InvalidDateRange"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
@@ -46,6 +46,6 @@ class BadRequestErrorBody_BadRequest(UniversalBaseModel):
 
 
 BadRequestErrorBody = typing_extensions.Annotated[
-    typing.Union[BadRequestErrorBody_InvalidTimeRange, BadRequestErrorBody_BadRequest],
+    typing.Union[BadRequestErrorBody_InvalidDateRange, BadRequestErrorBody_BadRequest],
     pydantic.Field(discriminator="type"),
 ]

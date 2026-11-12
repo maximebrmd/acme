@@ -41,6 +41,7 @@ import { apiErrorKey } from "#settings/errors.ts";
 import type { SettingsErrorKey } from "#settings/errors.ts";
 
 import { CreatedKey } from "./api-keys.tsx";
+import { UsagePerCustomer } from "./partner-usage.tsx";
 import { SettingsError } from "./settings-error.tsx";
 import { SettingsLoadFailed, SettingsLoading } from "./settings-status.tsx";
 
@@ -607,6 +608,9 @@ const Account = ({
       <Section title={t("workspacesTitle")}>
         <Workspaces workspaceId={workspaceId} />
       </Section>
+      <Section title={t("usageReport.title")}>
+        <UsagePerCustomer workspaceId={workspaceId} />
+      </Section>
       {mayManage ? (
         <Section title={t("closeTitle")}>
           <CloseAccount workspaceId={workspaceId} />
@@ -652,7 +656,7 @@ const Loaded = ({
 /**
  * A workspace's partner account: opening it where the server lets its
  * people, what its customers see of it, where hosted pages send them
- * back, its keys, and the workspaces it owns.
+ * back, its keys, the workspaces it owns, and what each used.
  */
 export const PartnerSettings = ({
   mayManage,

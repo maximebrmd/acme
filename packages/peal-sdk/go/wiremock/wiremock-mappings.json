@@ -2474,6 +2474,42 @@
       }
     },
     {
+      "id": "5a52bad9-34e0-42bd-bda8-a1399564e99d",
+      "name": "Get the partner account's usage per customer - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/usage/partner",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"allowances\": {\n    \"assistantRequests\": 1000000,\n    \"channels\": 1000000,\n    \"mediaStorage\": 1000000,\n    \"members\": 1000000,\n    \"scheduledPosts\": 1000000\n  },\n  \"current\": {\n    \"channels\": 1,\n    \"workspaces\": 1\n  },\n  \"days\": [\n    {\n      \"byPlatform\": [\n        {\n          \"platform\": \"x\",\n          \"posts\": 1\n        }\n      ],\n      \"channels\": 1,\n      \"day\": \"day\",\n      \"publishedPosts\": 1,\n      \"workspaces\": 1\n    }\n  ],\n  \"period\": {\n    \"from\": \"from\",\n    \"to\": \"to\"\n  },\n  \"plan\": \"free\",\n  \"totals\": {\n    \"byPlatform\": [\n      {\n        \"platform\": \"x\",\n        \"posts\": 1\n      }\n    ],\n    \"channelDays\": 1000000,\n    \"daysCounted\": 1,\n    \"meteredPosts\": [\n      {\n        \"month\": \"month\",\n        \"platform\": \"x\",\n        \"posts\": 1,\n        \"postsWithLinks\": 1\n      }\n    ],\n    \"publishedPosts\": 1\n  },\n  \"workspaces\": {\n    \"next\": \"next\",\n    \"total\": 1,\n    \"workspaces\": [\n      {\n        \"assistantRequests\": 1,\n        \"byPlatform\": [\n          {\n            \"platform\": \"x\",\n            \"posts\": 1\n          }\n        ],\n        \"channelDays\": 1000000,\n        \"channels\": 1,\n        \"daysCounted\": 1,\n        \"externalId\": null,\n        \"home\": true,\n        \"mediaStorage\": null,\n        \"meteredPosts\": [\n          {\n            \"month\": \"month\",\n            \"platform\": \"x\",\n            \"posts\": 1,\n            \"postsWithLinks\": 1\n          }\n        ],\n        \"name\": \"name\",\n        \"publishedPosts\": 1,\n        \"workspaceId\": \"workspaceId\"\n      }\n    ]\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "5a52bad9-34e0-42bd-bda8-a1399564e99d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "cbe4dd54-6c2c-4847-a425-b5926a5249b4",
       "name": "Summarize the workspace's analytics - default",
       "request": {
@@ -4728,6 +4764,38 @@
       }
     },
     {
+      "id": "d44eb474-f723-4927-b90e-84f5026ece9a",
+      "name": "Get the partner's usage per customer - default",
+      "request": {
+        "urlPathTemplate": "/api/partner/usage",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"allowances\": {\n    \"assistantRequests\": 1000000,\n    \"channels\": 1000000,\n    \"mediaStorage\": 1000000,\n    \"members\": 1000000,\n    \"scheduledPosts\": 1000000\n  },\n  \"current\": {\n    \"channels\": 1,\n    \"workspaces\": 1\n  },\n  \"days\": [\n    {\n      \"byPlatform\": [\n        {\n          \"platform\": \"x\",\n          \"posts\": 1\n        }\n      ],\n      \"channels\": 1,\n      \"day\": \"day\",\n      \"publishedPosts\": 1,\n      \"workspaces\": 1\n    }\n  ],\n  \"period\": {\n    \"from\": \"from\",\n    \"to\": \"to\"\n  },\n  \"plan\": \"free\",\n  \"totals\": {\n    \"byPlatform\": [\n      {\n        \"platform\": \"x\",\n        \"posts\": 1\n      }\n    ],\n    \"channelDays\": 1000000,\n    \"daysCounted\": 1,\n    \"meteredPosts\": [\n      {\n        \"month\": \"month\",\n        \"platform\": \"x\",\n        \"posts\": 1,\n        \"postsWithLinks\": 1\n      }\n    ],\n    \"publishedPosts\": 1\n  },\n  \"workspaces\": {\n    \"next\": \"next\",\n    \"total\": 1,\n    \"workspaces\": [\n      {\n        \"assistantRequests\": 1,\n        \"byPlatform\": [\n          {\n            \"platform\": \"x\",\n            \"posts\": 1\n          }\n        ],\n        \"channelDays\": 1000000,\n        \"channels\": 1,\n        \"daysCounted\": 1,\n        \"externalId\": null,\n        \"home\": true,\n        \"mediaStorage\": null,\n        \"meteredPosts\": [\n          {\n            \"month\": \"month\",\n            \"platform\": \"x\",\n            \"posts\": 1,\n            \"postsWithLinks\": 1\n          }\n        ],\n        \"name\": \"name\",\n        \"publishedPosts\": 1,\n        \"workspaceId\": \"workspaceId\"\n      }\n    ]\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "d44eb474-f723-4927-b90e-84f5026ece9a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
       "id": "ad8c8147-708b-4bd6-8f41-b96a2fc22cfb",
       "name": "Read the workspace's partner account - default",
       "request": {
@@ -6655,6 +6723,6 @@
     }
   ],
   "meta": {
-    "total": 177
+    "total": 179
   }
 }

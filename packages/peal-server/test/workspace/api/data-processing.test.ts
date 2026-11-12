@@ -39,6 +39,7 @@ import { auditRetention } from "#staff/domain/audit-retention.ts";
 import { deliveryRetention } from "#webhooks/domain/delivery-policy.ts";
 import { erasureLedgerRetention } from "#workspace/domain/erasure-ledger.ts";
 import { creationKeyLifetime } from "#workspace/domain/idempotency.ts";
+import { partnerUsageRetentionDays } from "#workspace/domain/partner-usage-retention.ts";
 
 const categoryOf = (id: string) =>
   processingRegister.find((category) => category.id === id);
@@ -132,6 +133,16 @@ describe("the data processing registry", () => {
     expect(kept("usage")).toContain("400 days from each day");
     // Counts only: nothing of a post, and no member named.
     expect(categoryOf("usage")?.data.en).toContain("Counts only");
+  });
+
+  it("keeps a partner's daily counts as long as their purge does", () => {
+    expect(retentionPeriods.partnerUsageDays.days).toBe(
+      partnerUsageRetentionDays
+    );
+    expect(kept("partners")).toContain(
+      "Its daily counts: 400 days from each day"
+    );
+    expect(kept("partners")).not.toContain("its daily counts: until");
   });
 
   it("keeps the short links' clicks as long as their purge does", () => {

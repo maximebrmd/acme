@@ -275,6 +275,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "get_comment_thread",
           "get_connect_link",
           "get_partner_account",
+          "get_partner_usage",
           "get_post",
           "get_post_ad_performance",
           "get_post_review",

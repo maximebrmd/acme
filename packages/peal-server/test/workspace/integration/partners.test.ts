@@ -36,6 +36,13 @@ const SharingSchema = Schema.Struct({
   ),
 });
 
+// The workspaces of a partner's usage per customer.
+const TenantPageSchema = Schema.Struct({
+  workspaces: Schema.Struct({
+    workspaces: Schema.Array(Schema.Struct({ workspaceId: Schema.String })),
+  }),
+});
+
 const StandingSchema = Schema.Struct({
   canOpen: Schema.Boolean,
   partner: Schema.NullOr(PartnerSchema),
@@ -714,6 +721,28 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             { partnerWorkspaceId: alpha.home }
           );
 
+          // Its usage per customer lists its own workspaces, never another
+          // partner's; a workspace that is no partner's home has none.
+          const perCustomer = yield* app.request("/api/partner/usage", {
+            headers: bearer(alphaKey),
+          });
+
+          assert.deepStrictEqual(
+            (yield* bodyOf(
+              TenantPageSchema,
+              perCustomer
+            )).workspaces.workspaces.map(({ workspaceId }) => workspaceId),
+            [alpha.home, ofAlpha.id]
+          );
+
+          const noHome = yield* app.request(
+            `/api/workspaces/${ordinary}/usage/partner`,
+            { headers: { cookie: stranger.cookies } }
+          );
+
+          assert.strictEqual(noHome.status, 404);
+          assert.deepInclude(noHome.body, { _tag: "PartnerNotFound" });
+
           // Another partner's workspace, an ordinary workspace, and its
           // own partner's home workspace: none exists for it.
           for (const workspaceId of [
@@ -805,6 +834,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
               "/api/partner",
               "/api/partner/workspaces",
               `/api/partner/workspaces/${ofAlpha.id}`,
+              "/api/partner/usage",
             ]) {
               const reply = yield* app.request(path, { headers });
 
@@ -840,6 +870,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             `/api/workspaces/${ofAlpha.id}/invitations`,
             `/api/workspaces/${ofAlpha.id}/api-keys`,
             `/api/workspaces/${ofAlpha.id}/partner`,
+            `/api/workspaces/${ofAlpha.id}/usage/partner`,
             "/api/me",
           ]) {
             const reply = yield* app.request(path, {
@@ -998,6 +1029,15 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
         });
 
         assert.strictEqual(listed.status, 403);
+
+        // Its partner's usage per customer, by the same scope.
+        const usage = yield* Effect.forEach([reading, blind], (key) =>
+          app
+            .request("/api/partner/usage", { headers: bearer(key) })
+            .pipe(Effect.map(({ status }) => status))
+        );
+
+        assert.deepStrictEqual(usage, [200, 403]);
       })
     );
 

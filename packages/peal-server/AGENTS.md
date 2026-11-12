@@ -153,7 +153,10 @@ and no socket, for tests.
   `WorkspaceAccess` then tells it to the member (`#workspace/api/refusal.ts`):
   an OAuth client without the scope gets `missingScope`, the scope and the
   RFC 6750 `insufficient_scope` challenge; a key or a role, who gives the
-  permission. Never answer a bare `new Forbidden()`.
+  permission. Never answer a bare `new Forbidden()`. Endpoints of the
+  partner API, whichever context serves them, take the key and refuse it
+  through `#shared/api/partner-key.ts` (`partnerKeyOnly`,
+  `withoutPartnerScope`, `partnerClosed`), in the same words.
 - Bearer credentials are rate limited (`RequestLimits`, backed by the
   activity context's `RequestLimiter`): `PEAL_API_REQUESTS_PER_MINUTE` (600)
   per API key, and per OAuth client and user (`limitSubjectOf`: a key counts
