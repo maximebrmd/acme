@@ -63,6 +63,7 @@ import type { PostId } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { purgeFinishedClusterRows } from "#shared/infrastructure/cluster-retention.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
+import type { Drizzle } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
@@ -371,6 +372,7 @@ const serverWith = <E, R>(
     | Feeds
     | PostScheduling
     | Recycling
+    | Drizzle
     | Sharding.Sharding
     | SqlClient.SqlClient
   > = CronsTest

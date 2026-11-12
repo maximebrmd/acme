@@ -302,7 +302,7 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   read, or a status YouTube refused for the moment (a rate limit),
   `unknown`. After the upload only YouTube's `failed`/`rejected` refuse the
   post: nothing that could make a retry upload twice. Each upload first spends a unit of the server-wide
-  ledger (`PlatformQuota`, `publishing.quota_usage`, by Pacific day,
+  ledger (`PlatformQuota`, `publishing.quota_usage`, whose days a week past `publishing.quota-retention` deletes daily, by Pacific day,
   `YOUTUBE_DAILY_UPLOADS`); past it, or on `quotaExceeded` and
   `uploadLimitExceeded`, it fails as `RateLimited` with that code
   (`dailyLimitCodes`) until Pacific midnight, which the policy ends as

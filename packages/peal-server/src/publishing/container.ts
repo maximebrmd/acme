@@ -64,6 +64,7 @@ import {
 import {
   FeedsCron,
   IdempotencyRetentionCron,
+  QuotaRetentionCron,
   RecyclingCron,
 } from "#publishing/infrastructure/crons.ts";
 import { DrizzleChannelDefaultsStore } from "#publishing/infrastructure/drizzle-channel-defaults-store.ts";
@@ -603,5 +604,6 @@ export {
 export const PublishingCronsLive = Layer.mergeAll(
   IdempotencyRetentionCron,
   RecyclingCron,
-  FeedsCron
+  FeedsCron,
+  QuotaRetentionCron.pipe(Layer.provide(DrizzlePlatformQuota))
 );

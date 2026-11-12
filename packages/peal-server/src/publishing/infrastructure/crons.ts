@@ -2,8 +2,16 @@ import { Cron, DateTime, Duration, Effect, Metric } from "effect";
 import { ClusterCron } from "effect/cluster";
 
 import { Feeds } from "#publishing/application/feeds.ts";
+import { PlatformQuota } from "#publishing/application/platform-quota.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { Recycling } from "#publishing/application/recycling.ts";
+import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
+import { addDays, localDateOf } from "#shared/domain/wall-clock.ts";
+
+// The quota ledger's days kept: a week, past the day any platform counts.
+const ledgerKeptDays = 7;
+
+const utc = TimeZoneIdSchema.make("UTC");
 
 /**
  * Every day at 04:17 UTC: deletes the idempotency keys past their lifetime,
@@ -171,4 +179,34 @@ export const FeedsCron = ClusterCron.make({
   ),
   name: "publishing.feeds",
   skipIfOlderThan: Duration.minutes(10),
+});
+
+/**
+ * Every day at 04:23 UTC: deletes the quota ledger's days a week past
+ * (`PlatformQuota.purge`). Every bucket counts one day, the day a platform
+ * counts (Pacific for YouTube, UTC for LinkedIn), so a past day counts
+ * nothing, and buckets by member or page would grow the ledger for good.
+ * A failed run is logged and the next day's catches up.
+ */
+export const QuotaRetentionCron = ClusterCron.make({
+  cron: Cron.parseUnsafe("23 4 * * *", "UTC"),
+  execute: Effect.gen(function* quotaRetention() {
+    const now = yield* DateTime.now;
+
+    const deleted = yield* PlatformQuota.use((quota) =>
+      quota.purge(addDays(localDateOf(now, utc), -ledgerKeptDays))
+    );
+
+    if (deleted > 0) {
+      yield* Effect.logInfo("Purged the quota ledger's past days").pipe(
+        Effect.annotateLogs({ deleted })
+      );
+    }
+  }).pipe(
+    Effect.catchCause((cause) =>
+      Effect.logWarning("Purging the quota ledger's past days failed", cause)
+    )
+  ),
+  name: "publishing.quota-retention",
+  skipIfOlderThan: Duration.hours(12),
 });

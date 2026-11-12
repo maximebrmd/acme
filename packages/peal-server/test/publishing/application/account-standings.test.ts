@@ -51,6 +51,7 @@ const standings = Effect.gen(function* standings() {
                 PlatformQuota,
                 PlatformQuota.of({
                   exhaust: () => Effect.void,
+                  purge: () => Effect.succeed(0),
                   spend: () => Effect.succeed(true),
                 })
               )
