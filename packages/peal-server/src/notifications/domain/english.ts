@@ -189,7 +189,8 @@ export const english: EmailCatalog = {
     notAFeed:
       "for seven days, its address has given something that is not a feed.",
     queueGone: "the queue it puts posts on was deleted.",
-    starterGone: "whoever added it can no longer make posts there.",
+    starterGone:
+      "whoever added it can no longer make posts there. Whoever resumes it takes it over: its posts are then theirs.",
     unreachable: "it could not be read for seven days.",
   },
   feedStopped: {

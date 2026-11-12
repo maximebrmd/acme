@@ -13,7 +13,12 @@ import { Queues } from "#publishing/application/queues.ts";
 import type { FeedId } from "#publishing/domain/feed-id.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
 import { newId } from "#shared/application/ids.ts";
-import { PostIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { Actor } from "#shared/domain/access.ts";
+import {
+  PostIdSchema,
+  UserIdSchema,
+  WorkspaceIdSchema,
+} from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
@@ -39,6 +44,7 @@ import {
   postsServerBehind,
 } from "#test/publishing/posts-server.ts";
 import {
+  actorAs,
   actorIn,
   attachableMedia,
   contentOf,
@@ -1000,6 +1006,100 @@ describe("a run that meets a broken feed", () => {
 
           assert.isAtLeast(run.failed, 1);
           assert.lengthOf(yield* postsOf(workspaceId), 1);
+        })
+      ),
+    timeout
+  );
+});
+
+describe("a feed whose starter is gone", () => {
+  it.effect(
+    "is taken over by whoever resumes it, and makes posts as them",
+    () =>
+      onServer(
+        Effect.gen(function* takenOver() {
+          const workspaceId = yield* freshWorkspace;
+          const newcomer = UserIdSchema.make(
+            "6c1d5a2b-7e3f-4a9b-8c0d-1e2f3a4b5c6d"
+          );
+
+          yield* serveItems(blog, []);
+
+          const { feed } = yield* created(workspaceId);
+
+          // Only the newcomer is still a member.
+          yield* startersAre((started) =>
+            Option.contains(started.startedBy, newcomer)
+              ? {
+                  _tag: "acting",
+                  actor: actorAs(newcomer, started.workspaceId),
+                }
+              : { _tag: "gone" }
+          );
+          yield* later();
+          yield* poll;
+
+          assert.deepStrictEqual(
+            (yield* feedNow(workspaceId, feed.id)).status._tag,
+            "stopped"
+          );
+
+          const resumed = yield* Feeds.use((feeds) =>
+            feeds.change(actorAs(newcomer, workspaceId), feed.id, {
+              status: "active",
+            })
+          );
+
+          assert.deepStrictEqual(resumed.startedBy, Option.some(newcomer));
+
+          yield* serveItems(blog, [{ n: 1, title: "Made as the newcomer" }]);
+          yield* later();
+          yield* poll;
+
+          const [post] = yield* postsOf(workspaceId);
+
+          assert.strictEqual(post?.authorId, newcomer);
+          assert.strictEqual(
+            (yield* feedNow(workspaceId, feed.id)).status._tag,
+            "active"
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "is not taken over by staff acting as a member",
+    () =>
+      onServer(
+        Effect.gen(function* notByStaff() {
+          const workspaceId = yield* freshWorkspace;
+
+          yield* serveItems(blog, []);
+
+          const { feed } = yield* created(workspaceId);
+
+          yield* startersAre(() => ({ _tag: "gone" }));
+          yield* later();
+          yield* poll;
+
+          const staff = new Actor({
+            permissions: permissionsFor("owner"),
+            subject: {
+              _tag: "user",
+              impersonatedBy: Option.some(
+                UserIdSchema.make("7d2e6b3c-8f4a-4b0c-9d1e-2f3a4b5c6d7e")
+              ),
+              userId: UserIdSchema.make("6c1d5a2b-7e3f-4a9b-8c0d-1e2f3a4b5c6d"),
+            },
+            workspaceId,
+          });
+
+          const refused = yield* Feeds.use((feeds) =>
+            feeds.change(staff, feed.id, { status: "active" })
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "MissingPermission");
         })
       ),
     timeout

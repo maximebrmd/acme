@@ -197,7 +197,7 @@ export const french: EmailCatalog = {
     queueGone:
       "la file d’attente où il programme ses publications a été supprimée.",
     starterGone:
-      "la personne qui l’a ajouté ne peut plus y créer de publications.",
+      "la personne qui l’a ajouté ne peut plus y créer de publications. La personne qui le reprend en devient responsable : ses publications sont alors les siennes.",
     unreachable: "il n’a pas pu être lu pendant sept jours.",
   },
   feedStopped: {

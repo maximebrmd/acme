@@ -359,6 +359,16 @@ export const resumeFeed = (
     status: { _tag: "active" },
   });
 
+/**
+ * The feed taken over by whoever resumes it once its starter is gone: its
+ * posts act as them from then on.
+ */
+export const adoptFeed = (
+  feed: Feed,
+  startedBy: Option.Option<UserId>,
+  startedVia: PostOrigin
+): Feed => changed(feed, { startedBy, startedVia });
+
 /** What a member changes of a feed: each left out stays as it is. */
 export interface FeedChange {
   readonly attachPicture?: boolean | undefined;

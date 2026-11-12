@@ -438,7 +438,12 @@ export const DrizzleFeedStore = Layer.effect(
       update: (feed) =>
         db
           .update(feeds)
-          .set(changing(feed))
+          .set({
+            ...changing(feed),
+            // Who acts for it changes when someone takes it over.
+            startedBy: Option.getOrNull(feed.startedBy),
+            startedVia: encodeOrigin(feed.startedVia),
+          })
           .where(inWorkspace(feed.workspaceId, feed.id))
           .pipe(Effect.asVoid, Effect.mapError(failed)),
     });

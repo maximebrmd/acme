@@ -29,6 +29,7 @@ import {
   writtenTooLong,
 } from "#publishing/domain/feed-template.ts";
 import {
+  adoptFeed,
   editFeed,
   isDue,
   leaseFeed,
@@ -50,6 +51,7 @@ import type {
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
+import type { PostOrigin } from "#publishing/domain/post-origin.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
@@ -595,6 +597,21 @@ export class Feeds extends Context.Service<
         const resuming =
           request.status === "active" && current.status._tag !== "active";
 
+        // A feed whose starter is gone is taken over by whoever resumes
+        // it, as one they add would be: their posts, as they reach Peal.
+        const takeOver =
+          resuming &&
+          current.status._tag === "stopped" &&
+          current.status.reason === "starterGone";
+
+        const via = takeOver
+          ? Option.some(
+              yield* PostOrigins.use((origins) => origins.of(actor)).pipe(
+                withPorts
+              )
+            )
+          : Option.none<PostOrigin>();
+
         // A new address, or a feed set going again, is read at once: what
         // it holds then is never made.
         const read =
@@ -629,6 +646,11 @@ export class Feeds extends Context.Service<
 
               // A paused feed moved stays paused; one resumed goes again.
               feed = resuming ? resumeFeed(feed, now, seenRead) : feed;
+
+              feed = Option.match(via, {
+                onNone: () => feed,
+                onSome: (origin) => adoptFeed(feed, starterOf(actor), origin),
+              });
 
               yield* store.record(feed.id, existing(document, now));
               yield* store.listed(

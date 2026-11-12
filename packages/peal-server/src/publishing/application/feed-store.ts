@@ -47,7 +47,7 @@ export class FeedStore extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<number, DatabaseError>;
     readonly insert: (feed: Feed) => Effect.Effect<void, DatabaseError>;
-    /** Writes everything of a feed but what started it. */
+    /** Writes everything of a feed that changes, its starter included. */
     readonly update: (feed: Feed) => Effect.Effect<void, DatabaseError>;
     readonly byId: (
       workspaceId: WorkspaceId,
