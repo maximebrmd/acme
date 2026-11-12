@@ -96,9 +96,16 @@ export const legacyPlans: readonly LegacyPlan[] = [
  */
 export const plans: readonly Plan[] = [...legacyPlans, "payAsYouGo"];
 
-/** The larger of two paid plans. */
+// Where a paid plan ranks among the entitlements a workspace holds. Until
+// per-account pricing is wired to the rate card, `allowancesOf` holds it to
+// the free plan, so it ranks below every legacy plan: a workspace that also
+// holds one keeps that plan's allowances. Wiring it removes this.
+const entitlementRank = (plan: PaidPlan): number =>
+  plan === "payAsYouGo" ? -1 : plans.indexOf(plan);
+
+/** The larger of two paid plans, as entitlements rank them. */
 export const largerPlan = (left: PaidPlan, right: PaidPlan): PaidPlan =>
-  plans.indexOf(right) > plans.indexOf(left) ? right : left;
+  entitlementRank(right) > entitlementRank(left) ? right : left;
 
 /**
  * The smallest plan larger than `current` whose allowance of `limit` holds
