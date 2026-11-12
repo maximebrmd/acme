@@ -341,4 +341,35 @@ describe("Instagram's comments", () => {
         );
       }).pipe(Effect.scoped)
   );
+
+  it.effect(
+    "pauses the channel rather than end a thread when the account itself no longer loads",
+    () =>
+      Effect.gen(function* unloadable() {
+        const { account, graph, platform } = yield* onGraph();
+
+        const gone = json(
+          { error: { code: 100, error_subcode: 33, message: "synthetic" } },
+          400
+        );
+
+        graph.add(comment(1));
+        graph.script.push(`GET /v27.0/${mediaId}/comments`, [gone, gone]);
+
+        // The account loads: the post is gone.
+        const [missing] = (yield* platform.read(account, toRead)).readings;
+
+        assert.strictEqual(missing?._tag, "missing");
+
+        graph.script.push(`GET /v27.0/${instagramUserId}`, [gone]);
+
+        const read = yield* platform.read(account, toRead).pipe(Effect.result);
+
+        assert.isTrue(
+          read._tag === "Failure" &&
+            read.failure._tag === "ChannelUnreadable" &&
+            read.failure.reason === "paused"
+        );
+      }).pipe(Effect.scoped)
+  );
 });

@@ -207,17 +207,35 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
     const refusedRead = Effect.fn("InstagramEngagement.refusedRead")(
       function* refusedRead(
         response: HttpClientResponse.HttpClientResponse,
-        thread: ThreadToRead,
-        comments: readonly CommentReading[]
+        reading: {
+          readonly account: ChannelAccount;
+          readonly comments: readonly CommentReading[];
+          /** Whether no thread of the batch was read before this one. */
+          readonly first: boolean;
+          readonly thread: ThreadToRead;
+          readonly token: Redacted.Redacted;
+        }
       ) {
+        const { account, comments, first, thread, token } = reading;
         const refusal = yield* metaRefusalOf(response);
+
+        const failed: Step = {
+          _tag: "read",
+          reading: { _tag: "failed", threadId: thread.threadId },
+        };
 
         if (refusal === "token") {
           return yield* new TokenRejected();
         }
 
+        // A permission the token lacks pauses the channel when the batch's
+        // first thread meets it; a later one, after another thread was
+        // read, is that thread's own (Meta also answers 200 to 299 for one
+        // object, such as 210 "User not visible"), and only it waits.
         if (refusal === "permission") {
-          return yield* new ChannelUnreadable({ reason: "paused" });
+          return first
+            ? yield* new ChannelUnreadable({ reason: "paused" })
+            : failed;
         }
 
         if (refusal === "rateLimited") {
@@ -237,15 +255,32 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
           return halt;
         }
 
-        const step: Step = {
+        if (refusal !== "gone" || comments.length > 0) {
+          return failed;
+        }
+
+        // Code 100, subcode 33 also says an object "cannot be loaded due to
+        // missing permissions": the post is gone, and its comments with
+        // it, only when the same token still loads the account itself.
+        // Otherwise the channel waits, and nothing is erased.
+        const own = yield* request(
+          account,
+          token,
+          "GET",
+          nodePath(account.accountId),
+          { fields: "id" }
+        ).pipe(Effect.flatMap(reader.execute), Effect.option);
+
+        if (!Option.exists(own, isSuccess)) {
+          return yield* new ChannelUnreadable({ reason: "paused" });
+        }
+
+        const missing: Step = {
           _tag: "read",
-          reading:
-            refusal === "gone" && comments.length === 0
-              ? { _tag: "missing", threadId: thread.threadId }
-              : { _tag: "failed", threadId: thread.threadId },
+          reading: { _tag: "missing", threadId: thread.threadId },
         };
 
-        return step;
+        return missing;
       }
     );
 
@@ -350,7 +385,8 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
       account: ChannelAccount,
       token: Redacted.Redacted,
       thread: ThreadToRead,
-      deadline: DateTime.Utc
+      deadline: DateTime.Utc,
+      first: boolean
     ) {
       const comments: CommentReading[] = [];
       let after = Option.none<string>();
@@ -388,7 +424,13 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
         const response = sent.success;
 
         if (!isSuccess(response)) {
-          return yield* refusedRead(response, thread, comments);
+          return yield* refusedRead(response, {
+            account,
+            comments,
+            first,
+            thread,
+            token,
+          });
         }
 
         const page = yield* pageOf(response);
@@ -451,7 +493,13 @@ export const instagramEngagement = Effect.fn("InstagramEngagement.make")(
           return { halted: true, readings };
         }
 
-        const step = yield* readOne(account, token, thread, deadline);
+        const step = yield* readOne(
+          account,
+          token,
+          thread,
+          deadline,
+          readings.length === 0
+        );
 
         if (step._tag === "halt") {
           readings.push(...Option.toArray(step.reading));

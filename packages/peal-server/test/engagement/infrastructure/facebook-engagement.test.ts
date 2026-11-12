@@ -511,4 +511,61 @@ describe("Facebook Pages' comments", () => {
       assert.lengthOf(graph.comments(), 2);
     }).pipe(Effect.scoped)
   );
+
+  it.effect(
+    "pauses the channel rather than end a thread when the account itself no longer loads",
+    () =>
+      Effect.gen(function* unloadable() {
+        const { account, graph, platform } = yield* onGraph();
+
+        const gone = json(
+          { error: { code: 100, error_subcode: 33, message: "synthetic" } },
+          400
+        );
+
+        graph.add(comment(1));
+        graph.script.push(
+          `GET /v27.0/${postId}/comments`,
+          [gone],
+          `GET /v27.0/${facebookPageId}`,
+          [gone]
+        );
+
+        const read = yield* platform.read(account, toRead).pipe(Effect.result);
+
+        assert.isTrue(
+          read._tag === "Failure" &&
+            read.failure._tag === "ChannelUnreadable" &&
+            read.failure.reason === "paused"
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "fails only the thread a permission error is about, once another was read",
+    () =>
+      Effect.gen(function* oneThread() {
+        const { account, graph, platform } = yield* onGraph();
+        const second = `${facebookPageId}_1002`;
+
+        graph.add(comment(1));
+        graph.script.push(`GET /v27.0/${second}/comments`, [
+          metaError(210, 400),
+        ]);
+
+        const batch = yield* platform.read(account, [
+          ...toRead,
+          {
+            platformPostId: PlatformPostIdSchema.make(second),
+            threadId: threadId(2),
+          },
+        ]);
+
+        assert.isFalse(batch.halted);
+        assert.deepStrictEqual(
+          batch.readings.map(({ _tag }) => _tag),
+          ["read", "failed"]
+        );
+      }).pipe(Effect.scoped)
+  );
 });
