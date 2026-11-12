@@ -17,26 +17,34 @@ export const CredentialWorkspaceSchema = Schema.Struct({
 export type CredentialWorkspace = typeof CredentialWorkspaceSchema.Type;
 
 /**
- * The workspace an OAuth client's token is bound to (MCP clients), and what
- * it may do there: the member's role, less what the scopes leave out. Where
- * the workspace refuses the person (`refused`), it may do nothing there.
+ * Which workspace an OAuth client's token acts in:
+ *
+ * - `unbound`: it names none, as the command line's does, and acts in the
+ *   person's workspaces as each decides.
+ * - `bound`: the workspace it was bound to (MCP clients), and what it may
+ *   do there: the member's role, less what the scopes leave out. Where the
+ *   workspace refuses the person (`refused`), it may do nothing there.
+ * - `left`: the workspace it was bound to, which the person has left since:
+ *   it may do nothing anywhere until the client connects again.
  */
-export const CredentialBoundWorkspaceSchema = Schema.Struct({
-  id: Schema.String,
-  name: Schema.String,
-  permissions: Schema.Array(PermissionSchema),
-  refused: Schema.NullOr(OverviewRefusalSchema),
-}).annotate({ identifier: "CredentialBoundWorkspace" });
+export const CredentialBindingSchema = Schema.Union([
+  Schema.TaggedStruct("unbound", {}),
+  Schema.TaggedStruct("bound", {
+    id: Schema.String,
+    name: Schema.String,
+    permissions: Schema.Array(PermissionSchema),
+    refused: Schema.NullOr(OverviewRefusalSchema),
+  }),
+  Schema.TaggedStruct("left", { id: Schema.String }),
+]).annotate({ identifier: "CredentialBinding" });
 
-export type CredentialBoundWorkspace =
-  typeof CredentialBoundWorkspaceSchema.Type;
+export type CredentialBinding = typeof CredentialBindingSchema.Type;
 
 /** The OAuth client a token was issued to, with what the user allowed it. */
 export const CredentialApplicationSchema = Schema.Struct({
+  binding: CredentialBindingSchema,
   clientId: Schema.String,
   scopes: Schema.Array(Schema.String),
-  // Null for a token bound to no workspace, as the command line's is.
-  workspace: Schema.NullOr(CredentialBoundWorkspaceSchema),
 }).annotate({ identifier: "CredentialApplication" });
 
 export type CredentialApplication = typeof CredentialApplicationSchema.Type;
@@ -65,6 +73,8 @@ export const CredentialSchema = Schema.Union([
   Schema.TaggedStruct("user", {
     // Null in a session of the person's own.
     application: Schema.NullOr(CredentialApplicationSchema),
+    // Staff acting as the person, in a session they opened as them.
+    impersonatedBy: Schema.NullOr(Schema.String),
     userId: Schema.String,
   }),
   Schema.TaggedStruct("apiKey", {
@@ -97,7 +107,7 @@ export class CredentialApi extends HttpApiGroup.make("credential")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers who the credential this request sends is and what it may do, whatever its kind: a person's session or an OAuth client's token (`user`, with the client's scopes and the workspace its token is bound to, if any), a workspace's API key (`apiKey`: its name, its start, its workspace, its permissions and when it expires) or a partner key (`partnerKey`: its partner, its scopes and the permissions it holds in each workspace the partner owns). Never the key or the token itself. A revoked or expired key answers 401, a suspended account 403, as on every endpoint; a workspace that requires two-step verification does not refuse this answer, which reads none of its data. It counts toward the rate limit as any request does.",
+          "Answers who the credential this request sends is and what it may do, whatever its kind: a person's session or an OAuth client's token (`user`, with the staff member acting as the person, if any, and for an OAuth token the client's scopes and its `binding`: no workspace, the workspace it is bound to with its permissions there, or one the person has left), a workspace's API key (`apiKey`: its name, its start, its workspace, its permissions and when it expires) or a partner key (`partnerKey`: its partner, its scopes and the permissions it holds in each workspace the partner owns). Never the key or the token itself. A revoked or expired key answers 401, a suspended account 403, as on every endpoint; a workspace that requires two-step verification does not refuse this answer, which reads none of its data. It counts toward the rate limit as any request does.",
         summary: "Check the credential",
       })
     )

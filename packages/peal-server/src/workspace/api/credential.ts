@@ -1,13 +1,28 @@
 import { Effect, Match, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 import { Api, CurrentPrincipal, Unauthenticated } from "peal-contract";
-import type { Credential } from "peal-contract";
+import type { Credential, CredentialBinding } from "peal-contract";
 
 import { forbidden } from "#shared/api/forbidden.ts";
 import { CredentialCheck } from "#workspace/application/credential-check.ts";
-import type { CredentialDescription } from "#workspace/application/credential-check.ts";
+import type {
+  Binding,
+  CredentialDescription,
+} from "#workspace/application/credential-check.ts";
 
 import { principalOf } from "./principal.ts";
+
+const bindingView = Match.typeTags<Binding, CredentialBinding>()({
+  bound: ({ id, name, permissions, refused }) => ({
+    _tag: "bound",
+    id,
+    name,
+    permissions,
+    refused: Option.getOrNull(refused),
+  }),
+  left: ({ id }) => ({ _tag: "left", id }),
+  unbound: () => ({ _tag: "unbound" }),
+});
 
 // What the contract answers: every kind of principal is a case, so adding
 // one fails to compile here until it is described.
@@ -31,26 +46,18 @@ const toCredential = Match.typeTags<CredentialDescription, Credential>()({
     scopes: key.scopes,
     start: key.start,
   }),
-  user: ({ application, userId }) => ({
+  user: ({ application, impersonatedBy, userId }) => ({
     _tag: "user",
     application: Option.getOrNull(
       application.pipe(
-        Option.map(({ clientId, scopes, workspace }) => ({
+        Option.map(({ binding, clientId, scopes }) => ({
+          binding: bindingView(binding),
           clientId,
           scopes,
-          workspace: Option.getOrNull(
-            workspace.pipe(
-              Option.map(({ id, name, permissions, refused }) => ({
-                id,
-                name,
-                permissions,
-                refused: Option.getOrNull(refused),
-              }))
-            )
-          ),
         }))
       )
     ),
+    impersonatedBy: Option.getOrNull(impersonatedBy),
     userId,
   }),
 });

@@ -1421,7 +1421,7 @@ export type { Me, Membership } from "./session.ts";
 export {
   CredentialApi,
   CredentialApplicationSchema,
-  CredentialBoundWorkspaceSchema,
+  CredentialBindingSchema,
   CredentialPartnerSchema,
   CredentialSchema,
   CredentialWorkspaceSchema,
@@ -1430,7 +1430,7 @@ export {
 export type {
   Credential,
   CredentialApplication,
-  CredentialBoundWorkspace,
+  CredentialBinding,
   CredentialPartner,
   CredentialWorkspace,
 } from "./credential.ts";

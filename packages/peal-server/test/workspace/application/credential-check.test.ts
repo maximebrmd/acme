@@ -26,6 +26,11 @@ const strict = WorkspaceIdSchema.make("5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a81");
 
 const left = WorkspaceIdSchema.make("6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b92");
 
+// Not among the account's workspaces any more.
+const gone = WorkspaceIdSchema.make("7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9ca3");
+
+const staffId = UserIdSchema.make("8b9c0d1e-2f3a-4b4c-9d5e-6f7a8b9c0db4");
+
 const account = new Account({
   ban: Option.none(),
   email: "synthetic@example.test",
@@ -104,9 +109,7 @@ const workspaceOf = (workspaceId: Option.Option<WorkspaceId>) =>
   ).pipe(
     Effect.map((described) =>
       described._tag === "user"
-        ? described.application.pipe(
-            Option.flatMap(({ workspace }) => workspace)
-          )
+        ? described.application.pipe(Option.map(({ binding }) => binding))
         : Option.none()
     ),
     Effect.provide(CheckTest)
@@ -120,6 +123,7 @@ describe(CredentialCheck, () => {
         assert.deepStrictEqual(
           yield* workspaceOf(Option.some(open)),
           Option.some({
+            _tag: "bound",
             id: open,
             name: "Open studio",
             permissions: ["post:read"],
@@ -136,6 +140,7 @@ describe(CredentialCheck, () => {
         assert.deepStrictEqual(
           yield* workspaceOf(Option.some(strict)),
           Option.some({
+            _tag: "bound",
             id: strict,
             name: "Strict studio",
             permissions: [],
@@ -145,10 +150,40 @@ describe(CredentialCheck, () => {
       })
   );
 
-  it.effect("names no workspace the person left, nor one never bound", () =>
-    Effect.gen(function* none() {
-      assert.isTrue(Option.isNone(yield* workspaceOf(Option.some(left))));
-      assert.isTrue(Option.isNone(yield* workspaceOf(Option.none())));
+  it.effect(
+    "tells a token bound to a workspace the person left from one bound to none",
+    () =>
+      Effect.gen(function* none() {
+        assert.deepStrictEqual(
+          yield* workspaceOf(Option.some(left)),
+          Option.some({ _tag: "left", id: left })
+        );
+        assert.deepStrictEqual(
+          yield* workspaceOf(Option.some(gone)),
+          Option.some({ _tag: "left", id: gone })
+        );
+        assert.deepStrictEqual(
+          yield* workspaceOf(Option.none()),
+          Option.some({ _tag: "unbound" })
+        );
+      })
+  );
+
+  it.effect("names staff who act as the person in their session", () =>
+    Effect.gen(function* impersonated() {
+      const described = yield* CredentialCheck.use((check) =>
+        check.describe(
+          new UserPrincipal({
+            impersonatedBy: Option.some(staffId),
+            userId,
+          })
+        )
+      ).pipe(Effect.provide(CheckTest));
+
+      assert.deepStrictEqual(
+        described._tag === "user" ? described.impersonatedBy : Option.none(),
+        Option.some(staffId)
+      );
     })
   );
 });

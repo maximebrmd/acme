@@ -6,12 +6,14 @@ import { Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 import { CredentialSchema } from "peal-contract";
 
+import { authorize, registeredClient } from "#test/app/mcp-support.ts";
 import { commandLineToken } from "#test/workspace/support.ts";
 
 import {
   apiKeyOf,
   bodyOf,
   MigratedSqlLive,
+  origin,
   signedUpUnconfirmed,
   TestApp,
   unconfirmedEmails,
@@ -23,6 +25,8 @@ import { bearer, customerOf, keyOf, partnerOf } from "./partner-support.ts";
 const CredentialLive = Layer.mergeAll(
   TestApp.layerWith({
     ...unconfirmedEmails,
+    // An application that registers itself, to be bound to a workspace.
+    MCP_DYNAMIC_REGISTRATION: "true",
     PEAL_PARTNER_SELF_SERVICE: "true",
   }),
   MigratedSqlLive
@@ -57,6 +61,7 @@ layer(CredentialLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.deepStrictEqual(inSession, {
             _tag: "user",
             application: null,
+            impersonatedBy: null,
             userId: owner.id,
           });
 
@@ -77,7 +82,9 @@ layer(CredentialLive, { excludeTestServices: true, timeout: "180 seconds" })(
               [...(throughCli.application?.scopes ?? [])],
               ["workspace:read", "workspace:write", "workspace:publish"]
             );
-            assert.isNull(throughCli.application?.workspace);
+            assert.deepStrictEqual(throughCli.application?.binding, {
+              _tag: "unbound",
+            });
           }
 
           neverHolds(reply, token);
@@ -94,6 +101,69 @@ layer(CredentialLive, { excludeTestServices: true, timeout: "180 seconds" })(
           });
 
           assert.strictEqual(suspended.status, 403);
+        })
+    );
+
+    it.effect(
+      "says what a token bound to a workspace may do there, and that a workspace requiring two-step verification refuses it",
+      () =>
+        Effect.gen(function* bound() {
+          const app = yield* TestApp;
+          const sql = yield* SqlClient.SqlClient;
+          const owner = yield* signedUpUnconfirmed("credential-bound");
+          const workspaceId = yield* workspaceOf(owner, "Bound studio");
+          const clientId = yield* registeredClient;
+
+          // An application the operator linked to the HTTP API, beside the
+          // MCP endpoint it registered for.
+          yield* sql`INSERT INTO auth.oauth_client_resource (client_id, resource_id, created_at) VALUES (${clientId}, ${`${origin}/api`}, now())`;
+
+          const token = yield* authorize(
+            owner,
+            clientId,
+            workspaceId,
+            "workspace:read",
+            `${origin}/api`
+          );
+
+          const first = yield* app.request("/api/credential", {
+            headers: bearer(token),
+          });
+
+          const read = yield* bodyOf(CredentialJsonSchema, first);
+
+          const binding =
+            read._tag === "user" ? read.application?.binding : undefined;
+
+          assert.strictEqual(binding?._tag, "bound");
+
+          if (binding?._tag === "bound") {
+            assert.strictEqual(binding.id, workspaceId);
+            assert.strictEqual(binding.name, "Bound studio");
+            assert.isNull(binding.refused);
+            // Reading only: the owner's role, less what the scope leaves out.
+            assert.include([...binding.permissions], "post:read");
+            assert.notInclude([...binding.permissions], "post:create");
+            assert.notInclude([...binding.permissions], "post:schedule");
+          }
+
+          yield* sql`INSERT INTO workspace.security_policies (workspace_id, two_step_required, updated_at) VALUES (${workspaceId}, true, now())`;
+
+          const refused = yield* bodyOf(
+            CredentialJsonSchema,
+            yield* app.request("/api/credential", { headers: bearer(token) })
+          );
+
+          assert.deepStrictEqual(
+            refused._tag === "user" ? refused.application?.binding : undefined,
+            {
+              _tag: "bound",
+              id: workspaceId,
+              name: "Bound studio",
+              permissions: [],
+              refused: "twoStepRequired",
+            }
+          );
         })
     );
 

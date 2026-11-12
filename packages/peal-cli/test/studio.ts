@@ -3044,6 +3044,7 @@ export const studioGroupsLive = (studio: Studio) =>
                 return {
                   _tag: "user",
                   application: null,
+                  impersonatedBy: null,
                   userId: studio.me.user.id,
                 };
               }

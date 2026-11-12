@@ -25,14 +25,23 @@ import { ResolveMember } from "./resolve-member.ts";
 /** Why a workspace an OAuth token is bound to lets the person do nothing. */
 export type BoundRefusal = "twoStepRequired";
 
-/** The workspace an OAuth token is bound to, and what it may do there. */
-export interface BoundWorkspace {
-  readonly id: WorkspaceId;
-  readonly name: string;
-  /** None where the workspace refuses the person (`refused`). */
-  readonly permissions: readonly Permission[];
-  readonly refused: Option.Option<BoundRefusal>;
-}
+/**
+ * Which workspace an OAuth token acts in: none named (`unbound`, as the
+ * command line's), one the person is still in (`bound`, with what the
+ * token may do there), or one the person left since (`left`), where it
+ * may do nothing. The last two are never read as the first.
+ */
+export type Binding =
+  | { readonly _tag: "unbound" }
+  | {
+      readonly _tag: "bound";
+      readonly id: WorkspaceId;
+      readonly name: string;
+      /** None where the workspace refuses the person (`refused`). */
+      readonly permissions: readonly Permission[];
+      readonly refused: Option.Option<BoundRefusal>;
+    }
+  | { readonly _tag: "left"; readonly id: WorkspaceId };
 
 /** Who a credential is and what it may do: never the credential itself. */
 export type CredentialDescription =
@@ -42,9 +51,10 @@ export type CredentialDescription =
       readonly application: Option.Option<{
         readonly clientId: string;
         readonly scopes: readonly string[];
-        /** None for a token bound to no workspace, or one left since. */
-        readonly workspace: Option.Option<BoundWorkspace>;
+        readonly binding: Binding;
       }>;
+      /** Staff acting as the person, in a session they opened as them. */
+      readonly impersonatedBy: Option.Option<string>;
       readonly userId: string;
     }
   | {
@@ -108,16 +118,18 @@ export class CredentialCheck extends Context.Service<
         const application = yield* Option.match(principal.oauth, {
           onNone: () => Effect.succeedNone,
           onSome: Effect.fnUntraced(function* bound(grant) {
-            const workspace = yield* Option.match(grant.workspaceId, {
-              onNone: () => Effect.succeedNone,
+            const binding = yield* Option.match(grant.workspaceId, {
+              onNone: () => Effect.succeed<Binding>({ _tag: "unbound" }),
               onSome: Effect.fnUntraced(function* boundTo(workspaceId) {
+                const left: Binding = { _tag: "left", id: workspaceId };
+
                 const membership = Array.findFirst(
                   account.workspaces,
                   ({ id }) => id === workspaceId
                 );
 
                 if (Option.isNone(membership)) {
-                  return Option.none<BoundWorkspace>();
+                  return left;
                 }
 
                 const { name } = membership.value;
@@ -127,44 +139,40 @@ export class CredentialCheck extends Context.Service<
                 ])).get(workspaceId);
 
                 if (decided === undefined) {
-                  return Option.none<BoundWorkspace>();
+                  return left;
                 }
-
-                const refusedBy = (refusal: BoundRefusal) =>
-                  Effect.succeed(
-                    Option.some<BoundWorkspace>({
-                      id: workspaceId,
-                      name,
-                      permissions: [],
-                      refused: Option.some(refusal),
-                    })
-                  );
 
                 return yield* Result.match(decided, {
                   onFailure: answerAccessDenied({
                     BannedUser: (banned) => Effect.fail(banned),
-                    // Left since the account was read: nothing of it.
-                    NotAMember: () => Effect.succeedNone,
-                    TwoStepRequired: () => refusedBy("twoStepRequired"),
-                    WorkspaceMismatch: () => Effect.succeedNone,
-                  }),
-                  onSuccess: (actor) =>
-                    Effect.succeed(
-                      Option.some<BoundWorkspace>({
+                    // Left since the account was read.
+                    NotAMember: () => Effect.succeed(left),
+                    TwoStepRequired: () =>
+                      Effect.succeed<Binding>({
+                        _tag: "bound",
                         id: workspaceId,
                         name,
-                        permissions: actor.permissions,
-                        refused: Option.none(),
-                      })
-                    ),
+                        permissions: [],
+                        refused: Option.some("twoStepRequired"),
+                      }),
+                    WorkspaceMismatch: () => Effect.succeed(left),
+                  }),
+                  onSuccess: (actor) =>
+                    Effect.succeed<Binding>({
+                      _tag: "bound",
+                      id: workspaceId,
+                      name,
+                      permissions: actor.permissions,
+                      refused: Option.none(),
+                    }),
                 });
               }),
             });
 
             return Option.some({
+              binding,
               clientId: grant.clientId,
               scopes: grant.scopes,
-              workspace,
             });
           }),
         });
@@ -172,6 +180,7 @@ export class CredentialCheck extends Context.Service<
         return {
           _tag: "user",
           application,
+          impersonatedBy: principal.impersonatedBy,
           userId: account.id,
         } satisfies CredentialDescription;
       });
