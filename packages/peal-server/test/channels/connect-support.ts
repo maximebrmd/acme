@@ -192,6 +192,7 @@ export const linkedinPagesAuthorizerOn = (
         },
         endpoints,
         http,
+        inbox: new Set(),
         publicUrl: testPublicUrl,
         version,
       })

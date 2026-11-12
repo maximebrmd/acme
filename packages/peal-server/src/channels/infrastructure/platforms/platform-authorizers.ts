@@ -128,6 +128,10 @@ export const PlatformAuthorizersLive = Layer.effect(
       ? Option.some(yield* blueskyAuthorizer(settings.bluesky.value, fetch))
       : Option.none<PlatformAuthorizer>();
 
+    // Where the inbox reads Facebook's, Instagram's, YouTube's or LinkedIn
+    // pages' comments, their sign-ins ask for its permissions too.
+    const inbox = yield* CurrentInboxPlatforms;
+
     const linkedin = Option.isSome(settings.linkedin)
       ? Option.some(
           yield* linkedinAuthorizer({
@@ -147,6 +151,7 @@ export const PlatformAuthorizersLive = Layer.effect(
             client: settings.linkedinPages.value,
             endpoints: linkedinEndpoints,
             http,
+            inbox,
             publicUrl: settings.publicUrl,
             version: settings.linkedinVersion,
           })
@@ -163,10 +168,6 @@ export const PlatformAuthorizersLive = Layer.effect(
           })
         )
       : Option.none<PlatformAuthorizer>();
-
-    // Where the inbox reads Facebook's, Instagram's or YouTube's comments,
-    // their sign-ins ask for its permissions too, as optional.
-    const inbox = yield* CurrentInboxPlatforms;
 
     const youtube = Option.isSome(settings.youtube)
       ? Option.some(

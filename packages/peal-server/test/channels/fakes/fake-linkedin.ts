@@ -93,6 +93,8 @@ interface PendingCode {
   readonly client: string;
   readonly member: string;
   readonly redirectUri: string;
+  /** What the authorization page asked, which LinkedIn grants whole. */
+  readonly scope: string;
 }
 
 interface IssuedToken {
@@ -161,6 +163,8 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
   ]);
 
   let refreshable = false;
+  // Whether the token answer lists the scopes granted.
+  let listsScopes = true;
 
   const members = new Map<string, LinkedInMember>([
     [linkedinMember.sub, linkedinMember],
@@ -241,11 +245,16 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
         refreshTokens.set(refreshToken, { member: code.member, pages });
       }
 
-      const answer = {
-        access_token: token,
-        expires_in: sixtyDays,
-        scope: pagesScopes,
-      };
+      // LinkedIn's consent is all or nothing: what was asked is granted.
+      const granted = code.scope.split(/[\s,]+/u).filter((s) => s !== "");
+
+      const answer = listsScopes
+        ? {
+            access_token: token,
+            expires_in: sixtyDays,
+            scope: granted.length === 0 ? pagesScopes : granted.join(","),
+          }
+        : { access_token: token, expires_in: sixtyDays };
 
       return json(
         refreshable
@@ -426,6 +435,7 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
       client: url.searchParams.get("client_id") ?? "",
       member,
       redirectUri: url.searchParams.get("redirect_uri") ?? "",
+      scope: url.searchParams.get("scope") ?? "",
     });
 
     return { code, state };
@@ -454,6 +464,10 @@ export const fakeLinkedIn = Effect.fnUntraced(function* fakeLinkedIn() {
      */
     issueRefreshTokens: () => {
       refreshable = true;
+    },
+    /** Answers tokens without the scopes they grant, as LinkedIn may. */
+    omitScopes: () => {
+      listsScopes = false;
     },
   };
 });

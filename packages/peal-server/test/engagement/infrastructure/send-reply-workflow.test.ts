@@ -252,6 +252,7 @@ const worldWithComment = (): World => {
 
   world.state.threads.set(post.id, post);
   world.state.channels.set(channelId(1), {
+    connection: Option.none(),
     platform: "mastodon",
     scopes: ["read:statuses", "write:statuses"],
   });

@@ -30,6 +30,10 @@ import type {
   EngagementPlatform,
   OutgoingReply,
 } from "#engagement/infrastructure/platforms/engagement-platform.ts";
+import {
+  linkedinEngagement,
+  linkedinRefreshWithin,
+} from "#engagement/infrastructure/platforms/linkedin/linkedin-engagement.ts";
 import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodon/mastodon-engagement.ts";
 import { facebookEngagement } from "#engagement/infrastructure/platforms/meta/facebook-engagement.ts";
 import { instagramEngagement } from "#engagement/infrastructure/platforms/meta/instagram-engagement.ts";
@@ -42,6 +46,7 @@ import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platfor
 import type { ChannelId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { InboxPlatformsLive } from "#shared/infrastructure/inbox-platforms.ts";
+import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
@@ -64,6 +69,9 @@ export interface EngagementSettings {
   readonly metaAppSecret: Option.Option<Redacted.Redacted>;
   /** Where Meta's Graph hosts are. */
   readonly metaHosts: MetaHosts;
+  /** LinkedIn's REST API's origin, and the version every call names. */
+  readonly linkedinApi: URL;
+  readonly linkedinVersion: string;
   /** The YouTube Data API's origin. */
   readonly youtubeApi: URL;
 }
@@ -74,7 +82,8 @@ export interface EngagementSettings {
  * Mastodon and Bluesky (public posts, kept as the inbox keeps them), nor
  * on Facebook Pages and Instagram (Meta's Platform Terms bound what Peal
  * keeps by the purpose, which the retention serves); 29 days on YouTube
- * (`youtubeRefreshWithin`). Every read's batch carries its platform's.
+ * (`youtubeRefreshWithin`), a day on LinkedIn (`linkedinRefreshWithin`).
+ * Every read's batch carries its platform's.
  */
 const keptWithoutRefresh: Readonly<
   Record<EngagedPlatform, Option.Option<Duration.Duration>>
@@ -82,6 +91,7 @@ const keptWithoutRefresh: Readonly<
   bluesky: Option.none(),
   facebook: Option.none(),
   instagram: Option.none(),
+  linkedin: Option.some(linkedinRefreshWithin),
   mastodon: Option.none(),
   youtube: Option.some(youtubeRefreshWithin),
 };
@@ -131,8 +141,8 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         timeout: "20 seconds",
       });
 
-      // Facebook Pages, Instagram and YouTube are read only where the
-      // operator turned them on: a channel of a platform that is off is
+      // Facebook Pages, Instagram, YouTube and LinkedIn pages are read
+      // only where the operator turned them on: a channel of a platform that is off is
       // never called, as one Peal reads no comments on.
       const inbox = yield* CurrentInboxPlatforms;
 
@@ -151,6 +161,12 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         }),
         facebook: yield* facebookEngagement(meta),
         instagram: yield* instagramEngagement(meta),
+        linkedin: yield* linkedinEngagement({
+          api: settings.linkedinApi,
+          http,
+          reader,
+          version: settings.linkedinVersion,
+        }),
         mastodon: yield* mastodonEngagement({
           http,
           reader,
@@ -398,10 +414,15 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
  * composition root provides.
  */
 export const PlatformEngagementLive = Layer.unwrap(
-  metaAppConfig.pipe(
-    Effect.map((app) =>
+  Effect.all({
+    app: metaAppConfig,
+    linkedinVersion: linkedinVersionConfig,
+  }).pipe(
+    Effect.map(({ app, linkedinVersion }) =>
       platformEngagementWith({
         blueskyAppView: new URL("https://public.api.bsky.app"),
+        linkedinApi: new URL("https://api.linkedin.com"),
+        linkedinVersion,
         mastodonScheme: "https:",
         metaAppSecret: app.pipe(Option.map(({ appSecret }) => appSecret)),
         metaHosts,

@@ -26,9 +26,12 @@ export const restCall =
 
 /**
  * A URN as Rest.li 2.0 takes one in a path or as a query value: its colons
- * percent-encoded, as every character outside the unreserved set.
+ * percent-encoded, as every character outside the unreserved set, the
+ * parentheses and commas of a composite URN (a comment's,
+ * `urn:li:comment:(<thread>,<id>)`) included.
  */
-export const encodedUrn = (urn: string): string => encodeURIComponent(urn);
+export const encodedUrn = (urn: string): string =>
+  encodeURIComponent(urn).replaceAll("(", "%28").replaceAll(")", "%29");
 
 /** Whether the account is a company page: its id is the page's URN. */
 export const isOrganization = (accountId: string): boolean =>

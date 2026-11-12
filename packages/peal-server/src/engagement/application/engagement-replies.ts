@@ -240,7 +240,8 @@ export class EngagementReplies extends Context.Service<
         const standing = abilitiesOf(
           channel.value.platform,
           channel.value.scopes,
-          inbox
+          inbox,
+          channel.value.connection
         )[ability];
 
         if (standing !== "available") {

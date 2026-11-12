@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer } from "effect";
+import { DateTime, Effect, Layer, Option } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import {
@@ -52,6 +52,7 @@ const worldWithComments = (): World => {
 
   world.state.threads.set(post.id, post);
   world.state.channels.set(channelId(1), {
+    connection: Option.none(),
     platform: "mastodon",
     scopes: ["read:statuses", "write:statuses"],
   });

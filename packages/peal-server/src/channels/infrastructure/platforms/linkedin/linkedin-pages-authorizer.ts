@@ -23,6 +23,8 @@ import type {
   AuthorizerHttp,
   TokenAnswer,
 } from "#channels/infrastructure/platforms/oauth-exchange.ts";
+import { linkedinCommentScopes } from "#shared/domain/inbox-platform.ts";
+import type { InboxPlatforms } from "#shared/domain/inbox-platform.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 
@@ -44,6 +46,25 @@ export const linkedinPagesScopes: readonly string[] = [
 
 // Without this one, nothing can be posted.
 const postingScope = "w_organization_social";
+
+/**
+ * What the pages' sign-in asks for on a server whose inbox reads `inbox`:
+ * `linkedinPagesScopes`, and, where it reads LinkedIn, the two comment
+ * scopes after them. LinkedIn's consent is all or nothing, so they are
+ * never needed to connect; an app LinkedIn did not grant them is refused
+ * the whole sign-in (`unauthorized_scope_error`), which is why the
+ * operator turns the inbox on only once the app holds them.
+ */
+export const linkedinPagesScopesFor = (
+  inbox: InboxPlatforms
+): readonly string[] =>
+  inbox.has("linkedin")
+    ? [
+        ...linkedinPagesScopes,
+        linkedinCommentScopes.read,
+        linkedinCommentScopes.write,
+      ]
+    : linkedinPagesScopes;
 
 /**
  * The roles that post a page's own updates, from LinkedIn's access control
@@ -144,7 +165,9 @@ const refusedRefresh = (
  * Access tokens last 60 days. An app LinkedIn approved for programmatic
  * refresh tokens gets one with them, which renews the access token for a
  * year from the sign-in; without one, the member reconnects, as for a
- * profile. Every call to the versioned API names `version`.
+ * profile. Every call to the versioned API names `version`. Where the
+ * inbox reads LinkedIn (`inbox`), the sign-in also asks the comment scopes
+ * (`linkedinPagesScopesFor`); off, it asks what it asked before.
  */
 export const linkedinPagesAuthorizer = Effect.fn(
   "LinkedInPagesAuthorizer.make"
@@ -152,10 +175,12 @@ export const linkedinPagesAuthorizer = Effect.fn(
   readonly client: OAuthClient;
   readonly endpoints: LinkedInEndpoints;
   readonly http: AuthorizerHttp;
+  readonly inbox: InboxPlatforms;
   readonly publicUrl: string;
   readonly version: string;
 }) {
   const { client, endpoints, http, version } = options;
+  const asked = linkedinPagesScopesFor(options.inbox);
   const redirectUri = new URL(linkedinCallbackPath, options.publicUrl).href;
   const randomText = yield* randomTexts;
 
@@ -187,7 +212,7 @@ export const linkedinPagesAuthorizer = Effect.fn(
         client_id: client.clientId,
         redirect_uri: redirectUri,
         response_type: "code",
-        scope: linkedinPagesScopes.join(" "),
+        scope: asked.join(" "),
         state,
       }).toString();
 
@@ -287,7 +312,9 @@ export const linkedinPagesAuthorizer = Effect.fn(
         exchanged
       );
 
-      const scopes = scopesOf(token, linkedinPagesScopes);
+      // When LinkedIn's answer lists none, what was asked, all of which
+      // its consent granted.
+      const scopes = scopesOf(token, asked);
 
       // An app without the Community Management API gets a token that
       // posts to no page.

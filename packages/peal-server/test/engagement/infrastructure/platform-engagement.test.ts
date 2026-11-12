@@ -49,6 +49,10 @@ import {
 } from "#test/publishing/fakes/platform-server.ts";
 import type { PlatformAnswer } from "#test/publishing/fakes/platform-server.ts";
 
+const youtubeOnly: InboxPlatforms = new Set(["youtube"]);
+
+const linkedinOnly: InboxPlatforms = new Set(["linkedin"]);
+
 // What the channel's gate runs for a reply, between the engagement tables
 // and a loopback server answering as Mastodon: the last check before a
 // public reply goes out.
@@ -94,7 +98,12 @@ const onServer = Effect.fnUntraced(function* onServer(
   failure: Option.Option<AccountFailure> = Option.none(),
   on: {
     readonly inbox?: InboxPlatforms;
-    readonly platform?: "facebook" | "mastodon" | "youtube";
+    readonly platform?:
+      | "facebook"
+      | "linkedinPage"
+      | "linkedinProfile"
+      | "mastodon"
+      | "youtube";
   } = {}
 ) {
   const server = yield* platformServer(() => answer);
@@ -109,7 +118,10 @@ const onServer = Effect.fnUntraced(function* onServer(
   };
 
   const accounts: Readonly<
-    Record<"facebook" | "mastodon" | "youtube", ChannelAccount>
+    Record<
+      "facebook" | "linkedinPage" | "linkedinProfile" | "mastodon" | "youtube",
+      ChannelAccount
+    >
   > = {
     facebook: {
       accountId: "102000000000001",
@@ -117,6 +129,20 @@ const onServer = Effect.fnUntraced(function* onServer(
       connection: Option.none(),
       platform: "facebook",
       scopes: ["pages_read_user_content", "pages_manage_engagement"],
+    },
+    linkedinPage: {
+      accountId: "urn:li:organization:9000000001",
+      channelId: channelId(1),
+      connection: Option.some("linkedinPage"),
+      platform: "linkedin",
+      scopes: ["r_organization_social_feed", "w_organization_social_feed"],
+    },
+    linkedinProfile: {
+      accountId: "syntheticMember1",
+      channelId: channelId(1),
+      connection: Option.some("linkedinProfile"),
+      platform: "linkedin",
+      scopes: ["openid", "profile", "w_member_social"],
     },
     mastodon: {
       accountId: `109372@${url.host}`,
@@ -132,6 +158,8 @@ const onServer = Effect.fnUntraced(function* onServer(
 
   const gate = platformEngagementWith({
     blueskyAppView: url,
+    linkedinApi: url,
+    linkedinVersion: "202610",
     mastodonScheme: "http:",
     metaAppSecret: Option.some(Redacted.make("synthetic-meta-secret")),
     metaHosts: { ...metaHosts, facebookGraph: url, instagramGraph: url },
@@ -349,6 +377,85 @@ describe("the gate's reply sender", () => {
         });
 
         assert.deepStrictEqual(batch.refreshWithin, Duration.days(29));
+        assert.lengthOf(server.requests(), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "never calls LinkedIn where the server does not read it, nor for a profile",
+    () =>
+      Effect.gen(function* linkedinOff() {
+        for (const [platform, inbox] of [
+          ["linkedinPage", youtubeOnly],
+          ["linkedinProfile", linkedinOnly],
+        ] as const) {
+          const world = worldWith(attempted());
+
+          const { sender, server, source } = yield* onServer(
+            world,
+            made,
+            Option.none(),
+            { inbox, platform }
+          );
+
+          const read = yield* source
+            .read({
+              channelId: channelId(1),
+              threads: [
+                {
+                  platformPostId: PlatformPostIdSchema.make(
+                    "urn:li:share:7100000000000000001"
+                  ),
+                  threadId: threadId(1),
+                },
+              ],
+            })
+            .pipe(Effect.result);
+
+          assert.isTrue(
+            read._tag === "Failure" &&
+              read.failure._tag === "ChannelUnreadable" &&
+              read.failure.reason === "unsupported"
+          );
+
+          if (platform === "linkedinPage") {
+            assert.deepStrictEqual(yield* sender.send(request), {
+              _tag: "failed",
+              reason: "channelUnavailable",
+            });
+          }
+
+          assert.lengthOf(server.requests(), 0);
+        }
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "reads a LinkedIn page where the server reads it, with LinkedIn's bound of a day",
+    () =>
+      Effect.gen(function* linkedinOn() {
+        const world = worldWith(attempted());
+
+        const { server, source } = yield* onServer(
+          world,
+          json({}),
+          Option.none(),
+          { inbox: linkedinOnly, platform: "linkedinPage" }
+        );
+
+        const batch = yield* source.read({
+          channelId: channelId(1),
+          threads: [
+            {
+              platformPostId: PlatformPostIdSchema.make(
+                "urn:li:share:7100000000000000001"
+              ),
+              threadId: threadId(1),
+            },
+          ],
+        });
+
+        assert.deepStrictEqual(batch.refreshWithin, Duration.hours(24));
         assert.lengthOf(server.requests(), 1);
       }).pipe(Effect.scoped)
   );
