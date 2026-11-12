@@ -102,6 +102,9 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM analytics.tracked_posts WHERE workspace_id = ${id}`,
   "assistant.daily_usage": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM assistant.daily_usage WHERE workspace_id = ${id}`,
+  // The image provider it brought, with its sealed key.
+  "assistant.image_providers": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM assistant.image_providers WHERE workspace_id = ${id}`,
   "auth.apikey": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.apikey WHERE reference_id = ${id}`,
   "auth.invitation": (sql, id) =>
@@ -262,6 +265,9 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM ads.grants WHERE granted_by = ${id}`,
   "ads.sign_in_attempts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM ads.sign_in_attempts WHERE started_by = ${id}`,
+  // The image providers they set stay with their workspaces, without them.
+  "assistant.image_providers": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM assistant.image_providers WHERE set_by = ${id}`,
   "auth.account": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.account WHERE user_id = ${id}`,
   "auth.device_code": (sql, id) =>
@@ -569,6 +575,10 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO analytics.paid_reads (workspace_id, platform, day, resource)
     VALUES (${workspaceId}, 'x', current_date, '1800000000000000001')`;
   yield* seedUsage(workspaceId, 2);
+  // The image provider the person set, its key sealed (a synthetic stand-in
+  // here: nothing opens it).
+  yield* sql`INSERT INTO assistant.image_providers (workspace_id, base_url, model, sealed_key, key_id, set_by, updated_at)
+    VALUES (${workspaceId}, 'https://images.example.com/v1', 'synthetic-image-model', 'test-key.synthetic-iv.synthetic-sealed', 'test-key', ${person.id}, now())`;
   yield* seedSubscription(workspaceId, "canceled");
 
   yield* sql`INSERT INTO billing.metered_posts (workspace_id, platform, month, posts, posts_with_links)

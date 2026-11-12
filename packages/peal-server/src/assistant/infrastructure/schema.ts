@@ -5,6 +5,8 @@ import {
   integer,
   pgSchema,
   primaryKey,
+  text,
+  timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -27,3 +29,23 @@ export const dailyUsage = assistant.table(
     check("daily_usage_requests", sql`${table.requests} >= 0`),
   ]
 );
+
+/**
+ * The image provider a workspace brought, one at most: its address and
+ * model, and its key, encrypted with the server's keyring as
+ * `<keyId>.<iv>.<ciphertext>` and bound to
+ * `assistant:<workspace id>:<origin of the address>`, so a row whose
+ * address moved to another origin, or that was copied to another
+ * workspace, does not decrypt. `key_id` names the key that encrypted it,
+ * for a rotation; `set_by` the member who saved it, null for a key or
+ * once their account closed.
+ */
+export const imageProviders = assistant.table("image_providers", {
+  baseUrl: text("base_url").notNull(),
+  keyId: text("key_id").notNull(),
+  model: text("model").notNull(),
+  sealedKey: text("sealed_key").notNull(),
+  setBy: uuid("set_by"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  workspaceId: uuid("workspace_id").primaryKey(),
+});

@@ -118,6 +118,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
         permissions: apiKey.permissions,
         start: Option.getOrNull(apiKey.start),
       })),
+      assistantImageProvider: workspace.assistantImageProvider,
       assistantUsage: workspace.assistantUsage,
       billing: workspace.billing,
       channels: workspace.channels,
