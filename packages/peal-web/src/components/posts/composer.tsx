@@ -54,6 +54,7 @@ import { instantOfChoice } from "#components/posts/schedule-fields.tsx";
 import type { ScheduleChoice } from "#components/posts/schedule-fields.tsx";
 import { SchedulePlacementFields } from "#components/posts/schedule-placement.tsx";
 import {
+  savableWith,
   ShortenLinks,
   textsOf,
   useShortLinking,
@@ -353,7 +354,7 @@ export const Composer = ({
 
   // Nothing is saved before the server says whether it shortens links, so
   // a new post takes the workspace's default.
-  const optionsTaken = optionProblems.length === 0 && linking.settled;
+  const optionsTaken = savableWith(linking, optionProblems.length === 0);
 
   const optionsOfChannel = (channelId: string) =>
     options.find((chosen) => chosen.channelId === channelId)?.options;

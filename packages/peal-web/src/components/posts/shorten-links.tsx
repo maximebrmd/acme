@@ -69,6 +69,10 @@ export const useShortLinking = (
   };
 };
 
+/** Whether the post may be saved: its options taken, and the server heard. */
+export const savableWith = (linking: ShortLinking, optionsTaken: boolean) =>
+  optionsTaken && linking.settled;
+
 /**
  * Under the post's text, on a server with short links: the box that asks
  * for them, and how many of the post's links will go out shortened.
