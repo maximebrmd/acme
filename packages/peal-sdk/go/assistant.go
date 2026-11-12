@@ -108,6 +108,7 @@ type AssistantAction struct {
 	Shorten   *AssistantActionShorten
 	Translate *AssistantActionTranslate
 	Hashtags  *AssistantActionHashtags
+	Write     *AssistantActionWrite
 
 	rawJSON json.RawMessage
 }
@@ -147,6 +148,13 @@ func (a *AssistantAction) GetHashtags() *AssistantActionHashtags {
 	return a.Hashtags
 }
 
+func (a *AssistantAction) GetWrite() *AssistantActionWrite {
+	if a == nil {
+		return nil
+	}
+	return a.Write
+}
+
 func (a *AssistantAction) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -183,6 +191,12 @@ func (a *AssistantAction) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		a.Hashtags = value
+	case "write":
+		value := new(AssistantActionWrite)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		a.Write = value
 	}
 	a.rawJSON = json.RawMessage(data)
 	return nil
@@ -204,6 +218,9 @@ func (a AssistantAction) MarshalJSON() ([]byte, error) {
 	if a.Hashtags != nil {
 		return internal.MarshalJSONWithExtraProperty(a.Hashtags, "_tag", "hashtags")
 	}
+	if a.Write != nil {
+		return internal.MarshalJSONWithExtraProperty(a.Write, "_tag", "write")
+	}
 	if len(a.rawJSON) > 0 {
 		return a.rawJSON, nil
 	}
@@ -215,6 +232,7 @@ type AssistantActionVisitor interface {
 	VisitShorten(*AssistantActionShorten) error
 	VisitTranslate(*AssistantActionTranslate) error
 	VisitHashtags(*AssistantActionHashtags) error
+	VisitWrite(*AssistantActionWrite) error
 }
 
 func (a *AssistantAction) Accept(visitor AssistantActionVisitor) error {
@@ -229,6 +247,9 @@ func (a *AssistantAction) Accept(visitor AssistantActionVisitor) error {
 	}
 	if a.Hashtags != nil {
 		return visitor.VisitHashtags(a.Hashtags)
+	}
+	if a.Write != nil {
+		return visitor.VisitWrite(a.Write)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", a)
 }
@@ -249,6 +270,9 @@ func (a *AssistantAction) validate() error {
 	}
 	if a.Hashtags != nil {
 		fields = append(fields, "hashtags")
+	}
+	if a.Write != nil {
+		fields = append(fields, "write")
 	}
 	if len(fields) == 0 {
 		if a.Type != "" {
@@ -587,6 +611,124 @@ func (a *AssistantActionTranslate) MarshalJSON() ([]byte, error) {
 }
 
 func (a *AssistantActionTranslate) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+var (
+	assistantActionWriteFieldLanguage = big.NewInt(1 << 0)
+	assistantActionWriteFieldPlatform = big.NewInt(1 << 1)
+	assistantActionWriteFieldTone     = big.NewInt(1 << 2)
+)
+
+type AssistantActionWrite struct {
+	Language *TranslationLanguage `json:"language,omitempty" url:"language,omitempty"`
+	Platform *Platform            `json:"platform,omitempty" url:"platform,omitempty"`
+	Tone     *AssistantTone       `json:"tone,omitempty" url:"tone,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantActionWrite) GetLanguage() *TranslationLanguage {
+	if a == nil {
+		return nil
+	}
+	return a.Language
+}
+
+func (a *AssistantActionWrite) GetPlatform() *Platform {
+	if a == nil {
+		return nil
+	}
+	return a.Platform
+}
+
+func (a *AssistantActionWrite) GetTone() *AssistantTone {
+	if a == nil {
+		return nil
+	}
+	return a.Tone
+}
+
+func (a *AssistantActionWrite) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *AssistantActionWrite) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+// SetLanguage sets the Language field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantActionWrite) SetLanguage(language *TranslationLanguage) {
+	a.Language = language
+	a.require(assistantActionWriteFieldLanguage)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantActionWrite) SetPlatform(platform *Platform) {
+	a.Platform = platform
+	a.require(assistantActionWriteFieldPlatform)
+}
+
+// SetTone sets the Tone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantActionWrite) SetTone(tone *AssistantTone) {
+	a.Tone = tone
+	a.require(assistantActionWriteFieldTone)
+}
+
+func (a *AssistantActionWrite) UnmarshalJSON(data []byte) error {
+	type unmarshaler AssistantActionWrite
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AssistantActionWrite(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantActionWrite) MarshalJSON() ([]byte, error) {
+	type embed AssistantActionWrite
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *AssistantActionWrite) String() string {
 	if a == nil {
 		return "<nil>"
 	}

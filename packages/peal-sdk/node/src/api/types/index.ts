@@ -70,6 +70,7 @@ export * from "./AssistantActionHashtags.js";
 export * from "./AssistantActionRewrite.js";
 export * from "./AssistantActionShorten.js";
 export * from "./AssistantActionTranslate.js";
+export * from "./AssistantActionWrite.js";
 export * from "./AssistantFailedEncoded.js";
 export * from "./AssistantInputRejectedEncoded.js";
 export * from "./AssistantQuotaExceededEncoded.js";

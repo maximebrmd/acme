@@ -437,6 +437,7 @@ module Peal
     autoload :AssistantActionShorten, ::File.join(__dir__, "peal/types/assistant_action_shorten")
     autoload :TranslationLanguage, ::File.join(__dir__, "peal/types/translation_language")
     autoload :AssistantActionTranslate, ::File.join(__dir__, "peal/types/assistant_action_translate")
+    autoload :AssistantActionWrite, ::File.join(__dir__, "peal/types/assistant_action_write")
     autoload :AssistantAction, ::File.join(__dir__, "peal/types/assistant_action")
     autoload :AssistantFailedEncodedTag, ::File.join(__dir__, "peal/types/assistant_failed_encoded_tag")
     autoload :AssistantFailedEncodedReason, ::File.join(__dir__, "peal/types/assistant_failed_encoded_reason")
