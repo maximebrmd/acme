@@ -385,37 +385,38 @@ layer(ImagesTest, { timeout: "60 seconds" })(
     it.effect("runs two images a workspace at once, and refuses a third", () =>
       Effect.gen(function* busy() {
         const workspaceId = yield* freshWorkspace;
+        const model = yield* FakeImageModel;
 
-        yield* FakeImageModel.use((model) =>
-          model.replyWith({ _tag: "silence" })
-        );
+        // The provider holds both until the test releases them.
+        yield* model.replyWith({ _tag: "held" });
 
         const waiting = yield* Effect.forEach([1, 2], () =>
           WritingAssistant.use((assistant) =>
             assistant.generateImage(actorIn(workspaceId), lighthouse)
-          ).pipe(Effect.forkChild)
+          ).pipe(Effect.flip, Effect.forkChild)
         );
 
-        // Once both reached the model, a third finds no slot.
-        for (let round = 0; round < 500; round += 1) {
-          if ((yield* sentRequests).length === 2) {
-            break;
-          }
+        // Both hold their slot at the provider: a third finds none. Were it
+        // let through, the provider would refuse it at once rather than
+        // leave the test waiting.
+        yield* model.arrived(2);
 
-          yield* Effect.yieldNow;
-        }
-
-        const refused = yield* ask(workspaceId, { _tag: "silence" }).pipe(
-          Effect.flip
-        );
+        const refused = yield* ask(workspaceId, {
+          _tag: "failure",
+          reason: "refused",
+        }).pipe(Effect.flip);
 
         assert.strictEqual(refused._tag, "ImagesBusy");
+        assert.lengthOf(yield* sentRequests, 2);
 
-        yield* Effect.all(waiting.map((fiber) => Fiber.interrupt(fiber)));
+        // Once the two end, a slot is free again.
+        yield* model.release({ _tag: "failure", reason: "refused" });
 
-        // Without the two, a slot is free again.
-        yield* FakeImageModel.use((model) =>
-          model.replyWith({ _tag: "failure", reason: "refused" })
+        const ended = yield* Effect.all(waiting.map(Fiber.join));
+
+        assert.deepStrictEqual(
+          ended.map((failure) => failure._tag),
+          ["ImageFailed", "ImageFailed"]
         );
 
         const after = yield* ask(workspaceId, {
