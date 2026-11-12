@@ -17,6 +17,9 @@ public record AssistantStatus : IJsonOnDeserialized
     [JsonPropertyName("dailyLimit")]
     public required int DailyLimit { get; set; }
 
+    [JsonPropertyName("images")]
+    public required AssistantImagesStatus Images { get; set; }
+
     [JsonPropertyName("maxTextLength")]
     public required int MaxTextLength { get; set; }
 

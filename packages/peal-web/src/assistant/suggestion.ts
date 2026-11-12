@@ -1,6 +1,9 @@
+import type { Types } from "effect";
 import { PlatformSchema } from "peal-contract";
 import type {
+  AssistantAction,
   AssistantFailed,
+  AssistantTone,
   AssistantInputRejected,
   AssistantQuotaExceeded,
   AssistantUnavailable,
@@ -46,6 +49,50 @@ export const shortenablePlatforms = (
   const picked = limited.filter((platform) => platforms.includes(platform));
 
   return picked.length === 0 ? limited : picked;
+};
+
+/**
+ * The longest text limit a platform may have for the assistant to offer to
+ * write a post within it: X's, Bluesky's, Threads' and Mastodon's.
+ */
+const shortLimit = 500;
+
+/**
+ * The platforms of the post's channels whose text limit is short, for which
+ * the person may ask that a post written from a subject fits.
+ */
+export const writablePlatforms = (
+  platforms: readonly Platform[]
+): readonly Platform[] =>
+  limited.filter(
+    (platform) =>
+      platforms.includes(platform) &&
+      platformRules[platform].textLimits.some(
+        ({ maximum }) => maximum <= shortLimit
+      )
+  );
+
+/** What the person chose in the dialog that writes a post from a subject. */
+export interface WriteChoices {
+  readonly platform: Platform | null;
+  readonly tone: AssistantTone | null;
+}
+
+type WriteAction = Extract<AssistantAction, { readonly _tag: "write" }>;
+
+/** The action that writes a post, naming only what the person chose. */
+export const writeAction = ({ platform, tone }: WriteChoices): WriteAction => {
+  const action: Types.Mutable<WriteAction> = { _tag: "write" };
+
+  if (platform !== null) {
+    action.platform = platform;
+  }
+
+  if (tone !== null) {
+    action.tone = tone;
+  }
+
+  return action;
 };
 
 /**

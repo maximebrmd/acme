@@ -731,12 +731,22 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         // request concerns can be forbidden, so the export never does.
         assert.notInclude(text, "Synthetic requisition");
         assert.deepStrictEqual(
-          own?.media.map(({ contentType, downloadUrl, status }) => ({
-            contentType,
-            downloadUrl,
-            status,
-          })),
-          [{ contentType: "image/png", downloadUrl: null, status: "pending" }]
+          own?.media.map(
+            ({ aiGenerated, contentType, downloadUrl, status }) => ({
+              aiGenerated,
+              contentType,
+              downloadUrl,
+              status,
+            })
+          ),
+          [
+            {
+              aiGenerated: false,
+              contentType: "image/png",
+              downloadUrl: null,
+              status: "pending",
+            },
+          ]
         );
 
         // Once the store holds the file, the copy links to it, as the

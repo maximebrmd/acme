@@ -44,6 +44,12 @@ import { UnsupportedMediaType } from "./unsupported-media-type.ts";
 export class MediaAsset extends Schema.Class<MediaAsset>(
   "peal-server/media/domain/MediaAsset"
 )({
+  /**
+   * Whether the writing assistant made the file: shown in the library, and
+   * offered to the platforms' own AI labels. Set when the asset is created,
+   * never changed.
+   */
+  aiGenerated: Schema.Boolean,
   altText: Schema.Option(AltTextSchema),
   byteSize: ByteSizeSchema,
   contentType: MediaContentTypeSchema,
@@ -96,6 +102,8 @@ export const acceptUpload = (
 /** What a new pending asset is made of. */
 export interface NewUpload {
   readonly accepted: AcceptedUpload;
+  /** True only for a file the writing assistant made; false by default. */
+  readonly aiGenerated?: boolean;
   readonly altText: Option.Option<AltText>;
   readonly id: MediaAssetId;
   readonly upload: UploadMethod;
@@ -104,10 +112,18 @@ export interface NewUpload {
 
 /** Records an accepted file that the client is about to upload. */
 export const startUpload = (
-  { accepted, altText, id, upload, workspaceId }: NewUpload,
+  {
+    accepted,
+    aiGenerated = false,
+    altText,
+    id,
+    upload,
+    workspaceId,
+  }: NewUpload,
   now: DateTime.Utc
 ): MediaAsset =>
   new MediaAsset({
+    aiGenerated,
     altText,
     byteSize: accepted.byteSize,
     contentType: accepted.contentType,
@@ -155,6 +171,7 @@ const withChange = (
   now: DateTime.Utc
 ): MediaAsset =>
   new MediaAsset({
+    aiGenerated: asset.aiGenerated,
     altText: asset.altText,
     byteSize: asset.byteSize,
     contentType: asset.contentType,
@@ -244,6 +261,7 @@ export const describe = (
   now: DateTime.Utc
 ): MediaAsset =>
   new MediaAsset({
+    aiGenerated: asset.aiGenerated,
     altText,
     byteSize: asset.byteSize,
     contentType: asset.contentType,

@@ -12,5 +12,10 @@ export class AssistantAllowance extends Context.Service<
   AssistantAllowance,
   {
     readonly dailyRequests: (workspaceId: WorkspaceId) => Effect.Effect<number>;
+    /**
+     * How many of those images may take: as many, but on a plan in its
+     * trial (`imageRequestsOnTrial`).
+     */
+    readonly imageRequests: (workspaceId: WorkspaceId) => Effect.Effect<number>;
   }
 >()("peal-server/assistant/application/AssistantAllowance") {}

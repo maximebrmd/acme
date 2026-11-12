@@ -14,6 +14,8 @@ use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Peal\Assistant\Requests\SuggestionRequest;
 use Peal\Types\Suggestion;
+use Peal\Assistant\Requests\ImageRequest;
+use Peal\Types\Media;
 
 class AssistantClient
 {
@@ -52,7 +54,7 @@ class AssistantClient
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (`images`), and how many requests the workspace has left today. Needs assistant:use.
      *
      * Example:
      * ```php
@@ -107,7 +109,7 @@ class AssistantClient
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (`write`), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      *
      * Example:
      * ```php
@@ -157,6 +159,68 @@ class AssistantClient
                     return null;
                 }
                 return Suggestion::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the server has an image model.
+     *
+     * Example:
+     * ```php
+     * $client->assistant->generateImage(
+     *     'workspaceId',
+     *     new ImageRequest([
+     *         'aspect' => ImageAspect::Square->value,
+     *         'prompt' => 'prompt',
+     *     ]),
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param ImageRequest $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?Media
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function generateImage(string $workspaceId, ImageRequest $request, ?array $options = null): ?Media
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/assistant/images",
+                    method: HttpMethod::POST,
+                    body: $request,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return Media::fromJson($json);
             }
         } catch (JsonException $e) {
             throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);

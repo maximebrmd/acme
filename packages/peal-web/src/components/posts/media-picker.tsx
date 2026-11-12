@@ -21,6 +21,7 @@ import {
 import { Skeleton } from "peal-ui/components/skeleton";
 import { useState } from "react";
 
+import { GenerateImage } from "#components/media/generate-image.tsx";
 import { MediaThumbnail } from "#components/media/media-thumbnail.tsx";
 import { mediaPage } from "#media/atoms.ts";
 
@@ -92,6 +93,11 @@ const MediaChoice = ({
             </Badge>
           ) : null}
         </span>
+        {media.aiGenerated ? (
+          <span className="px-2 pt-2">
+            <Badge variant="secondary">{t("aiGenerated")}</Badge>
+          </span>
+        ) : null}
         <span className="flex flex-col gap-1 p-2 text-xs">
           <span className="font-medium">
             {t("option", {
@@ -211,6 +217,11 @@ interface MediaPickerProps {
   readonly accepts?: (media: Media) => boolean;
   /** The media the post shows already. */
   readonly attached: readonly string[];
+  /**
+   * Whether the member may have the assistant make an image here (they
+   * hold assistant:use and media:upload): the new image is then picked.
+   */
+  readonly canGenerate?: boolean;
   readonly disabled: boolean;
   readonly onPick: (media: readonly Media[]) => void;
   /** How many more the post can show. */
@@ -227,6 +238,7 @@ interface MediaPickerProps {
 export const MediaPicker = ({
   accepts,
   attached,
+  canGenerate = false,
   disabled,
   onPick,
   room,
@@ -278,6 +290,19 @@ export const MediaPicker = ({
             <output className="text-muted-foreground text-sm">
               {t("room", { count: Math.max(0, room - picked.length) })}
             </output>
+          ) : null}
+          {open && canGenerate ? (
+            <div>
+              <GenerateImage
+                disabled={picked.length >= room}
+                workspaceId={workspaceId}
+                onGenerated={(made) => {
+                  setPicked((current) =>
+                    current.length < room ? [...current, made] : current
+                  );
+                }}
+              />
+            </div>
           ) : null}
           {open ? (
             <Pages

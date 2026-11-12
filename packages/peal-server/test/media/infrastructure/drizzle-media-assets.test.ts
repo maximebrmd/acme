@@ -53,6 +53,7 @@ const changed = (
   metadata = asset.metadata
 ): MediaAsset =>
   new MediaAsset({
+    aiGenerated: asset.aiGenerated,
     altText: asset.altText,
     byteSize: asset.byteSize,
     contentType: asset.contentType,
@@ -97,6 +98,7 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
         const secondId = MediaAssetIdSchema.make(yield* ids.next);
 
         const second = new MediaAsset({
+          aiGenerated: first.aiGenerated,
           altText: first.altText,
           byteSize: first.byteSize,
           contentType: first.contentType,
@@ -280,6 +282,41 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
       );
     })
   );
+  it.effect("keeps the mark of a file made by AI", () =>
+    Effect.gen(function* marks() {
+      const assets = yield* MediaAssets;
+      const plain = yield* freshAsset;
+      const id = MediaAssetIdSchema.make(yield* (yield* Ids).next);
+
+      const generated = startUpload(
+        {
+          accepted: { byteSize: 100, contentType: "image/png", kind: "image" },
+          aiGenerated: true,
+          altText: Option.none(),
+          id,
+          upload: { _tag: "single" },
+          workspaceId: plain.workspaceId,
+        },
+        createdAt
+      );
+
+      yield* Effect.forEach([plain, generated], assets.insert);
+
+      const page = yield* assets.list(plain.workspaceId, {
+        after: Option.none(),
+        limit: 10,
+      });
+
+      assert.deepStrictEqual(
+        page.assets.map((asset) => [asset.id, asset.aiGenerated]),
+        [
+          [generated.id, true],
+          [plain.id, false],
+        ]
+      );
+    })
+  );
+
   it.effect("lists a workspace's assets newest first, a page at a time", () =>
     Effect.gen(function* lists() {
       const assets = yield* MediaAssets;

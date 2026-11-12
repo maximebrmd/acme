@@ -5,19 +5,27 @@ import type { Prompt, Response } from "effect/ai";
 import { SqlClient } from "effect/sql";
 
 import { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
+import { GeneratedImages } from "#assistant/application/ports/generated-images.ts";
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
+import { CountedImageSlots } from "#assistant/infrastructure/counted-image-slots.ts";
 import { DrizzleAssistantUsageLive } from "#assistant/infrastructure/drizzle-assistant-usage.ts";
 import { languageModelWritingModel } from "#assistant/infrastructure/language-model-writing-model.ts";
+import { LibraryGeneratedImagesLive } from "#assistant/infrastructure/library-generated-images.ts";
 import { PublishingPlatformLimitsLive } from "#assistant/infrastructure/publishing-platform-limits.ts";
+import { UnavailableImageModelLive } from "#assistant/infrastructure/unavailable-image-model.ts";
 import { UnavailableWritingModelLive } from "#assistant/infrastructure/unavailable-writing-model.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
+import { FakeImageModelLive } from "#test/assistant/fake-image-model.ts";
+import { UnmeteredTest } from "#test/billing/support.ts";
+import { mediaTestWith } from "#test/media/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 /**
@@ -112,14 +120,50 @@ export const FakeWritingModelLive = languageModelWritingModel({
   provider: "fake",
 }).pipe(Layer.provideMerge(FakeModelLive));
 
-/** Every workspace may send `dailyRequests` a day. */
-export const allowanceOf = (dailyRequests: number) =>
+/** No library to keep images in: for tests of the text alone. */
+export const NoGeneratedImages = Layer.succeed(
+  GeneratedImages,
+  GeneratedImages.of({
+    roomFor: () => Effect.die("no image is made in this test"),
+    store: () => Effect.die("no image is made in this test"),
+  })
+);
+
+/**
+ * Every workspace may send `dailyRequests` a day, of which images may
+ * take `imageRequests`.
+ */
+export const allowanceOf = (
+  dailyRequests: number,
+  imageRequests = dailyRequests
+) =>
   Layer.succeed(
     AssistantAllowance,
     AssistantAllowance.of({
       dailyRequests: () => Effect.succeed(dailyRequests),
+      imageRequests: () => Effect.succeed(imageRequests),
     })
   );
+
+/**
+ * A library with room before an image is made, and none once it was: the
+ * plan filled meanwhile.
+ */
+export const FullLibrary = Layer.succeed(
+  GeneratedImages,
+  GeneratedImages.of({
+    roomFor: () => Effect.void,
+    store: () =>
+      Effect.fail(
+        new PlanLimitReached({
+          allowed: 1000,
+          limit: "mediaStorage",
+          needed: 2000,
+          used: 1000,
+        })
+      ),
+  })
+);
 
 /**
  * Postgres from DATABASE_URL, brought up to date, and random ids, so runs
@@ -146,7 +190,10 @@ export const assistantTest = ({
       Layer.mergeAll(
         DrizzleAssistantUsageLive,
         allowanceOf(dailyRequests),
-        PublishingPlatformLimitsLive
+        PublishingPlatformLimitsLive,
+        UnavailableImageModelLive,
+        CountedImageSlots,
+        NoGeneratedImages
       )
     ),
     Layer.provideMerge(
@@ -207,3 +254,54 @@ export const messagesOf = (prompt: Prompt.Prompt | undefined) =>
 
     return { role: message.role, text: "" };
   });
+
+export { FakeImageModel } from "#test/assistant/fake-image-model.ts";
+
+export type { ImageReply } from "#test/assistant/fake-image-model.ts";
+
+/**
+ * The assistant's use cases as the server wires them, with the fake
+ * writing and image models (or only the script of the image model, with
+ * no model behind it), storing what the image
+ * model makes in the media context, on the entitlements given. Built for
+ * each test; it needs DatabaseTest and the store's settings.
+ */
+export const imagesTest = ({
+  dailyRequests = 10,
+  entitlements = UnmeteredTest,
+  imageRequests = dailyRequests,
+  images = "fake",
+  library = "media",
+}: {
+  readonly dailyRequests?: number;
+  readonly entitlements?: typeof UnmeteredTest;
+  /** The requests images may take each day: none on a trial. */
+  readonly imageRequests?: number;
+  readonly images?: "fake" | "off";
+  /**
+   * Where images are kept: the media context, or a library whose plan
+   * turns out full once the image is made.
+   */
+  readonly library?: "full" | "media";
+} = {}) =>
+  WritingAssistant.layer.pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        DrizzleAssistantUsageLive,
+        allowanceOf(dailyRequests, imageRequests),
+        PublishingPlatformLimitsLive,
+        CountedImageSlots,
+        library === "media"
+          ? LibraryGeneratedImagesLive.pipe(
+              Layer.provide(mediaTestWith(entitlements))
+            )
+          : FullLibrary
+      )
+    ),
+    Layer.provideMerge(FakeWritingModelLive),
+    Layer.provideMerge(
+      images === "fake"
+        ? FakeImageModelLive
+        : Layer.merge(FakeImageModelLive, UnavailableImageModelLive)
+    )
+  );

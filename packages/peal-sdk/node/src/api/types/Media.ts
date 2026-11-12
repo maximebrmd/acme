@@ -3,6 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface Media {
+    aiGenerated: boolean;
     altText: string | null;
     byteSize: number;
     codec: string | null;

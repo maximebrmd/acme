@@ -16,6 +16,8 @@ module Peal
       member -> { Peal::Types::AssistantActionTranslate }, key: "TRANSLATE"
 
       member -> { Peal::Types::AssistantActionHashtags }, key: "HASHTAGS"
+
+      member -> { Peal::Types::AssistantActionWrite }, key: "WRITE"
     end
   end
 end

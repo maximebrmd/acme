@@ -3,6 +3,7 @@ import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
+import { canGenerateImages } from "#assistant/permissions.ts";
 import { currentUser } from "#auth/session.ts";
 import { MediaLibrary } from "#components/media/media-library.tsx";
 import { redirect } from "#i18n/navigation.ts";
@@ -45,6 +46,7 @@ const MediaPage = async ({
       </div>
       <MediaLibrary
         workspaceId={workspace.id}
+        canGenerate={canGenerateImages(workspace.permissions)}
         canUpload={workspace.permissions.includes("media:upload")}
         canDelete={workspace.permissions.includes("media:delete")}
       />

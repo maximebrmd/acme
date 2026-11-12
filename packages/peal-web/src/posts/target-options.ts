@@ -1410,12 +1410,15 @@ const chooses = (
  * some and where the member chose one at least, and what is wrong with
  * those filled in. A channel where nothing was chosen gets no entry, so a
  * new post takes the channel's default options, as it does through the
- * API. A field the post's `media` hide is not sent.
+ * API. A field the post's `media` hide is not sent. A channel in `settled`
+ * (whose AI label the member, or a preset, chose) sends its options
+ * whatever they hold, so a label turned off is kept as off.
  */
 export const channelOptionsOf = (
   channels: readonly { readonly id: string; readonly platform: Platform }[],
   values: ValuesByChannel,
-  media?: PostMediaKinds
+  media?: PostMediaKinds,
+  settled: ReadonlySet<string> = new Set()
 ): ChannelOptionsState => {
   const options: ChannelOptions[] = [];
   const problems: ChannelOptionProblem[] = [];
@@ -1431,7 +1434,10 @@ export const channelOptionsOf = (
       problems.push(
         ...given.failure.map((problem) => ({ ...problem, channelId: id }))
       );
-    } else if (chooses(platform, given.success, media)) {
+    } else if (
+      Option.isSome(given.success) &&
+      (settled.has(id) || chooses(platform, given.success, media))
+    ) {
       options.push({ channelId: id, options: given.success.value });
     }
   }

@@ -26,8 +26,10 @@ import { Separator } from "peal-ui/components/separator";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { canGenerateImages } from "#assistant/permissions.ts";
 import { PostMetrics } from "#components/analytics/post-metrics.tsx";
 import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
+import { AiLabelsNotice } from "#components/posts/ai-labels-notice.tsx";
 import { AssistantMenu } from "#components/posts/assistant-menu.tsx";
 import { ChannelPicker } from "#components/posts/channel-picker.tsx";
 import { ChannelSetPicker } from "#components/posts/channel-set-picker.tsx";
@@ -58,6 +60,7 @@ import { SignaturePause } from "#components/posts/signature-pause.tsx";
 import { TargetOptionsSection } from "#components/posts/target-options-panel.tsx";
 import { TargetStatuses } from "#components/posts/target-statuses.tsx";
 import { TextTabs } from "#components/posts/text-tabs.tsx";
+import { useAiLabels } from "#components/posts/use-ai-labels.ts";
 import { useTimeOptions } from "#i18n/hour-cycle.ts";
 import { getPathname, useRouter } from "#i18n/navigation.ts";
 import { useAttachedMedia } from "#posts/attached-media.ts";
@@ -336,13 +339,31 @@ export const Composer = ({
   // so every option shows, while one is still being read.
   const mediaKinds = mediaKindsOf(attached);
 
+  // Every attachment of the post, its follow-up parts' included: media
+  // made by AI in any part presets the AI labels.
+  const everyAttached = useAttachedMedia(workspaceId, [
+    ...media,
+    ...parts.flatMap((part) => part.media),
+  ]);
+
+  const aiLabels = useAiLabels({
+    attached: everyAttached,
+    optionValues,
+    post,
+    selected,
+    setOptionValues,
+    writable: canWrite,
+  });
+
   // The options to send, and what is wrong with those filled in: while
   // anything is, the post is neither saved nor scheduled. An option the
-  // media hide is not sent.
+  // media hide is not sent; a channel whose AI label was settled always
+  // sends its options, so the label is kept as chosen.
   const { options, problems: optionProblems } = channelOptionsOf(
     selected,
     optionValues,
-    mediaKinds
+    mediaKinds,
+    aiLabels.labelled
   );
 
   const optionsTaken = optionProblems.length === 0;
@@ -814,6 +835,7 @@ export const Composer = ({
             failure={requests.failure}
             valuesOf={valuesOn}
             onChange={(channelId, values) => {
+              aiLabels.changed(channelId, values);
               setOptionValues((current) => ({
                 ...current,
                 [channelId]: values,
@@ -828,6 +850,7 @@ export const Composer = ({
             <MediaAttachments
               attached={attached}
               canBrowse={permissions.includes("media:read")}
+              canGenerate={canGenerateImages(permissions)}
               canUpload={permissions.includes("media:upload")}
               disabled={locked}
               editable={canWrite}
@@ -837,6 +860,7 @@ export const Composer = ({
               workspaceId={workspaceId}
               onChange={setMedia}
             />
+            <AiLabelsNotice labels={aiLabels} />
           </fieldset>
           <Separator />
           <FollowUpParts

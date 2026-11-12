@@ -49,6 +49,10 @@ import { permissionsFor } from "#workspace/domain/roles.ts";
 
 const timeout = 90_000;
 
+// The tests that move the clock days ahead have the cluster's timers
+// replay the time skipped, which takes CPU: under load they need longer.
+const farJumpTimeout = 240_000;
+
 // A Monday, 09:00 in Paris; the source goes out a minute later.
 const start = "2026-06-15T07:00:00Z";
 const sourceAt = "2026-06-15T07:01:00Z";
@@ -333,7 +337,7 @@ describe("making a rule's occurrences", () => {
           assert.lengthOf(yield* occurrencesOf(rule.id), 1);
         })
       ),
-    timeout
+    farJumpTimeout
   );
 
   it.effect(
@@ -374,7 +378,7 @@ describe("making a rule's occurrences", () => {
           ]);
         })
       ),
-    timeout
+    farJumpTimeout
   );
 
   it.effect(

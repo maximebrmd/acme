@@ -28,6 +28,7 @@ import { Link } from "#i18n/navigation.ts";
 import { deleteMedia, mediaKey, mediaPage, usageOf } from "#media/atoms.ts";
 import { failureOf } from "#posts/outcome.ts";
 
+import { GenerateImage } from "./generate-image.tsx";
 import { MediaThumbnail } from "./media-thumbnail.tsx";
 import { MediaUploader } from "./media-uploader.tsx";
 import { MediaUsageNotice } from "./media-usage-notice.tsx";
@@ -231,9 +232,14 @@ const MediaCard = ({
       </div>
       <div className="flex flex-1 flex-col gap-2 p-3">
         <div className="flex items-center justify-between gap-2">
-          <Badge variant={badgeVariant[media.status._tag]}>
-            {t(`status.${media.status._tag}`)}
-          </Badge>
+          <span className="flex flex-wrap items-center gap-1">
+            <Badge variant={badgeVariant[media.status._tag]}>
+              {t(`status.${media.status._tag}`)}
+            </Badge>
+            {media.aiGenerated ? (
+              <Badge variant="secondary">{t("library.aiGenerated")}</Badge>
+            ) : null}
+          </span>
           {canDelete ? (
             <DeleteMedia media={media} workspaceId={workspaceId} />
           ) : null}
@@ -353,10 +359,13 @@ const MediaPages = ({
  */
 export const MediaLibrary = ({
   canDelete,
+  canGenerate = false,
   canUpload,
   workspaceId,
 }: {
   readonly canDelete: boolean;
+  /** The member may have the assistant make images (assistant:use and media:upload). */
+  readonly canGenerate?: boolean;
   readonly canUpload: boolean;
   readonly workspaceId: string;
 }) => {
@@ -373,6 +382,11 @@ export const MediaLibrary = ({
   return (
     <div className="flex flex-col gap-8">
       {canUpload ? <MediaUploader workspaceId={workspaceId} /> : null}
+      {canGenerate && hydrated ? (
+        <div>
+          <GenerateImage workspaceId={workspaceId} />
+        </div>
+      ) : null}
       <section className="flex flex-col gap-4" aria-labelledby="media-library">
         <h2 id="media-library" className="text-xl font-semibold">
           {t("title")}

@@ -19,7 +19,7 @@ layer(UsageTest)("the assistant's usage in Postgres", (it) => {
       const workspaceId = yield* freshWorkspace;
 
       const claims = yield* Effect.forEach([1, 2, 3, 4], () =>
-        usage.claim(workspaceId, ninth, 3)
+        usage.claim(workspaceId, ninth, 3, 1)
       );
 
       assert.deepStrictEqual(claims.map(Option.getOrNull), [1, 2, 3, null]);
@@ -33,7 +33,7 @@ layer(UsageTest)("the assistant's usage in Postgres", (it) => {
       const workspaceId = yield* freshWorkspace;
 
       const claims = yield* Effect.all(
-        Array.from({ length: 12 }, () => usage.claim(workspaceId, ninth, 5)),
+        Array.from({ length: 12 }, () => usage.claim(workspaceId, ninth, 5, 1)),
         { concurrency: "unbounded" }
       );
 
@@ -48,11 +48,15 @@ layer(UsageTest)("the assistant's usage in Postgres", (it) => {
       const workspaceId = yield* freshWorkspace;
       const other = yield* freshWorkspace;
 
-      yield* usage.claim(workspaceId, ninth, 1);
+      yield* usage.claim(workspaceId, ninth, 1, 1);
 
-      assert.isTrue(Option.isNone(yield* usage.claim(workspaceId, ninth, 1)));
-      assert.isTrue(Option.isSome(yield* usage.claim(workspaceId, tenth, 1)));
-      assert.isTrue(Option.isSome(yield* usage.claim(other, ninth, 1)));
+      assert.isTrue(
+        Option.isNone(yield* usage.claim(workspaceId, ninth, 1, 1))
+      );
+      assert.isTrue(
+        Option.isSome(yield* usage.claim(workspaceId, tenth, 1, 1))
+      );
+      assert.isTrue(Option.isSome(yield* usage.claim(other, ninth, 1, 1)));
       assert.strictEqual(yield* usage.used(other, tenth), 0);
     })
   );
@@ -64,10 +68,10 @@ layer(UsageTest)("the assistant's usage in Postgres", (it) => {
       const other = yield* freshWorkspace;
       const idle = yield* freshWorkspace;
 
-      yield* usage.claim(workspaceId, ninth, 5);
-      yield* usage.claim(workspaceId, ninth, 5);
-      yield* usage.claim(other, ninth, 5);
-      yield* usage.claim(other, tenth, 5);
+      yield* usage.claim(workspaceId, ninth, 5, 1);
+      yield* usage.claim(workspaceId, ninth, 5, 1);
+      yield* usage.claim(other, ninth, 5, 1);
+      yield* usage.claim(other, tenth, 5, 1);
 
       assert.deepStrictEqual(
         yield* usage.usedIn([workspaceId, other, idle], ninth),
@@ -85,18 +89,79 @@ layer(UsageTest)("the assistant's usage in Postgres", (it) => {
       const usage = yield* AssistantUsage;
       const workspaceId = yield* freshWorkspace;
 
-      yield* usage.claim(workspaceId, ninth, 2);
-      yield* usage.claim(workspaceId, ninth, 2);
-      yield* usage.release(workspaceId, ninth);
+      yield* usage.claim(workspaceId, ninth, 2, 1);
+      yield* usage.claim(workspaceId, ninth, 2, 1);
+      yield* usage.release(workspaceId, ninth, 1);
 
       assert.strictEqual(yield* usage.used(workspaceId, ninth), 1);
 
-      yield* usage.release(workspaceId, ninth);
-      yield* usage.release(workspaceId, ninth);
-      yield* usage.release(workspaceId, tenth);
+      yield* usage.release(workspaceId, ninth, 1);
+      yield* usage.release(workspaceId, ninth, 1);
+      yield* usage.release(workspaceId, tenth, 1);
 
       assert.strictEqual(yield* usage.used(workspaceId, ninth), 0);
       assert.strictEqual(yield* usage.used(workspaceId, tenth), 0);
+    })
+  );
+
+  it.effect("claims a request that costs several, never past the limit", () =>
+    Effect.gen(function* costly() {
+      const usage = yield* AssistantUsage;
+      const workspaceId = yield* freshWorkspace;
+
+      // Too costly for the day's whole allowance: nothing is counted.
+      assert.isTrue(
+        Option.isNone(yield* usage.claim(workspaceId, ninth, 3, 5))
+      );
+      assert.strictEqual(yield* usage.used(workspaceId, ninth), 0);
+
+      const claims = yield* Effect.forEach([5, 1, 5, 1, 1], (cost) =>
+        usage.claim(workspaceId, ninth, 12, cost)
+      );
+
+      // 5, 6, 11, 12, then the last one finds no room.
+      assert.deepStrictEqual(claims.map(Option.getOrNull), [
+        5,
+        6,
+        11,
+        12,
+        null,
+      ]);
+
+      yield* usage.release(workspaceId, ninth, 5);
+
+      assert.strictEqual(yield* usage.used(workspaceId, ninth), 7);
+    })
+  );
+
+  it.effect(
+    "lets no costly request past the limit when they arrive together",
+    () =>
+      Effect.gen(function* together() {
+        const usage = yield* AssistantUsage;
+        const workspaceId = yield* freshWorkspace;
+
+        const claims = yield* Effect.all(
+          Array.from({ length: 8 }, () =>
+            usage.claim(workspaceId, ninth, 12, 5)
+          ),
+          { concurrency: "unbounded" }
+        );
+
+        assert.strictEqual(claims.filter(Option.isSome).length, 2);
+        assert.strictEqual(yield* usage.used(workspaceId, ninth), 10);
+      })
+  );
+
+  it.effect("takes back a costly request, never below zero", () =>
+    Effect.gen(function* floor() {
+      const usage = yield* AssistantUsage;
+      const workspaceId = yield* freshWorkspace;
+
+      yield* usage.claim(workspaceId, ninth, 10, 2);
+      yield* usage.release(workspaceId, ninth, 5);
+
+      assert.strictEqual(yield* usage.used(workspaceId, ninth), 0);
     })
   );
 });

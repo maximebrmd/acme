@@ -29,13 +29,17 @@ import social.peal.core.RetryInterceptor;
 import social.peal.errors.BadGatewayError;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.NotFoundError;
+import social.peal.errors.PaymentRequiredError;
 import social.peal.errors.ServiceUnavailableError;
 import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
+import social.peal.resources.assistant.requests.ImageRequest;
 import social.peal.resources.assistant.requests.StatusAssistantRequest;
 import social.peal.resources.assistant.requests.SuggestionRequest;
 import social.peal.types.AssistantStatus;
+import social.peal.types.Media;
+import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.Suggestion;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -47,14 +51,14 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(String workspaceId) {
         return status(workspaceId, StatusAssistantRequest.builder().build());
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(
             String workspaceId, RequestOptions requestOptions) {
@@ -62,7 +66,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(
             String workspaceId, StatusAssistantRequest request) {
@@ -70,7 +74,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<AssistantStatus>> status(
             String workspaceId, StatusAssistantRequest request, RequestOptions requestOptions) {
@@ -169,7 +173,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<Suggestion>> suggest(
             String workspaceId, SuggestionRequest request) {
@@ -177,7 +181,7 @@ public class AsyncRawAssistantClient {
     }
 
     /**
-     * Asks the language model to rewrite, shorten or translate a post's text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
+     * Asks the language model to rewrite, shorten or translate a post's text, to suggest hashtags for it, or to write a first post from a subject (<code>write</code>), and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace's daily quota, unless the model's provider could not be reached. Needs assistant:use.
      */
     public CompletableFuture<PealClientHttpResponse<Suggestion>> suggest(
             String workspaceId, SuggestionRequest request, RequestOptions requestOptions) {
@@ -234,6 +238,138 @@ public class AsyncRawAssistantClient {
                                 future.completeExceptionally(new UnauthorizedError(
                                         ObjectMappers.JSON_MAPPER.readValue(
                                                 responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 403:
+                                future.completeExceptionally(new ForbiddenError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 404:
+                                future.completeExceptionally(new NotFoundError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 422:
+                                future.completeExceptionally(new UnprocessableEntityError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 502:
+                                future.completeExceptionally(new BadGatewayError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 503:
+                                future.completeExceptionally(new ServiceUnavailableError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                        }
+                    } catch (JsonProcessingException ignored) {
+                        // unable to map error response, throwing generic error
+                    }
+                    Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+                    future.completeExceptionally(new PealClientApiException(
+                            "Error with status code " + response.code(), response.code(), errorBody, response));
+                    return;
+                } catch (JsonProcessingException e) {
+                    future.completeExceptionally(
+                            new PealClientException("Failed to deserialize response: " + e.getMessage(), e));
+                } catch (IOException e) {
+                    future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                future.completeExceptionally(new PealClientException("Network error executing HTTP request", e));
+            }
+        });
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                okhttpCall.cancel();
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the server has an image model.
+     */
+    public CompletableFuture<PealClientHttpResponse<Media>> generateImage(String workspaceId, ImageRequest request) {
+        return generateImage(workspaceId, request, null);
+    }
+
+    /**
+     * Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the server has an image model.
+     */
+    public CompletableFuture<PealClientHttpResponse<Media>> generateImage(
+            String workspaceId, ImageRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/workspaces")
+                .addPathSegment(PathSegments.validate(workspaceId))
+                .addPathSegments("assistant")
+                .addPathSegments("images");
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        RequestBody body;
+        try {
+            body = RequestBody.create(
+                    ObjectMappers.JSON_MAPPER.writeValueAsBytes(BodyProperties.merge(
+                            request, requestOptions != null ? requestOptions.getBodyProperties() : null)),
+                    MediaTypes.APPLICATION_JSON);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to serialize request", e);
+        }
+        Request okhttpRequest = new Request.Builder()
+                .url(httpUrl.build())
+                .method("POST", body)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        okhttpRequest = okhttpRequest
+                .newBuilder()
+                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
+                .build();
+        CompletableFuture<PealClientHttpResponse<Media>> future = new CompletableFuture<>();
+        RetryInterceptor.AsyncCall okhttpCall = RetryInterceptor.newAsyncCall(client, okhttpRequest);
+        okhttpCall.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try (ResponseBody responseBody = response.body()) {
+                    String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+                    if (response.isSuccessful()) {
+                        future.complete(new PealClientHttpResponse<>(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Media.class), response));
+                        return;
+                    }
+                    try {
+                        switch (response.code()) {
+                            case 401:
+                                future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 402:
+                                future.completeExceptionally(new PaymentRequiredError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, PlanLimitReachedEncoded.class),
                                         response));
                                 return;
                             case 403:
