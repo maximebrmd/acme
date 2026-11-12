@@ -8,7 +8,7 @@ header -Server
 
 @read method GET HEAD
 handle @read {
-	reverse_proxy status:8080
+	reverse_proxy {{ uptime_status_upstream }}
 }
 
 handle {

@@ -5,6 +5,7 @@ server of the inventory."""
 from __future__ import annotations
 
 import functools
+import json
 import re
 import shlex
 import shutil
@@ -102,19 +103,19 @@ def stdin_of(found: dict[str, Any]) -> str | None:
     return render(args["stdin"]) + "\n"
 
 
-def run_tasks(
+def play_tasks(
     folder: Path,
     role: str,
     names: list[str],
     *,
     check: bool = False,
     **settings_: Any,
-) -> dict[str, int]:
+) -> subprocess.CompletedProcess[str]:
     """Runs tasks of a role, by name and in the order given, with Ansible
     itself, on this machine and as this user, for the inventory's production
     server and with the settings given: what a server's files become when
-    the role's paths name a folder of the test's. Returns the run's recap
-    (ok, changed, skipped…)."""
+    the role's paths name a folder of the test's. Returns the run, which may
+    have failed."""
     play = {
         "name": f"Run tasks of the {role} role",
         "hosts": "peal-production",
@@ -125,7 +126,7 @@ def run_tasks(
     }
     playbook = folder / "tasks.yml"
     playbook.write_text(yaml.safe_dump([play], sort_keys=False))
-    ran = subprocess.run(
+    return subprocess.run(
         [
             str(Path(sys.executable).parent / "ansible-playbook"),
             "--inventory",
@@ -139,16 +140,32 @@ def run_tasks(
         text=True,
         stdin=subprocess.DEVNULL,
     )
-    assert ran.returncode == 0, ran.stdout + ran.stderr
+
+
+def recap_of(ran: subprocess.CompletedProcess[str]) -> dict[str, int]:
+    """A run's recap: ok, changed, skipped, failed…"""
     recap = ran.stdout.rsplit("PLAY RECAP", 1)[1]
     return {name: int(count) for name, count in re.findall(r"(\w+)=(\d+)", recap)}
 
 
-@pytest.fixture(scope="session")
-def rendered(tmp_path_factory: pytest.TempPathFactory) -> Path:
+def run_tasks(
+    folder: Path,
+    role: str,
+    names: list[str],
+    *,
+    check: bool = False,
+    **settings_: Any,
+) -> dict[str, int]:
+    """play_tasks, for a run that must succeed: returns its recap."""
+    ran = play_tasks(folder, role, names, check=check, **settings_)
+    assert ran.returncode == 0, ran.stdout + ran.stderr
+    return recap_of(ran)
+
+
+def render_inventory(folder: Path, **extra_vars: Any) -> Path:
     """The templates of tests/render.yml, rendered by Ansible for each
-    server of the inventory, in <folder>/<server>/."""
-    folder = tmp_path_factory.mktemp("rendered")
+    server of the inventory, with the settings given above it, in
+    <folder>/<server>/."""
     subprocess.run(
         [
             str(Path(sys.executable).parent / "ansible-playbook"),
@@ -156,10 +173,17 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Path:
             committed_inventory(),
             "tests/render.yml",
             "--extra-vars",
-            f"render_dir={folder}",
+            json.dumps({"render_dir": str(folder), **extra_vars}),
         ],
         cwd=INFRA,
         check=True,
         capture_output=True,
     )
     return folder
+
+
+@pytest.fixture(scope="session")
+def rendered(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The templates of tests/render.yml, rendered by Ansible for each
+    server of the inventory, in <folder>/<server>/."""
+    return render_inventory(tmp_path_factory.mktemp("rendered"))

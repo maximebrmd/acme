@@ -12,3 +12,13 @@ uptime_required_credentials: >-
 uptime_heartbeat_tokens: >-
   {{ uptime_environments | selectattr('heartbeat', 'defined') | selectattr('heartbeat')
      | map(attribute='name') | map('upper') | map('regex_replace', '$', '_HEARTBEAT_TOKEN') | list }}
+
+# Where Caddy reaches each Gatus: on the stack's network on a server of its
+# own, on the host's loopback on a shared host.
+uptime_gatus_upstream: "{{ '127.0.0.1:%s' % uptime_gatus_port if uptime_shared_host | bool else 'gatus:8080' }}"
+uptime_status_upstream: "{{ '127.0.0.1:%s' % uptime_status_port if uptime_shared_host | bool else 'status:8080' }}"
+
+# On a shared host: the names its Caddy serves for the uptime server, and the
+# loopback ports the stack publishes there.
+uptime_caddy_names: "{{ [uptime_hostname] + ([uptime_status_hostname] if uptime_public_status else []) }}"
+uptime_published_ports: "{{ [uptime_gatus_port] + ([uptime_status_port] if uptime_public_status else []) }}"

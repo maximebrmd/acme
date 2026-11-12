@@ -1,7 +1,13 @@
 # Managed by Ansible (peal-infra): the uptime server's stack, the Compose
 # project uptime in {{ uptime_root }} (`sudo uptime-compose ps`). Gatus
+{% if uptime_shared_host | bool %}
+# publishes its dashboard on 127.0.0.1 only, and the status page's Gatus
+# too: on this shared host, the host's own Caddy is the one public entry,
+# from the site file the uptime role drops in ({{ uptime_caddy_site_file }}).
+{% else %}
 # publishes its dashboard on 127.0.0.1 only; Caddy alone publishes a port to
 # the world, 443, which Docker opens whatever ufw says.
+{% endif %}
 #
 # Each service's `peal.config` label is the digest of the configuration it
 # mounts, so `up` recreates a service whose configuration changed, and only
@@ -58,8 +64,14 @@ services:
     volumes:
       - ./status:/config:ro
       - ./status-data:/data
+{% if uptime_shared_host | bool %}
+    # For the host's Caddy alone, on its loopback.
+    ports:
+      - 127.0.0.1:{{ uptime_status_port }}:8080
+{% endif %}
 
 {% endif %}
+{% if not (uptime_shared_host | bool) %}
   caddy:
     <<: *service
     image: {{ uptime_caddy_image }}
@@ -86,3 +98,4 @@ services:
 volumes:
   caddy-data:
   caddy-config:
+{% endif %}

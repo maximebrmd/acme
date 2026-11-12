@@ -58,6 +58,10 @@
         uptime_caddy_routes: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/routes.caddy.j2') }}"
         uptime_caddy_status: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/status.caddy.j2') }}"
 
+    - name: Render the shared host's site file as the role does
+      ansible.builtin.set_fact:
+        uptime_caddy_site: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/site.caddy.j2') }}"
+
     - name: Write the configuration
       ansible.builtin.copy:
         dest: "{{ render_dir }}/{{ inventory_hostname }}/{{ item.path }}"
@@ -69,6 +73,7 @@
         - { path: caddy/Caddyfile, content: "{{ uptime_caddyfile }}" }
         - { path: caddy/routes.caddy, content: "{{ uptime_caddy_routes }}" }
         - { path: caddy/status.caddy, content: "{{ uptime_caddy_status }}" }
+        - { path: caddy/peal-uptime.caddy, content: "{{ uptime_caddy_site }}" }
       loop_control:
         label: "{{ item.path }}"
 
