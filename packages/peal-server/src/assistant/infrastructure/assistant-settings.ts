@@ -101,3 +101,55 @@ export const dailyRequestsConfig = Config.schema(
   Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   "PEAL_AI_DAILY_REQUESTS"
 ).pipe(Config.withDefault(defaultDailyRequests));
+
+/** The model the assistant makes images with, if any. */
+export type ImageProvider =
+  | { readonly _tag: "Off" }
+  | {
+      readonly _tag: "OpenAiCompatible";
+      /** None for an endpoint that takes requests without a key. */
+      readonly apiKey: Option.Option<Redacted.Redacted>;
+      /** The API's base URL, which `/images/generations` follows. */
+      readonly baseUrl: string;
+      readonly model: string;
+    };
+
+// Like a self-hosted writing model, an image endpoint is reached at the
+// address the operator names, with the model it names: both must be given.
+const openAiCompatibleImages = Config.all({
+  apiKey: Config.option(Config.Redacted("PEAL_AI_IMAGE_API_KEY")).pipe(
+    Config.map(Option.filter((key) => Redacted.value(key) !== ""))
+  ),
+  baseUrl: urlConfig("PEAL_AI_IMAGE_BASE_URL"),
+  model: Config.NonEmptyString("PEAL_AI_IMAGE_MODEL"),
+}).pipe(
+  Config.map((settings): ImageProvider => ({
+    _tag: "OpenAiCompatible",
+    ...settings,
+  }))
+);
+
+const imageProviders = {
+  "": Config.succeed<ImageProvider>({ _tag: "Off" }),
+  "openai-compatible": openAiCompatibleImages,
+};
+
+/**
+ * The assistant's image model, read from the environment when the server
+ * starts, apart from the writing model, which may make no images:
+ *
+ * - `PEAL_AI_IMAGE_PROVIDER`: `openai-compatible`. Unset or empty, images
+ *   are off: the endpoint answers AssistantUnavailable and clients hide it.
+ * - `PEAL_AI_IMAGE_BASE_URL`: the API's base URL, required.
+ * - `PEAL_AI_IMAGE_API_KEY`: the provider's key, optional.
+ * - `PEAL_AI_IMAGE_MODEL`: the model, required.
+ *
+ * A provider named without its base URL or its model stops the server.
+ */
+export const imageProviderConfig = Config.Literals(
+  ["", "openai-compatible"],
+  "PEAL_AI_IMAGE_PROVIDER"
+).pipe(
+  Config.withDefault(""),
+  Config.flatMap((name) => imageProviders[name])
+);
