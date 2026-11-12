@@ -10,6 +10,7 @@ import { PublicationProgress } from "#publishing/application/publication-progres
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
+import { FacebookFormatProgressSchema } from "#publishing/infrastructure/platforms/meta/facebook-format-progress.ts";
 import { TikTokProgressSchema } from "#publishing/infrastructure/platforms/tiktok/tiktok-client.ts";
 import { newId } from "#shared/application/ids.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
@@ -87,6 +88,45 @@ layer(StorageTest)("a call's recorded progress", (it) => {
     })
   );
 
+  it.effect(
+    "replaces what a call recorded only while it is what the caller read",
+    () =>
+      Effect.gen(function* replaces() {
+        const progress = yield* PublicationProgress;
+        const { idempotencyKey, postId } = yield* begunCall();
+        const first = { run: "synthetic-run-1", step: "preparing" };
+        const other = { run: "synthetic-run-2", step: "preparing" };
+
+        yield* Effect.gen(function* checks() {
+          assert.isTrue(
+            yield* progress.replace(idempotencyKey, Option.none(), first)
+          );
+          // Nothing recorded is no longer true.
+          assert.isFalse(
+            yield* progress.replace(idempotencyKey, Option.none(), other)
+          );
+          // Another run's step is not this one's: refused.
+          assert.isFalse(
+            yield* progress.replace(idempotencyKey, Option.some(other), {
+              step: "finishing",
+            })
+          );
+          // Its own, whatever the order of its keys: written.
+          assert.isTrue(
+            yield* progress.replace(
+              idempotencyKey,
+              Option.some({ run: "synthetic-run-1", step: "preparing" }),
+              { step: "finishing" }
+            )
+          );
+          assert.deepStrictEqual(yield* progress.read(idempotencyKey), {
+            _tag: "begun",
+            recorded: Option.some({ step: "finishing" }),
+          });
+        }).pipe(Effect.ensuring(deletePost(postId)));
+      })
+  );
+
   it.effect("says so of a key the journal never began", () =>
     Effect.gen(function* unknown() {
       const progress = yield* PublicationProgress;
@@ -133,5 +173,42 @@ layer(StorageTest)("a call's recorded progress", (it) => {
         ["pulling", "pulling", "pulled", "uploading", "finishing"]
       );
     })
+  );
+
+  it.effect(
+    "keeps Facebook's reel and story steps decoding as this release writes them",
+    () =>
+      Effect.gen(function* facebookSteps() {
+        const stored = yield* Effect.promise(
+          async () =>
+            await readFile(
+              path.join(
+                import.meta.dirname,
+                "fixtures",
+                "persisted",
+                "publication-calls",
+                "facebook-format-progress.json"
+              ),
+              "utf-8"
+            )
+        );
+
+        const steps = yield* Schema.decodeUnknownEffect(
+          Schema.fromJsonString(
+            Schema.Array(Schema.toCodecJson(FacebookFormatProgressSchema))
+          )
+        )(stored);
+
+        assert.deepStrictEqual(
+          steps.map(({ format, step }) => `${step} ${format}`),
+          [
+            "preparing reel",
+            "preparing photoStory",
+            "finishing reel",
+            "finishing videoStory",
+            "finishing photoStory",
+          ]
+        );
+      })
   );
 });

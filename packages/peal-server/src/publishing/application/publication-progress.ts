@@ -41,6 +41,16 @@ export class PublicationProgress extends Context.Service<
       idempotencyKey: string,
       progress: Schema.Json
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Replaces what the call recorded only while it still is `expected`
+     * (none: nothing recorded yet), in one statement, and says whether it
+     * did: two runs of one attempt never both write over the same step.
+     */
+    readonly replace: (
+      idempotencyKey: string,
+      expected: Option.Option<Schema.Json>,
+      progress: Schema.Json
+    ) => Effect.Effect<boolean, DatabaseError>;
     readonly read: (
       idempotencyKey: string
     ) => Effect.Effect<CallProgress, DatabaseError>;

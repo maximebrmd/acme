@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from "node:util";
+
 import { Context, Effect, Layer, Option, Ref } from "effect";
 import type { Schema } from "effect";
 
@@ -55,6 +57,23 @@ export const progressInMemory = Layer.effectContext(
             found ? Effect.void : Effect.die("No call has this key")
           )
         ),
+      replace: (idempotencyKey, expected, step) =>
+        Ref.modify(calls, (known) => {
+          const steps = known.get(idempotencyKey);
+          const last = steps?.at(-1);
+
+          const holds =
+            steps !== undefined &&
+            Option.match(expected, {
+              onNone: () => last === undefined,
+              onSome: (value) =>
+                last !== undefined && isDeepStrictEqual(last, value),
+            });
+
+          return holds
+            ? [true, new Map(known).set(idempotencyKey, [...steps, step])]
+            : [false, known];
+        }),
     });
 
     const log = ProgressLog.of({

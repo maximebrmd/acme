@@ -113,7 +113,11 @@ const stepsWith = Effect.fn("test.stepsWith")(function* stepsWith(
     prepare: () => Effect.succeed(readiness(options.processing ?? 0)),
   };
 
-  return { client: sequenced(steps, timing), sentAt: Ref.get(sentAt) };
+  return {
+    client: sequenced(steps, timing),
+    looks: Ref.get(looks),
+    sentAt: Ref.get(sentAt),
+  };
 });
 
 const postStarted = (startedAt: DateTime.Utc): OutgoingPost => ({
@@ -356,5 +360,83 @@ describe("the publication steps", () => {
       );
       assert.lengthOf(yield* unknown.sentAt, 0);
     })
+  );
+
+  it.effect(
+    "reads on, as after an unknown outcome, while a resumed post is pending",
+    () =>
+      Effect.gen(function* pendingResume() {
+        const startedAt = yield* minutesAgo(5);
+
+        const { client, looks, sentAt } = yield* stepsWith({
+          confirmation: {
+            _tag: "lookUp",
+            found: ["pending", "pending", "found"],
+          },
+        });
+
+        assert.deepStrictEqual(
+          yield* withinTheHour(client.resume(postStarted(startedAt))),
+          published
+        );
+        // The look the resume began with, then one after each wait.
+        assert.strictEqual(yield* looks, 1 + timing.confirmDelays.length);
+        assert.lengthOf(yield* sentAt, 0);
+      })
+  );
+
+  it.effect(
+    "leaves a resumed post unconfirmed, still processing, when it stays pending",
+    () =>
+      Effect.gen(function* stillPending() {
+        const startedAt = yield* minutesAgo(5);
+
+        const { client, looks, sentAt } = yield* stepsWith({
+          confirmation: {
+            _tag: "lookUp",
+            found: ["pending", "pending", "pending", "found"],
+          },
+        });
+
+        assert.deepStrictEqual(
+          yield* withinTheHour(client.resume(postStarted(startedAt))),
+          { _tag: "unconfirmed", reason: "stillProcessing" }
+        );
+        assert.strictEqual(yield* looks, 1 + timing.confirmDelays.length);
+        assert.lengthOf(yield* sentAt, 0);
+      })
+  );
+
+  it.effect("takes pending for unsettled while confirming a publish", () =>
+    Effect.gen(function* pendingPublish() {
+      const { client, sentAt } = yield* stepsWith({
+        commits: [{ _tag: "unknown" }],
+        confirmation: { _tag: "lookUp", found: ["pending", "found"] },
+      });
+
+      assert.deepStrictEqual(
+        yield* withinTheHour(client.publish(postStarted(yield* DateTime.now))),
+        published
+      );
+      assert.lengthOf(yield* sentAt, 1);
+    })
+  );
+
+  it.effect(
+    "looks once on a resume when the adapter never answers pending, as before",
+    () =>
+      Effect.gen(function* neverPending() {
+        const startedAt = yield* minutesAgo(5);
+
+        const { client, looks } = yield* stepsWith({
+          confirmation: { _tag: "lookUp", found: ["unknown", "found"] },
+        });
+
+        assert.deepStrictEqual(
+          yield* withinTheHour(client.resume(postStarted(startedAt))),
+          { _tag: "unconfirmed", reason: "interrupted" }
+        );
+        assert.strictEqual(yield* looks, 1);
+      })
   );
 });
