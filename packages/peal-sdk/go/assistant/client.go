@@ -34,7 +34,7 @@ func NewClient(options *core.RequestOptions) *Client {
 	}
 }
 
-// Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+// Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (`images`), and how many requests the workspace has left today. Needs assistant:use.
 //
 // Example:
 //
@@ -84,6 +84,35 @@ func (c *Client) Suggest(
 	opts ...option.RequestOption,
 ) (*peal.Suggestion, error) {
 	response, err := c.WithRawResponse.Suggest(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the server has an image model.
+//
+// Example:
+//
+//	request := &peal.ImageRequest{
+//	    WorkspaceID: "workspaceId",
+//	    Aspect: peal.ImageAspectSquare,
+//	    Prompt: "prompt",
+//	}
+//	_, err := client.Assistant.GenerateImage(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) GenerateImage(
+	ctx context.Context,
+	request *peal.ImageRequest,
+	opts ...option.RequestOption,
+) (*peal.Media, error) {
+	response, err := c.WithRawResponse.GenerateImage(
 		ctx,
 		request,
 		opts...,

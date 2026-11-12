@@ -20,6 +20,12 @@ class AssistantStatus extends JsonSerializableType
     public int $dailyLimit;
 
     /**
+     * @var AssistantImagesStatus $images
+     */
+    #[JsonProperty('images')]
+    public AssistantImagesStatus $images;
+
+    /**
      * @var int $maxTextLength
      */
     #[JsonProperty('maxTextLength')]
@@ -41,6 +47,7 @@ class AssistantStatus extends JsonSerializableType
      * @param array{
      *   available: bool,
      *   dailyLimit: int,
+     *   images: AssistantImagesStatus,
      *   maxTextLength: int,
      *   remaining: int,
      *   resetsAt: string,
@@ -51,6 +58,7 @@ class AssistantStatus extends JsonSerializableType
     ) {
         $this->available = $values['available'];
         $this->dailyLimit = $values['dailyLimit'];
+        $this->images = $values['images'];
         $this->maxTextLength = $values['maxTextLength'];
         $this->remaining = $values['remaining'];
         $this->resetsAt = $values['resetsAt'];

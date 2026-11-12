@@ -7,9 +7,11 @@ import java.util.concurrent.CompletableFuture;
 import social.peal.core.ClientOptions;
 import social.peal.core.PealClientHttpResponse;
 import social.peal.core.RequestOptions;
+import social.peal.resources.assistant.requests.ImageRequest;
 import social.peal.resources.assistant.requests.StatusAssistantRequest;
 import social.peal.resources.assistant.requests.SuggestionRequest;
 import social.peal.types.AssistantStatus;
+import social.peal.types.Media;
 import social.peal.types.Suggestion;
 
 public class AsyncAssistantClient {
@@ -30,7 +32,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<AssistantStatus> status(String workspaceId) {
         CompletableFuture<PealClientHttpResponse<AssistantStatus>> rawFuture = this.rawClient.status(workspaceId);
@@ -44,7 +46,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<AssistantStatus> status(String workspaceId, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<AssistantStatus>> rawFuture =
@@ -59,7 +61,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<AssistantStatus> status(String workspaceId, StatusAssistantRequest request) {
         CompletableFuture<PealClientHttpResponse<AssistantStatus>> rawFuture =
@@ -74,7 +76,7 @@ public class AsyncAssistantClient {
     }
 
     /**
-     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (<code>images</code>), and how many requests the workspace has left today. Needs assistant:use.
      */
     public CompletableFuture<AssistantStatus> status(
             String workspaceId, StatusAssistantRequest request, RequestOptions requestOptions) {
@@ -111,6 +113,36 @@ public class AsyncAssistantClient {
         CompletableFuture<PealClientHttpResponse<Suggestion>> rawFuture =
                 this.rawClient.suggest(workspaceId, request, requestOptions);
         CompletableFuture<Suggestion> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the server has an image model.
+     */
+    public CompletableFuture<Media> generateImage(String workspaceId, ImageRequest request) {
+        CompletableFuture<PealClientHttpResponse<Media>> rawFuture = this.rawClient.generateImage(workspaceId, request);
+        CompletableFuture<Media> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked <code>aiGenerated</code> and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's <code>images.requestCost</code> of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube <code>containsSyntheticMedia</code>, TikTok <code>aiGenerated</code>, X <code>madeWithAi</code>). Needs assistant:use and media:upload. Off unless the server has an image model.
+     */
+    public CompletableFuture<Media> generateImage(
+            String workspaceId, ImageRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Media>> rawFuture =
+                this.rawClient.generateImage(workspaceId, request, requestOptions);
+        CompletableFuture<Media> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);

@@ -10,6 +10,72 @@ import (
 )
 
 var (
+	imageRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	imageRequestFieldAspect      = big.NewInt(1 << 1)
+	imageRequestFieldPrompt      = big.NewInt(1 << 2)
+)
+
+type ImageRequest struct {
+	WorkspaceID string      `json:"-" url:"-"`
+	Aspect      ImageAspect `json:"aspect" url:"-"`
+	Prompt      string      `json:"prompt" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (i *ImageRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageRequest) SetWorkspaceID(workspaceID string) {
+	i.WorkspaceID = workspaceID
+	i.require(imageRequestFieldWorkspaceID)
+}
+
+// SetAspect sets the Aspect field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageRequest) SetAspect(aspect ImageAspect) {
+	i.Aspect = aspect
+	i.require(imageRequestFieldAspect)
+}
+
+// SetPrompt sets the Prompt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImageRequest) SetPrompt(prompt string) {
+	i.Prompt = prompt
+	i.require(imageRequestFieldPrompt)
+}
+
+func (i *ImageRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImageRequest
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*i = ImageRequest(body)
+	return nil
+}
+
+func (i *ImageRequest) MarshalJSON() ([]byte, error) {
+	type embed ImageRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
 	statusAssistantRequestFieldWorkspaceID = big.NewInt(1 << 0)
 )
 
@@ -744,19 +810,155 @@ func (a *AssistantActionWrite) String() string {
 }
 
 var (
+	assistantImagesStatusFieldAspects         = big.NewInt(1 << 0)
+	assistantImagesStatusFieldAvailable       = big.NewInt(1 << 1)
+	assistantImagesStatusFieldMaxPromptLength = big.NewInt(1 << 2)
+	assistantImagesStatusFieldRequestCost     = big.NewInt(1 << 3)
+)
+
+type AssistantImagesStatus struct {
+	Aspects         []ImageAspect `json:"aspects" url:"aspects"`
+	Available       bool          `json:"available" url:"available"`
+	MaxPromptLength int           `json:"maxPromptLength" url:"maxPromptLength"`
+	RequestCost     int           `json:"requestCost" url:"requestCost"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AssistantImagesStatus) GetAspects() []ImageAspect {
+	if a == nil {
+		return nil
+	}
+	return a.Aspects
+}
+
+func (a *AssistantImagesStatus) GetAvailable() bool {
+	if a == nil {
+		return false
+	}
+	return a.Available
+}
+
+func (a *AssistantImagesStatus) GetMaxPromptLength() int {
+	if a == nil {
+		return 0
+	}
+	return a.MaxPromptLength
+}
+
+func (a *AssistantImagesStatus) GetRequestCost() int {
+	if a == nil {
+		return 0
+	}
+	return a.RequestCost
+}
+
+func (a *AssistantImagesStatus) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *AssistantImagesStatus) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+// SetAspects sets the Aspects field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantImagesStatus) SetAspects(aspects []ImageAspect) {
+	a.Aspects = aspects
+	a.require(assistantImagesStatusFieldAspects)
+}
+
+// SetAvailable sets the Available field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantImagesStatus) SetAvailable(available bool) {
+	a.Available = available
+	a.require(assistantImagesStatusFieldAvailable)
+}
+
+// SetMaxPromptLength sets the MaxPromptLength field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantImagesStatus) SetMaxPromptLength(maxPromptLength int) {
+	a.MaxPromptLength = maxPromptLength
+	a.require(assistantImagesStatusFieldMaxPromptLength)
+}
+
+// SetRequestCost sets the RequestCost field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantImagesStatus) SetRequestCost(requestCost int) {
+	a.RequestCost = requestCost
+	a.require(assistantImagesStatusFieldRequestCost)
+}
+
+func (a *AssistantImagesStatus) UnmarshalJSON(data []byte) error {
+	type unmarshaler AssistantImagesStatus
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AssistantImagesStatus(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AssistantImagesStatus) MarshalJSON() ([]byte, error) {
+	type embed AssistantImagesStatus
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *AssistantImagesStatus) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+var (
 	assistantStatusFieldAvailable     = big.NewInt(1 << 0)
 	assistantStatusFieldDailyLimit    = big.NewInt(1 << 1)
-	assistantStatusFieldMaxTextLength = big.NewInt(1 << 2)
-	assistantStatusFieldRemaining     = big.NewInt(1 << 3)
-	assistantStatusFieldResetsAt      = big.NewInt(1 << 4)
+	assistantStatusFieldImages        = big.NewInt(1 << 2)
+	assistantStatusFieldMaxTextLength = big.NewInt(1 << 3)
+	assistantStatusFieldRemaining     = big.NewInt(1 << 4)
+	assistantStatusFieldResetsAt      = big.NewInt(1 << 5)
 )
 
 type AssistantStatus struct {
-	Available     bool   `json:"available" url:"available"`
-	DailyLimit    int    `json:"dailyLimit" url:"dailyLimit"`
-	MaxTextLength int    `json:"maxTextLength" url:"maxTextLength"`
-	Remaining     int    `json:"remaining" url:"remaining"`
-	ResetsAt      string `json:"resetsAt" url:"resetsAt"`
+	Available     bool                   `json:"available" url:"available"`
+	DailyLimit    int                    `json:"dailyLimit" url:"dailyLimit"`
+	Images        *AssistantImagesStatus `json:"images" url:"images"`
+	MaxTextLength int                    `json:"maxTextLength" url:"maxTextLength"`
+	Remaining     int                    `json:"remaining" url:"remaining"`
+	ResetsAt      string                 `json:"resetsAt" url:"resetsAt"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -777,6 +979,13 @@ func (a *AssistantStatus) GetDailyLimit() int {
 		return 0
 	}
 	return a.DailyLimit
+}
+
+func (a *AssistantStatus) GetImages() *AssistantImagesStatus {
+	if a == nil {
+		return nil
+	}
+	return a.Images
 }
 
 func (a *AssistantStatus) GetMaxTextLength() int {
@@ -828,6 +1037,13 @@ func (a *AssistantStatus) SetAvailable(available bool) {
 func (a *AssistantStatus) SetDailyLimit(dailyLimit int) {
 	a.DailyLimit = dailyLimit
 	a.require(assistantStatusFieldDailyLimit)
+}
+
+// SetImages sets the Images field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantStatus) SetImages(images *AssistantImagesStatus) {
+	a.Images = images
+	a.require(assistantStatusFieldImages)
 }
 
 // SetMaxTextLength sets the MaxTextLength field and marks it as non-optional;
@@ -922,6 +1138,31 @@ func NewAssistantToneFromString(s string) (AssistantTone, error) {
 
 func (a AssistantTone) Ptr() *AssistantTone {
 	return &a
+}
+
+type ImageAspect string
+
+const (
+	ImageAspectSquare    ImageAspect = "square"
+	ImageAspectLandscape ImageAspect = "landscape"
+	ImageAspectPortrait  ImageAspect = "portrait"
+)
+
+func NewImageAspectFromString(s string) (ImageAspect, error) {
+	switch s {
+	case "square":
+		return ImageAspectSquare, nil
+	case "landscape":
+		return ImageAspectLandscape, nil
+	case "portrait":
+		return ImageAspectPortrait, nil
+	}
+	var t ImageAspect
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i ImageAspect) Ptr() *ImageAspect {
+	return &i
 }
 
 type Suggestion struct {

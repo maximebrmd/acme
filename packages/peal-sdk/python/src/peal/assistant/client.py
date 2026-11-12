@@ -6,6 +6,8 @@ from ..core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ..core.request_options import RequestOptions
 from ..types.assistant_action import AssistantAction
 from ..types.assistant_status import AssistantStatus
+from ..types.image_aspect import ImageAspect
+from ..types.media import Media
 from ..types.suggestion import Suggestion
 from .raw_client import AsyncRawAssistantClient, RawAssistantClient
 
@@ -30,7 +32,7 @@ class AssistantClient:
 
     def status(self, workspace_id: str, *, request_options: typing.Optional[RequestOptions] = None) -> AssistantStatus:
         """
-        Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+        Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (`images`), and how many requests the workspace has left today. Needs assistant:use.
 
         Parameters
         ----------
@@ -103,6 +105,51 @@ class AssistantClient:
         _response = self._raw_client.suggest(workspace_id, action=action, text=text, request_options=request_options)
         return _response.data
 
+    def generate_image(
+        self,
+        workspace_id: str,
+        *,
+        aspect: ImageAspect,
+        prompt: str,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Media:
+        """
+        Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the server has an image model.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        aspect : ImageAspect
+
+        prompt : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Media
+            Media
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.assistant.generate_image(
+            workspace_id="workspaceId",
+            aspect="square",
+            prompt="prompt",
+        )
+        """
+        _response = self._raw_client.generate_image(
+            workspace_id, aspect=aspect, prompt=prompt, request_options=request_options
+        )
+        return _response.data
+
 
 class AsyncAssistantClient:
     def __init__(self, *, client_wrapper: AsyncClientWrapper):
@@ -123,7 +170,7 @@ class AsyncAssistantClient:
         self, workspace_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AssistantStatus:
         """
-        Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+        Tells whether the server has a language model, so clients show the assistant or hide it, whether it has an image model (`images`), and how many requests the workspace has left today. Needs assistant:use.
 
         Parameters
         ----------
@@ -211,5 +258,58 @@ class AsyncAssistantClient:
         """
         _response = await self._raw_client.suggest(
             workspace_id, action=action, text=text, request_options=request_options
+        )
+        return _response.data
+
+    async def generate_image(
+        self,
+        workspace_id: str,
+        *,
+        aspect: ImageAspect,
+        prompt: str,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Media:
+        """
+        Asks the server's image model for one image from the prompt, in the aspect asked for, and answers with it as a new file of the media library, ready to attach, marked `aiGenerated` and without a description. The prompt is sent to the image provider the server's operator chose; neither it nor the image is logged. An image costs the status's `images.requestCost` of the workspace's daily requests, given back only when the provider could not be reached, and takes room in the plan's media storage, which must hold the largest image before anything is spent. The file is stored as the provider gave it. Peal sets no platform's AI label on its own: set it in the post's options (YouTube `containsSyntheticMedia`, TikTok `aiGenerated`, X `madeWithAi`). Needs assistant:use and media:upload. Off unless the server has an image model.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        aspect : ImageAspect
+
+        prompt : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Media
+            Media
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.assistant.generate_image(
+                workspace_id="workspaceId",
+                aspect="square",
+                prompt="prompt",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.generate_image(
+            workspace_id, aspect=aspect, prompt=prompt, request_options=request_options
         )
         return _response.data

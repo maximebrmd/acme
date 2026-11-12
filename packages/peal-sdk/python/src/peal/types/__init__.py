@@ -111,6 +111,7 @@ if typing.TYPE_CHECKING:
     from .assistant_failed_encoded import AssistantFailedEncoded
     from .assistant_failed_encoded_reason import AssistantFailedEncodedReason
     from .assistant_failed_encoded_tag import AssistantFailedEncodedTag
+    from .assistant_images_status import AssistantImagesStatus
     from .assistant_input_rejected_encoded import AssistantInputRejectedEncoded
     from .assistant_input_rejected_encoded_reason import AssistantInputRejectedEncodedReason
     from .assistant_input_rejected_encoded_tag import AssistantInputRejectedEncodedTag
@@ -317,6 +318,7 @@ if typing.TYPE_CHECKING:
     from .held_limit import HeldLimit
     from .hosted_connect_failure import HostedConnectFailure
     from .idempotency_key_reused_encoded import IdempotencyKeyReusedEncoded
+    from .image_aspect import ImageAspect
     from .import_cell_problem import ImportCellProblem
     from .import_cell_problem_problem import ImportCellProblemProblem
     from .import_column import ImportColumn
@@ -942,6 +944,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AssistantFailedEncoded": ".assistant_failed_encoded",
     "AssistantFailedEncodedReason": ".assistant_failed_encoded_reason",
     "AssistantFailedEncodedTag": ".assistant_failed_encoded_tag",
+    "AssistantImagesStatus": ".assistant_images_status",
     "AssistantInputRejectedEncoded": ".assistant_input_rejected_encoded",
     "AssistantInputRejectedEncodedReason": ".assistant_input_rejected_encoded_reason",
     "AssistantInputRejectedEncodedTag": ".assistant_input_rejected_encoded_tag",
@@ -1147,6 +1150,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "HeldLimit": ".held_limit",
     "HostedConnectFailure": ".hosted_connect_failure",
     "IdempotencyKeyReusedEncoded": ".idempotency_key_reused_encoded",
+    "ImageAspect": ".image_aspect",
     "ImportCellProblem": ".import_cell_problem",
     "ImportCellProblemProblem": ".import_cell_problem_problem",
     "ImportColumn": ".import_column",
@@ -1785,6 +1789,7 @@ __all__ = [
     "AssistantFailedEncoded",
     "AssistantFailedEncodedReason",
     "AssistantFailedEncodedTag",
+    "AssistantImagesStatus",
     "AssistantInputRejectedEncoded",
     "AssistantInputRejectedEncodedReason",
     "AssistantInputRejectedEncodedTag",
@@ -1990,6 +1995,7 @@ __all__ = [
     "HeldLimit",
     "HostedConnectFailure",
     "IdempotencyKeyReusedEncoded",
+    "ImageAspect",
     "ImportCellProblem",
     "ImportCellProblemProblem",
     "ImportColumn",

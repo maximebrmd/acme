@@ -16,6 +16,15 @@ public class StatusTest : BaseMockServerTest
             {
               "available": true,
               "dailyLimit": 1,
+              "images": {
+                "aspects": [
+                  "square",
+                  "square"
+                ],
+                "available": true,
+                "maxPromptLength": 1,
+                "requestCost": 1
+              },
               "maxTextLength": 1,
               "remaining": 1,
               "resetsAt": "resetsAt"
@@ -49,6 +58,14 @@ public class StatusTest : BaseMockServerTest
             {
               "available": true,
               "dailyLimit": 1,
+              "images": {
+                "aspects": [
+                  "square"
+                ],
+                "available": true,
+                "maxPromptLength": 1,
+                "requestCost": 1
+              },
               "maxTextLength": 1,
               "remaining": 1,
               "resetsAt": "resetsAt"

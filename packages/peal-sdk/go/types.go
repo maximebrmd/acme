@@ -10418,6 +10418,317 @@ func (m MastodonVisibility) Ptr() *MastodonVisibility {
 	return &m
 }
 
+var (
+	mediaFieldAiGenerated = big.NewInt(1 << 0)
+	mediaFieldAltText     = big.NewInt(1 << 1)
+	mediaFieldByteSize    = big.NewInt(1 << 2)
+	mediaFieldCodec       = big.NewInt(1 << 3)
+	mediaFieldContentType = big.NewInt(1 << 4)
+	mediaFieldCreatedAt   = big.NewInt(1 << 5)
+	mediaFieldDimensions  = big.NewInt(1 << 6)
+	mediaFieldDurationMs  = big.NewInt(1 << 7)
+	mediaFieldID          = big.NewInt(1 << 8)
+	mediaFieldKind        = big.NewInt(1 << 9)
+	mediaFieldPageCount   = big.NewInt(1 << 10)
+	mediaFieldStatus      = big.NewInt(1 << 11)
+	mediaFieldUpdatedAt   = big.NewInt(1 << 12)
+	mediaFieldURL         = big.NewInt(1 << 13)
+)
+
+// mediaNullableFields maps the wire names of Media's nullable fields (required or optional) to their field bits.
+var mediaNullableFields = map[string]*big.Int{
+	"altText":    mediaFieldAltText,
+	"codec":      mediaFieldCodec,
+	"dimensions": mediaFieldDimensions,
+	"durationMs": mediaFieldDurationMs,
+	"pageCount":  mediaFieldPageCount,
+	"url":        mediaFieldURL,
+}
+
+type Media struct {
+	AiGenerated bool             `json:"aiGenerated" url:"aiGenerated"`
+	AltText     *string          `json:"altText,omitempty" url:"altText,omitempty"`
+	ByteSize    int64            `json:"byteSize" url:"byteSize"`
+	Codec       *string          `json:"codec,omitempty" url:"codec,omitempty"`
+	ContentType MediaContentType `json:"contentType" url:"contentType"`
+	CreatedAt   string           `json:"createdAt" url:"createdAt"`
+	Dimensions  *MediaDimensions `json:"dimensions,omitempty" url:"dimensions,omitempty"`
+	DurationMs  *int             `json:"durationMs,omitempty" url:"durationMs,omitempty"`
+	ID          string           `json:"id" url:"id"`
+	Kind        MediaKind        `json:"kind" url:"kind"`
+	PageCount   *int             `json:"pageCount,omitempty" url:"pageCount,omitempty"`
+	Status      *MediaStatus     `json:"status" url:"status"`
+	UpdatedAt   string           `json:"updatedAt" url:"updatedAt"`
+	URL         *string          `json:"url,omitempty" url:"url,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *Media) GetAiGenerated() bool {
+	if m == nil {
+		return false
+	}
+	return m.AiGenerated
+}
+
+func (m *Media) GetAltText() *string {
+	if m == nil {
+		return nil
+	}
+	return m.AltText
+}
+
+func (m *Media) GetByteSize() int64 {
+	if m == nil {
+		return 0
+	}
+	return m.ByteSize
+}
+
+func (m *Media) GetCodec() *string {
+	if m == nil {
+		return nil
+	}
+	return m.Codec
+}
+
+func (m *Media) GetContentType() MediaContentType {
+	if m == nil {
+		return ""
+	}
+	return m.ContentType
+}
+
+func (m *Media) GetCreatedAt() string {
+	if m == nil {
+		return ""
+	}
+	return m.CreatedAt
+}
+
+func (m *Media) GetDimensions() *MediaDimensions {
+	if m == nil {
+		return nil
+	}
+	return m.Dimensions
+}
+
+func (m *Media) GetDurationMs() *int {
+	if m == nil {
+		return nil
+	}
+	return m.DurationMs
+}
+
+func (m *Media) GetID() string {
+	if m == nil {
+		return ""
+	}
+	return m.ID
+}
+
+func (m *Media) GetKind() MediaKind {
+	if m == nil {
+		return ""
+	}
+	return m.Kind
+}
+
+func (m *Media) GetPageCount() *int {
+	if m == nil {
+		return nil
+	}
+	return m.PageCount
+}
+
+func (m *Media) GetStatus() *MediaStatus {
+	if m == nil {
+		return nil
+	}
+	return m.Status
+}
+
+func (m *Media) GetUpdatedAt() string {
+	if m == nil {
+		return ""
+	}
+	return m.UpdatedAt
+}
+
+func (m *Media) GetURL() *string {
+	if m == nil {
+		return nil
+	}
+	return m.URL
+}
+
+func (m *Media) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *Media) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetAiGenerated sets the AiGenerated field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetAiGenerated(aiGenerated bool) {
+	m.AiGenerated = aiGenerated
+	m.require(mediaFieldAiGenerated)
+}
+
+// SetAltText sets the AltText field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetAltText(altText *string) {
+	m.AltText = altText
+	m.require(mediaFieldAltText)
+}
+
+// SetByteSize sets the ByteSize field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetByteSize(byteSize int64) {
+	m.ByteSize = byteSize
+	m.require(mediaFieldByteSize)
+}
+
+// SetCodec sets the Codec field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetCodec(codec *string) {
+	m.Codec = codec
+	m.require(mediaFieldCodec)
+}
+
+// SetContentType sets the ContentType field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetContentType(contentType MediaContentType) {
+	m.ContentType = contentType
+	m.require(mediaFieldContentType)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetCreatedAt(createdAt string) {
+	m.CreatedAt = createdAt
+	m.require(mediaFieldCreatedAt)
+}
+
+// SetDimensions sets the Dimensions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetDimensions(dimensions *MediaDimensions) {
+	m.Dimensions = dimensions
+	m.require(mediaFieldDimensions)
+}
+
+// SetDurationMs sets the DurationMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetDurationMs(durationMs *int) {
+	m.DurationMs = durationMs
+	m.require(mediaFieldDurationMs)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetID(id string) {
+	m.ID = id
+	m.require(mediaFieldID)
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetKind(kind MediaKind) {
+	m.Kind = kind
+	m.require(mediaFieldKind)
+}
+
+// SetPageCount sets the PageCount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetPageCount(pageCount *int) {
+	m.PageCount = pageCount
+	m.require(mediaFieldPageCount)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetStatus(status *MediaStatus) {
+	m.Status = status
+	m.require(mediaFieldStatus)
+}
+
+// SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetUpdatedAt(updatedAt string) {
+	m.UpdatedAt = updatedAt
+	m.require(mediaFieldUpdatedAt)
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetURL(url *string) {
+	m.URL = url
+	m.require(mediaFieldURL)
+}
+
+func (m *Media) UnmarshalJSON(data []byte) error {
+	type unmarshaler Media
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = Media(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, mediaNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		m.require(presentFields)
+	}
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *Media) MarshalJSON() ([]byte, error) {
+	type embed Media
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *Media) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
 type MediaContentType string
 
 const (
@@ -10453,6 +10764,108 @@ func NewMediaContentTypeFromString(s string) (MediaContentType, error) {
 
 func (m MediaContentType) Ptr() *MediaContentType {
 	return &m
+}
+
+var (
+	mediaDimensionsFieldHeight = big.NewInt(1 << 0)
+	mediaDimensionsFieldWidth  = big.NewInt(1 << 1)
+)
+
+type MediaDimensions struct {
+	Height int `json:"height" url:"height"`
+	Width  int `json:"width" url:"width"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MediaDimensions) GetHeight() int {
+	if m == nil {
+		return 0
+	}
+	return m.Height
+}
+
+func (m *MediaDimensions) GetWidth() int {
+	if m == nil {
+		return 0
+	}
+	return m.Width
+}
+
+func (m *MediaDimensions) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MediaDimensions) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetHeight sets the Height field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaDimensions) SetHeight(height int) {
+	m.Height = height
+	m.require(mediaDimensionsFieldHeight)
+}
+
+// SetWidth sets the Width field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaDimensions) SetWidth(width int) {
+	m.Width = width
+	m.require(mediaDimensionsFieldWidth)
+}
+
+func (m *MediaDimensions) UnmarshalJSON(data []byte) error {
+	type unmarshaler MediaDimensions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MediaDimensions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MediaDimensions) MarshalJSON() ([]byte, error) {
+	type embed MediaDimensions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MediaDimensions) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
 }
 
 var (
@@ -11182,6 +11595,486 @@ func (m *MediaSourceUnreachableEncoded) MarshalJSON() ([]byte, error) {
 }
 
 func (m *MediaSourceUnreachableEncoded) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+type MediaStatus struct {
+	Type     string
+	Pending  *MediaStatusPending
+	Uploaded *MediaStatusUploaded
+	Ready    *MediaStatusReady
+	Rejected *MediaStatusRejected
+
+	rawJSON json.RawMessage
+}
+
+func (m *MediaStatus) GetType() string {
+	if m == nil {
+		return ""
+	}
+	return m.Type
+}
+
+func (m *MediaStatus) GetPending() *MediaStatusPending {
+	if m == nil {
+		return nil
+	}
+	return m.Pending
+}
+
+func (m *MediaStatus) GetUploaded() *MediaStatusUploaded {
+	if m == nil {
+		return nil
+	}
+	return m.Uploaded
+}
+
+func (m *MediaStatus) GetReady() *MediaStatusReady {
+	if m == nil {
+		return nil
+	}
+	return m.Ready
+}
+
+func (m *MediaStatus) GetRejected() *MediaStatusRejected {
+	if m == nil {
+		return nil
+	}
+	return m.Rejected
+}
+
+func (m *MediaStatus) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"_tag"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	m.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant _tag", m)
+	}
+	switch unmarshaler.Type {
+	case "pending":
+		value := new(MediaStatusPending)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		m.Pending = value
+	case "uploaded":
+		value := new(MediaStatusUploaded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		m.Uploaded = value
+	case "ready":
+		value := new(MediaStatusReady)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		m.Ready = value
+	case "rejected":
+		value := new(MediaStatusRejected)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		m.Rejected = value
+	}
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m MediaStatus) MarshalJSON() ([]byte, error) {
+	if err := m.validate(); err != nil {
+		return nil, err
+	}
+	if m.Pending != nil {
+		return internal.MarshalJSONWithExtraProperty(m.Pending, "_tag", "pending")
+	}
+	if m.Uploaded != nil {
+		return internal.MarshalJSONWithExtraProperty(m.Uploaded, "_tag", "uploaded")
+	}
+	if m.Ready != nil {
+		return internal.MarshalJSONWithExtraProperty(m.Ready, "_tag", "ready")
+	}
+	if m.Rejected != nil {
+		return internal.MarshalJSONWithExtraProperty(m.Rejected, "_tag", "rejected")
+	}
+	if len(m.rawJSON) > 0 {
+		return m.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", m)
+}
+
+type MediaStatusVisitor interface {
+	VisitPending(*MediaStatusPending) error
+	VisitUploaded(*MediaStatusUploaded) error
+	VisitReady(*MediaStatusReady) error
+	VisitRejected(*MediaStatusRejected) error
+}
+
+func (m *MediaStatus) Accept(visitor MediaStatusVisitor) error {
+	if m.Pending != nil {
+		return visitor.VisitPending(m.Pending)
+	}
+	if m.Uploaded != nil {
+		return visitor.VisitUploaded(m.Uploaded)
+	}
+	if m.Ready != nil {
+		return visitor.VisitReady(m.Ready)
+	}
+	if m.Rejected != nil {
+		return visitor.VisitRejected(m.Rejected)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", m)
+}
+
+func (m *MediaStatus) validate() error {
+	if m == nil {
+		return fmt.Errorf("type %T is nil", m)
+	}
+	var fields []string
+	if m.Pending != nil {
+		fields = append(fields, "pending")
+	}
+	if m.Uploaded != nil {
+		fields = append(fields, "uploaded")
+	}
+	if m.Ready != nil {
+		fields = append(fields, "ready")
+	}
+	if m.Rejected != nil {
+		fields = append(fields, "rejected")
+	}
+	if len(fields) == 0 {
+		if m.Type != "" {
+			if len(m.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", m, m.Type)
+		}
+		return fmt.Errorf("type %T is empty", m)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", m, fields)
+	}
+	if m.Type != "" {
+		field := fields[0]
+		if m.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				m,
+				m.Type,
+				m,
+			)
+		}
+	}
+	return nil
+}
+
+type MediaStatusPending struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MediaStatusPending) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MediaStatusPending) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+func (m *MediaStatusPending) UnmarshalJSON(data []byte) error {
+	type unmarshaler MediaStatusPending
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MediaStatusPending(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MediaStatusPending) MarshalJSON() ([]byte, error) {
+	type embed MediaStatusPending
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MediaStatusPending) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+type MediaStatusReady struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MediaStatusReady) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MediaStatusReady) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+func (m *MediaStatusReady) UnmarshalJSON(data []byte) error {
+	type unmarshaler MediaStatusReady
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MediaStatusReady(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MediaStatusReady) MarshalJSON() ([]byte, error) {
+	type embed MediaStatusReady
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MediaStatusReady) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+var (
+	mediaStatusRejectedFieldReason = big.NewInt(1 << 0)
+)
+
+type MediaStatusRejected struct {
+	Reason RejectionReason `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MediaStatusRejected) GetReason() RejectionReason {
+	if m == nil {
+		return ""
+	}
+	return m.Reason
+}
+
+func (m *MediaStatusRejected) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MediaStatusRejected) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaStatusRejected) SetReason(reason RejectionReason) {
+	m.Reason = reason
+	m.require(mediaStatusRejectedFieldReason)
+}
+
+func (m *MediaStatusRejected) UnmarshalJSON(data []byte) error {
+	type unmarshaler MediaStatusRejected
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MediaStatusRejected(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MediaStatusRejected) MarshalJSON() ([]byte, error) {
+	type embed MediaStatusRejected
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MediaStatusRejected) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+var (
+	mediaStatusUploadedFieldProbe = big.NewInt(1 << 0)
+)
+
+type MediaStatusUploaded struct {
+	Probe ProbeState `json:"probe" url:"probe"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MediaStatusUploaded) GetProbe() ProbeState {
+	if m == nil {
+		return ""
+	}
+	return m.Probe
+}
+
+func (m *MediaStatusUploaded) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MediaStatusUploaded) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetProbe sets the Probe field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaStatusUploaded) SetProbe(probe ProbeState) {
+	m.Probe = probe
+	m.require(mediaStatusUploadedFieldProbe)
+}
+
+func (m *MediaStatusUploaded) UnmarshalJSON(data []byte) error {
+	type unmarshaler MediaStatusUploaded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MediaStatusUploaded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MediaStatusUploaded) MarshalJSON() ([]byte, error) {
+	type embed MediaStatusUploaded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MediaStatusUploaded) String() string {
 	if m == nil {
 		return "<nil>"
 	}
@@ -14709,6 +15602,43 @@ func (p PostStatusConflictEncodedTag) Ptr() *PostStatusConflictEncodedTag {
 	return &p
 }
 
+type ProbeState string
+
+const (
+	ProbeStatePending      ProbeState = "pending"
+	ProbeStateUnavailable  ProbeState = "unavailable"
+	ProbeStateUnreadable   ProbeState = "unreadable"
+	ProbeStateTimedOut     ProbeState = "timedOut"
+	ProbeStateTooLarge     ProbeState = "tooLarge"
+	ProbeStateToolFailed   ProbeState = "toolFailed"
+	ProbeStateTooManyPages ProbeState = "tooManyPages"
+)
+
+func NewProbeStateFromString(s string) (ProbeState, error) {
+	switch s {
+	case "pending":
+		return ProbeStatePending, nil
+	case "unavailable":
+		return ProbeStateUnavailable, nil
+	case "unreadable":
+		return ProbeStateUnreadable, nil
+	case "timedOut":
+		return ProbeStateTimedOut, nil
+	case "tooLarge":
+		return ProbeStateTooLarge, nil
+	case "toolFailed":
+		return ProbeStateToolFailed, nil
+	case "tooManyPages":
+		return ProbeStateTooManyPages, nil
+	}
+	var t ProbeState
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p ProbeState) Ptr() *ProbeState {
+	return &p
+}
+
 var (
 	queueNameTakenEncodedFieldTag       = big.NewInt(1 << 0)
 	queueNameTakenEncodedFieldCode      = big.NewInt(1 << 1)
@@ -15539,6 +16469,28 @@ func (r *RecyclingVariantsInvalidEncodedVariantsItem) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", r)
+}
+
+type RejectionReason string
+
+const (
+	RejectionReasonSizeMismatch RejectionReason = "sizeMismatch"
+	RejectionReasonTypeMismatch RejectionReason = "typeMismatch"
+)
+
+func NewRejectionReasonFromString(s string) (RejectionReason, error) {
+	switch s {
+	case "sizeMismatch":
+		return RejectionReasonSizeMismatch, nil
+	case "typeMismatch":
+		return RejectionReasonTypeMismatch, nil
+	}
+	var t RejectionReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r RejectionReason) Ptr() *RejectionReason {
+	return &r
 }
 
 var (
