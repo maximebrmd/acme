@@ -725,8 +725,9 @@ full backups with what they need: point-in-time recovery over the last three
 weeks at least, four just before a Sunday's backup expires the oldest, with
 at most 5 minutes lost. Backups are compressed and encrypted with the backup
 passphrase before they leave the server. Each one that finishes reports to the
-collector, and Grafana alerts when none has for 30 hours, and when the disk is
-85% full, as a stuck archive would make it.
+collector, and each one that fails too: Grafana alerts at once when the last
+backup failed (`peal-backup-failed`), when none has finished for 30 hours,
+and when the disk is 85% full, as a stuck archive would make it.
 
 pgBackRest rather than WAL-G: it comes from the PostgreSQL project's signed
 apt repository, which the official Postgres image already trusts, at an exact
@@ -747,7 +748,10 @@ secrets are on the server only: [restoring onto a new server](runbooks/restore-d
 says what that costs.
 
 [`runbooks/restore-database.md`](runbooks/restore-database.md) restores the
-database, to its latest state or to a time.
+database, to its latest state or to a time. When a server's database is
+started over rather than restored, pgBackRest refuses its backups until the
+old ones are deleted:
+[Starting a server's database over](runbooks/restore-database.md#starting-a-servers-database-over).
 
 ## Disks
 

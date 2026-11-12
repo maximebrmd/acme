@@ -235,6 +235,78 @@ cover: single posts, files or channels deleted since the restore point come
 back with the restore, as only whole accounts and workspaces are recorded;
 and a restore to a point more than 42 days back, which no backup allows.
 
+## Starting a server's database over
+
+pgBackRest ties a server's backups to the database cluster they were taken
+from. When that cluster is replaced by a new one, as when a server's
+Postgres volume is removed and Postgres initialises an empty database (the
+sandbox reset, or the second pass of [Practise](#practise) left without its
+restore), it refuses every backup and every write-ahead log segment:
+
+```text
+ERROR: [028]: backup and archive info files exist but do not match the database
+```
+
+Grafana's `peal-backup-failed` alert fires at the first refused backup,
+and `peal-backup-stale` 30 hours after the last good one. Meanwhile the
+write-ahead log stays on the server's disk, and nothing new can be
+restored.
+
+Start the backups over **only when the old backups are no longer wanted**:
+it deletes every backup and archived segment of that server's stanza from
+its bucket, for good, so the server can no longer be restored to any time
+before it. If the old database may still be needed, restore it instead
+([On the same server](#on-the-same-server)), which keeps the backups. On
+production, that is the owner's decision, never a fix for an alert.
+
+1. **Check you are on the server you mean**, and that the error is this one,
+   in the last backup's journal and in Postgres's archiver:
+
+   ```sh
+   hostname
+   sudo journalctl --unit 'peal-backup@*' --since -2d | grep -F '[028]'
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     'SELECT failed_count, last_failed_wal, last_failed_time, last_archived_time FROM pg_stat_archiver'
+   ```
+
+2. **Stop pgBackRest**, so no backup or archive runs while the stanza is
+   deleted. Postgres keeps running; each segment it tries to archive in the
+   meantime is refused and kept, then archived after step 4:
+
+   ```sh
+   sudo peal-compose exec --user postgres postgres pgbackrest stop
+   ```
+
+3. **Delete the stanza** from the bucket, with the old cluster's backups and
+   archive. `--force` because Postgres is running:
+
+   ```sh
+   sudo peal-compose exec --user postgres postgres pgbackrest stanza-delete --force
+   ```
+
+4. **Start pgBackRest again**, and take a full backup, which creates the
+   stanza for the new cluster and reports to Grafana, which clears the
+   alerts:
+
+   ```sh
+   sudo peal-compose exec --user postgres postgres pgbackrest start
+   sudo systemctl start peal-backup@full
+   ```
+
+5. **Check the backup and the archive.** `info` lists one full backup;
+   `check` archives a segment and waits for it; `last_archived_time` is
+   recent and `last_failed_time` older than it:
+
+   ```sh
+   sudo peal-compose exec --user postgres postgres pgbackrest info
+   sudo peal-compose exec --user postgres postgres pgbackrest check
+   sudo peal-compose exec postgres psql --username peal --dbname peal --command \
+     'SELECT last_archived_time, last_failed_time FROM pg_stat_archiver'
+   ```
+
+If the container restarts between steps 2 and 4, its `/tmp` goes with
+pgBackRest's stop file: run step 2 again before step 3.
+
 ## Practise
 
 Restore into the sandbox from its own backups now and then, with the steps
