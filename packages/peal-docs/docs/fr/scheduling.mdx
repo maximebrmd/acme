@@ -25,10 +25,10 @@ Un espace de travail peut demander que les publications attendent une [approbati
 
 Sur la carte d’un espace de travail, dans **Espaces de travail**, choisissez **Nouvelle publication**.
 
-1. Sous **Canaux**, cochez les comptes où part la publication. La liste reprend les [canaux](/channels) de l’espace de travail.
-2. Écrivez dans **Texte pour tous les canaux**. Les mentions, les hashtags et les liens ressortent pendant la saisie, et sont gardés en texte brut.
+1. Sous **Canaux**, cochez les comptes où part la publication. La liste reprend les [canaux](/channels) de l’espace de travail. À partir de trois canaux, **Tout sélectionner** coche chaque canal qui publie (pas un canal désactivé ou à reconnecter), et **Effacer** n’en coche aucun.
+2. Écrivez dans **Texte pour tous les canaux**. Les mentions, les hashtags et les liens ressortent pendant la saisie, et sont gardés en texte brut. Chaque ligne prend le sens de sa première lettre : un texte en arabe ou en hébreu se lit de droite à gauche. Le bouton en forme de sourire, à côté de l’assistant, ouvre un sélecteur d’emoji dans votre langue : l’emoji s’insère là où était votre curseur, dans le dernier texte où vous avez écrit (le texte pour tous les canaux, le texte propre à un canal ou une partie), et l’annulation le retire. Les données du sélecteur viennent de Peal lui-même, jamais d’un autre site.
 3. Pour dire autre chose sur un canal, ouvrez son onglet et écrivez-y son propre texte. Laissé vide, un canal reprend le texte de tous les canaux.
-4. Sous **Images et vidéos**, ajoutez des images ou des vidéos de la médiathèque, ou importez-les là : voyez [Images et vidéos](/media).
+4. Sous **Images et vidéos**, ajoutez des images ou des vidéos de la médiathèque, ou importez-les là : voyez [Images et vidéos](/media). Une image ou une vidéo collée dans un texte est importée et jointe comme si elle était déposée là (à sa partie, si elle est collée dans une partie), avec les mêmes limites ; un texte collé reste du texte.
 5. Quand la plateforme d’un canal en demande plus, comme le titre d’une vidéo YouTube, remplissez ses champs sous **Options des plateformes** : voyez [Options des plateformes](#options).
 6. Choisissez **Enregistrer le brouillon** pour garder la publication sans heure. Elle rejoint les **Brouillons** de l’espace de travail, que le calendrier n’affiche pas.
 
@@ -227,6 +227,10 @@ L’heure est celle de l’horloge dans ce fuseau, changements d’heure compris
 
 Une heure passée depuis moins d’une minute compte comme maintenant. Une heure plus ancienne est refusée : choisissez une heure à venir.
 
+### Publier maintenant [#publish-now]
+
+À côté de **Programmer** sur un brouillon, et de **Déplacer à cette heure** sur une publication programmée, **Publier maintenant** envoie la publication tout de suite. Le bouton demande une confirmation, en nommant les canaux, car la publication devient publique et ne peut pas être reprise depuis l’éditeur. Il programme la publication au moment où vous confirmez, dans le fuseau horaire de votre navigateur, comme **Programmer** : les mêmes vérifications s’appliquent. Il n’est pas proposé là où vos publications attendent une approbation : une approbation après l’heure de la publication ne publie rien.
+
 ## Files d’attente [#queues]
 
 Une file d’attente est un emploi du temps hebdomadaire de créneaux dans un fuseau horaire, par exemple chaque jour de semaine à 09:30 et à 17:00 en Europe/Paris, pour certains canaux et au plus un [groupe de canaux](/fr/organise#sets). Au lieu de choisir une heure, ajoutez une publication à une file : elle prend le prochain créneau libre de la file. **Réglages**, **Files d’attente** liste les files de l’espace de travail avec leurs prochains créneaux, et permet à ceux qui peuvent modifier les [groupes de canaux](/fr/organise#roles) d’en ajouter, d’en modifier, d’en supprimer ou d’en faire la file par défaut : propriétaires, administrateurs, éditeurs et contributeurs (`post:update` par l’API). Ajouter une publication à une file la programme : il faut donc ce que demande la programmation de cette publication, et celle d’un contributeur attend une approbation là où l’espace de travail en demande, et elle est refusée sinon. Un espace de travail garde jusqu’à 20 files, chacune d’au plus 100 créneaux.
@@ -276,6 +280,10 @@ Un espace de travail peut suivre un **flux web** (RSS 2.0, Atom 1.0 ou JSON Feed
 Sur la carte d’un espace de travail, **Brouillons** liste les publications qui n’ont pas encore d’heure, les plus récentes d’abord, 20 à la fois : chacune montre le début de son texte, ses canaux et ses médias, et s’ouvre dans l’éditeur.
 
 Pour abandonner un brouillon, choisissez **Supprimer le brouillon** dans l’éditeur et confirmez. Il est supprimé, et ses images et vidéos restent dans la médiathèque. Les propriétaires, administrateurs et éditeurs suppriment tout brouillon ; un contributeur supprime ceux qu’il a écrits.
+
+## Toutes les publications [#all-posts]
+
+Sur la carte d’un espace de travail, **Toutes les publications** liste ses publications quel que soit leur état, les plus récentes d’abord, avec **Afficher plus** pour la page suivante : chacune montre le début de son texte, son heure dans votre fuseau horaire, son état et, une fois terminée, son résultat, ses canaux et ses étiquettes, et s’ouvre sur sa page. Filtrez par état, par résultat (pour les publications terminées), par canal et par étiquette, et triez par création ou par heure ; triée par heure, la liste ne contient que les publications qui en ont une. Les filtres sont dans l’adresse de la page : un lien montre la même liste.
 
 ## La déplacer, la repasser en brouillon ou l’annuler [#move-cancel]
 
