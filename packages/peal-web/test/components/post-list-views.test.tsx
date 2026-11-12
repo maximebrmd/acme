@@ -192,6 +192,16 @@ describe(PostListFiltersView, () => {
     ).resolves.toContain("Every outcome");
   });
 
+  it("says when it filters by a channel the workspace no longer has", async () => {
+    const html = await renderFilters({
+      ...noFilters,
+      channelId: "00000000-0000-7000-8000-00000000c0ff",
+    });
+
+    expect(html).toContain("A channel no longer connected");
+    expect(html).not.toContain("Every channel");
+  });
+
   it("says that ordering by time leaves out the posts without one", async () => {
     await expect(renderFilters(noFilters)).resolves.not.toContain(
       "only the posts that have one"

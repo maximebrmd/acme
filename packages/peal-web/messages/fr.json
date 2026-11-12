@@ -1373,7 +1373,9 @@
       "noTime": "Pas encore d’heure",
       "channels": "Canaux",
       "noChannel": "Aucun canal pour l’instant",
-      "tags": "Étiquettes"
+      "tags": "Étiquettes",
+      "unknownChannel": "Un canal qui n’est plus connecté",
+      "unknownTag": "Une étiquette supprimée depuis"
     },
     "Preview": {
       "title": "Aperçus",

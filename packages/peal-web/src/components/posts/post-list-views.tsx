@@ -214,6 +214,24 @@ export const PostListFiltersView = ({
   const channel = channels.find(({ id }) => id === filters.channelId);
   const tag = tags.find(({ id }) => id === filters.tagId);
 
+  // A filter on a channel or a tag the workspace no longer has, as an old
+  // link may hold, is said, never shown as "every".
+  const channelShown = () => {
+    if (filters.channelId === undefined) {
+      return t("anyChannel");
+    }
+
+    return channel === undefined ? t("unknownChannel") : channelName(channel);
+  };
+
+  const tagShown = () => {
+    if (filters.tagId === undefined) {
+      return t("anyTag");
+    }
+
+    return tag === undefined ? t("unknownTag") : tag.name;
+  };
+
   const handleChange = (name: FilterName, value: string | undefined) => {
     onChange(withFilter(filters, name, value));
   };
@@ -260,13 +278,11 @@ export const PostListFiltersView = ({
             ))}
           </FilterSelect>
         ) : null}
-        {channels.length === 0 ? null : (
+        {channels.length === 0 && filters.channelId === undefined ? null : (
           <FilterSelect
             label={t("channel")}
             name="channel"
-            shown={
-              channel === undefined ? t("anyChannel") : channelName(channel)
-            }
+            shown={channelShown()}
             value={filters.channelId}
             onChange={handleChange}
           >
@@ -278,11 +294,11 @@ export const PostListFiltersView = ({
             ))}
           </FilterSelect>
         )}
-        {tags.length === 0 ? null : (
+        {tags.length === 0 && filters.tagId === undefined ? null : (
           <FilterSelect
             label={t("tag")}
             name="tag"
-            shown={tag === undefined ? t("anyTag") : tag.name}
+            shown={tagShown()}
             value={filters.tagId}
             onChange={handleChange}
           >

@@ -1373,7 +1373,9 @@
       "noTime": "No time yet",
       "channels": "Channels",
       "noChannel": "No channel yet",
-      "tags": "Tags"
+      "tags": "Tags",
+      "unknownChannel": "A channel no longer connected",
+      "unknownTag": "A tag since deleted"
     },
     "Preview": {
       "title": "Previews",
