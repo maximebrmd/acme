@@ -94,6 +94,20 @@ $peal = new PealClient(token: getenv('PEAL_API_KEY'));
 $credential = $peal->credential->get();
 ```
 
+```java Java
+// Maven: com.standardwebhooks:standardwebhooks:1.2.0
+import com.standardwebhooks.Webhook;
+import com.standardwebhooks.exceptions.WebhookVerificationException;
+
+Webhook webhook = new Webhook(System.getenv("PEAL_WEBHOOK_SECRET"));
+
+// `rawBody` is the request body as received, as a string, and `headers`
+// the request's headers, a Map<String, List<String>> (names in any case).
+// Throws WebhookVerificationException when the signature or the timestamp
+// is wrong.
+webhook.verify(rawBody, headers);
+```
+
 ```csharp .NET
 using Peal;
 
@@ -221,7 +235,7 @@ The SDKs call the API: they do not receive [webhooks](/webhooks). Verify each de
 - the libraries refuse a timestamp more than five minutes from the present;
 - for 24 hours after a rotation, `webhook-signature` holds two signatures, one per secret: the libraries accept either.
 
-Verify the body as it arrived, byte for byte, before parsing it. The samples for JavaScript, Python, Go, Ruby and PHP are on [the webhooks page](/webhooks#verify). For .NET and Rust:
+Verify the body as it arrived, byte for byte, before parsing it. The samples for JavaScript, Python, Go, Ruby and PHP are on [the webhooks page](/webhooks#verify). For Java, .NET and Rust:
 
 <CodeGroup>
 
@@ -258,5 +272,3 @@ webhook.verify(&raw_body, &headers)?;
 ```
 
 </CodeGroup>
-
-The Standard Webhooks library for Java is not on Maven Central: in Java, check the signature as [Verify a delivery](/webhooks#verify) shows, with `javax.crypto.Mac` and `MessageDigest.isEqual`.
