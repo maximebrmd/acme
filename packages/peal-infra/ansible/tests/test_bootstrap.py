@@ -29,9 +29,15 @@ def _leaving(bootstrap_user: str) -> list[str]:
     return ansible_render(role_file("ssh", "vars")["ssh_image_users"], bootstrap_user=bootstrap_user, admin_user="ops")
 
 
-@pytest.mark.parametrize("group", GROUPS)
+@pytest.mark.parametrize("group", ["sandbox", "uptime"])
 def test_images_log_in_as_root_unless_the_inventory_says(group: str) -> None:
     assert settings(group)["bootstrap_user"] == "root"
+
+
+def test_production_s_image_lets_in_the_installer_s_account() -> None:
+    """Its sudo asks its password, which the bootstrap reads from the
+    keychain (scripts/become-keychain.py)."""
+    assert settings("production")["bootstrap_user"] == "install"
 
 
 def test_the_bootstrap_logs_in_as_the_image_s_account() -> None:
@@ -44,7 +50,7 @@ def test_root_needs_no_sudo() -> None:
     assert ansible_render(BOOTSTRAP["become"], ansible_user="root") is False
 
 
-@pytest.mark.parametrize("user", ["ubuntu", "debian", "admin"])
+@pytest.mark.parametrize("user", ["ubuntu", "debian", "admin", "install"])
 def test_an_image_s_own_account_uses_sudo(user: str) -> None:
     assert ansible_render(BOOTSTRAP["become"], ansible_user=user) is True
 
@@ -58,7 +64,7 @@ def test_the_admin_user_stays() -> None:
     assert _leaving("ops") == []
 
 
-@pytest.mark.parametrize("user", ["ubuntu", "debian"])
+@pytest.mark.parametrize("user", ["ubuntu", "debian", "install"])
 def test_the_image_s_own_account_leaves(user: str) -> None:
     assert _leaving(user) == [user]
 
@@ -125,6 +131,8 @@ def test_the_account_ansible_is_connected_as_is_never_removed() -> None:
     """`site.yml -e ansible_user=ubuntu` would otherwise delete the account
     the run is logged in as, in the middle of the play."""
     assert _refused("ubuntu", "ubuntu") is True
+    assert _refused("install", "install") is True
+    assert _refused("ops", "install") is False
     assert _refused("ops", "ubuntu") is False
     assert _refused("root", "root") is False
     assert SSH_NAMES.index("Refuse to remove the account Ansible is connected as") < SSH_NAMES.index(

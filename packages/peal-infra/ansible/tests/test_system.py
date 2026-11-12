@@ -156,3 +156,10 @@ def test_chrony_runs_from_boot_once_installed() -> None:
 
     assert clock["ansible.builtin.systemd_service"] == {"name": "chrony.service", "enabled": True, "state": "started"}
     assert clock["when"] == "not (ansible_check_mode and system_base_packages is changed)"
+
+
+def test_production_reuses_the_installer_s_swap_file() -> None:
+    production = settings("production")
+
+    assert production["swap_file"] == "/swap.img"
+    assert production["swap_size_mb"] == 8192

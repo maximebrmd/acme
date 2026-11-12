@@ -1,19 +1,30 @@
 ---
 # Production, on peal.social. The host names are the official ones; the
-# other values are placeholders until the Cloudflare account and the server
-# exist.
+# Cloudflare values (the Access team and audience tags, the buckets and
+# their endpoints) are placeholders until the environment's Pulumi stack
+# exists and its output is committed. The server's address stays off Git,
+# in host_vars/peal-production/local.yml (inventory/hosts.yml).
 server_hostname: peal-production
 peal_environment: production
 
 # Where the server is hosted: the provider, a European company, in lowercase
 # as its own site writes it, and the city of its data centre, in lowercase
 # English (paris, not the provider's zone, which differs between providers
-# for one city). No provider is chosen yet: these are placeholders, which
-# the preflight refuses. Nothing else reads them but the uptime server's
-# check that it shares neither (group_vars/uptime). README.md, "Choosing a
-# provider and a size", says what the stack needs of any provider.
-hosting_provider: REPLACE-WITH-THE-PROVIDER-OF-PRODUCTION
-hosting_location: REPLACE-WITH-THE-CITY-OF-PRODUCTION
+# for one city). Production is a dedicated server in Paris. Nothing else
+# reads them but the uptime server's check that it shares neither
+# (group_vars/uptime). README.md, "Choosing a provider and a size", says
+# what the stack needs of any provider.
+hosting_provider: scaleway
+hosting_location: paris
+
+# The account the provider's installer made, whose sudo asks its password
+# (README.md, "The image's account"): bootstrap.yml logs in as it, and the
+# ssh role removes it once ops works.
+bootstrap_user: install
+
+# The installer's swap file, 8 GiB and in fstab already, reused as it is.
+swap_file: /swap.img
+swap_size_mb: 8192
 
 # Units the server's image runs that nothing here needs, which the system
 # role stops and masks (its defaults say why masked, not removed):
