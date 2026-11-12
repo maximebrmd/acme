@@ -28,6 +28,7 @@ export interface PostToValidate {
     content: Peal.PostContent;
     defaultSignatures?: boolean;
     options?: Peal.ChannelOptions[];
+    shortenLinks?: boolean;
     signatureId?: string;
     when?: Peal.PostTiming;
 }

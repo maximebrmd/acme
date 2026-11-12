@@ -15,6 +15,9 @@ pub struct PostDraft {
     pub default_signatures: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub options: Option<Vec<ChannelOptions>>,
+    #[serde(rename = "shortenLinks")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shorten_links: Option<bool>,
     #[serde(rename = "signatureId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature_id: Option<String>,
@@ -37,6 +40,7 @@ pub struct PostDraftBuilder {
     content: Option<PostContent>,
     default_signatures: Option<bool>,
     options: Option<Vec<ChannelOptions>>,
+    shorten_links: Option<bool>,
     signature_id: Option<String>,
     tag_ids: Option<Vec<String>>,
 }
@@ -67,6 +71,11 @@ impl PostDraftBuilder {
         self
     }
 
+    pub fn shorten_links(mut self, value: bool) -> Self {
+        self.shorten_links = Some(value);
+        self
+    }
+
     pub fn signature_id(mut self, value: impl Into<String>) -> Self {
         self.signature_id = Some(value.into());
         self
@@ -92,6 +101,7 @@ impl PostDraftBuilder {
                 .ok_or_else(|| BuildError::missing_field("content"))?,
             default_signatures: self.default_signatures,
             options: self.options,
+            shorten_links: self.shorten_links,
             signature_id: self.signature_id,
             tag_ids: self.tag_ids,
         })

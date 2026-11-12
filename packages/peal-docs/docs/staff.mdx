@@ -72,6 +72,10 @@ On a server that bills, anyone cancels a contract or withdraws from one without 
 
 Both ask why, and are in the audit log with the request's id and the workspace's, never the name or the address the request holds. Requests are kept 5 years, as the contract's orders are.
 
+## Short links [#short-links]
+
+**Short links** finds a [short link](/scheduling#short-links) by its code, or by its whole address pasted as reported: where it leads, the workspace and post that hold it, and whether it is on. **Turn it off**, with a reason, when a link is reported as leading somewhere it should not: whoever follows it then gets `410 Gone` and nothing is counted; the post on the platform keeps its text, and **Turn it back on** makes it redirect again. Each is recorded in the audit log, with the reason, the link's workspace and its code, before it is done. A workspace's page lists its short links, newest first, and **Turn them all off** stops every one still on at once, with a reason, recorded once in the audit log. A short link also answers only while the part of the post that holds it is live on its platform (`404` before it went out), and `410` once staff banned every account that owns its workspace. Through the API, the console's own endpoints are `GET /api/admin/short-links/{code}`, and `POST …/disable` and `…/enable` with a `reason`; for a workspace, `GET /api/admin/workspaces/{workspaceId}/short-links` and `POST …/short-links/disable`.
+
 ## The audit log [#audit-log]
 
 Each action is recorded before it is carried out, so nothing staff do goes unrecorded: who did it, what, to which account, why, and when, with a ban's end. An action that then failed still shows what staff asked for. The log keeps ids, never what anyone wrote. It keeps each entry 12 months, and a ban, or the lifting of one, 5 years (the limitation period for a claim about it, art. 2224 of the French Code civil), or 12 months past the end of a ban that lasted longer; a ban until lifted is kept as long as it holds, and ends when it is lifted or the account is closed: a daily job (`staff.audit-retention`, at 03:41 UTC) deletes older entries.

@@ -55,6 +55,12 @@ import type { Placement } from "#components/posts/queue-choice.tsx";
 import { instantOfChoice } from "#components/posts/schedule-fields.tsx";
 import type { ScheduleChoice } from "#components/posts/schedule-fields.tsx";
 import { SchedulePlacementFields } from "#components/posts/schedule-placement.tsx";
+import {
+  savableWith,
+  ShortenLinks,
+  textsOf,
+  useShortLinking,
+} from "#components/posts/shorten-links.tsx";
 import { SignatureMenu } from "#components/posts/signature-menu.tsx";
 import { SignaturePause } from "#components/posts/signature-pause.tsx";
 import { TargetOptionsSection } from "#components/posts/target-options-panel.tsx";
@@ -324,6 +330,7 @@ export const Composer = ({
   const busy = isPending ? action : null;
   const locked = !canWrite || busy !== null;
   const signing = useDefaultSigning(workspaceId, postId === undefined);
+  const linking = useShortLinking(workspaceId, post);
   // Whether scheduling stopped for the person to read the signed text.
   const [signedPause, setSignedPause] = useState(false);
 
@@ -366,7 +373,9 @@ export const Composer = ({
     aiLabels.labelled
   );
 
-  const optionsTaken = optionProblems.length === 0;
+  // Nothing is saved before the server says whether it shortens links, so
+  // a new post takes the workspace's default.
+  const optionsTaken = savableWith(linking, optionProblems.length === 0);
 
   const optionsOfChannel = (channelId: string) =>
     options.find((chosen) => chosen.channelId === channelId)?.options;
@@ -502,6 +511,7 @@ export const Composer = ({
       options,
       tagIds,
       ...signing.payload,
+      ...linking.payload,
     });
 
     if (Option.isSome(saved)) {
@@ -529,6 +539,7 @@ export const Composer = ({
       options,
       tagIds,
       ...signing.payload,
+      ...linking.payload,
     });
 
     const [first, ...rest] = channelIds;
@@ -811,6 +822,12 @@ export const Composer = ({
               texts={[text, ...content.overrides.map((own) => own.text)]}
             />
             <DefaultSignatures disabled={locked} signing={signing} />
+            <ShortenLinks
+              disabled={locked}
+              linking={linking}
+              platforms={selected.map(({ platform }) => platform)}
+              texts={textsOf(content)}
+            />
           </fieldset>
           <section
             aria-labelledby="counters-title"

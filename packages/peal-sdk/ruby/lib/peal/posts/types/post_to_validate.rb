@@ -18,6 +18,8 @@ module Peal
 
         field :options, -> { Internal::Types::Array[Peal::Types::ChannelOptions] }, optional: true, nullable: false
 
+        field :shorten_links, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "shortenLinks"
+
         field :signature_id, -> { String }, optional: true, nullable: false, api_name: "signatureId"
 
         field :when_, -> { Peal::Types::PostTiming }, optional: true, nullable: false, api_name: "when"

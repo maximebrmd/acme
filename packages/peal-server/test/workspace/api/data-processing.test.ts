@@ -34,6 +34,7 @@ import { legalRetention } from "#legal/domain/legal-retention.ts";
 import { downloadLifetime } from "#media/infrastructure/drizzle-media-records.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
 import { visitorNameRetention } from "#review/domain/review-retention.ts";
+import { clickRetentionDays } from "#shortlinks/domain/click-retention.ts";
 import { auditRetention } from "#staff/domain/audit-retention.ts";
 import { deliveryRetention } from "#webhooks/domain/delivery-policy.ts";
 import { erasureLedgerRetention } from "#workspace/domain/erasure-ledger.ts";
@@ -142,6 +143,13 @@ describe("the data processing registry", () => {
       "Its daily counts: 400 days from each day"
     );
     expect(kept("partners")).not.toContain("its daily counts: until");
+  });
+
+  it("keeps the short links' clicks as long as their purge does", () => {
+    expect(retentionPeriods.shortLinkClicks.days).toBe(clickRetentionDays);
+    expect(kept("shortLinks")).toContain("400 days from each day");
+    // Counts only: nothing of the visitors.
+    expect(categoryOf("shortLinks")?.data.en).toContain("Counts only");
   });
 
   it("keeps a webhook delivery's log as long as its purge does", () => {

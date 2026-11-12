@@ -20,6 +20,7 @@ change crosses several:
 | `engagement`         | [`src/engagement/AGENTS.md`](src/engagement/AGENTS.md)       |
 | `activity`           | [`src/activity/AGENTS.md`](src/activity/AGENTS.md)           |
 | `ads`                | [`src/ads/AGENTS.md`](src/ads/AGENTS.md)                     |
+| `shortlinks`         | [`src/shortlinks/AGENTS.md`](src/shortlinks/AGENTS.md)       |
 | the MCP endpoint     | [`src/app/mcp/AGENTS.md`](src/app/mcp/AGENTS.md)             |
 
 The shared kernel's rules are below.
@@ -48,6 +49,7 @@ them:
 | `legal`         | what French law has a host keep, and the legal requests that read it                                                                                            |
 | `review`        | approval policies, requests and decisions, review links, comments                                                                                               |
 | `ads`           | ad accounts, what they may spend, what is read of them, boosts                                                                                                  |
+| `shortlinks`    | the short addresses a post's links go out as, their daily click counts, each workspace's default                                                                |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -186,6 +188,11 @@ and no socket, for tests.
   CORS for any origin, an ETag) and `/llms.txt`. Implement a discovery
   document only where a specification gives its path and format, and read
   the specification first.
+- `GET /api/l/:code` (`src/app/short-links/`) is a short link's redirect,
+  outside the contract and without credentials: a 302 that is never
+  cached, 404 and 410 in the general error envelope, 300 a minute per
+  address in the process (429). A short domain's proxy rewrites `/<code>`
+  to it, so the route rule holds.
 - `GET /api/health` is liveness: keep it free of the database.
   `GET /api/ready` is readiness: `SELECT 1` within 2 seconds, otherwise
   `DatabaseUnavailable` (503).
@@ -278,7 +285,7 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`, `engagement`, `ads`; the
+  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`, `engagement`, `ads`, `shortlinks`; the
   workspace context's are Better Auth's, in `auth`). Effect creates its
   `cluster_*` tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then

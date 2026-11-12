@@ -143,6 +143,7 @@ public class SendTest : BaseMockServerTest
                 "name": "name",
                 "via": "web"
               },
+              "shortenLinks": true,
               "status": "draft",
               "tagIds": [
                 "tagIds",
@@ -313,6 +314,7 @@ public class SendTest : BaseMockServerTest
                 },
                 DefaultSignatures = null,
                 Options = null,
+                ShortenLinks = null,
                 SignatureId = null,
                 TagIds = null,
                 When = new PostTiming(new PostTiming.Now(new PostTimingNow { TimeZone = null })),
@@ -406,6 +408,7 @@ public class SendTest : BaseMockServerTest
                 "name": "name",
                 "via": "web"
               },
+              "shortenLinks": true,
               "status": "draft",
               "tagIds": [
                 "tagIds"

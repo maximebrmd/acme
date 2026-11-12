@@ -168,6 +168,7 @@ export const postView = ({
     schedule: scheduleOf(post.status),
     scheduledBy: Option.getOrNull(post.attribution.scheduledBy),
     scheduledVia: originOrNull(post.attribution.scheduledVia),
+    shortenLinks: post.shortenLinks,
     status: post.status._tag,
     tagIds: [...post.tagIds],
     targets: targets.map((target) =>

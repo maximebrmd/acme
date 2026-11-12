@@ -27,6 +27,7 @@ const draftFor = (...channelIds: readonly string[]): Post => ({
   schedule: null,
   scheduledBy: null,
   scheduledVia: null,
+  shortenLinks: false,
   status: "draft",
   tagIds: [],
   targets: channelIds.map((channelId, index) => ({

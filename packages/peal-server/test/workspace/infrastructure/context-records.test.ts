@@ -21,6 +21,7 @@ import { PostsPublishing } from "#publishing/application/posts-publishing.ts";
 import { ReviewRecords } from "#review/application/review-records.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { ShortLinkRecords } from "#shortlinks/application/short-link-records.ts";
 import { StaffRecords } from "#staff/application/staff-records.ts";
 import { PlainPseudonymsTest } from "#test/billing/support.ts";
 import { WebhookRecords } from "#webhooks/application/webhook-records.ts";
@@ -95,6 +96,7 @@ const RecordsTest = Layer.unwrap(
             eraseWorkspace: () => Effect.void,
           }),
           Layer.mock(ActivityRecords, { eraseWorkspace: () => Effect.void }),
+          Layer.mock(ShortLinkRecords, { eraseWorkspace: () => Effect.void }),
           Layer.mock(StaffRecords, {}),
           Layer.mock(LegalRecords, {})
         )

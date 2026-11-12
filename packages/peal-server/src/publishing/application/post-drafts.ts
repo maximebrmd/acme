@@ -12,6 +12,7 @@ import {
   editDraft,
   mayDiscard,
   tagPost,
+  withLinksShortened,
 } from "#publishing/domain/post.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -63,6 +64,11 @@ export interface DraftRequest {
    * signatures. Left out, nothing.
    */
   readonly presets?: PresetAsk;
+  /**
+   * Whether its links go out shortened. Left out, a new draft's do not,
+   * and a draft that is changed keeps its own choice.
+   */
+  readonly shortenLinks?: boolean | undefined;
   /**
    * The workspace's tags it is filed under. Left out, a new draft has
    * none, and a draft that is changed keeps its own.
@@ -226,15 +232,18 @@ export class PostDrafts extends Context.Service<
           Effect.gen(function* insert() {
             const tags = yield* tagsOf(actor, request);
 
-            const made = tagPost(
-              createDraft(
-                postId,
-                actor.workspaceId,
-                request.content,
-                authorOf(actor),
-                Option.some(via)
+            const made = withLinksShortened(
+              tagPost(
+                createDraft(
+                  postId,
+                  actor.workspaceId,
+                  request.content,
+                  authorOf(actor),
+                  Option.some(via)
+                ),
+                Option.getOrElse(tags, () => [])
               ),
-              Option.getOrElse(tags, () => [])
+              request.shortenLinks ?? false
             );
 
             yield* posts.insert(made, targets);
@@ -270,10 +279,15 @@ export class PostDrafts extends Context.Service<
               editDraft(current.post, request.content)
             );
 
-            const post = Option.match(tags, {
+            const tagged = Option.match(tags, {
               onNone: () => edited,
               onSome: (chosen) => tagPost(edited, chosen),
             });
+
+            const post =
+              request.shortenLinks === undefined
+                ? tagged
+                : withLinksShortened(tagged, request.shortenLinks);
 
             const targets = yield* targetsOn(
               postId,

@@ -32,6 +32,7 @@ import {
   schedulePost,
   asReceived,
   tagPost,
+  withLinksShortened,
 } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import { postingMonthOf, sameMonth } from "#publishing/domain/posting-month.ts";
@@ -118,6 +119,8 @@ export interface SchedulePostRequest {
   // The options it has on some channels, one at most per channel.
   readonly options?: readonly ChannelOptions[];
   readonly schedule: Schedule;
+  /** Whether its links go out shortened; left out, not. */
+  readonly shortenLinks?: boolean | undefined;
   /** The workspace's tags it is filed under; left out, none. */
   readonly tagIds?: readonly TagId[];
 }
@@ -151,6 +154,8 @@ export interface SendPostRequest {
   readonly options?: readonly ChannelOptions[];
   /** When it goes out: now, at an instant, or on a queue's next free slot. */
   readonly placement: Placement;
+  /** Whether its links go out shortened; left out, not. */
+  readonly shortenLinks?: boolean | undefined;
   /** The workspace's tags it is filed under; left out, none. */
   readonly tagIds?: readonly TagId[];
   /**
@@ -171,6 +176,8 @@ export interface OccurrenceRequest<E, E2> {
   /** The rule that makes it, and its place among the rule's posts. */
   readonly occurrence: PostOccurrence;
   readonly options: readonly ChannelOptions[];
+  /** As the rule's source asks; left out, not. */
+  readonly shortenLinks?: boolean | undefined;
   readonly tagIds: readonly TagId[];
   /** The rule's zone, which a post at its due instant is shown in. */
   readonly timeZone: TimeZoneId;
@@ -209,6 +216,7 @@ interface NewPostRequest {
   readonly content: PostContent;
   readonly occurrence?: PostOccurrence;
   readonly options?: readonly ChannelOptions[];
+  readonly shortenLinks?: boolean | undefined;
   readonly tagIds?: readonly TagId[];
 }
 
@@ -871,6 +879,7 @@ export class PostScheduling extends Context.Service<
             content,
             occurrence,
             options = [],
+            shortenLinks = false,
             tagIds = [],
           }: NewPostRequest,
           placing: (received: DateTime.Utc) => Effect.Effect<Placed, E3>,
@@ -905,15 +914,18 @@ export class PostScheduling extends Context.Service<
 
           const via = yield* originOf(actor);
 
-          const created = tagPost(
-            createDraft(
-              postId,
-              actor.workspaceId,
-              content,
-              authorOf(actor),
-              Option.some(via)
+          const created = withLinksShortened(
+            tagPost(
+              createDraft(
+                postId,
+                actor.workspaceId,
+                content,
+                authorOf(actor),
+                Option.some(via)
+              ),
+              tags
             ),
-            tags
+            shortenLinks
           );
 
           const draft =

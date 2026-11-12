@@ -119,6 +119,7 @@ public class ScheduleTest : BaseMockServerTest
                 "name": "name",
                 "via": "web"
               },
+              "shortenLinks": true,
               "status": "draft",
               "tagIds": [
                 "tagIds",
@@ -347,6 +348,7 @@ public class ScheduleTest : BaseMockServerTest
                 "name": "name",
                 "via": "web"
               },
+              "shortenLinks": true,
               "status": "draft",
               "tagIds": [
                 "tagIds"

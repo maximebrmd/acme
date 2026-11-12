@@ -184,5 +184,10 @@ module Peal
     def channel_defaults
       @channel_defaults ||= Peal::ChannelDefaults::Client.new(client: @raw_client)
     end
+
+    # @return [Peal::ShortLinks::Client]
+    def short_links
+      @short_links ||= Peal::ShortLinks::Client.new(client: @raw_client)
+    end
   end
 end

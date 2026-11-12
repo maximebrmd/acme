@@ -19,6 +19,7 @@ import { LivePostClients } from "#publishing/application/live-post-clients.ts";
 import { LivePostEdits } from "#publishing/application/live-post-edits.ts";
 import { LivePostEvents } from "#publishing/application/live-post-events.ts";
 import { LivePostHolds } from "#publishing/application/live-post-holds.ts";
+import { LiveTargetParts } from "#publishing/application/live-target-parts.ts";
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import { pacedLookups } from "#publishing/application/paced-lookups.ts";
 import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
@@ -101,6 +102,7 @@ import { LivePostClientsLive } from "#publishing/infrastructure/platforms/live-p
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platform-lookups-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
+import { ShortLinksLinkShortener } from "#publishing/infrastructure/shortlinks-link-shortener.ts";
 import { ToldLivePostEvents } from "#publishing/infrastructure/told-live-post-events.ts";
 import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
 import {
@@ -193,7 +195,8 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6, E7, R7>(
     HeldPosts.layer,
     PostFollowUp.layer,
     PostUsage.layer,
-    LivePostChanges.layer
+    LivePostChanges.layer,
+    LiveTargetParts.layer
   ).pipe(
     Layer.provideMerge(PostPresets.layer),
     Layer.provideMerge(
@@ -503,12 +506,14 @@ export const publishingWorkers = <
  * the tokens
  * the channels context hands out (ChannelAccess) and the files the media
  * context does (MediaForPlatforms), the large ones a few at a time
- * (`limitedUploads`), which the composition root provides
- * with Dns, the database and the PostRepository.
+ * (`limitedUploads`), and the short links the shortlinks context issues
+ * (ShortLinks, ShortLinkBase), which the composition root provides with
+ * Dns, the database and the PostRepository.
  */
 export const PlatformsLive = RoutedPlatformPublisher.pipe(
   // The operator's X_THREADS: a part already scheduled is not sent either.
   Layer.provide(XThreadsLive),
+  Layer.provide(ShortLinksLinkShortener),
   Layer.provide(PlatformClientsLive),
   Layer.provide(
     Layer.mergeAll(

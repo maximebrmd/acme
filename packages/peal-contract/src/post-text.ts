@@ -5,6 +5,10 @@ import type { Platform } from "./platform.ts";
 import type { TargetOptions } from "./target-options.ts";
 import { xLinksIn } from "./x-links.ts";
 
+export { xLinksIn } from "./x-links.ts";
+
+export type { XLink } from "./x-links.ts";
+
 // The rules the API applies to a post's text and media before it schedules
 // it, so clients count as the server does: a composer shows how much room is
 // left on each platform, and which images or videos it would refuse. The
@@ -680,4 +684,133 @@ export const rulesFor = (
   } = rules;
 
   return { ...base, ...format };
+};
+
+/** What a server's short addresses look like: its base, then a code. */
+export interface ShortAddresses {
+  /** The base, ending in `/`, as `shortLinks.status` answers it. */
+  readonly base: string;
+  /** How many characters a code has. */
+  readonly codeLength: number;
+}
+
+/** Where a link stands in a text, in UTF-16 offsets. */
+export interface LinkPlace {
+  readonly end: number;
+  readonly start: number;
+}
+
+/** A distinct address a post's text goes out with shortened. */
+export interface LinkToShorten {
+  readonly address: string;
+  readonly places: readonly LinkPlace[];
+}
+
+/** The longest address the server shortens, written as its redirect writes it (`URL.href`). */
+export const maxShortenedLinkLength = 2048;
+
+/**
+ * The platforms whose posts take their links as written, never shortened:
+ * Pinterest, whose help page "Blocked links and websites"
+ * (https://help.pinterest.com/en/articles/blocked-links-and-websites,
+ * read 2026-11-12) says "we don't allow certain redirects or URL
+ * shorteners"; Instagram and TikTok, whose captions make no link
+ * clickable, so a short address would only be less readable and could
+ * count no click.
+ */
+const linksAsWritten: ReadonlySet<Platform> = new Set([
+  "pinterest",
+  "instagram",
+  "tiktok",
+]);
+
+/** Whether a platform's posts take their links as written. */
+export const keepsLinksAsWritten = (platform: Platform): boolean =>
+  linksAsWritten.has(platform);
+
+/**
+ * The hosts of each platform's own pages: a link to one is left as
+ * written on a channel of that platform, which shows it natively (a post
+ * of X quoted, a video of YouTube played), where a short address would
+ * hide it. Mastodon's servers are many, and Google Business Profile's
+ * local posts link out: neither has hosts here.
+ */
+const ownHosts: Readonly<Record<Platform, readonly string[]>> = {
+  bluesky: ["bsky.app"],
+  facebook: ["facebook.com", "fb.com", "fb.me", "fb.watch"],
+  googleBusiness: [],
+  instagram: ["instagram.com"],
+  linkedin: ["linkedin.com", "lnkd.in"],
+  mastodon: [],
+  pinterest: ["pinterest.com", "pin.it"],
+  threads: ["threads.net", "threads.com"],
+  tiktok: ["tiktok.com"],
+  x: ["x.com", "twitter.com"],
+  youtube: ["youtube.com", "youtu.be"],
+};
+
+// Whether the address is on one of the platform's own hosts, or under one.
+const isOwnLink = (address: string, platform: Platform): boolean => {
+  const host = URL.parse(address)?.hostname.toLowerCase();
+
+  return (
+    host !== undefined &&
+    ownHosts[platform].some((own) => host === own || host.endsWith(`.${own}`))
+  );
+};
+
+const hasLinkScheme = (address: string) => /^https?:\/\//iu.test(address);
+
+// An absolute http or https address of 2,048 characters at most, naming
+// no user or password, on another host than the short links' own.
+const isShortenable = (address: string, addresses: ShortAddresses) => {
+  const parsed = URL.parse(address);
+  const base = URL.parse(addresses.base);
+
+  // Written as its redirect writes it (`URL.href`: ASCII, as a header
+  // takes it), of 2,048 characters at most.
+  return (
+    parsed !== null &&
+    (parsed.protocol === "https:" || parsed.protocol === "http:") &&
+    parsed.username === "" &&
+    parsed.password === "" &&
+    parsed.host !== base?.host &&
+    parsed.href.length <= maxShortenedLinkLength &&
+    /^[\u0021-\u007E]+$/u.test(parsed.href)
+  );
+};
+
+/**
+ * The links of `text` a post that asks for short links sends shortened on
+ * `platform`, as the server decides it: those written with `http://` or
+ * `https://` and longer than a short address (`base` and a code), one
+ * entry per distinct address with every place it stands; none on a
+ * platform that keeps links as written. The composer counts them.
+ */
+export const linksToShorten = (
+  text: string,
+  platform: Platform,
+  addresses: ShortAddresses
+): readonly LinkToShorten[] => {
+  if (keepsLinksAsWritten(platform)) {
+    return [];
+  }
+
+  const shortLength = addresses.base.length + addresses.codeLength;
+  const found = new Map<string, LinkPlace[]>();
+
+  for (const { end, start } of xLinksIn(text)) {
+    const address = text.slice(start, end);
+
+    if (
+      hasLinkScheme(address) &&
+      address.length > shortLength &&
+      !isOwnLink(address, platform) &&
+      isShortenable(address, addresses)
+    ) {
+      found.set(address, [...(found.get(address) ?? []), { end, start }]);
+    }
+  }
+
+  return Array.from(found, ([address, places]) => ({ address, places }));
 };

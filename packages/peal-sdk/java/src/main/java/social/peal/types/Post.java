@@ -48,6 +48,8 @@ public final class Post {
 
     private final Optional<PostOrigin> scheduledVia;
 
+    private final boolean shortenLinks;
+
     private final PostStatus status;
 
     private final List<String> tagIds;
@@ -70,6 +72,7 @@ public final class Post {
             Optional<PostSchedule> schedule,
             Optional<String> scheduledBy,
             Optional<PostOrigin> scheduledVia,
+            boolean shortenLinks,
             PostStatus status,
             List<String> tagIds,
             List<PostTarget> targets,
@@ -86,6 +89,7 @@ public final class Post {
         this.schedule = schedule;
         this.scheduledBy = scheduledBy;
         this.scheduledVia = scheduledVia;
+        this.shortenLinks = shortenLinks;
         this.status = status;
         this.tagIds = tagIds;
         this.targets = targets;
@@ -173,6 +177,11 @@ public final class Post {
             return Optional.empty();
         }
         return scheduledVia;
+    }
+
+    @JsonProperty("shortenLinks")
+    public boolean getShortenLinks() {
+        return shortenLinks;
     }
 
     @JsonProperty("status")
@@ -272,6 +281,7 @@ public final class Post {
                 && schedule.equals(other.schedule)
                 && scheduledBy.equals(other.scheduledBy)
                 && scheduledVia.equals(other.scheduledVia)
+                && shortenLinks == other.shortenLinks
                 && status.equals(other.status)
                 && tagIds.equals(other.tagIds)
                 && targets.equals(other.targets)
@@ -292,6 +302,7 @@ public final class Post {
                 this.schedule,
                 this.scheduledBy,
                 this.scheduledVia,
+                this.shortenLinks,
                 this.status,
                 this.tagIds,
                 this.targets,
@@ -314,7 +325,11 @@ public final class Post {
     }
 
     public interface IdStage {
-        StatusStage id(@NotNull String id);
+        ShortenLinksStage id(@NotNull String id);
+    }
+
+    public interface ShortenLinksStage {
+        StatusStage shortenLinks(boolean shortenLinks);
     }
 
     public interface StatusStage {
@@ -400,10 +415,12 @@ public final class Post {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements ContentStage, IdStage, StatusStage, _FinalStage {
+    public static final class Builder implements ContentStage, IdStage, ShortenLinksStage, StatusStage, _FinalStage {
         private PostContent content;
 
         private String id;
+
+        private boolean shortenLinks;
 
         private PostStatus status;
 
@@ -448,6 +465,7 @@ public final class Post {
             schedule(other.getSchedule());
             scheduledBy(other.getScheduledBy());
             scheduledVia(other.getScheduledVia());
+            shortenLinks(other.getShortenLinks());
             status(other.getStatus());
             tagIds(other.getTagIds());
             targets(other.getTargets());
@@ -464,8 +482,15 @@ public final class Post {
 
         @java.lang.Override
         @JsonSetter("id")
-        public StatusStage id(@NotNull String id) {
+        public ShortenLinksStage id(@NotNull String id) {
             this.id = Objects.requireNonNull(id, "id must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("shortenLinks")
+        public StatusStage shortenLinks(boolean shortenLinks) {
+            this.shortenLinks = shortenLinks;
             return this;
         }
 
@@ -776,6 +801,7 @@ public final class Post {
                     schedule,
                     scheduledBy,
                     scheduledVia,
+                    shortenLinks,
                     status,
                     tagIds,
                     targets,
@@ -796,6 +822,7 @@ public final class Post {
                     || key.equalsIgnoreCase("schedule")
                     || key.equalsIgnoreCase("scheduledBy")
                     || key.equalsIgnoreCase("scheduledVia")
+                    || key.equalsIgnoreCase("shortenLinks")
                     || key.equalsIgnoreCase("status")
                     || key.equalsIgnoreCase("tagIds")
                     || key.equalsIgnoreCase("targets")

@@ -832,6 +832,7 @@ export class Recycling extends Context.Service<
               onNone: () => ({ _tag: "at" }) as const,
               onSome: (queueId) => ({ _tag: "queue", queueId }) as const,
             }),
+            shortenLinks: copy.value.shortenLinks,
             tagIds: copy.value.tagIds,
             timeZone: planned.timeZone,
           })

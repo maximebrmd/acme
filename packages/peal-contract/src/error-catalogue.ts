@@ -58,6 +58,12 @@ export const generalErrors = [
     tag: "MethodNotAllowed",
   },
   {
+    message:
+      "What this address led to was turned off: it answers no more, and will not again.",
+    status: 410,
+    tag: "Gone",
+  },
+  {
     message: "The request's body is larger than this endpoint takes.",
     status: 413,
     tag: "PayloadTooLarge",

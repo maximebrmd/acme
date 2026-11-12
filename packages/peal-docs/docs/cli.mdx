@@ -234,6 +234,7 @@ peal post "Spring catalogue is out" --channel <channel-id> --now --wait 30
 - **Options.** `--options <channel-id>=<json>` sets a channel's [platform options](/scheduling#options), as `peal drafts save` takes them. A channel on which you give none takes the options of a set you name, then the channel's [default options](#default-options).
 - **Signatures.** `--signature <id-or-name>` puts one of the workspace's [signatures](#signatures) under the text, on every channel; `--default-signatures` puts each channel's default one. A signature is text of the post: it counts against each platform's limit, and is never added twice.
 - **Tags.** `--tag <id-or-name>` files the post under one of the workspace's [tags](#tags); repeat it for several.
+- **Short links.** `--shorten-links` sends its links shortened, on a server that has [short links](/scheduling#short-links): `peal short-links list` then reads their clicks.
 - **Running it again.** `--idempotency-key` takes any text of your choosing, of 255 characters at most, such as a UUID: within 24 hours, the same key with the same post answers the post the first run made, and makes no other; with another post it is refused. Without it, `peal` sends no key. To run a post with media again, give `--media` as media ids: files and addresses are stored anew on each run, which makes it another post.
 - **The same post twice.** Apart from keys, a post whose content (the text the channel receives and the same media, in the same order) already goes to one of its channels less than 23 hours from its time is refused, and `peal` names the post that has it. `--allow-duplicate` lets it through, when you mean to post the same twice ([Duplicate posts](/posting-api#duplicates)).
 - **Checking first.** `--dry-run` checks the post and posts nothing: it tells what would be refused, and which channels of a set would be left out.
@@ -533,6 +534,17 @@ peal usage --from 2026-10-01 --to 2026-10-31
 ```
 
 `peal usage` prints the workspace's plan, each limit against what is used now, then, over UTC days (the last 30 unless `--from` and `--to` say otherwise, 92 at most), the posts that went out by platform, the channel-days, the posts on platforms that bill per post, and a row for each day that has anything: its posts, the channels, members and media as the day's snapshot found them (a dash for a day without a snapshot), and its assistant requests. `--json` prints the API's answer as it came. It changes nothing, and nothing in it is priced ([Usage](/billing#usage)).
+
+## Short links [#short-links]
+
+```sh
+peal short-links status
+peal short-links set-default on
+peal short-links list --post <post-id>
+peal short-links show <link-id> --from 2026-11-01 --to 2026-11-30
+```
+
+`peal short-links status` says whether the server has [short links](/scheduling#short-links) and whether the workspace's new posts ask for them by default, which `peal short-links set-default on` or `off` changes (owners and admins). `peal post --shorten-links` and `peal drafts save --shorten-links` ask for them on one post. `peal short-links list` lists the workspace's links, newest first, with their clicks over UTC days (the last 30 unless `--from` and `--to` say otherwise, 92 at most), those of a `--post` or a `--channel`, a page at a time (`--limit`, `--cursor`); `peal short-links show` prints one link's clicks day by day. Counts are approximate: automated readers are left out, and nothing about visitors is kept ([Clicks on short links](/analytics#short-links)). `--json` prints the API's answer as it came.
 
 ## Members and invitations [#members]
 

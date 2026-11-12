@@ -297,6 +297,7 @@ export const sendRequestFrom = (input: NewPostInput, key?: string) =>
       options: yield* optionsFrom(input.options ?? []),
       placement: yield* placementFrom(when),
       presets,
+      shortenLinks: input.shortenLinks,
       ...(yield* tagsGiven(input.tagIds)),
       timeZone: zone,
     };

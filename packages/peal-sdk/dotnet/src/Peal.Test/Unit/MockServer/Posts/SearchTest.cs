@@ -120,6 +120,7 @@ public class SearchTest : BaseMockServerTest
                     "name": "name",
                     "via": "web"
                   },
+                  "shortenLinks": true,
                   "status": "draft",
                   "tagIds": [
                     "tagIds",
@@ -343,6 +344,7 @@ public class SearchTest : BaseMockServerTest
                     "name": "name",
                     "via": "web"
                   },
+                  "shortenLinks": true,
                   "status": "draft",
                   "tagIds": [
                     "tagIds",
@@ -541,6 +543,7 @@ public class SearchTest : BaseMockServerTest
                   "scheduledVia": {
                     "via": "web"
                   },
+                  "shortenLinks": true,
                   "status": "draft",
                   "tagIds": [
                     "tagIds"

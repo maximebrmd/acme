@@ -1,6 +1,7 @@
 import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option, Ref, Result, Schema } from "effect";
 
+import { LinkShortener } from "#publishing/application/link-shortener.ts";
 import { PlatformClients } from "#publishing/application/platform-client.ts";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
@@ -108,7 +109,8 @@ const publisherFor = (
         PlanTest,
         RecordingClients,
         credentialsOf(account, ["token-1"]),
-        Layer.succeed(CurrentThreadedPlatforms, { takesParts: threaded })
+        Layer.succeed(CurrentThreadedPlatforms, { takesParts: threaded }),
+        LinkShortener.none
       )
     ),
     Layer.provideMerge(DrizzlePostRepository),

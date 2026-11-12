@@ -59,6 +59,7 @@ import {
   maxPartDelaySeconds,
 } from "#publishing/domain/post-part.ts";
 import { maxPostTextLength } from "#publishing/domain/post-text.ts";
+import { linksToShorten } from "#publishing/domain/short-links.ts";
 import {
   optionsPlatforms,
   TargetOptionsSchema,
@@ -84,7 +85,7 @@ import {
   youTubeThumbnailTypes,
 } from "#publishing/domain/youtube-options.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
-import { platforms } from "#shared/domain/platform.ts";
+import { platforms, PlatformSchema } from "#shared/domain/platform.ts";
 import {
   linkCases,
   weightedCases,
@@ -802,5 +803,31 @@ describe("the contract's target options", () => {
         ? Schema.encodeSync(TargetOptionsSchema)(server.value)
         : undefined
     ).toStrictEqual(Exit.isSuccess(contract) ? contract.value : undefined);
+  });
+});
+
+describe("the contract's short links rule", () => {
+  const addresses = { base: "https://go.example.com/", codeLength: 7 };
+
+  const linkTexts = [
+    "",
+    "No link at all.",
+    "See https://example.com/a/landing/page/longer/than/a/short/link today",
+    "Short https://ex.com/a, bare example.com/a/long/path/without/any/scheme",
+    "Twice https://example.com/a/long/path/twice/over and https://example.com/a/long/path/twice/over",
+    "Own https://go.example.com/AbCdEfG/and/a/long/tail/after/it",
+    "User https://someone:secret@example.com/a/long/path/with/a/user",
+    "🎉 HTTP://EXAMPLE.COM/AN/UPPER/CASE/ADDRESS/WRITTEN/LOUDLY 👋",
+    "Cyrillic https://example.com/путь/к/странице/длиннее/короткой/ссылки",
+    "Own https://x.com/synthetic/status/1234567890123456789/photo/1 and https://www.youtube.com/watch?v=synthetic12345&t=42s",
+    `Too long once written https://example.com/${"ж".repeat(400)}`,
+  ];
+
+  it.each(linkTexts)("finds in %j what the server shortens", (text) => {
+    for (const platform of PlatformSchema.literals) {
+      expect(
+        ContractText.linksToShorten(text, platform, addresses)
+      ).toStrictEqual(linksToShorten(text, platform, addresses));
+    }
   });
 });

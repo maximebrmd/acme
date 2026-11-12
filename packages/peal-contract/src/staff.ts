@@ -12,6 +12,7 @@ import { ChannelStatusSchema } from "./channels.ts";
 import { Int64Schema } from "./int64.ts";
 import { ChannelConnectionSchema, PlatformSchema } from "./platform.ts";
 import { FailureReasonSchema, UnconfirmedReasonSchema } from "./posts.ts";
+import { ShortLinkNotFound } from "./short-link-not-found.ts";
 import { StaffAccess } from "./staff-access.ts";
 import { StaffActionRefused } from "./staff-action-refused.ts";
 import { UserNotFound } from "./user-not-found.ts";
@@ -63,7 +64,11 @@ export const StaffReasonSchema = Schema.Trim.check(
  * from one that staff applied to a workspace's contract or closed
  * (`applyContractRequest`, `closeContractRequest`), its id among the
  * object ids; and an account's two-step verification turned off for its
- * person, who lost their phone and codes (`resetTwoStep`).
+ * person, who lost their phone and codes (`resetTwoStep`); and a short
+ * link turned off or on again (`disableShortLink`, `enableShortLink`), its
+ * workspace and its code among the object ids; and every short link of a
+ * workspace turned off at once (`disableWorkspaceShortLinks`), with how
+ * many among the object ids.
  */
 export const StaffActionSchema = Schema.Literals([
   "ban",
@@ -79,6 +84,9 @@ export const StaffActionSchema = Schema.Literals([
   "closeContractRequest",
   "grantPartner",
   "resetTwoStep",
+  "disableShortLink",
+  "enableShortLink",
+  "disableWorkspaceShortLinks",
 ]).annotate({ identifier: "StaffAction" });
 
 /**
@@ -420,6 +428,44 @@ const userAction = <const Name extends string, const Path extends `/${string}`>(
   }).annotateMerge(OpenApi.annotations({ description, summary }));
 
 /**
+ * A short link, as staff read it to judge a report about it: its code,
+ * where it leads (the workspace's content), the post and workspace it
+ * belongs to, and whether it is turned off. Never its clicks.
+ */
+export const StaffShortLinkSchema = Schema.Struct({
+  channelId: Schema.String,
+  code: Schema.String,
+  createdAt: Schema.DateTimeUtc,
+  destination: Schema.String,
+  // A link turned off answers 410 to whoever follows it.
+  disabled: Schema.Boolean,
+  disabledAt: Schema.NullOr(Schema.DateTimeUtc),
+  postId: Schema.String,
+  workspaceId: Schema.String,
+}).annotate({ identifier: "StaffShortLink" });
+
+export type StaffShortLink = typeof StaffShortLinkSchema.Type;
+
+const shortLinkParams = { code: Schema.String };
+
+/** The most short links staff read of a workspace at once. */
+export const staffShortLinkPageSize = 100;
+
+/** A workspace's short links, newest first, as staff read them. */
+export const StaffShortLinkPageSchema = Schema.Struct({
+  items: Schema.Array(StaffShortLinkSchema),
+  // How many the workspace has, those turned off included.
+  total: Schema.Int,
+}).annotate({ identifier: "StaffShortLinkPage" });
+
+export type StaffShortLinkPage = typeof StaffShortLinkPageSchema.Type;
+
+/** How many of a workspace's short links staff turned off. */
+export const StaffShortLinksDisabledSchema = Schema.Struct({
+  disabled: Schema.Int,
+}).annotate({ identifier: "StaffShortLinksDisabled" });
+
+/**
  * The staff console, for the people who run the server: accounts,
  * workspaces, the system's health, and the audit log of what staff did.
  * Every endpoint answers 404 to anyone but staff in their own session, and
@@ -542,6 +588,71 @@ export class StaffApi extends HttpApiGroup.make("staff")
         description:
           "Opens a partner account for the workspace, which becomes its home workspace, named after it; its owners and admins then name it, create its keys and register its return origins. Leaves the account it has when it has one. A workspace a partner owns cannot hold one: 404. Recorded in the audit log, with the reason, before it is done.",
         summary: "Grant a workspace a partner account",
+      })
+    ),
+    HttpApiEndpoint.get("shortLink", "/short-links/:code", {
+      error: ShortLinkNotFound,
+      params: shortLinkParams,
+      success: StaffShortLinkSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Answers with the short link of this code (the seven characters after the short address's base): where it leads, its post and workspace, and whether it is turned off.",
+        summary: "Get a short link",
+      })
+    ),
+    HttpApiEndpoint.post("disableShortLink", "/short-links/:code/disable", {
+      error: ShortLinkNotFound,
+      params: shortLinkParams,
+      payload: StaffReasonPayloadSchema,
+      success: StaffShortLinkSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Turns the short link off: whoever follows it gets 410, and nothing is counted. The post that holds it is not changed. Recorded in the audit log, with the reason, its workspace and its code, before it is done.",
+        summary: "Turn a short link off",
+      })
+    ),
+    HttpApiEndpoint.post("enableShortLink", "/short-links/:code/enable", {
+      error: ShortLinkNotFound,
+      params: shortLinkParams,
+      payload: StaffReasonPayloadSchema,
+      success: StaffShortLinkSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Turns the short link back on: it redirects and counts again. Recorded in the audit log, with the reason, its workspace and its code, before it is done.",
+        summary: "Turn a short link back on",
+      })
+    ),
+    HttpApiEndpoint.get(
+      "workspaceShortLinks",
+      "/workspaces/:workspaceId/short-links",
+      {
+        error: WorkspaceNotFound,
+        params: { workspaceId: Schema.String },
+        success: StaffShortLinkPageSchema,
+      }
+    ).annotateMerge(
+      OpenApi.annotations({
+        description: `Answers the workspace's short links, newest first, ${staffShortLinkPageSize} at most, with how many it has: where each leads, its post, and whether it is on.`,
+        summary: "List a workspace's short links",
+      })
+    ),
+    HttpApiEndpoint.post(
+      "disableWorkspaceShortLinks",
+      "/workspaces/:workspaceId/short-links/disable",
+      {
+        error: WorkspaceNotFound,
+        params: { workspaceId: Schema.String },
+        payload: StaffReasonPayloadSchema,
+        success: StaffShortLinksDisabledSchema,
+      }
+    ).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Turns off every short link of the workspace that is still on, as when it is reported for abuse: each answers 410. Recorded once in the audit log, with the reason and how many, before it is done.",
+        summary: "Turn off a workspace's short links",
       })
     ),
     HttpApiEndpoint.get("system", "/system", {

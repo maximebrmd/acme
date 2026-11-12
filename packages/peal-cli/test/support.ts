@@ -285,6 +285,9 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
   handlers.handleAll({
     audit: () => notStaff,
     ban: () => notStaff,
+    disableShortLink: () => notStaff,
+    disableWorkspaceShortLinks: () => notStaff,
+    enableShortLink: () => notStaff,
     grantPartner: () => notStaff,
     impersonate: () => notStaff,
     partner: () => notStaff,
@@ -292,11 +295,13 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
     resetTwoStep: () => notStaff,
     revokeSessions: () => notStaff,
     session: () => notStaff,
+    shortLink: () => notStaff,
     system: () => notStaff,
     unban: () => notStaff,
     user: () => notStaff,
     users: () => notStaff,
     workspace: () => notStaff,
+    workspaceShortLinks: () => notStaff,
     workspaces: () => notStaff,
   })
 ).pipe(

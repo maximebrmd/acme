@@ -681,6 +681,10 @@ const reasonOf =
       ScheduleInPast: () =>
         refused("That time has passed: give a later --at, or publish it now."),
       SchemaError: requestFailed(url),
+      ShortLinkNotFound: () =>
+        refused(
+          "The workspace has no short link with that id: peal short-links list shows them."
+        ),
       SignatureNameTaken: () =>
         refused(
           "The workspace already has a signature of that name, whatever its case: nothing was changed. peal signatures list shows them."

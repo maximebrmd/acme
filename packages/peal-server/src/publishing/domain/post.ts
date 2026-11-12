@@ -89,6 +89,11 @@ export class Post extends Schema.Class<Post>(
     Schema.withConstructorDefault(Effect.succeed(Option.none()))
   ),
   scheduleRevision: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  // Whether its links go out shortened, where the server has short links:
+  // the text stored stays as written (`./short-links.ts`).
+  shortenLinks: Schema.Boolean.pipe(
+    Schema.withConstructorDefault(Effect.succeed(false))
+  ),
   status: PostStatusSchema,
   // None unless given: the labels its workspace filed it under.
   tagIds: PostTagIdsSchema.pipe(
@@ -112,6 +117,7 @@ const withStatus = (
     occurrence: post.occurrence,
     queueId: post.queueId,
     scheduleRevision,
+    shortenLinks: post.shortenLinks,
     status,
     tagIds: post.tagIds,
     workspaceId: post.workspaceId,
@@ -185,6 +191,7 @@ export const editDraft = (post: Post, content: PostContent): Transition =>
           occurrence: post.occurrence,
           queueId: post.queueId,
           scheduleRevision: post.scheduleRevision,
+          shortenLinks: post.shortenLinks,
           status: post.status,
           tagIds: post.tagIds,
           workspaceId: post.workspaceId,
@@ -226,6 +233,27 @@ const attributed = (
     occurrence: post.occurrence,
     queueId: post.queueId,
     scheduleRevision: post.scheduleRevision,
+    shortenLinks: post.shortenLinks,
+    status: post.status,
+    tagIds: post.tagIds,
+    workspaceId: post.workspaceId,
+  });
+
+/**
+ * Asks, or no longer asks, that the post's links go out shortened. Like
+ * its tags, it is no part of what the post says; it matters only when the
+ * post goes out, and an edit of a live post sends the text as written.
+ */
+export const withLinksShortened = (post: Post, shortenLinks: boolean): Post =>
+  new Post({
+    attribution: post.attribution,
+    authorId: post.authorId,
+    content: post.content,
+    id: post.id,
+    occurrence: post.occurrence,
+    queueId: post.queueId,
+    scheduleRevision: post.scheduleRevision,
+    shortenLinks,
     status: post.status,
     tagIds: post.tagIds,
     workspaceId: post.workspaceId,
@@ -244,6 +272,7 @@ export const tagPost = (post: Post, tagIds: readonly TagId[]): Post =>
     occurrence: post.occurrence,
     queueId: post.queueId,
     scheduleRevision: post.scheduleRevision,
+    shortenLinks: post.shortenLinks,
     status: post.status,
     tagIds,
     workspaceId: post.workspaceId,
@@ -262,6 +291,7 @@ export const placedBy = (post: Post, queueId: QueueId): Post =>
     occurrence: post.occurrence,
     queueId: Option.some(queueId),
     scheduleRevision: post.scheduleRevision,
+    shortenLinks: post.shortenLinks,
     status: post.status,
     tagIds: post.tagIds,
     workspaceId: post.workspaceId,
@@ -277,6 +307,7 @@ export const madeBy = (post: Post, occurrence: PostOccurrence): Post =>
     occurrence: Option.some(occurrence),
     queueId: post.queueId,
     scheduleRevision: post.scheduleRevision,
+    shortenLinks: post.shortenLinks,
     status: post.status,
     tagIds: post.tagIds,
     workspaceId: post.workspaceId,

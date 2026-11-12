@@ -1920,6 +1920,7 @@ async fn main() {
                 channel_sets: None,
                 default_signatures: None,
                 options: None,
+                shorten_links: None,
                 signature_id: None,
                 tag_ids: None,
             },
@@ -1990,6 +1991,14 @@ async fn main() {
 <dd>
 
 **options:** `Option<Vec<ChannelOptions>>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**shorten_links:** `Option<bool>` 
     
 </dd>
 </dl>
@@ -2094,6 +2103,7 @@ async fn main() {
                     },
                     default_signatures: None,
                     options: None,
+                    shorten_links: None,
                     signature_id: None,
                     tag_ids: None,
                     when: PostTiming::Now {
@@ -2292,6 +2302,7 @@ async fn main() {
                 channel_sets: None,
                 default_signatures: None,
                 options: None,
+                shorten_links: None,
                 signature_id: None,
                 when: None,
             },
@@ -2362,6 +2373,14 @@ async fn main() {
 <dd>
 
 **options:** `Option<Vec<ChannelOptions>>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**shorten_links:** `Option<bool>` 
     
 </dd>
 </dl>
@@ -16090,6 +16109,372 @@ async fn main() {
 <dd>
 
 **channel_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## shortLinks
+<details><summary><code>client.short_links.<a href="/src/api/resources/short_links/client.rs">status</a>(workspace_id: String) -> Result&lt;ShortLinkStatus, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers whether this server shortens links (`available`), what a short address starts with (`base`) and how long it is (`shortLength`), and whether the workspace's new posts ask for short links by default (`byDefault`). A post that asks (`shortenLinks`) goes out with each link written with `http://` or `https://` and longer than a short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a channel's own platform. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .short_links
+        .status(&"workspaceId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.short_links.<a href="/src/api/resources/short_links/client.rs">set_default</a>(workspace_id: String, request: ShortLinkSettings) -> Result&lt;ShortLinkStatus, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sets whether the workspace's new posts ask for short links unless their author says otherwise; each post still chooses for itself. Needs organization:update, which owners and admins hold.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .short_links
+        .set_default(
+            &"workspaceId".to_string(),
+            &ShortLinkSettings { by_default: true },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**by_default:** `bool` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.short_links.<a href="/src/api/resources/short_links/client.rs">list</a>(workspace_id: String, channel_id: Option&lt;Option&lt;String&gt;&gt;, cursor: Option&lt;Option&lt;String&gt;&gt;, from: Option&lt;Option&lt;CalendarDay&gt;&gt;, limit: Option&lt;Option&lt;String&gt;&gt;, post_id: Option&lt;Option&lt;String&gt;&gt;, to: Option&lt;Option&lt;CalendarDay&gt;&gt;) -> Result&lt;ShortLinkPage, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's short links, newest first, 50 a page unless `limit` (at most 100) says otherwise, those of one post (`postId`) or one channel (`channelId`), each with its clicks from `from` to `to` (UTC days, both included, at most 92; by default the 30 days that end today). Pass the page's `nextCursor` as `cursor` for the next one. Clicks are counted by UTC day and kept 400 days; a request from an automated reader (a crawler, a link preview), a prefetch or a HEAD is redirected but not counted, so the figure is approximate, and nothing about the visitor is kept. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .short_links
+        .list(
+            &"workspaceId".to_string(),
+            &ShortLinksListQueryRequest {
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.short_links.<a href="/src/api/resources/short_links/client.rs">get</a>(workspace_id: String, link_id: String, from: Option&lt;Option&lt;CalendarDay&gt;&gt;, to: Option&lt;Option&lt;CalendarDay&gt;&gt;) -> Result&lt;ShortLinkReport, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers one short link with its clicks each day from `from` to `to` (UTC days, both included, at most 92; by default the 30 days that end today), oldest first. Clicks are counted by UTC day and kept 400 days; a request from an automated reader (a crawler, a link preview), a prefetch or a HEAD is redirected but not counted, so the figure is approximate, and nothing about the visitor is kept. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .short_links
+        .get(
+            &"workspaceId".to_string(),
+            &"linkId".to_string(),
+            &ShortLinksGetQueryRequest {
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**link_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `Option<CalendarDay>` 
     
 </dd>
 </dl>

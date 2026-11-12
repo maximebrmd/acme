@@ -11,6 +11,7 @@ import { createServer } from "node:http";
 import { assert, layer } from "@effect/vitest";
 import {
   Cause,
+  ConfigProvider,
   Effect,
   Exit,
   Layer,
@@ -24,6 +25,15 @@ import sharp from "sharp";
 
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
 import {
+  ChannelIdSchema,
+  PostIdSchema,
+  PostTargetIdSchema,
+  WorkspaceIdSchema,
+} from "#shared/domain/ids.ts";
+import { ShortLinks } from "#shortlinks/application/short-links.ts";
+import { ShortLinksLive } from "#shortlinks/container.ts";
+import { DatabaseTest } from "#test/channels/support.ts";
+import {
   facebookPageId,
   fakeMetaGraph,
   graphAppSecret,
@@ -35,6 +45,7 @@ import {
   outgoing,
   testFile,
 } from "#test/publishing/platforms/support.ts";
+import { liveTarget, OpenLinkStanding } from "#test/shortlinks/support.ts";
 import {
   answered,
   FakeTransport,
@@ -388,6 +399,71 @@ layer(Layer.mergeAll(capture, Layer.succeed(Tracer.Tracer, tracer)), {
       }).pipe(Effect.scoped)
   );
 });
+
+const shortBase = "http://links.example.com/api/l/";
+
+const shortLinkSettings = {
+  ...unconfirmedEmails,
+  PEAL_SHORT_LINK_BASE: shortBase,
+};
+
+// The app with short links on, and the context beside it to issue one.
+const ShortLinksTest = Layer.mergeAll(
+  TestApp.layerWith(
+    shortLinkSettings,
+    Layer.merge(capture, Layer.succeed(Tracer.Tracer, tracer))
+  ),
+  ShortLinksLive.pipe(
+    Layer.provide(OpenLinkStanding),
+    Layer.provide(
+      ConfigProvider.layerAdd(ConfigProvider.fromUnknown(shortLinkSettings), {
+        asPrimary: true,
+      })
+    ),
+    Layer.provideMerge(DatabaseTest)
+  )
+);
+
+layer(ShortLinksTest, { excludeTestServices: true, timeout: "120 seconds" })(
+  "what the server writes about a short link followed",
+  (it) => {
+    // Nothing of the visitor either: no span holds their browser or
+    // address, as the privacy register says.
+    it.effect("holds its path, never where it leads nor who followed it", () =>
+      Effect.gen(function* followed() {
+        const app = yield* TestApp;
+        const links = yield* ShortLinks;
+
+        const destination =
+          "https://example.test/synthetic-destination-never-logged";
+
+        const target = yield* liveTarget("logged-link", true);
+
+        const [shortUrl = ""] = yield* links.issue({
+          channelId: ChannelIdSchema.make(target.channelId),
+          destinations: [destination],
+          part: 0,
+          postId: PostIdSchema.make(target.postId),
+          targetId: PostTargetIdSchema.make(target.targetId),
+          workspaceId: WorkspaceIdSchema.make(target.workspaceId),
+        });
+
+        const { pathname } = new URL(shortUrl);
+        const agent = "Mozilla/5.0 (synthetic visitor agent)";
+
+        const reply = yield* app.request(pathname, {
+          headers: { "user-agent": agent, "x-forwarded-for": "203.0.113.77" },
+        });
+
+        assert.strictEqual(reply.status, 302);
+        assert.include(written(), pathname);
+        assert.notInclude(written(), "synthetic-destination-never-logged");
+        assert.notInclude(written(), "synthetic visitor agent");
+        assert.notInclude(written(), "203.0.113.77");
+      })
+    );
+  }
+);
 
 // The image provider's key, and the prompt, which the server never writes:
 // a loopback provider that refuses a prompt naming "refused" with 401, and

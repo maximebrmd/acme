@@ -19,20 +19,20 @@ public record BadRequestErrorBody
     }
 
     /// <summary>
-    /// Create an instance of BadRequestErrorBody with <see cref="BadRequestErrorBody.InvalidDateRange"/>.
-    /// </summary>
-    public BadRequestErrorBody(BadRequestErrorBody.InvalidDateRange value)
-    {
-        Type = "InvalidDateRange";
-        Value = value.Value;
-    }
-
-    /// <summary>
     /// Create an instance of BadRequestErrorBody with <see cref="BadRequestErrorBody.BadRequest"/>.
     /// </summary>
     public BadRequestErrorBody(BadRequestErrorBody.BadRequest value)
     {
         Type = "BadRequest";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of BadRequestErrorBody with <see cref="BadRequestErrorBody.InvalidDateRange"/>.
+    /// </summary>
+    public BadRequestErrorBody(BadRequestErrorBody.InvalidDateRange value)
+    {
+        Type = "InvalidDateRange";
         Value = value.Value;
     }
 
@@ -48,14 +48,23 @@ public record BadRequestErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
+    /// Returns true if <see cref="Type"/> is "BadRequest"
+    /// </summary>
+    public bool IsBadRequest => Type == "BadRequest";
+
+    /// <summary>
     /// Returns true if <see cref="Type"/> is "InvalidDateRange"
     /// </summary>
     public bool IsInvalidDateRange => Type == "InvalidDateRange";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "BadRequest"
+    /// Returns the value as a <see cref="Peal.EffectHttpApiErrorBadRequestEncoded"/> if <see cref="Type"/> is 'BadRequest', otherwise throws an exception.
     /// </summary>
-    public bool IsBadRequest => Type == "BadRequest";
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'BadRequest'.</exception>
+    public Peal.EffectHttpApiErrorBadRequestEncoded AsBadRequest() =>
+        IsBadRequest
+            ? (Peal.EffectHttpApiErrorBadRequestEncoded)Value!
+            : throw new global::System.Exception("BadRequestErrorBody.Type is not 'BadRequest'");
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.InvalidDateRangeEncoded"/> if <see cref="Type"/> is 'InvalidDateRange', otherwise throws an exception.
@@ -68,61 +77,38 @@ public record BadRequestErrorBody
                 "BadRequestErrorBody.Type is not 'InvalidDateRange'"
             );
 
-    /// <summary>
-    /// Returns the value as a <see cref="Peal.EffectHttpApiErrorBadRequestEncoded"/> if <see cref="Type"/> is 'BadRequest', otherwise throws an exception.
-    /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'BadRequest'.</exception>
-    public Peal.EffectHttpApiErrorBadRequestEncoded AsBadRequest() =>
-        IsBadRequest
-            ? (Peal.EffectHttpApiErrorBadRequestEncoded)Value!
-            : throw new global::System.Exception("BadRequestErrorBody.Type is not 'BadRequest'");
-
     public T Match<T>(
-        Func<Peal.InvalidDateRangeEncoded, T> onInvalidDateRange,
         Func<Peal.EffectHttpApiErrorBadRequestEncoded, T> onBadRequest,
+        Func<Peal.InvalidDateRangeEncoded, T> onInvalidDateRange,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "InvalidDateRange" => onInvalidDateRange(AsInvalidDateRange()),
             "BadRequest" => onBadRequest(AsBadRequest()),
+            "InvalidDateRange" => onInvalidDateRange(AsInvalidDateRange()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.InvalidDateRangeEncoded> onInvalidDateRange,
         Action<Peal.EffectHttpApiErrorBadRequestEncoded> onBadRequest,
+        Action<Peal.InvalidDateRangeEncoded> onInvalidDateRange,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "InvalidDateRange":
-                onInvalidDateRange(AsInvalidDateRange());
-                break;
             case "BadRequest":
                 onBadRequest(AsBadRequest());
+                break;
+            case "InvalidDateRange":
+                onInvalidDateRange(AsInvalidDateRange());
                 break;
             default:
                 onUnknown_(Type, Value);
                 break;
         }
-    }
-
-    /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.InvalidDateRangeEncoded"/> and returns true if successful.
-    /// </summary>
-    public bool TryAsInvalidDateRange(out Peal.InvalidDateRangeEncoded? value)
-    {
-        if (Type == "InvalidDateRange")
-        {
-            value = (Peal.InvalidDateRangeEncoded)Value!;
-            return true;
-        }
-        value = null;
-        return false;
     }
 
     /// <summary>
@@ -139,14 +125,28 @@ public record BadRequestErrorBody
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.InvalidDateRangeEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsInvalidDateRange(out Peal.InvalidDateRangeEncoded? value)
+    {
+        if (Type == "InvalidDateRange")
+        {
+            value = (Peal.InvalidDateRangeEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
+
+    public static implicit operator BadRequestErrorBody(BadRequestErrorBody.BadRequest value) =>
+        new(value);
 
     public static implicit operator BadRequestErrorBody(
         BadRequestErrorBody.InvalidDateRange value
     ) => new(value);
-
-    public static implicit operator BadRequestErrorBody(BadRequestErrorBody.BadRequest value) =>
-        new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<BadRequestErrorBody>
@@ -183,13 +183,13 @@ public record BadRequestErrorBody
 
             var value = discriminator switch
             {
-                "InvalidDateRange" => json.Deserialize<Peal.InvalidDateRangeEncoded?>(options)
-                    ?? throw new JsonException(
-                        "Failed to deserialize Peal.InvalidDateRangeEncoded"
-                    ),
                 "BadRequest" => json.Deserialize<Peal.EffectHttpApiErrorBadRequestEncoded?>(options)
                     ?? throw new JsonException(
                         "Failed to deserialize Peal.EffectHttpApiErrorBadRequestEncoded"
+                    ),
+                "InvalidDateRange" => json.Deserialize<Peal.InvalidDateRangeEncoded?>(options)
+                    ?? throw new JsonException(
+                        "Failed to deserialize Peal.InvalidDateRangeEncoded"
                     ),
                 _ => json.Deserialize<object?>(options),
             };
@@ -205,8 +205,8 @@ public record BadRequestErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "InvalidDateRange" => JsonSerializer.SerializeToNode(value.Value, options),
                     "BadRequest" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "InvalidDateRange" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -236,26 +236,6 @@ public record BadRequestErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for InvalidDateRange
-    /// </summary>
-    [Serializable]
-    public struct InvalidDateRange
-    {
-        public InvalidDateRange(Peal.InvalidDateRangeEncoded value)
-        {
-            Value = value;
-        }
-
-        internal Peal.InvalidDateRangeEncoded Value { get; set; }
-
-        public override string ToString() => Value.ToString() ?? "null";
-
-        public static implicit operator BadRequestErrorBody.InvalidDateRange(
-            Peal.InvalidDateRangeEncoded value
-        ) => new(value);
-    }
-
-    /// <summary>
     /// Discriminated union type for BadRequest
     /// </summary>
     [Serializable]
@@ -272,6 +252,26 @@ public record BadRequestErrorBody
 
         public static implicit operator BadRequestErrorBody.BadRequest(
             Peal.EffectHttpApiErrorBadRequestEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for InvalidDateRange
+    /// </summary>
+    [Serializable]
+    public struct InvalidDateRange
+    {
+        public InvalidDateRange(Peal.InvalidDateRangeEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.InvalidDateRangeEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator BadRequestErrorBody.InvalidDateRange(
+            Peal.InvalidDateRangeEncoded value
         ) => new(value);
     }
 }

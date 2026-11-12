@@ -9,9 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::InvalidDateRangeEncoded }, key: "INVALID_DATE_RANGE"
-
       member -> { Peal::Types::EffectHttpApiErrorBadRequestEncoded }, key: "BAD_REQUEST"
+
+      member -> { Peal::Types::InvalidDateRangeEncoded }, key: "INVALID_DATE_RANGE"
     end
   end
 end

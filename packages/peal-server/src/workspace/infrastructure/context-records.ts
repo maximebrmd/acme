@@ -15,6 +15,7 @@ import { PostRecords } from "#publishing/application/post-records.ts";
 import { ReviewRecords } from "#review/application/review-records.ts";
 import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { ShortLinkRecords } from "#shortlinks/application/short-link-records.ts";
 import { StaffRecords } from "#staff/application/staff-records.ts";
 import { WebhookRecords } from "#webhooks/application/webhook-records.ts";
 import { BillingUnavailable } from "#workspace/application/billing-unavailable.ts";
@@ -47,7 +48,7 @@ const billingRefusals = (workspaceId: WorkspaceId) => ({
  * the channels, the media library, the notices, the assistant's usage,
  * analytics' posts followed, engagement's threads, billing's
  * subscriptions, the webhooks, the activity logs, the staff audit log, the
- * legal records, the reviews of posts, and the ads.
+ * legal records, the reviews of posts, the ads, and the short links.
  */
 export const ContextRecordsLive = Layer.effect(
   ContextRecords,
@@ -66,6 +67,7 @@ export const ContextRecordsLive = Layer.effect(
     const activity = yield* ActivityRecords;
     const engagement = yield* EngagementRecords;
     const adRecords = yield* AdRecords;
+    const shortLinks = yield* ShortLinkRecords;
     const pseudonyms = yield* Pseudonyms;
 
     return ContextRecords.of({
@@ -101,6 +103,8 @@ export const ContextRecordsLive = Layer.effect(
           yield* usage.eraseWorkspace(workspaceId);
           yield* webhooks.eraseWorkspace(workspaceId);
           yield* activity.eraseWorkspace(workspaceId);
+          // The short addresses in its published posts stop answering.
+          yield* shortLinks.eraseWorkspace(workspaceId);
 
           // Ads refuse while a boost may still spend: it is stopped
           // first, which settling checked, unless one started since.
@@ -150,6 +154,7 @@ export const ContextRecordsLive = Layer.effect(
           posts: posts.exportWorkspace(workspaceId),
           review: reviews.exportWorkspace(workspaceId),
           saved: posts.exportSaved(workspaceId),
+          shortLinks: shortLinks.exportWorkspace(workspaceId),
           webhooks: webhooks.exportWorkspace(workspaceId),
         }),
       holdIdentification: (record, closedAt) => legal.hold(record, closedAt),

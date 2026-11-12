@@ -287,6 +287,7 @@ export const PostsHandlers = HttpApiBuilder.group(
               content,
               options,
               presets: asked,
+              shortenLinks: payload.shortenLinks,
               ...filed,
             })
             .pipe(
@@ -871,6 +872,7 @@ export const PostsHandlers = HttpApiBuilder.group(
               content,
               options,
               presets: asked,
+              shortenLinks: payload.shortenLinks,
               ...filed,
             })
             .pipe(

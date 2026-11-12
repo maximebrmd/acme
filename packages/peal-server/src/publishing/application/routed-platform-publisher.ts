@@ -8,6 +8,10 @@ import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import { postingMonthOf } from "#publishing/domain/posting-month.ts";
 import {
+  linksToShorten,
+  withShortLinks,
+} from "#publishing/domain/short-links.ts";
+import {
   storableFailure,
   storableResult,
 } from "#publishing/domain/storable-outcome.ts";
@@ -15,9 +19,11 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import { withinAllowance } from "#shared/domain/allowance.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import type { PublishResult } from "#shared/domain/publish-result.ts";
 
+import { LinkShortener } from "./link-shortener.ts";
 import { PlatformClients } from "./platform-client.ts";
 import type { OutgoingPost, ReplyReference } from "./platform-client.ts";
 import { PlatformCredentials } from "./platform-credentials.ts";
@@ -99,6 +105,47 @@ export const RoutedPlatformPublisher = Layer.effect(
     const clients = yield* PlatformClients;
     const allowance = yield* PostAllowance;
     const threaded = yield* CurrentThreadedPlatforms;
+    const shortener = yield* LinkShortener;
+
+    // The part's text as the channel receives it: with its links' short
+    // addresses when the post asks for them and the server has some. The
+    // codes come from the table, so every run of an attempt sends the
+    // same text; a table that cannot be written sends nothing.
+    const textSent = Effect.fn("Publishing.textSent")(function* textSent(
+      post: Post,
+      request: PublishRequest,
+      platform: Platform,
+      text: string
+    ) {
+      if (!post.shortenLinks || Option.isNone(shortener.addresses)) {
+        return text;
+      }
+
+      const links = linksToShorten(text, platform, shortener.addresses.value);
+
+      if (links.length === 0) {
+        return text;
+      }
+
+      const shortUrls = yield* shortener
+        .shortened({
+          channelId: request.channelId,
+          destinations: links.map(({ address }) => address),
+          part: request.part,
+          postId: post.id,
+          targetId: request.targetId,
+          workspaceId: post.workspaceId,
+        })
+        .pipe(Effect.catchTag("DatabaseError", databaseDown));
+
+      return withShortLinks(
+        text,
+        links.map((link, index) => ({
+          ...link,
+          shortUrl: shortUrls[index] ?? link.address,
+        }))
+      );
+    });
 
     const withinPlan = Effect.fn("Publishing.withinPlan")(function* withinPlan(
       post: Post
@@ -195,7 +242,7 @@ export const RoutedPlatformPublisher = Layer.effect(
         part: part.index,
         replyTo: yield* replyTargetOf(target.value, part.index),
         startedAt: request.startedAt,
-        text: part.text,
+        text: yield* textSent(post, request, account.platform, part.text),
         workspaceId: post.workspaceId,
       };
 

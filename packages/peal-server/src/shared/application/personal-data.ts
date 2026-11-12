@@ -233,6 +233,21 @@ export interface WebhookRecord {
 }
 
 /**
+ * A short link a published post of the workspace holds: where it leads,
+ * its code, and its address on this server (null once the server has no
+ * base for short links). Counts are not part of it.
+ */
+export interface ShortLinkRecord {
+  readonly channelId: string;
+  readonly code: string;
+  readonly createdAt: DateTime.Utc;
+  readonly destination: string;
+  readonly part: number;
+  readonly postId: string;
+  readonly shortUrl: string | null;
+}
+
+/**
  * What ads keep of a workspace: its sign-ins to ad networks without their
  * tokens, its ad accounts with what an owner allowed them to spend, its
  * boosts as they were asked, and the audit trail of every decision about

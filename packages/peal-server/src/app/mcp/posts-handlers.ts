@@ -409,7 +409,14 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(confirmed);
         }).pipe(Effect.catchTags(malformedPost)),
-      create_draft: ({ channelIds, content, options, tagIds, ...saved }) =>
+      create_draft: ({
+        channelIds,
+        content,
+        options,
+        shortenLinks,
+        tagIds,
+        ...saved
+      }) =>
         Effect.gen(function* create() {
           const given = yield* givenOptions(options);
           const tags = yield* draftTagsFrom(tagIds);
@@ -420,6 +427,7 @@ export const PostToolsLive = PostTools.toLayer(
               content: yield* contentFrom(content),
               options: Option.getOrElse(given, () => []),
               presets: yield* presetsFrom(saved),
+              shortenLinks,
               ...tags,
             })
             .pipe(
@@ -995,6 +1003,7 @@ export const PostToolsLive = PostTools.toLayer(
         content,
         options,
         postId,
+        shortenLinks,
         tagIds,
         ...saved
       }) =>
@@ -1017,6 +1026,7 @@ export const PostToolsLive = PostTools.toLayer(
               content: yield* contentFrom(content),
               options: kept,
               presets: yield* presetsFrom(saved),
+              shortenLinks,
               ...tags,
             })
             .pipe(

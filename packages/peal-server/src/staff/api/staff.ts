@@ -10,6 +10,7 @@ import {
   Api,
   CurrentStaff,
   FailureReasonSchema,
+  ShortLinkNotFound,
   StaffActionRefused,
   SubscriptionStatusSchema,
   UnconfirmedReasonSchema,
@@ -20,6 +21,7 @@ import type {
   StaffAuditEvent,
   StaffChannel,
   StaffPartner,
+  StaffShortLink,
   StaffUser,
   StaffUserSummary,
   StaffWorkspace,
@@ -28,6 +30,7 @@ import type {
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import type { PartnerPosition } from "#staff/application/ports/partner-desk.ts";
+import type { StaffShortLinkSummary } from "#staff/application/ports/short-link-desk.ts";
 import type {
   UserProfile,
   UserSummary,
@@ -41,6 +44,7 @@ import type {
   WorkspaceOverview,
 } from "#staff/application/staff-console.ts";
 import { StaffPartners } from "#staff/application/staff-partners.ts";
+import { StaffShortLinks } from "#staff/application/staff-short-links.ts";
 import { StaffReasonSchema } from "#staff/domain/staff-reason.ts";
 
 const decodeUserId = Schema.decodeUnknownOption(UserIdSchema);
@@ -268,6 +272,17 @@ const pageOf = (page: number | undefined): number => page ?? 1;
 const queryOf = (query: string | undefined): Option.Option<string> =>
   Option.fromUndefinedOr(query);
 
+const shortLinkView = (link: StaffShortLinkSummary): StaffShortLink => ({
+  channelId: link.channelId,
+  code: link.code,
+  createdAt: link.createdAt,
+  destination: link.destination,
+  disabled: Option.isSome(link.disabledAt),
+  disabledAt: Option.getOrNull(link.disabledAt),
+  postId: link.postId,
+  workspaceId: link.workspaceId,
+});
+
 export const StaffHandlers = HttpApiBuilder.group(
   Api,
   "staff",
@@ -275,6 +290,30 @@ export const StaffHandlers = HttpApiBuilder.group(
     const staffConsole = yield* StaffConsole;
     const actions = yield* StaffActions;
     const partners = yield* StaffPartners;
+    const shortLinks = yield* StaffShortLinks;
+
+    // A short link turned off or on again, by the staff member, recorded.
+    const turnShortLink = (
+      turn: typeof shortLinks.disable,
+      code: string,
+      reason: string
+    ) =>
+      Effect.gen(function* turned() {
+        const { userId } = yield* currentStaff;
+
+        const link = yield* turn({
+          code,
+          reason: yield* decodeReason(reason).pipe(Effect.orDie),
+          staffId: userId,
+        }).pipe(
+          Effect.catchTags({
+            DatabaseError: Effect.die,
+            ShortLinkNotFound: () => Effect.fail(new ShortLinkNotFound()),
+          })
+        );
+
+        return shortLinkView(link);
+      });
 
     const viewUser = (userId: UserId) =>
       staffConsole.user(userId).pipe(
@@ -315,6 +354,30 @@ export const StaffHandlers = HttpApiBuilder.group(
             })
             .pipe(Effect.catchTags(failures));
         }),
+      disableShortLink: ({ params, payload }) =>
+        turnShortLink(shortLinks.disable, params.code, payload.reason),
+      disableWorkspaceShortLinks: ({ params, payload }) =>
+        Effect.gen(function* disableWorkspaceShortLinks() {
+          const workspaceId = decodeWorkspaceId(params.workspaceId);
+
+          if (Option.isNone(workspaceId)) {
+            return yield* new WorkspaceNotFound();
+          }
+
+          const { userId } = yield* currentStaff;
+
+          const disabled = yield* shortLinks
+            .disableWorkspace({
+              reason: yield* decodeReason(payload.reason).pipe(Effect.orDie),
+              staffId: userId,
+              workspaceId: workspaceId.value,
+            })
+            .pipe(Effect.orDie);
+
+          return { disabled };
+        }),
+      enableShortLink: ({ params, payload }) =>
+        turnShortLink(shortLinks.enable, params.code, payload.reason),
       grantPartner: ({ params, payload }) =>
         Effect.gen(function* grantPartner() {
           const workspaceId = decodeWorkspaceId(params.workspaceId);
@@ -393,6 +456,14 @@ export const StaffHandlers = HttpApiBuilder.group(
 
           return { email: staff.email, name: staff.name, userId: staff.id };
         }),
+      shortLink: ({ params }) =>
+        shortLinks.find(params.code).pipe(
+          Effect.map(shortLinkView),
+          Effect.catchTags({
+            DatabaseError: Effect.die,
+            ShortLinkNotFound: () => Effect.fail(new ShortLinkNotFound()),
+          })
+        ),
       system: () =>
         staffConsole.system.pipe(
           Effect.orDie,
@@ -439,6 +510,18 @@ export const StaffHandlers = HttpApiBuilder.group(
                 WorkspaceNotFound: () => Effect.fail(new WorkspaceNotFound()),
               }),
               Effect.flatMap(workspaceView)
+            ),
+        }),
+      workspaceShortLinks: ({ params }) =>
+        Option.match(decodeWorkspaceId(params.workspaceId), {
+          onNone: () => Effect.fail(new WorkspaceNotFound()),
+          onSome: (workspaceId) =>
+            shortLinks.ofWorkspace(workspaceId).pipe(
+              Effect.orDie,
+              Effect.map(({ links, total }) => ({
+                items: links.map(shortLinkView),
+                total,
+              }))
             ),
         }),
       workspaces: ({ query }) =>

@@ -108,6 +108,7 @@ public class RepostTest : BaseMockServerTest
                 "name": "name",
                 "via": "web"
               },
+              "shortenLinks": true,
               "status": "draft",
               "tagIds": [
                 "tagIds",
@@ -322,6 +323,7 @@ public class RepostTest : BaseMockServerTest
                 "name": "name",
                 "via": "web"
               },
+              "shortenLinks": true,
               "status": "draft",
               "tagIds": [
                 "tagIds"

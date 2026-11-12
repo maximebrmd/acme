@@ -35,4 +35,5 @@ public partial interface IPealClient
     public IRecyclingClient Recycling { get; }
     public IFeedsClient Feeds { get; }
     public IChannelDefaultsClient ChannelDefaults { get; }
+    public IShortLinksClient ShortLinks { get; }
 }

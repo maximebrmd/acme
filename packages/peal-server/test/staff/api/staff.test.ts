@@ -10,6 +10,7 @@ import {
   memoryStaff,
   ownedWorkspaceId,
   profileOf,
+  shortLinkCode,
   staffId,
   StaffMemory,
   workspaceId,
@@ -78,6 +79,28 @@ layer(handlersWith(anonymousSecurityTest))(
           ),
           statusOf(client.staff.impersonate({ params, payload: reason })),
           statusOf(client.staff.partner({ params: { workspaceId: memberId } })),
+          statusOf(client.staff.shortLink({ params: { code: shortLinkCode } })),
+          statusOf(
+            client.staff.workspaceShortLinks({ params: { workspaceId } })
+          ),
+          statusOf(
+            client.staff.disableWorkspaceShortLinks({
+              params: { workspaceId },
+              payload: reason,
+            })
+          ),
+          statusOf(
+            client.staff.disableShortLink({
+              params: { code: shortLinkCode },
+              payload: reason,
+            })
+          ),
+          statusOf(
+            client.staff.enableShortLink({
+              params: { code: shortLinkCode },
+              payload: reason,
+            })
+          ),
           statusOf(
             client.staff.grantPartner({
               params: { workspaceId: memberId },
@@ -217,6 +240,139 @@ layer(handlersWith(staffSecurityTest(staffId)))(
               "WorkspaceNotFound"
             );
           }
+        })
+    );
+
+    it.effect(
+      "turn a short link off and on again, each recorded with its reason",
+      () =>
+        Effect.gen(function* shortLinks() {
+          const client = yield* makeClient;
+          const params = { code: shortLinkCode };
+
+          const before = yield* client.staff.shortLink({ params });
+
+          assert.deepInclude(before, {
+            code: shortLinkCode,
+            destination: "https://example.test/reported",
+            disabled: false,
+            workspaceId,
+          });
+
+          const off = yield* client.staff.disableShortLink({
+            params,
+            payload: reason,
+          });
+
+          assert.isTrue(off.disabled);
+
+          const { events } = yield* StaffMemory;
+          const recorded = (yield* Ref.get(events)).at(-1);
+
+          assert(recorded !== undefined);
+          assert.deepStrictEqual(
+            {
+              action: recorded.action,
+              objectIds: recorded.objectIds,
+              reason: Option.getOrNull(recorded.reason),
+              staffId: Option.getOrNull(recorded.staffId),
+              targetId: Option.getOrNull(recorded.targetId),
+              workspaceId: Option.getOrNull(recorded.workspaceId),
+            },
+            {
+              action: "disableShortLink",
+              objectIds: { code: shortLinkCode },
+              reason: reason.reason,
+              staffId,
+              targetId: null,
+              workspaceId,
+            }
+          );
+
+          const on = yield* client.staff.enableShortLink({
+            params,
+            payload: reason,
+          });
+
+          assert.isFalse(on.disabled);
+          assert.strictEqual(
+            (yield* Ref.get(events)).at(-1)?.action,
+            "enableShortLink"
+          );
+
+          // A code no link has, or not shaped like one: nothing recorded.
+          const recordedBefore = (yield* Ref.get(events)).length;
+
+          for (const code of ["Missing", "not a code"]) {
+            assert.strictEqual(
+              yield* statusOf(
+                client.staff.disableShortLink({
+                  params: { code },
+                  payload: reason,
+                })
+              ),
+              "ShortLinkNotFound"
+            );
+            assert.strictEqual(
+              yield* statusOf(client.staff.shortLink({ params: { code } })),
+              "ShortLinkNotFound"
+            );
+          }
+
+          assert.lengthOf(yield* Ref.get(events), recordedBefore);
+        })
+    );
+
+    it.effect(
+      "list a workspace's short links, and turn them all off at once, recorded once",
+      () =>
+        Effect.gen(function* allOff() {
+          const client = yield* makeClient;
+          const params = { workspaceId };
+
+          const listed = yield* client.staff.workspaceShortLinks({ params });
+
+          assert.deepStrictEqual(
+            listed.items.map(({ code }) => code),
+            [shortLinkCode]
+          );
+          assert.strictEqual(listed.total, 1);
+
+          const { events } = yield* StaffMemory;
+          const before = (yield* Ref.get(events)).length;
+
+          const off = yield* client.staff.disableWorkspaceShortLinks({
+            params,
+            payload: reason,
+          });
+
+          assert.deepStrictEqual(off, { disabled: 1 });
+
+          const recorded = yield* Ref.get(events);
+
+          assert.lengthOf(recorded, before + 1);
+          assert.deepStrictEqual(
+            {
+              action: recorded.at(-1)?.action,
+              workspaceId: Option.getOrNull(
+                recorded.at(-1)?.workspaceId ?? Option.none()
+              ),
+            },
+            { action: "disableWorkspaceShortLinks", workspaceId }
+          );
+          assert.isTrue(
+            (yield* client.staff.shortLink({ params: { code: shortLinkCode } }))
+              .disabled
+          );
+
+          assert.strictEqual(
+            yield* statusOf(
+              client.staff.workspaceShortLinks({
+                params: { workspaceId: "not-an-id" },
+              })
+            ),
+            "WorkspaceNotFound"
+          );
         })
     );
 

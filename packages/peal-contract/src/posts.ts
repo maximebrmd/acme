@@ -353,6 +353,8 @@ export const PostSchema = Schema.Struct({
   // How it was last scheduled or moved; null on a draft, or on a post from
   // before this was kept.
   scheduledVia: Schema.NullOr(PostOriginSchema),
+  // Whether its links go out shortened, where the server has short links.
+  shortenLinks: Schema.Boolean,
   status: PostStatusSchema,
   // The workspace's tags it is filed under (`tags.list` names them).
   tagIds: Schema.Array(Schema.String),
@@ -392,6 +394,12 @@ export const PostDraftSchema = Schema.Struct({
     )
   ),
   // A signature of the workspace to put under its text, on every channel.
+  // True to send its links shortened, where the server has short links
+  // (`shortLinks.status`): each link written with http:// or https:// and
+  // longer than a short address goes out as one, per channel; the text
+  // kept stays as written, Pinterest, Instagram and TikTok get links as written, as does a link to a channel's own platform, and an edit of
+  // a live post sends the text as written. Left out, false on a new draft; on an update, the draft keeps its own.
+  shortenLinks: Schema.optionalKey(Schema.Boolean),
   signatureId: Schema.optionalKey(Schema.String),
   tagIds: Schema.optionalKey(PostTagIdsSchema),
 }).annotate({ identifier: "PostDraft" });
@@ -476,6 +484,12 @@ export const NewPostSchema = Schema.Struct({
     )
   ),
   // A signature of the workspace to put under its text, on every channel.
+  // True to send its links shortened, where the server has short links
+  // (`shortLinks.status`): each link written with http:// or https:// and
+  // longer than a short address goes out as one, per channel; the text
+  // kept stays as written, Pinterest, Instagram and TikTok get links as written, as does a link to a channel's own platform, and an edit of
+  // a live post sends the text as written. Left out, false.
+  shortenLinks: Schema.optionalKey(Schema.Boolean),
   signatureId: Schema.optionalKey(Schema.String),
   // The workspace's tags it is filed under; left out, none.
   tagIds: Schema.optionalKey(PostTagIdsSchema),
@@ -512,6 +526,9 @@ export const PostToValidateSchema = Schema.Struct({
     )
   ),
   // A signature of the workspace to put under its text, on every channel.
+  // As `send` takes it: what the check answers is about the text as
+  // written, which a short address never makes longer.
+  shortenLinks: Schema.optionalKey(Schema.Boolean),
   signatureId: Schema.optionalKey(Schema.String),
   when: Schema.optionalKey(PostTimingSchema),
 }).annotate({ identifier: "PostToValidate" });

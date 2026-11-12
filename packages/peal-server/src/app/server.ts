@@ -33,6 +33,10 @@ import { DiscoveryLive } from "#app/discovery/live.ts";
 import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { countRequests } from "#app/request-metrics.ts";
+import {
+  ShortLinkRedirectsLive,
+  ShortLinkRedirectsUntraced,
+} from "#app/short-links/redirects.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
@@ -106,6 +110,11 @@ import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import {
+  LinkStandingLive,
+  ShortLinksApiLive,
+  ShortLinksLive,
+} from "#shortlinks/container.ts";
+import {
   ContractRequestAuditLive,
   ImpersonationAuditLive,
   LegalDisclosureAuditLive,
@@ -164,7 +173,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   RecyclingApiLive,
   FeedsApiLive,
   ChannelDefaultsApiLive,
-  AdsApiLive
+  AdsApiLive,
+  ShortLinksApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 // `/openapi.json` is served with the discovery documents, the same as
@@ -192,6 +202,8 @@ export const RoutesLive = Layer.mergeAll(
   AuthRoutesLive,
   McpLive,
   DiscoveryLive,
+  ShortLinkRedirectsLive,
+  ShortLinkRedirectsUntraced,
   ApiAnswersLive
 );
 
@@ -278,6 +290,19 @@ const PublishingContextLive = PublishingLive.pipe(
   )
 );
 
+// Short links, which answer only while the part of the post that holds
+// them is live (publishing) and their workspace in good standing (the
+// workspace context).
+const ShortLinksContextLive = ShortLinksLive.pipe(
+  Layer.provide(
+    LinkStandingLive.pipe(
+      Layer.provide(
+        Layer.mergeAll(PublishingContextLive, ChannelsWithNoticesLive)
+      )
+    )
+  )
+);
+
 // Reviews: links, comments and approvals of the posts publishing holds,
 // with their channels' names, their media and their members' names.
 const ReviewContextLive = ReviewLive.pipe(
@@ -338,7 +363,8 @@ const AdsRoutesContextLive = adsContext(DirectAds);
 
 // Workspace and account settings, which erase and export what every context
 // keeps, billing's included, which the workspace context brings, the staff
-// audit log's, and the legal records, which keep who held a closed account.
+// audit log's, the short links', and the legal records, which keep who held
+// a closed account.
 const SettingsContextLive = WorkspaceSettingsLive.pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -350,7 +376,8 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       EngagementRecordsLive,
       StaffRecordsLive,
       ReviewGateContextLive,
-      AdsRoutesContextLive
+      AdsRoutesContextLive,
+      ShortLinksContextLive
     )
   )
 );
@@ -365,7 +392,8 @@ const ErasedContextsLive = Layer.mergeAll(
   EngagementRecordsLive,
   StaffRecordsLive,
   ReviewGateContextLive,
-  AdsRoutesContextLive
+  AdsRoutesContextLive,
+  ShortLinksContextLive
 );
 
 // The staff console, which reads accounts and workspaces from the workspace
@@ -377,7 +405,9 @@ const StaffContextLive = StaffLive.pipe(
       ChannelsWithNoticesLive,
       PublishingContextLive,
       // Its ad accounts and boosts, as metadata.
-      AdsRoutesContextLive
+      AdsRoutesContextLive,
+      // The short links it turns off.
+      ShortLinksContextLive
     )
   )
 );
@@ -455,7 +485,8 @@ const ServicesLive = Layer.mergeAll(
   ReviewGateContextLive,
   ReviewContextLive,
   ContractRequestsContextLive,
-  AdsRoutesContextLive
+  AdsRoutesContextLive,
+  ShortLinksContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -527,7 +558,8 @@ const ContextsLive = Layer.mergeAll(
   ReviewContextLive,
   ContractRequestsContextLive,
   // On the cluster, every call to an ad account goes through its gate.
-  adsContext(GatedAds)
+  adsContext(GatedAds),
+  ShortLinksContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

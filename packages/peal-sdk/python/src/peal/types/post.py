@@ -39,6 +39,9 @@ class Post(UniversalBaseModel):
     scheduled_via: typing_extensions.Annotated[
         typing.Optional[PostOrigin], FieldMetadata(alias="scheduledVia"), pydantic.Field(alias="scheduledVia")
     ] = None
+    shorten_links: typing_extensions.Annotated[
+        bool, FieldMetadata(alias="shortenLinks"), pydantic.Field(alias="shortenLinks")
+    ]
     status: PostStatus
     tag_ids: typing_extensions.Annotated[
         typing.List[str], FieldMetadata(alias="tagIds"), pydantic.Field(alias="tagIds")

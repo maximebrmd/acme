@@ -66,6 +66,7 @@ public partial class PealClient : IPealClient
         Recycling = new RecyclingClient(_client);
         Feeds = new FeedsClient(_client);
         ChannelDefaults = new ChannelDefaultsClient(_client);
+        ShortLinks = new ShortLinksClient(_client);
     }
 
     public ISystemClient System { get; }
@@ -133,4 +134,6 @@ public partial class PealClient : IPealClient
     public IFeedsClient Feeds { get; }
 
     public IChannelDefaultsClient ChannelDefaults { get; }
+
+    public IShortLinksClient ShortLinks { get; }
 }

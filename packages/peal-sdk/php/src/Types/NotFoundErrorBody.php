@@ -9,7 +9,7 @@ class NotFoundErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'ChannelNotFound'
+     *    'ShortLinkNotFound'
      *   |'WorkspaceNotFound'
      *   |'_unknown'
      * ) $type
@@ -18,7 +18,7 @@ class NotFoundErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    ChannelNotFoundEncoded
+     *    ShortLinkNotFoundEncoded
      *   |WorkspaceNotFoundEncoded
      *   |mixed
      * ) $value
@@ -28,12 +28,12 @@ class NotFoundErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'ChannelNotFound'
+     *    'ShortLinkNotFound'
      *   |'WorkspaceNotFound'
      *   |'_unknown'
      * ),
      *   value: (
-     *    ChannelNotFoundEncoded
+     *    ShortLinkNotFoundEncoded
      *   |WorkspaceNotFoundEncoded
      *   |mixed
      * ),
@@ -47,14 +47,14 @@ class NotFoundErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param ChannelNotFoundEncoded $channelNotFound
+     * @param ShortLinkNotFoundEncoded $shortLinkNotFound
      * @return NotFoundErrorBody
      */
-    public static function channelNotFound(ChannelNotFoundEncoded $channelNotFound): NotFoundErrorBody
+    public static function shortLinkNotFound(ShortLinkNotFoundEncoded $shortLinkNotFound): NotFoundErrorBody
     {
         return new NotFoundErrorBody([
-            'type' => 'ChannelNotFound',
-            'value' => $channelNotFound,
+            'type' => 'ShortLinkNotFound',
+            'value' => $shortLinkNotFound,
         ]);
     }
 
@@ -73,19 +73,19 @@ class NotFoundErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isChannelNotFound(): bool
+    public function isShortLinkNotFound(): bool
     {
-        return $this->value instanceof ChannelNotFoundEncoded && $this->type === 'ChannelNotFound';
+        return $this->value instanceof ShortLinkNotFoundEncoded && $this->type === 'ShortLinkNotFound';
     }
 
     /**
-     * @return ChannelNotFoundEncoded
+     * @return ShortLinkNotFoundEncoded
      */
-    public function asChannelNotFound(): ChannelNotFoundEncoded
+    public function asShortLinkNotFound(): ShortLinkNotFoundEncoded
     {
-        if (!($this->value instanceof ChannelNotFoundEncoded && $this->type === 'ChannelNotFound')) {
+        if (!($this->value instanceof ShortLinkNotFoundEncoded && $this->type === 'ShortLinkNotFound')) {
             throw new Exception(
-                "Expected ChannelNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected ShortLinkNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,8 +134,8 @@ class NotFoundErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'ChannelNotFound':
-                $value = $this->asChannelNotFound()->jsonSerialize();
+            case 'ShortLinkNotFound':
+                $value = $this->asShortLinkNotFound()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case 'WorkspaceNotFound':
@@ -178,8 +178,8 @@ class NotFoundErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'ChannelNotFound':
-                $args['value'] = ChannelNotFoundEncoded::jsonDeserialize($data);
+            case 'ShortLinkNotFound':
+                $args['value'] = ShortLinkNotFoundEncoded::jsonDeserialize($data);
                 break;
             case 'WorkspaceNotFound':
                 $args['value'] = WorkspaceNotFoundEncoded::jsonDeserialize($data);

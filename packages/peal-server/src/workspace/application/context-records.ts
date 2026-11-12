@@ -21,6 +21,7 @@ import type {
   ReviewRecord,
   SentReplyRecord,
   SavedItemsRecord,
+  ShortLinkRecord,
   StaffActionRecord,
   UsageRecord,
   UserReviewRecord,
@@ -64,6 +65,8 @@ export interface WorkspaceContent {
   readonly review: ReviewRecord;
   /** Its tags, signatures, channel sets and channels' default options. */
   readonly saved: SavedItemsRecord;
+  /** The short links its published posts went out with, without counts. */
+  readonly shortLinks: readonly ShortLinkRecord[];
   readonly webhooks: readonly WebhookRecord[];
 }
 

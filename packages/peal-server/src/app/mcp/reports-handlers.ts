@@ -30,8 +30,19 @@ import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
+import {
+  pageView,
+  reportView,
+  statusView,
+} from "#shortlinks/api/short-links-view.ts";
+import { ShortLinkBase } from "#shortlinks/application/short-link-base.ts";
+import { ShortLinkReports } from "#shortlinks/application/short-link-reports.ts";
+import { ShortLinkSettings } from "#shortlinks/application/short-link-settings.ts";
+import { ShortLinkIdSchema } from "#shortlinks/domain/short-link-id.ts";
 
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
+
+const decodeShortLinkId = Schema.decodeUnknownOption(ShortLinkIdSchema);
 
 const decodeEventId = Schema.decodeUnknownOption(ActivityEventIdSchema);
 const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
@@ -96,6 +107,23 @@ const rangeAsked = (asked: {
     );
   });
 
+// A day asked, as its first instant (UTC).
+const clickDay = (day: CalendarDay | undefined) =>
+  Option.fromUndefinedOr(day).pipe(Option.flatMap(dayFrom));
+
+// An id asked that is not one names nothing of the workspace.
+const idAsked = <A>(
+  text: string | undefined,
+  decoded: (input: string) => Option.Option<A>,
+  what: string
+) =>
+  text === undefined
+    ? Effect.succeedNone
+    : Option.match(decoded(text), {
+        onNone: () => refuse(`${text} is not ${what}.`),
+        onSome: (id) => Effect.succeed(Option.some(id)),
+      });
+
 /** What the report tools do, through the analytics and billing use cases. */
 export const ReportToolsLive = ReportTools.toLayer(
   Effect.gen(function* reportTools() {
@@ -103,6 +131,19 @@ export const ReportToolsLive = ReportTools.toLayer(
     const billing = yield* BillingOverview;
     const usage = yield* UsageReports;
     const activity = yield* ActivityLog;
+    const shortLinkReports = yield* ShortLinkReports;
+    const shortLinkSettings = yield* ShortLinkSettings;
+    const { base } = yield* ShortLinkBase;
+    const written = base.pipe(Option.map((url) => url.href));
+
+    const clickRefusals = {
+      DatabaseError: Effect.die,
+      InvalidClickRange: ({ maxDays }: { readonly maxDays: number }) =>
+        refuse(
+          `The range must end on or after the day it starts, and span ${String(maxDays)} days at most.`
+        ),
+      MissingPermission: notAllowed("read analytics"),
+    };
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
@@ -177,6 +218,44 @@ export const ReportToolsLive = ReportTools.toLayer(
 
           return billingView(found);
         }),
+      get_short_link: ({ from, linkId, to }) =>
+        Effect.gen(function* getShortLink() {
+          const id = decodeShortLinkId(linkId);
+
+          if (Option.isNone(id)) {
+            return yield* refuse(
+              "The workspace has no short link with this id: list_short_links lists them."
+            );
+          }
+
+          const found = yield* shortLinkReports
+            .get(yield* actor, id.value, {
+              from: clickDay(from),
+              to: clickDay(to),
+            })
+            .pipe(
+              Effect.catchTags({
+                ...clickRefusals,
+                ShortLinkNotFound: () =>
+                  refuse(
+                    "The workspace has no short link with this id: list_short_links lists them."
+                  ),
+              })
+            );
+
+          return reportView(found, written);
+        }),
+      get_short_link_status: () =>
+        Effect.gen(function* getShortLinkStatus() {
+          const found = yield* shortLinkSettings.status(yield* actor).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read posts"),
+            })
+          );
+
+          return statusView(found);
+        }),
       get_usage: ({ from, to }) =>
         Effect.gen(function* getUsage() {
           const found = yield* usage
@@ -228,6 +307,29 @@ export const ReportToolsLive = ReportTools.toLayer(
             items: page.items.map(toEventView),
             nextCursor: Option.getOrNull(page.next),
           };
+        }),
+      list_short_links: (asked) =>
+        Effect.gen(function* listShortLinks() {
+          const found = yield* shortLinkReports
+            .list(yield* actor, {
+              channelId: yield* idAsked(
+                asked.channelId,
+                decodeChannelId,
+                "a channel's id"
+              ),
+              cursor: yield* idAsked(
+                asked.cursor,
+                decodeShortLinkId,
+                "a page's nextCursor"
+              ),
+              from: clickDay(asked.from),
+              limit: Option.fromUndefinedOr(asked.limit),
+              postId: yield* idAsked(asked.postId, decodePostId, "a post's id"),
+              to: clickDay(asked.to),
+            })
+            .pipe(Effect.catchTags(clickRefusals));
+
+          return pageView(found, written);
         }),
       post_analytics: ({ postId }) =>
         Effect.gen(function* post() {

@@ -39,6 +39,12 @@ class PostDraft extends JsonSerializableType
     public ?array $options;
 
     /**
+     * @var ?bool $shortenLinks
+     */
+    #[JsonProperty('shortenLinks')]
+    public ?bool $shortenLinks;
+
+    /**
      * @var ?string $signatureId
      */
     #[JsonProperty('signatureId')]
@@ -57,6 +63,7 @@ class PostDraft extends JsonSerializableType
      *   channelSets?: ?array<string>,
      *   defaultSignatures?: ?bool,
      *   options?: ?array<ChannelOptions>,
+     *   shortenLinks?: ?bool,
      *   signatureId?: ?string,
      *   tagIds?: ?array<string>,
      * } $values
@@ -69,6 +76,7 @@ class PostDraft extends JsonSerializableType
         $this->content = $values['content'];
         $this->defaultSignatures = $values['defaultSignatures'] ?? null;
         $this->options = $values['options'] ?? null;
+        $this->shortenLinks = $values['shortenLinks'] ?? null;
         $this->signatureId = $values['signatureId'] ?? null;
         $this->tagIds = $values['tagIds'] ?? null;
     }

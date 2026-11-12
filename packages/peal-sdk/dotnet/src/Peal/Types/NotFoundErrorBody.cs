@@ -19,11 +19,11 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.ChannelNotFound"/>.
+    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.ShortLinkNotFound"/>.
     /// </summary>
-    public NotFoundErrorBody(NotFoundErrorBody.ChannelNotFound value)
+    public NotFoundErrorBody(NotFoundErrorBody.ShortLinkNotFound value)
     {
-        Type = "ChannelNotFound";
+        Type = "ShortLinkNotFound";
         Value = value.Value;
     }
 
@@ -48,9 +48,9 @@ public record NotFoundErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "ChannelNotFound"
+    /// Returns true if <see cref="Type"/> is "ShortLinkNotFound"
     /// </summary>
-    public bool IsChannelNotFound => Type == "ChannelNotFound";
+    public bool IsShortLinkNotFound => Type == "ShortLinkNotFound";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "WorkspaceNotFound"
@@ -58,13 +58,15 @@ public record NotFoundErrorBody
     public bool IsWorkspaceNotFound => Type == "WorkspaceNotFound";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.ChannelNotFoundEncoded"/> if <see cref="Type"/> is 'ChannelNotFound', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.ShortLinkNotFoundEncoded"/> if <see cref="Type"/> is 'ShortLinkNotFound', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ChannelNotFound'.</exception>
-    public Peal.ChannelNotFoundEncoded AsChannelNotFound() =>
-        IsChannelNotFound
-            ? (Peal.ChannelNotFoundEncoded)Value!
-            : throw new global::System.Exception("NotFoundErrorBody.Type is not 'ChannelNotFound'");
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ShortLinkNotFound'.</exception>
+    public Peal.ShortLinkNotFoundEncoded AsShortLinkNotFound() =>
+        IsShortLinkNotFound
+            ? (Peal.ShortLinkNotFoundEncoded)Value!
+            : throw new global::System.Exception(
+                "NotFoundErrorBody.Type is not 'ShortLinkNotFound'"
+            );
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.WorkspaceNotFoundEncoded"/> if <see cref="Type"/> is 'WorkspaceNotFound', otherwise throws an exception.
@@ -78,29 +80,29 @@ public record NotFoundErrorBody
             );
 
     public T Match<T>(
-        Func<Peal.ChannelNotFoundEncoded, T> onChannelNotFound,
+        Func<Peal.ShortLinkNotFoundEncoded, T> onShortLinkNotFound,
         Func<Peal.WorkspaceNotFoundEncoded, T> onWorkspaceNotFound,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "ChannelNotFound" => onChannelNotFound(AsChannelNotFound()),
+            "ShortLinkNotFound" => onShortLinkNotFound(AsShortLinkNotFound()),
             "WorkspaceNotFound" => onWorkspaceNotFound(AsWorkspaceNotFound()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.ChannelNotFoundEncoded> onChannelNotFound,
+        Action<Peal.ShortLinkNotFoundEncoded> onShortLinkNotFound,
         Action<Peal.WorkspaceNotFoundEncoded> onWorkspaceNotFound,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "ChannelNotFound":
-                onChannelNotFound(AsChannelNotFound());
+            case "ShortLinkNotFound":
+                onShortLinkNotFound(AsShortLinkNotFound());
                 break;
             case "WorkspaceNotFound":
                 onWorkspaceNotFound(AsWorkspaceNotFound());
@@ -112,13 +114,13 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.ChannelNotFoundEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.ShortLinkNotFoundEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsChannelNotFound(out Peal.ChannelNotFoundEncoded? value)
+    public bool TryAsShortLinkNotFound(out Peal.ShortLinkNotFoundEncoded? value)
     {
-        if (Type == "ChannelNotFound")
+        if (Type == "ShortLinkNotFound")
         {
-            value = (Peal.ChannelNotFoundEncoded)Value!;
+            value = (Peal.ShortLinkNotFoundEncoded)Value!;
             return true;
         }
         value = null;
@@ -141,7 +143,7 @@ public record NotFoundErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator NotFoundErrorBody(NotFoundErrorBody.ChannelNotFound value) =>
+    public static implicit operator NotFoundErrorBody(NotFoundErrorBody.ShortLinkNotFound value) =>
         new(value);
 
     public static implicit operator NotFoundErrorBody(NotFoundErrorBody.WorkspaceNotFound value) =>
@@ -188,10 +190,10 @@ public record NotFoundErrorBody
 
             var value = discriminator switch
             {
-                "ChannelNotFound" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.ChannelNotFoundEncoded?>(options)
+                "ShortLinkNotFound" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ShortLinkNotFoundEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.ChannelNotFoundEncoded"
+                            "Failed to deserialize Peal.ShortLinkNotFoundEncoded"
                         ),
                 "WorkspaceNotFound" => json.Deserialize<Peal.WorkspaceNotFoundEncoded?>(options)
                     ?? throw new JsonException(
@@ -211,7 +213,7 @@ public record NotFoundErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "ChannelNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "ShortLinkNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     "WorkspaceNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
@@ -242,22 +244,22 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for ChannelNotFound
+    /// Discriminated union type for ShortLinkNotFound
     /// </summary>
     [Serializable]
-    public struct ChannelNotFound
+    public struct ShortLinkNotFound
     {
-        public ChannelNotFound(Peal.ChannelNotFoundEncoded value)
+        public ShortLinkNotFound(Peal.ShortLinkNotFoundEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.ChannelNotFoundEncoded Value { get; set; }
+        internal Peal.ShortLinkNotFoundEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator NotFoundErrorBody.ChannelNotFound(
-            Peal.ChannelNotFoundEncoded value
+        public static implicit operator NotFoundErrorBody.ShortLinkNotFound(
+            Peal.ShortLinkNotFoundEncoded value
         ) => new(value);
     }
 

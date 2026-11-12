@@ -44,6 +44,9 @@ public record Post : IJsonOnDeserialized
     [JsonPropertyName("scheduledVia")]
     public PostOrigin? ScheduledVia { get; set; }
 
+    [JsonPropertyName("shortenLinks")]
+    public required bool ShortenLinks { get; set; }
+
     [JsonPropertyName("status")]
     public required PostStatus Status { get; set; }
 

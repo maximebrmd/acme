@@ -33,6 +33,7 @@ import (
 	recycling "github.com/peal-social/peal/packages/peal-sdk/go/recycling"
 	review "github.com/peal-social/peal/packages/peal-sdk/go/review"
 	session "github.com/peal-social/peal/packages/peal-sdk/go/session"
+	shortlinks "github.com/peal-social/peal/packages/peal-sdk/go/shortlinks"
 	signatures "github.com/peal-social/peal/packages/peal-sdk/go/signatures"
 	system "github.com/peal-social/peal/packages/peal-sdk/go/system"
 	tags "github.com/peal-social/peal/packages/peal-sdk/go/tags"
@@ -75,6 +76,7 @@ type Client struct {
 	Recycling               *recycling.Client
 	Feeds                   *feeds.Client
 	ChannelDefaults         *channeldefaults.Client
+	ShortLinks              *shortlinks.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -117,6 +119,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Recycling:               recycling.NewClient(options),
 		Feeds:                   feeds.NewClient(options),
 		ChannelDefaults:         channeldefaults.NewClient(options),
+		ShortLinks:              shortlinks.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,
 		caller: internal.NewCaller(

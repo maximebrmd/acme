@@ -550,6 +550,10 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/t
 - Before anything is called, 409 `live_post_not_changeable` says why not, as for a deletion, with `approvalRequired` too; a part the post does not have live there is `noPlatformId`.
 - Webhooks hear `post.edited` or `post.edit_failed` ([Webhooks](/webhooks#post-edited)), with the part, never the text. `livePost.edit` and `livePost.editBlockedBy` in the capabilities say beforehand where Peal edits.
 
+## Short links [#short-links]
+
+`shortenLinks: true` on `POST …/posts`, `PUT …/posts/{postId}`, `send` and each item of `bulk` asks for the post's links to go out [shortened](/scheduling#short-links), on a server that has short links (`GET …/short-links/status` says, with what a short address starts with and how long it is). Left out, a new post's links go out as written and a draft that changes keeps its choice; every post carries `shortenLinks` in its answer. `validate` takes it and checks the text as written, which a short address never makes longer. A CSV import has no column for it. The links and their clicks are read through `GET …/short-links` ([Clicks on short links](/analytics#short-links)); no endpoint shortens an address outside a post.
+
 ## From MCP and the command line [#tools]
 
 | Request                             | MCP tool                          | Command                              |

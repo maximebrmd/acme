@@ -33,6 +33,7 @@ import social.peal.resources.queues.QueuesClient;
 import social.peal.resources.recycling.RecyclingClient;
 import social.peal.resources.review.ReviewClient;
 import social.peal.resources.session.SessionClient;
+import social.peal.resources.shortlinks.ShortLinksClient;
 import social.peal.resources.signatures.SignaturesClient;
 import social.peal.resources.system.SystemClient;
 import social.peal.resources.tags.TagsClient;
@@ -109,6 +110,8 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<ChannelDefaultsClient> channelDefaultsClient;
 
+    protected final Supplier<ShortLinksClient> shortLinksClient;
+
     public PealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new SystemClient(clientOptions));
@@ -144,6 +147,7 @@ public class PealClient implements AutoCloseable {
         this.recyclingClient = Suppliers.memoize(() -> new RecyclingClient(clientOptions));
         this.feedsClient = Suppliers.memoize(() -> new FeedsClient(clientOptions));
         this.channelDefaultsClient = Suppliers.memoize(() -> new ChannelDefaultsClient(clientOptions));
+        this.shortLinksClient = Suppliers.memoize(() -> new ShortLinksClient(clientOptions));
     }
 
     public SystemClient system() {
@@ -276,6 +280,10 @@ public class PealClient implements AutoCloseable {
 
     public ChannelDefaultsClient channelDefaults() {
         return this.channelDefaultsClient.get();
+    }
+
+    public ShortLinksClient shortLinks() {
+        return this.shortLinksClient.get();
     }
 
     /**

@@ -2080,7 +2080,7 @@
       "description": "Supprime définitivement l’espace de travail, avec tout son contenu. Seuls les propriétaires le peuvent.",
       "open": "Supprimer cet espace de travail…",
       "confirmTitle": "Supprimer définitivement {name} ?",
-      "confirmDescription": "Ses canaux et leurs autorisations, ses publications, programmées ou non, sa médiathèque, ses notifications, ses membres et invitations, et ses clés d’API disparaissent, sans retour possible. Plus rien n’en est publié, et son abonnement, s’il en a un, est résilié.",
+      "confirmDescription": "Ses canaux et leurs autorisations, ses publications, programmées ou non, sa médiathèque, ses notifications, ses membres et invitations, et ses clés d’API disparaissent, sans retour possible. Plus rien n’en est publié, et son abonnement, s’il en a un, est résilié. Les liens courts de ses publications mises en ligne cessent de fonctionner.",
       "typeName": "Saisissez {name} pour confirmer",
       "confirm": "Supprimer l’espace de travail",
       "deleting": "Suppression…",
@@ -2494,6 +2494,7 @@
       "workspaces": "Espaces de travail",
       "audit": "Journal d’audit",
       "requests": "Demandes sur les contrats",
+      "shortLinks": "Liens courts",
       "legal": "Réquisitions"
     },
     "search": {
@@ -2635,6 +2636,7 @@
       "banned": "On ne peut pas se connecter avec un compte banni. Levez d’abord le bannissement.",
       "expired": "Un bannissement doit prendre fin dans le futur.",
       "gone": "Ce compte n’existe plus.",
+      "linkGone": "Plus aucun lien court n’a ce code.",
       "notStaff": "Votre session d’équipe a pris fin. Reconnectez-vous.",
       "self": "L’équipe ne fait pas cela à son propre compte.",
       "staff": "L’équipe n’agit jamais à la place d’autres membres de l’équipe.",
@@ -2719,7 +2721,7 @@
       "noReason": "Non conservé",
       "until": "Jusqu’au",
       "workspace": "Dans un espace de travail",
-      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} resetTwoStep {A réinitialisé la validation en deux étapes} other {{action}}}"
+      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} resetTwoStep {A réinitialisé la validation en deux étapes} disableShortLink {A désactivé un lien court} enableShortLink {A réactivé un lien court} disableWorkspaceShortLinks {A désactivé les liens courts d’un espace de travail} other {{action}}}"
     },
     "channelStatus": {
       "active": "Fonctionne",
@@ -2855,6 +2857,33 @@
       "grant": "Accorder un compte partenaire",
       "granting": "Accord en cours…",
       "granted": "L’espace de travail a un compte partenaire."
+    },
+    "shortLinks": {
+      "title": "Liens courts",
+      "description": "Trouvez un lien court par son code, ou son adresse entière, pour voir où il mène et quelle publication le contient, et désactivez-le quand il est signalé. Un lien désactivé répond 410 à qui le suit ; la publication qui le contient n’est pas modifiée.",
+      "searchLabel": "Code ou adresse courte",
+      "notFound": "Aucun lien court n’a ce code.",
+      "code": "Code",
+      "destination": "Mène à",
+      "workspace": "Espace de travail",
+      "post": "Publication",
+      "created": "Créé",
+      "state": "État",
+      "on": "Redirige",
+      "off": "Désactivé depuis",
+      "disable": "Le désactiver",
+      "disabling": "Désactivation…",
+      "disabled": "Le lien court est désactivé.",
+      "enable": "Le réactiver",
+      "enabling": "Réactivation…",
+      "enabled": "Le lien court redirige de nouveau.",
+      "hint": "Consigné dans le journal d’audit, avec le motif, avant d’être fait.",
+      "none": "Cet espace de travail n’a aucun lien court.",
+      "count": "{total, plural, one {# lien court} other {# liens courts}}, les {shown} plus récents affichés.",
+      "turnedOff": "Désactivé",
+      "allHint": "Désactive tous les liens courts encore actifs de cet espace de travail, comme lorsqu’il est signalé pour abus : chacun répond alors 410. Consigné une seule fois dans le journal d’audit, avec le motif.",
+      "disableAll": "Les désactiver tous",
+      "allDisabled": "{count, plural, =0 {Aucun lien court n’était encore actif.} one {# lien court désactivé.} other {# liens courts désactivés.}}"
     }
   },
   "Impersonation": {
@@ -3453,6 +3482,38 @@
       "inPublic": "Elle repart, en public, sans que personne ne soit sollicité à chaque fois, sauf si l’espace de travail demande des approbations : chaque publication en attend alors une.",
       "start": "Répéter",
       "cancel": "Annuler"
+    }
+  },
+  "ShortLinks": {
+    "composer": {
+      "label": "Raccourcir les liens",
+      "count": "{count, plural, =0 {Aucun lien de la publication n’est assez long pour être raccourci.} one {# lien part sous une adresse courte, qui compte ses clics, sur chaque canal.} other {# liens partent sous des adresses courtes, qui comptent leurs clics, sur chaque canal.}}",
+      "off": "Les liens partent tels qu’écrits.",
+      "keptAsWritten": "Pinterest, Instagram et TikTok gardent les liens tels qu’écrits, et un lien vers la plateforme d’un canal y reste tel qu’écrit."
+    },
+    "post": {
+      "title": "Liens",
+      "description": "Les adresses courtes avec lesquelles cette publication est partie, et combien de fois chacune a été suivie ces 30 derniers jours (UTC). Les décomptes sont approximatifs : les lecteurs automatisés sont écartés, et rien des visiteurs n’est conservé.",
+      "loading": "Lecture des liens…",
+      "loadFailed": "Les liens n’ont pas pu être lus.",
+      "empty": "Cette publication est partie sans lien court.",
+      "link": "Lien",
+      "channel": "Canal",
+      "clicks": "Clics",
+      "part": "partie {number}",
+      "off": "Désactivé",
+      "unknownChannel": "Un canal qui n’est plus connecté"
+    },
+    "settings": {
+      "title": "Liens courts",
+      "description": "Une publication qui demande des liens courts part avec ses liens longs remplacés par des adresses courtes, une par canal, qui comptent leurs clics. Le texte conservé reste tel qu’écrit, Pinterest, Instagram et TikTok gardent les liens tels qu’écrits, comme un lien vers la plateforme du canal, et les adresses courtes cessent de fonctionner quand l’espace de travail est supprimé.",
+      "unavailable": "Ce serveur n’a pas de liens courts : son exploitant n’a pas indiqué où ils se trouvent.",
+      "label": "Raccourcir les liens des nouvelles publications par défaut",
+      "hint": "Chaque publication peut toujours choisir dans l’éditeur.",
+      "readOnly": "Les propriétaires et les administrateurs choisissent la valeur par défaut.",
+      "saved": "Valeur par défaut enregistrée.",
+      "saveFailed": "La valeur par défaut n’a pas pu être enregistrée.",
+      "loadFailed": "Impossible de savoir si ce serveur a des liens courts."
     }
   },
   "Feeds": {

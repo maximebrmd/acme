@@ -38,6 +38,8 @@ public final class PostToValidate {
 
     private final Optional<List<ChannelOptions>> options;
 
+    private final Optional<Boolean> shortenLinks;
+
     private final Optional<String> signatureId;
 
     private final Optional<PostTiming> when;
@@ -51,6 +53,7 @@ public final class PostToValidate {
             PostContent content,
             Optional<Boolean> defaultSignatures,
             Optional<List<ChannelOptions>> options,
+            Optional<Boolean> shortenLinks,
             Optional<String> signatureId,
             Optional<PostTiming> when,
             Map<String, Object> additionalProperties) {
@@ -60,6 +63,7 @@ public final class PostToValidate {
         this.content = content;
         this.defaultSignatures = defaultSignatures;
         this.options = options;
+        this.shortenLinks = shortenLinks;
         this.signatureId = signatureId;
         this.when = when;
         this.additionalProperties = additionalProperties;
@@ -95,6 +99,11 @@ public final class PostToValidate {
         return options;
     }
 
+    @JsonProperty("shortenLinks")
+    public Optional<Boolean> getShortenLinks() {
+        return shortenLinks;
+    }
+
     @JsonProperty("signatureId")
     public Optional<String> getSignatureId() {
         return signatureId;
@@ -123,6 +132,7 @@ public final class PostToValidate {
                 && content.equals(other.content)
                 && defaultSignatures.equals(other.defaultSignatures)
                 && options.equals(other.options)
+                && shortenLinks.equals(other.shortenLinks)
                 && signatureId.equals(other.signatureId)
                 && when.equals(other.when);
     }
@@ -136,6 +146,7 @@ public final class PostToValidate {
                 this.content,
                 this.defaultSignatures,
                 this.options,
+                this.shortenLinks,
                 this.signatureId,
                 this.when);
     }
@@ -184,6 +195,10 @@ public final class PostToValidate {
 
         _FinalStage options(List<ChannelOptions> options);
 
+        _FinalStage shortenLinks(Optional<Boolean> shortenLinks);
+
+        _FinalStage shortenLinks(Boolean shortenLinks);
+
         _FinalStage signatureId(Optional<String> signatureId);
 
         _FinalStage signatureId(String signatureId);
@@ -200,6 +215,8 @@ public final class PostToValidate {
         private Optional<PostTiming> when = Optional.empty();
 
         private Optional<String> signatureId = Optional.empty();
+
+        private Optional<Boolean> shortenLinks = Optional.empty();
 
         private Optional<List<ChannelOptions>> options = Optional.empty();
 
@@ -223,6 +240,7 @@ public final class PostToValidate {
             content(other.getContent());
             defaultSignatures(other.getDefaultSignatures());
             options(other.getOptions());
+            shortenLinks(other.getShortenLinks());
             signatureId(other.getSignatureId());
             when(other.getWhen());
             return this;
@@ -258,6 +276,19 @@ public final class PostToValidate {
         @JsonSetter(value = "signatureId", nulls = Nulls.SKIP)
         public _FinalStage signatureId(Optional<String> signatureId) {
             this.signatureId = signatureId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage shortenLinks(Boolean shortenLinks) {
+            this.shortenLinks = Optional.ofNullable(shortenLinks);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "shortenLinks", nulls = Nulls.SKIP)
+        public _FinalStage shortenLinks(Optional<Boolean> shortenLinks) {
+            this.shortenLinks = shortenLinks;
             return this;
         }
 
@@ -346,6 +377,7 @@ public final class PostToValidate {
                     content,
                     defaultSignatures,
                     options,
+                    shortenLinks,
                     signatureId,
                     when,
                     additionalProperties);
@@ -359,6 +391,7 @@ public final class PostToValidate {
                     || key.equalsIgnoreCase("content")
                     || key.equalsIgnoreCase("defaultSignatures")
                     || key.equalsIgnoreCase("options")
+                    || key.equalsIgnoreCase("shortenLinks")
                     || key.equalsIgnoreCase("signatureId")
                     || key.equalsIgnoreCase("when")) {
                 return;

@@ -28,6 +28,7 @@ import { queues } from "#commands/queues.ts";
 import { recycling } from "#commands/recycling.ts";
 import { review } from "#commands/review.ts";
 import { sets } from "#commands/sets.ts";
+import { shortLinks } from "#commands/short-links.ts";
 import { signatures } from "#commands/signatures.ts";
 import { tags } from "#commands/tags.ts";
 import { usage } from "#commands/usage.ts";
@@ -73,6 +74,7 @@ export const cli = peal.pipe(
     invitations,
     webhooks,
     activity,
+    shortLinks,
     links,
     partner,
     account,

@@ -152,6 +152,12 @@ const save = Command.make(
     sets: setsFlag(
       "A channel set the post is for as well, by its id or its name, as peal sets list shows them; repeat it for several: its connected channels, with the options the set keeps for them where --options gives none. A channel of the set that is no longer connected is left out, and said."
     ),
+    shortenLinks: Flag.Boolean("shorten-links").pipe(
+      Flag.withDescription(
+        "Send the post's links shortened, where the server has short links (peal short-links status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks; the text kept stays as written, and Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform. A draft you change keeps its own choice without it."
+      ),
+      Flag.withDefault(false)
+    ),
     signature: signatureFlag(
       "A signature to put under the post's text, on every channel, by its id or its name, as peal signatures list shows them; under the last part of a post with --then parts. It is then text of the post, counted against each platform's limit, and never added twice."
     ),
@@ -176,7 +182,13 @@ const save = Command.make(
 
     // Tags are sent only when some were given: a new draft has none
     // without them, and a draft that changes keeps its own.
-    const filed = tagIds.length === 0 ? {} : { tagIds };
+    const tagged = tagIds.length === 0 ? {} : { tagIds };
+
+    // Asked for only with the flag: a draft that changes keeps its own.
+    const filed = input.shortenLinks
+      ? { ...tagged, shortenLinks: true }
+      : tagged;
+
     const presets = yield* presetsOf(session, input);
 
     const saved: Post = yield* Option.match(input.postId, {

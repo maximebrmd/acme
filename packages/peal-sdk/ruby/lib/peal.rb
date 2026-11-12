@@ -251,6 +251,11 @@ require_relative "peal/channel_defaults/client"
 require_relative "peal/channel_defaults/types/get_channel_defaults_request"
 require_relative "peal/channel_defaults/types/new_channel_defaults"
 require_relative "peal/channel_defaults/types/clear_channel_defaults_request"
+require_relative "peal/short_links/client"
+require_relative "peal/short_links/types/status_short_links_request"
+require_relative "peal/short_links/types/short_link_settings"
+require_relative "peal/short_links/types/list_short_links_request"
+require_relative "peal/short_links/types/get_short_links_request"
 require_relative "peal/environment"
 
 module Peal
@@ -286,7 +291,7 @@ module Peal
   end
 
   module Types
-    autoload :ChannelNotFoundEncoded, ::File.join(__dir__, "peal/types/channel_not_found_encoded")
+    autoload :ShortLinkNotFoundEncoded, ::File.join(__dir__, "peal/types/short_link_not_found_encoded")
     autoload :WorkspaceNotFoundEncodedTag, ::File.join(__dir__, "peal/types/workspace_not_found_encoded_tag")
     autoload :WorkspaceNotFoundEncoded, ::File.join(__dir__, "peal/types/workspace_not_found_encoded")
     autoload :NotFoundErrorBody, ::File.join(__dir__, "peal/types/not_found_error_body")
@@ -631,6 +636,7 @@ module Peal
     autoload :ChannelCapabilities, ::File.join(__dir__, "peal/types/channel_capabilities")
     autoload :ChannelDay, ::File.join(__dir__, "peal/types/channel_day")
     autoload :ChannelDefaults, ::File.join(__dir__, "peal/types/channel_defaults")
+    autoload :ChannelNotFoundEncoded, ::File.join(__dir__, "peal/types/channel_not_found_encoded")
     autoload :ChannelPageCounts, ::File.join(__dir__, "peal/types/channel_page_counts")
     autoload :ChannelPage, ::File.join(__dir__, "peal/types/channel_page")
     autoload :LimitedCount, ::File.join(__dir__, "peal/types/limited_count")
@@ -913,6 +919,12 @@ module Peal
     autoload :ReviewLinkNotFoundEncoded, ::File.join(__dir__, "peal/types/review_link_not_found_encoded")
     autoload :ReviewSettings, ::File.join(__dir__, "peal/types/review_settings")
     autoload :Role, ::File.join(__dir__, "peal/types/role")
+    autoload :ShortLink, ::File.join(__dir__, "peal/types/short_link")
+    autoload :ShortLinkDay, ::File.join(__dir__, "peal/types/short_link_day")
+    autoload :ShortLinkPeriod, ::File.join(__dir__, "peal/types/short_link_period")
+    autoload :ShortLinkPage, ::File.join(__dir__, "peal/types/short_link_page")
+    autoload :ShortLinkReport, ::File.join(__dir__, "peal/types/short_link_report")
+    autoload :ShortLinkStatus, ::File.join(__dir__, "peal/types/short_link_status")
     autoload :SignatureScopeChannel, ::File.join(__dir__, "peal/types/signature_scope_channel")
     autoload :SignatureScopePlatform, ::File.join(__dir__, "peal/types/signature_scope_platform")
     autoload :SignatureScopeWorkspace, ::File.join(__dir__, "peal/types/signature_scope_workspace")

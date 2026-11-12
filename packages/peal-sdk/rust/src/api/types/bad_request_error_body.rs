@@ -5,6 +5,9 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum BadRequestErrorBody {
     #[non_exhaustive]
+    BadRequest {},
+
+    #[non_exhaustive]
     InvalidDateRange {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
@@ -15,9 +18,6 @@ pub enum BadRequestErrorBody {
         request_id: Option<String>,
     },
 
-    #[non_exhaustive]
-    BadRequest {},
-
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -26,16 +26,16 @@ pub enum BadRequestErrorBody {
 }
 
 impl BadRequestErrorBody {
+    pub fn bad_request() -> Self {
+        Self::BadRequest {}
+    }
+
     pub fn invalid_date_range() -> Self {
         Self::InvalidDateRange {
             code: None,
             message: None,
             request_id: None,
         }
-    }
-
-    pub fn bad_request() -> Self {
-        Self::BadRequest {}
     }
 
     pub fn invalid_date_range_with_code(

@@ -260,6 +260,11 @@
     "tag": "Forbidden"
   },
   {
+    "code": "gone",
+    "status": 410,
+    "tag": "Gone"
+  },
+  {
     "code": "hosted_connect_failed",
     "status": 422,
     "tag": "HostedConnectFailed"
@@ -593,6 +598,11 @@
     "code": "service_unavailable",
     "status": 503,
     "tag": "ServiceUnavailable"
+  },
+  {
+    "code": "short_link_not_found",
+    "status": 404,
+    "tag": "ShortLinkNotFound"
   },
   {
     "code": "signature_name_taken",
