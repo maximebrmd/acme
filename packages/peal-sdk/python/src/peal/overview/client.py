@@ -6,6 +6,7 @@ from ..core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ..core.request_options import RequestOptions
 from ..types.agenda_page import AgendaPage
 from ..types.overview import Overview
+from ..types.report_across_workspaces import ReportAcrossWorkspaces
 from .raw_client import AsyncRawOverviewClient, RawOverviewClient
 
 
@@ -109,6 +110,90 @@ class OverviewClient:
             from_=from_, to=to, cursor=cursor, limit=limit, workspace_ids=workspace_ids, request_options=request_options
         )
         return _response.data
+
+    def report(
+        self,
+        *,
+        time_zone: str,
+        days: typing.Optional[str] = None,
+        cursor: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> ReportAcrossWorkspaces:
+        """
+        Answers what went out in each workspace the user belongs to and how it did, 50 workspaces a page at most, by name then id: each workspace's totals of the posts published in the range (likes, reposts, replies, quotes, impressions, clicks, reach, saves; null where no platform of the workspace gives one, never zero), followers and their change, and the same for the range before with `previousKept` (false where a platform's terms keep less than the range before goes back: show no change then), as that workspace's own dashboard answers them. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. `analytics` is null where the user's role may not read the workspace's analytics (`analytics:read`), and in a workspace that refuses the user (`refused`). Figures of different platforms are not alike: compare a workspace with itself, not with another. Pass the page's `nextCursor` as `cursor` for the next one. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+
+        Parameters
+        ----------
+        time_zone : str
+
+        days : typing.Optional[str]
+
+        cursor : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ReportAcrossWorkspaces
+            ReportAcrossWorkspaces
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.overview.report(
+            time_zone="timeZone",
+        )
+        """
+        _response = self._raw_client.report(
+            time_zone=time_zone, days=days, cursor=cursor, limit=limit, request_options=request_options
+        )
+        return _response.data
+
+    def report_export(
+        self,
+        *,
+        time_zone: str,
+        days: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> typing.Iterator[bytes]:
+        """
+        Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns `workspaceId`, `workspace`, `from`, `to`, `posts`, `likes`, `reposts`, `replies`, `quotes`, `impressions`, `clicks`, `reach`, `saves`, `engagement`, `followers`, `followersGained`, `previousKept`, `previousPosts`, `previousLikes`, `previousReposts`, `previousReplies`, `previousQuotes`, `previousImpressions`, `previousClicks`, `previousReach`, `previousSaves`, `previousEngagement`, `previousFollowers`, `previousFollowersGained`. A count no platform gives, a workspace whose analytics the user may not read, and the range before where `previousKept` is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+
+        Parameters
+        ----------
+        time_zone : str
+
+        days : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration. You can pass in configuration such as `chunk_size`, and more to customize the request and response.
+
+        Returns
+        -------
+        typing.Iterator[bytes]
+            Success
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.overview.report_export(
+            time_zone="timeZone",
+        )
+        """
+        with self._raw_client.report_export(time_zone=time_zone, days=days, request_options=request_options) as r:
+            yield from r.data
 
 
 class AsyncOverviewClient:
@@ -227,3 +312,104 @@ class AsyncOverviewClient:
             from_=from_, to=to, cursor=cursor, limit=limit, workspace_ids=workspace_ids, request_options=request_options
         )
         return _response.data
+
+    async def report(
+        self,
+        *,
+        time_zone: str,
+        days: typing.Optional[str] = None,
+        cursor: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> ReportAcrossWorkspaces:
+        """
+        Answers what went out in each workspace the user belongs to and how it did, 50 workspaces a page at most, by name then id: each workspace's totals of the posts published in the range (likes, reposts, replies, quotes, impressions, clicks, reach, saves; null where no platform of the workspace gives one, never zero), followers and their change, and the same for the range before with `previousKept` (false where a platform's terms keep less than the range before goes back: show no change then), as that workspace's own dashboard answers them. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. `analytics` is null where the user's role may not read the workspace's analytics (`analytics:read`), and in a workspace that refuses the user (`refused`). Figures of different platforms are not alike: compare a workspace with itself, not with another. Pass the page's `nextCursor` as `cursor` for the next one. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+
+        Parameters
+        ----------
+        time_zone : str
+
+        days : typing.Optional[str]
+
+        cursor : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ReportAcrossWorkspaces
+            ReportAcrossWorkspaces
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.overview.report(
+                time_zone="timeZone",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.report(
+            time_zone=time_zone, days=days, cursor=cursor, limit=limit, request_options=request_options
+        )
+        return _response.data
+
+    async def report_export(
+        self,
+        *,
+        time_zone: str,
+        days: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> typing.AsyncIterator[bytes]:
+        """
+        Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns `workspaceId`, `workspace`, `from`, `to`, `posts`, `likes`, `reposts`, `replies`, `quotes`, `impressions`, `clicks`, `reach`, `saves`, `engagement`, `followers`, `followersGained`, `previousKept`, `previousPosts`, `previousLikes`, `previousReposts`, `previousReplies`, `previousQuotes`, `previousImpressions`, `previousClicks`, `previousReach`, `previousSaves`, `previousEngagement`, `previousFollowers`, `previousFollowersGained`. A count no platform gives, a workspace whose analytics the user may not read, and the range before where `previousKept` is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+
+        Parameters
+        ----------
+        time_zone : str
+
+        days : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration. You can pass in configuration such as `chunk_size`, and more to customize the request and response.
+
+        Returns
+        -------
+        typing.AsyncIterator[bytes]
+            Success
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.overview.report_export(
+                time_zone="timeZone",
+            )
+
+
+        asyncio.run(main())
+        """
+        async with self._raw_client.report_export(time_zone=time_zone, days=days, request_options=request_options) as r:
+            async for _chunk in r.data:
+                yield _chunk

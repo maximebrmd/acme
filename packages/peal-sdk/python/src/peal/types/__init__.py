@@ -694,6 +694,8 @@ if typing.TYPE_CHECKING:
     from .reply_pending_encoded import ReplyPendingEncoded
     from .reply_status_conflict_encoded import ReplyStatusConflictEncoded
     from .reply_status_conflict_encoded_tag import ReplyStatusConflictEncodedTag
+    from .report_across_workspaces import ReportAcrossWorkspaces
+    from .report_across_workspaces_previous import ReportAcrossWorkspacesPrevious
     from .reshuffle_stop import ReshuffleStop
     from .return_url_not_allowed_encoded import ReturnUrlNotAllowedEncoded
     from .review_comment import ReviewComment
@@ -877,12 +879,14 @@ if typing.TYPE_CHECKING:
     from .webhooks_not_configured_encoded import WebhooksNotConfiguredEncoded
     from .webhooks_not_configured_encoded_tag import WebhooksNotConfiguredEncodedTag
     from .weekday import Weekday
+    from .workspace_analytics import WorkspaceAnalytics
     from .workspace_busy_encoded import WorkspaceBusyEncoded
     from .workspace_busy_encoded_tag import WorkspaceBusyEncodedTag
     from .workspace_member import WorkspaceMember
     from .workspace_not_found_encoded import WorkspaceNotFoundEncoded
     from .workspace_not_found_encoded_tag import WorkspaceNotFoundEncodedTag
     from .workspace_overview import WorkspaceOverview
+    from .workspace_report import WorkspaceReport
     from .workspace_usage_report import WorkspaceUsageReport
     from .x_options import XOptions
     from .x_reply_settings import XReplySettings
@@ -1566,6 +1570,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ReplyPendingEncoded": ".reply_pending_encoded",
     "ReplyStatusConflictEncoded": ".reply_status_conflict_encoded",
     "ReplyStatusConflictEncodedTag": ".reply_status_conflict_encoded_tag",
+    "ReportAcrossWorkspaces": ".report_across_workspaces",
+    "ReportAcrossWorkspacesPrevious": ".report_across_workspaces_previous",
     "ReshuffleStop": ".reshuffle_stop",
     "ReturnUrlNotAllowedEncoded": ".return_url_not_allowed_encoded",
     "ReviewComment": ".review_comment",
@@ -1747,12 +1753,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WebhooksNotConfiguredEncoded": ".webhooks_not_configured_encoded",
     "WebhooksNotConfiguredEncodedTag": ".webhooks_not_configured_encoded_tag",
     "Weekday": ".weekday",
+    "WorkspaceAnalytics": ".workspace_analytics",
     "WorkspaceBusyEncoded": ".workspace_busy_encoded",
     "WorkspaceBusyEncodedTag": ".workspace_busy_encoded_tag",
     "WorkspaceMember": ".workspace_member",
     "WorkspaceNotFoundEncoded": ".workspace_not_found_encoded",
     "WorkspaceNotFoundEncodedTag": ".workspace_not_found_encoded_tag",
     "WorkspaceOverview": ".workspace_overview",
+    "WorkspaceReport": ".workspace_report",
     "WorkspaceUsageReport": ".workspace_usage_report",
     "XOptions": ".x_options",
     "XReplySettings": ".x_reply_settings",
@@ -2460,6 +2468,8 @@ __all__ = [
     "ReplyPendingEncoded",
     "ReplyStatusConflictEncoded",
     "ReplyStatusConflictEncodedTag",
+    "ReportAcrossWorkspaces",
+    "ReportAcrossWorkspacesPrevious",
     "ReshuffleStop",
     "ReturnUrlNotAllowedEncoded",
     "ReviewComment",
@@ -2641,12 +2651,14 @@ __all__ = [
     "WebhooksNotConfiguredEncoded",
     "WebhooksNotConfiguredEncodedTag",
     "Weekday",
+    "WorkspaceAnalytics",
     "WorkspaceBusyEncoded",
     "WorkspaceBusyEncodedTag",
     "WorkspaceMember",
     "WorkspaceNotFoundEncoded",
     "WorkspaceNotFoundEncodedTag",
     "WorkspaceOverview",
+    "WorkspaceReport",
     "WorkspaceUsageReport",
     "XOptions",
     "XReplySettings",

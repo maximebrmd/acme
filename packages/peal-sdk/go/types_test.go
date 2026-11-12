@@ -10846,6 +10846,685 @@ func TestSettersMarkExplicitCustomerWorkspacePage(t *testing.T) {
 
 }
 
+func TestSettersDashboardTotals(t *testing.T) {
+	t.Run("SetClicks", func(t *testing.T) {
+		obj := &DashboardTotals{}
+		var fernTestValueClicks *int
+		obj.SetClicks(fernTestValueClicks)
+		assert.Equal(t, fernTestValueClicks, obj.Clicks)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetEngagement", func(t *testing.T) {
+		obj := &DashboardTotals{}
+		var fernTestValueEngagement int
+		obj.SetEngagement(fernTestValueEngagement)
+		assert.Equal(t, fernTestValueEngagement, obj.Engagement)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetImpressions", func(t *testing.T) {
+		obj := &DashboardTotals{}
+		var fernTestValueImpressions *int
+		obj.SetImpressions(fernTestValueImpressions)
+		assert.Equal(t, fernTestValueImpressions, obj.Impressions)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetLikes", func(t *testing.T) {
+		obj := &DashboardTotals{}
+		var fernTestValueLikes int
+		obj.SetLikes(fernTestValueLikes)
+		assert.Equal(t, fernTestValueLikes, obj.Likes)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetPosts", func(t *testing.T) {
+		obj := &DashboardTotals{}
+		var fernTestValuePosts int
+		obj.SetPosts(fernTestValuePosts)
+		assert.Equal(t, fernTestValuePosts, obj.Posts)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetQuotes", func(t *testing.T) {
+		obj := &DashboardTotals{}
+		var fernTestValueQuotes *int
+		obj.SetQuotes(fernTestValueQuotes)
+		assert.Equal(t, fernTestValueQuotes, obj.Quotes)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetReach", func(t *testing.T) {
+		obj := &DashboardTotals{}
+		var fernTestValueReach *int
+		obj.SetReach(fernTestValueReach)
+		assert.Equal(t, fernTestValueReach, obj.Reach)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetReplies", func(t *testing.T) {
+		obj := &DashboardTotals{}
+		var fernTestValueReplies int
+		obj.SetReplies(fernTestValueReplies)
+		assert.Equal(t, fernTestValueReplies, obj.Replies)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetReposts", func(t *testing.T) {
+		obj := &DashboardTotals{}
+		var fernTestValueReposts int
+		obj.SetReposts(fernTestValueReposts)
+		assert.Equal(t, fernTestValueReposts, obj.Reposts)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetSaves", func(t *testing.T) {
+		obj := &DashboardTotals{}
+		var fernTestValueSaves *int
+		obj.SetSaves(fernTestValueSaves)
+		assert.Equal(t, fernTestValueSaves, obj.Saves)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersDashboardTotals(t *testing.T) {
+	t.Run("GetClicks", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var expected *int
+		obj.Clicks = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetClicks(), "getter should return the property value")
+	})
+
+	t.Run("GetClicks_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		obj.Clicks = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetClicks(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetClicks_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetClicks() // Should return zero value
+	})
+
+	t.Run("GetEngagement", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var expected int
+		obj.Engagement = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetEngagement(), "getter should return the property value")
+	})
+
+	t.Run("GetEngagement_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetEngagement() // Should return zero value
+	})
+
+	t.Run("GetImpressions", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var expected *int
+		obj.Impressions = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetImpressions(), "getter should return the property value")
+	})
+
+	t.Run("GetImpressions_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		obj.Impressions = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetImpressions(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetImpressions_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetImpressions() // Should return zero value
+	})
+
+	t.Run("GetLikes", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var expected int
+		obj.Likes = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetLikes(), "getter should return the property value")
+	})
+
+	t.Run("GetLikes_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetLikes() // Should return zero value
+	})
+
+	t.Run("GetPosts", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var expected int
+		obj.Posts = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetPosts(), "getter should return the property value")
+	})
+
+	t.Run("GetPosts_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetPosts() // Should return zero value
+	})
+
+	t.Run("GetQuotes", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var expected *int
+		obj.Quotes = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetQuotes(), "getter should return the property value")
+	})
+
+	t.Run("GetQuotes_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		obj.Quotes = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetQuotes(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetQuotes_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetQuotes() // Should return zero value
+	})
+
+	t.Run("GetReach", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var expected *int
+		obj.Reach = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetReach(), "getter should return the property value")
+	})
+
+	t.Run("GetReach_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		obj.Reach = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetReach(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetReach_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetReach() // Should return zero value
+	})
+
+	t.Run("GetReplies", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var expected int
+		obj.Replies = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetReplies(), "getter should return the property value")
+	})
+
+	t.Run("GetReplies_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetReplies() // Should return zero value
+	})
+
+	t.Run("GetReposts", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var expected int
+		obj.Reposts = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetReposts(), "getter should return the property value")
+	})
+
+	t.Run("GetReposts_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetReposts() // Should return zero value
+	})
+
+	t.Run("GetSaves", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var expected *int
+		obj.Saves = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetSaves(), "getter should return the property value")
+	})
+
+	t.Run("GetSaves_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		obj.Saves = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetSaves(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetSaves_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetSaves() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitDashboardTotals(t *testing.T) {
+	t.Run("SetClicks_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var fernTestValueClicks *int
+
+		// Act
+		obj.SetClicks(fernTestValueClicks)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetEngagement_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var fernTestValueEngagement int
+
+		// Act
+		obj.SetEngagement(fernTestValueEngagement)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetImpressions_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var fernTestValueImpressions *int
+
+		// Act
+		obj.SetImpressions(fernTestValueImpressions)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetLikes_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var fernTestValueLikes int
+
+		// Act
+		obj.SetLikes(fernTestValueLikes)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetPosts_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var fernTestValuePosts int
+
+		// Act
+		obj.SetPosts(fernTestValuePosts)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetQuotes_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var fernTestValueQuotes *int
+
+		// Act
+		obj.SetQuotes(fernTestValueQuotes)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetReach_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var fernTestValueReach *int
+
+		// Act
+		obj.SetReach(fernTestValueReach)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetReplies_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var fernTestValueReplies int
+
+		// Act
+		obj.SetReplies(fernTestValueReplies)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetReposts_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var fernTestValueReposts int
+
+		// Act
+		obj.SetReposts(fernTestValueReposts)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetSaves_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+		var fernTestValueSaves *int
+
+		// Act
+		obj.SetSaves(fernTestValueSaves)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
 func TestSettersDatabaseUnavailableEncoded(t *testing.T) {
 	t.Run("SetTag", func(t *testing.T) {
 		obj := &DatabaseUnavailableEncoded{}
@@ -14657,6 +15336,159 @@ func TestSettersMarkExplicitFieldDescription(t *testing.T) {
 
 		// Act
 		obj.SetValues(fernTestValueValues)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersFollowerChange(t *testing.T) {
+	t.Run("SetCurrent", func(t *testing.T) {
+		obj := &FollowerChange{}
+		var fernTestValueCurrent *int
+		obj.SetCurrent(fernTestValueCurrent)
+		assert.Equal(t, fernTestValueCurrent, obj.Current)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetGained", func(t *testing.T) {
+		obj := &FollowerChange{}
+		var fernTestValueGained *int
+		obj.SetGained(fernTestValueGained)
+		assert.Equal(t, fernTestValueGained, obj.Gained)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersFollowerChange(t *testing.T) {
+	t.Run("GetCurrent", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowerChange{}
+		var expected *int
+		obj.Current = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetCurrent(), "getter should return the property value")
+	})
+
+	t.Run("GetCurrent_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowerChange{}
+		obj.Current = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetCurrent(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetCurrent_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FollowerChange
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetCurrent() // Should return zero value
+	})
+
+	t.Run("GetGained", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowerChange{}
+		var expected *int
+		obj.Gained = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetGained(), "getter should return the property value")
+	})
+
+	t.Run("GetGained_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowerChange{}
+		obj.Gained = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetGained(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetGained_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FollowerChange
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetGained() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitFollowerChange(t *testing.T) {
+	t.Run("SetCurrent_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowerChange{}
+		var fernTestValueCurrent *int
+
+		// Act
+		obj.SetCurrent(fernTestValueCurrent)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetGained_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowerChange{}
+		var fernTestValueGained *int
+
+		// Act
+		obj.SetGained(fernTestValueGained)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -51184,6 +52016,39 @@ func TestJSONMarshalingCustomerWorkspacePage(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingDashboardTotals(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &DashboardTotals{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled DashboardTotals
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj DashboardTotals
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj DashboardTotals
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingDatabaseUnavailableEncoded(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -51575,6 +52440,39 @@ func TestJSONMarshalingFieldDescription(t *testing.T) {
 	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
 		t.Parallel()
 		var obj FieldDescription
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingFollowerChange(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowerChange{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled FollowerChange
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj FollowerChange
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj FollowerChange
 		err := json.Unmarshal([]byte(`{}`), &obj)
 		assert.NoError(t, err, "unmarshaling empty object should succeed")
 	})
@@ -55483,6 +56381,53 @@ func TestRequiredNullableRoundTripCustomerWorkspacePage(t *testing.T) {
 	})
 }
 
+func TestRequiredNullableRoundTripDashboardTotals(t *testing.T) {
+	requiredNullableKeys := []string{
+		"clicks",
+		"impressions",
+		"quotes",
+		"reach",
+		"saves",
+	}
+	marshalToMap := func(t *testing.T, obj *DashboardTotals) map[string]json.RawMessage {
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		var result map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal(data, &result), "marshaled data should be a JSON object")
+		return result
+	}
+
+	t.Run("NullPreserved", func(t *testing.T) {
+		t.Parallel()
+		var obj DashboardTotals
+		require.NoError(t, json.Unmarshal([]byte(`{"clicks":null,"impressions":null,"quotes":null,"reach":null,"saves":null}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			value, ok := result[key]
+			require.True(t, ok, "required nullable field %q received as null should be present in the output", key)
+			assert.Equal(t, "null", string(value), "required nullable field %q received as null should be null in the output", key)
+		}
+	})
+
+	t.Run("AbsentStaysAbsent", func(t *testing.T) {
+		t.Parallel()
+		var obj DashboardTotals
+		require.NoError(t, json.Unmarshal([]byte(`{}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q absent from the input should be absent from the output", key)
+		}
+	})
+
+	t.Run("FreshValueOmits", func(t *testing.T) {
+		t.Parallel()
+		result := marshalToMap(t, &DashboardTotals{})
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q should be omitted from a freshly constructed value", key)
+		}
+	})
+}
+
 func TestRequiredNullableRoundTripFieldDescription(t *testing.T) {
 	requiredNullableKeys := []string{
 		"ifLeftOut",
@@ -55526,6 +56471,50 @@ func TestRequiredNullableRoundTripFieldDescription(t *testing.T) {
 	t.Run("FreshValueOmits", func(t *testing.T) {
 		t.Parallel()
 		result := marshalToMap(t, &FieldDescription{})
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q should be omitted from a freshly constructed value", key)
+		}
+	})
+}
+
+func TestRequiredNullableRoundTripFollowerChange(t *testing.T) {
+	requiredNullableKeys := []string{
+		"current",
+		"gained",
+	}
+	marshalToMap := func(t *testing.T, obj *FollowerChange) map[string]json.RawMessage {
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		var result map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal(data, &result), "marshaled data should be a JSON object")
+		return result
+	}
+
+	t.Run("NullPreserved", func(t *testing.T) {
+		t.Parallel()
+		var obj FollowerChange
+		require.NoError(t, json.Unmarshal([]byte(`{"current":null,"gained":null}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			value, ok := result[key]
+			require.True(t, ok, "required nullable field %q received as null should be present in the output", key)
+			assert.Equal(t, "null", string(value), "required nullable field %q received as null should be null in the output", key)
+		}
+	})
+
+	t.Run("AbsentStaysAbsent", func(t *testing.T) {
+		t.Parallel()
+		var obj FollowerChange
+		require.NoError(t, json.Unmarshal([]byte(`{}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q absent from the input should be absent from the output", key)
+		}
+	})
+
+	t.Run("FreshValueOmits", func(t *testing.T) {
+		t.Parallel()
+		result := marshalToMap(t, &FollowerChange{})
 		for _, key := range requiredNullableKeys {
 			assert.NotContains(t, result, key, "required nullable field %q should be omitted from a freshly constructed value", key)
 		}
@@ -56686,6 +57675,22 @@ func TestStringCustomerWorkspacePage(t *testing.T) {
 	})
 }
 
+func TestStringDashboardTotals(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &DashboardTotals{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
 func TestStringDatabaseUnavailableEncoded(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -56873,6 +57878,22 @@ func TestStringFieldDescription(t *testing.T) {
 	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *FieldDescription
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringFollowerChange(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &FollowerChange{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FollowerChange
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
 	})
@@ -63297,6 +64318,29 @@ func TestExtraPropertiesCustomerWorkspacePage(t *testing.T) {
 	})
 }
 
+func TestExtraPropertiesDashboardTotals(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &DashboardTotals{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *DashboardTotals
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
 func TestExtraPropertiesDatabaseUnavailableEncoded(t *testing.T) {
 	t.Run("GetExtraProperties", func(t *testing.T) {
 		t.Parallel()
@@ -63568,6 +64612,29 @@ func TestExtraPropertiesFieldDescription(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *FieldDescription
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesFollowerChange(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &FollowerChange{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FollowerChange
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

@@ -101,6 +101,8 @@ require_relative "peal/notification_preferences/types/notification_preferences_c
 require_relative "peal/overview/client"
 require_relative "peal/overview/types/get_overview_request"
 require_relative "peal/overview/types/agenda_overview_request"
+require_relative "peal/overview/types/report_overview_request"
+require_relative "peal/overview/types/report_export_overview_request"
 require_relative "peal/assistant/client"
 require_relative "peal/assistant/types/status_assistant_request"
 require_relative "peal/assistant/types/suggestion_request"
@@ -926,6 +928,10 @@ module Peal
     autoload :ReplyPendingEncoded, ::File.join(__dir__, "peal/types/reply_pending_encoded")
     autoload :ReplyStatusConflictEncodedTag, ::File.join(__dir__, "peal/types/reply_status_conflict_encoded_tag")
     autoload :ReplyStatusConflictEncoded, ::File.join(__dir__, "peal/types/reply_status_conflict_encoded")
+    autoload :ReportAcrossWorkspacesPrevious, ::File.join(__dir__, "peal/types/report_across_workspaces_previous")
+    autoload :WorkspaceAnalytics, ::File.join(__dir__, "peal/types/workspace_analytics")
+    autoload :WorkspaceReport, ::File.join(__dir__, "peal/types/workspace_report")
+    autoload :ReportAcrossWorkspaces, ::File.join(__dir__, "peal/types/report_across_workspaces")
     autoload :ReturnURLNotAllowedEncoded, ::File.join(__dir__, "peal/types/return_url_not_allowed_encoded")
     autoload :ReviewLinkNotFoundEncoded, ::File.join(__dir__, "peal/types/review_link_not_found_encoded")
     autoload :ReviewSettings, ::File.join(__dir__, "peal/types/review_settings")

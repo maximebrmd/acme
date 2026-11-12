@@ -3,12 +3,16 @@
  */
 package social.peal.resources.overview;
 
+import java.io.InputStream;
 import social.peal.core.ClientOptions;
 import social.peal.core.RequestOptions;
 import social.peal.resources.overview.requests.AgendaOverviewRequest;
 import social.peal.resources.overview.requests.GetOverviewRequest;
+import social.peal.resources.overview.requests.ReportExportOverviewRequest;
+import social.peal.resources.overview.requests.ReportOverviewRequest;
 import social.peal.types.AgendaPage;
 import social.peal.types.Overview;
+import social.peal.types.ReportAcrossWorkspaces;
 
 public class OverviewClient {
     protected final ClientOptions clientOptions;
@@ -67,5 +71,33 @@ public class OverviewClient {
      */
     public AgendaPage agenda(AgendaOverviewRequest request, RequestOptions requestOptions) {
         return this.rawClient.agenda(request, requestOptions).body();
+    }
+
+    /**
+     * Answers what went out in each workspace the user belongs to and how it did, 50 workspaces a page at most, by name then id: each workspace's totals of the posts published in the range (likes, reposts, replies, quotes, impressions, clicks, reach, saves; null where no platform of the workspace gives one, never zero), followers and their change, and the same for the range before with <code>previousKept</code> (false where a platform's terms keep less than the range before goes back: show no change then), as that workspace's own dashboard answers them. The range is <code>days</code> (7, 30 or 90, 30 unless given: that many days ending today in <code>timeZone</code>, an IANA zone such as Europe/Paris), beside the range before, of the same length. <code>analytics</code> is null where the user's role may not read the workspace's analytics (<code>analytics:read</code>), and in a workspace that refuses the user (<code>refused</code>). Figures of different platforms are not alike: compare a workspace with itself, not with another. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     */
+    public ReportAcrossWorkspaces report(ReportOverviewRequest request) {
+        return this.rawClient.report(request).body();
+    }
+
+    /**
+     * Answers what went out in each workspace the user belongs to and how it did, 50 workspaces a page at most, by name then id: each workspace's totals of the posts published in the range (likes, reposts, replies, quotes, impressions, clicks, reach, saves; null where no platform of the workspace gives one, never zero), followers and their change, and the same for the range before with <code>previousKept</code> (false where a platform's terms keep less than the range before goes back: show no change then), as that workspace's own dashboard answers them. The range is <code>days</code> (7, 30 or 90, 30 unless given: that many days ending today in <code>timeZone</code>, an IANA zone such as Europe/Paris), beside the range before, of the same length. <code>analytics</code> is null where the user's role may not read the workspace's analytics (<code>analytics:read</code>), and in a workspace that refuses the user (<code>refused</code>). Figures of different platforms are not alike: compare a workspace with itself, not with another. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     */
+    public ReportAcrossWorkspaces report(ReportOverviewRequest request, RequestOptions requestOptions) {
+        return this.rawClient.report(request, requestOptions).body();
+    }
+
+    /**
+     * Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns <code>workspaceId</code>, <code>workspace</code>, <code>from</code>, <code>to</code>, <code>posts</code>, <code>likes</code>, <code>reposts</code>, <code>replies</code>, <code>quotes</code>, <code>impressions</code>, <code>clicks</code>, <code>reach</code>, <code>saves</code>, <code>engagement</code>, <code>followers</code>, <code>followersGained</code>, <code>previousKept</code>, <code>previousPosts</code>, <code>previousLikes</code>, <code>previousReposts</code>, <code>previousReplies</code>, <code>previousQuotes</code>, <code>previousImpressions</code>, <code>previousClicks</code>, <code>previousReach</code>, <code>previousSaves</code>, <code>previousEngagement</code>, <code>previousFollowers</code>, <code>previousFollowersGained</code>. A count no platform gives, a workspace whose analytics the user may not read, and the range before where <code>previousKept</code> is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. The range is <code>days</code> (7, 30 or 90, 30 unless given: that many days ending today in <code>timeZone</code>, an IANA zone such as Europe/Paris), beside the range before, of the same length. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     */
+    public InputStream reportExport(ReportExportOverviewRequest request) {
+        return this.rawClient.reportExport(request).body();
+    }
+
+    /**
+     * Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns <code>workspaceId</code>, <code>workspace</code>, <code>from</code>, <code>to</code>, <code>posts</code>, <code>likes</code>, <code>reposts</code>, <code>replies</code>, <code>quotes</code>, <code>impressions</code>, <code>clicks</code>, <code>reach</code>, <code>saves</code>, <code>engagement</code>, <code>followers</code>, <code>followersGained</code>, <code>previousKept</code>, <code>previousPosts</code>, <code>previousLikes</code>, <code>previousReposts</code>, <code>previousReplies</code>, <code>previousQuotes</code>, <code>previousImpressions</code>, <code>previousClicks</code>, <code>previousReach</code>, <code>previousSaves</code>, <code>previousEngagement</code>, <code>previousFollowers</code>, <code>previousFollowersGained</code>. A count no platform gives, a workspace whose analytics the user may not read, and the range before where <code>previousKept</code> is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. The range is <code>days</code> (7, 30 or 90, 30 unless given: that many days ending today in <code>timeZone</code>, an IANA zone such as Europe/Paris), beside the range before, of the same length. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     */
+    public InputStream reportExport(ReportExportOverviewRequest request, RequestOptions requestOptions) {
+        return this.rawClient.reportExport(request, requestOptions).body();
     }
 }

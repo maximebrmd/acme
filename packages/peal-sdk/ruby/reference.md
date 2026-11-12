@@ -4907,6 +4907,162 @@ client.overview.agenda(
 </dl>
 </details>
 
+<details><summary><code>client.overview.<a href="/lib/peal/overview/client.rb">report</a>() -> Peal::Types::ReportAcrossWorkspaces</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers what went out in each workspace the user belongs to and how it did, 50 workspaces a page at most, by name then id: each workspace's totals of the posts published in the range (likes, reposts, replies, quotes, impressions, clicks, reach, saves; null where no platform of the workspace gives one, never zero), followers and their change, and the same for the range before with `previousKept` (false where a platform's terms keep less than the range before goes back: show no change then), as that workspace's own dashboard answers them. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. `analytics` is null where the user's role may not read the workspace's analytics (`analytics:read`), and in a workspace that refuses the user (`refused`). Figures of different platforms are not alike: compare a workspace with itself, not with another. Pass the page's `nextCursor` as `cursor` for the next one. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.overview.report(time_zone: "timeZone")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**days:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Peal::Overview::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.overview.<a href="/lib/peal/overview/client.rb">report_export</a>() -> String</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns `workspaceId`, `workspace`, `from`, `to`, `posts`, `likes`, `reposts`, `replies`, `quotes`, `impressions`, `clicks`, `reach`, `saves`, `engagement`, `followers`, `followersGained`, `previousKept`, `previousPosts`, `previousLikes`, `previousReposts`, `previousReplies`, `previousQuotes`, `previousImpressions`, `previousClicks`, `previousReach`, `previousSaves`, `previousEngagement`, `previousFollowers`, `previousFollowersGained`. A count no platform gives, a workspace whose analytics the user may not read, and the range before where `previousKept` is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.overview.report_export(time_zone: "timeZone")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**days:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Peal::Overview::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## assistant
 <details><summary><code>client.assistant.<a href="/lib/peal/assistant/client.rb">status</a>(workspace_id:) -> Peal::Types::AssistantStatus</code></summary>
 <dl>

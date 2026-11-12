@@ -2219,6 +2219,80 @@
       "postServeActions": []
     },
     {
+      "id": "7dd0b91b-26d2-420a-a6da-09df88d037c8",
+      "name": "Get a report across workspaces - default",
+      "request": {
+        "urlPathTemplate": "/api/me/report",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "queryParameters": {
+          "timeZone": {
+            "equalTo": "timeZone"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"from\": \"from\",\n  \"nextCursor\": \"nextCursor\",\n  \"previous\": {\n    \"from\": \"from\",\n    \"to\": \"to\"\n  },\n  \"timeZone\": \"timeZone\",\n  \"to\": \"to\",\n  \"workspaces\": [\n    {\n      \"analytics\": {\n        \"followers\": {\n          \"current\": null,\n          \"gained\": null\n        },\n        \"previousFollowers\": {\n          \"current\": null,\n          \"gained\": null\n        },\n        \"previousKept\": true,\n        \"previousTotals\": {\n          \"clicks\": null,\n          \"engagement\": 1,\n          \"impressions\": null,\n          \"likes\": 1,\n          \"posts\": 1,\n          \"quotes\": null,\n          \"reach\": null,\n          \"replies\": 1,\n          \"reposts\": 1,\n          \"saves\": null\n        },\n        \"totals\": {\n          \"clicks\": null,\n          \"engagement\": 1,\n          \"impressions\": null,\n          \"likes\": 1,\n          \"posts\": 1,\n          \"quotes\": null,\n          \"reach\": null,\n          \"replies\": 1,\n          \"reposts\": 1,\n          \"saves\": null\n        }\n      },\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"refused\": \"twoStepRequired\",\n      \"role\": \"role\",\n      \"slug\": \"slug\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "7dd0b91b-26d2-420a-a6da-09df88d037c8",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "c510f5c9-93b5-4610-a73c-360cadefb637",
+      "name": "Export the report across workspaces - default",
+      "request": {
+        "urlPathTemplate": "/api/me/report/export",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "queryParameters": {
+          "timeZone": {
+            "equalTo": "timeZone"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "base64Body": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDE1IDAwMDAwIG4gCjAwMDAwMDAwNjQgMDAwMDAgbiAKMDAwMDAwMDEyMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjE5MgolJUVPRgo=",
+        "headers": {
+          "Content-Type": "application/octet-stream"
+        }
+      },
+      "uuid": "c510f5c9-93b5-4610-a73c-360cadefb637",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
       "id": "e1107588-162c-4297-a5b8-4738e0a6617b",
       "name": "Get the assistant's status - default",
       "request": {
@@ -7242,6 +7316,6 @@
     }
   ],
   "meta": {
-    "total": 193
+    "total": 195
   }
 }

@@ -149,4 +149,125 @@ export class OverviewClient {
 
         return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/api/me/agenda");
     }
+
+    /**
+     * Answers what went out in each workspace the user belongs to and how it did, 50 workspaces a page at most, by name then id: each workspace's totals of the posts published in the range (likes, reposts, replies, quotes, impressions, clicks, reach, saves; null where no platform of the workspace gives one, never zero), followers and their change, and the same for the range before with `previousKept` (false where a platform's terms keep less than the range before goes back: show no change then), as that workspace's own dashboard answers them. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. `analytics` is null where the user's role may not read the workspace's analytics (`analytics:read`), and in a workspace that refuses the user (`refused`). Figures of different platforms are not alike: compare a workspace with itself, not with another. Pass the page's `nextCursor` as `cursor` for the next one. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     *
+     * @param {Peal.ReportOverviewRequest} request
+     * @param {OverviewClient.RequestOptions} requestOptions - Request-specific configuration.
+     *
+     * @throws {@link Peal.BadRequestError}
+     * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.UnprocessableEntityError}
+     * @throws {@link Peal.TooManyRequestsError}
+     * @throws {@link errors.PealError}
+     * @throws {@link errors.PealTimeoutError}
+     *
+     * @example
+     *     await client.overview.report({
+     *         timeZone: "timeZone"
+     *     })
+     */
+    public report(request: Peal.ReportOverviewRequest, requestOptions?: OverviewClient.RequestOptions): core.HttpResponsePromise<Peal.ReportAcrossWorkspaces> {
+        return core.HttpResponsePromise.fromPromise(this.__report(request, requestOptions));
+    }
+
+    private async __report(request: Peal.ReportOverviewRequest, requestOptions?: OverviewClient.RequestOptions): Promise<core.WithRawResponse<Peal.ReportAcrossWorkspaces>> {
+        const { days, timeZone, cursor, limit } = request;
+        const _queryParams: Record<string, unknown> = {
+            days,
+            timeZone,
+            cursor,
+            limit
+        };
+        const _authRequest: core.AuthRequest = await this._options.authProvider.getAuthRequest();
+        let _headers: core.Fetcher.Args["headers"] = mergeHeaders(_authRequest.headers, this._options?.headers, requestOptions?.headers);
+        const _response = await core.fetcher({
+            url: core.url.join(await core.Supplier.get(this._options.baseUrl) ?? (await core.Supplier.get(this._options.environment) ?? environments.PealEnvironment.Default), "api/me/report"),
+            method: "GET",
+            headers: _headers,
+            queryString: core.url.queryBuilder().addMany(_queryParams).mergeAdditional(requestOptions?.queryParams).build(),
+            timeoutMs: (requestOptions?.timeoutInSeconds ?? this._options?.timeoutInSeconds ?? 60) * 1000,
+            maxRetries: requestOptions?.maxRetries ?? this._options?.maxRetries,
+            abortSignal: requestOptions?.abortSignal,
+            fetchFn: this._options?.fetch,
+            logging: this._options.logging
+        });
+        if (_response.ok) {
+            return { data: _response.body as Peal.ReportAcrossWorkspaces, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            switch (_response.error.statusCode) {
+                case 400: throw new Peal.BadRequestError(_response.error.body as unknown, _response.rawResponse);
+                case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
+                case 422: throw new Peal.UnprocessableEntityError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
+                default: throw new errors.PealError({
+                    statusCode: _response.error.statusCode,
+                    body: _response.error.body,
+                    rawResponse: _response.rawResponse
+                });
+            }
+        }
+
+        return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/api/me/report");
+    }
+
+    /**
+     * Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns `workspaceId`, `workspace`, `from`, `to`, `posts`, `likes`, `reposts`, `replies`, `quotes`, `impressions`, `clicks`, `reach`, `saves`, `engagement`, `followers`, `followersGained`, `previousKept`, `previousPosts`, `previousLikes`, `previousReposts`, `previousReplies`, `previousQuotes`, `previousImpressions`, `previousClicks`, `previousReach`, `previousSaves`, `previousEngagement`, `previousFollowers`, `previousFollowersGained`. A count no platform gives, a workspace whose analytics the user may not read, and the range before where `previousKept` is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     *
+     * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.UnprocessableEntityError}
+     * @throws {@link Peal.TooManyRequestsError}
+     * @throws {@link errors.PealError}
+     * @throws {@link errors.PealTimeoutError}
+     */
+    public reportExport(request: Peal.ReportExportOverviewRequest, requestOptions?: OverviewClient.RequestOptions): core.HttpResponsePromise<core.BinaryResponse> {
+        return core.HttpResponsePromise.fromPromise(this.__reportExport(request, requestOptions));
+    }
+
+    private async __reportExport(request: Peal.ReportExportOverviewRequest, requestOptions?: OverviewClient.RequestOptions): Promise<core.WithRawResponse<core.BinaryResponse>> {
+        const { days, timeZone } = request;
+        const _queryParams: Record<string, unknown> = {
+            days,
+            timeZone
+        };
+        const _authRequest: core.AuthRequest = await this._options.authProvider.getAuthRequest();
+        let _headers: core.Fetcher.Args["headers"] = mergeHeaders(_authRequest.headers, this._options?.headers, requestOptions?.headers);
+        const _response = await core.fetcher<core.BinaryResponse>({
+            url: core.url.join(await core.Supplier.get(this._options.baseUrl) ?? (await core.Supplier.get(this._options.environment) ?? environments.PealEnvironment.Default), "api/me/report/export"),
+            method: "GET",
+            headers: _headers,
+            queryString: core.url.queryBuilder().addMany(_queryParams).mergeAdditional(requestOptions?.queryParams).build(),
+            responseType: "binary-response",
+            timeoutMs: (requestOptions?.timeoutInSeconds ?? this._options?.timeoutInSeconds ?? 60) * 1000,
+            maxRetries: requestOptions?.maxRetries ?? this._options?.maxRetries,
+            abortSignal: requestOptions?.abortSignal,
+            fetchFn: this._options?.fetch,
+            logging: this._options.logging
+        });
+        if (_response.ok) {
+            return { data: _response.body, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            switch (_response.error.statusCode) {
+                case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
+                case 422: throw new Peal.UnprocessableEntityError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
+                default: throw new errors.PealError({
+                    statusCode: _response.error.statusCode,
+                    body: _response.error.body,
+                    rawResponse: _response.rawResponse
+                });
+            }
+        }
+
+        return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/api/me/report/export");
+    }
 }

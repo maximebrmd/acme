@@ -5,6 +5,7 @@ package social.peal.resources.overview;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
+import java.io.InputStream;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -18,15 +19,20 @@ import social.peal.core.PealClientException;
 import social.peal.core.PealClientHttpResponse;
 import social.peal.core.QueryStringMapper;
 import social.peal.core.RequestOptions;
+import social.peal.core.ResponseBodyInputStream;
 import social.peal.core.RetryInterceptor;
 import social.peal.errors.BadRequestError;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
+import social.peal.errors.UnprocessableEntityError;
 import social.peal.resources.overview.requests.AgendaOverviewRequest;
 import social.peal.resources.overview.requests.GetOverviewRequest;
+import social.peal.resources.overview.requests.ReportExportOverviewRequest;
+import social.peal.resources.overview.requests.ReportOverviewRequest;
 import social.peal.types.AgendaPage;
 import social.peal.types.Overview;
+import social.peal.types.ReportAcrossWorkspaces;
 import social.peal.types.UnauthenticatedEncoded;
 
 public class RawOverviewClient {
@@ -202,6 +208,178 @@ public class RawOverviewClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 429:
+                        throw new TooManyRequestsError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                }
+            } catch (JsonProcessingException ignored) {
+                // unable to map error response, throwing generic error
+            }
+            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+            throw new PealClientApiException(
+                    "Error with status code " + response.code(), response.code(), errorBody, response);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new PealClientException("Network error executing HTTP request", e);
+        }
+    }
+
+    /**
+     * Answers what went out in each workspace the user belongs to and how it did, 50 workspaces a page at most, by name then id: each workspace's totals of the posts published in the range (likes, reposts, replies, quotes, impressions, clicks, reach, saves; null where no platform of the workspace gives one, never zero), followers and their change, and the same for the range before with <code>previousKept</code> (false where a platform's terms keep less than the range before goes back: show no change then), as that workspace's own dashboard answers them. The range is <code>days</code> (7, 30 or 90, 30 unless given: that many days ending today in <code>timeZone</code>, an IANA zone such as Europe/Paris), beside the range before, of the same length. <code>analytics</code> is null where the user's role may not read the workspace's analytics (<code>analytics:read</code>), and in a workspace that refuses the user (<code>refused</code>). Figures of different platforms are not alike: compare a workspace with itself, not with another. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     */
+    public PealClientHttpResponse<ReportAcrossWorkspaces> report(ReportOverviewRequest request) {
+        return report(request, null);
+    }
+
+    /**
+     * Answers what went out in each workspace the user belongs to and how it did, 50 workspaces a page at most, by name then id: each workspace's totals of the posts published in the range (likes, reposts, replies, quotes, impressions, clicks, reach, saves; null where no platform of the workspace gives one, never zero), followers and their change, and the same for the range before with <code>previousKept</code> (false where a platform's terms keep less than the range before goes back: show no change then), as that workspace's own dashboard answers them. The range is <code>days</code> (7, 30 or 90, 30 unless given: that many days ending today in <code>timeZone</code>, an IANA zone such as Europe/Paris), beside the range before, of the same length. <code>analytics</code> is null where the user's role may not read the workspace's analytics (<code>analytics:read</code>), and in a workspace that refuses the user (<code>refused</code>). Figures of different platforms are not alike: compare a workspace with itself, not with another. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     */
+    public PealClientHttpResponse<ReportAcrossWorkspaces> report(
+            ReportOverviewRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/me/report");
+        if (request.getDays().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "days", request.getDays().get(), false);
+        }
+        QueryStringMapper.addQueryParameter(httpUrl, "timeZone", request.getTimeZone(), false);
+        if (request.getCursor().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "cursor", request.getCursor().get(), false);
+        }
+        if (request.getLimit().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "limit", request.getLimit().get(), false);
+        }
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method("GET", null)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
+        try (Response response = client.newCall(okhttpRequest).execute()) {
+            ResponseBody responseBody = response.body();
+            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+            if (response.isSuccessful()) {
+                return new PealClientHttpResponse<>(
+                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ReportAcrossWorkspaces.class),
+                        response);
+            }
+            try {
+                switch (response.code()) {
+                    case 400:
+                        throw new BadRequestError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 401:
+                        throw new UnauthorizedError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
+                                response);
+                    case 403:
+                        throw new ForbiddenError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 422:
+                        throw new UnprocessableEntityError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 429:
+                        throw new TooManyRequestsError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                }
+            } catch (JsonProcessingException ignored) {
+                // unable to map error response, throwing generic error
+            }
+            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
+            throw new PealClientApiException(
+                    "Error with status code " + response.code(), response.code(), errorBody, response);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new PealClientException("Network error executing HTTP request", e);
+        }
+    }
+
+    /**
+     * Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns <code>workspaceId</code>, <code>workspace</code>, <code>from</code>, <code>to</code>, <code>posts</code>, <code>likes</code>, <code>reposts</code>, <code>replies</code>, <code>quotes</code>, <code>impressions</code>, <code>clicks</code>, <code>reach</code>, <code>saves</code>, <code>engagement</code>, <code>followers</code>, <code>followersGained</code>, <code>previousKept</code>, <code>previousPosts</code>, <code>previousLikes</code>, <code>previousReposts</code>, <code>previousReplies</code>, <code>previousQuotes</code>, <code>previousImpressions</code>, <code>previousClicks</code>, <code>previousReach</code>, <code>previousSaves</code>, <code>previousEngagement</code>, <code>previousFollowers</code>, <code>previousFollowersGained</code>. A count no platform gives, a workspace whose analytics the user may not read, and the range before where <code>previousKept</code> is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. The range is <code>days</code> (7, 30 or 90, 30 unless given: that many days ending today in <code>timeZone</code>, an IANA zone such as Europe/Paris), beside the range before, of the same length. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     */
+    public PealClientHttpResponse<InputStream> reportExport(ReportExportOverviewRequest request) {
+        return reportExport(request, null);
+    }
+
+    /**
+     * Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns <code>workspaceId</code>, <code>workspace</code>, <code>from</code>, <code>to</code>, <code>posts</code>, <code>likes</code>, <code>reposts</code>, <code>replies</code>, <code>quotes</code>, <code>impressions</code>, <code>clicks</code>, <code>reach</code>, <code>saves</code>, <code>engagement</code>, <code>followers</code>, <code>followersGained</code>, <code>previousKept</code>, <code>previousPosts</code>, <code>previousLikes</code>, <code>previousReposts</code>, <code>previousReplies</code>, <code>previousQuotes</code>, <code>previousImpressions</code>, <code>previousClicks</code>, <code>previousReach</code>, <code>previousSaves</code>, <code>previousEngagement</code>, <code>previousFollowers</code>, <code>previousFollowersGained</code>. A count no platform gives, a workspace whose analytics the user may not read, and the range before where <code>previousKept</code> is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. The range is <code>days</code> (7, 30 or 90, 30 unless given: that many days ending today in <code>timeZone</code>, an IANA zone such as Europe/Paris), beside the range before, of the same length. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     */
+    public PealClientHttpResponse<InputStream> reportExport(
+            ReportExportOverviewRequest request, RequestOptions requestOptions) {
+        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
+                .newBuilder()
+                .addPathSegments("api/me/report/export");
+        if (request.getDays().isPresent()) {
+            QueryStringMapper.addQueryParameter(
+                    httpUrl, "days", request.getDays().get(), false);
+        }
+        QueryStringMapper.addQueryParameter(httpUrl, "timeZone", request.getTimeZone(), false);
+        if (requestOptions != null) {
+            requestOptions.getQueryParameters().forEach((_key, _value) -> {
+                httpUrl.addQueryParameter(_key, _value);
+            });
+        }
+        Request.Builder _requestBuilder = new Request.Builder()
+                .url(httpUrl.build())
+                .method("GET", null)
+                .headers(Headers.of(clientOptions.headers(requestOptions)))
+                .addHeader("Accept", "application/json");
+        Request okhttpRequest = _requestBuilder.build();
+        OkHttpClient client = clientOptions.httpClient();
+        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
+            client = clientOptions.httpClientWithTimeout(requestOptions);
+        }
+        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
+            okhttpRequest = okhttpRequest
+                    .newBuilder()
+                    .tag(
+                            RetryInterceptor.MaxRetriesOverride.class,
+                            new RetryInterceptor.MaxRetriesOverride(
+                                    requestOptions.getMaxRetries().get()))
+                    .build();
+        }
+        try {
+            Response response = client.newCall(okhttpRequest).execute();
+            ResponseBody responseBody = response.body();
+            if (response.isSuccessful()) {
+                return new PealClientHttpResponse<>(new ResponseBodyInputStream(response), response);
+            }
+            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
+            try {
+                switch (response.code()) {
+                    case 401:
+                        throw new UnauthorizedError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
+                                response);
+                    case 403:
+                        throw new ForbiddenError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
+                    case 422:
+                        throw new UnprocessableEntityError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 429:
                         throw new TooManyRequestsError(

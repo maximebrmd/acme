@@ -15,6 +15,9 @@ use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Peal\Overview\Requests\AgendaOverviewRequest;
 use Peal\Types\AgendaPage;
+use Peal\Overview\Requests\ReportOverviewRequest;
+use Peal\Types\ReportAcrossWorkspaces;
+use Peal\Overview\Requests\ReportExportOverviewRequest;
 
 class OverviewClient
 {
@@ -176,6 +179,132 @@ class OverviewClient
             }
         } catch (JsonException $e) {
             throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Answers what went out in each workspace the user belongs to and how it did, 50 workspaces a page at most, by name then id: each workspace's totals of the posts published in the range (likes, reposts, replies, quotes, impressions, clicks, reach, saves; null where no platform of the workspace gives one, never zero), followers and their change, and the same for the range before with `previousKept` (false where a platform's terms keep less than the range before goes back: show no change then), as that workspace's own dashboard answers them. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. `analytics` is null where the user's role may not read the workspace's analytics (`analytics:read`), and in a workspace that refuses the user (`refused`). Figures of different platforms are not alike: compare a workspace with itself, not with another. Pass the page's `nextCursor` as `cursor` for the next one. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     *
+     * Example:
+     * ```php
+     * $client->overview->report(
+     *     new ReportOverviewRequest([
+     *         'timeZone' => 'timeZone',
+     *     ]),
+     * );
+     * ```
+     *
+     * @param ReportOverviewRequest $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?ReportAcrossWorkspaces
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function report(ReportOverviewRequest $request, ?array $options = null): ?ReportAcrossWorkspaces
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $query = [];
+        $query['timeZone'] = $request->timeZone;
+        if ($request->days != null) {
+            $query['days'] = $request->days;
+        }
+        if ($request->cursor != null) {
+            $query['cursor'] = $request->cursor;
+        }
+        if ($request->limit != null) {
+            $query['limit'] = $request->limit;
+        }
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/me/report",
+                    method: HttpMethod::GET,
+                    query: $query,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return ReportAcrossWorkspaces::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns `workspaceId`, `workspace`, `from`, `to`, `posts`, `likes`, `reposts`, `replies`, `quotes`, `impressions`, `clicks`, `reach`, `saves`, `engagement`, `followers`, `followersGained`, `previousKept`, `previousPosts`, `previousLikes`, `previousReposts`, `previousReplies`, `previousQuotes`, `previousImpressions`, `previousClicks`, `previousReach`, `previousSaves`, `previousEngagement`, `previousFollowers`, `previousFollowersGained`. A count no platform gives, a workspace whose analytics the user may not read, and the range before where `previousKept` is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. The range is `days` (7, 30 or 90, 30 unless given: that many days ending today in `timeZone`, an IANA zone such as Europe/Paris), beside the range before, of the same length. API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.
+     *
+     * Example:
+     * ```php
+     * $client->overview->reportExport(
+     *     new ReportExportOverviewRequest([
+     *         'timeZone' => 'timeZone',
+     *     ]),
+     * );
+     * ```
+     *
+     * @param ReportExportOverviewRequest $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return string
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function reportExport(ReportExportOverviewRequest $request, ?array $options = null): string
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $query = [];
+        $query['timeZone'] = $request->timeZone;
+        if ($request->days != null) {
+            $query['days'] = $request->days;
+        }
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/me/report/export",
+                    method: HttpMethod::GET,
+                    query: $query,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                return $response->getBody()->getContents();
+            }
         } catch (ClientExceptionInterface $e) {
             throw new PealException(message: $e->getMessage(), previous: $e);
         }

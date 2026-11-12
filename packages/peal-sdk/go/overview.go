@@ -109,6 +109,96 @@ func (g *GetOverviewRequest) SetLimit(limit *string) {
 }
 
 var (
+	reportOverviewRequestFieldDays     = big.NewInt(1 << 0)
+	reportOverviewRequestFieldTimeZone = big.NewInt(1 << 1)
+	reportOverviewRequestFieldCursor   = big.NewInt(1 << 2)
+	reportOverviewRequestFieldLimit    = big.NewInt(1 << 3)
+)
+
+type ReportOverviewRequest struct {
+	Days     *string `json:"-" url:"days,omitempty"`
+	TimeZone string  `json:"-" url:"timeZone"`
+	Cursor   *string `json:"-" url:"cursor,omitempty"`
+	Limit    *string `json:"-" url:"limit,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (r *ReportOverviewRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportOverviewRequest) SetDays(days *string) {
+	r.Days = days
+	r.require(reportOverviewRequestFieldDays)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportOverviewRequest) SetTimeZone(timeZone string) {
+	r.TimeZone = timeZone
+	r.require(reportOverviewRequestFieldTimeZone)
+}
+
+// SetCursor sets the Cursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportOverviewRequest) SetCursor(cursor *string) {
+	r.Cursor = cursor
+	r.require(reportOverviewRequestFieldCursor)
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportOverviewRequest) SetLimit(limit *string) {
+	r.Limit = limit
+	r.require(reportOverviewRequestFieldLimit)
+}
+
+var (
+	reportExportOverviewRequestFieldDays     = big.NewInt(1 << 0)
+	reportExportOverviewRequestFieldTimeZone = big.NewInt(1 << 1)
+)
+
+type ReportExportOverviewRequest struct {
+	Days     *string `json:"-" url:"days,omitempty"`
+	TimeZone string  `json:"-" url:"timeZone"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (r *ReportExportOverviewRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportExportOverviewRequest) SetDays(days *string) {
+	r.Days = days
+	r.require(reportExportOverviewRequestFieldDays)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportExportOverviewRequest) SetTimeZone(timeZone string) {
+	r.TimeZone = timeZone
+	r.require(reportExportOverviewRequestFieldTimeZone)
+}
+
+var (
 	agendaItemFieldExcerpt     = big.NewInt(1 << 0)
 	agendaItemFieldPlatforms   = big.NewInt(1 << 1)
 	agendaItemFieldPostID      = big.NewInt(1 << 2)
@@ -920,6 +1010,436 @@ func (o OverviewRefusal) Ptr() *OverviewRefusal {
 }
 
 var (
+	reportAcrossWorkspacesFieldFrom       = big.NewInt(1 << 0)
+	reportAcrossWorkspacesFieldNextCursor = big.NewInt(1 << 1)
+	reportAcrossWorkspacesFieldPrevious   = big.NewInt(1 << 2)
+	reportAcrossWorkspacesFieldTimeZone   = big.NewInt(1 << 3)
+	reportAcrossWorkspacesFieldTo         = big.NewInt(1 << 4)
+	reportAcrossWorkspacesFieldWorkspaces = big.NewInt(1 << 5)
+)
+
+// reportAcrossWorkspacesNullableFields maps the wire names of ReportAcrossWorkspaces's nullable fields (required or optional) to their field bits.
+var reportAcrossWorkspacesNullableFields = map[string]*big.Int{
+	"nextCursor": reportAcrossWorkspacesFieldNextCursor,
+}
+
+type ReportAcrossWorkspaces struct {
+	From       CalendarDay                     `json:"from" url:"from"`
+	NextCursor *string                         `json:"nextCursor,omitempty" url:"nextCursor,omitempty"`
+	Previous   *ReportAcrossWorkspacesPrevious `json:"previous" url:"previous"`
+	TimeZone   string                          `json:"timeZone" url:"timeZone"`
+	To         CalendarDay                     `json:"to" url:"to"`
+	Workspaces []*WorkspaceReport              `json:"workspaces" url:"workspaces"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *ReportAcrossWorkspaces) GetFrom() CalendarDay {
+	if r == nil {
+		return ""
+	}
+	return r.From
+}
+
+func (r *ReportAcrossWorkspaces) GetNextCursor() *string {
+	if r == nil {
+		return nil
+	}
+	return r.NextCursor
+}
+
+func (r *ReportAcrossWorkspaces) GetPrevious() *ReportAcrossWorkspacesPrevious {
+	if r == nil {
+		return nil
+	}
+	return r.Previous
+}
+
+func (r *ReportAcrossWorkspaces) GetTimeZone() string {
+	if r == nil {
+		return ""
+	}
+	return r.TimeZone
+}
+
+func (r *ReportAcrossWorkspaces) GetTo() CalendarDay {
+	if r == nil {
+		return ""
+	}
+	return r.To
+}
+
+func (r *ReportAcrossWorkspaces) GetWorkspaces() []*WorkspaceReport {
+	if r == nil {
+		return nil
+	}
+	return r.Workspaces
+}
+
+func (r *ReportAcrossWorkspaces) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *ReportAcrossWorkspaces) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportAcrossWorkspaces) SetFrom(from CalendarDay) {
+	r.From = from
+	r.require(reportAcrossWorkspacesFieldFrom)
+}
+
+// SetNextCursor sets the NextCursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportAcrossWorkspaces) SetNextCursor(nextCursor *string) {
+	r.NextCursor = nextCursor
+	r.require(reportAcrossWorkspacesFieldNextCursor)
+}
+
+// SetPrevious sets the Previous field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportAcrossWorkspaces) SetPrevious(previous *ReportAcrossWorkspacesPrevious) {
+	r.Previous = previous
+	r.require(reportAcrossWorkspacesFieldPrevious)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportAcrossWorkspaces) SetTimeZone(timeZone string) {
+	r.TimeZone = timeZone
+	r.require(reportAcrossWorkspacesFieldTimeZone)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportAcrossWorkspaces) SetTo(to CalendarDay) {
+	r.To = to
+	r.require(reportAcrossWorkspacesFieldTo)
+}
+
+// SetWorkspaces sets the Workspaces field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportAcrossWorkspaces) SetWorkspaces(workspaces []*WorkspaceReport) {
+	r.Workspaces = workspaces
+	r.require(reportAcrossWorkspacesFieldWorkspaces)
+}
+
+func (r *ReportAcrossWorkspaces) UnmarshalJSON(data []byte) error {
+	type unmarshaler ReportAcrossWorkspaces
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = ReportAcrossWorkspaces(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, reportAcrossWorkspacesNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		r.require(presentFields)
+	}
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *ReportAcrossWorkspaces) MarshalJSON() ([]byte, error) {
+	type embed ReportAcrossWorkspaces
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *ReportAcrossWorkspaces) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	reportAcrossWorkspacesPreviousFieldFrom = big.NewInt(1 << 0)
+	reportAcrossWorkspacesPreviousFieldTo   = big.NewInt(1 << 1)
+)
+
+type ReportAcrossWorkspacesPrevious struct {
+	From CalendarDay `json:"from" url:"from"`
+	To   CalendarDay `json:"to" url:"to"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *ReportAcrossWorkspacesPrevious) GetFrom() CalendarDay {
+	if r == nil {
+		return ""
+	}
+	return r.From
+}
+
+func (r *ReportAcrossWorkspacesPrevious) GetTo() CalendarDay {
+	if r == nil {
+		return ""
+	}
+	return r.To
+}
+
+func (r *ReportAcrossWorkspacesPrevious) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *ReportAcrossWorkspacesPrevious) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportAcrossWorkspacesPrevious) SetFrom(from CalendarDay) {
+	r.From = from
+	r.require(reportAcrossWorkspacesPreviousFieldFrom)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReportAcrossWorkspacesPrevious) SetTo(to CalendarDay) {
+	r.To = to
+	r.require(reportAcrossWorkspacesPreviousFieldTo)
+}
+
+func (r *ReportAcrossWorkspacesPrevious) UnmarshalJSON(data []byte) error {
+	type unmarshaler ReportAcrossWorkspacesPrevious
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = ReportAcrossWorkspacesPrevious(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *ReportAcrossWorkspacesPrevious) MarshalJSON() ([]byte, error) {
+	type embed ReportAcrossWorkspacesPrevious
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *ReportAcrossWorkspacesPrevious) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	workspaceAnalyticsFieldFollowers         = big.NewInt(1 << 0)
+	workspaceAnalyticsFieldPreviousFollowers = big.NewInt(1 << 1)
+	workspaceAnalyticsFieldPreviousKept      = big.NewInt(1 << 2)
+	workspaceAnalyticsFieldPreviousTotals    = big.NewInt(1 << 3)
+	workspaceAnalyticsFieldTotals            = big.NewInt(1 << 4)
+)
+
+type WorkspaceAnalytics struct {
+	Followers         *FollowerChange  `json:"followers" url:"followers"`
+	PreviousFollowers *FollowerChange  `json:"previousFollowers" url:"previousFollowers"`
+	PreviousKept      bool             `json:"previousKept" url:"previousKept"`
+	PreviousTotals    *DashboardTotals `json:"previousTotals" url:"previousTotals"`
+	Totals            *DashboardTotals `json:"totals" url:"totals"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (w *WorkspaceAnalytics) GetFollowers() *FollowerChange {
+	if w == nil {
+		return nil
+	}
+	return w.Followers
+}
+
+func (w *WorkspaceAnalytics) GetPreviousFollowers() *FollowerChange {
+	if w == nil {
+		return nil
+	}
+	return w.PreviousFollowers
+}
+
+func (w *WorkspaceAnalytics) GetPreviousKept() bool {
+	if w == nil {
+		return false
+	}
+	return w.PreviousKept
+}
+
+func (w *WorkspaceAnalytics) GetPreviousTotals() *DashboardTotals {
+	if w == nil {
+		return nil
+	}
+	return w.PreviousTotals
+}
+
+func (w *WorkspaceAnalytics) GetTotals() *DashboardTotals {
+	if w == nil {
+		return nil
+	}
+	return w.Totals
+}
+
+func (w *WorkspaceAnalytics) GetExtraProperties() map[string]interface{} {
+	if w == nil {
+		return nil
+	}
+	return w.extraProperties
+}
+
+func (w *WorkspaceAnalytics) require(field *big.Int) {
+	next := new(big.Int)
+	if w.explicitFields != nil {
+		next.Set(w.explicitFields)
+	}
+	next.Or(next, field)
+	w.explicitFields = next
+}
+
+// SetFollowers sets the Followers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceAnalytics) SetFollowers(followers *FollowerChange) {
+	w.Followers = followers
+	w.require(workspaceAnalyticsFieldFollowers)
+}
+
+// SetPreviousFollowers sets the PreviousFollowers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceAnalytics) SetPreviousFollowers(previousFollowers *FollowerChange) {
+	w.PreviousFollowers = previousFollowers
+	w.require(workspaceAnalyticsFieldPreviousFollowers)
+}
+
+// SetPreviousKept sets the PreviousKept field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceAnalytics) SetPreviousKept(previousKept bool) {
+	w.PreviousKept = previousKept
+	w.require(workspaceAnalyticsFieldPreviousKept)
+}
+
+// SetPreviousTotals sets the PreviousTotals field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceAnalytics) SetPreviousTotals(previousTotals *DashboardTotals) {
+	w.PreviousTotals = previousTotals
+	w.require(workspaceAnalyticsFieldPreviousTotals)
+}
+
+// SetTotals sets the Totals field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceAnalytics) SetTotals(totals *DashboardTotals) {
+	w.Totals = totals
+	w.require(workspaceAnalyticsFieldTotals)
+}
+
+func (w *WorkspaceAnalytics) UnmarshalJSON(data []byte) error {
+	type unmarshaler WorkspaceAnalytics
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*w = WorkspaceAnalytics(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *w)
+	if err != nil {
+		return err
+	}
+	w.extraProperties = extraProperties
+	w.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (w *WorkspaceAnalytics) MarshalJSON() ([]byte, error) {
+	type embed WorkspaceAnalytics
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*w),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (w *WorkspaceAnalytics) String() string {
+	if w == nil {
+		return "<nil>"
+	}
+	if len(w.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(w); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", w)
+}
+
+var (
 	workspaceOverviewFieldChannels = big.NewInt(1 << 0)
 	workspaceOverviewFieldID       = big.NewInt(1 << 1)
 	workspaceOverviewFieldInbox    = big.NewInt(1 << 2)
@@ -1135,6 +1655,185 @@ func (w *WorkspaceOverview) MarshalJSON() ([]byte, error) {
 }
 
 func (w *WorkspaceOverview) String() string {
+	if w == nil {
+		return "<nil>"
+	}
+	if len(w.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(w); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", w)
+}
+
+var (
+	workspaceReportFieldAnalytics = big.NewInt(1 << 0)
+	workspaceReportFieldID        = big.NewInt(1 << 1)
+	workspaceReportFieldName      = big.NewInt(1 << 2)
+	workspaceReportFieldRefused   = big.NewInt(1 << 3)
+	workspaceReportFieldRole      = big.NewInt(1 << 4)
+	workspaceReportFieldSlug      = big.NewInt(1 << 5)
+)
+
+// workspaceReportNullableFields maps the wire names of WorkspaceReport's nullable fields (required or optional) to their field bits.
+var workspaceReportNullableFields = map[string]*big.Int{
+	"analytics": workspaceReportFieldAnalytics,
+	"refused":   workspaceReportFieldRefused,
+}
+
+type WorkspaceReport struct {
+	Analytics *WorkspaceAnalytics `json:"analytics,omitempty" url:"analytics,omitempty"`
+	ID        string              `json:"id" url:"id"`
+	Name      string              `json:"name" url:"name"`
+	Refused   *OverviewRefusal    `json:"refused,omitempty" url:"refused,omitempty"`
+	Role      string              `json:"role" url:"role"`
+	Slug      string              `json:"slug" url:"slug"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (w *WorkspaceReport) GetAnalytics() *WorkspaceAnalytics {
+	if w == nil {
+		return nil
+	}
+	return w.Analytics
+}
+
+func (w *WorkspaceReport) GetID() string {
+	if w == nil {
+		return ""
+	}
+	return w.ID
+}
+
+func (w *WorkspaceReport) GetName() string {
+	if w == nil {
+		return ""
+	}
+	return w.Name
+}
+
+func (w *WorkspaceReport) GetRefused() *OverviewRefusal {
+	if w == nil {
+		return nil
+	}
+	return w.Refused
+}
+
+func (w *WorkspaceReport) GetRole() string {
+	if w == nil {
+		return ""
+	}
+	return w.Role
+}
+
+func (w *WorkspaceReport) GetSlug() string {
+	if w == nil {
+		return ""
+	}
+	return w.Slug
+}
+
+func (w *WorkspaceReport) GetExtraProperties() map[string]interface{} {
+	if w == nil {
+		return nil
+	}
+	return w.extraProperties
+}
+
+func (w *WorkspaceReport) require(field *big.Int) {
+	next := new(big.Int)
+	if w.explicitFields != nil {
+		next.Set(w.explicitFields)
+	}
+	next.Or(next, field)
+	w.explicitFields = next
+}
+
+// SetAnalytics sets the Analytics field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceReport) SetAnalytics(analytics *WorkspaceAnalytics) {
+	w.Analytics = analytics
+	w.require(workspaceReportFieldAnalytics)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceReport) SetID(id string) {
+	w.ID = id
+	w.require(workspaceReportFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceReport) SetName(name string) {
+	w.Name = name
+	w.require(workspaceReportFieldName)
+}
+
+// SetRefused sets the Refused field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceReport) SetRefused(refused *OverviewRefusal) {
+	w.Refused = refused
+	w.require(workspaceReportFieldRefused)
+}
+
+// SetRole sets the Role field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceReport) SetRole(role string) {
+	w.Role = role
+	w.require(workspaceReportFieldRole)
+}
+
+// SetSlug sets the Slug field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceReport) SetSlug(slug string) {
+	w.Slug = slug
+	w.require(workspaceReportFieldSlug)
+}
+
+func (w *WorkspaceReport) UnmarshalJSON(data []byte) error {
+	type unmarshaler WorkspaceReport
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*w = WorkspaceReport(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *w)
+	if err != nil {
+		return err
+	}
+	w.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, workspaceReportNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		w.require(presentFields)
+	}
+	w.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (w *WorkspaceReport) MarshalJSON() ([]byte, error) {
+	type embed WorkspaceReport
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*w),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (w *WorkspaceReport) String() string {
 	if w == nil {
 		return "<nil>"
 	}
