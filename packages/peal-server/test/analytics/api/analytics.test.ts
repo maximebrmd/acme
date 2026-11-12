@@ -5,6 +5,7 @@ import { HttpApiTest } from "effect/http-api";
 import { SqlClient } from "effect/sql";
 import {
   Api,
+  ChannelNotFound,
   exportColumns,
   Forbidden,
   InvalidDateRange,
@@ -753,6 +754,71 @@ layer(ApiTest, { excludeTestServices: true })(
           assert.instanceOf(refusal, Forbidden);
         }
       })
+    );
+
+    it.effect(
+      "answer when a channel's posts did best, and refuse a zone, a channel and a member as the other endpoints do",
+      () =>
+        Effect.gen(function* bestTimes() {
+          const workspaceId = yield* freshWorkspace;
+          const channelId = yield* newChannelId;
+          const sql = yield* SqlClient.SqlClient;
+          const params = { workspaceId };
+
+          yield* sql`INSERT INTO analytics.tracked_channels (channel_id, workspace_id, platform, next_collection_at)
+            VALUES (${channelId}, ${workspaceId}, 'pinterest', '2090-01-01T00:00:00Z')`;
+
+          const found = yield* Effect.gen(function* read() {
+            const client = yield* as(workspaceId);
+
+            const answered = yield* client.analytics.bestTimes({
+              params,
+              query: { channelId, days: 180, timeZone: "Europe/Paris" },
+            });
+
+            const zone = yield* client.analytics
+              .bestTimes({ params, query: { channelId, timeZone: "+01:00" } })
+              .pipe(Effect.flip);
+
+            const unknown = yield* client.analytics
+              .bestTimes({
+                params,
+                query: { channelId: "not-a-channel", timeZone: "UTC" },
+              })
+              .pipe(Effect.flip);
+
+            const denied = yield* (yield* as(workspaceId, [])).analytics
+              .bestTimes({ params, query: { channelId, timeZone: "UTC" } })
+              .pipe(Effect.flip);
+
+            return { answered, denied, unknown, zone };
+          }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+
+          // Pinterest keeps 90 days: no more are read.
+          assert.deepStrictEqual(
+            {
+              best: found.answered.best,
+              counted: found.answered.counted,
+              days: found.answered.days,
+              enough: found.answered.enough,
+              minimumPosts: found.answered.minimumPosts,
+              platform: found.answered.platform,
+              posts: found.answered.posts,
+            },
+            {
+              best: [],
+              counted: true,
+              days: 90,
+              enough: false,
+              minimumPosts: 20,
+              platform: "pinterest",
+              posts: 0,
+            }
+          );
+          assert.instanceOf(found.zone, InvalidTimeZone);
+          assert.instanceOf(found.unknown, ChannelNotFound);
+          assert.instanceOf(found.denied, Forbidden);
+        })
     );
   }
 );

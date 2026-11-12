@@ -240,6 +240,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "analytics_summary",
           "approve_post",
           "await_post",
+          "best_times",
           "boost_post",
           "cancel_post",
           "channel_analytics",

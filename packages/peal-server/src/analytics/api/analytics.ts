@@ -3,6 +3,7 @@ import { HttpServerResponse } from "effect/http";
 import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
+  ChannelNotFound,
   CurrentMember,
   InvalidDateRange,
   InvalidTimeZone,
@@ -25,6 +26,7 @@ import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
 import { contentTypes, headerOf, lineOf } from "./analytics-export.ts";
 import {
+  bestTimesView,
   channelSeriesView,
   dashboardView,
   dateFrom,
@@ -84,6 +86,32 @@ export const AnalyticsHandlers = HttpApiBuilder.group(
     };
 
     return handlers.handleAll({
+      bestTimes: ({ query }) =>
+        Effect.gen(function* bestTimes() {
+          const actor = actorOf(yield* CurrentMember);
+          const timeZone = decodeTimeZone(query.timeZone);
+
+          if (Option.isNone(timeZone)) {
+            return yield* new InvalidTimeZone({ timeZone: query.timeZone });
+          }
+
+          const found = yield* queries
+            .bestTimes(
+              actor,
+              decodeChannelId(query.channelId),
+              query.days ?? 90,
+              timeZone.value
+            )
+            .pipe(
+              Effect.catchTags({
+                ChannelNotFound: () => Effect.fail(new ChannelNotFound()),
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+              })
+            );
+
+          return bestTimesView(found);
+        }),
       channel: ({ params, query }) =>
         Effect.gen(function* channel() {
           const actor = actorOf(yield* CurrentMember);

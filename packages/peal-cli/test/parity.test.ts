@@ -64,6 +64,7 @@ const coverage = {
   ),
   "ads.status": by("ads status"),
   "ads.stopBoost": by("ads boost stop"),
+  "analytics.bestTimes": by("analytics best-times"),
   "analytics.channel": by("analytics channel"),
   "analytics.dashboard": by("analytics dashboard"),
   "analytics.export": exempt(

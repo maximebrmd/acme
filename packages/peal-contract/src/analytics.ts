@@ -7,11 +7,13 @@ import {
 } from "effect/http-api";
 
 import { Authentication } from "./authentication.ts";
+import { ChannelNotFound } from "./channel-not-found.ts";
 import { Forbidden } from "./forbidden.ts";
 import { InvalidDateRange } from "./invalid-date-range.ts";
 import { InvalidTimeZone } from "./invalid-time-zone.ts";
 import { PlatformSchema } from "./platform.ts";
 import type { Platform } from "./platform.ts";
+import { WeekdaySchema } from "./queues.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 const isCalendarDay = (written: string): boolean => {
@@ -405,6 +407,63 @@ const range = {
 const rangeWords =
   "The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris.";
 
+/** The days a reading of best times covers: the last 30, 90 or 180. */
+export const bestTimesPeriods = [30, 90, 180] as const;
+
+/** An hour with fewer posts than this has no median. */
+export const bestTimesMinimumPostsPerHour = 3;
+
+/** A channel with fewer posts than this in the range is not ranked. */
+export const bestTimesMinimumPosts = 20;
+
+/** How many hours `best` lists at most. */
+export const bestTimesHours = 5;
+
+/** A post younger than this many hours is left out: its counts still move. */
+export const bestTimesSettlingHours = 48;
+
+/**
+ * A weekday and hour in the reading's zone: how many of the channel's
+ * posts went live in it, and the median of what each was given (likes,
+ * reposts, replies and quotes, those the platform gives), null under
+ * the floors.
+ */
+export const BestTimesHourSchema = Schema.Struct({
+  hour: Schema.Int.check(Schema.isBetween({ maximum: 23, minimum: 0 })),
+  median: Schema.NullOr(Schema.Number),
+  posts: CountSchema,
+  weekday: WeekdaySchema,
+}).annotate({ identifier: "BestTimesHour" });
+
+export type BestTimesHour = typeof BestTimesHourSchema.Type;
+
+/** When one channel's posts did best over a range: its past, never a prediction. */
+export const BestTimesSchema = Schema.Struct({
+  // At most `bestTimesHours`, by median then by posts; empty when not enough.
+  best: Schema.Array(BestTimesHourSchema),
+  // Every weekday and hour with a post, by weekday then hour.
+  buckets: Schema.Array(BestTimesHourSchema),
+  channelId: Schema.String,
+  // Whether the platform gives any of likes, reposts, replies and quotes.
+  counted: Schema.Boolean,
+  // The days read: those asked, or fewer where the platform keeps less.
+  days: Schema.Int,
+  // Whether the range holds enough posts to rank its hours.
+  enough: Schema.Boolean,
+  from: CalendarDaySchema,
+  minimumPosts: Schema.Int,
+  minimumPostsPerHour: Schema.Int,
+  platform: PlatformSchema,
+  // The posts weighed.
+  posts: CountSchema,
+  // The posts left out because they went live less than 48 hours ago.
+  recent: CountSchema,
+  timeZone: Schema.String,
+  to: CalendarDaySchema,
+}).annotate({ identifier: "BestTimes" });
+
+export type BestTimes = typeof BestTimesSchema.Type;
+
 const workspace = { workspaceId: Schema.String };
 
 /** What a workspace's posts did on their platforms. */
@@ -474,6 +533,25 @@ export class AnalyticsApi extends HttpApiGroup.make("analytics")
       OpenApi.annotations({
         description: `Streams the workspace's analytics as a file: \`kind=posts\` lists each post published in the range on each channel with its latest counts, \`kind=accounts\` each channel's account day by day. \`format=csv\` (the default) writes a header line then one line a row, as RFC 4180; \`format=json\` writes one JSON object a line (\`application/x-ndjson\`). A number a platform does not give is empty in CSV and null in JSON. ${rangeWords} Needs analytics:read.`,
         summary: "Export the workspace's analytics",
+      })
+    ),
+    HttpApiEndpoint.get("bestTimes", "/best-times", {
+      error: [Forbidden, ChannelNotFound, InvalidTimeZone],
+      params: workspace,
+      query: {
+        channelId: Schema.String,
+        days: Schema.optionalKey(
+          Schema.NumberFromString.pipe(
+            Schema.decodeTo(Schema.Literals(bestTimesPeriods))
+          )
+        ),
+        timeZone: Schema.String,
+      },
+      success: BestTimesSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Answers when one channel's posts did best, by weekday and hour as \`timeZone\` (an IANA zone) runs them, over the last \`days\` (30, 90 or 180, 90 unless given; fewer where the platform lets Peal keep less): for each hour, how many of its posts went live in it and the median of what each was given, likes, reposts, replies and quotes together, those the platform gives (\`counted\` is false where it gives none). It describes this channel's past and predicts nothing: counts of different platforms are never added, an hour with fewer than ${String(bestTimesMinimumPostsPerHour)} posts has no median, and a channel with fewer than ${String(bestTimesMinimumPosts)} posts in the range answers \`enough: false\` with no ranking. \`best\` lists at most ${String(bestTimesHours)} hours, by median then by posts. Posts younger than ${String(bestTimesSettlingHours)} hours are left out (\`recent\`), as are posts Peal deleted from the platform. Needs analytics:read.`,
+        summary: "Get when a channel's posts did best",
       })
     ),
     HttpApiEndpoint.get("post", "/posts/:postId", {

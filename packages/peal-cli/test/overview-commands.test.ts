@@ -7,7 +7,13 @@ import {
 } from "peal-contract";
 
 import { draftingKey, filesLayer, signedIn } from "./signed-in.ts";
-import { awaitingId, scheduledId, studioId, studioMe } from "./studio.ts";
+import {
+  awaitingId,
+  mastodonId,
+  scheduledId,
+  studioId,
+  studioMe,
+} from "./studio.ts";
 
 // peal overview and peal agenda, against the in-memory studio: what they
 // print across the person's workspaces, and that a key is refused before
@@ -252,6 +258,48 @@ describe("peal report", () => {
         .refused(["report"]);
 
       assert.include(refusal, "An API key cannot read across workspaces");
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
+describe("peal analytics best-times", () => {
+  it.effect("prints the channel's best hours, and says it is its past", () =>
+    Effect.gen(function* best() {
+      const session = yield* signedIn();
+
+      const printed = yield* session.printed([
+        "analytics",
+        "best-times",
+        "--workspace",
+        "studio",
+        "--channel",
+        mastodonId,
+        "--time-zone",
+        "Europe/Paris",
+      ]);
+
+      assert.include(printed, "what happened, not what will.");
+      assert.match(printed, /Tuesday 09:00\s+median 13\s+4 posts/u);
+      assert.include(printed, "24 posts weighed; 1 left out");
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("refuses an offset for a zone before any request", () =>
+    Effect.gen(function* offset() {
+      const session = yield* signedIn();
+
+      const refusal = yield* session.refused([
+        "analytics",
+        "best-times",
+        "--workspace",
+        "studio",
+        "--channel",
+        mastodonId,
+        "--time-zone",
+        "+01:00",
+      ]);
+
+      assert.include(refusal, "is not an IANA time zone");
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });

@@ -19,6 +19,7 @@ import { PlatformMetricsReaderLive as PlatformReaders } from "#analytics/infrast
 import { PublishingPublishedPosts } from "#analytics/infrastructure/publishing-published-posts.ts";
 import { SqlAnalyticsAcrossReads } from "#analytics/infrastructure/sql-analytics-across-reads.ts";
 import { SqlAnalyticsReports } from "#analytics/infrastructure/sql-analytics-reports.ts";
+import { SqlBestTimesReads } from "#analytics/infrastructure/sql-best-times-reads.ts";
 import { SqlExpiredAnalytics } from "#analytics/infrastructure/sql-expired-analytics.ts";
 import { SqlPaidReads } from "#analytics/infrastructure/sql-paid-reads.ts";
 import { SqlTrackedChannels } from "#analytics/infrastructure/sql-tracked-channels.ts";
@@ -32,7 +33,13 @@ import { SqlTrackedChannels } from "#analytics/infrastructure/sql-tracked-channe
  */
 export const AnalyticsLive = Layer.mergeAll(
   AnalyticsQueries.layer.pipe(
-    Layer.provide(Layer.merge(SqlAnalyticsReports, SqlAnalyticsAcrossReads))
+    Layer.provide(
+      Layer.mergeAll(
+        SqlAnalyticsReports,
+        SqlAnalyticsAcrossReads,
+        SqlBestTimesReads
+      )
+    )
   ),
   DrizzleAnalyticsRecords,
   PurgeAnalytics.layer.pipe(Layer.provide(SqlExpiredAnalytics))

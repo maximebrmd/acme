@@ -6,6 +6,7 @@ import { toEventView } from "#activity/api/activity-view.ts";
 import { ActivityLog } from "#activity/application/activity-log.ts";
 import { ActivityEventIdSchema } from "#activity/domain/activity-event-id.ts";
 import {
+  bestTimesView,
   channelSeriesView,
   dashboardView,
   dateFrom,
@@ -196,6 +197,36 @@ export const ReportToolsLive = ReportTools.toLayer(
             );
 
           return summaryView(found);
+        }),
+      best_times: ({ channelId, days, timeZone }) =>
+        Effect.gen(function* bestTimes() {
+          const zone = decodeTimeZone(timeZone);
+
+          if (Option.isNone(zone)) {
+            return yield* refuse(
+              `${timeZone} is not an IANA time zone, such as Europe/Paris.`
+            );
+          }
+
+          const found = yield* analytics
+            .bestTimes(
+              yield* actor,
+              decodeChannelId(channelId),
+              days ?? 90,
+              zone.value
+            )
+            .pipe(
+              Effect.catchTags({
+                ChannelNotFound: () =>
+                  refuse(
+                    "The workspace follows no channel with this id: list_channels lists them."
+                  ),
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("read analytics"),
+              })
+            );
+
+          return bestTimesView(found);
         }),
       channel_analytics: (asked) =>
         Effect.gen(function* channel() {

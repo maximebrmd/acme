@@ -68,6 +68,9 @@
   caller sets the platforms' AI labels; it refuses in words on a server
   without an image model. The journal keeps the call by name, never the
   prompt. The text assistant has no tool: an agent writes its own text.
+- `best_times` (`reports-tools.ts`) answers `GET …/analytics/best-times`'s
+  view for one channel; its description says it describes the past of
+  that channel, is no prediction, and that `enough: false` ranks nothing.
 - `get_usage` (`reports-tools.ts`) answers the usage endpoint's view
   (`#billing/api/usage-view.ts`), with `from` and `to` as text days;
   `get_billing` stays as it is. The CLI's is `peal usage`.

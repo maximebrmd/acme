@@ -3002,6 +3002,14 @@ const shortLinkFixture = {
   targetId: "0190f3a0-0000-7000-8000-0000000005c1",
 };
 
+// An hour of the studio's best times.
+const studioHour = (
+  weekday: "friday" | "tuesday",
+  hour: number,
+  median: number | null,
+  count: number
+) => ({ hour, median, posts: count, weekday });
+
 export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
     adsGroupLive(studio),
@@ -4196,6 +4204,34 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     HttpApiBuilder.group(Api, "analytics", (handlers) =>
       handlers.handleAll({
+        bestTimes: ({ query }) =>
+          Effect.gen(function* bestTimes() {
+            yield* allowed("analytics:read");
+
+            if (query.channelId !== mastodonId) {
+              return yield* new ChannelNotFound();
+            }
+
+            return {
+              best: [studioHour("tuesday", 9, 13, 4)],
+              buckets: [
+                studioHour("tuesday", 9, 13, 4),
+                studioHour("friday", 18, null, 2),
+              ],
+              channelId: mastodonId,
+              counted: true,
+              days: query.days ?? 90,
+              enough: true,
+              from: "2026-08-12",
+              minimumPosts: 20,
+              minimumPostsPerHour: 3,
+              platform: "mastodon" as const,
+              posts: 24,
+              recent: 1,
+              timeZone: query.timeZone,
+              to: "2026-11-09",
+            };
+          }),
         channel: ({ params, query }) =>
           Effect.gen(function* channel() {
             yield* allowed("analytics:read");

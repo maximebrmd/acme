@@ -3,6 +3,7 @@ import { Argument, Command, Flag } from "effect/cli";
 import {
   AnalyticsDashboardSchema,
   AnalyticsSummarySchema,
+  BestTimesSchema,
   CalendarDaySchema,
   ChannelSeriesSchema,
   countedPlatforms,
@@ -10,6 +11,7 @@ import {
 } from "peal-contract";
 import type {
   AnalyticsSummary,
+  BestTimesHour,
   DashboardTotals,
   FollowerChange,
   MetricTotals,
@@ -522,9 +524,124 @@ const exportFile = Command.make(
   )
 );
 
+const weekdayNames: Readonly<Record<BestTimesHour["weekday"], string>> = {
+  friday: "Friday",
+  monday: "Monday",
+  saturday: "Saturday",
+  sunday: "Sunday",
+  thursday: "Thursday",
+  tuesday: "Tuesday",
+  wednesday: "Wednesday",
+};
+
+// An offset, such as +01:00, is refused before any request.
+const zoneNamed = (zone: string) =>
+  isZoneName(zone)
+    ? Effect.void
+    : Effect.fail(
+        new Refused({
+          reason: `${zone} is not an IANA time zone: give one such as Europe/Paris with --time-zone.`,
+        })
+      );
+
+const bestTimesDays = { "180": 180, "30": 30, "90": 90 } as const;
+
+const hourName = ({ hour, weekday }: BestTimesHour): string =>
+  `${weekdayNames[weekday]} ${String(hour).padStart(2, "0")}:00`;
+
+const bestTimes = Command.make(
+  "best-times",
+  {
+    channel: Flag.String("channel").pipe(
+      Flag.withMetavar("<channel-id>"),
+      Flag.withDescription("The channel, as peal channels list shows its id.")
+    ),
+    days: Flag.Literals("days", ["30", "90", "180"]).pipe(
+      Flag.withDescription(
+        "The last 30, 90 or 180 days, today included. Defaults to 90; fewer where the platform lets Peal keep less."
+      ),
+      Flag.withDefault("90" as const)
+    ),
+    json: jsonFlag,
+    timeZone: timeZoneFlag,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("analytics.bestTimes")(function* showBestTimes(input) {
+    yield* zoneNamed(input.timeZone);
+
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+
+    const found = yield* client.analytics
+      .bestTimes({
+        params: { workspaceId: workspace.id },
+        query: {
+          channelId: input.channel,
+          days: bestTimesDays[input.days],
+          timeZone: input.timeZone,
+        },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(BestTimesSchema, found);
+
+      return;
+    }
+
+    yield* Console.log(
+      `When this ${found.platform} channel's posts did best, from ${found.from} to ${found.to} in ${found.timeZone}: what happened, not what will.`
+    );
+
+    if (!found.counted) {
+      yield* Console.log(
+        "Its platform gives no likes, reposts, replies or quotes, so there is nothing to weigh."
+      );
+
+      return;
+    }
+
+    if (!found.enough) {
+      yield* Console.log(
+        `Not enough posts to rank its hours: ${String(found.posts)} weighed, ${String(found.minimumPosts)} needed.`
+      );
+    }
+
+    if (found.best.length > 0) {
+      yield* Console.log(
+        "Best hours, by the median of likes, reposts, replies and quotes each post was given:"
+      );
+
+      for (const line of columns(
+        found.best.map((bucket) => [
+          `  ${hourName(bucket)}`,
+          `median ${count(bucket.median)}`,
+          `${String(bucket.posts)} posts`,
+        ])
+      )) {
+        yield* Console.log(line);
+      }
+    }
+
+    yield* Console.log(
+      `${String(found.posts)} posts weighed; ${String(found.recent)} left out, less than 48 hours old. An hour with fewer than ${String(found.minimumPostsPerHour)} posts has no median.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "Show when one channel's posts did best, by weekday and hour: how many went live in each hour and the median of what they were given. It describes the channel's past, never a prediction, and ranks nothing under 20 posts."
+  )
+);
+
 export const analytics = Command.make("analytics").pipe(
   Command.withDescription(
     "How a workspace's posts and accounts did on their platforms."
   ),
-  Command.withSubcommands([summary, dashboard, channel, exportFile, post])
+  Command.withSubcommands([
+    summary,
+    dashboard,
+    channel,
+    bestTimes,
+    exportFile,
+    post,
+  ])
 );
