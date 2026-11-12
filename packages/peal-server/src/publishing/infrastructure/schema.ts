@@ -83,6 +83,8 @@ export const posts = publishing.table(
     scheduledAt: instant("scheduled_at"),
     scheduledBy: uuid("scheduled_by"),
     scheduledVia: jsonb("scheduled_via"),
+    // Whether its links go out shortened, where the server has short links.
+    shortenLinks: boolean("shorten_links").notNull().default(false),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
     tagIds: uuid("tag_ids")

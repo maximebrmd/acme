@@ -4,6 +4,7 @@ import { MessageStorage } from "effect/cluster";
 import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
+import { LinkShortener } from "#publishing/application/link-shortener.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
@@ -80,6 +81,7 @@ const platformsOn = (instanceUrl: string) =>
           ["token-1"]
         ),
         mediaOf([]),
+        LinkShortener.none,
         DrizzlePublicationProgress,
         DrizzleUploadSessions,
         DrizzlePlatformQuota,

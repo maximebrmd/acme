@@ -12,6 +12,9 @@ export class ShortLinkBase extends Context.Service<
   { readonly base: Option.Option<URL> }
 >()("peal-server/shortlinks/application/ShortLinkBase") {}
 
+/** How many characters a code has, for other contexts. */
+export { codeLength as shortCodeLength } from "#shortlinks/domain/short-code.ts";
+
 /** A code's full short address under `base`. */
 export const shortUrlOf = (base: URL, code: string): string =>
   `${base.href}${code}`;

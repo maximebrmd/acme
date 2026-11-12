@@ -23,6 +23,8 @@ export interface PostCopy {
   readonly channelIds: readonly ChannelId[];
   readonly content: PostContent;
   readonly options: readonly ChannelOptions[];
+  /** As the post asks: each copy's links get short addresses of their own. */
+  readonly shortenLinks: boolean;
   readonly tagIds: readonly TagId[];
 }
 
@@ -96,6 +98,7 @@ export const copyOf = Effect.fn("Publishing.copyOf")(function* copyOf(
           ),
         })
     ),
+    shortenLinks: post.shortenLinks,
     tagIds: post.tagIds.filter((tagId) => tagIds.has(tagId)),
   };
 

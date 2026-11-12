@@ -91,6 +91,7 @@ import { LivePostClientsLive } from "#publishing/infrastructure/platforms/live-p
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platform-lookups-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
+import { ShortLinksLinkShortener } from "#publishing/infrastructure/shortlinks-link-shortener.ts";
 import { ToldLivePostEvents } from "#publishing/infrastructure/told-live-post-events.ts";
 import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
 import {
@@ -451,12 +452,14 @@ export const publishingWorkers = <
  * the tokens
  * the channels context hands out (ChannelAccess) and the files the media
  * context does (MediaForPlatforms), the large ones a few at a time
- * (`limitedUploads`), which the composition root provides
- * with Dns, the database and the PostRepository.
+ * (`limitedUploads`), and the short links the shortlinks context issues
+ * (ShortLinks, ShortLinkBase), which the composition root provides with
+ * Dns, the database and the PostRepository.
  */
 export const PlatformsLive = RoutedPlatformPublisher.pipe(
   // The operator's X_THREADS: a part already scheduled is not sent either.
   Layer.provide(XThreadsLive),
+  Layer.provide(ShortLinksLinkShortener),
   Layer.provide(PlatformClientsLive),
   Layer.provide(
     Layer.mergeAll(

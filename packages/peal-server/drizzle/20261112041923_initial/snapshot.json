@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "03f8eb58-93e6-4194-b23e-5aa647fbcda7",
+  "id": "e9416c73-ef82-4989-9e76-b43c64da08c9",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -14341,6 +14341,19 @@
       "notNull": false,
       "dimensions": 0,
       "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "shorten_links",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
       "generated": null,
       "identity": null,
       "entityType": "columns"

@@ -783,6 +783,7 @@ CREATE TABLE "publishing"."posts" (
 	"scheduled_at" timestamp with time zone,
 	"scheduled_by" uuid,
 	"scheduled_via" jsonb,
+	"shorten_links" boolean DEFAULT false NOT NULL,
 	"started_at" timestamp with time zone,
 	"status" text NOT NULL,
 	"tag_ids" uuid[] DEFAULT '{}'::uuid[] NOT NULL,
