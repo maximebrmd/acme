@@ -35,6 +35,12 @@ peal_backup_path: /sandbox
 # Few people use the sandbox: the server traces every request there.
 peal_settings:
   OTEL_TRACES_SAMPLER: parentbased_always_on
+  # The platforms' sandbox apps: their ids here, their secrets in the vault.
+  YOUTUBE_CLIENT_ID: 342335857798-t4h1dootm1813qo0pe8be46ahidqmo2g.apps.googleusercontent.com
+  X_CLIENT_ID: aG1fSFFkWUF1OGJYM2ZZQktRbEk6MTpjaQ
+  # X bills each read: the sandbox reads, but little.
+  X_ANALYTICS: "true"
+  X_ANALYTICS_DAILY_READS: "50"
   # Refuses the staff console to staff whose own account does not have
   # two-step verification on: turn it on for each staff account first.
   PEAL_STAFF_TWO_STEP: "true"
