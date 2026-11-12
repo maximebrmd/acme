@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "peal-ui/components/dialog";
+import { useState } from "react";
 
 /**
  * What "Publish now" asks before it sends: that the post goes out at once,
@@ -55,9 +56,17 @@ export const PublishNowButton = ({
   readonly onConfirm: () => void;
 }) => {
   const t = useTranslations("Posts.Composer");
+  // Once confirmed, the button sends nothing more while the dialog closes.
+  const [confirmed, setConfirmed] = useState(false);
 
   return (
-    <Dialog>
+    <Dialog
+      onOpenChange={(open) => {
+        if (open) {
+          setConfirmed(false);
+        }
+      }}
+    >
       <DialogTrigger
         render={
           <Button
@@ -80,7 +89,13 @@ export const PublishNowButton = ({
           <DialogClose render={<Button variant="outline" />}>
             {t("keepForLater")}
           </DialogClose>
-          <DialogClose render={<Button />} onClick={onConfirm}>
+          <DialogClose
+            render={<Button disabled={confirmed} />}
+            onClick={() => {
+              setConfirmed(true);
+              onConfirm();
+            }}
+          >
             {t("confirmPublishNow")}
           </DialogClose>
         </DialogFooter>

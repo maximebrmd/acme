@@ -24,7 +24,7 @@ import {
   CardTitle,
 } from "peal-ui/components/card";
 import { Separator } from "peal-ui/components/separator";
-import { useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { canGenerateImages } from "#assistant/permissions.ts";
@@ -79,6 +79,7 @@ import { connectedTargets } from "#posts/channel-selection.ts";
 import { fitOn, fits } from "#posts/character-count.ts";
 import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits, showsAltText } from "#posts/media-fit.ts";
+import { oneAtATime } from "#posts/one-at-a-time.ts";
 import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
 import { publishNowOf } from "#posts/publish-now.ts";
@@ -272,6 +273,7 @@ export const Composer = ({
   const requests = usePostRequests(workspaceId);
   const [isPending, startTransition] = useTransition();
   const [action, setAction] = useState<ComposerAction | null>(null);
+  const guard = useMemo(() => oneAtATime(), []);
 
   const start = startOf(post);
   const [text, setText] = useState(start.text);
@@ -753,10 +755,17 @@ export const Composer = ({
     },
   };
 
+  // One action at a time, refused synchronously: a double click on a
+  // dialog's confirm button, still clickable while it closes, sends nothing
+  // twice.
   const perform = (next: ComposerAction) => {
-    setAction(next);
-    setSignedPause(false);
-    startTransition(work[next]);
+    startTransition(async () => {
+      await guard.run(async () => {
+        setAction(next);
+        setSignedPause(false);
+        await work[next]();
+      });
+    });
   };
 
   const notice = noticeOf(t, status, { canSchedule, canWrite, willWait });
