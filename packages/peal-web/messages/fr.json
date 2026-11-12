@@ -3365,6 +3365,7 @@
       "endings": "{ending, select, count {Après un nombre de publications} until {À une date} other {Après {max} publications au plus}}",
       "count": "Publications en tout, celle-ci comprise",
       "until": "Dernier jour",
+      "untilRequired": "Choisissez le dernier jour où elle se répète, ou une autre fin.",
       "queue": "Quand",
       "ownTime": "À l’heure de la publication",
       "variantsHint": "Des textes dits à la place de celui de la publication, à tour de rôle après lui, {max} au plus. Ses médias et options restent. Certaines plateformes refusent deux fois le même texte : les variantes sont faites pour cela.",

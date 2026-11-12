@@ -43,10 +43,18 @@ const RepeatForm = ({
   const [busy, startTransition] = useTransition();
 
   const submit = () => {
+    const request = ruleRequestOf(post.id, draft);
+
+    if (Option.isNone(request)) {
+      setError(t("form.untilRequired"));
+
+      return;
+    }
+
     startTransition(async () => {
       const exit = await start({
         params: { workspaceId },
-        payload: ruleRequestOf(post.id, draft),
+        payload: request.value,
         reactivityKeys: rulesChanged(workspaceId),
       });
 

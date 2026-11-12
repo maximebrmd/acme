@@ -312,6 +312,7 @@ export const RepeatFormView = ({
             <Input
               id={untilId}
               type="date"
+              required
               className="w-44"
               value={draft.until}
               onChange={(event) => {

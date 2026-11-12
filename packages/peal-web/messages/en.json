@@ -3365,6 +3365,7 @@
       "endings": "{ending, select, count {After a number of posts} until {On a date} other {After {max} posts at most}}",
       "count": "Posts in all, this one counted",
       "until": "Last day",
+      "untilRequired": "Choose the last day it repeats on, or another ending.",
       "queue": "When",
       "ownTime": "At the post’s time of day",
       "variantsHint": "Texts said instead of the post’s, in turn after it, {max} at most. Its media and options stay. Some platforms refuse the same text twice: variants are for that.",

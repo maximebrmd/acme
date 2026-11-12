@@ -59,11 +59,18 @@ const given = <A, B extends object>(
   fields: (present: A) => B
 ) => Option.match(value, { onNone: () => ({}), onSome: fields });
 
-/** The rule the form asks the server to start on the post. */
+/**
+ * The rule the form asks the server to start on the post; none while it is
+ * to end on a date left empty, which would start a rule with no ending.
+ */
 export const ruleRequestOf = (
   postId: string,
   draft: RepeatDraft
-): NewRecyclingRule => {
+): Option.Option<NewRecyclingRule> => {
+  if (draft.ending === "until" && draft.until === "") {
+    return Option.none();
+  }
+
   const variants = draft.variants
     .map(({ text }) => text.trim())
     .filter((text) => text !== "")
@@ -94,7 +101,7 @@ export const ruleRequestOf = (
     ),
   };
 
-  return request;
+  return Option.some(request);
 };
 
 /** The rule that repeats the post and goes on, if one does. */

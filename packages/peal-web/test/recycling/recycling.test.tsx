@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { DateTime } from "effect";
+import { DateTime, Option } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type { RecyclingRule } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -59,11 +59,13 @@ const render = async (locale: "en" | "fr", node: React.ReactNode) =>
 
 describe("the repeat form's request", () => {
   it("asks for what the form holds, and nothing it leaves empty", () => {
-    expect(ruleRequestOf("post", freshRepeat)).toStrictEqual({
-      count: 3,
-      every: { count: 1, unit: "weeks" },
-      postId: "post",
-    });
+    expect(ruleRequestOf("post", freshRepeat)).toStrictEqual(
+      Option.some({
+        count: 3,
+        every: { count: 1, unit: "weeks" },
+        postId: "post",
+      })
+    );
     expect(
       ruleRequestOf("post", {
         ...freshRepeat,
@@ -76,12 +78,20 @@ describe("the repeat form's request", () => {
           { key: 2, text: " " },
         ],
       })
-    ).toStrictEqual({
-      every: { count: 12, unit: "months" },
-      postId: "post",
-      until: "2026-12-31",
-      variants: [{ text: "Another way" }],
-    });
+    ).toStrictEqual(
+      Option.some({
+        every: { count: 12, unit: "months" },
+        postId: "post",
+        until: "2026-12-31",
+        variants: [{ text: "Another way" }],
+      })
+    );
+  });
+
+  it("asks for nothing when the date it ends on is left empty", () => {
+    expect(
+      ruleRequestOf("post", { ...freshRepeat, ending: "until", until: "" })
+    ).toStrictEqual(Option.none());
   });
 
   it("finds the rule going on for a post, and which may resume", () => {
