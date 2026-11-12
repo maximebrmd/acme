@@ -81,7 +81,11 @@ describe("a review link", { serial: true }, () => {
     await screen.getByRole("textbox", "Time").fill("23:59");
     await screen.getByRole("button", "Ask for approval").tap();
 
-    await expect(screen.getByRole("heading", "Calendar")).toBeVisible();
+    // Sent, then the calendar renders on the server: longer than an
+    // assertion's 5 seconds on a loaded machine.
+    await expect(screen.getByRole("heading", "Calendar")).toBeVisible({
+      timeout: 30_000,
+    });
 
     const waiting = screen.getByRole(
       "link",
