@@ -280,17 +280,42 @@ On an instance that bills, the workspaces your partner account owns have no subs
 - **The other limits apply to each workspace**, as the plan gives them: posts scheduled in a month, media stored, the writing assistant's requests a day.
 - **Over the plan.** If your plan shrinks under what you hold, nothing is deleted, but until the channels held are back within it, by disconnecting some or taking a larger plan, your workspaces schedule and publish nothing ([A workspace over its plan](/billing#over)).
 
-A self-hosted Peal without billing limits nothing. `GET /api/partner` answers what the account holds each day, which is what a price by the workspace or by the connected channel would count.
+A self-hosted Peal without billing limits nothing. `GET /api/partner` answers what the account holds each day, and [its usage per customer](#usage) what each workspace used, which is what a price by the workspace or by the connected channel would count.
+
+## Usage per customer [#usage]
+
+One call answers what your partner account used across the workspaces it holds, per customer with your own id for each, over a period of UTC days: for your own billing and dashboards.
+
+```bash
+curl "https://api.example.com/api/partner/usage?from=2026-11-01&to=2026-11-30&limit=50" \
+  -H "Authorization: Bearer $PEAL_PARTNER_KEY"
+```
+
+```typescript
+const usage = await peal.partnerUsage.get({
+  from: "2026-11-01",
+  to: "2026-11-30",
+});
+// usage.workspaces.workspaces: your home workspace first, then each customer's
+```
+
+- **Who reads it.** A partner key with the scope `workspaces:read` at `GET /api/partner/usage`, or your home workspace's owners and admins (`partner:read`) at `GET /api/workspaces/{workspaceId}/usage/partner`, which answers the same; any other workspace answers 404 `PartnerNotFound`.
+- **The period.** `from` and `to` are UTC days, both included, 92 days at most; by default the 30 days that end today.
+- **What it answers.** `current`: the workspaces you own now and the channels connected across them and your home workspace, which your plan's channel limit counts. `days`: for each day, the workspaces and channels as the daily count found them at 23:41 UTC (null for a day without one), and the posts that went out. `totals`: the period's posts by platform, its channel-days and, for each calendar month it touches, the posts on platforms that bill per post.
+- **Per workspace.** `workspaces` is a page of them, newest first, in the order and with the cursor of [`GET /api/partner/workspaces`](#workspaces), 50 a page unless `limit` (at most 100) says otherwise: pass `next` as `before` for the next page. Your home workspace comes first, on the first page only, one more than asked, with `home: true`. Each gives its `externalId`, the channels it connected itself now, and over the period its channel-days, posts by platform, requests to the writing assistant, latest media storage and metered posts.
+- **A customer offboarded during the period** is no longer listed, and its posts leave the sums, as its counts were erased with it; the daily `workspaces` and `channels` still count it for the days it existed.
+- The daily counts are kept {{keep-partner-usage-en}}. Counts only: nothing here is priced, and a self-hosted Peal without billing answers `plan` and `allowances` as null.
 
 ## Where things are [#surfaces]
 
-| To                                              | Use                                                                                                                         |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Set the account up, create and revoke keys      | The web app: **Settings**, then **Partner**                                                                                 |
-| Create, find, change and delete workspaces      | `/api/partner`, with a partner key; `partner` in the SDKs                                                                   |
-| Act inside a workspace                          | `/api/workspaces/{workspaceId}/…`, with the same key; `connectLinks`, `channels`, `media`, `posts`, `analytics` in the SDKs |
-| Read the account and its workspaces as a person | `peal partner show`, `peal partner keys`, `peal partner workspaces` ([command line](/cli#partner))                          |
-| Make a link by hand for a workspace of yours    | `peal links create` ([command line](/cli#links)), or the MCP tool `create_connect_link` ([MCP](/mcp#tools))                 |
+| To                                              | Use                                                                                                                                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Set the account up, create and revoke keys      | The web app: **Settings**, then **Partner**                                                                                                                                |
+| Create, find, change and delete workspaces      | `/api/partner`, with a partner key; `partner` in the SDKs                                                                                                                  |
+| Act inside a workspace                          | `/api/workspaces/{workspaceId}/…`, with the same key; `connectLinks`, `channels`, `media`, `posts`, `analytics` in the SDKs                                                |
+| Read the account and its workspaces as a person | `peal partner show`, `peal partner keys`, `peal partner workspaces` ([command line](/cli#partner))                                                                         |
+| Read the usage per customer                     | `GET /api/partner/usage`, with the key; `partnerUsage` in the SDKs; `peal partner usage`, the MCP tool `get_partner_usage` and **Settings**, then **Partner**, as a person |
+| Make a link by hand for a workspace of yours    | `peal links create` ([command line](/cli#links)), or the MCP tool `create_connect_link` ([MCP](/mcp#tools))                                                                |
 
 The [API reference](/reference) lists every endpoint with its errors. The SDKs are generated from the same contract, in eight languages.
 

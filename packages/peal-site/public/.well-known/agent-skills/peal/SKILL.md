@@ -354,7 +354,7 @@ peal posts repost <post-id> <target-id> --json
 ```
 
 Taking a live post down (`peal posts unpublish`) deletes it for everyone, for good, and correcting its text (`peal posts edit`, Mastodon and Google Business Profile) changes it for everyone at once: either only when the user asks, as [references/live-posts.md](references/live-posts.md) says. Counts once a post is live (`peal analytics`), and what the workspace used
-of its plan by UTC day (`peal usage`, needs billing:read):
+of its plan by UTC day (`peal usage`, needs billing:read; a partner's, per customer, `peal partner usage`):
 [references/reports.md](references/reports.md).
 
 ## Comments
