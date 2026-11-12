@@ -41,6 +41,11 @@ export const StaffActionSchema = Schema.Literals([
   // their phone and recovery codes: deleted its authenticator, codes and
   // trusted browsers, and signed it out everywhere.
   "resetTwoStep",
+  // Turned a short link off (`shortlinks` context): it answers 410. The
+  // event's workspace is the link's, and its code is among the object ids.
+  "disableShortLink",
+  // Turned it back on.
+  "enableShortLink",
 ]);
 
 export type StaffAction = typeof StaffActionSchema.Type;

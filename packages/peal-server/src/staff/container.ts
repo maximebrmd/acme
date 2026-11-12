@@ -7,12 +7,14 @@ import { PurgeAuditLog } from "#staff/application/purge-audit-log.ts";
 import { StaffActions } from "#staff/application/staff-actions.ts";
 import { StaffConsole } from "#staff/application/staff-console.ts";
 import { StaffPartners } from "#staff/application/staff-partners.ts";
+import { StaffShortLinks } from "#staff/application/staff-short-links.ts";
 import { AccountsModeration } from "#staff/infrastructure/account-moderation.ts";
 import { AccountStaffDirectory } from "#staff/infrastructure/account-staff-directory.ts";
 import { ContextSystemHealth } from "#staff/infrastructure/context-system-health.ts";
 import { ContextWorkspaceHealth } from "#staff/infrastructure/context-workspace-health.ts";
 import { DrizzleAuditLog } from "#staff/infrastructure/drizzle-audit-log.ts";
 import { DrizzleExpiredAuditEvents } from "#staff/infrastructure/drizzle-expired-audit-events.ts";
+import { ShortLinksDesk } from "#staff/infrastructure/short-links-desk.ts";
 import { WorkspacePartnerDesk } from "#staff/infrastructure/workspace-partner-desk.ts";
 
 const AdaptersLive = Layer.mergeAll(
@@ -22,24 +24,28 @@ const AdaptersLive = Layer.mergeAll(
   ContextWorkspaceHealth,
   DrizzleAuditLog,
   DrizzleExpiredAuditEvents,
+  ShortLinksDesk,
   WorkspacePartnerDesk
 );
 
 /**
  * The staff console's use cases: what it reads (StaffConsole) and what staff
  * do, recorded in the audit log (StaffActions, and StaffPartners for the
- * partner accounts they grant), and the log's retention
+ * partner accounts they grant, StaffShortLinks for the short links they
+ * turn off), and the log's retention
  * (PurgeAuditLog). Needs the database (Drizzle
  * and SqlClient), Ids, and what the other contexts hand staff: the
  * workspace context's AccountDirectory, AccountModeration, PartnerAccounts
  * and PartnerOwnership, billing's
- * WorkspaceEntitlements, the channels' ChannelOversight and publishing's
- * PostOversight, which the composition root brings.
+ * WorkspaceEntitlements, the channels' ChannelOversight, publishing's
+ * PostOversight and the shortlinks context's ShortLinkModeration, which
+ * the composition root brings.
  */
 export const StaffLive = Layer.mergeAll(
   StaffActions.layer,
   StaffConsole.layer,
   StaffPartners.layer,
+  StaffShortLinks.layer,
   PurgeAuditLog.layer
 ).pipe(Layer.provide(AdaptersLive));
 

@@ -21,6 +21,11 @@ export const impersonateUser = PealApi.mutation("staff", "impersonate");
 // their phone and recovery codes.
 export const resetTwoStep = PealApi.mutation("staff", "resetTwoStep");
 
+// Turns a short link off, or on again.
+export const disableShortLink = PealApi.mutation("staff", "disableShortLink");
+
+export const enableShortLink = PealApi.mutation("staff", "enableShortLink");
+
 // Opens a partner account for a workspace.
 export const grantPartner = PealApi.mutation("staff", "grantPartner");
 

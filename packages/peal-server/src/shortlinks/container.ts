@@ -1,6 +1,7 @@
 import { Layer } from "effect";
 
 import { PurgeClicks } from "#shortlinks/application/purge-clicks.ts";
+import { ShortLinkModeration } from "#shortlinks/application/short-link-moderation.ts";
 import { ShortLinkRecords } from "#shortlinks/application/short-link-records.ts";
 import { ShortLinkReports } from "#shortlinks/application/short-link-reports.ts";
 import { ShortLinkSettings } from "#shortlinks/application/short-link-settings.ts";
@@ -12,7 +13,8 @@ import { ShortLinkBaseLive } from "#shortlinks/infrastructure/short-link-setting
 /**
  * Short links: issued when a post goes out (ShortLinks), followed by
  * anyone, read by the workspace (ShortLinkReports, ShortLinkSettings),
- * erased and exported with it (ShortLinkRecords), and their clicks' daily
+ * erased and exported with it (ShortLinkRecords), turned off by staff
+ * (ShortLinkModeration), and their clicks' daily
  * retention (PurgeClicks). Reads `PEAL_SHORT_LINK_BASE` when it is built.
  * Needs the database (Drizzle, SqlClient) and Ids.
  */
@@ -21,6 +23,7 @@ export const ShortLinksLive = Layer.mergeAll(
   ShortLinkReports.layer,
   ShortLinkSettings.layer,
   ShortLinkRecords.layer,
+  ShortLinkModeration.layer,
   PurgeClicks.layer
 ).pipe(
   Layer.provideMerge(ShortLinkBaseLive),

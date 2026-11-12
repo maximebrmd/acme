@@ -5,6 +5,7 @@ export const StaffErrorKeySchema = Schema.Literals([
   "banned",
   "expired",
   "gone",
+  "linkGone",
   "notStaff",
   "self",
   "staff",
@@ -33,6 +34,7 @@ const decodeRefused = Schema.decodeUnknownOption(RefusedSchema);
 // The API's other answers, by tag.
 const reasons = new Map<string, StaffErrorKey>([
   ["NotFound", "notStaff"],
+  ["ShortLinkNotFound", "linkGone"],
   ["UserNotFound", "gone"],
   ["WorkspaceNotFound", "workspaceGone"],
 ]);

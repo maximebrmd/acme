@@ -380,7 +380,9 @@ const StaffContextLive = StaffLive.pipe(
       ChannelsWithNoticesLive,
       PublishingContextLive,
       // Its ad accounts and boosts, as metadata.
-      AdsRoutesContextLive
+      AdsRoutesContextLive,
+      // The short links it turns off.
+      ShortLinksLive
     )
   )
 );

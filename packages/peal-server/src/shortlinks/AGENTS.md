@@ -42,3 +42,8 @@
   then answer 404), and exports its links without counts.
 - Tests count clicks in the 1890s, so the purge's cutoff touches no other
   suite's rows.
+- Staff turn a link off or on again (`ShortLinkModeration`, for the staff
+  context's `StaffShortLinks` through its `ShortLinkDesk` port): the
+  staff use case records `disableShortLink` or `enableShortLink` in the
+  audit log, with the link's workspace and its code, before it asks. A
+  link turned off (`disabled_at`) answers 410 and counts nothing.

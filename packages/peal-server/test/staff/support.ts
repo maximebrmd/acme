@@ -11,6 +11,7 @@ import { AuditLog } from "#staff/application/ports/audit-log.ts";
 import { Moderation } from "#staff/application/ports/moderation.ts";
 import type { EndedImpersonation } from "#staff/application/ports/moderation.ts";
 import { PartnerDesk } from "#staff/application/ports/partner-desk.ts";
+import { ShortLinkDesk } from "#staff/application/ports/short-link-desk.ts";
 import { StaffDirectory } from "#staff/application/ports/staff-directory.ts";
 import type { UserProfile } from "#staff/application/ports/staff-directory.ts";
 import { SystemHealth } from "#staff/application/ports/system-health.ts";
@@ -18,6 +19,7 @@ import { WorkspaceHealth } from "#staff/application/ports/workspace-health.ts";
 import { StaffActions } from "#staff/application/staff-actions.ts";
 import { StaffConsole } from "#staff/application/staff-console.ts";
 import { StaffPartners } from "#staff/application/staff-partners.ts";
+import { StaffShortLinks } from "#staff/application/staff-short-links.ts";
 import type { AuditEvent } from "#staff/domain/audit-event.ts";
 
 export const staffId = UserIdSchema.make(
@@ -94,6 +96,9 @@ const sameTarget = (event: AuditEvent, targetId: Option.Option<UserId>) =>
  * is set, and whose bans and sign-outs end the impersonations `ending`
  * lists. StaffMemory reads what they kept.
  */
+/** The code of the one short link the memory desk holds. */
+export const shortLinkCode = "AbC1234";
+
 export const memoryStaff = (
   accounts: readonly UserProfile[],
   options: {
@@ -236,6 +241,45 @@ export const memoryStaff = (
               ),
           })
         ),
+        // One short link of the workspace, turned off and on in memory.
+        Layer.effect(
+          ShortLinkDesk,
+          Ref.make(Option.none<DateTime.Utc>()).pipe(
+            Effect.map((disabledAt) => {
+              const read = Ref.get(disabledAt).pipe(
+                Effect.map((at) => ({
+                  channelId: "00000000-0000-7000-8000-0000000000c1",
+                  code: shortLinkCode,
+                  createdAt: DateTime.makeUnsafe("2026-11-10T09:00:00Z"),
+                  destination: "https://example.test/reported",
+                  disabledAt: at,
+                  postId: "00000000-0000-7000-8000-0000000000b1",
+                  workspaceId,
+                }))
+              );
+
+              const found = (code: string) =>
+                code === shortLinkCode
+                  ? read.pipe(Effect.map(Option.some))
+                  : Effect.succeedNone;
+
+              return ShortLinkDesk.of({
+                find: found,
+                setDisabled: (code, disabled) =>
+                  code === shortLinkCode
+                    ? Ref.set(
+                        disabledAt,
+                        disabled
+                          ? Option.some(
+                              DateTime.makeUnsafe("2026-11-11T09:00:00Z")
+                            )
+                          : Option.none()
+                      ).pipe(Effect.andThen(found(code)))
+                    : Effect.succeedNone,
+              });
+            })
+          )
+        ),
         Ids.layerTest
       );
 
@@ -243,6 +287,7 @@ export const memoryStaff = (
         StaffActions.layer,
         StaffConsole.layer,
         StaffPartners.layer,
+        StaffShortLinks.layer,
         ImpersonationAudit.layer
       ).pipe(
         Layer.provideMerge(ports),
