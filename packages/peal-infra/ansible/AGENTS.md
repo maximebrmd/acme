@@ -5,10 +5,13 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
 
 - Production runs on a server at a European provider, managed with Ansible
   from `peal-infra`, reachable only through a Cloudflare Tunnel: no inbound
-  ports, SSH included. No provider is chosen yet, and the repository names
-  none: each group's `hosting_provider` and `hosting_location` (a city) are
-  placeholders `peal_preflight` refuses, and the infra README's "Choosing a
-  provider and a size" says what the stack needs of any of them.
+  ports, SSH included. Each group's `hosting_provider` and
+  `hosting_location` (a city) say where its server is: production's are set
+  (a dedicated server in Paris), the sandbox's and the uptime server's are
+  placeholders `peal_preflight` refuses until each is hosted, and the infra
+  README's "Choosing a provider and a size" says what the stack needs of any
+  provider. A server's address may stay off Git, in
+  `host_vars/<host>/local.yml`.
   Cloudflare Zero Trust Access guards Grafana, the admin (`/api/auth/admin`,
   the staff console's `/api/admin`, `/admin`, `/en/admin` and `/fr/admin`) and the
   sandbox, and cloudflared checks the Access token on those routes too. Caddy fronts the
@@ -20,11 +23,17 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   gets in is the Access policy's business; do not grant roles in Grafana by
   hand.
 - `bootstrap.yml` logs in as `bootstrap_user`, the account a server's image
-  lets in: root, or the image's own (then with sudo), which the `ssh` role
-  removes once `ops` works. Where cloud-init rewrites `/etc/hosts`
+  lets in: root, or the image's own (then with sudo, whose password, when it
+  asks one, `scripts/become-keychain.py` reads from the keychain without
+  showing it), which the `ssh` role removes once `ops` works. Where cloud-init rewrites `/etc/hosts`
   (`manage_etc_hosts`), the `system` role turns it off in
   `cloud.cfg.d/zz-peal.cfg` and writes its line in cloud-init's template
   too, as a provider's own settings at boot override files on the server.
+- A unit a server's image runs for nothing is masked
+  (`system_masked_units`, per group), never removed with its package:
+  removing one can take Ubuntu's metapackages, whose other dependencies the
+  unattended upgrades then remove. The `system` role keeps the clock with
+  chrony on every server.
 - Keep check mode working on a new server: a task that needs what an earlier
   one would make (a folder, a package, a unit) skips in check mode when that
   one reports a change.

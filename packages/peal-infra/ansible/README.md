@@ -3,11 +3,12 @@
 Ansible for the servers Peal runs on, production and the sandbox, each a
 server at a European provider reachable only through a Cloudflare Tunnel,
 and for the uptime server that watches them from outside, at another
-provider and in another city. Nothing here has been applied yet, and no
-provider is chosen: the inventory names the hosts on `peal.social` but holds
-placeholders for the rest (`203.0.113.0/24`, `example-team`, `REPLACE…`,
-each server's `hosting_provider` and `hosting_location`), and every playbook
-refuses to run until they are replaced.
+provider and in another city. Nothing here has been applied yet.
+Production's provider is chosen, and its group names it; the inventory names
+the hosts on `peal.social` but holds placeholders for the rest
+(`203.0.113.0/24`, `example-team`, `REPLACE…`, the sandbox's and the uptime
+server's `hosting_provider` and `hosting_location`), and every playbook
+refuses to run on a server until its own are replaced.
 
 Self-hosters do not need this folder: Caddy and Compose are enough (the docs'
 self-hosting page, and [`peal-docker`](../../peal-docker)).
@@ -133,27 +134,31 @@ Host ssh.peal.social sandbox-ssh.peal.social
 
 ## Choosing a provider and a size
 
-No provider is chosen, and nothing in this folder depends on one: the roles
-use no provider's API, module or collection, and the servers are created by
-hand in a console. What a choice changes is the inventory: each server's
-address in `hosts.yml`, and its `hosting_provider` and `hosting_location`
-(the city) in its group's `main.yml`, placeholders until then. Production
+Production's provider is chosen, a dedicated server in Paris, and its group
+names it; the sandbox's and the uptime server's are not. Nothing in this
+folder depends on a provider: the roles use no provider's API, module or
+collection, and the servers are created by hand in a console. What a choice
+changes is the inventory: each server's address in `hosts.yml`, or off Git
+in `host_vars/<host>/local.yml`, and its `hosting_provider` and
+`hosting_location` (the city) in its group's `main.yml`, placeholders until
+then. Production
 and the sandbox may share a provider; the uptime server shares neither a
 provider nor a city with them ([Uptime](#uptime)).
 
 ### What the stack needs of a provider
 
-| Need                         | Why                                                                                                                                                                                                                                                                        |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A European company           | Production holds customers' data: the provider is a processor, with a data processing agreement, and its data centres are in the EU                                                                                                                                        |
-| An Ubuntu LTS image          | The roles are written for it: apt, unattended upgrades, ufw, sshd's drop-in folder, and Docker's packages, pinned for the release the server runs (`docker_packages`: 24.04 or 26.04)                                                                                      |
-| x86-64 or Arm64              | Either: `release.yml` builds the images for each server's own architecture, and cloudflared's package is pinned for both ([Architecture](#architecture))                                                                                                                   |
-| A public IPv4 address        | The servers dial out over it: GitHub, which cloudflared's package comes from, has no IPv6 address. The uptime server is reached on it                                                                                                                                      |
-| An IPv6 address              | For the uptime server, whose name has an AAAA record beside its A record. Production and the sandbox need none                                                                                                                                                             |
-| A firewall in front          | Beside ufw on the server: no inbound rule for production and the sandbox, but port 22 from your address while one is bootstrapped; for the uptime server, port 443 from anywhere and port 22 from the addresses you work from                                              |
-| Snapshots                    | Before a change that is hard to undo, such as a Docker Engine or Ubuntu upgrade. A snapshot holds the server's secrets: keep it at the provider, and delete it after. It replaces no backup ([Backups](#backups))                                                          |
-| A rescue system or a console | The way in when the tunnel stops carrying SSH, with port 22 closed. Neither root nor `ops` has a password, so a console that only offers a login prompt lets nobody in: it takes a rescue system that mounts the server's disk ([Without the tunnel](#without-the-tunnel)) |
-| A disk that grows            | Postgres's and the telemetry's volumes are on the root disk, under `/var/lib/docker`; media are in the bucket                                                                                                                                                              |
+| Need                         | Why                                                                                                                                                                                                                                                                                                                                                                                            |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A European company           | Production holds customers' data: the provider is a processor, with a data processing agreement, and its data centres are in the EU                                                                                                                                                                                                                                                            |
+| An Ubuntu LTS image          | The roles are written for it: apt, unattended upgrades, ufw, sshd's drop-in folder, and Docker's packages, pinned for the release the server runs (`docker_packages`: 24.04 or 26.04)                                                                                                                                                                                                          |
+| x86-64 or Arm64              | Either: `release.yml` builds the images for each server's own architecture, and cloudflared's package is pinned for both ([Architecture](#architecture))                                                                                                                                                                                                                                       |
+| A public IPv4 address        | The servers dial out over it: GitHub, which cloudflared's package comes from, has no IPv6 address. The uptime server is reached on it                                                                                                                                                                                                                                                          |
+| An IPv6 address              | For the uptime server, whose name has an AAAA record beside its A record. Production and the sandbox need none                                                                                                                                                                                                                                                                                 |
+| A firewall in front          | Beside ufw on the server: no inbound rule for production and the sandbox, but port 22 from your address while one is bootstrapped; for the uptime server, port 443 from anywhere and port 22 from the addresses you work from. Where the provider has none, as for production's dedicated server, ufw stands alone, and port 22 is open to the world, rate limited, for the two bootstrap runs |
+| Snapshots                    | Before a change that is hard to undo, such as a Docker Engine or Ubuntu upgrade. A snapshot holds the server's secrets: keep it at the provider, and delete it after. It replaces no backup ([Backups](#backups)). Without them, as on a dedicated server, take a full backup and have [the restore runbook](runbooks/restore-database.md#a-new-server) at hand instead                        |
+| A rescue system or a console | The way in when the tunnel stops carrying SSH, with port 22 closed. Neither root nor `ops` has a password, so a console that only offers a login prompt lets nobody in: it takes a rescue system that mounts the server's disk ([Without the tunnel](#without-the-tunnel))                                                                                                                     |
+| A disk that grows            | Postgres's and the telemetry's volumes are on the root disk, under `/var/lib/docker`; media are in the bucket. A dedicated server's disk does not grow: when it fills, move to a new server ([the runbook](runbooks/restore-database.md#a-planned-move))                                                                                                                                       |
+| Disks that survive a failure | A cloud server's disk is the provider's to keep. A dedicated server's two disks are a software RAID its installer made, and whether a failed disk can be replaced depends on the offer: some, such as blades in a shared chassis, replace none. Read the provider's page on it before buying                                                                                                   |
 
 Nothing else: no load balancer, as the tunnel is the one entry; no private
 network while one server runs the stack; no managed database, as Postgres
@@ -202,9 +207,13 @@ measure before moving up.
 
 The sandbox is a small copy at any size, 2 vCPUs, 8 GB and a 50 GB disk,
 and the uptime server needs 1 vCPU, 1 GB and 10 GB. Shared vCPUs do for the
-first two sizes. Going from the first to the second is a resize in the
-provider's console, a few minutes down, with nothing to change here but
-`swap_size_mb` if you want more.
+first two sizes. On a cloud server, going from the first to the second is
+a resize in the provider's console, a few minutes down, with nothing to
+change here (`swap_size_mb` sizes the swap file when the role makes it,
+and never resizes one that exists). A dedicated server does not resize: move to a new one
+([the runbook](runbooks/restore-database.md#a-planned-move)). Production is
+a dedicated server of the second size, 12 threads and 32 GB, which reuses
+the 8 GB swap file its installer made (`swap_file`).
 
 Move up when one of these holds for days:
 
@@ -537,12 +546,13 @@ password manager: the backups cannot be read without it.
 ### A new server
 
 1. Create it in the provider's console, from its Ubuntu LTS image, with
-   your SSH key, the provider's firewall with no inbound rule, and its
-   address in `inventory/hosts.yml`. See which account the image lets your
+   your SSH key, the provider's firewall with no inbound rule where it has
+   one, and its address in `inventory/hosts.yml` or
+   `host_vars/<host>/local.yml`. See which account the image lets your
    key into ([The image's account](#the-images-account)).
 2. `uv run ansible-playbook playbooks/bootstrap.yml --limit production -e ssh_via_tunnel=false`
 3. `uv run ansible-playbook playbooks/site.yml --limit production -e ssh_via_tunnel=false`:
-   port 22 stays open while the tunnel comes up. With the provider's
+   port 22 stays open while the tunnel comes up. Where the provider has a
    firewall in front, open 22 there for your address for these two runs.
 4. Check SSH through the tunnel: `ssh ops@ssh.peal.social true`.
 5. `uv run ansible-playbook playbooks/site.yml --limit production`: Ansible
@@ -553,8 +563,9 @@ password manager: the backups cannot be read without it.
    Test).
 8. For production, once the uptime server runs: give it its heartbeat token
    ([The heartbeat](#the-heartbeat)). Until then, set `peal_heartbeat_url` to
-   `""` in `group_vars/production/main.yml`: while it names the uptime
-   server, `site.yml` requires the credential `PEAL_HEARTBEAT_TOKEN`.
+   `""` in `host_vars/peal-production/local.yml`, off Git, as the committed
+   value is the one the tests check: while it names the uptime server,
+   `site.yml` requires the credential `PEAL_HEARTBEAT_TOKEN`.
 
 ### The image's account
 
@@ -619,17 +630,20 @@ Once the tunnel carries SSH, port 22 is closed, and no account has a
 password: when the tunnel stops for good (its token revoked, cloudflared
 broken), the provider's rescue system is the way back in.
 
-1. Open port 22 to your address alone in the provider's firewall.
+1. Open port 22 to your address alone in the provider's firewall, where it
+   has one.
 2. Boot the server into the rescue system, mount its disk, and set
    `ENABLED=no` in its `etc/ufw/ufw.conf`: ufw then stays off when the
-   server starts. Boot the server from its disk again.
+   server starts. On a software RAID, assemble the arrays first
+   (`mdadm --assemble --scan`), then mount the root one. Boot the server
+   from its disk again.
 3. `ssh ops@<address>` answers, with your key. Run
    `site.yml --limit production -e ssh_via_tunnel=false`, which turns ufw
    back on with port 22 open, rate limited, and writes the tunnel's routes
    again, and its token when the vault holds a new one.
 4. Once `ssh ops@ssh.peal.social true` works again, run `site.yml` without
    the setting, which closes port 22, and close it in the provider's
-   firewall.
+   firewall, where it has one.
 
 ### A sandbox on a machine of your own
 
