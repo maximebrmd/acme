@@ -51,7 +51,7 @@ export const FakeImageModelLive = Layer.effectContext(
     return Context.make(
       ImageModel,
       ImageModel.of({
-        available: true,
+        available: Effect.succeed(true),
         generate: (request) =>
           Ref.update(sent, (requests) => [...requests, request]).pipe(
             Effect.andThen(Ref.get(next)),

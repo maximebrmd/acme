@@ -1020,6 +1020,10 @@ describe("peal media", () => {
         "This Peal server makes no images"
       );
       assert.include(
+        yield* session.refused(generating("over the quota")),
+        "makes no image"
+      );
+      assert.include(
         yield* session.refused([
           "media",
           "generate",

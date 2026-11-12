@@ -24,13 +24,17 @@ export interface MadeImage {
  *
  * `generate` never logs or traces the prompt, the image or a provider's
  * error; it fails with AssistantUnavailable when the provider refuses the
- * server's credentials.
+ * server's settings (its key, its account, its model or address), and
+ * from then on.
  */
 export class ImageModel extends Context.Service<
   ImageModel,
   {
-    /** Whether an image model is configured; when not, `generate` always fails. */
-    readonly available: boolean;
+    /**
+     * Whether an image model is configured, and has not refused the
+     * server's settings since it started; when not, `generate` fails.
+     */
+    readonly available: Effect.Effect<boolean>;
     readonly generate: (
       request: ImageRequest
     ) => Effect.Effect<MadeImage, AssistantUnavailable | ImageFailed>;

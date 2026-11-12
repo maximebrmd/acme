@@ -5,6 +5,8 @@ import { ConfigProvider, Effect, Layer, Option } from "effect";
 
 import { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import { PlanAssistantAllowanceLive } from "#assistant/infrastructure/plan-assistant-allowance.ts";
+import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
+import { Entitlements } from "#billing/domain/entitlements.ts";
 import { ChannelAllowance } from "#channels/application/channel-allowance.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
@@ -12,7 +14,11 @@ import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { Plan } from "#shared/domain/plan.ts";
-import { everyWorkspaceOn, UnmeteredTest } from "#test/billing/support.ts";
+import {
+  everyWorkspaceOn,
+  subscriptionOf,
+  UnmeteredTest,
+} from "#test/billing/support.ts";
 import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -110,6 +116,48 @@ describe("the plan allowances", () => {
         );
 
         assert.strictEqual(configured.assistantRequests, 7);
+      })
+  );
+
+  it.effect(
+    "let a trial make no image, however many requests its plan has",
+    () =>
+      Effect.gen(function* trial() {
+        const on = (status: "active" | "trialing") =>
+          AssistantAllowance.use((assistant) =>
+            Effect.all([
+              assistant.dailyRequests(workspaceId),
+              assistant.imageRequests(workspaceId),
+            ])
+          ).pipe(
+            Effect.provide(
+              allowancesWith(
+                Layer.succeed(
+                  WorkspaceEntitlements,
+                  WorkspaceEntitlements.of({
+                    of: () =>
+                      Effect.succeed(
+                        new Entitlements({
+                          plan: Option.some("pro"),
+                          subscription: Option.some(
+                            subscriptionOf({ plan: "pro", status, workspaceId })
+                          ),
+                        })
+                      ),
+                  })
+                )
+              )
+            )
+          );
+
+        assert.deepStrictEqual(yield* on("active"), [20, 20]);
+        assert.deepStrictEqual(yield* on("trialing"), [20, 0]);
+        assert.deepStrictEqual(
+          yield* AssistantAllowance.use((assistant) =>
+            assistant.imageRequests(workspaceId)
+          ).pipe(Effect.provide(allowancesWith(UnmeteredTest))),
+          100
+        );
       })
   );
 });

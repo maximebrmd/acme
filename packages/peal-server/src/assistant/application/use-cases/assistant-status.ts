@@ -18,6 +18,11 @@ export interface ImagesStatus {
   readonly aspects: readonly ImageAspect[];
   /** Whether the server has an image model; clients hide images otherwise. */
   readonly available: boolean;
+  /**
+   * How many of the day's requests images may take: the day's limit, but
+   * none on a trial. Under `requestCost`, the workspace makes no image.
+   */
+  readonly dailyLimit: number;
   /** The longest description an image is made from. */
   readonly maxPromptLength: number;
   /** How many of the day's requests an image costs. */
@@ -56,7 +61,10 @@ export const assistantStatus = Effect.fn("WritingAssistant.status")(
       dailyLimit,
       images: {
         aspects: ImageAspectSchema.literals,
-        available: imageModel.available,
+        available: yield* imageModel.available,
+        dailyLimit: yield* AssistantAllowance.use((allowance) =>
+          allowance.imageRequests(workspaceId)
+        ),
         maxPromptLength: maxImagePromptLength,
         requestCost: imageRequestCost,
       },

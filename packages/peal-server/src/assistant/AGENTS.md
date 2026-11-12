@@ -47,12 +47,16 @@
   `PEAL_AI_IMAGE_BASE_URL`, `PEAL_AI_IMAGE_MODEL`, `PEAL_AI_IMAGE_API_KEY`.
   Its adapter (`openai-compatible-image-model.ts`) calls
   `POST {base}/images/generations` itself, at the operator's host, with no
-  `response_format` (current models answer base64); a `url` answer came
-  from outside and goes through `publicHttpClientWith`. Answers are
-  bounded (`maxAnswerBytes`, then `maxImageBytes`, the library's image
-  limit), the call waits `imageAnswerTimeout` (90 seconds), 401 and 403 are
-  logged by status alone and answered `AssistantUnavailable`, another 4xx
-  is `refused`, 429 and 5xx `unreachable`. It was written to one
+  `response_format` (current models answer base64; a field left out may be
+  `null`); a `url` answer came from outside, must be absolute and goes
+  through `publicHttpClientWith`. Answers are bounded (`maxAnswerBytes`,
+  then `maxImageBytes`, the library's image limit; the text is decoded as
+  it arrives, so a request holds about three copies of an image at its
+  peak, some 60 MiB at the bounds), the call waits `imageAnswerTimeout`
+  (90 seconds). 401, 402, 403 and 404 say the operator's settings are
+  wrong: logged by status alone, answered `AssistantUnavailable`, and
+  images stay off (`available` false) until the server restarts. Another
+  4xx is `refused`, 429 and 5xx `unreachable`. It was written to one
   provider's reference and tested on a loopback fake only: it has never
   called a real provider.
 - `generateImage` needs `assistant:use` and `media:upload`. Before anything
@@ -61,7 +65,11 @@
   the `imagesAtOnce` slots (two a workspace, eight a server, `ImageSlots`,
   past them `ImagesBusy`, 429), then `imageRequestCost` (5) claimed of the
   same daily requests a suggestion takes one of (`AssistantUsage.claim`'s
-  cost), given back only on `unreachable`. No plan or price changes, and
+  cost), within `AssistantAllowance.imageRequests`: the day's limit, but
+  `imageRequestsOnTrial` (0) while the plan is on trial. The cost is given
+  back whenever no image came of it (`unreachable`, `refused`, the
+  settings refused, or `PlanLimitReached` when the library counts again);
+  a timeout or an unusable answer counts. No plan or price changes, and
   the free plan's 3 make none.
 - The image is kept through the `GeneratedImages` port, whose adapter
   (`library-generated-images.ts`) calls the media context's

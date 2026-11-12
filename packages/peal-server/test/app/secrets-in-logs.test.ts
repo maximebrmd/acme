@@ -502,7 +502,7 @@ layer(ImagesTest, { excludeTestServices: true, timeout: "180 seconds" })(
         });
 
         // The refusal is told to the operator, by its status alone.
-        assert.include(written(), "refused the server's credentials");
+        assert.include(written(), "refused the server's settings");
         assert.notInclude(written(), imageKey);
         assert.notInclude(written(), inPrompt);
       })

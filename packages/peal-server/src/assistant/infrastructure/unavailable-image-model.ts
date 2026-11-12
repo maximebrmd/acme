@@ -7,7 +7,7 @@ import { ImageModel } from "#assistant/application/ports/image-model.ts";
 export const UnavailableImageModelLive = Layer.succeed(
   ImageModel,
   ImageModel.of({
-    available: false,
+    available: Effect.succeed(false),
     generate: () => Effect.fail(new AssistantUnavailable()),
   })
 );

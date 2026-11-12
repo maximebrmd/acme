@@ -6,6 +6,7 @@ import {
   Api,
   ApprovalChanged,
   ApprovalNotPending,
+  AssistantQuotaExceeded,
   AssistantUnavailable,
   ChannelNotFound,
   ChannelSetNameTaken,
@@ -3907,6 +3908,17 @@ export const studioGroupsLive = (studio: Studio) =>
 
             if (payload.prompt.includes("unavailable")) {
               return yield* new AssistantUnavailable();
+            }
+
+            // A plan whose day holds fewer requests than an image costs.
+            if (payload.prompt.includes("quota")) {
+              return yield* new AssistantQuotaExceeded({
+                billingUrl: null,
+                dailyLimit: 3,
+                plan: "free",
+                planWithRoom: "starter",
+                resetsAt: studioNow,
+              });
             }
 
             const { media: all } = yield* Ref.get(studio.state);

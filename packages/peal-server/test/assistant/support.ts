@@ -19,6 +19,7 @@ import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
@@ -128,14 +129,41 @@ export const NoGeneratedImages = Layer.succeed(
   })
 );
 
-/** Every workspace may send `dailyRequests` a day. */
-export const allowanceOf = (dailyRequests: number) =>
+/**
+ * Every workspace may send `dailyRequests` a day, of which images may
+ * take `imageRequests`.
+ */
+export const allowanceOf = (
+  dailyRequests: number,
+  imageRequests = dailyRequests
+) =>
   Layer.succeed(
     AssistantAllowance,
     AssistantAllowance.of({
       dailyRequests: () => Effect.succeed(dailyRequests),
+      imageRequests: () => Effect.succeed(imageRequests),
     })
   );
+
+/**
+ * A library with room before an image is made, and none once it was: the
+ * plan filled meanwhile.
+ */
+export const FullLibrary = Layer.succeed(
+  GeneratedImages,
+  GeneratedImages.of({
+    roomFor: () => Effect.void,
+    store: () =>
+      Effect.fail(
+        new PlanLimitReached({
+          allowed: 1000,
+          limit: "mediaStorage",
+          needed: 2000,
+          used: 1000,
+        })
+      ),
+  })
+);
 
 /**
  * Postgres from DATABASE_URL, brought up to date, and random ids, so runs
@@ -241,22 +269,33 @@ export type { ImageReply } from "#test/assistant/fake-image-model.ts";
 export const imagesTest = ({
   dailyRequests = 10,
   entitlements = UnmeteredTest,
+  imageRequests = dailyRequests,
   images = "fake",
+  library = "media",
 }: {
   readonly dailyRequests?: number;
   readonly entitlements?: typeof UnmeteredTest;
+  /** The requests images may take each day: none on a trial. */
+  readonly imageRequests?: number;
   readonly images?: "fake" | "off";
+  /**
+   * Where images are kept: the media context, or a library whose plan
+   * turns out full once the image is made.
+   */
+  readonly library?: "full" | "media";
 } = {}) =>
   WritingAssistant.layer.pipe(
     Layer.provide(
       Layer.mergeAll(
         DrizzleAssistantUsageLive,
-        allowanceOf(dailyRequests),
+        allowanceOf(dailyRequests, imageRequests),
         PublishingPlatformLimitsLive,
         CountedImageSlots,
-        LibraryGeneratedImagesLive.pipe(
-          Layer.provide(mediaTestWith(entitlements))
-        )
+        library === "media"
+          ? LibraryGeneratedImagesLive.pipe(
+              Layer.provide(mediaTestWith(entitlements))
+            )
+          : FullLibrary
       )
     ),
     Layer.provideMerge(FakeWritingModelLive),

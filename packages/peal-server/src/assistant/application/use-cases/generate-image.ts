@@ -29,16 +29,18 @@ export interface ImageGenerationRequest {
  * be on, the prompt one the assistant takes, the workspace's storage must
  * have room for the largest image, one of the images made at once must be
  * free, and the workspace must have `imageRequestCost` requests left
- * today, which are counted then. The cost is given back only when the
- * provider never ran the request (`unreachable`). Nothing of the prompt or
- * the image is logged.
+ * today, which are counted then. The cost is given back whenever no image
+ * came of it: the provider could not be reached, refused the request or
+ * the server's settings, or the plan had no room left to keep it. A
+ * timeout or an unusable answer counts, as the provider may have made the
+ * image. Nothing of the prompt or the image is logged.
  */
 export const generateImage = Effect.fn("WritingAssistant.generateImage")(
   function* generateImage({ actor, aspect, prompt }: ImageGenerationRequest) {
     const { workspaceId } = actor;
     const model = yield* ImageModel;
 
-    if (!model.available) {
+    if (!(yield* model.available)) {
       return yield* new AssistantUnavailable();
     }
 
@@ -56,8 +58,9 @@ export const generateImage = Effect.fn("WritingAssistant.generateImage")(
     const usage = yield* AssistantUsage;
     const window = usageWindowAt(yield* DateTime.now);
 
+    // Images may take less of the day than suggestions: none on a trial.
     const dailyLimit = yield* AssistantAllowance.use((allowance) =>
-      allowance.dailyRequests(workspaceId)
+      allowance.imageRequests(workspaceId)
     );
 
     const claimed = yield* usage.claim(
@@ -74,16 +77,30 @@ export const generateImage = Effect.fn("WritingAssistant.generateImage")(
       });
     }
 
-    const giveBackUnsent = (failure: AssistantUnavailable | ImageFailed) =>
-      failure._tag === "ImageFailed" && failure.reason === "unreachable"
-        ? usage.release(workspaceId, window.day, imageRequestCost)
+    const giveBack = usage.release(workspaceId, window.day, imageRequestCost);
+
+    // The provider made nothing: it could not be reached, refused the
+    // request, or refused the server's settings.
+    const giveBackUnmade = (failure: AssistantUnavailable | ImageFailed) =>
+      failure._tag === "AssistantUnavailable" ||
+      failure.reason === "unreachable" ||
+      failure.reason === "refused"
+        ? giveBack
         : Effect.void;
 
     const made = yield* model
       .generate({ aspect, prompt: checked })
-      .pipe(Effect.tapError(giveBackUnsent));
+      .pipe(Effect.tapError(giveBackUnmade));
 
-    return yield* images.store(actor, made.bytes);
+    // An image the plan has no room for once counted under the lock is
+    // not kept, so it costs nothing.
+    return yield* images
+      .store(actor, made.bytes)
+      .pipe(
+        Effect.tapError((failure) =>
+          failure._tag === "PlanLimitReached" ? giveBack : Effect.void
+        )
+      );
   },
   // The slot goes back when the request ends, however it ends.
   Effect.scoped

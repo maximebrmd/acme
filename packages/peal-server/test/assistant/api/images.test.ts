@@ -115,6 +115,7 @@ layer(StoreTest, { timeout: "60 seconds" })("the image endpoint", (it) => {
       assert.deepStrictEqual(status.images, {
         aspects: ["square", "landscape", "portrait"],
         available: true,
+        dailyLimit: 10,
         maxPromptLength: 1000,
         requestCost: 5,
       });

@@ -73,6 +73,7 @@ layer(DatabaseTest)("the assistant endpoints", (it) => {
           images: {
             aspects: ["square", "landscape", "portrait"],
             available: false,
+            dailyLimit: 2,
             maxPromptLength: 1000,
             requestCost: 5,
           },

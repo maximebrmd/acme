@@ -3,6 +3,7 @@ import {
   Layer,
   Option,
   Redacted,
+  Ref,
   Result,
   Schema,
   Stream,
@@ -61,8 +62,9 @@ const decodeAnswer = Schema.decodeUnknownResult(
     Schema.Struct({
       data: Schema.Array(
         Schema.Struct({
-          b64_json: Schema.optionalKey(Schema.String),
-          url: Schema.optionalKey(Schema.String),
+          // Some servers write both fields, the one left out as null.
+          b64_json: Schema.optionalKey(Schema.NullOr(Schema.String)),
+          url: Schema.optionalKey(Schema.NullOr(Schema.String)),
         })
       ).check(Schema.isMinLength(1)),
     })
@@ -71,23 +73,32 @@ const decodeAnswer = Schema.decodeUnknownResult(
 
 const failure = (reason: ImageFailed["reason"]) => new ImageFailed({ reason });
 
-// The answer's bytes, failing once there are more than `limit`: nothing
-// past it is read.
-const readBounded = <E>(stream: Stream.Stream<Uint8Array, E>, limit: number) =>
-  stream.pipe(
-    Stream.mapError(() => failure("unusableAnswer")),
-    Stream.runFoldEffect(
-      () => ({ chunks: new Array<Uint8Array>(), total: 0 }),
-      (read, chunk) => {
-        const total = read.total + chunk.byteLength;
+// Counts the bytes read, failing once there are more than `limit`:
+// nothing past it is read.
+const bounded = <E>(stream: Stream.Stream<Uint8Array, E>, limit: number) => {
+  let total = 0;
 
-        return total > limit
-          ? Effect.fail(failure("unusableAnswer"))
-          : Effect.succeed({ chunks: [...read.chunks, chunk], total });
-      }
-    ),
-    Effect.map(({ chunks, total }) => {
-      const bytes = new Uint8Array(total);
+  return stream.pipe(
+    Stream.mapError(() => failure("unusableAnswer")),
+    Stream.mapEffect((chunk) => {
+      total += chunk.byteLength;
+
+      return total > limit
+        ? Effect.fail(failure("unusableAnswer"))
+        : Effect.succeed(chunk);
+    })
+  );
+};
+
+// A file's bytes, in one array once read.
+const readBytes = <E>(stream: Stream.Stream<Uint8Array, E>, limit: number) =>
+  bounded(stream, limit).pipe(
+    Stream.runCollect,
+    Effect.map((chunks) => {
+      const bytes = new Uint8Array(
+        chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)
+      );
+
       let offset = 0;
 
       for (const chunk of chunks) {
@@ -99,9 +110,27 @@ const readBounded = <E>(stream: Stream.Stream<Uint8Array, E>, limit: number) =>
     })
   );
 
-// What a status that is not a success means: the server's key refused
-// (the operator's to fix), a rate limit or a failure of the provider, which
-// ran nothing, or a refusal of this request.
+// An answer's text, decoded as it arrives: its bytes are not kept beside
+// it.
+const readText = <E>(stream: Stream.Stream<Uint8Array, E>, limit: number) => {
+  const decoder = new TextDecoder();
+
+  return bounded(stream, limit).pipe(
+    Stream.map((chunk) => decoder.decode(chunk, { stream: true })),
+    Stream.runCollect,
+    Effect.map((parts) => [...parts, decoder.decode()].join(""))
+  );
+};
+
+// The statuses that say the operator's settings are wrong: a key refused
+// or not allowed, an account that does not pay, a model or an address
+// the provider does not have. Nothing ran, and nothing will until the
+// operator fixes them.
+const settingsRefused: ReadonlySet<number> = new Set([401, 402, 403, 404]);
+
+// What another status that is not a success means: a rate limit or a
+// failure of the provider, or a refusal of this request. In either case
+// no image was made.
 const reasonOfStatus = (status: number): ImageFailed["reason"] =>
   status === 429 || status >= 500 ? "unreachable" : "refused";
 
@@ -147,6 +176,9 @@ export const openAiCompatibleImageModel = (
         timeout,
       });
 
+      // Whether the provider refused the server's settings since it started.
+      const refused = yield* Ref.make(false);
+
       const identity = {
         "gen_ai.provider.name": "openai-compatible",
         "gen_ai.request.model": model,
@@ -166,21 +198,24 @@ export const openAiCompatibleImageModel = (
         );
 
       const fetchImage = (url: string) =>
-        guarded.execute(HttpClientRequest.get(url)).pipe(
-          Effect.withTracerEnabled(false),
-          Effect.mapError(() => failure("unusableAnswer")),
-          Effect.flatMap((response) =>
-            response.status === 200
-              ? readBounded(response.stream, maxImageBytes)
-              : Effect.fail(failure("unusableAnswer"))
-          )
-        );
+        // An address that is not absolute leads nowhere.
+        URL.canParse(url)
+          ? guarded.execute(HttpClientRequest.get(url)).pipe(
+              Effect.withTracerEnabled(false),
+              Effect.mapError(() => failure("unusableAnswer")),
+              Effect.flatMap((response) =>
+                response.status === 200
+                  ? readBytes(response.stream, maxImageBytes)
+                  : Effect.fail(failure("unusableAnswer"))
+              )
+            )
+          : Effect.fail(failure("unusableAnswer"));
 
-      const bytesOf = (answer: Uint8Array) =>
-        Result.match(decodeAnswer(new TextDecoder().decode(answer)), {
+      const bytesOf = (answer: string) =>
+        Result.match(decodeAnswer(answer), {
           onFailure: () => Effect.fail(failure("unusableAnswer")),
           onSuccess: ({ data: [first] }) => {
-            if (first?.b64_json !== undefined) {
+            if (first?.b64_json !== undefined && first.b64_json !== null) {
               return Effect.fromResult(
                 Result.mapError(Base64.decode(first.b64_json), () =>
                   failure("unusableAnswer")
@@ -188,7 +223,7 @@ export const openAiCompatibleImageModel = (
               );
             }
 
-            return first?.url === undefined
+            return first?.url === undefined || first.url === null
               ? Effect.fail(failure("unusableAnswer"))
               : fetchImage(first.url);
           },
@@ -197,12 +232,16 @@ export const openAiCompatibleImageModel = (
       const answered = (
         response: HttpClientResponse.HttpClientResponse
       ): Effect.Effect<MadeImage, AssistantUnavailable | ImageFailed> => {
-        if (response.status === 401 || response.status === 403) {
-          // The operator's to fix: by status alone, never the body.
-          return Effect.logError(
-            "The image model refused the server's credentials",
-            { model, status: response.status }
-          ).pipe(
+        if (settingsRefused.has(response.status)) {
+          // The operator's to fix: by status alone, never the body. Images
+          // stay off until the server restarts with other settings.
+          return Ref.set(refused, true).pipe(
+            Effect.andThen(
+              Effect.logError(
+                "The image model refused the server's settings: images are off until the server restarts",
+                { model, status: response.status }
+              )
+            ),
             Effect.andThen(
               Effect.annotateCurrentSpan(
                 "peal.assistant.failure",
@@ -220,7 +259,7 @@ export const openAiCompatibleImageModel = (
           );
         }
 
-        return readBounded(response.stream, maxAnswerBytes).pipe(
+        return readText(response.stream, maxAnswerBytes).pipe(
           Effect.flatMap(bytesOf),
           Effect.flatMap((bytes) => Effect.fromResult(imageOf(bytes))),
           Effect.catchTag("ImageFailed", ({ reason }) =>
@@ -243,7 +282,7 @@ export const openAiCompatibleImageModel = (
           })
         );
 
-      const generate = (made: ImageRequest) =>
+      const call = (made: ImageRequest) =>
         client.execute(request(made)).pipe(
           // The HTTP client's spans record what they end with.
           Effect.withTracerEnabled(false),
@@ -260,6 +299,16 @@ export const openAiCompatibleImageModel = (
           Effect.withSpan("ImageModel.generate", { attributes: identity })
         );
 
-      return ImageModel.of({ available: true, generate });
+      const generate = (made: ImageRequest) =>
+        Ref.get(refused).pipe(
+          Effect.flatMap((off) =>
+            off ? Effect.fail(new AssistantUnavailable()) : call(made)
+          )
+        );
+
+      return ImageModel.of({
+        available: Ref.get(refused).pipe(Effect.map((off) => !off)),
+        generate,
+      });
     })
   );

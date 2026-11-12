@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer, Stream } from "effect";
+import { DateTime, Effect, Layer, Stream } from "effect";
 import { CurrentMember } from "peal-contract";
 import type { Member } from "peal-contract";
 
@@ -7,6 +7,7 @@ import { MediaToolsLive } from "#app/mcp/media-handlers.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
+import { AssistantQuotaExceeded } from "#assistant/application/assistant-quota-exceeded.ts";
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { MediaLibrary } from "#media/application/media-library.ts";
 import { LivePostChanges } from "#publishing/application/live-post-changes.ts";
@@ -128,6 +129,41 @@ describe("a plan's refusal, through the tools", () => {
                         limit: "mediaStorage",
                         needed: 1_000_000_000 + 16 * 1024 * 1024,
                         used: 999_999_000,
+                      })
+                    ),
+                }),
+                UpgradePaths.layerTest
+              )
+            )
+          )
+        )
+      )
+  );
+
+  it.effect(
+    "tells an agent when the plan's day can never pay for an image",
+    () =>
+      Effect.gen(function* quota() {
+        const tools = yield* MediaTools;
+
+        const refusal = yield* refusalOf(
+          tools.handle("generate_image", { prompt: "A lighthouse." })
+        );
+
+        assert.include(refusal, "makes no image");
+        assert.notInclude(refusal, "midnight");
+      }).pipe(
+        Effect.provide(
+          MediaToolsLive.pipe(
+            Layer.provide(
+              Layer.mergeAll(
+                Layer.mock(MediaLibrary, {}),
+                Layer.mock(WritingAssistant, {
+                  generateImage: () =>
+                    Effect.fail(
+                      new AssistantQuotaExceeded({
+                        dailyLimit: 3,
+                        resetsAt: DateTime.makeUnsafe("2026-11-13T00:00:00Z"),
                       })
                     ),
                 }),

@@ -139,6 +139,11 @@ export const AssistantImagesStatusSchema = Schema.Struct({
   // Whether the server has an image model. Clients hide images when it
   // does not; it is off unless the operator set one up.
   available: Schema.Boolean,
+  // How many of the day's requests images may take: the day's limit, but
+  // none while the workspace's plan is on trial. Under `requestCost`, the
+  // workspace makes no image (the request is refused with
+  // AssistantQuotaExceeded).
+  dailyLimit: Schema.Int,
   // The longest description an image is made from, in UTF-16 code units.
   maxPromptLength: Schema.Int,
   // How many of the day's requests an image costs.

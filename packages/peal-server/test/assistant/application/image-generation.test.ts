@@ -198,6 +198,7 @@ layer(ImagesTest, { timeout: "60 seconds" })(
         assert.deepStrictEqual(status.images, {
           aspects: ["square", "landscape", "portrait"],
           available: false,
+          dailyLimit: 10,
           maxPromptLength: 1000,
           requestCost: 5,
         });
@@ -287,19 +288,20 @@ layer(ImagesTest, { timeout: "60 seconds" })(
       }).pipe(Effect.provide(imagesTest({ dailyRequests: 7 })))
     );
 
-    it.effect("gives the cost back only when the provider never ran it", () =>
+    it.effect("gives the cost back whenever the provider made nothing", () =>
       Effect.gen(function* giveBack() {
         const workspaceId = yield* freshWorkspace;
 
         const reasons = yield* Effect.all(
-          (["unreachable", "refused", "unusableAnswer"] as const).map(
-            (reason) =>
-              ask(workspaceId, { _tag: "failure", reason }).pipe(
-                Effect.flip,
-                Effect.map((refusal) =>
-                  refusal._tag === "ImageFailed" ? refusal.reason : refusal._tag
-                )
+          (
+            ["unreachable", "refused", "unusableAnswer", "timedOut"] as const
+          ).map((reason) =>
+            ask(workspaceId, { _tag: "failure", reason }).pipe(
+              Effect.flip,
+              Effect.map((refusal) =>
+                refusal._tag === "ImageFailed" ? refusal.reason : refusal._tag
               )
+            )
           )
         );
 
@@ -307,9 +309,17 @@ layer(ImagesTest, { timeout: "60 seconds" })(
           "unreachable",
           "refused",
           "unusableAnswer",
+          "timedOut",
         ]);
 
-        // The refusal and the unusable answer ran on the provider.
+        // A key the provider refused ran nothing either.
+        const keyRefused = yield* ask(workspaceId, { _tag: "keyRefused" }).pipe(
+          Effect.flip
+        );
+
+        assert.strictEqual(keyRefused._tag, "AssistantUnavailable");
+
+        // The unusable answer and the timeout may have made an image.
         assert.strictEqual(yield* remainingIn(workspaceId), 10);
       }).pipe(Effect.provide(imagesTest({ dailyRequests: 20 })))
     );

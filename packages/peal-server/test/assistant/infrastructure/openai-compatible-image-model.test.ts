@@ -348,8 +348,8 @@ describe("the image model on an OpenAI-compatible endpoint", () => {
       })
   );
 
-  it.live.each([401, 403])(
-    "says images are off when the provider refuses the server's key (%d)",
+  it.live.each([401, 402, 403, 404])(
+    "says images are off when the provider refuses the server's settings (%d)",
     (status) =>
       Effect.gen(function* credentials() {
         const host = yield* provider({
@@ -370,6 +370,82 @@ describe("the image model on an OpenAI-compatible endpoint", () => {
           assert.notInclude(line, "Invalid key");
         }
       })
+  );
+
+  it.live("stays off once the provider refused the server's settings", () =>
+    Effect.gen(function* sticky() {
+      const host = yield* provider({
+        "/v1/images/generations": json(401, { error: { message: "No." } }),
+      });
+
+      yield* Effect.gen(function* twice() {
+        const model = yield* ImageModel;
+
+        assert.isTrue(yield* model.available);
+
+        const first = yield* model.generate(squareImage).pipe(Effect.flip);
+        const second = yield* model.generate(squareImage).pipe(Effect.flip);
+
+        assert.deepStrictEqual(
+          [first._tag, second._tag],
+          ["AssistantUnavailable", "AssistantUnavailable"]
+        );
+        assert.isFalse(yield* model.available);
+        // The second never reached the provider.
+        assert.lengthOf(host.received, 1);
+      }).pipe(Effect.provide(modelAt(host.url)));
+    })
+  );
+
+  it.live(
+    "reads an answer that also says null for the field it leaves out",
+    () =>
+      Effect.gen(function* nulls() {
+        const host = yield* provider({
+          "/files/made.png": (response) => {
+            response
+              .writeHead(200, { "content-type": "image/png" })
+              .end(pngBytes);
+          },
+          "/v1/images/generations": json(200, {
+            created: 1,
+            data: [{ b64_json: Base64.encode(pngBytes), url: null }],
+          }),
+          "/v2/images/generations": (response, origin) => {
+            json(200, {
+              created: 1,
+              data: [{ b64_json: null, url: `${origin}/files/made.png` }],
+            })(response, origin);
+          },
+        });
+
+        const outcomes = yield* Effect.all([
+          generate(modelAt(host.url)),
+          generate(modelAt(host.url.replace("/v1", "/v2"))),
+        ]);
+
+        for (const { outcome } of outcomes) {
+          assert.deepStrictEqual(
+            Exit.isSuccess(outcome) ? outcome.value.bytes : null,
+            pngBytes
+          );
+        }
+      })
+  );
+
+  it.live("finds an address that is not absolute unusable", () =>
+    Effect.gen(function* relative() {
+      const host = yield* provider({
+        "/v1/images/generations": json(200, {
+          created: 1,
+          data: [{ url: "/files/made.png" }],
+        }),
+      });
+
+      const { outcome } = yield* generate(modelAt(host.url));
+
+      assert.strictEqual(failureOf(outcome), "unusableAnswer");
+    })
   );
 
   it.live("times out on a provider that never answers", () =>
