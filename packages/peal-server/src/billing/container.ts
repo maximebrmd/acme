@@ -186,6 +186,7 @@ export const BillingOverviewLive = Layer.mergeAll(
       ContextUsageStatesLive,
       HoldersLive,
       AccountsLive,
+      WorkspaceAccountPayersLive,
       DrizzleWithdrawalsLive,
       StripeContractsLive,
       NotifiedBillingNoticesLive,

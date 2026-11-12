@@ -539,6 +539,7 @@
       "PASSWORD_TOO_SHORT": "Le mot de passe doit compter au moins 12 caractères.",
       "USER_ALREADY_EXISTS": "Un compte utilise déjà cette adresse e-mail.",
       "MEMBER_LIMIT_REACHED": "L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut passer à un abonnement supérieur.",
+      "PAYER_MUST_STAY": "Ce propriétaire paie l’espace de travail : il le confie à un autre propriétaire depuis sa page Facturation avant de partir, d’être retiré ou de cesser d’être propriétaire.",
       "MISSING_RESPONSE": "Faites d’abord la vérification ci-dessus.",
       "VERIFICATION_FAILED": "La vérification n’a pas abouti. Recommencez-la.",
       "TOO_MANY_REQUESTS": "Trop de tentatives. Patientez une minute, puis réessayez.",
@@ -2269,6 +2270,7 @@
       "unknownMember": "Une personne gardée n’est plus membre, ou vous ne l’êtes plus : un autre membre a peut-être choisi entre-temps. Rechargez la page.",
       "selfRequired": "Vous devez rester parmi les membres.",
       "ownerRequired": "Seul un propriétaire retire un propriétaire.",
+      "payerRequired": "Le propriétaire qui paie l’espace de travail reste parmi ses membres : il le confie d’abord à un autre propriétaire depuis sa page Facturation.",
       "generic": "Cela n’a pas fonctionné. Réessayez dans un instant."
     }
   },

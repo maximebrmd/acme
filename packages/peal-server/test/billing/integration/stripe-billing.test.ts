@@ -1557,6 +1557,96 @@ layer(BillingIntegration, {
       assert.deepStrictEqual(accounts, [{ workspaces: 2 }]);
     })
   );
+  it.effect(
+    "keeps a workspace's payer among its owners until they hand it over",
+    () =>
+      Effect.gen(function* payerStays() {
+        const app = yield* TestApp;
+        const payer = yield* signedUp("payer");
+        const other = yield* signedUp("other-owner");
+        const workspaceId = yield* workspaceOf(payer, "Handed over");
+
+        const invited = yield* app.request(
+          "/api/auth/organization/invite-member",
+          {
+            body: {
+              email: other.email,
+              organizationId: workspaceId,
+              role: "owner",
+            },
+            headers: { cookie: payer.cookies },
+          }
+        );
+
+        const accepted = yield* app.request(
+          "/api/auth/organization/accept-invitation",
+          {
+            body: {
+              invitationId: (yield* bodyOf(CreatedSchema, invited)).id,
+            },
+            headers: { cookie: other.cookies },
+          }
+        );
+
+        assert.strictEqual(accepted.status, 200);
+
+        const sql = yield* SqlClient.SqlClient;
+
+        const [payerMember] = yield* sql<{
+          readonly id: string;
+        }>`SELECT id FROM auth.member WHERE organization_id = ${workspaceId} AND user_id = ${payer.id}`.pipe(
+          Effect.orDie
+        );
+
+        const refusals = [
+          yield* post(payer, "/api/auth/organization/leave", {
+            organizationId: workspaceId,
+          }),
+          yield* post(other, "/api/auth/organization/remove-member", {
+            memberIdOrEmail: payer.email,
+            organizationId: workspaceId,
+          }),
+          yield* post(other, "/api/auth/organization/update-member-role", {
+            memberId: payerMember?.id ?? "",
+            organizationId: workspaceId,
+            role: "admin",
+          }),
+        ];
+
+        assert.deepStrictEqual(statusesOf(refusals), [400, 400, 400]);
+
+        for (const refused of refusals) {
+          assert.strictEqual(
+            (yield* bodyOf(ErrorSchema, refused)).code,
+            "PAYER_MUST_STAY"
+          );
+        }
+
+        // Handed over: the other owner pays, and the first may leave.
+        const offered = yield* post(
+          payer,
+          `/api/workspaces/${workspaceId}/billing/transfer`,
+          { toUserId: other.id }
+        );
+
+        assert.strictEqual(offered.status, 200);
+
+        const taken = yield* post(
+          other,
+          `/api/workspaces/${workspaceId}/billing/transfer/acceptance`
+        );
+
+        assert.strictEqual(taken.status, 200);
+        assert.deepInclude(taken.body, { payer: true });
+
+        const left = yield* post(payer, "/api/auth/organization/leave", {
+          organizationId: workspaceId,
+        });
+
+        assert.strictEqual(left.status, 200);
+      })
+  );
+
   // A plan that shrinks under a workspace deletes nothing: the workspace
   // says what it holds beyond the plan, and comes back within it by
   // keeping what a member who manages billing chose.

@@ -51,6 +51,7 @@ const auth = makeAuth({
         plan: "free" as const,
         planWithRoom: null,
       }),
+    payerOf: async () => await Promise.resolve(null),
     resetPassword: ignore,
     signUp: async () => await Promise.resolve(true),
     subscriptionChanged: nothing,

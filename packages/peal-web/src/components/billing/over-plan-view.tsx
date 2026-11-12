@@ -40,6 +40,7 @@ export type OverPlanError =
   | "forbidden"
   | "generic"
   | "ownerRequired"
+  | "payerRequired"
   | "selfRequired"
   | "tooManyChannels"
   | "tooManyMembers"

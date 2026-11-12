@@ -12,6 +12,8 @@ export const ReductionRefusalSchema = Schema.Literals([
   "selfRequired",
   // Only an owner removes an owner.
   "ownerRequired",
+  // The owner who pays for the workspace stays until they hand it over.
+  "payerRequired",
 ]);
 
 export type ReductionRefusal = typeof ReductionRefusalSchema.Type;

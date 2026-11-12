@@ -26,6 +26,8 @@ import { RoleSchema } from "#workspace/domain/roles.ts";
 import { accessControl, roles } from "./access-control.ts";
 import {
   checkMemberRoom,
+  keepPayer,
+  keepPayerLeaving,
   refusePersonalSubscriptions,
   stripeBilling,
   turnstile,
@@ -322,6 +324,7 @@ const beforeEveryRoute = (hooks: AuthHooks) =>
     await refuseUnadmittedSignUps(ctx, hooks.signUp);
     await refuseImpersonatedChanges(ctx);
     refusePersonalSubscriptions(ctx);
+    await keepPayerLeaving(ctx, hooks);
     await refuseLockedOutMembers(ctx, hooks.twoStep);
     await guardTwoStepChanges(ctx, hooks.twoStep);
     await noteTwoStepSender(ctx);
@@ -512,8 +515,22 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
               where: [{ field: "referenceId", value: workspace.id }],
             });
           },
-          beforeUpdateMemberRole: async ({ newRole }) => {
+          // The workspace's payer stays one of its owners until they hand
+          // it to another payer.
+          beforeRemoveMember: async ({ member }) => {
+            await keepPayer(hooks, {
+              organizationId: member.organizationId,
+              role: Option.none(),
+              userId: member.userId,
+            });
+          },
+          beforeUpdateMemberRole: async ({ member, newRole }) => {
             await oneRole(newRole);
+            await keepPayer(hooks, {
+              organizationId: member.organizationId,
+              role: Option.some(newRole.split(",").map((role) => role.trim())),
+              userId: member.userId,
+            });
           },
         },
         requireEmailVerificationOnInvitation: true,

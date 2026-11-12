@@ -539,6 +539,7 @@
       "PASSWORD_TOO_SHORT": "The password needs at least 12 characters.",
       "USER_ALREADY_EXISTS": "An account already uses this email address.",
       "MEMBER_LIMIT_REACHED": "The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.",
+      "PAYER_MUST_STAY": "This owner pays for the workspace: they hand it to another owner on its billing page before they leave, are removed or stop being an owner.",
       "MISSING_RESPONSE": "Complete the check above first.",
       "VERIFICATION_FAILED": "The check did not go through. Try it again.",
       "TOO_MANY_REQUESTS": "Too many attempts. Wait a minute, then try again.",
@@ -2269,6 +2270,7 @@
       "unknownMember": "Someone kept is no longer a member, or you no longer are: another member may have chosen meanwhile. Reload the page.",
       "selfRequired": "You must stay among the members.",
       "ownerRequired": "Only an owner removes an owner.",
+      "payerRequired": "The owner who pays for the workspace stays among its members: they hand it to another owner on its billing page first.",
       "generic": "That did not work. Try again in a moment."
     }
   },

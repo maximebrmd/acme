@@ -353,6 +353,22 @@ export const BetterAuthLive = Layer.effect(
             .from(workspaceId, "members", needed)
             .pipe(Effect.map(upgradeOf))
         ),
+      // Read when a member leaves, is removed or changes role. A database
+      // failure refuses it.
+      payerOf: async (workspaceId) =>
+        await runPromise(
+          Effect.gen(function* payerOf() {
+            const { plan } = yield* entitlements.of(workspaceId);
+
+            if (Option.isNone(plan)) {
+              return null;
+            }
+
+            const { payer } = yield* accounts.of(workspaceId);
+
+            return Option.getOrNull(payer);
+          })
+        ),
       resetPassword: (link) => {
         run(emails.send({ _tag: "ResetPassword", ...link }));
       },

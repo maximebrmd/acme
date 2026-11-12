@@ -80,14 +80,18 @@ export const aloneAccountId = BillingAccountIdSchema.make(
   "00000000-0000-7000-8000-00000000a11e"
 );
 
-const aloneAccountOf = (workspaceId: WorkspaceId) =>
+/** A workspace's account of its own, which `payer` pays for, if anyone. */
+export const aloneAccountOf = (
+  workspaceId: WorkspaceId,
+  payer: Option.Option<UserId> = Option.none()
+) =>
   new BillingAccount({
     createdAt: DateTime.makeUnsafe("2026-11-01T00:00:00Z"),
     freeTier: true,
     holder: workspaceId,
     id: aloneAccountId,
     partnerId: Option.none(),
-    payer: Option.none(),
+    payer,
     standalone: false,
   });
 
