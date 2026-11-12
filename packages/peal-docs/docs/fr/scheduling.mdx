@@ -289,6 +289,14 @@ Pour abandonner un brouillon, choisissez **Supprimer le brouillon** dans l’éd
 
 Sur la carte d’un espace de travail, **Toutes les publications** liste ses publications quel que soit leur état, les plus récentes d’abord, avec **Afficher plus** pour la page suivante : chacune montre le début de son texte, son heure dans votre fuseau horaire, son état et, une fois terminée, son résultat, ses canaux et ses étiquettes, et s’ouvre sur sa page. Filtrez par état, par résultat (pour les publications terminées), par canal et par étiquette, et triez par création ou par heure ; triée par heure, la liste ne contient que les publications qui en ont une. Les filtres sont dans l’adresse de la page : un lien montre la même liste.
 
+## Importer des publications depuis un fichier [#import-screen]
+
+Depuis **Toutes les publications**, **Importer depuis un fichier** programme jusqu’à 100 publications d’un coup depuis un fichier CSV, une publication par ligne. Les propriétaires, administrateurs et éditeurs le peuvent : il faut le droit de programmer. La page liste les colonnes que prend le fichier, propose un exemple pour commencer, et liste les canaux de l’espace de travail avec leurs identifiants, à copier dans la colonne `channels` du fichier, et les noms de ses groupes de canaux.
+
+Cela se fait en deux étapes. Choisir un fichier le vérifie, chaque ligne, sans rien créer : chaque ligne s’affiche valide, refusée avec la raison, ou illisible avec les cellules en cause. C’est tout ou rien : **Importer** n’est proposé qu’une fois chaque ligne valide ; sinon, corrigez le fichier et choisissez-le à nouveau. **Importer** demande une fois, en disant combien de publications seront programmées, puis les crée dans l’ordre et donne un lien vers chacune. Une ligne datée `now` part dès qu’elle est créée, en public ; les autres attendent leur heure.
+
+Une ligne peut encore être refusée pendant l’import, quand quelque chose a changé depuis la vérification, comme la place restante du mois sur l’offre. Les publications créées avant elle le restent, et la page dit quelles lignes ne l’ont pas été : corrigez-les et importez-les dans un fichier à part, car importer à nouveau le même fichier créerait les autres deux fois. [Importer des publications depuis un fichier CSV](/posting-api#import) décrit chaque colonne et chaque réponse.
+
 ## La déplacer, la repasser en brouillon ou l’annuler [#move-cancel]
 
 Une fois une publication programmée, son texte est verrouillé ; son heure ne l’est pas.
