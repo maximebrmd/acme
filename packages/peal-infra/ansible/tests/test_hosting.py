@@ -147,3 +147,21 @@ def test_the_uptime_role_reads_a_provider_s_name_as_written() -> None:
     servers = {"peal-production": {"hosting_provider": "firstXprovider", "hosting_location": "paris"}}
 
     assert _shared({"hosting_provider": "first.provider", "hosting_location": "stockholm"}, servers) == []
+
+
+def test_the_uptime_role_takes_production_as_committed_from_elsewhere() -> None:
+    """Production's provider and city, as the inventory names them, against
+    an uptime server at another provider in another city."""
+    servers = {"peal-production": settings("production")}
+
+    assert _shared({"hosting_provider": "second-provider", "hosting_location": "stockholm"}, servers) == []
+
+
+def test_the_uptime_role_refuses_production_s_provider_and_city() -> None:
+    production = settings("production")
+    uptime = {name: production[name] for name in NAMES}
+
+    assert _shared(uptime, {"peal-production": production}) == [
+        "hosting_provider of peal-production",
+        "hosting_location of peal-production",
+    ]

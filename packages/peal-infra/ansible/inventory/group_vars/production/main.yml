@@ -1,9 +1,10 @@
 ---
 # Production, on peal.social. The host names are the official ones; the
 # Cloudflare values (the Access team and audience tags, the buckets and
-# their endpoints) are placeholders until the environment's Pulumi stack
-# exists and its output is committed. The server's address stays off Git,
-# in host_vars/peal-production/local.yml (inventory/hosts.yml).
+# their endpoints) are placeholders until production's Pulumi stack is up
+# and scripts/cloudflare_from_pulumi.py writes cloudflare.yml, as the
+# comment above cloudflare_access_team says. The server's address stays off
+# Git, in host_vars/peal-production/local.yml (inventory/hosts.yml).
 server_hostname: peal-production
 peal_environment: production
 
@@ -58,14 +59,18 @@ peal_hostnames:
   grafana: grafana.peal.social
   ssh: ssh.peal.social
 # Short links, public: https://peal.link/<code> (group_vars/all says how it
-# is routed). Its DNS record points to this tunnel (README.md, "Before the
-# first run"), through which cf-connecting-ip (AUTH_IP_HEADERS) comes, so
-# each visitor has a redirect limit of their own.
+# is routed). Its DNS record, which production's Pulumi stack makes in the
+# peal.link zone, points to this tunnel, through which cf-connecting-ip
+# (AUTH_IP_HEADERS) comes, so each visitor has a redirect limit of their own.
 peal_short_link_hostname: peal.link
 
 # Cloudflare Zero Trust: the team (<team>.cloudflareaccess.com) and the
-# audience tag of each Access application (Access > Applications > the
-# application > Overview), which cloudflared and Grafana check.
+# audience tag of each Access application, which cloudflared and Grafana
+# check. Production's Pulumi stack makes the applications, and
+# scripts/cloudflare_from_pulumi.py writes their tags, the buckets and
+# their endpoints into cloudflare.yml. This file is read after it and would
+# win: the commit that adds cloudflare.yml removes cloudflare_access_aud and
+# the four storage values below, as the sandbox's main.yml did.
 cloudflare_access_team: example-team
 cloudflare_access_aud:
   admin: REPLACE-WITH-THE-ADMIN-APPLICATION-AUD

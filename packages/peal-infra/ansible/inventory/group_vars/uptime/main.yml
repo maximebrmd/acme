@@ -15,6 +15,14 @@ server_hostname: peal-uptime
 hosting_provider: REPLACE-WITH-THE-PROVIDER-OF-THE-UPTIME-SERVER
 hosting_location: REPLACE-WITH-THE-CITY-OF-THE-UPTIME-SERVER
 
+# A server of its own, which uptime.yml gives the same baseline as Peal's
+# servers (false), or a host the owner already uses for other sites (true),
+# where it runs Gatus alone, on 127.0.0.1, behind the host's own Caddy, and
+# leaves SSH, users, packages, Docker and the firewall as they are
+# (README.md, "On a shared host"). Set it with the host's address, in
+# host_vars/peal-uptime/local.yml.
+uptime_shared_host: false
+
 # No tunnel: SSH listens on port 22, key-only and rate limited, and the admin
 # user may forward one local port, to Gatus's dashboard on 127.0.0.1:
 #   ssh -N -L 8080:127.0.0.1:8080 ops@uptime.peal.social

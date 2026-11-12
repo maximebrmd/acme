@@ -72,6 +72,81 @@
     quiet: true
   when: uptime_public_status
 
+# On a shared host, what the owner's other sites use stays theirs: the role
+# installs nothing there and changes no setting of the host's own, so it
+# first checks that the host has what Gatus needs, and that the ports it
+# publishes are free, before it changes anything.
+- name: Look for Docker Compose on the shared host
+  ansible.builtin.command: docker compose version
+  register: uptime_compose_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: uptime_shared_host | bool
+
+- name: Require Docker Compose on the shared host
+  ansible.builtin.assert:
+    that: uptime_compose_version.rc == 0
+    fail_msg: >-
+      Docker Engine and its Compose plugin must run on the shared host:
+      uptime.yml installs nothing there.
+    quiet: true
+  when: uptime_shared_host | bool
+
+- name: Look for the host's Caddy
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ uptime_caddy_config }}"
+    - "{{ uptime_caddy_site_file | dirname }}"
+  register: uptime_caddy_paths
+  when: uptime_shared_host | bool
+
+- name: Require the host's Caddy
+  ansible.builtin.assert:
+    that: uptime_caddy_paths.results | rejectattr('stat.exists') | list | length == 0
+    fail_msg: >-
+      The shared host's Caddy needs {{ uptime_caddy_config }}, and the folder
+      {{ uptime_caddy_site_file | dirname }}, which it imports with
+      `import {{ uptime_caddy_site_file | dirname }}/*.caddy`; make the folder
+      and add that line (README.md, "On a shared host").
+    quiet: true
+  when: uptime_shared_host | bool
+
+# A port is free when no container but the uptime project's publishes it,
+# whether or not Docker's proxy listens for it, and nothing else listens on
+# it. Read-only, so it runs in check mode too.
+- name: Find the loopback ports another service holds
+  ansible.builtin.shell: |
+    set -eu
+    for port in {{ uptime_published_ports | join(' ') }}; do
+      ours=no
+      others=no
+      for container in $(docker ps --filter "publish=${port}" --format '{% raw %}{{ .ID }}:{{ .Label "com.docker.compose.project" }}{% endraw %}'); do
+        case "$container" in
+          *:uptime) ours=yes ;;
+          *) others=yes ;;
+        esac
+      done
+      listening=$(ss -Hltn "sport = :${port}")
+      if [ "$others" = yes ] || { [ "$ours" = no ] && [ -n "$listening" ]; }; then
+        echo "$port"
+      fi
+    done
+  register: uptime_held_ports
+  changed_when: false
+  check_mode: false
+  when: uptime_shared_host | bool
+
+- name: Refuse ports another service holds
+  ansible.builtin.assert:
+    that: uptime_held_ports.stdout_lines | length == 0
+    fail_msg: >-
+      Something else on the shared host holds {{ uptime_held_ports.stdout_lines | join(', ') }}:
+      give uptime_gatus_port and uptime_status_port free ones.
+    quiet: true
+  when: uptime_shared_host | bool
+
 - name: Look for the uptime folder
   ansible.builtin.stat:
     path: "{{ uptime_root }}"
@@ -103,6 +178,8 @@
     - { path: "{{ uptime_root }}/status-data", owner: gatus, group: gatus, mode: "0700" }
   loop_control:
     label: "{{ item.path }}"
+  # The stack's Caddy, which a shared host leaves to its own.
+  when: item.path != uptime_root ~ '/caddy' or not (uptime_shared_host | bool)
 
 # Generated on the server, one per environment whose Grafana sends a
 # heartbeat, and never again once there. The value goes from openssl into
@@ -200,6 +277,7 @@
     uptime_caddyfile: "{{ lookup('ansible.builtin.template', 'Caddyfile.j2') }}"
     uptime_caddy_routes: "{{ lookup('ansible.builtin.template', 'routes.caddy.j2') }}"
     uptime_caddy_status: "{{ lookup('ansible.builtin.template', 'status.caddy.j2') }}"
+    uptime_caddy_site: "{{ lookup('ansible.builtin.template', 'site.caddy.j2') }}"
 
 - name: Write Gatus's configurations
   ansible.builtin.copy:
@@ -230,7 +308,9 @@
     - { name: status.caddy, content: "{{ uptime_caddy_status }}" }
   loop_control:
     label: "{{ item.name }}"
-  when: not ansible_check_mode or uptime_root_folder.stat.exists
+  when:
+    - not (uptime_shared_host | bool)
+    - not ansible_check_mode or uptime_root_folder.stat.exists
 
 - name: Write the stack's Compose file
   ansible.builtin.template:
@@ -264,3 +344,150 @@
   retries: 20
   delay: 3
   when: not ansible_check_mode
+
+- name: Check that the status page's Gatus answers
+  ansible.builtin.uri:
+    url: http://127.0.0.1:{{ uptime_status_port }}/health
+  register: uptime_status_health
+  until: uptime_status_health.status == 200
+  retries: 20
+  delay: 3
+  when:
+    - uptime_shared_host | bool
+    - uptime_public_status
+    - not ansible_check_mode
+
+# On a shared host, the host's Caddy serves the uptime names from a site file
+# of the role's, which its configuration imports. The whole configuration,
+# the owner's sites included, must load with the file before Caddy reloads:
+# Caddy validates it as the service's user, and adapts it to find each
+# name. A file Caddy refuses, or does not import, comes out again, or goes
+# back to what it was, so the next start of Caddy finds the configuration
+# that runs. The file holds no secret.
+- name: Serve the uptime names through the host's Caddy
+  when: uptime_shared_host | bool
+  block:
+    - name: Look for the site file
+      ansible.builtin.stat:
+        path: "{{ uptime_caddy_site_file }}"
+      register: uptime_site_before
+
+    - name: Read the site file as it was
+      ansible.builtin.slurp:
+        src: "{{ uptime_caddy_site_file }}"
+      register: uptime_site_previous
+      when: uptime_site_before.stat.exists
+
+    # Readable by Caddy's user; root owns it.
+    - name: Write the site file
+      ansible.builtin.copy:
+        dest: "{{ uptime_caddy_site_file }}"
+        content: "{{ uptime_caddy_site }}"
+        mode: "0644"
+      register: uptime_site
+
+    # Read-only, so it runs in check mode too, once the file is there: a
+    # configuration the owner broke since stops the run before a reload.
+    - name: Validate the host's Caddy configuration
+      ansible.builtin.command: >-
+        {{ uptime_caddy_bin }} validate --config {{ uptime_caddy_config }} --adapter caddyfile
+      become: true
+      become_user: "{{ uptime_caddy_user }}"
+      changed_when: false
+      check_mode: false
+      when: not (ansible_check_mode and uptime_site is changed)
+
+    # Names only: the configuration, which holds the owner's sites, stays in
+    # the shell.
+    - name: Find the uptime names the host's Caddy does not serve
+      ansible.builtin.shell: |
+        set -eu
+        adapted=$({{ uptime_caddy_bin }} adapt --config {{ uptime_caddy_config }} --adapter caddyfile)
+        for name in {{ uptime_caddy_names | join(' ') }}; do
+          case "$adapted" in
+            *"\"$name\""*) ;;
+            *) echo "$name" ;;
+          esac
+        done
+      become: true
+      become_user: "{{ uptime_caddy_user }}"
+      register: uptime_unserved
+      changed_when: false
+      check_mode: false
+      when: not (ansible_check_mode and uptime_site is changed)
+
+    - name: Require the host's Caddy to import the site file
+      ansible.builtin.assert:
+        that: uptime_unserved.stdout_lines | length == 0
+        fail_msg: >-
+          The host's Caddy does not serve {{ uptime_unserved.stdout_lines | join(', ') }}
+          from {{ uptime_caddy_site_file }}: add
+          `import {{ uptime_caddy_site_file | dirname }}/*.caddy` to
+          {{ uptime_caddy_config }} (README.md, "On a shared host").
+        quiet: true
+      when: uptime_unserved is not skipped
+
+  rescue:
+    - name: Put the site file back as it was
+      ansible.builtin.copy:
+        dest: "{{ uptime_caddy_site_file }}"
+        content: "{{ uptime_site_previous.content | b64decode }}"
+        mode: "0644"
+      when:
+        - uptime_site is defined and uptime_site is changed
+        - uptime_site_before.stat.exists
+
+    - name: Take the site file out
+      ansible.builtin.file:
+        path: "{{ uptime_caddy_site_file }}"
+        state: absent
+      when:
+        - uptime_site is defined and uptime_site is changed
+        - not uptime_site_before.stat.exists
+
+    - name: Report why the site file came out
+      ansible.builtin.fail:
+        msg: >-
+          {{ ansible_failed_task.name }}: {{ ansible_failed_result.msg | default('') }}
+          {{ ansible_failed_result.stderr | default('') }}
+
+# What the host's Caddy runs, read from its admin API: the owner's sites are
+# in it, so it stays out of the output.
+- name: Read the configuration the host's Caddy runs
+  ansible.builtin.uri:
+    url: "{{ uptime_caddy_admin }}/config/"
+    return_content: true
+  register: uptime_caddy_running
+  check_mode: false
+  no_log: true
+  when: uptime_shared_host | bool
+
+# Caddy's unit reloads through its admin API, gracefully: the new
+# configuration replaces the old without dropping connections, and Caddy
+# keeps the old when it refuses the new. Also when an earlier run wrote the
+# file but did not get to reload.
+- name: Reload the host's Caddy
+  ansible.builtin.systemd_service:
+    name: "{{ uptime_caddy_service }}"
+    state: reloaded
+  register: uptime_caddy_reload
+  when:
+    - uptime_shared_host | bool
+    - uptime_site is changed or uptime_unserved_running | length > 0
+  vars:
+    uptime_unserved_running: >-
+      {{ uptime_caddy_names | map('to_json') | reject('in', uptime_caddy_running.content) | list }}
+
+- name: Check that the host's Caddy serves the uptime names
+  ansible.builtin.uri:
+    url: "{{ uptime_caddy_admin }}/config/"
+    return_content: true
+  register: uptime_caddy_reloaded
+  until: uptime_caddy_names | map('to_json') | reject('in', uptime_caddy_reloaded.content | default('')) | list | length == 0
+  retries: 10
+  delay: 2
+  no_log: true
+  when:
+    - uptime_shared_host | bool
+    - uptime_caddy_reload is changed
+    - not ansible_check_mode

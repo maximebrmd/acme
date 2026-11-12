@@ -29,4 +29,12 @@ credentials and how to adopt what exists.
   URL normalisation, which stays on, in code.
 - Resource names (the first argument) are what the state knows a resource
   by: renaming one makes Pulumi delete it and make it again. Use an alias.
+- The sandbox is applied, as production will be: `test/sandbox-resources.ts` pins
+  every resource the sandbox's stack makes, by name and inputs, so a change
+  there is one its preview shows. Change it only with a change the sandbox
+  is meant to take, and preview both stacks before `up`.
+- Production is public but for its admin, Grafana and SSH: no Access
+  application covers its app, site, docs or short links. Its admin
+  application's paths (`adminPaths`) are the Ansible project's
+  `peal_access_paths`: change both together.
 - Pin `@pulumi/pulumi` and `@pulumi/cloudflare` exactly, as everything else.

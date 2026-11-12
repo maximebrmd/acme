@@ -25,15 +25,16 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
 - `bootstrap.yml` logs in as `bootstrap_user`, the account a server's image
   lets in: root, or the image's own (then with sudo, whose password, when it
   asks one, `scripts/become-keychain.py` reads from the keychain without
-  showing it), which the `ssh` role removes once `ops` works. Where cloud-init rewrites `/etc/hosts`
-  (`manage_etc_hosts`), the `system` role turns it off in
-  `cloud.cfg.d/zz-peal.cfg` and writes its line in cloud-init's template
-  too, as a provider's own settings at boot override files on the server.
+  showing it), which the `ssh` role removes once `ops` works. Where
+  cloud-init rewrites `/etc/hosts` (`manage_etc_hosts`), the `system` role
+  turns it off in `cloud.cfg.d/zz-peal.cfg` and writes its line in
+  cloud-init's template too, as a provider's own settings at boot override
+  files on the server.
 - A unit a server's image runs for nothing is masked
   (`system_masked_units`, per group), never removed with its package:
   removing one can take Ubuntu's metapackages, whose other dependencies the
   unattended upgrades then remove. The `system` role keeps the clock with
-  chrony on every server.
+  chrony on every server it runs on (not on a shared uptime host).
 - Keep check mode working on a new server: a task that needs what an earlier
   one would make (a folder, a package, a unit) skips in check mode when that
   one reports a change.
@@ -50,9 +51,9 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   stops on one), and `PEAL_SHORT_LINK_BASE` in `peal_settings`; a test ties
   the tunnel's code pattern to the server's `codeLength` and alphabet, and
   Gatus follows an unknown code on each short-link host (`short_links` in
-  `uptime_environments`). Make production's record in the peal.link zone
-  by the dashboard or Pulumi, never `cloudflared tunnel route dns`, which
-  can put it in peal.social's.
+  `uptime_environments`). Each environment's Pulumi stack makes its record
+  in the peal.link zone; never `cloudflared tunnel route dns`, which can
+  put it in peal.social's.
 - Containers publish ports on 127.0.0.1 only, and the tunnel reaches them
   there; Docker's own rules would otherwise bypass ufw.
 - A separate server checks uptime (`uptime.yml`, inventory group
@@ -74,6 +75,17 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   hides URLs, conditions and errors; Caddy serves it by GET and HEAD alone
   (`status.caddy`), and the heartbeats never go through its name. Both names have DNS
   records Cloudflare does not proxy (the infra README's "The status page").
+- The uptime server may be a host the owner uses for other sites
+  (`uptime_shared_host: true`, in its Git-ignored `local.yml`): `uptime.yml`
+  skips every task of `system`, `ssh`, `docker` and `firewall` there, and
+  `bootstrap.yml` refuses it. On it the `uptime` role changes nothing of
+  the host's own (no package, setting, firewall rule, or account but
+  `gatus`), publishes Gatus on 127.0.0.1 alone, on ports it checks are
+  free, and serves the names through the host's Caddy from one site file,
+  validated with the whole configuration as Caddy's user before a reload
+  and taken out when Caddy refuses it. A change to the role leaves the
+  dedicated server's rendered files as they were unless it means to change
+  them; `tests/test_uptime_shared_host.py` covers the shared host.
 - Postgres archives its write-ahead log and is backed up to R2 with
   pgBackRest; the backup passphrase is the one secret kept outside the server
   too. R2 buckets are in its EU jurisdiction (`<account>.eu.r2…`).
@@ -92,8 +104,12 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   endpoints, or another store's host listed in `peal_storage_eu_hosts` once
   the owner checked it; hosts are compared without case or port. A ledger
   bucket that is the media bucket is not one of its own.
-- An environment with a Pulumi stack (the sandbox) takes its Cloudflare
-  values from it: `scripts/cloudflare_from_pulumi.py` writes
+- An environment with a Pulumi stack (the sandbox and production) takes
+  its Cloudflare values from it: `scripts/cloudflare_from_pulumi.py` writes
   `group_vars/<environment>/cloudflare.yml` (generated, committed, never
   edited by hand) and the tunnel's token and buckets' keys into the vault.
-  Change them in `packages/peal-infra/pulumi`, then run the script.
+  Change them in `packages/peal-infra/pulumi`, then run the script. The
+  script maps each stack's audience tags onto the inventory's
+  (`AUD_NAMES`): production's `admin` application covers
+  `peal_access_paths`, so a path added there is added to the Pulumi
+  project's `adminPaths` too.

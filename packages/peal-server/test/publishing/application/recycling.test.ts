@@ -49,10 +49,6 @@ import { permissionsFor } from "#workspace/domain/roles.ts";
 
 const timeout = 90_000;
 
-// The tests that move the clock days ahead have the cluster's timers
-// replay the time skipped, which takes CPU: under load they need longer.
-const farJumpTimeout = 240_000;
-
 // A Monday, 09:00 in Paris; the source goes out a minute later.
 const start = "2026-06-15T07:00:00Z";
 const sourceAt = "2026-06-15T07:01:00Z";
@@ -146,6 +142,14 @@ const weekly = (
   variants: [],
   ...more,
 });
+
+// A rule every day: a test that skips runs moves the clock days, not
+// weeks, ahead, and the cluster's timers replay less of it.
+const daily = (
+  postId: PostId,
+  more: Partial<StartRequest> = {}
+): StartRequest =>
+  weekly(postId, { interval: { count: 1, unit: "days" }, ...more });
 
 const started = (workspaceId: WorkspaceId, request: StartRequest) =>
   Recycling.use((recycling) =>
@@ -308,8 +312,8 @@ describe("making a rule's occurrences", () => {
 
           const rule = yield* started(
             workspaceId,
-            weekly(source, {
-              until: Option.some({ day: 25, month: 6, year: 2026 }),
+            daily(source, {
+              until: Option.some({ day: 17, month: 6, year: 2026 }),
             })
           );
 
@@ -317,7 +321,7 @@ describe("making a rule's occurrences", () => {
 
           // Missed until past its last day, which a member moves on while
           // the run goes.
-          yield* setTime("2026-06-26T08:00:00Z");
+          yield* setTime("2026-06-18T08:00:00Z");
           yield* whileRunning(
             Recycling.use((recycling) =>
               recycling.change(actorIn(workspaceId), rule.id, {
@@ -337,7 +341,7 @@ describe("making a rule's occurrences", () => {
           assert.lengthOf(yield* occurrencesOf(rule.id), 1);
         })
       ),
-    farJumpTimeout
+    timeout
   );
 
   it.effect(
@@ -367,18 +371,18 @@ describe("making a rule's occurrences", () => {
           const workspaceId = yield* freshWorkspace;
           const channel = yield* connect(workspaceId, "mastodon");
           const source = yield* published(workspaceId, channel);
-          const rule = yield* started(workspaceId, weekly(source));
+          const rule = yield* started(workspaceId, daily(source));
 
-          // Nothing ran for three weeks.
-          yield* setTime("2026-07-08T12:00:00Z");
+          // Nothing ran for three days.
+          yield* setTime("2026-06-18T12:00:00Z");
           yield* makeDue;
 
           assert.deepStrictEqual(atOf(yield* occurrencesOf(rule.id)), [
-            "2026-07-13T07:01:00.000Z",
+            "2026-06-19T07:01:00.000Z",
           ]);
         })
       ),
-    farJumpTimeout
+    timeout
   );
 
   it.effect(

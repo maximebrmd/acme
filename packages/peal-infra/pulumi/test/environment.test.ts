@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { PealEnvironment } from "../src/environment.ts";
 import type { EnvironmentSettings } from "../src/settings.ts";
+import { sandboxResources } from "./sandbox-resources.ts";
 import { input, recordResources, valueOf } from "./support.ts";
 
 const made = await recordResources();
@@ -94,7 +95,7 @@ describe("the sandbox at Cloudflare", () => {
   });
 
   it("keeps every host name behind the owner's policy, but the callbacks", async () => {
-    await valueOf(result.accessAud.app);
+    await valueOf(pulumi.output(result.accessAud));
 
     const applications = ofType(
       "cloudflare:index/zeroTrustAccessApplication:ZeroTrustAccessApplication"
@@ -183,18 +184,6 @@ describe("the sandbox at Cloudflare", () => {
     ]);
   });
 
-  it("describes no other environment yet", () => {
-    expect(
-      () =>
-        new PealEnvironment(
-          "production",
-          { ...sandbox, environment: "production" },
-          { owner: "o", publicCallbacks: "c" },
-          "link-zone-synthetic"
-        )
-    ).toThrow("not described yet");
-  });
-
   it("gives each bucket a key that reaches it alone", async () => {
     const accessKeyId = await valueOf(result.keys.media.accessKeyId);
     const secretAccessKey = await valueOf(result.keys.media.secretAccessKey);
@@ -219,6 +208,36 @@ describe("the sandbox at Cloudflare", () => {
         "com.cloudflare.edge.r2.bucket.account-synthetic_eu_peal-sandbox-backups",
       ],
     ]);
+  });
+
+  it("makes every resource as the applied sandbox has it", async () => {
+    await valueOf(
+      pulumi.all([
+        result.cors.id,
+        result.keys.backups.accessKeyId,
+        result.keys.media.accessKeyId,
+        ...result.applications.map((application) => application.id),
+        ...result.records.map((record) => record.id),
+      ])
+    );
+
+    expect(
+      made
+        .map(({ inputs, name, type }) => ({ inputs, name, type }))
+        .toSorted((left, right) => left.name.localeCompare(right.name))
+    ).toStrictEqual(sandboxResources);
+  });
+
+  it("keeps every resource under the component, at its URN", async () => {
+    await expect(valueOf(result.urn)).resolves.toBe(
+      "urn:pulumi:test::peal::peal:cloudflare:Environment::environment"
+    );
+    await expect(valueOf(result.tunnel.urn)).resolves.toBe(
+      "urn:pulumi:test::peal::peal:cloudflare:Environment$cloudflare:index/zeroTrustTunnelCloudflared:ZeroTrustTunnelCloudflared::tunnel"
+    );
+    await expect(valueOf(result.buckets.media.urn)).resolves.toBe(
+      "urn:pulumi:test::peal::peal:cloudflare:Environment$cloudflare:index/r2Bucket:R2Bucket::bucket-media"
+    );
   });
 
   it("gives the tunnel's token as a secret", async () => {

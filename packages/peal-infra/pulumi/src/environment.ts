@@ -17,6 +17,21 @@ const publicCallbackPaths = [
   "api/data-deletion",
 ] as const;
 
+/**
+ * The paths of the app's host name that Access guards on an environment
+ * otherwise public (production): Better Auth's admin endpoints, the staff
+ * console's API, and its pages, under /en and /fr too. The Ansible
+ * project's peal_access_paths routes the same paths, and cloudflared checks
+ * this application's token on them: a path added there is added here.
+ */
+const adminPaths = [
+  "api/auth/admin",
+  "api/admin",
+  "admin",
+  "en/admin",
+  "fr/admin",
+] as const;
+
 /** Cloudflare's permission group "Workers R2 Storage Bucket Item Write". */
 const bucketItemWrite = "2efd5506f9c8494dacb1fa10a3e7d5b6";
 
@@ -44,12 +59,29 @@ export interface BucketKey {
   readonly secretAccessKey: pulumi.Output<string>;
 }
 
+/**
+ * The account stack's Access policies: the owner's, and the Bypass policy
+ * an environment behind Access throughout puts on its callbacks.
+ */
 export interface AccessPolicies {
   readonly owner: pulumi.Input<string>;
   readonly publicCallbacks: pulumi.Input<string>;
 }
 
 type Kind = "media" | "backups";
+
+type Audiences = Readonly<Record<"grafana" | "ssh", pulumi.Output<string>>>;
+
+/**
+ * The audience tags of an environment's Access applications: `app` on an
+ * environment behind Access throughout (the sandbox), `admin` on one that
+ * is public but for its admin (production). The Ansible project's
+ * scripts/cloudflare_from_pulumi.py reads them by these names, and maps
+ * them onto the inventory's (cloudflare_access_aud).
+ */
+export type AccessAud =
+  | (Audiences & { readonly app: pulumi.Output<string> })
+  | (Audiences & { readonly admin: pulumi.Output<string> });
 
 /**
  * One environment of Peal at Cloudflare: its tunnel and the host names that
@@ -59,11 +91,7 @@ type Kind = "media" | "backups";
  * scripts/cloudflare_from_pulumi.py writes into the environment's vault.
  */
 export class PealEnvironment extends pulumi.ComponentResource {
-  readonly accessAud: {
-    readonly app: pulumi.Output<string>;
-    readonly grafana: pulumi.Output<string>;
-    readonly ssh: pulumi.Output<string>;
-  };
+  readonly accessAud: AccessAud;
   readonly applications: readonly cloudflare.ZeroTrustAccessApplication[];
   readonly buckets: Readonly<Record<Kind, cloudflare.R2Bucket>>;
   readonly cors: cloudflare.R2BucketCors;
@@ -91,13 +119,15 @@ export class PealEnvironment extends pulumi.ComponentResource {
       zoneId,
     } = settings;
 
-    if (env !== "sandbox") {
-      // Production is public, with Access on its admin paths alone: its
-      // applications come with its stack.
-      throw new Error(`The ${env} environment is not described yet`);
-    }
+    // The sandbox is behind Access throughout, but for what outside
+    // services call; production is public, with Access on its admin alone
+    // (the Ansible project's peal_access_everything).
+    const behindAccess = env === "sandbox";
 
-    const host = (subdomain: string) => `${subdomain}.${domain}`;
+    // `@` is the bare domain, which Cloudflare flattens as a proxied CNAME.
+    const host = (label: string) =>
+      label === "@" ? domain : `${label}.${domain}`;
+
     const title = `Peal ${env}`;
 
     // The resources were made at the stack's root before this component:
@@ -146,8 +176,8 @@ export class PealEnvironment extends pulumi.ComponentResource {
     // Short links are on a zone of their own, whose rules (src/link-domain.ts)
     // rewrite /<code> to the server's /api/l/<code> on the way.
     this.records = [
-      ...Object.entries(hostnames).map(([key, subdomain]) =>
-        toTunnel(key, host(subdomain), zoneId)
+      ...Object.entries(hostnames).map(([key, label]) =>
+        toTunnel(key, host(label), zoneId)
       ),
       toTunnel("short-links", shortLinkHost, linkZoneId),
     ];
@@ -172,43 +202,69 @@ export class PealEnvironment extends pulumi.ComponentResource {
         child(false)
       );
 
-    const app = application(
-      "access-app",
-      title,
-      [
-        host(hostnames.app),
-        host(hostnames.site),
-        host(hostnames.docs),
-        // The sandbox's short links stay behind Access with the rest of it:
-        // a tester signed in follows them.
-        shortLinkHost,
-      ],
-      policies.owner
-    );
+    const grafana = () =>
+      application(
+        "access-grafana",
+        `${title} Grafana`,
+        [host(hostnames.grafana)],
+        policies.owner
+      );
 
-    const callbacks = application(
-      "access-callbacks",
-      `${title} callbacks`,
-      publicCallbackPaths.map((path) => `${host(hostnames.app)}/${path}`),
-      policies.publicCallbacks
-    );
+    const ssh = () =>
+      application(
+        "access-ssh",
+        `${title} SSH`,
+        [host(hostnames.ssh)],
+        policies.owner
+      );
 
-    const grafana = application(
-      "access-grafana",
-      `${title} Grafana`,
-      [host(hostnames.grafana)],
-      policies.owner
-    );
+    if (behindAccess) {
+      const app = application(
+        "access-app",
+        title,
+        [
+          host(hostnames.app),
+          host(hostnames.site),
+          host(hostnames.docs),
+          // The sandbox's short links stay behind Access with the rest of
+          // it: a tester signed in follows them.
+          shortLinkHost,
+        ],
+        policies.owner
+      );
 
-    const ssh = application(
-      "access-ssh",
-      `${title} SSH`,
-      [host(hostnames.ssh)],
-      policies.owner
-    );
+      const callbacks = application(
+        "access-callbacks",
+        `${title} callbacks`,
+        publicCallbackPaths.map((path) => `${host(hostnames.app)}/${path}`),
+        policies.publicCallbacks
+      );
 
-    this.applications = [app, callbacks, grafana, ssh];
-    this.accessAud = { app: app.aud, grafana: grafana.aud, ssh: ssh.aud };
+      const [grafanaApp, sshApp] = [grafana(), ssh()];
+      this.applications = [app, callbacks, grafanaApp, sshApp];
+      this.accessAud = {
+        app: app.aud,
+        grafana: grafanaApp.aud,
+        ssh: sshApp.aud,
+      };
+    } else {
+      // The app, the site, the docs and the short links are public: no
+      // application covers them.
+      const admin = application(
+        "access-admin",
+        `${title} admin`,
+        adminPaths.map((path) => `${host(hostnames.app)}/${path}`),
+        policies.owner
+      );
+
+      const [grafanaApp, sshApp] = [grafana(), ssh()];
+      this.applications = [admin, grafanaApp, sshApp];
+      this.accessAud = {
+        admin: admin.aud,
+        grafana: grafanaApp.aud,
+        ssh: sshApp.aud,
+      };
+    }
 
     // A bucket outlives its resource: removing it from here leaves it, and
     // its data, at Cloudflare.

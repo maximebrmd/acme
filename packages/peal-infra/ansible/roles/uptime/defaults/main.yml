@@ -12,6 +12,25 @@ uptime_caddy_image: caddy:2.11.9-alpine@sha256:0bbb055bda6793c999bde78b1b5ce3e89
 # Gatus's dashboard, on 127.0.0.1 only: `ssh -N -L 8080:127.0.0.1:8080 ops@<uptime_hostname>`.
 uptime_gatus_port: 8080
 
+# A server of its own (false), whose stack runs Caddy on port 443, or a host
+# the owner already uses for other sites (true; group_vars/uptime), whose
+# own Caddy serves the uptime names: Gatus, and the status page's Gatus on
+# uptime_status_port, then publish on 127.0.0.1 alone, on ports nothing
+# else holds there (README.md, "On a shared host").
+uptime_shared_host: false
+uptime_status_port: 8081
+
+# The shared host's Caddy, a systemd service whose configuration imports the
+# site file (`import /etc/caddy/sites/*.caddy`): the role drops that file
+# in, checks the whole configuration as the service's user, and reloads the
+# service through its admin API, which listens on uptime_caddy_admin.
+uptime_caddy_bin: caddy
+uptime_caddy_config: /etc/caddy/Caddyfile
+uptime_caddy_site_file: /etc/caddy/sites/peal-uptime.caddy
+uptime_caddy_user: caddy
+uptime_caddy_service: caddy.service
+uptime_caddy_admin: http://127.0.0.1:2019
+
 # What each environment of uptime_environments is checked for, every
 # uptime_check_interval: the status a request answers, and how fast, in
 # milliseconds, through Cloudflare as people reach it. A redirect is a

@@ -27,13 +27,23 @@ export type LinkDomainSettings = Pick<
   "accountId" | "domain" | "linkDomain"
 >;
 
-/** The first-level subdomains of an environment's host names. */
+/**
+ * A host name of an environment, on its domain: a first-level label
+ * (`docs` for docs.<domain>), as Cloudflare's free certificate covers the
+ * zone and its first-level subdomains alone, or `@` for the bare domain
+ * (production's site, peal.social).
+ */
+const HostnameSchema = Schema.String.check(
+  Schema.isPattern(/^(?:@|[a-z\d](?:[a-z\d-]*[a-z\d])?)$/u)
+);
+
+/** An environment's host names, on its domain. */
 const HostnamesSchema = Schema.Struct({
-  app: Schema.NonEmptyString,
-  docs: Schema.NonEmptyString,
-  grafana: Schema.NonEmptyString,
-  site: Schema.NonEmptyString,
-  ssh: Schema.NonEmptyString,
+  app: HostnameSchema,
+  docs: HostnameSchema,
+  grafana: HostnameSchema,
+  site: HostnameSchema,
+  ssh: HostnameSchema,
 });
 
 export const EnvironmentSettingsSchema = Schema.Struct({
