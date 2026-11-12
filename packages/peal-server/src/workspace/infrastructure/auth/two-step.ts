@@ -215,12 +215,17 @@ const notRead = (path: string, field: NamingField) =>
   });
 
 /**
- * The workspaces a request names, in its body and its query. On a guarded
- * route, a field the route does not read is refused.
+ * The workspaces a request names, in its body and its query, and whether
+ * a field the route reads holds a value: when none does, the route acts on
+ * the session's active workspace. On a guarded route, a field the route
+ * does not read is refused.
  */
 const namedWorkspaces = async (
   ctx: GenericEndpointContext
-): Promise<readonly WorkspaceId[]> => {
+): Promise<{
+  readonly named: readonly WorkspaceId[];
+  readonly readsOne: boolean;
+}> => {
   const reads = guarded.get(ctx.path);
 
   const parts: readonly (readonly [Where, unknown])[] = [
@@ -258,17 +263,22 @@ const namedWorkspaces = async (
     namings.map(async (naming) => await workspacesNamedBy(ctx, naming))
   );
 
-  return named.flat();
+  // Every field given is one the route reads, the others being refused.
+  const readsOne = namings.some((naming) =>
+    namingKeys.some((key) => given(naming[key]).length > 0)
+  );
+
+  return { named: named.flat(), readsOne };
 };
 
 /**
  * Part of Better Auth's before hook: its routes that read or change one
  * workspace never pass WorkspaceAccess, so a member whose account lacks the
  * two-step verification the workspace requires is refused them here, as
- * the API refuses them. The workspaces checked are the session's active
- * one and every one the request names, together: a route falls back to the
- * active one when the field it reads is empty, so neither alone is the one
- * it acts on. The routes a refused member needs (their
+ * the API refuses them. The workspaces checked are every one the request
+ * names, in the fields the route reads (any other is refused), and the
+ * session's active one when none of those fields holds a value, or what
+ * they hold names no workspace: the route then acts on the active one. The routes a refused member needs (their
  * workspaces, the picker, invitations, leaving, making one of their own)
  * stay open. Better Auth's calls from Peal's own API carry no request:
  * WorkspaceAccess checked them.
@@ -298,14 +308,18 @@ export const refuseLockedOutMembers = async (
   }
 
   const { session, user } = found.value;
-  const named = await namedWorkspaces(ctx);
+  const { named, readsOne } = await namedWorkspaces(ctx);
 
-  const workspaceIds = [
-    ...named,
-    ...Option.toArray(
-      Option.fromNullishOr(session.activeOrganizationId).pipe(Option.map(idOf))
-    ),
-  ];
+  const active =
+    readsOne && named.length > 0
+      ? []
+      : Option.toArray(
+          Option.fromNullishOr(session.activeOrganizationId).pipe(
+            Option.map(idOf)
+          )
+        );
+
+  const workspaceIds = [...named, ...active];
 
   if (
     workspaceIds.length > 0 &&

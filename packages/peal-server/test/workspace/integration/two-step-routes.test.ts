@@ -221,8 +221,9 @@ layer(BillingLive, { excludeTestServices: true, timeout: "180 seconds" })(
           }
 
           // Naming their own workspace in a field the route does not read
-          // is refused, and naming it where the route reads it is checked
-          // with the session's active workspace, which requires it.
+          // is refused; named where the route reads it, it is the one
+          // checked, and the active workspace only when no field the
+          // route reads holds one.
           const decoys: readonly (Call & { readonly code: string })[] = [
             {
               code: "WORKSPACE_FIELD_NOT_READ",
@@ -269,19 +270,6 @@ layer(BillingLive, { excludeTestServices: true, timeout: "180 seconds" })(
               code: "WORKSPACE_FIELD_NOT_READ",
               path: "/subscription/upgrade",
             },
-            {
-              code: "TWO_STEP_REQUIRED",
-              path: `/organization/list-members?organizationId=${ownId}`,
-            },
-            {
-              body: {
-                customerType: "organization",
-                plan: "starter",
-                referenceId: ownId,
-              },
-              code: "TWO_STEP_REQUIRED",
-              path: "/subscription/upgrade",
-            },
           ];
 
           for (const { code, ...call } of decoys) {
@@ -293,6 +281,29 @@ layer(BillingLive, { excludeTestServices: true, timeout: "180 seconds" })(
               `${call.path}: ${refused.status} ${JSON.stringify(refused.body)}`
             );
           }
+
+          // Their own workspace, named where the route reads it, stays
+          // theirs, though the active one requires it.
+          const own = yield* send(browser, {
+            path: `/organization/list-members?organizationId=${ownId}`,
+          });
+
+          assert.strictEqual(own.status, 200, JSON.stringify(own.body));
+
+          const ownCheckout = yield* send(browser, {
+            body: {
+              customerType: "organization",
+              plan: "starter",
+              referenceId: ownId,
+            },
+            path: "/subscription/upgrade",
+          });
+
+          assert.notStrictEqual(
+            codeOf(ownCheckout),
+            "TWO_STEP_REQUIRED",
+            JSON.stringify(ownCheckout.body)
+          );
 
           // What they still reach.
           const open: readonly Call[] = [
@@ -336,6 +347,76 @@ layer(BillingLive, { excludeTestServices: true, timeout: "180 seconds" })(
           });
 
           assert.strictEqual(codeOf(malformed), "INVALID_ID");
+        })
+    );
+
+    it.effect(
+      "leave a member their own workspaces once they accept an invitation to one that requires it",
+      () =>
+        Effect.gen(function* invited() {
+          const app = yield* TestApp;
+          const owner = yield* signedUp("invited-owner");
+          const strict = yield* workspaceOf(owner, "Strict");
+          const { cookies } = yield* enrolled(owner);
+
+          yield* app.request(`/api/workspaces/${strict}/security`, {
+            body: { twoStepRequired: true },
+            headers: { cookie: cookies },
+            method: "PUT",
+          });
+
+          const person = yield* signedUp("invited-person");
+          const ownId = yield* workspaceOf(person, "Mine");
+
+          const sent = yield* bodyOf(
+            Schema.Struct({ id: Schema.String }),
+            yield* app.request(`/api/workspaces/${strict}/invitations`, {
+              body: { email: person.email, role: "viewer" },
+              headers: { cookie: cookies },
+            })
+          );
+
+          // Accepting makes the invited workspace the session's active one.
+          const accepted = yield* send(person.cookies, {
+            body: { invitationId: sent.id },
+            path: "/organization/accept-invitation",
+          });
+
+          assert.strictEqual(
+            accepted.status,
+            200,
+            JSON.stringify(accepted.body)
+          );
+
+          // Without the session's cached copy, as once it lapses.
+          const browser = withCookies(person.cookies, accepted)
+            .split("; ")
+            .filter((cookie) => !cookie.includes("session_data"))
+            .join("; ");
+
+          for (const call of [
+            { path: `/organization/list-members?organizationId=${ownId}` },
+            { path: `/organization/list-invitations?organizationId=${ownId}` },
+            {
+              body: { data: { name: "Still mine" }, organizationId: ownId },
+              path: "/organization/update",
+            },
+          ]) {
+            const answered = yield* send(browser, call);
+
+            assert.strictEqual(
+              answered.status,
+              200,
+              `${call.path}: ${JSON.stringify(answered.body)}`
+            );
+          }
+
+          // The active workspace, which the route falls back to, is checked.
+          const fallback = yield* send(browser, {
+            path: "/organization/list-members",
+          });
+
+          assert.strictEqual(codeOf(fallback), "TWO_STEP_REQUIRED");
         })
     );
 

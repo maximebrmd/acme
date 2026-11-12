@@ -308,8 +308,10 @@ The staff context follows these rules too. What the law has a host keep is in
   pass `WorkspaceAccess`, are guarded in its before hook
   (`refuseLockedOutMembers`, `auth/two-step.ts`: 403 `TWO_STEP_REQUIRED`)
   for every workspace a request names (id, slug, invitation, `referenceId`;
-  `INVALID_ID` for one it cannot read) and the session's active one, all
-  together: a route falls back to the active one when its field is empty.
+  `INVALID_ID` for one it cannot read), and for the session's active one
+  when no field the route reads holds a value or what they hold names no
+  workspace, as the route then falls back to it (`accept-invitation` and
+  the OAuth picker make the active workspace one that may require it).
   `guarded` gives each route the naming fields it reads, body or query, as
   Better Auth's routes and the Stripe plugin read them; any other is
   refused (400 `WORKSPACE_FIELD_NOT_READ`), so no decoy is checked in place
