@@ -1,11 +1,11 @@
-import { DateTime, Option, Schema } from "effect";
+import { DateTime, Schema } from "effect";
 
 /**
- * What a billing account pays for by use, each with a free monthly
- * allowance across every workspace it pays for: writing assistant requests
- * and images on the server's provider (none with the workspace's own),
- * inbox messages sent (comment replies included), managed ads active in
- * the month, and calls to X's API at X's rates.
+ * What a billing account pays for by use, each with a monthly allowance
+ * across every workspace it pays for: writing assistant requests and images
+ * on the server's provider (never with a workspace's own), inbox messages
+ * sent (comment replies included), managed ads active in the month, and
+ * calls to X's API at X's rates.
  */
 export const MeterSchema = Schema.Literals([
   "assistantRequests",
@@ -17,10 +17,14 @@ export const MeterSchema = Schema.Literals([
 
 export type Meter = typeof MeterSchema.Type;
 
-/** The currencies a rate card is published in. */
-export const RateCardCurrencySchema = Schema.Literals(["usd"]);
+/**
+ * The currencies prices are listed in: US dollars only. Customers elsewhere
+ * may pay in their own currency at checkout, converted by Stripe; the key
+ * is kept so a list could be added, and no other is written.
+ */
+export const PriceCurrencySchema = Schema.Literals(["usd"]);
 
-export type RateCardCurrency = typeof RateCardCurrencySchema.Type;
+export type PriceCurrency = typeof PriceCurrencySchema.Type;
 
 /** A band of the account ladder: accounts up to `upTo` (none: no end). */
 export interface AccountBand {
@@ -35,19 +39,25 @@ export interface UnitPrice {
   readonly per: number;
 }
 
-/**
- * A meter's free units per billing account and calendar month (UTC),
- * across every workspace it pays for, then the price of each unit past
- * them. Without a payment method nothing is billed: the meter pauses at
- * its allowance, and one whose allowance there is null needs a payment
- * method before any use.
- */
-export interface MeterRate {
-  readonly allowance: {
-    readonly withPaymentMethod: number;
-    readonly withoutPaymentMethod: number | null;
-  };
-  readonly price: UnitPrice;
+/** What is priced in one currency: the account ladder and each meter. */
+export interface Prices {
+  /** The graduated ladder, from a billing account's first connected account. */
+  readonly accounts: { readonly bands: readonly AccountBand[] };
+  /** The price of each unit past a meter's allowance. */
+  readonly meters: { readonly [M in Meter]: UnitPrice };
+}
+
+/** A meter's terms, per billing account and calendar month (UTC). */
+export interface MeterTerms {
+  /** Units included with a payment method. */
+  readonly allowance: number;
+  /** Units included without one: past them, the meter pauses. */
+  readonly allowanceWithout: number;
+  /**
+   * What may be spent past the allowance unless the account changes it,
+   * in cents; null where there is no ceiling.
+   */
+  readonly ceiling: number | null;
 }
 
 /** X's published pay-per-use rates, in thousandths of a dollar. */
@@ -62,26 +72,22 @@ export interface XRates {
 }
 
 /**
- * Every price, band, allowance and default of per-account pricing, in one
- * currency. Prices exclude tax and are billed monthly, for the month past.
+ * Every price, band, allowance and default of per-account pricing. Prices
+ * exclude tax and are billed monthly, for the month past; every allowance
+ * is per billing account, across the workspaces it pays for.
  */
 export interface RateCard {
-  readonly currency: RateCardCurrency;
-  /** The VAT rate, in percent, prices are shown with beside: France's. */
+  /** The VAT rate, in percent, of the amount pages show beside: France's. */
   readonly displayVatRate: number;
-  readonly accounts: {
-    /**
-     * The graduated ladder, from a billing account's first connected
-     * account, across every workspace it pays for.
-     */
-    readonly bands: readonly AccountBand[];
-    /** An account-day costs this fraction of the monthly rate. */
-    readonly daysPerMonth: number;
-    /** The most accounts a billing account connects until it paid an invoice. */
-    readonly unverifiedCeiling: number;
-  };
-  readonly meters: { readonly [M in Meter]: MeterRate };
-  /** Media stored, in decimal bytes (fair use, not billed). */
+  readonly prices: { readonly [C in PriceCurrency]: Prices };
+  /** An account-day costs this fraction of the monthly rate. */
+  readonly daysPerMonth: number;
+  /** The most accounts a billing account connects until it paid an invoice. */
+  readonly unverifiedCeiling: number;
+  readonly meters: { readonly [M in Meter]: MeterTerms };
+  /** The assistant's prices: its cost, plus this margin, in percent. */
+  readonly assistant: { readonly margin: number };
+  /** Media stored across the billing account, in decimal bytes (fair use). */
   readonly storage: {
     readonly withoutPaymentMethod: number;
     readonly perAccount: number;
@@ -105,16 +111,16 @@ export interface RateCard {
 const gigabytes = (count: number): number => count * 1_000_000_000;
 
 /**
- * Placeholders awaiting the owner's decision, kept here, together, until
- * confirmed: the assistant's allowances with a payment method and its
- * prices, the X ceiling, the account ceiling before a first paid invoice,
- * storage, and the API's rate limits. Decided: the ladder, the currency,
- * messages, managed ads, X at X's rates with a payment method, and no
- * assistant on the server's provider without one.
+ * Not decided yet, kept here together. Placeholders, to be replaced with
+ * the owner's figures before a pricing page shows them: the assistant's
+ * allowances with a payment method, its two prices and its margin.
+ * Recommended defaults awaiting confirmation: the X ceiling, the account
+ * ceiling before a first paid invoice, storage and the API's rate limits.
  */
 const awaitingDecision = {
   apiRequestsPerMinute: { onRequest: 1200, withoutPaymentMethod: 60 },
   assistantImages: { allowance: 10, cents: 5 },
+  assistantMargin: 30,
   assistantRequests: { allowance: 100, cents: 1 },
   storage: {
     minimum: gigabytes(5),
@@ -122,92 +128,99 @@ const awaitingDecision = {
     withoutPaymentMethod: gigabytes(1),
   },
   unverifiedCeiling: 100,
-  xDefaultCeiling: 2500,
+  xCeiling: 2500,
 } as const;
 
 /**
- * The published rate cards, by currency: US dollars only, for now. Keep
- * the contract's copy (`peal-contract/rate-card`) equal; the site, the
- * docs and the web app read that copy.
+ * Peal Cloud's rate card. Keep the contract's copy
+ * (`peal-contract/rate-card`) equal: the site, the docs and the web app
+ * read that copy.
  */
-export const rateCards: Readonly<Record<RateCardCurrency, RateCard>> = {
-  usd: {
-    accounts: {
-      bands: [
-        { monthly: 0, upTo: 2 },
-        { monthly: 500, upTo: 10 },
-        { monthly: 300, upTo: 100 },
-        { monthly: 100, upTo: null },
-      ],
-      daysPerMonth: 30,
-      unverifiedCeiling: awaitingDecision.unverifiedCeiling,
+export const rateCard: RateCard = {
+  apiRequestsPerMinute: awaitingDecision.apiRequestsPerMinute,
+  assistant: { margin: awaitingDecision.assistantMargin },
+  daysPerMonth: 30,
+  displayVatRate: 20,
+  meters: {
+    // Peal's own provider needs a payment method, and stops at the
+    // allowance unless the account sets a ceiling.
+    assistantImages: {
+      allowance: awaitingDecision.assistantImages.allowance,
+      allowanceWithout: 0,
+      ceiling: 0,
     },
-    apiRequestsPerMinute: awaitingDecision.apiRequestsPerMinute,
-    currency: "usd",
-    displayVatRate: 20,
-    meters: {
-      assistantImages: {
-        allowance: {
-          withPaymentMethod: awaitingDecision.assistantImages.allowance,
-          withoutPaymentMethod: null,
-        },
-        price: { cents: awaitingDecision.assistantImages.cents, per: 1 },
-      },
-      assistantRequests: {
-        allowance: {
-          withPaymentMethod: awaitingDecision.assistantRequests.allowance,
-          withoutPaymentMethod: null,
-        },
-        price: { cents: awaitingDecision.assistantRequests.cents, per: 1 },
-      },
-      managedAds: {
-        allowance: { withPaymentMethod: 500, withoutPaymentMethod: 500 },
-        price: { cents: 1, per: 1 },
-      },
-      outboundMessages: {
-        allowance: { withPaymentMethod: 10_000, withoutPaymentMethod: 10_000 },
-        price: { cents: 100, per: 10_000 },
-      },
-      // A thousandth of a dollar of X's rates a unit.
-      xApi: {
-        allowance: { withPaymentMethod: 0, withoutPaymentMethod: null },
-        price: { cents: 1, per: 10 },
-      },
+    assistantRequests: {
+      allowance: awaitingDecision.assistantRequests.allowance,
+      allowanceWithout: 0,
+      ceiling: 0,
     },
-    storage: awaitingDecision.storage,
-    x: {
-      defaultCeiling: awaitingDecision.xDefaultCeiling,
-      rates: {
-        dmCreate: 15,
-        dmEventRead: 10,
-        ownedRead: 1,
-        postCreate: 15,
-        postCreateWithUrl: 200,
-        postRead: 5,
-        userRead: 10,
+    managedAds: { allowance: 500, allowanceWithout: 500, ceiling: null },
+    outboundMessages: {
+      allowance: 10_000,
+      allowanceWithout: 10_000,
+      ceiling: null,
+    },
+    // X needs a payment method: nothing is included.
+    xApi: {
+      allowance: 0,
+      allowanceWithout: 0,
+      ceiling: awaitingDecision.xCeiling,
+    },
+  },
+  prices: {
+    usd: {
+      accounts: {
+        bands: [
+          { monthly: 0, upTo: 2 },
+          { monthly: 500, upTo: 10 },
+          { monthly: 300, upTo: 100 },
+          { monthly: 100, upTo: null },
+        ],
+      },
+      meters: {
+        assistantImages: {
+          cents: awaitingDecision.assistantImages.cents,
+          per: 1,
+        },
+        assistantRequests: {
+          cents: awaitingDecision.assistantRequests.cents,
+          per: 1,
+        },
+        managedAds: { cents: 1, per: 1 },
+        outboundMessages: { cents: 100, per: 10_000 },
+        // A unit is a thousandth of a dollar of X's rates.
+        xApi: { cents: 1, per: 10 },
       },
     },
   },
+  storage: awaitingDecision.storage,
+  unverifiedCeiling: awaitingDecision.unverifiedCeiling,
+  x: {
+    defaultCeiling: awaitingDecision.xCeiling,
+    rates: {
+      dmCreate: 15,
+      dmEventRead: 10,
+      ownedRead: 1,
+      postCreate: 15,
+      postCreateWithUrl: 200,
+      postRead: 5,
+      userRead: 10,
+    },
+  },
 };
-
-/** The rate card Peal Cloud bills with. */
-export const rateCard: RateCard = rateCards.usd;
 
 /** `numerator / denominator`, rounded half up, for whole numbers. */
 const roundedHalfUp = (numerator: number, denominator: number): number =>
   Math.floor((2 * numerator + denominator) / (2 * denominator));
 
-/**
- * Splits `quantity` along the ladder's bands, each `upTo` scaled by
- * `scale`: how many units fall in each band.
- */
+/** How many of `quantity` fall in each band, its bounds times `scale`. */
 const unitsByBand = (
-  card: RateCard,
+  bands: readonly AccountBand[],
   quantity: number,
   scale: number
 ): readonly { readonly band: AccountBand; readonly units: number }[] =>
-  card.accounts.bands.map((band, index) => {
-    const from = (card.accounts.bands[index - 1]?.upTo ?? 0) * scale;
+  bands.map((band, index) => {
+    const from = (bands[index - 1]?.upTo ?? 0) * scale;
     const to = band.upTo === null ? quantity : band.upTo * scale;
 
     return { band, units: Math.max(0, Math.min(quantity, to) - from) };
@@ -216,9 +229,10 @@ const unitsByBand = (
 /** What `accounts` connected all month cost, in cents: 10 cost 4,000. */
 export const accountsMonthly = (
   accounts: number,
+  currency: PriceCurrency = "usd",
   card: RateCard = rateCard
 ): number =>
-  unitsByBand(card, accounts, 1).reduce(
+  unitsByBand(card.prices[currency].accounts.bands, accounts, 1).reduce(
     (sum, { band, units }) => sum + units * band.monthly,
     0
   );
@@ -231,11 +245,16 @@ export const accountsMonthly = (
  */
 export const accountsCharge = (
   accountDays: number,
+  currency: PriceCurrency = "usd",
   card: RateCard = rateCard
 ): number =>
-  unitsByBand(card, accountDays, card.accounts.daysPerMonth).reduce(
+  unitsByBand(
+    card.prices[currency].accounts.bands,
+    accountDays,
+    card.daysPerMonth
+  ).reduce(
     (sum, { band, units }) =>
-      sum + roundedHalfUp(units * band.monthly, card.accounts.daysPerMonth),
+      sum + roundedHalfUp(units * band.monthly, card.daysPerMonth),
     0
   );
 
@@ -247,22 +266,13 @@ export const accountsCharge = (
 export const billableAccountDays = (day: DateTime.Utc, peak: number): number =>
   DateTime.getPartUtc(day, "day") === 31 ? 0 : peak;
 
-/**
- * The free units of `meter` a billing account has in a month, with a
- * payment method or without: none when the meter needs one.
- */
+/** The units of `meter` a billing account has included in a month. */
 export const meterAllowance = (
   meter: Meter,
   paying: boolean,
   card: RateCard = rateCard
-): Option.Option<number> => {
-  const { withoutPaymentMethod, withPaymentMethod } =
-    card.meters[meter].allowance;
-
-  return paying
-    ? Option.some(withPaymentMethod)
-    : Option.fromNullOr(withoutPaymentMethod);
-};
+): number =>
+  paying ? card.meters[meter].allowance : card.meters[meter].allowanceWithout;
 
 /**
  * The units of `meter` past its monthly allowance with a payment method,
@@ -272,23 +282,24 @@ export const billableUnits = (
   meter: Meter,
   used: number,
   card: RateCard = rateCard
-): number => Math.max(0, used - card.meters[meter].allowance.withPaymentMethod);
+): number => Math.max(0, used - card.meters[meter].allowance);
 
 /** What `billable` units of `meter` cost, in cents, rounded half up. */
 export const meterCharge = (
   meter: Meter,
   billable: number,
+  currency: PriceCurrency = "usd",
   card: RateCard = rateCard
 ): number => {
-  const { cents, per } = card.meters[meter].price;
+  const { cents, per } = card.prices[currency].meters[meter];
 
   return roundedHalfUp(billable * cents, per);
 };
 
 /**
- * The media a workspace may store, in decimal bytes: a small allowance
- * without a payment method, and with one, an allowance per connected
- * account with a floor.
+ * The media a billing account may store, in decimal bytes: a small
+ * allowance without a payment method, and with one, an allowance per
+ * connected account with a floor.
  */
 export const storageAllowance = (
   paying: boolean,
@@ -329,8 +340,11 @@ const decimalOf = (cents: number, days: number): string => {
  * never typed: each band's bound times `daysPerMonth`, its rate divided by
  * it.
  */
-export const stripeTiersOf = (card: RateCard): readonly StripeTier[] =>
-  card.accounts.bands.map(({ monthly, upTo }) => ({
-    unitAmountDecimal: decimalOf(monthly, card.accounts.daysPerMonth),
-    upTo: upTo === null ? null : upTo * card.accounts.daysPerMonth,
+export const stripeTiersOf = (
+  card: RateCard,
+  currency: PriceCurrency = "usd"
+): readonly StripeTier[] =>
+  card.prices[currency].accounts.bands.map(({ monthly, upTo }) => ({
+    unitAmountDecimal: decimalOf(monthly, card.daysPerMonth),
+    upTo: upTo === null ? null : upTo * card.daysPerMonth,
   }));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { DateTime, Option, Schema } from "effect";
+import { DateTime, Schema } from "effect";
 
 import {
   accountsCharge,
@@ -10,7 +10,6 @@ import {
   meterCharge,
   MeterSchema,
   rateCard,
-  rateCards,
   storageAllowance,
   stripeTiersOf,
 } from "#billing/domain/rate-card.ts";
@@ -29,15 +28,25 @@ const monthOf = (accounts: number, days: number): number =>
   ).reduce((sum, billed) => sum + billed, 0);
 
 describe("the rate card", () => {
-  it("prices in US dollars, keyed by currency", () => {
-    expect(rateCard.currency).toBe("usd");
-    expect(rateCards.usd).toBe(rateCard);
+  it("lists its prices in US dollars only, keyed by currency", () => {
+    expect(Object.keys(rateCard.prices)).toStrictEqual(["usd"]);
   });
 
-  it("names every meter it prices", () => {
-    expect(Object.keys(rateCard.meters).toSorted()).toStrictEqual(
-      [...MeterSchema.literals].toSorted()
+  it("gives every meter its terms and its price", () => {
+    const meters = [...MeterSchema.literals].toSorted();
+
+    expect(Object.keys(rateCard.meters).toSorted()).toStrictEqual(meters);
+    expect(Object.keys(rateCard.prices.usd.meters).toSorted()).toStrictEqual(
+      meters
     );
+  });
+
+  it("stops X and the assistant past their allowance by default", () => {
+    expect(rateCard.meters.xApi.ceiling).toBe(rateCard.x.defaultCeiling);
+    expect(rateCard.meters.xApi.ceiling).toBe(2500);
+    expect(rateCard.meters.assistantRequests.ceiling).toBe(0);
+    expect(rateCard.meters.assistantImages.ceiling).toBe(0);
+    expect(rateCard.meters.outboundMessages.ceiling).toBeNull();
   });
 });
 
@@ -119,33 +128,21 @@ describe(billableAccountDays, () => {
 
 describe(meterAllowance, () => {
   it("gives messages and managed ads with a payment method or without", () => {
-    expect(meterAllowance("outboundMessages", false)).toStrictEqual(
-      Option.some(10_000)
-    );
-    expect(meterAllowance("outboundMessages", true)).toStrictEqual(
-      Option.some(10_000)
-    );
-    expect(meterAllowance("managedAds", false)).toStrictEqual(Option.some(500));
+    expect(meterAllowance("outboundMessages", false)).toBe(10_000);
+    expect(meterAllowance("outboundMessages", true)).toBe(10_000);
+    expect(meterAllowance("managedAds", false)).toBe(500);
   });
 
-  it("gives the server's assistant and X only with a payment method", () => {
-    expect(meterAllowance("assistantRequests", false)).toStrictEqual(
-      Option.none()
-    );
-    expect(meterAllowance("assistantImages", false)).toStrictEqual(
-      Option.none()
-    );
-    expect(meterAllowance("xApi", false)).toStrictEqual(Option.none());
+  it("includes nothing of the server's assistant or X without a payment method", () => {
+    expect(meterAllowance("assistantRequests", false)).toBe(0);
+    expect(meterAllowance("assistantImages", false)).toBe(0);
+    expect(meterAllowance("xApi", false)).toBe(0);
   });
 
   it("gives a payer the assistant's allowance, and nothing free on X", () => {
-    expect(meterAllowance("assistantRequests", true)).toStrictEqual(
-      Option.some(100)
-    );
-    expect(meterAllowance("assistantImages", true)).toStrictEqual(
-      Option.some(10)
-    );
-    expect(meterAllowance("xApi", true)).toStrictEqual(Option.some(0));
+    expect(meterAllowance("assistantRequests", true)).toBe(100);
+    expect(meterAllowance("assistantImages", true)).toBe(10);
+    expect(meterAllowance("xApi", true)).toBe(0);
   });
 });
 

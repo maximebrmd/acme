@@ -7,12 +7,15 @@
   self-hosted server limits nothing, and its billing routes answer
   `BillingNotEnabled`.
 - Per-account pricing's every number is the rate card
-  (`billing/domain/rate-card.ts`, keyed by currency: US dollars only):
-  the graduated account ladder, account-days at one thirtieth (the 31st
-  free), each meter's monthly allowance with and without a payment method
-  (per billing account, across the workspaces it pays for) and price,
-  storage, the API's rate limits and X's rates, with the placeholders still
-  awaiting the owner's decision together in `awaitingDecision`. Prices are
+  (`billing/domain/rate-card.ts`): its `prices`, keyed by currency with
+  US dollars only (Stripe converts at checkout; add no other list), hold
+  the graduated account ladder and each meter's unit price; the rest is
+  written once: account-days at one thirtieth (the 31st free), each
+  meter's monthly allowance with and without a payment method and its
+  default ceiling (per billing account, across the workspaces it pays
+  for), the assistant's margin, storage, the API's rate limits and X's
+  rates. What is not decided yet (the assistant's figures are
+  placeholders) sits together in `awaitingDecision`. Prices are
   computed by its pure functions (`accountsCharge`, `meterCharge`,
   `stripeTiersOf`…), never written by hand. The contract copies it
   (`peal-contract/rate-card`), kept equal by

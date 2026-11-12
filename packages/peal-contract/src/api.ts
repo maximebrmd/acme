@@ -709,11 +709,11 @@ export {
   accountsCharge,
   accountsMonthly,
   meterCharge,
-  MeterRateSchema,
   MeterSchema,
+  MeterTermsSchema,
+  PriceCurrencySchema,
+  PricesSchema,
   rateCard,
-  RateCardCurrencySchema,
-  rateCards,
   RateCardSchema,
   UnitPriceSchema,
 } from "./rate-card.ts";
@@ -721,9 +721,10 @@ export {
 export type {
   AccountBand,
   Meter,
-  MeterRate,
+  MeterTerms,
+  PriceCurrency,
+  Prices,
   RateCard,
-  RateCardCurrency,
   UnitPrice,
 } from "./rate-card.ts";
 

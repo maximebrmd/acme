@@ -22,7 +22,6 @@ import {
   meterCharge as contractMeterCharge,
   MeterSchema as ContractMeterSchema,
   rateCard as contractRateCard,
-  rateCards as contractRateCards,
   RateCardSchema,
 } from "peal-contract/rate-card";
 
@@ -46,7 +45,6 @@ import {
   meterCharge,
   MeterSchema,
   rateCard,
-  rateCards,
 } from "#billing/domain/rate-card.ts";
 import { SubscriptionStatusSchema } from "#billing/domain/subscription.ts";
 import {
@@ -122,7 +120,6 @@ describe("the contract", () => {
   });
 
   it("publishes the rate card the server bills with", () => {
-    expect(contractRateCards).toStrictEqual(rateCards);
     expect(contractRateCard).toStrictEqual(rateCard);
     expect(ContractMeterSchema.literals).toStrictEqual(MeterSchema.literals);
     expect(Schema.decodeUnknownSync(RateCardSchema)(rateCard)).toStrictEqual(
