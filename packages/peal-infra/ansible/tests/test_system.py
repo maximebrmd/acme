@@ -138,3 +138,21 @@ def test_the_installer_s_swap_line_is_left_as_it_is(tmp_path: Path) -> None:
     assert ran.returncode == 0, ran.stdout + ran.stderr
     assert "changed=0" in ran.stdout
     assert fstab.read_text().endswith(line)
+
+
+def test_the_clock_is_kept_by_chrony() -> None:
+    """Ubuntu's supported time daemon, in main, which the security updates
+    cover; installing it replaces whichever an image ran."""
+    packages = task("system", "Install base packages")
+
+    assert "chrony" in packages["ansible.builtin.apt"]["name"]
+    assert packages["register"] == "system_base_packages"
+
+
+def test_chrony_runs_from_boot_once_installed() -> None:
+    """In check mode on a new server the package is not installed yet, and
+    its unit waits for it."""
+    clock = task("system", "Keep the clock in step")
+
+    assert clock["ansible.builtin.systemd_service"] == {"name": "chrony.service", "enabled": True, "state": "started"}
+    assert clock["when"] == "not (ansible_check_mode and system_base_packages is changed)"

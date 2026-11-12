@@ -61,10 +61,24 @@
     cache_valid_time: 3600
     upgrade: safe
 
+# chrony keeps the clock, which scheduled posts, two-step codes, tokens and
+# signed requests depend on. It is Ubuntu's own time daemon, in main, which
+# the security updates cover, and apt removes whichever other one the image
+# ran (they all provide time-daemon). It keeps Ubuntu's default sources.
 - name: Install base packages
   ansible.builtin.apt:
-    name: [unattended-upgrades, ufw, ca-certificates, curl]
+    name: [unattended-upgrades, ufw, ca-certificates, curl, chrony]
     state: present
+  register: system_base_packages
+
+# In check mode on a new server, chrony is not installed yet, and its unit
+# waits for it.
+- name: Keep the clock in step
+  ansible.builtin.systemd_service:
+    name: chrony.service
+    enabled: true
+    state: started
+  when: not (ansible_check_mode and system_base_packages is changed)
 
 # Read-only, so it runs in check mode too. Packages install their units in
 # /usr/lib/systemd/system, the administrator in /etc/systemd/system; a
