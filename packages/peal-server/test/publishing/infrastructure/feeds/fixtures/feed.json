@@ -1,0 +1,23 @@
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "A synthetic \u0000feed",
+  "home_page_url": "https://notes.example/",
+  "items": [
+    {
+      "id": "note-2",
+      "url": "https://notes.example/2",
+      "title": "Bad \u0000 title \ud800 here‮",
+      "content_html": "<p>HTML <em>content</em></p>",
+      "date_published": "2026-06-15T09:00:00Z",
+      "image": "/images/2.webp"
+    },
+    {
+      "id": 1,
+      "content_text": "A text note",
+      "summary": "Its summary",
+      "date_published": "2026-06-14T09:00:00-07:00"
+    },
+    { "id": " ", "content_text": "No id: discarded" },
+    { "id": "note-0", "title": 42, "content_text": "A title of the wrong type" }
+  ]
+}

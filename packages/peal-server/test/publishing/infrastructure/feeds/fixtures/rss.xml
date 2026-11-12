@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>A synthetic blog</title>
+    <link>https://blog.example/</link>
+    <description>Posts about nothing in particular</description>
+    <item>
+      <title>Third post &amp; more</title>
+      <link>/posts/third</link>
+      <description><![CDATA[<p>The <b>third</b> post.</p><script>alert("no")</script><p>Second paragraph.</p>]]></description>
+      <pubDate>Mon, 15 Jun 26 09:30:00 +0200</pubDate>
+      <guid isPermaLink="false">synthetic-3</guid>
+      <enclosure url="https://cdn.blog.example/third.jpg" length="1200" type="image/jpeg"/>
+    </item>
+    <item>
+      <title>Second post</title>
+      <description>Only a description, &lt;i&gt;escaped&lt;/i&gt;.</description>
+      <pubDate>Sun, 14 Jun 2026 08:00:00 GMT</pubDate>
+      <guid>https://blog.example/posts/second</guid>
+      <media:group>
+        <media:content url="https://cdn.blog.example/second.mp4" type="video/mp4"/>
+        <media:thumbnail url="thumbs/second.png"/>
+      </media:group>
+    </item>
+    <item>
+      <title>First post</title>
+      <link>https://blog.example/posts/first</link>
+      <pubDate>Sat, 13 Jun 2026 07:00:00 EDT</pubDate>
+      <enclosure url="https://cdn.blog.example/first.mp3" length="1" type="audio/mpeg"/>
+    </item>
+    <item>
+      <description>No title, no link, no guid.</description>
+    </item>
+    <item>
+      <title>Unsafe link</title>
+      <link>javascript:alert(1)</link>
+      <pubDate>not a date</pubDate>
+    </item>
+  </channel>
+</rss>
