@@ -1,0 +1,54 @@
+---
+# The disks' health, posted to the collector as the backups' is: a timer
+# runs peal-disk-health, which counts the md arrays, the degraded ones and
+# the disks smartctl says are failing, and two of Grafana's rules alert on
+# Telegram (peal-docker's rules.yaml). Neither mdadm nor smartd can say so
+# themselves: they mail root, and the server has no mail transport.
+#
+# The rules stay quiet without data, as they must on a server without this
+# role, so a timer that stops posting is seen by none of them: the deploy
+# reads the three series once (runbooks/failed-disk.md, "Check it reports").
+# Never fail a disk to test this: the script is tested on a made-up /sys.
+
+# Without its recommends: they pull a mail client and a transport in. The
+# package's smartd stays as it sets it.
+- name: Install smartmontools
+  ansible.builtin.apt:
+    name: smartmontools
+    state: present
+    install_recommends: false
+
+- name: Install peal-disk-health
+  ansible.builtin.template:
+    src: peal-disk-health.j2
+    dest: /usr/local/sbin/peal-disk-health
+    owner: root
+    group: root
+    mode: "0750"
+
+# On a new server in check mode, the timer is not written yet, so there is
+# nothing to start.
+- name: Look for the disk health timer
+  ansible.builtin.stat:
+    path: /etc/systemd/system/peal-disk-health.timer
+  register: peal_disks_timer
+
+- name: Write the disk health service and timer
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: /etc/systemd/system/{{ item }}
+    mode: "0644"
+  loop:
+    - peal-disk-health.service
+    - peal-disk-health.timer
+  notify: Reload systemd for the disk health units
+
+- name: Apply changed units now
+  ansible.builtin.meta: flush_handlers
+
+- name: Start the disk health timer at boot
+  ansible.builtin.systemd_service:
+    name: peal-disk-health.timer
+    state: started
+    enabled: true
+  when: not ansible_check_mode or peal_disks_timer.stat.exists

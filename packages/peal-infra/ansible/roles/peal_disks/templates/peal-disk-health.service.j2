@@ -1,0 +1,9 @@
+# Managed by Ansible (peal-infra). Reports the RAID arrays' and the disks'
+# health to the collector, once.
+[Unit]
+Description=Report the disks' health to the collector
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/peal-disk-health
+Nice=10
