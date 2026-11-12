@@ -250,6 +250,8 @@ One app in Meta's developer dashboard connects all three, through three use case
 - **Instagram** ("Manage messaging and content on Instagram", the Instagram API with Instagram Login): the permissions `instagram_business_basic`, `instagram_business_content_publish` and `instagram_business_manage_insights`. Set `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` from its **Business login settings**, which show an Instagram app id and secret apart from the main ones.
 - **Threads**: `threads_basic` and `threads_content_publish`. Set `THREADS_APP_ID` and `THREADS_APP_SECRET` from its Threads settings.
 
+To read and answer comments on Facebook Pages and Instagram in the [inbox](/inbox#meta), set `PEAL_INBOX_PLATFORMS` to `facebook`, `instagram` or both, and add the comment permissions to the use cases: `pages_read_user_content` and `pages_manage_engagement` to Facebook Login for Pages, `instagram_manage_comments` to it for Instagram, `instagram_business_manage_comments` to the Instagram use case. The sign-ins then ask for them, and a member may decline them. Meta grants them to accounts your own app's people manage at once, and to anyone else's only after its App Review.
+
 A platform whose settings are missing is not offered. Instagram is offered with either of its settings; with both, members connect with Instagram first, and through a Facebook Page as the other way:
 
 | Way in                                        | Needs                                   | Access                                | Gives                                                                                                                                        |

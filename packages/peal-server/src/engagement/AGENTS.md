@@ -34,8 +34,9 @@
   after it leaves it ended.
 - `CollectComments` runs on the `engagement.collect-comments` cron, every
   ten minutes from minute 2: it follows publishing's `PublishedTargets` (`FollowedPosts`)
-  as analytics does, stories left out by the listing's query (they leave
-  after a day, and Peal reads none of their replies), then reads the
+  as analytics does, stories and Facebook reels left out by the listing's
+  query (stories leave after a day, and Peal reads none of their replies;
+  a reel is published under its video's id, not read yet), then reads the
   threads due, the channels that waited
   longest first, 10 threads a call (`CommentSource`, through the channel's
   gate: `ReadComments`), 30 threads a channel a run, 8 channels at once
@@ -92,7 +93,12 @@
   record absent, then its own create refused; Mastodon: a 422 with
   Mastodon's JSON error, as it validates only a status the key did not
   make); anything else, the channel or the store unreadable included, is
-  `unconfirmed`, which a person settles (`confirm`), for good.
+  `unconfirmed`, which a person settles (`confirm`), for good. Meta takes
+  no idempotency key, so on Facebook and Instagram `resume` never sends:
+  it lists every reply under the comment (`foundAmong`) and answers
+  `sent` only when exactly one by the account, written since the reply
+  was (a minute of clock skew), has its text; none, two, or a list it
+  could not read whole is `unconfirmed`.
 - The gate (`platform-engagement.ts`) claims the call
   (`EngagementStore.claimCall`, `call_claimed_at`) immediately before the
   platform request, and makes none for a reply that is not `sending`: one
@@ -112,10 +118,11 @@
   short answer to a live thread that the same roles may publish at once.
   Writes of the `inbox` group and the inbox tools that change something
   go through the ConnectionJournal, as a reply is content.
-- What a channel can do is `abilitiesOf(platform, scopes)`
+- What a channel can do is `abilitiesOf(platform, scopes, inbox)`
   (`engagement-abilities.ts`): `available`, `reconnect` (only for the
-  abilities in `askedAtSignIn`, whose scopes the sign-ins ask for) or
-  `unsupported`. Mastodon: read, reply, withdraw; a favourite takes
+  abilities in `askedAtSignIn(platform, inbox)`, whose scopes the sign-ins
+  ask for) or `unsupported`; `inbox` is `CurrentInboxPlatforms`, which the
+  use cases read when built. Mastodon: read, reply, withdraw; a favourite takes
   `write:favourites`; nobody hides or deletes another account's reply.
   Bluesky: read (public AppView, no session), reply, withdraw; a like and a
   hidden reply (the post's thread gate, written keeping its `allow`) take
@@ -128,10 +135,33 @@
   (`infrastructure/platforms/engagement-platform.ts`) and entering
   `engagedPlatforms`, `abilitiesOf` and the registry in
   `platform-engagement.ts`, which does not compile without it; the
-  contract's `inboxPlatforms` and the docs' table follow. Facebook Pages
-  need `pages_read_user_content` and `pages_manage_engagement` (App
-  Review), Instagram `instagram_manage_comments`, YouTube the
-  `youtube.force-ssl` scope (Google verification): none is asked today.
+  contract's `inboxPlatforms` and the docs' table follow. YouTube needs the
+  `youtube.force-ssl` scope (Google verification), not asked today.
+- Facebook Pages and Instagram are read only where `PEAL_INBOX_PLATFORMS`
+  names them (`#shared/infrastructure/inbox-platforms.ts`, read once into
+  `CurrentInboxPlatforms`; another name, or a platform without its app,
+  stops the server), because their permissions need Meta's App Review for
+  accounts the app's own people do not manage. Off, the gate calls nothing
+  there (`readsCommentsOn`), the abilities are `unsupported` and the
+  sign-ins ask what they asked before, byte for byte; on, Facebook Login
+  asks `pages_read_user_content` (read) and `pages_manage_engagement`
+  (reply, withdraw, hide) for Pages, `instagram_manage_comments` for
+  Instagram, and Instagram Login `instagram_business_manage_comments`
+  (read, reply, withdraw, hide), all optional. The adapters
+  (`infrastructure/platforms/meta/`) cite Meta's pages and the date read,
+  read 25 comments a page (Facebook `filter=stream`; Instagram's top-level
+  comments with their replies, then a comment's further replies), carry
+  `appsecret_proof` through Facebook Login and none through Instagram
+  Login, take a missing permission (Graph code 10, 200 to 299:
+  `GraphRefusal`'s `permission`) as nothing to reconnect, and code 100
+  subcode 33 alone as an object gone. Facebook gives no handle (an empty
+  one, which the web app does not show) and says nothing of a comment
+  being hidden (`hidden` none: Peal's state stands). Their reply limits
+  are the posts' own: Meta's pages state none for a comment. They were
+  written from Meta's reference and never run against Meta: before the
+  setting is turned on anywhere, read, answer, hide and withdraw one
+  comment on a test Page and a test Instagram account, through each way
+  in.
   Platform events will name threads to read through `CommentSource`: what
   a platform pushes is an id to fetch, never content to trust.
 - Adapters reach platforms through `publicHttpClient` and `ChannelAccess`

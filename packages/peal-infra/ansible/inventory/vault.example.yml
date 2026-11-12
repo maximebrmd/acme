@@ -45,7 +45,9 @@ peal_credentials:
   # INSTAGRAM_APP_ID, THREADS_APP_ID, TIKTOK_CLIENT_KEY, YOUTUBE_CLIENT_ID,
   # PINTEREST_APP_ID, GOOGLE_BUSINESS_CLIENT_ID). Use the sandbox's Stripe
   # account and apps in the sandbox's vault. Short links need no secret:
-  # PEAL_SHORT_LINK_BASE goes in peal_settings, once their domain exists.
+  # PEAL_SHORT_LINK_BASE goes in peal_settings, once their domain exists;
+  # nor do Meta's comments in the inbox: PEAL_INBOX_PLATFORMS goes there,
+  # beside META_APP_ID or INSTAGRAM_APP_ID.
   # PEAL_AI_API_KEY: REPLACE
   # PEAL_AI_IMAGE_API_KEY: REPLACE
   # STRIPE_SECRET_KEY: REPLACE

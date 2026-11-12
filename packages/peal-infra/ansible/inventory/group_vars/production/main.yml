@@ -73,6 +73,11 @@ peal_settings:
   # through the same tunnel as the app, which sets cf-connecting-ip
   # (AUTH_IP_HEADERS), or every visitor shares one redirect limit.
   # PEAL_SHORT_LINK_BASE: https://<short domain>/
+  # Facebook Pages' and Instagram's comments in the inbox: off until Meta's
+  # App Review granted the app their permissions, and one comment was read,
+  # answered, hidden and withdrawn on a test Page and a test Instagram
+  # account (the engagement context's guide).
+  # PEAL_INBOX_PLATFORMS: facebook,instagram
   # Refuses the staff console to staff whose own account does not have
   # two-step verification on: set once every staff account has it on.
   # PEAL_STAFF_TWO_STEP: "true"
