@@ -487,8 +487,8 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO publishing.feeds (id, workspace_id, url, mode, template, status, started_by, started_via, since, next_check_at, created_at, updated_at)
     VALUES (${feedId}, ${workspaceId}, 'https://blog.example/feed.xml', 'draft', '{title}', 'active', ${person.id}, '{"_tag":"web"}'::jsonb, now(), now() + interval '1 day', now(), now())`;
 
-  yield* sql`INSERT INTO publishing.feed_items (feed_id, item_digest, outcome, post_id, seen_at)
-    VALUES (${feedId}, ${"0".repeat(64)}, 'made', ${postId}, now())`;
+  yield* sql`INSERT INTO publishing.feed_items (feed_id, item_digest, outcome, post_id, seen_at, last_seen_at)
+    VALUES (${feedId}, ${"0".repeat(64)}, 'made', ${postId}, now(), now())`;
 
   yield* sql`INSERT INTO publishing.feed_reads (workspace_id, window_start, reads)
     VALUES (${workspaceId}, date_trunc('hour', now()), 1)`;
