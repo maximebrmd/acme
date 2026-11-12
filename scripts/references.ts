@@ -52,11 +52,12 @@ const references: readonly Reference[] = [
     tag: (version) => `v${version}`,
   },
   {
-    // The editor plugin and the diagnostics the checks run on Effect code.
-    name: "effect-language-service",
-    packageName: "@effect/language-service",
-    repository: "Effect-TS/language-service",
-    tag: (version) => `@effect/language-service@${version}`,
+    // Effect's language service for TypeScript 7: the editor plugin and the
+    // diagnostics the checks run on Effect code.
+    name: "effect-tsgo",
+    packageName: "@effect/tsgo",
+    repository: "Effect-TS/tsgo",
+    tag: (version) => `@effect/tsgo@${version}`,
   },
   {
     // The components peal-ui's shadcn/ui layer is built on.
