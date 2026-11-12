@@ -199,14 +199,17 @@ const withFields = (
  * The parts of a published target to delete, last first, each with the
  * platform's id for it, or why it cannot be removed now. `platform` is its
  * channel's, none when the channel cannot be used (disconnected, turned
- * off, to reconnect). `latest` is the newest change asked of the target: a
- * pending one stands in the way, and one that failed left the parts it had
- * not deleted, which are those to delete now (the others are gone).
+ * off, to reconnect). `latest` is the newest change asked of the target,
+ * a pending one standing in the way; `lastRemoval` the newest removal
+ * (`latest` by default): one that failed left the parts it had not
+ * deleted, which are those to delete now (the others are gone), even when
+ * an edit came after it.
  */
 export const removable = (
   target: PostTarget,
   platform: Option.Option<Platform>,
-  latest: Option.Option<LivePostChange>
+  latest: Option.Option<LivePostChange>,
+  lastRemoval: Option.Option<LivePostChange> = latest
 ): Result.Result<readonly PartToRemove[], LivePostRefusal> => {
   const { status } = target;
 
@@ -230,7 +233,7 @@ export const removable = (
     return Result.fail("notSupported");
   }
 
-  const failed = latest.pipe(
+  const failed = lastRemoval.pipe(
     Option.filter(
       (change) => change.status === "failed" && change.kind === "unpublish"
     )

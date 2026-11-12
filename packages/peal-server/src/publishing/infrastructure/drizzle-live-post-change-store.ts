@@ -160,11 +160,16 @@ export const DrizzleLivePostChangeStore = Layer.effect(
             Effect.mapError(failed),
             Effect.map((rows) => rows.length === 1)
           ),
-      latestOf: (targetId) =>
+      latestOf: (targetId, kind) =>
         db
           .select()
           .from(livePostChanges)
-          .where(eq(livePostChanges.targetId, targetId))
+          .where(
+            and(
+              eq(livePostChanges.targetId, targetId),
+              kind === undefined ? undefined : eq(livePostChanges.kind, kind)
+            )
+          )
           .orderBy(desc(livePostChanges.id))
           .limit(1)
           .pipe(Effect.mapError(failed), Effect.flatMap(changeFrom)),

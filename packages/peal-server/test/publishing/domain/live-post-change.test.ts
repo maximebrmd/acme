@@ -232,6 +232,66 @@ describe("the parts a removal takes", () => {
   });
 });
 
+describe("the parts a removal takes after an edit", () => {
+  it("takes up the parts the last failed removal left, past an edit made since", () => {
+    const target = targetWith(published, [
+      livePart(0, Option.some("1")),
+      livePart(1, Option.some("2")),
+    ]);
+
+    const failed = Result.getOrThrow(
+      failChange(
+        Result.getOrThrow(
+          partRemoved(
+            request([
+              { index: 1, platformPostId: id("2") },
+              { index: 0, platformPostId: id("1") },
+            ]),
+            1,
+            false
+          )
+        ),
+        "unavailable",
+        now
+      )
+    );
+
+    const edited = Result.getOrThrow(
+      finishChange(
+        Result.getOrThrow(
+          partEdited(
+            requestEdit({
+              channelId,
+              id: LivePostChangeIdSchema.make(
+                "00000000-0000-7000-8000-000000000005"
+              ),
+              now,
+              part: { index: 0, platformPostId: id("1") },
+              postId,
+              requestedBy: Option.none(),
+              requestedVia: Option.none(),
+              targetId,
+              text: "Corrected",
+              workspaceId,
+            }),
+            0
+          )
+        ),
+        now
+      )
+    );
+
+    expect(
+      removable(
+        target,
+        Option.some("mastodon"),
+        Option.some(edited),
+        Option.some(failed)
+      )
+    ).toStrictEqual(Result.succeed([{ index: 0, platformPostId: id("1") }]));
+  });
+});
+
 describe("a live post change", () => {
   const parts = [
     { index: 1, platformPostId: id("2") },

@@ -182,9 +182,10 @@ export class LivePostChanges extends Context.Service<
           target: PostTarget
         ) {
           const latest = yield* store.latestOf(target.id);
+          const lastRemoval = yield* store.latestOf(target.id, "unpublish");
           const platform = yield* platformOf(target);
 
-          const parts = removable(target, platform, latest);
+          const parts = removable(target, platform, latest, lastRemoval);
 
           if (Result.isFailure(parts)) {
             return Result.fail<LivePostRefusal>(parts.failure);

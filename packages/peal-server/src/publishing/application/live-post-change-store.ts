@@ -2,7 +2,10 @@ import { Context } from "effect";
 import type { DateTime, Effect, Option } from "effect";
 
 import type { LivePostChangeId } from "#publishing/domain/live-post-change-id.ts";
-import type { LivePostChange } from "#publishing/domain/live-post-change.ts";
+import type {
+  LivePostChange,
+  LivePostChangeKind,
+} from "#publishing/domain/live-post-change.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -39,9 +42,10 @@ export class LivePostChangeStore extends Context.Service<
     readonly lock: (
       changeId: LivePostChangeId
     ) => Effect.Effect<Option.Option<LivePostChange>, DatabaseError>;
-    /** The newest change asked of the target. */
+    /** The newest change asked of the target, of `kind` if given. */
     readonly latestOf: (
-      targetId: PostTargetId
+      targetId: PostTargetId,
+      kind?: LivePostChangeKind
     ) => Effect.Effect<Option.Option<LivePostChange>, DatabaseError>;
     /** The changes asked of a post of the workspace, newest first. */
     readonly ofPost: (
