@@ -14,3 +14,24 @@ export const connectedTargets = (
   (post?.targets ?? []).flatMap(({ channelId }) =>
     channels.some(({ id }) => id === channelId) ? [channelId] : []
   );
+
+/**
+ * Every channel the picker offers, in the list's order, for "Select all":
+ * those that publish, and those the post goes to already, which stay
+ * chosen. A channel turned off or to reconnect publishes nothing, so it is
+ * never added by this.
+ */
+export const everyChannel = (
+  channels: readonly Channel[],
+  selected: readonly string[]
+): readonly string[] =>
+  channels.flatMap(({ id, status }) =>
+    status._tag === "active" || selected.includes(id) ? [id] : []
+  );
+
+// From how many channels the picker offers to select them all.
+const everyChannelFrom = 3;
+
+/** Whether the picker offers "Select all" and "Clear". */
+export const offersEveryChannel = (channels: readonly Channel[]): boolean =>
+  channels.length >= everyChannelFrom;

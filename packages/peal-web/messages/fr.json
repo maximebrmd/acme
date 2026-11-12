@@ -956,7 +956,9 @@
       "nextFreeSlot": "Prochain créneau libre : {at} ({zone}). Le créneau est décidé à l’ajout de la publication.",
       "queueNoRoom": "{reason, select, noSlots {La file n’a aucun créneau : ajoutez-en dans ses réglages.} other {Tous les créneaux des {days, number} prochains jours sont pris.}}",
       "queued": "Ajoutée à la file : elle part {at}.",
-      "queuedForApproval": "Ajoutée à la file pour {at} : elle attend une approbation."
+      "queuedForApproval": "Ajoutée à la file pour {at} : elle attend une approbation.",
+      "selectAllChannels": "Tout sélectionner",
+      "clearChannels": "Effacer"
     },
     "Parts": {
       "legend": "Fil",

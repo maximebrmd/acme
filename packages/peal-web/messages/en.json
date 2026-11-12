@@ -956,7 +956,9 @@
       "nextFreeSlot": "Next free slot: {at} ({zone}). The slot is decided when the post is added.",
       "queueNoRoom": "{reason, select, noSlots {The queue has no slot: add some in its settings.} other {Every slot of the next {days, number} days is taken.}}",
       "queued": "Added to the queue: it goes out {at}.",
-      "queuedForApproval": "Added to the queue for {at}: it waits for an approval."
+      "queuedForApproval": "Added to the queue for {at}: it waits for an approval.",
+      "selectAllChannels": "Select all",
+      "clearChannels": "Clear"
     },
     "Parts": {
       "legend": "Thread",
