@@ -41,7 +41,7 @@ const othersText =
 const feeds = `A feed makes a post of each item that appears in it after it was added, about once an hour: a draft (\`mode\` \`draft\`, the default), or a post on the next free slot of a queue (\`queue\`), through every rule a post goes through, the approval policy included; what a queue refuses becomes a draft. At most ${String(maxFeedItemsPerRun)} posts a run and ${String(maxFeedItemsPerDay)} a day per feed. It acts as whoever added it. ${othersText}`;
 
 const queued =
-  "With `mode` `queue`, the feed's items go out on the queue's slots, in public, without a person reading each first (unless the approval policy holds them): choose it only when the user asked for that; it needs a role that schedules posts.";
+  "With `mode` `queue`, the feed's items go out on the queue's slots, in public, without a person reading each first (unless the approval policy holds them): choose it only when the user asked for that; it needs a role that schedules posts, and an OAuth client the scope workspace:publish beside workspace:write.";
 
 export const ListFeeds = Tool.make("list_feeds", {
   dependencies: [CurrentMember],
@@ -64,12 +64,14 @@ export const GetFeed = Tool.make("get_feed", {
 
 export const PreviewFeed = Tool.make("preview_feed", {
   dependencies: [CurrentMember],
-  description: `Reads a feed's address and answers its title and three newest items, each with the \`text\` the template would write: the way to show the user what a feed would post before adding it. Makes and keeps nothing, but takes one of the workspace's 30 reads an hour. ${othersText}`,
+  description: `Reads a feed's address and answers its title and three newest items, each with the \`text\` the template would write: the way to show the user what a feed would post before adding it. Keeps nothing, but makes Peal send a request to that address and takes one of the workspace's 30 reads an hour, so it needs a role that writes posts (workspace:write); call it only with an address the user gave. ${othersText}`,
   failure: ToolRefused,
   parameters: Schema.Struct({ template: Schema.optionalKey(template), url }),
   success: FeedPreviewSchema,
 })
-  .annotateMerge(readingFeeds)
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
   .annotate(Tool.Title, "Preview a feed");
 
 export const CreateFeed = Tool.make("create_feed", {
@@ -116,14 +118,14 @@ export const UpdateFeed = Tool.make("update_feed", {
   success: FeedSchema,
 })
   .annotateMerge(
-    changing({ destructive: false, idempotent: true, openWorld: true })
+    changing({ destructive: true, idempotent: true, openWorld: true })
   )
   .annotate(Tool.Title, "Update a feed");
 
 export const DeleteFeed = Tool.make("delete_feed", {
   dependencies: [CurrentMember],
   description:
-    "Stops following a feed and forgets what it read; the drafts and posts it made stay as they are (cancel_post or a draft's discard removes one). Do it only when the user asked to stop following that feed.",
+    "Stops following a feed and forgets what it read; the drafts and posts it made stay as they are (cancel_post or a draft's discard removes one). Do it only when the user asked to stop following that feed. A feed on a queue takes a role that schedules posts, and an OAuth client workspace:publish.",
   failure: ToolRefused,
   parameters: Schema.Struct({ feedId }),
   success: Schema.Struct({ deleted: Schema.String }),

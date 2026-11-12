@@ -459,7 +459,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           moderate_comment: [false, true, true, true],
           pause_boost: [false, false, true, true],
           post_analytics: [true, false, true, false],
-          preview_feed: [true, false, true, true],
+          // It spends a read of the workspace, and asks a host outside.
+          preview_feed: [false, false, false, true],
           preview_queue: [true, false, true, false],
           publish_post: [false, false, false, true],
           queue_post: [false, true, true, true],
@@ -496,7 +497,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           unschedule_post: [false, true, true, false],
           update_channel_set: [false, true, true, false],
           update_draft: [false, true, true, false],
-          update_feed: [false, false, true, true],
+          // It replaces what it names.
+          update_feed: [false, true, true, true],
           update_queue: [false, true, true, false],
           update_recycling_rule: [false, false, true, true],
           update_signature: [false, true, true, false],
@@ -719,10 +721,6 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               postId,
               targetId: postId,
             },
-            create_feed: {
-              mode: "queue",
-              url: "https://blog.example/feed.xml",
-            },
             create_post: {
               channelIds: [fixture.channelId],
               content: content("Never sent."),
@@ -765,7 +763,6 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             stop_recycling_rule: { ruleId: postId },
             unpublish_post: { postId },
             unschedule_post: { postId },
-            update_feed: { feedId: postId, mode: "queue" },
             update_recycling_rule: { paused: true, ruleId: postId },
             withdraw_comment_reply: { replyId: postId },
           } satisfies Record<string, ToolArguments>;

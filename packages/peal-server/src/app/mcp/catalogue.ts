@@ -65,7 +65,6 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "cancel_post",
   "confirm_comment_reply",
   "confirm_target",
-  "create_feed",
   "create_post",
   "create_posts",
   "edit_published_post",
@@ -84,7 +83,6 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "stop_recycling_rule",
   "unpublish_post",
   "unschedule_post",
-  "update_feed",
   "update_recycling_rule",
   "withdraw_comment_reply",
 ]);

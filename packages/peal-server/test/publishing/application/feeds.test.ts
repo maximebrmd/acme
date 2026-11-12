@@ -1158,4 +1158,3 @@ describe("a feed whose queue is gone", () => {
     timeout
   );
 });
-
