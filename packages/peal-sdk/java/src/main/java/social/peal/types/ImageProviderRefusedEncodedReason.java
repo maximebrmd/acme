@@ -16,6 +16,9 @@ public final class ImageProviderRefusedEncodedReason {
     public static final ImageProviderRefusedEncodedReason SETTINGS_REFUSED =
             new ImageProviderRefusedEncodedReason(Value.SETTINGS_REFUSED, "settingsRefused");
 
+    public static final ImageProviderRefusedEncodedReason REDIRECTED =
+            new ImageProviderRefusedEncodedReason(Value.REDIRECTED, "redirected");
+
     private final Value value;
 
     private final String string;
@@ -55,6 +58,8 @@ public final class ImageProviderRefusedEncodedReason {
                 return visitor.visitKeyUnreadable();
             case SETTINGS_REFUSED:
                 return visitor.visitSettingsRefused();
+            case REDIRECTED:
+                return visitor.visitRedirected();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -70,6 +75,8 @@ public final class ImageProviderRefusedEncodedReason {
                 return KEY_UNREADABLE;
             case "settingsRefused":
                 return SETTINGS_REFUSED;
+            case "redirected":
+                return REDIRECTED;
             default:
                 return new ImageProviderRefusedEncodedReason(Value.UNKNOWN, value);
         }
@@ -77,6 +84,8 @@ public final class ImageProviderRefusedEncodedReason {
 
     public enum Value {
         SETTINGS_REFUSED,
+
+        REDIRECTED,
 
         ADDRESS_REFUSED,
 
@@ -87,6 +96,8 @@ public final class ImageProviderRefusedEncodedReason {
 
     public interface Visitor<T> {
         T visitSettingsRefused();
+
+        T visitRedirected();
 
         T visitAddressRefused();
 

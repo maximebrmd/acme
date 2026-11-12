@@ -14,6 +14,8 @@ public readonly record struct ImageProviderRefusedEncodedReason : IStringEnum
         Values.SettingsRefused
     );
 
+    public static readonly ImageProviderRefusedEncodedReason Redirected = new(Values.Redirected);
+
     public static readonly ImageProviderRefusedEncodedReason AddressRefused = new(
         Values.AddressRefused
     );
@@ -120,6 +122,8 @@ public readonly record struct ImageProviderRefusedEncodedReason : IStringEnum
     public static class Values
     {
         public const string SettingsRefused = "settingsRefused";
+
+        public const string Redirected = "redirected";
 
         public const string AddressRefused = "addressRefused";
 

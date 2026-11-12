@@ -3,5 +3,5 @@
 import typing
 
 ImageProviderRefusedEncodedReason = typing.Union[
-    typing.Literal["settingsRefused", "addressRefused", "keyUnreadable"], typing.Any
+    typing.Literal["settingsRefused", "redirected", "addressRefused", "keyUnreadable"], typing.Any
 ]

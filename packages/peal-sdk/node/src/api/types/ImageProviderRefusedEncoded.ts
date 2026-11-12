@@ -11,6 +11,7 @@ export interface ImageProviderRefusedEncoded {
 export namespace ImageProviderRefusedEncoded {
     export const Reason = {
             SettingsRefused: "settingsRefused",
+            Redirected: "redirected",
             AddressRefused: "addressRefused",
             KeyUnreadable: "keyUnreadable"
         } as const;

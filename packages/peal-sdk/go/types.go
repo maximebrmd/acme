@@ -9032,6 +9032,7 @@ type ImageProviderRefusedEncodedReason string
 
 const (
 	ImageProviderRefusedEncodedReasonSettingsRefused ImageProviderRefusedEncodedReason = "settingsRefused"
+	ImageProviderRefusedEncodedReasonRedirected      ImageProviderRefusedEncodedReason = "redirected"
 	ImageProviderRefusedEncodedReasonAddressRefused  ImageProviderRefusedEncodedReason = "addressRefused"
 	ImageProviderRefusedEncodedReasonKeyUnreadable   ImageProviderRefusedEncodedReason = "keyUnreadable"
 )
@@ -9040,6 +9041,8 @@ func NewImageProviderRefusedEncodedReasonFromString(s string) (ImageProviderRefu
 	switch s {
 	case "settingsRefused":
 		return ImageProviderRefusedEncodedReasonSettingsRefused, nil
+	case "redirected":
+		return ImageProviderRefusedEncodedReasonRedirected, nil
 	case "addressRefused":
 		return ImageProviderRefusedEncodedReasonAddressRefused, nil
 	case "keyUnreadable":
@@ -14228,6 +14231,156 @@ func NewNotRecyclableReasonFromString(s string) (NotRecyclableReason, error) {
 
 func (n NotRecyclableReason) Ptr() *NotRecyclableReason {
 	return &n
+}
+
+var (
+	ownImageLimitReachedEncodedFieldCode       = big.NewInt(1 << 0)
+	ownImageLimitReachedEncodedFieldMessage    = big.NewInt(1 << 1)
+	ownImageLimitReachedEncodedFieldRequestID  = big.NewInt(1 << 2)
+	ownImageLimitReachedEncodedFieldDailyLimit = big.NewInt(1 << 3)
+	ownImageLimitReachedEncodedFieldResetsAt   = big.NewInt(1 << 4)
+)
+
+type OwnImageLimitReachedEncoded struct {
+	Code       *string `json:"code,omitempty" url:"code,omitempty"`
+	Message    *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID  *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+	DailyLimit int     `json:"dailyLimit" url:"dailyLimit"`
+	ResetsAt   string  `json:"resetsAt" url:"resetsAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (o *OwnImageLimitReachedEncoded) GetCode() *string {
+	if o == nil {
+		return nil
+	}
+	return o.Code
+}
+
+func (o *OwnImageLimitReachedEncoded) GetMessage() *string {
+	if o == nil {
+		return nil
+	}
+	return o.Message
+}
+
+func (o *OwnImageLimitReachedEncoded) GetRequestID() *string {
+	if o == nil {
+		return nil
+	}
+	return o.RequestID
+}
+
+func (o *OwnImageLimitReachedEncoded) GetDailyLimit() int {
+	if o == nil {
+		return 0
+	}
+	return o.DailyLimit
+}
+
+func (o *OwnImageLimitReachedEncoded) GetResetsAt() string {
+	if o == nil {
+		return ""
+	}
+	return o.ResetsAt
+}
+
+func (o *OwnImageLimitReachedEncoded) GetExtraProperties() map[string]interface{} {
+	if o == nil {
+		return nil
+	}
+	return o.extraProperties
+}
+
+func (o *OwnImageLimitReachedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if o.explicitFields != nil {
+		next.Set(o.explicitFields)
+	}
+	next.Or(next, field)
+	o.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OwnImageLimitReachedEncoded) SetCode(code *string) {
+	o.Code = code
+	o.require(ownImageLimitReachedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OwnImageLimitReachedEncoded) SetMessage(message *string) {
+	o.Message = message
+	o.require(ownImageLimitReachedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OwnImageLimitReachedEncoded) SetRequestID(requestID *string) {
+	o.RequestID = requestID
+	o.require(ownImageLimitReachedEncodedFieldRequestID)
+}
+
+// SetDailyLimit sets the DailyLimit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OwnImageLimitReachedEncoded) SetDailyLimit(dailyLimit int) {
+	o.DailyLimit = dailyLimit
+	o.require(ownImageLimitReachedEncodedFieldDailyLimit)
+}
+
+// SetResetsAt sets the ResetsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OwnImageLimitReachedEncoded) SetResetsAt(resetsAt string) {
+	o.ResetsAt = resetsAt
+	o.require(ownImageLimitReachedEncodedFieldResetsAt)
+}
+
+func (o *OwnImageLimitReachedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler OwnImageLimitReachedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*o = OwnImageLimitReachedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *o)
+	if err != nil {
+		return err
+	}
+	o.extraProperties = extraProperties
+	o.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (o *OwnImageLimitReachedEncoded) MarshalJSON() ([]byte, error) {
+	type embed OwnImageLimitReachedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*o),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, o.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (o *OwnImageLimitReachedEncoded) String() string {
+	if o == nil {
+		return "<nil>"
+	}
+	if len(o.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(o.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(o); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", o)
 }
 
 type PaidPlan string
