@@ -11,6 +11,7 @@ import {
   maxXmlDepth,
   parseXml,
 } from "#publishing/infrastructure/feeds/xml-tree.ts";
+import { growthOf, linearGrowthAtMost } from "#test/shared/support.ts";
 
 // Each format's mapping, on fixture documents: what an item says of
 // itself, made storable, its addresses absolute against the feed's.
@@ -318,19 +319,27 @@ describe("RSS's dates", () => {
   });
 });
 
+// A feed of each kind whose titles and summaries are `run`.
+const atomOf = (run: string) =>
+  `<feed xmlns="http://www.w3.org/2005/Atom"><title type="html"><![CDATA[${run}]]></title><entry><id>1</id><title type="html"><![CDATA[${run}]]></title><summary type="html"><![CDATA[${run}]]></summary></entry></feed>`;
+
+const rssOf = (run: string) =>
+  `<rss><channel><item><guid>1</guid><title><![CDATA[${run}]]></title><description><![CDATA[${run}]]></description></item></channel></rss>`;
+
 describe("a hostile document", () => {
-  it("is read fast when a title or a summary is a 2 MiB run of '<'", () => {
-    const run = "<".repeat(2 * 1024 * 1024);
+  it("is read in linear time when a title or a summary is a long run of '<'", () => {
+    const readBoth = (run: string) => {
+      readFeed(atomOf(run), "https://x.example/");
+      readFeed(rssOf(run), "https://x.example/");
+    };
 
-    const atom = `<feed xmlns="http://www.w3.org/2005/Atom"><title type="html"><![CDATA[${run}]]></title><entry><id>1</id><title type="html"><![CDATA[${run}]]></title><summary type="html"><![CDATA[${run}]]></summary></entry></feed>`;
+    expect(
+      growthOf(readBoth, (times) => "<".repeat(times), 16_384).growth
+    ).toBeLessThan(linearGrowthAtMost);
 
-    const rss = `<rss><channel><item><guid>1</guid><title><![CDATA[${run}]]></title><description><![CDATA[${run}]]></description></item></channel></rss>`;
-
-    const started = performance.now();
-
-    readFeed(atom, "https://x.example/");
-    readFeed(rss, "https://x.example/");
-
-    expect(performance.now() - started).toBeLessThan(1000);
+    // And a 2 MiB run, as a hostile feed would send.
+    expect(
+      readFeed(rssOf("<".repeat(2 * 1024 * 1024)), "https://x.example/")
+    ).toBeDefined();
   });
 });
