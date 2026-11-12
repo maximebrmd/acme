@@ -573,6 +573,13 @@ export const publishingWorkersReading = <E, R, E2, R2>(
   );
 
 /**
+ * The server's ledger of the platforms' daily quotas, in Postgres: for
+ * engagement's reads of YouTube's comments, which share the project's
+ * day with publishing. Needs the database (Drizzle).
+ */
+export { DrizzlePlatformQuota as PlatformQuotaLive } from "#publishing/infrastructure/drizzle-platform-quota.ts";
+
+/**
  * The MetricsReader that sends each read through its channel's gate, for
  * analytics' collection.
  */

@@ -4,6 +4,8 @@ import {
   facebookCommentScopes,
   instagramLoginCommentScope,
   instagramPageCommentScope,
+  OptionalInboxPlatformSchema,
+  youtubeCommentScope,
 } from "#shared/domain/inbox-platform.ts";
 import type {
   InboxPlatforms,
@@ -78,24 +80,25 @@ const postingAbilities: readonly EngagementAbility[] = [
   "withdraw",
 ];
 
-// What the sign-ins of Facebook Pages and Instagram ask for, as optional
-// scopes, where the server reads them.
-const metaAbilities: readonly EngagementAbility[] = [
+// What the sign-ins of Facebook Pages, Instagram and YouTube ask for, as
+// optional scopes, where the server reads them.
+const optionalAbilities: readonly EngagementAbility[] = [
   ...postingAbilities,
   "hide",
 ];
 
 /**
  * The platforms Peal reads comments on. A platform joins the list with its
- * reader, in the same change. Facebook Pages and Instagram are read only
- * where the server's operator turned them on (`PEAL_INBOX_PLATFORMS`,
- * `InboxPlatforms`).
+ * reader, in the same change. Facebook Pages, Instagram and YouTube are
+ * read only where the server's operator turned them on
+ * (`PEAL_INBOX_PLATFORMS`, `InboxPlatforms`).
  */
 export const engagedPlatforms = [
   "mastodon",
   "bluesky",
   "facebook",
   "instagram",
+  "youtube",
 ] as const satisfies readonly Platform[];
 
 export type EngagedPlatform = (typeof engagedPlatforms)[number];
@@ -104,11 +107,13 @@ export const isEngaged = (platform: Platform): platform is EngagedPlatform =>
   engagedPlatforms.some((engaged) => engaged === platform);
 
 const isOptional = (platform: Platform): platform is OptionalInboxPlatform =>
-  platform === "facebook" || platform === "instagram";
+  OptionalInboxPlatformSchema.literals.some(
+    (optional) => optional === platform
+  );
 
 /**
  * Whether this server reads comments on `platform`: Mastodon and Bluesky
- * always, Facebook Pages and Instagram where `inbox` names them.
+ * always, Facebook Pages, Instagram and YouTube where `inbox` names them.
  */
 export const readsCommentsOn = (
   platform: Platform,
@@ -131,7 +136,7 @@ export const askedAtSignIn = (
     return [];
   }
 
-  return isOptional(platform) ? metaAbilities : postingAbilities;
+  return isOptional(platform) ? optionalAbilities : postingAbilities;
 };
 
 // Whether the grant holds one of the scopes that allow an ability.
@@ -182,6 +187,10 @@ const repo = (collection: string) => (scope: string) =>
  *   (`instagram_manage_comments` through a Page,
  *   `instagram_business_manage_comments` through Instagram Login). The API
  *   has no like; deleting someone's comment is not done yet.
+ * - YouTube: reading, answering, withdrawing an answer and hiding a
+ *   comment (rejecting it) take `youtube.force-ssl`, the one scope the
+ *   discovery document lists for every comment method. The API has no
+ *   like, and only a comment's author deletes it.
  */
 export const abilitiesOf = (
   platform: Platform,
@@ -230,6 +239,19 @@ export const abilitiesOf = (
       read: granted("read", scopes, oneOf(facebookCommentScopes.read)),
       reply: granted("reply", scopes, managing),
       withdraw: granted("withdraw", scopes, managing),
+    };
+  }
+
+  if (platform === "youtube") {
+    const commenting = oneOf(youtubeCommentScope);
+
+    return {
+      delete: "unsupported",
+      hide: granted("hide", scopes, commenting),
+      like: "unsupported",
+      read: granted("read", scopes, commenting),
+      reply: granted("reply", scopes, commenting),
+      withdraw: granted("withdraw", scopes, commenting),
     };
   }
 

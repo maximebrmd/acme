@@ -1,5 +1,5 @@
 import { DateTime, Effect, Layer, Option } from "effect";
-import type { Redacted } from "effect";
+import type { Duration, Redacted } from "effect";
 import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
@@ -34,6 +34,10 @@ import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodo
 import { facebookEngagement } from "#engagement/infrastructure/platforms/meta/facebook-engagement.ts";
 import { instagramEngagement } from "#engagement/infrastructure/platforms/meta/instagram-engagement.ts";
 import { maxThreadBytes } from "#engagement/infrastructure/platforms/thread-body.ts";
+import {
+  youtubeEngagement,
+  youtubeRefreshWithin,
+} from "#engagement/infrastructure/platforms/youtube/youtube-engagement.ts";
 import { CurrentInboxPlatforms } from "#shared/application/current-inbox-platforms.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
@@ -60,7 +64,27 @@ export interface EngagementSettings {
   readonly metaAppSecret: Option.Option<Redacted.Redacted>;
   /** Where Meta's Graph hosts are. */
   readonly metaHosts: MetaHosts;
+  /** The YouTube Data API's origin. */
+  readonly youtubeApi: URL;
 }
+
+/**
+ * How long each platform lets Peal keep what a read gave without reading
+ * it again, where that is shorter than the thread's own retention: none on
+ * Mastodon and Bluesky (public posts, kept as the inbox keeps them), nor
+ * on Facebook Pages and Instagram (Meta's Platform Terms bound what Peal
+ * keeps by the purpose, which the retention serves); 29 days on YouTube
+ * (`youtubeRefreshWithin`). Every read's batch carries its platform's.
+ */
+const keptWithoutRefresh: Readonly<
+  Record<EngagedPlatform, Option.Option<Duration.Duration>>
+> = {
+  bluesky: Option.none(),
+  facebook: Option.none(),
+  instagram: Option.none(),
+  mastodon: Option.none(),
+  youtube: Option.some(youtubeRefreshWithin),
+};
 
 const failedWith = (reason: ReplyFailure): SendOutcome => ({
   _tag: "failed",
@@ -85,7 +109,8 @@ const notClaimed: SendOutcome = { _tag: "unconfirmed", reason: "interrupted" };
  * (ChannelAccess). Every request goes through the public HTTP client, so
  * the outbound guard checks the servers users chose. Needs the
  * EngagementStore, ChannelAccess, an HttpClient, the OutboundGuard, Digest,
- * Mac and SecureRandom; Facebook Pages and Instagram are read where
+ * Mac, SecureRandom and publishing's PlatformQuota, the server's ledger
+ * of YouTube's day; Facebook Pages, Instagram and YouTube are read where
  * CurrentInboxPlatforms names them.
  *
  * A platform not built yet has no entry in the registry below, which does
@@ -106,9 +131,9 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         timeout: "20 seconds",
       });
 
-      // Facebook Pages and Instagram are read only where the operator
-      // turned them on: a channel of a platform that is off is never
-      // called, as one Peal reads no comments on.
+      // Facebook Pages, Instagram and YouTube are read only where the
+      // operator turned them on: a channel of a platform that is off is
+      // never called, as one Peal reads no comments on.
       const inbox = yield* CurrentInboxPlatforms;
 
       const meta = {
@@ -131,6 +156,11 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
           reader,
           scheme: settings.mastodonScheme,
         }),
+        youtube: yield* youtubeEngagement({
+          api: settings.youtubeApi,
+          http,
+          reader,
+        }),
       };
 
       const readHere = (platform: Platform): platform is EngagedPlatform =>
@@ -151,10 +181,15 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
           return yield* new ChannelUnreadable({ reason: "unsupported" });
         }
 
-        return yield* platforms[account.platform].read(
+        const batch = yield* platforms[account.platform].read(
           account,
           request.threads
         );
+
+        return Option.match(keptWithoutRefresh[account.platform], {
+          onNone: () => batch,
+          onSome: (refreshWithin) => ({ ...batch, refreshWithin }),
+        });
       });
 
       // The channel's account and its platform's adapter, or why nothing
@@ -356,10 +391,11 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
   );
 
 /**
- * The platforms as production reaches them, Facebook Pages and Instagram
- * where PEAL_INBOX_PLATFORMS names them, with Meta's main app's secret for
- * Facebook Login's proofs. Needs the EngagementStore, ChannelAccess and
- * Dns, which the composition root provides.
+ * The platforms as production reaches them, Facebook Pages, Instagram and
+ * YouTube where PEAL_INBOX_PLATFORMS names them, with Meta's main app's
+ * secret for Facebook Login's proofs. Needs the EngagementStore,
+ * ChannelAccess, publishing's PlatformQuota and Dns, which the
+ * composition root provides.
  */
 export const PlatformEngagementLive = Layer.unwrap(
   metaAppConfig.pipe(
@@ -369,6 +405,7 @@ export const PlatformEngagementLive = Layer.unwrap(
         mastodonScheme: "https:",
         metaAppSecret: app.pipe(Option.map(({ appSecret }) => appSecret)),
         metaHosts,
+        youtubeApi: new URL("https://www.googleapis.com"),
       })
     )
   )

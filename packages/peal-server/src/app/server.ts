@@ -92,6 +92,7 @@ import {
   LookupsApiLive,
   MediaInPostsLive,
   PostAttentionLive,
+  PlatformQuotaLive,
   PostsApiLive,
   PublishingLive,
   QueuesApiLive,
@@ -553,7 +554,12 @@ const HttpServerLive = Layer.unwrap(
 // gates publish, read analytics' counts with the platforms' readers, and
 // read and answer comments with engagement's.
 const WorkersLive = Layer.mergeAll(
-  publishingWorkersReading(PlatformMetricsReaderLive, PlatformEngagementLive),
+  publishingWorkersReading(
+    PlatformMetricsReaderLive,
+    // YouTube's comment reads count their units in the server's ledger of
+    // the project's day, which publishing keeps.
+    PlatformEngagementLive.pipe(Layer.provide(PlatformQuotaLive))
+  ),
   NotificationsWorkersLive,
   EngagementWorkersLive,
   WebhooksWorkersLive,

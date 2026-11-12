@@ -55,7 +55,17 @@ export const inboxStandardPlatforms = ["mastodon", "bluesky"] as const;
  * turned them on: their comment permissions are granted to an app after
  * the platform's review.
  */
-export const inboxOptionalPlatforms = ["facebook", "instagram"] as const;
+export const inboxOptionalPlatforms = [
+  "facebook",
+  "instagram",
+  "youtube",
+] as const;
+
+// Names as a sentence lists them: "a", "a and b", "a, b and c".
+const listed = (names: readonly string[]): string =>
+  names.length < 2
+    ? names.join("")
+    : `${names.slice(0, -1).join(", ")} and ${String(names.at(-1))}`;
 
 /** The platforms Peal reads comments on, those its operator turns on included. */
 export const inboxPlatforms = [
@@ -64,7 +74,7 @@ export const inboxPlatforms = [
 ] as const;
 
 /** Where Peal reads comments, as the descriptions say it. */
-export const inboxPlatformsText = `${inboxStandardPlatforms.join(" and ")}, and on ${inboxOptionalPlatforms.join(" and ")} where the server's operator turned them on`;
+export const inboxPlatformsText = `${listed(inboxStandardPlatforms)}, and on ${listed(inboxOptionalPlatforms)} where the server's operator turned them on`;
 
 /**
  * What a channel's account can do about comments: `read` them, `reply` in
