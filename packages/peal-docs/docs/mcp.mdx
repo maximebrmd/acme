@@ -221,7 +221,7 @@ Before a post is scheduled, it is checked against every channel's platform: text
 
 `create_post` and `create_posts` also refuse a post whose content (the text the channel receives and the same media, in the same order) already goes to one of its channels less than 23 hours from its time, naming the post that has it: a call made twice by mistake makes no second post. `allowDuplicate: true` lets it through, for when you mean to post the same twice. Scheduling a draft with `schedule_post` is not checked ([Duplicate posts](/posting-api#duplicates)).
 
-`create_draft`, `update_draft`, `create_post` and `create_posts` take `shortenLinks: true` to send a post's links [shortened](/scheduling#short-links); no tool shortens an address outside a post.
+`create_draft`, `update_draft`, `create_post` and `create_posts` take `shortenLinks: true` to send a post's links [shortened](/scheduling#short-links) and `false` to send them as written; left out, a new post takes the workspace's default (`get_short_link_status`'s `byDefault`) when it is made. No tool shortens an address outside a post.
 
 ### Signatures, channel sets and default options [#saved]
 

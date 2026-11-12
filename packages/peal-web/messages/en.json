@@ -3509,7 +3509,7 @@
       "description": "A post that asks for short links goes out with its long links replaced by short addresses, one per channel, which count their clicks. The text kept stays as written, Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform, and the short addresses stop working when the workspace is deleted.",
       "unavailable": "This server has no short links: its operator has not set where they live.",
       "label": "Shorten links in new posts by default",
-      "hint": "Each post can still choose for itself in the composer.",
+      "hint": "Posts made through the API, an agent, the command line or a feed take it too, unless they say otherwise. Each post can still choose for itself in the composer.",
       "readOnly": "Owners and admins choose the default.",
       "saved": "Default saved.",
       "saveFailed": "The default could not be saved.",
