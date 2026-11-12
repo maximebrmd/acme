@@ -2,11 +2,13 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { describe, test } from "@e2e-dev/web";
+import { afterEach, describe, test } from "@e2e-dev/web";
 import { credentials, expect } from "e2e";
+import type { Screen } from "e2e";
 
 import { seedChannel } from "./support/channels.ts";
 import { emailedLink } from "./support/mailpit.ts";
+import { scheduledPosts } from "./support/posts.ts";
 
 // A member imports posts from a CSV file, in one browser: a file whose
 // row names a channel the workspace does not have is refused, with nothing
@@ -43,6 +45,19 @@ const csvFile = async (file: string, rows: readonly string[]) => {
 const nextYear = String(new Date().getUTCFullYear() + 1);
 
 let workspaceId = "";
+
+// Whether the import may have scheduled a post not yet cancelled.
+let imported = false;
+
+const cancelOpenPost = async (screen: Screen) => {
+  await expect(screen.getByRole("heading", "Scheduled post")).toBeVisible();
+  await screen.getByRole("button", "Cancel the post").tap();
+  await screen
+    .getByRole("dialog", "Cancel this post?")
+    .getByRole("button", "Cancel the post")
+    .tap();
+  await expect(screen.getByText("Post cancelled.")).toBeVisible();
+};
 
 describe("a member's CSV import", { serial: true }, () => {
   test("signs up and creates a workspace", async ({ app, browser, screen }) => {
@@ -114,7 +129,10 @@ describe("a member's CSV import", { serial: true }, () => {
     await expect(screen.getByRole("button", "Import 1 post")).toBeHidden();
   });
 
-  test("checks a valid file and imports it", async ({ app, screen }) => {
+  test("checks a valid file, imports it and cancels its post", async ({
+    app,
+    screen,
+  }) => {
     const channelId = await seedChannel(workspaceId, handle);
 
     await app.open(`/app/${workspaceId}/posts/import`);
@@ -132,6 +150,9 @@ describe("a member's CSV import", { serial: true }, () => {
       screen.getByText("The row is valid.", { exact: false })
     ).toBeVisible();
 
+    // From here a post may be scheduled: the hook below cancels it if this
+    // test stops before it does.
+    imported = true;
     await screen.getByRole("button", "Import 1 post").tap();
     await screen
       .getByRole("dialog", "Import these posts?")
@@ -139,19 +160,32 @@ describe("a member's CSV import", { serial: true }, () => {
       .tap();
 
     await expect(screen.getByText("1 post was made.")).toBeVisible();
-    await expect(screen.getByRole("link", "Open the post")).toBeVisible();
+
+    // Nothing goes out: the imported post is cancelled.
+    await screen.getByRole("link", "Open the post").tap();
+    await cancelOpenPost(screen);
+    imported = false;
   });
 
-  // Nothing goes out: the imported post is cancelled.
-  test("cancels the imported post", async ({ screen }) => {
-    await screen.getByRole("link", "Open the post").tap();
-    await expect(screen.getByRole("heading", "Scheduled post")).toBeVisible();
-    await screen.getByRole("button", "Cancel the post").tap();
-    await screen
-      .getByRole("dialog", "Cancel this post?")
-      .getByRole("button", "Cancel the post")
-      .tap();
+  // Whatever became of the test, no post of the run stays scheduled.
+  afterEach(async ({ app, screen }) => {
+    if (!imported) {
+      return;
+    }
 
-    await expect(screen.getByText("Post cancelled.")).toBeVisible();
+    // One page at a time, in the one browser.
+    const cancelEach = async ([postId, ...rest]: readonly string[]) => {
+      if (postId === undefined) {
+        return;
+      }
+
+      await app.open(`/app/${workspaceId}/posts/${postId}`);
+      await cancelOpenPost(screen);
+      await cancelEach(rest);
+    };
+
+    await cancelEach(await scheduledPosts(workspaceId));
+
+    imported = false;
   });
 });
