@@ -385,6 +385,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // through Peal's own page: nothing leaves Peal with the call.
           create_connect_link: [false, false, false, false],
           create_draft: [false, false, false, false],
+          create_feed: [false, false, false, true],
           create_post: [false, false, false, true],
           create_posts: [false, false, false, true],
           create_queue: [false, false, false, false],
@@ -395,6 +396,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // workspace.
           create_webhook: [false, false, false, true],
           delete_channel_set: [false, true, true, false],
+          delete_feed: [false, true, true, false],
           delete_queue: [false, true, true, false],
           delete_signature: [false, true, true, false],
           // Its posts lose it, and stay.
@@ -418,6 +420,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           get_channel_defaults: [true, false, true, false],
           get_comment_thread: [true, false, true, false],
           get_connect_link: [true, false, true, false],
+          get_feed: [true, false, true, true],
           get_partner_account: [true, false, true, false],
           get_post: [true, false, true, false],
           get_post_ad_performance: [true, false, true, false],
@@ -436,6 +439,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_comment_threads: [true, false, true, false],
           list_connect_links: [true, false, true, false],
           list_drafts: [true, false, true, false],
+          list_feeds: [true, false, true, true],
           list_invitations: [true, false, true, false],
           list_media: [true, false, true, false],
           list_members: [true, false, true, false],
@@ -454,6 +458,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           moderate_comment: [false, true, true, true],
           pause_boost: [false, false, true, true],
           post_analytics: [true, false, true, false],
+          preview_feed: [true, false, true, true],
           preview_queue: [true, false, true, false],
           publish_post: [false, false, false, true],
           queue_post: [false, true, true, true],
@@ -490,6 +495,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           unschedule_post: [false, true, true, false],
           update_channel_set: [false, true, true, false],
           update_draft: [false, true, true, false],
+          update_feed: [false, false, true, true],
           update_queue: [false, true, true, false],
           update_recycling_rule: [false, false, true, true],
           update_signature: [false, true, true, false],
@@ -711,6 +717,10 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               postId,
               targetId: postId,
             },
+            create_feed: {
+              mode: "queue",
+              url: "https://blog.example/feed.xml",
+            },
             create_post: {
               channelIds: [fixture.channelId],
               content: content("Never sent."),
@@ -753,6 +763,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             stop_recycling_rule: { ruleId: postId },
             unpublish_post: { postId },
             unschedule_post: { postId },
+            update_feed: { feedId: postId, mode: "queue" },
             update_recycling_rule: { paused: true, ruleId: postId },
             withdraw_comment_reply: { replyId: postId },
           } satisfies Record<string, ToolArguments>;

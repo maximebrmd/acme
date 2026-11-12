@@ -6,6 +6,7 @@ import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { ConnectTools } from "#app/mcp/connect-tools.ts";
 import { ToolAreaSchema } from "#app/mcp/discovery-tools.ts";
 import type { ToolArea } from "#app/mcp/discovery-tools.ts";
+import { FeedTools } from "#app/mcp/feeds-tools.ts";
 import { InboxTools } from "#app/mcp/inbox-tools.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PeopleTools } from "#app/mcp/people-tools.ts";
@@ -38,6 +39,7 @@ export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
   ads: Object.values(AdsTools.tools),
   channels: Object.values(CapabilityTools.tools),
   connect: Object.values(ConnectTools.tools),
+  feeds: Object.values(FeedTools.tools),
   inbox: Object.values(InboxTools.tools),
   media: Object.values(MediaTools.tools),
   people: Object.values(PeopleTools.tools),
@@ -63,6 +65,7 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "cancel_post",
   "confirm_comment_reply",
   "confirm_target",
+  "create_feed",
   "create_post",
   "create_posts",
   "edit_published_post",
@@ -81,6 +84,7 @@ export const publishingTools: ReadonlySet<string> = new Set([
   "stop_recycling_rule",
   "unpublish_post",
   "unschedule_post",
+  "update_feed",
   "update_recycling_rule",
   "withdraw_comment_reply",
 ]);
