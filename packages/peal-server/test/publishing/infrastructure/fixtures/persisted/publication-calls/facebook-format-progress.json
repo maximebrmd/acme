@@ -1,0 +1,5 @@
+[
+  { "format": "reel", "step": "finishing", "videoId": "1234567890123456" },
+  { "format": "videoStory", "step": "finishing", "videoId": "1234567890123457" },
+  { "format": "photoStory", "photoId": "1234567890123458", "step": "finishing" }
+]

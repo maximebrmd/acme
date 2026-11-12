@@ -261,7 +261,11 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   Facebook Pages', by text, as they keep no key); `resend` with the
   attempt's idempotency key within the window the platform keeps it
   (Mastodon: 50 minutes of its hour); or `none`, unconfirmed at once
-  (LinkedIn members' posts cannot be read back).
+  (LinkedIn members' posts cannot be read back). A `lookUp` that knows
+  the platform holds the post, not live yet, answers `pending`: unsettled
+  while publishing, and on a resume read again after each of
+  `confirmDelays`, then unconfirmed `stillProcessing` (only Facebook's
+  reels and video stories answer it).
 - YouTube's adapter (`platforms/youtube/`) uploads with the resumable
   protocol, in parts of a multiple of 256 KiB from the media stream
   (`fromByte` skips what YouTube already has). It journals the session URL
@@ -380,7 +384,8 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   (`platforms/tiktok/`): a FILE_UPLOAD goes live only with its last 10 MB
   chunk, so `uploading` starts over and `finishing` polls status/fetch; a
   PULL_FROM_URL init is the commit, so `pulling` without an answer is
-  unconfirmed, `pulled` polls. Its steps (`TikTokProgressSchema`) are
+  unconfirmed, `pulled` polls. Its steps (`TikTokProgressSchema`), and
+  Facebook's reels' and stories' (`FacebookFormatProgressSchema`), are
   persisted contract (`fixtures/persisted/publication-calls`). TikTok's
   post ids are int64s: read them from the answer's text, never as JSON
   numbers. A post only its creator sees has no public id: it is published
@@ -563,12 +568,23 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   `videoStepTiming`), then unconfirmed `stillProcessing`, never sent
   again. A photo story uploads its
   photo unpublished in `prepare`, every run its own, and publishes it with
-  `photo_stories`. Their `lookUp` reads what the run holds and never
-  answers `absent` (Meta's samples show `not_started` after an upload, and
-  `publish_status: "published"` before a story is): a reel is `found` when
-  its `publishing_phase` is done, a video story when that phase is done
-  and the Page's `stories` list it by its `media_id`, `unknown` otherwise; a resumed run answers `unknown`,
-  so a story or a reel is never sent twice. A reel is published under its
+  `photo_stories`. Their `commit` journals the video's or the photo's id
+  (`FacebookFormatProgressSchema`, through `PublicationProgress`) before
+  the finish or `photo_stories`, on every run; a journal it cannot write
+  sends nothing (`PlatformUnavailable`). Their `lookUp` reads what the run
+  holds, or on a resume what the journal names, and never rules a post
+  out from Meta's answers (its samples show `not_started` after an
+  upload, and `publish_status: "published"` before a story is): a reel is
+  `found` when its `publishing_phase` is done, a video story when that
+  phase is done and the Page's `stories` list it by its `media_id`, a
+  video still being made live `pending` (a resumed run reads it on over
+  the same looks, then answers unconfirmed `stillProcessing`), a photo
+  story `found` by the listing or `unknown`. A resumed run whose call was
+  begun with nothing journaled answers `absent`: the finish never went,
+  so it uploads and finishes anew (a second upload shows nowhere); a call
+  begun under another key, or a journal this release cannot read, is
+  `unknown`, unconfirmed `interrupted`. So a story or a reel is never
+  sent twice. A reel is published under its
   video's id, a story under its `post_id` only (a finish without it is
   confirmed by the listing), neither with a permalink. Meta's 30 reels a Page a day have no endpoint or
   documented code: its refusal keeps Meta's code.

@@ -63,6 +63,8 @@ import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 
+import { ProgressLog, progressInMemory } from "./progress-log.ts";
+
 // The platform adapters against fake platforms on loopback, with stand-ins
 // for the channels context's credentials and the media context's files.
 
@@ -261,13 +263,16 @@ export const mediaOf = (files: readonly TestFile[]) => {
 export const attached = (file: TestFile, altText = "A synthetic picture") =>
   new MediaAttachment({ altText, mediaId: file.media.mediaId });
 
+/** The idempotency key of a post `outgoing` makes. */
+export const outgoingKey = "9f86d081884c7d659a2feaa0c55ad015";
+
 /** A post as it goes out, started now unless said otherwise. */
 export const outgoing = Effect.fn("test.outgoing")(function* outgoing(
   fields: Partial<OutgoingPost> & { readonly accountId: string }
 ) {
   const post: OutgoingPost = {
     channelId,
-    idempotencyKey: "9f86d081884c7d659a2feaa0c55ad015",
+    idempotencyKey: outgoingKey,
     media: [],
     options: Option.none(),
     part: 0,
@@ -489,20 +494,37 @@ export const metaClientWith = Effect.fn("test.metaClient")(
     /** Instagram Login's Graph host, when it is not the fake at `url`. */
     readonly instagramUrl?: string;
     readonly platform: MetaPlatform;
+    /**
+     * The journal's progress; by default one in memory where the call of
+     * `outgoingKey` is begun.
+     */
+    readonly progress?: Context.Context<PublicationProgress>;
+    readonly timing?: StepTiming;
     readonly url: string;
   }) {
     const api = yield* httpClient;
     const hosts = metaHostsAt(options.url, options.instagramUrl);
     const appSecret = Option.some(Redacted.make(options.appSecret));
+    const timing = options.timing ?? testTiming;
+
+    const progress =
+      options.progress ??
+      (yield* Layer.build(progressInMemory).pipe(
+        Effect.tap((built) =>
+          Context.get(built, ProgressLog).begin(outgoingKey)
+        ),
+        Effect.scoped
+      ));
 
     const services = Layer.mergeAll(
       options.credentials,
       mediaOf(options.files ?? []),
-      MetaCryptoTest
+      MetaCryptoTest,
+      Layer.succeedContext(progress)
     );
 
     if (options.platform === "threads") {
-      return yield* threadsClient({ api, hosts, timing: testTiming }).pipe(
+      return yield* threadsClient({ api, hosts, timing }).pipe(
         Effect.provide(services)
       );
     }
@@ -512,7 +534,7 @@ export const metaClientWith = Effect.fn("test.metaClient")(
         api,
         appSecret,
         hosts,
-        timing: testTiming,
+        timing,
       }).pipe(Effect.provide(services));
     }
 
@@ -520,7 +542,7 @@ export const metaClientWith = Effect.fn("test.metaClient")(
       api,
       appSecret,
       hosts,
-      timing: testTiming,
+      timing,
       uploads: api,
     }).pipe(Effect.provide(services));
   }

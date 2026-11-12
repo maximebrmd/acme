@@ -10,6 +10,7 @@ import { PublicationProgress } from "#publishing/application/publication-progres
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
+import { FacebookFormatProgressSchema } from "#publishing/infrastructure/platforms/meta/facebook-format-progress.ts";
 import { TikTokProgressSchema } from "#publishing/infrastructure/platforms/tiktok/tiktok-client.ts";
 import { newId } from "#shared/application/ids.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
@@ -133,5 +134,36 @@ layer(StorageTest)("a call's recorded progress", (it) => {
         ["pulling", "pulling", "pulled", "uploading", "finishing"]
       );
     })
+  );
+
+  it.effect(
+    "keeps Facebook's reel and story steps decoding as this release writes them",
+    () =>
+      Effect.gen(function* facebookSteps() {
+        const stored = yield* Effect.promise(
+          async () =>
+            await readFile(
+              path.join(
+                import.meta.dirname,
+                "fixtures",
+                "persisted",
+                "publication-calls",
+                "facebook-format-progress.json"
+              ),
+              "utf-8"
+            )
+        );
+
+        const steps = yield* Schema.decodeUnknownEffect(
+          Schema.fromJsonString(
+            Schema.Array(Schema.toCodecJson(FacebookFormatProgressSchema))
+          )
+        )(stored);
+
+        assert.deepStrictEqual(
+          steps.map(({ format }) => format),
+          ["reel", "videoStory", "photoStory"]
+        );
+      })
   );
 });

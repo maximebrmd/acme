@@ -1,10 +1,12 @@
 import { createHmac } from "node:crypto";
 
 import { assert, describe, it } from "@effect/vitest";
-import { Duration, Effect, Option } from "effect";
+import { Context, Duration, Effect, Layer, Option, Schema } from "effect";
 
+import type { PlatformClient } from "#publishing/application/platform-client.ts";
 import { defaultStepTiming } from "#publishing/application/publication-steps.ts";
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
+import { FacebookFormatProgressSchema } from "#publishing/infrastructure/platforms/meta/facebook-format-progress.ts";
 import {
   videoPublishingWait,
   videoStepTiming,
@@ -26,12 +28,15 @@ import {
 } from "#test/publishing/fakes/platform-server.ts";
 import type { PlatformServer } from "#test/publishing/fakes/platform-server.ts";
 
+import { ProgressLog, progressInMemory } from "./progress-log.ts";
 import {
   attached,
   credentialsOf,
   metaClientWith,
   outgoing,
+  outgoingKey,
   testFile,
+  testTiming,
 } from "./support.ts";
 import type { TestFile } from "./support.ts";
 
@@ -436,28 +441,33 @@ describe("a Facebook reel", () => {
     }).pipe(Effect.scoped)
   );
 
-  it.live("is left unconfirmed on a resume, never sent again", () =>
-    Effect.gen(function* resumed() {
-      const clip = testFile("video", 4096);
-      const { client, graph } = yield* onPage({ files: [clip] });
+  it.live(
+    "is confirmed on a resume by the video it journaled, never sent again",
+    () =>
+      Effect.gen(function* resumed() {
+        const clip = testFile("video", 4096);
+        const { client, graph } = yield* onPage({ files: [clip] });
 
-      const post = yield* outgoing({
-        accountId: facebookPageId,
-        media: [attached(clip)],
-        options: reel,
-      });
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: reel,
+        });
 
-      yield* client.publish(post);
+        yield* client.publish(post);
 
-      const before = graph.requests().length;
-
-      assert.deepStrictEqual(yield* client.resume(post), {
-        _tag: "unconfirmed",
-        reason: "interrupted",
-      });
-      assert.lengthOf(graph.requests(), before);
-      assert.lengthOf(graph.posts(), 1);
-    }).pipe(Effect.scoped)
+        assert.deepStrictEqual(yield* client.resume(post), {
+          _tag: "published",
+          platformPostId: PlatformPostIdSchema.make(
+            graph.videos()[0]?.id ?? "missing"
+          ),
+        });
+        assert.lengthOf(
+          graph.requests().filter((request) => request.method === "POST"),
+          3
+        );
+        assert.lengthOf(graph.posts(), 1);
+      }).pipe(Effect.scoped)
   );
 
   it.live("keeps Meta's code when it refuses the video", () =>
@@ -965,6 +975,478 @@ describe("a Facebook story", () => {
             graph.stories()[0]?.postId ?? "missing"
           ),
         });
+      }).pipe(Effect.scoped)
+  );
+});
+
+const decodeProgress = Schema.decodeUnknownSync(
+  Schema.toCodecJson(FacebookFormatProgressSchema)
+);
+
+// The fake Graph API, the journal's progress with the call begun under
+// `begunAs`, and two clients sharing them: the earlier run's, cut short
+// (no confirmation after an unknown outcome, and, with `stopsUploading`,
+// no patience for an upload), and the resumed run's.
+const onPageResumed = Effect.fn("test.onPageResumed")(function* onPageResumed(
+  options: {
+    readonly begunAs?: string;
+    readonly files?: readonly TestFile[];
+    readonly graph?: FakeMetaGraphOptions;
+    readonly stopsUploading?: boolean;
+  } = {}
+) {
+  const graph = yield* fakeMetaGraph([pageToken], options.graph);
+  const progress = yield* Layer.build(progressInMemory);
+  const journal = Context.get(progress, ProgressLog);
+
+  yield* journal.begin(options.begunAs ?? outgoingKey);
+
+  const clientWith = (timing: typeof testTiming) =>
+    metaClientWith({
+      appSecret: graphAppSecret,
+      credentials: credentialsOf(
+        { accountId: facebookPageId, platform: "facebook" },
+        [pageToken]
+      ),
+      files: options.files ?? [],
+      platform: "facebook",
+      progress,
+      timing,
+      url: graph.url,
+    });
+
+  const earlier: PlatformClient = yield* clientWith({
+    ...testTiming,
+    confirmDelays: [],
+    processingLimit:
+      options.stopsUploading === true
+        ? Duration.zero
+        : testTiming.processingLimit,
+  });
+
+  const resumed: PlatformClient = yield* clientWith(testTiming);
+
+  return { earlier, graph, journal, resumed };
+});
+
+const finishes = (graph: PlatformServer, edge: string) =>
+  steps(graph).filter((step) => step.endsWith(`${edge} finish`));
+
+describe("a Facebook reel resumed after a restart", () => {
+  it.live(
+    "journals its video before the finish, and reads its status on until Meta publishes it",
+    () =>
+      Effect.gen(function* resumedDone() {
+        const clip = testFile("video", 4096);
+
+        const { earlier, graph, journal, resumed } = yield* onPageResumed({
+          files: [clip],
+          graph: { videoPublishLag: 2 },
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: reel,
+        });
+
+        graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_reels#finish`);
+
+        yield* earlier.publish(post);
+
+        const [video] = graph.videos();
+
+        assert.deepStrictEqual(
+          (yield* journal.recorded(outgoingKey)).map((step) =>
+            decodeProgress(step)
+          ),
+          [{ format: "reel", step: "finishing", videoId: video?.id ?? "" }]
+        );
+
+        assert.deepStrictEqual(yield* resumed.resume(post), {
+          _tag: "published",
+          platformPostId: PlatformPostIdSchema.make(video?.id ?? "missing"),
+        });
+        assert.lengthOf(finishes(graph, "video_reels"), 1);
+        assert.lengthOf(graph.posts(), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("fails with Meta's processing error read on the resume", () =>
+    Effect.gen(function* resumedRefused() {
+      const clip = testFile("video", 4096);
+
+      const { earlier, graph, resumed } = yield* onPageResumed({
+        files: [clip],
+        graph: { videoProcessingErrorAfterFinish: true },
+      });
+
+      const post = yield* outgoing({
+        accountId: facebookPageId,
+        media: [attached(clip)],
+        options: reel,
+      });
+
+      graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_reels#finish`);
+
+      yield* earlier.publish(post);
+
+      const failure = yield* Effect.flip(resumed.resume(post));
+
+      assert.strictEqual(failure._tag, "MediaRejected");
+      assert.strictEqual(
+        "code" in failure ? failure.code : undefined,
+        "processingFailed"
+      );
+      assert.lengthOf(finishes(graph, "video_reels"), 1);
+    }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "is left unconfirmed, still processing, when Meta has not published it once the looks run out",
+    () =>
+      Effect.gen(function* resumedStillProcessing() {
+        const clip = testFile("video", 4096);
+
+        const { earlier, graph, resumed } = yield* onPageResumed({
+          files: [clip],
+          graph: { videoPublishLag: 50 },
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: reel,
+        });
+
+        graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_reels#finish`);
+
+        yield* earlier.publish(post);
+
+        assert.deepStrictEqual(yield* resumed.resume(post), {
+          _tag: "unconfirmed",
+          reason: "stillProcessing",
+        });
+        assert.lengthOf(finishes(graph, "video_reels"), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "is uploaded and finished anew when the earlier run never reached its finish",
+    () =>
+      Effect.gen(function* resumedBeforeFinish() {
+        const clip = testFile("video", 4096);
+
+        const { earlier, graph, journal, resumed } = yield* onPageResumed({
+          files: [clip],
+          graph: { videoUploadReads: 1 },
+          stopsUploading: true,
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: reel,
+        });
+
+        yield* Effect.flip(earlier.publish(post));
+
+        assert.deepStrictEqual(yield* journal.recorded(outgoingKey), []);
+
+        const result = yield* resumed.resume(post);
+        const [, second] = graph.videos();
+
+        // A second upload shows nowhere: only the one finish made a post.
+        assert.lengthOf(graph.videos(), 2);
+        assert.deepStrictEqual(result, {
+          _tag: "published",
+          platformPostId: PlatformPostIdSchema.make(second?.id ?? "missing"),
+        });
+        assert.lengthOf(finishes(graph, "video_reels"), 1);
+        assert.lengthOf(graph.posts(), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "is left unconfirmed, never finished, when the journal began another call",
+    () =>
+      Effect.gen(function* resumedUnknownCall() {
+        const clip = testFile("video", 4096);
+
+        const { graph, resumed } = yield* onPageResumed({
+          begunAs: "another-key",
+          files: [clip],
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: reel,
+        });
+
+        assert.deepStrictEqual(yield* resumed.resume(post), {
+          _tag: "unconfirmed",
+          reason: "interrupted",
+        });
+        assert.lengthOf(graph.requests(), 0);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "is left unconfirmed, never finished, when the journal holds what this release cannot read",
+    () =>
+      Effect.gen(function* resumedUnreadable() {
+        const clip = testFile("video", 4096);
+
+        const { graph, journal, resumed } = yield* onPageResumed({
+          files: [clip],
+        });
+
+        yield* journal.begin(outgoingKey, { step: "unheardOf" });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: reel,
+        });
+
+        assert.deepStrictEqual(yield* resumed.resume(post), {
+          _tag: "unconfirmed",
+          reason: "interrupted",
+        });
+        assert.lengthOf(graph.requests(), 0);
+      }).pipe(Effect.scoped)
+  );
+});
+
+describe("a Facebook story resumed after a restart", () => {
+  it.live(
+    "of a video reads its status on until Meta publishes it and lists it",
+    () =>
+      Effect.gen(function* storyDone() {
+        const clip = testFile("video", 4096);
+
+        const { earlier, graph, journal, resumed } = yield* onPageResumed({
+          files: [clip],
+          graph: { videoPublishLag: 2 },
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: story,
+        });
+
+        graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_stories#finish`);
+
+        yield* earlier.publish(post);
+
+        const [video] = graph.videos();
+
+        assert.deepStrictEqual(
+          (yield* journal.recorded(outgoingKey)).map((step) =>
+            decodeProgress(step)
+          ),
+          [
+            {
+              format: "videoStory",
+              step: "finishing",
+              videoId: video?.id ?? "",
+            },
+          ]
+        );
+
+        assert.deepStrictEqual(yield* resumed.resume(post), {
+          _tag: "published",
+          platformPostId: PlatformPostIdSchema.make(
+            graph.stories()[0]?.postId ?? "missing"
+          ),
+        });
+        assert.lengthOf(finishes(graph, "video_stories"), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "of a video fails with Meta's processing error read on the resume",
+    () =>
+      Effect.gen(function* storyRefused() {
+        const clip = testFile("video", 4096);
+
+        const { earlier, graph, resumed } = yield* onPageResumed({
+          files: [clip],
+          graph: { videoProcessingErrorAfterFinish: true },
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: story,
+        });
+
+        graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_stories#finish`);
+
+        yield* earlier.publish(post);
+
+        const failure = yield* Effect.flip(resumed.resume(post));
+
+        assert.strictEqual(failure._tag, "MediaRejected");
+        assert.lengthOf(finishes(graph, "video_stories"), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "of a video is left unconfirmed, still processing, once the looks run out",
+    () =>
+      Effect.gen(function* storyStillProcessing() {
+        const clip = testFile("video", 4096);
+
+        const { earlier, graph, resumed } = yield* onPageResumed({
+          files: [clip],
+          graph: { videoPublishLag: 50 },
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: story,
+        });
+
+        graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_stories#finish`);
+
+        yield* earlier.publish(post);
+
+        assert.deepStrictEqual(yield* resumed.resume(post), {
+          _tag: "unconfirmed",
+          reason: "stillProcessing",
+        });
+        assert.lengthOf(finishes(graph, "video_stories"), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "of a video is uploaded and finished anew when the earlier run never reached its finish",
+    () =>
+      Effect.gen(function* storyBeforeFinish() {
+        const clip = testFile("video", 4096);
+
+        const { earlier, graph, resumed } = yield* onPageResumed({
+          files: [clip],
+          graph: { videoUploadReads: 1 },
+          stopsUploading: true,
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: story,
+        });
+
+        yield* Effect.flip(earlier.publish(post));
+
+        const result = yield* resumed.resume(post);
+
+        assert.lengthOf(graph.videos(), 2);
+        assert.strictEqual(result._tag, "published");
+        assert.lengthOf(finishes(graph, "video_stories"), 1);
+        assert.lengthOf(graph.stories(), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "of a video is left unconfirmed, never finished, when the journal began another call",
+    () =>
+      Effect.gen(function* storyUnknownCall() {
+        const clip = testFile("video", 4096);
+
+        const { graph, resumed } = yield* onPageResumed({
+          begunAs: "another-key",
+          files: [clip],
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: story,
+        });
+
+        assert.deepStrictEqual(yield* resumed.resume(post), {
+          _tag: "unconfirmed",
+          reason: "interrupted",
+        });
+        assert.lengthOf(graph.requests(), 0);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "of a photo journals its photo before the story, and is found among the Page's stories",
+    () =>
+      Effect.gen(function* photoFound() {
+        const image = testFile("image", 2048, "image/jpeg");
+
+        const { earlier, graph, journal, resumed } = yield* onPageResumed({
+          files: [image],
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(image)],
+          options: story,
+        });
+
+        graph.loseAnswer(`POST /v27.0/${facebookPageId}/photo_stories`);
+
+        yield* earlier.publish(post);
+
+        const [shown] = graph.stories();
+
+        assert.deepStrictEqual(
+          (yield* journal.recorded(outgoingKey)).map((step) =>
+            decodeProgress(step)
+          ),
+          [
+            {
+              format: "photoStory",
+              photoId: shown?.mediaId ?? "",
+              step: "finishing",
+            },
+          ]
+        );
+
+        assert.deepStrictEqual(yield* resumed.resume(post), {
+          _tag: "published",
+          platformPostId: PlatformPostIdSchema.make(shown?.postId ?? "missing"),
+        });
+        assert.lengthOf(callsTo(graph, "/photo_stories"), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "of a photo is left unconfirmed, never sent again, when the Page does not list it",
+    () =>
+      Effect.gen(function* photoNotListed() {
+        const image = testFile("image", 2048, "image/jpeg");
+
+        const { earlier, graph, resumed } = yield* onPageResumed({
+          files: [image],
+        });
+
+        const post = yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(image)],
+          options: story,
+        });
+
+        graph.script.push(`POST /v27.0/${facebookPageId}/photo_stories`, [
+          dropped,
+        ]);
+
+        yield* earlier.publish(post);
+
+        assert.deepStrictEqual(yield* resumed.resume(post), {
+          _tag: "unconfirmed",
+          reason: "interrupted",
+        });
+        assert.lengthOf(callsTo(graph, "/photo_stories"), 1);
       }).pipe(Effect.scoped)
   );
 });
