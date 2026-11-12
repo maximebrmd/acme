@@ -12,7 +12,7 @@
   allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `tags`, `signatures`, `sets`, `queues`, `recycling`, `media`, `approvals`,
+  `post`, `tags`, `signatures`, `sets`, `queues`, `recycling`, `feeds`, `media`, `approvals`,
   `review`, `analytics`, `inbox`, `billing`, `usage`, `members`,
   `invitations`, `webhooks` and `ads`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id

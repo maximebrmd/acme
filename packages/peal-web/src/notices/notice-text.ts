@@ -86,6 +86,12 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
       text,
     });
 
+    const feed = (feedId: string, text: string): NoticeText => ({
+      href: `/app/${workspaceId}/settings/feeds?feed=${feedId}`,
+      open: t("open", { page: "feeds" }),
+      text,
+    });
+
     const plan = (name: string) => t("plan", { plan: name });
 
     return Match.valueTags(event, {
@@ -131,6 +137,8 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
         ),
       CommentsReceived: ({ count, threadId }) =>
         inbox(threadId, t("event.CommentsReceived", { count, workspace })),
+      FeedStopped: ({ feedId, reason }) =>
+        feed(feedId, t("event.FeedStopped", { reason, workspace })),
       PostApprovalRequested: ({ postId, scheduledAt }) =>
         post(
           postId,

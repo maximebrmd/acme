@@ -29,6 +29,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'AdBoostChanged'
      *   |'AdConnectionReconnectRequired'
      *   |'RecyclingEnded'
+     *   |'FeedStopped'
      *   |'_unknown'
      * ) $type
      */
@@ -56,6 +57,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventAdBoostChanged
      *   |NoticeEventAdConnectionReconnectRequired
      *   |NoticeEventRecyclingEnded
+     *   |NoticeEventFeedStopped
      *   |mixed
      * ) $value
      */
@@ -84,6 +86,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'AdBoostChanged'
      *   |'AdConnectionReconnectRequired'
      *   |'RecyclingEnded'
+     *   |'FeedStopped'
      *   |'_unknown'
      * ),
      *   value: (
@@ -107,6 +110,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventAdBoostChanged
      *   |NoticeEventAdConnectionReconnectRequired
      *   |NoticeEventRecyclingEnded
+     *   |NoticeEventFeedStopped
      *   |mixed
      * ),
      * } $values
@@ -355,6 +359,18 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'RecyclingEnded',
             'value' => $recyclingEnded,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventFeedStopped $feedStopped
+     * @return NoticeEvent
+     */
+    public static function feedStopped(NoticeEventFeedStopped $feedStopped): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'FeedStopped',
+            'value' => $feedStopped,
         ]);
     }
 
@@ -799,6 +815,28 @@ class NoticeEvent extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isFeedStopped(): bool
+    {
+        return $this->value instanceof NoticeEventFeedStopped && $this->type === 'FeedStopped';
+    }
+
+    /**
+     * @return NoticeEventFeedStopped
+     */
+    public function asFeedStopped(): NoticeEventFeedStopped
+    {
+        if (!($this->value instanceof NoticeEventFeedStopped && $this->type === 'FeedStopped')) {
+            throw new Exception(
+                "Expected FeedStopped; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -898,6 +936,10 @@ class NoticeEvent extends JsonSerializableType
                 $value = $this->asRecyclingEnded()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'FeedStopped':
+                $value = $this->asFeedStopped()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case '_unknown':
             default:
                 if (is_null($this->value)) {
@@ -993,6 +1035,9 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'RecyclingEnded':
                 $args['value'] = NoticeEventRecyclingEnded::jsonDeserialize($data);
+                break;
+            case 'FeedStopped':
+                $args['value'] = NoticeEventFeedStopped::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

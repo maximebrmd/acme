@@ -1666,10 +1666,11 @@
       "TrialEndingOver": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan. It holds more than the free plan allows ({over}): from that day nothing is scheduled or published until it is back within it.",
       "AdBoostChanged": "{change, select, started {A boost started in {workspace}: it may spend up to its budget of {budget}, from the ad account’s payment method, until {endsAt, date, long}. Pause or stop it at any time on the post’s page.} ended {A boost in {workspace}, with a budget of {budget}, reached its end date ({endsAt, date, long}) and no longer runs. What it spent is on the post’s page.} failed {A boost in {workspace}, with a budget of {budget}, could not be made: {reason} Nothing ran, and nothing was spent.} budgetReached {A boost in {workspace} has spent its whole budget of {budget}. The ad network stops showing it; nothing more is spent on it.} unconfirmed {Peal told the ad network to run a boost in {workspace}, with a budget of {budget}, and could not learn whether it runs. It may be spending. Check it on the post’s page, and stop it there if it should not run.} other {A boost of {workspace} changed.}}",
       "AdConnectionReconnectRequired": "{network} refused the sign-in that connects ad accounts to {workspace}. Their campaigns and numbers are no longer read, and no boost can be made on them, until the person who signed in does so again. Boosts that run keep running at the network.",
-      "RecyclingEnded": "A post of {workspace} no longer repeats: {reason, select, sourceGone {the post it repeats was deleted.} sourceWithdrawn {the post it repeats was cancelled or taken back to draft: schedule it again, then resume.} starterGone {whoever started it can no longer schedule posts there.} noChannels {none of its channels is connected any more.} contentRejected {a platform refuses what the next post would say.} planLimit {the plan has no room left for posts that month.} queueGone {its queue was deleted.} other {its queue has no free slot.}}"
+      "RecyclingEnded": "A post of {workspace} no longer repeats: {reason, select, sourceGone {the post it repeats was deleted.} sourceWithdrawn {the post it repeats was cancelled or taken back to draft: schedule it again, then resume.} starterGone {whoever started it can no longer schedule posts there.} noChannels {none of its channels is connected any more.} contentRejected {a platform refuses what the next post would say.} planLimit {the plan has no room left for posts that month.} queueGone {its queue was deleted.} other {its queue has no free slot.}}",
+      "FeedStopped": "A feed of {workspace} no longer makes posts: {reason, select, gone {its site says it is gone for good.} notAFeed {for seven days, its address gave something that is not a feed.} queueGone {the queue it puts posts on was deleted.} starterGone {whoever added it can no longer make posts there. Whoever resumes it takes it over.} other {it could not be read for seven days.}}"
     },
     "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn the channel back on, on the Channels page, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} partsNotSent {its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. It cannot be sent again from Peal: post the rest on the platform, as replies to the last part that is live.} repliesNotAllowed {its first part is live, and X did not let this server’s app post the parts after it as replies: on self-serve access, an app may reply only to a post whose author mentioned or quoted the account. It cannot be sent again from Peal: post the rest on X, as replies to the last part that is live.} other {{reason}}}",
-    "open": "{page, select, post {Open the post} billing {Open billing} webhooks {Open the webhooks} inbox {Open the comments} ads {Open the ads} recycling {Open the repeating posts} other {Open the channels}}",
+    "open": "{page, select, post {Open the post} billing {Open billing} webhooks {Open the webhooks} inbox {Open the comments} ads {Open the ads} recycling {Open the repeating posts} feeds {Open the feeds} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
       "many": "99+",
@@ -1713,7 +1714,8 @@
       "loading": "Loading your preferences…",
       "loadFailed": "Your preferences could not be loaded.",
       "reload": "Try again",
-      "recyclingEnded": "A post stops repeating"
+      "recyclingEnded": "A post stops repeating",
+      "feedStopped": "A feed stops making posts"
     },
     "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
     "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
@@ -2062,7 +2064,8 @@
       "channelSets": "Channel sets",
       "queues": "Queues",
       "security": "Security",
-      "recycling": "Repeating posts"
+      "recycling": "Repeating posts",
+      "feeds": "Feeds"
     },
     "general": {
       "title": "Name",
@@ -3512,5 +3515,68 @@
       "saveFailed": "The default could not be saved.",
       "loadFailed": "Whether this server has short links could not be read."
     }
+  },
+  "Feeds": {
+    "description": "Web feeds the workspace follows (RSS, Atom, JSON Feed), such as a blog’s: each item that appears in one after it was added becomes a draft for a person to finish, or a post on a queue’s next free slot, written from a template. What a feed holds when it is added is never posted.",
+    "readOnly": "You may read the feeds: adding or changing them takes a role that writes posts.",
+    "listTitle": "Feeds",
+    "createTitle": "Add a feed",
+    "empty": "The workspace follows no feed yet.",
+    "status": "{status, select, active {Active} paused {Paused} other {Stopped}}",
+    "mode": "{mode, select, queue {Posts on a queue} other {Drafts}}",
+    "stoppedBecause": "Stopped: {reason, select, gone {its site says it is gone for good.} notAFeed {for seven days, its address gave something that is not a feed.} queueGone {its queue was deleted.} starterGone {whoever added it can no longer make posts here: resuming it makes its posts yours.} other {it could not be read for seven days.}} Resume it once that is put right.",
+    "failing": "The last read failed: {failure, select, timeout {no answer in time.} rateLimited {its site asked to wait.} serverError {its site failed.} notFound {the address is not found.} gone {its site says it is gone.} notAFeed {it is not a feed.} tooLarge {it is larger than Peal reads.} refused {its host is not public.} other {it could not be read.}} Peal tries again later.",
+    "nextRead": "Next read: {at}",
+    "items": "Its newest items",
+    "noItems": "Nothing read yet.",
+    "item": "{at}: {outcome, select, made {a post was made} heldBack {a draft was made instead} skipped {nothing was made} claimed {its post is being sent} other {its post was never confirmed}}{reason, select, existing {, as the feed held it when it was added} tooMany {, as more came than a run or a day makes} empty {, as the template wrote nothing} contentRejected {, as a platform refused it} planLimit {, as the plan had no room} queueFull {, as the queue had no free slot} noChannels {, as a channel is gone} duplicate {, as the same post already goes out} queueGone {, as its queue was deleted} other {}}",
+    "showItems": "Items",
+    "pause": "Pause",
+    "resume": "Resume",
+    "delete": "Delete",
+    "deleteConfirm": "Stop following this feed? The drafts and posts it made stay as they are.",
+    "cancel": "Cancel",
+    "paused": "The feed is paused.",
+    "resumed": "The feed goes on: it was read, and what it holds now is not posted.",
+    "deleted": "The feed is deleted.",
+    "added": "The feed is added: what it holds now is not posted, only what appears from now on.",
+    "failed": "That did not work. Try again.",
+    "url": "Address",
+    "urlHint": "A public HTTPS address of an RSS, Atom or JSON feed.",
+    "template": "Template",
+    "templateHint": "What each post says: '{title}', '{link}' and '{summary}' are replaced by the item’s.",
+    "modeLabel": "Each new item becomes",
+    "modeHint": "Drafts wait for a person. On a queue, posts go out at the queue’s slots without anyone reading them first.",
+    "modeDraftsOnly": "Putting posts on a queue takes a role that schedules posts.",
+    "queue": "Queue",
+    "defaultQueue": "The default queue",
+    "queueWarning": "Each new item will go out on the queue’s slots, in public, without anyone reading it first, unless the workspace asks for approvals.",
+    "channels": "Channels",
+    "noChannels": "No channel is connected yet.",
+    "channelsHint": "Where its posts go. On a queue, none means the queue’s channels.",
+    "preview": "Preview",
+    "add": "Add the feed",
+    "previewTitle": "Preview",
+    "previewOf": "The newest items of {title}, as posts:",
+    "othersText": "What a feed says is its site’s text: read it before it goes out.",
+    "nothingToPost": "(The template writes nothing from this item.)",
+    "errors": {
+      "address": "Peal does not read this address: {reason, select, credentials {it carries a user name or a password.} malformed {it is not a valid address.} notHttps {only HTTPS addresses on the default port are read.} other {its host is not on the public internet.}}",
+      "unreadable": "The address could not be read as a feed: {reason, select, notAFeed {it is not RSS, Atom or JSON Feed.} tooLarge {it is larger than the 2 MiB Peal reads.} other {it gave no answer Peal could use.}}",
+      "template": "{reason, select, unknownPlaceholder {The template names {placeholder}: only title, link and summary are replaced.} tooLong {The template is longer than 1,000 characters, or names its placeholders so often that a post could not hold them.} other {The template is empty.}}",
+      "readsLimited": "The workspace read 30 addresses this hour: try again in {minutes, plural, one {a minute} other {# minutes}}.",
+      "tooMany": "The workspace follows {allowed} feeds, the most it may: delete one first.",
+      "forbidden": "Your role does not allow this.",
+      "noChannelSet": "That channel set no longer exists.",
+      "noQueue": "The feed’s queue, or the workspace’s default queue, no longer exists: edit the feed to choose another queue, or make its posts drafts.",
+      "notFound": "This feed no longer exists.",
+      "unknownChannels": "A channel of the feed is no longer connected: edit the feed to choose its channels again."
+    },
+    "pictureSkipped": "Its picture was left out: {reason, select, notPublic {its address is not public.} unreachable {it could not be fetched.} tooLarge {it is too large.} notAnImage {it is not an image.} storageFull {the plan’s storage is full.} busy {too many imports ran at once.} notAllowed {whoever added the feed may not upload media.} other {it could not be imported.}}",
+    "picture": "Attach each item’s picture",
+    "pictureHint": "Imported into the media library, described by the item’s title. A post goes without it when it cannot be had.",
+    "edit": "Edit",
+    "save": "Save",
+    "saved": "The feed is saved."
   }
 }

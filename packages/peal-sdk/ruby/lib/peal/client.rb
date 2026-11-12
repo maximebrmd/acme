@@ -175,6 +175,11 @@ module Peal
       @recycling ||= Peal::Recycling::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Feeds::Client]
+    def feeds
+      @feeds ||= Peal::Feeds::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::ChannelDefaults::Client]
     def channel_defaults
       @channel_defaults ||= Peal::ChannelDefaults::Client.new(client: @raw_client)

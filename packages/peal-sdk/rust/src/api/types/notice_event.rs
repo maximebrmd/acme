@@ -203,6 +203,14 @@ pub enum NoticeEvent {
         source_post_id: String,
     },
 
+    #[non_exhaustive]
+    FeedStopped {
+        #[serde(rename = "feedId")]
+        #[serde(default)]
+        feed_id: String,
+        reason: FeedStopReason,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -364,6 +372,10 @@ impl NoticeEvent {
             rule_id,
             source_post_id,
         }
+    }
+
+    pub fn feed_stopped(feed_id: String, reason: FeedStopReason) -> Self {
+        Self::FeedStopped { feed_id, reason }
     }
 
     pub fn post_published_with_channel(

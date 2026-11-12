@@ -68,10 +68,17 @@ const commandLines = (text: string): string[] =>
       .map((line) => line.trim())
   );
 
-// A command line's words, as a shell splits them: quotes group, and go.
+// A command line's words, as a shell splits them: quotes group, and go;
+// `$'…'` (ANSI-C quoting) is one word too.
 const wordsOf = (line: string): string[] =>
-  [...line.matchAll(/"(?:[^"\\]|\\.)*"|'[^']*'|[^\s"']+/gu)].map(([word]) =>
-    word.replace(/^(?<quote>["'])(?<inner>[\s\S]*)\k<quote>$/u, "$<inner>")
+  [
+    ...line.matchAll(
+      /\$'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|'[^']*'|[^\s"']+/gu
+    ),
+  ].map(([word]) =>
+    word
+      .replace(/^\$'(?<inner>[\s\S]*)'$/u, "$<inner>")
+      .replace(/^(?<quote>["'])(?<inner>[\s\S]*)\k<quote>$/u, "$<inner>")
   );
 
 const everyLine = documents.flatMap((file) =>

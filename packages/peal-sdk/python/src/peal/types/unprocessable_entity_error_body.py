@@ -8,21 +8,21 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
-from .recycling_variants_invalid_encoded_variants_item import RecyclingVariantsInvalidEncodedVariantsItem
+from .feed_address_refused_encoded_reason import FeedAddressRefusedEncodedReason
+from .feed_template_invalid_encoded_reason import FeedTemplateInvalidEncodedReason
+from .feed_unreadable_encoded_reason import FeedUnreadableEncodedReason
 
 
-class UnprocessableEntityErrorBody_RecyclingEndsTooSoon(UniversalBaseModel):
+class UnprocessableEntityErrorBody_FeedAddressRefused(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["RecyclingEndsTooSoon"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "RecyclingEndsTooSoon"
+        typing.Literal["FeedAddressRefused"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "FeedAddressRefused"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
-    first_due_at: typing_extensions.Annotated[
-        str, FieldMetadata(alias="firstDueAt"), pydantic.Field(alias="firstDueAt")
-    ]
+    reason: FeedAddressRefusedEncodedReason
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -34,16 +34,61 @@ class UnprocessableEntityErrorBody_RecyclingEndsTooSoon(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class UnprocessableEntityErrorBody_RecyclingVariantsInvalid(UniversalBaseModel):
+class UnprocessableEntityErrorBody_FeedTemplateInvalid(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["RecyclingVariantsInvalid"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "RecyclingVariantsInvalid"
+        typing.Literal["FeedTemplateInvalid"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "FeedTemplateInvalid"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
-    variants: typing.List[RecyclingVariantsInvalidEncodedVariantsItem]
+    placeholder: typing.Optional[str] = None
+    reason: FeedTemplateInvalidEncodedReason
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class UnprocessableEntityErrorBody_FeedUnreadable(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["FeedUnreadable"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "FeedUnreadable"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+    reason: FeedUnreadableEncodedReason
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class UnprocessableEntityErrorBody_UnknownChannels(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["UnknownChannels"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "UnknownChannels"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+    channel_ids: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="channelIds"), pydantic.Field(alias="channelIds")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -57,7 +102,10 @@ class UnprocessableEntityErrorBody_RecyclingVariantsInvalid(UniversalBaseModel):
 
 UnprocessableEntityErrorBody = typing_extensions.Annotated[
     typing.Union[
-        UnprocessableEntityErrorBody_RecyclingEndsTooSoon, UnprocessableEntityErrorBody_RecyclingVariantsInvalid
+        UnprocessableEntityErrorBody_FeedAddressRefused,
+        UnprocessableEntityErrorBody_FeedTemplateInvalid,
+        UnprocessableEntityErrorBody_FeedUnreadable,
+        UnprocessableEntityErrorBody_UnknownChannels,
     ],
     pydantic.Field(discriminator="type"),
 ]

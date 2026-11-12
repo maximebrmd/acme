@@ -74,6 +74,11 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     postId,
     threadId: Uuid7Schema.make("00000000-0000-7000-8000-00000000c0de"),
   },
+  FeedStopped: {
+    _tag: "FeedStopped",
+    feedId: Uuid7Schema.make("00000000-0000-7000-8000-00000000fe01"),
+    reason: "unreachable",
+  },
   PostApprovalRequested: {
     _tag: "PostApprovalRequested",
     postId,
@@ -204,6 +209,20 @@ describe("notice events", () => {
     );
     expect(wantsEmail(defaultPreferences, events.RecyclingEnded)).toBeTruthy();
     expect(wantsEmail(off, events.RecyclingEnded)).toBeFalsy();
+  });
+
+  it("tell those who schedule posts that a feed stopped, by email unless they turned it off", () => {
+    const off = changePreferences(defaultPreferences, {
+      email: { feedStopped: false },
+    });
+
+    expect(audienceOf(events.FeedStopped)).toBe("post:schedule");
+    expect(isAboutPost(events.FeedStopped)).toBeTruthy();
+    expect(pageOf(events.FeedStopped, workspaceId)).toBe(
+      `/app/${workspaceId}/settings/feeds?feed=00000000-0000-7000-8000-00000000fe01`
+    );
+    expect(wantsEmail(defaultPreferences, events.FeedStopped)).toBeTruthy();
+    expect(wantsEmail(off, events.FeedStopped)).toBeFalsy();
   });
 
   it("tell those who manage webhooks that deliveries fail, by email unless they turned it off", () => {
@@ -396,6 +415,7 @@ describe("notification preferences", () => {
       Option.none(),
       Option.some("channelReconnect"),
       Option.some("channelReconnect"),
+      Option.some("feedStopped"),
       Option.some("postReview"),
       Option.some("postReview"),
       Option.some("postReview"),
@@ -423,6 +443,7 @@ describe("notification preferences", () => {
     expect(changed.email).toStrictEqual({
       channelReconnect: true,
       comments: false,
+      feedStopped: true,
       postFailed: false,
       postPublished: true,
       postReview: true,

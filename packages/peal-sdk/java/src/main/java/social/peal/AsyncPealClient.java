@@ -17,6 +17,7 @@ import social.peal.resources.channeldefaults.AsyncChannelDefaultsClient;
 import social.peal.resources.channels.AsyncChannelsClient;
 import social.peal.resources.channelsets.AsyncChannelSetsClient;
 import social.peal.resources.connectlinks.AsyncConnectLinksClient;
+import social.peal.resources.feeds.AsyncFeedsClient;
 import social.peal.resources.inbox.AsyncInboxClient;
 import social.peal.resources.invitations.AsyncInvitationsClient;
 import social.peal.resources.lookups.AsyncLookupsClient;
@@ -105,6 +106,8 @@ public class AsyncPealClient implements AutoCloseable {
 
     protected final Supplier<AsyncRecyclingClient> recyclingClient;
 
+    protected final Supplier<AsyncFeedsClient> feedsClient;
+
     protected final Supplier<AsyncChannelDefaultsClient> channelDefaultsClient;
 
     protected final Supplier<AsyncShortLinksClient> shortLinksClient;
@@ -143,6 +146,7 @@ public class AsyncPealClient implements AutoCloseable {
         this.channelSetsClient = Suppliers.memoize(() -> new AsyncChannelSetsClient(clientOptions));
         this.queuesClient = Suppliers.memoize(() -> new AsyncQueuesClient(clientOptions));
         this.recyclingClient = Suppliers.memoize(() -> new AsyncRecyclingClient(clientOptions));
+        this.feedsClient = Suppliers.memoize(() -> new AsyncFeedsClient(clientOptions));
         this.channelDefaultsClient = Suppliers.memoize(() -> new AsyncChannelDefaultsClient(clientOptions));
         this.shortLinksClient = Suppliers.memoize(() -> new AsyncShortLinksClient(clientOptions));
     }
@@ -269,6 +273,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncRecyclingClient recycling() {
         return this.recyclingClient.get();
+    }
+
+    public AsyncFeedsClient feeds() {
+        return this.feedsClient.get();
     }
 
     public AsyncChannelDefaultsClient channelDefaults() {

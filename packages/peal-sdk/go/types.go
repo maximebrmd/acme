@@ -6709,6 +6709,754 @@ func (f FailureReason) Ptr() *FailureReason {
 	return &f
 }
 
+var (
+	feedAddressRefusedEncodedFieldCode      = big.NewInt(1 << 0)
+	feedAddressRefusedEncodedFieldMessage   = big.NewInt(1 << 1)
+	feedAddressRefusedEncodedFieldRequestID = big.NewInt(1 << 2)
+	feedAddressRefusedEncodedFieldReason    = big.NewInt(1 << 3)
+)
+
+type FeedAddressRefusedEncoded struct {
+	Code      *string                         `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                         `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                         `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Reason    FeedAddressRefusedEncodedReason `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FeedAddressRefusedEncoded) GetCode() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Code
+}
+
+func (f *FeedAddressRefusedEncoded) GetMessage() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Message
+}
+
+func (f *FeedAddressRefusedEncoded) GetRequestID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.RequestID
+}
+
+func (f *FeedAddressRefusedEncoded) GetReason() FeedAddressRefusedEncodedReason {
+	if f == nil {
+		return ""
+	}
+	return f.Reason
+}
+
+func (f *FeedAddressRefusedEncoded) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FeedAddressRefusedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedAddressRefusedEncoded) SetCode(code *string) {
+	f.Code = code
+	f.require(feedAddressRefusedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedAddressRefusedEncoded) SetMessage(message *string) {
+	f.Message = message
+	f.require(feedAddressRefusedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedAddressRefusedEncoded) SetRequestID(requestID *string) {
+	f.RequestID = requestID
+	f.require(feedAddressRefusedEncodedFieldRequestID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedAddressRefusedEncoded) SetReason(reason FeedAddressRefusedEncodedReason) {
+	f.Reason = reason
+	f.require(feedAddressRefusedEncodedFieldReason)
+}
+
+func (f *FeedAddressRefusedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler FeedAddressRefusedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FeedAddressRefusedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FeedAddressRefusedEncoded) MarshalJSON() ([]byte, error) {
+	type embed FeedAddressRefusedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FeedAddressRefusedEncoded) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FeedAddressRefusedEncodedReason string
+
+const (
+	FeedAddressRefusedEncodedReasonCredentials FeedAddressRefusedEncodedReason = "credentials"
+	FeedAddressRefusedEncodedReasonMalformed   FeedAddressRefusedEncodedReason = "malformed"
+	FeedAddressRefusedEncodedReasonNotHTTPS    FeedAddressRefusedEncodedReason = "notHttps"
+	FeedAddressRefusedEncodedReasonNotPublic   FeedAddressRefusedEncodedReason = "notPublic"
+)
+
+func NewFeedAddressRefusedEncodedReasonFromString(s string) (FeedAddressRefusedEncodedReason, error) {
+	switch s {
+	case "credentials":
+		return FeedAddressRefusedEncodedReasonCredentials, nil
+	case "malformed":
+		return FeedAddressRefusedEncodedReasonMalformed, nil
+	case "notHttps":
+		return FeedAddressRefusedEncodedReasonNotHTTPS, nil
+	case "notPublic":
+		return FeedAddressRefusedEncodedReasonNotPublic, nil
+	}
+	var t FeedAddressRefusedEncodedReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FeedAddressRefusedEncodedReason) Ptr() *FeedAddressRefusedEncodedReason {
+	return &f
+}
+
+var (
+	feedNotFoundEncodedFieldCode      = big.NewInt(1 << 0)
+	feedNotFoundEncodedFieldMessage   = big.NewInt(1 << 1)
+	feedNotFoundEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type FeedNotFoundEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FeedNotFoundEncoded) GetCode() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Code
+}
+
+func (f *FeedNotFoundEncoded) GetMessage() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Message
+}
+
+func (f *FeedNotFoundEncoded) GetRequestID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.RequestID
+}
+
+func (f *FeedNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FeedNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedNotFoundEncoded) SetCode(code *string) {
+	f.Code = code
+	f.require(feedNotFoundEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedNotFoundEncoded) SetMessage(message *string) {
+	f.Message = message
+	f.require(feedNotFoundEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedNotFoundEncoded) SetRequestID(requestID *string) {
+	f.RequestID = requestID
+	f.require(feedNotFoundEncodedFieldRequestID)
+}
+
+func (f *FeedNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler FeedNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FeedNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FeedNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed FeedNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FeedNotFoundEncoded) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+var (
+	feedReadsLimitedEncodedFieldCode              = big.NewInt(1 << 0)
+	feedReadsLimitedEncodedFieldMessage           = big.NewInt(1 << 1)
+	feedReadsLimitedEncodedFieldRequestID         = big.NewInt(1 << 2)
+	feedReadsLimitedEncodedFieldRetryAfterSeconds = big.NewInt(1 << 3)
+)
+
+type FeedReadsLimitedEncoded struct {
+	Code              *string `json:"code,omitempty" url:"code,omitempty"`
+	Message           *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID         *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+	RetryAfterSeconds int     `json:"retryAfterSeconds" url:"retryAfterSeconds"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FeedReadsLimitedEncoded) GetCode() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Code
+}
+
+func (f *FeedReadsLimitedEncoded) GetMessage() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Message
+}
+
+func (f *FeedReadsLimitedEncoded) GetRequestID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.RequestID
+}
+
+func (f *FeedReadsLimitedEncoded) GetRetryAfterSeconds() int {
+	if f == nil {
+		return 0
+	}
+	return f.RetryAfterSeconds
+}
+
+func (f *FeedReadsLimitedEncoded) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FeedReadsLimitedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedReadsLimitedEncoded) SetCode(code *string) {
+	f.Code = code
+	f.require(feedReadsLimitedEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedReadsLimitedEncoded) SetMessage(message *string) {
+	f.Message = message
+	f.require(feedReadsLimitedEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedReadsLimitedEncoded) SetRequestID(requestID *string) {
+	f.RequestID = requestID
+	f.require(feedReadsLimitedEncodedFieldRequestID)
+}
+
+// SetRetryAfterSeconds sets the RetryAfterSeconds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedReadsLimitedEncoded) SetRetryAfterSeconds(retryAfterSeconds int) {
+	f.RetryAfterSeconds = retryAfterSeconds
+	f.require(feedReadsLimitedEncodedFieldRetryAfterSeconds)
+}
+
+func (f *FeedReadsLimitedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler FeedReadsLimitedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FeedReadsLimitedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FeedReadsLimitedEncoded) MarshalJSON() ([]byte, error) {
+	type embed FeedReadsLimitedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FeedReadsLimitedEncoded) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+var (
+	feedTemplateInvalidEncodedFieldCode        = big.NewInt(1 << 0)
+	feedTemplateInvalidEncodedFieldMessage     = big.NewInt(1 << 1)
+	feedTemplateInvalidEncodedFieldRequestID   = big.NewInt(1 << 2)
+	feedTemplateInvalidEncodedFieldPlaceholder = big.NewInt(1 << 3)
+	feedTemplateInvalidEncodedFieldReason      = big.NewInt(1 << 4)
+)
+
+type FeedTemplateInvalidEncoded struct {
+	Code        *string                          `json:"code,omitempty" url:"code,omitempty"`
+	Message     *string                          `json:"message,omitempty" url:"message,omitempty"`
+	RequestID   *string                          `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Placeholder *string                          `json:"placeholder,omitempty" url:"placeholder,omitempty"`
+	Reason      FeedTemplateInvalidEncodedReason `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FeedTemplateInvalidEncoded) GetCode() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Code
+}
+
+func (f *FeedTemplateInvalidEncoded) GetMessage() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Message
+}
+
+func (f *FeedTemplateInvalidEncoded) GetRequestID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.RequestID
+}
+
+func (f *FeedTemplateInvalidEncoded) GetPlaceholder() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Placeholder
+}
+
+func (f *FeedTemplateInvalidEncoded) GetReason() FeedTemplateInvalidEncodedReason {
+	if f == nil {
+		return ""
+	}
+	return f.Reason
+}
+
+func (f *FeedTemplateInvalidEncoded) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FeedTemplateInvalidEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedTemplateInvalidEncoded) SetCode(code *string) {
+	f.Code = code
+	f.require(feedTemplateInvalidEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedTemplateInvalidEncoded) SetMessage(message *string) {
+	f.Message = message
+	f.require(feedTemplateInvalidEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedTemplateInvalidEncoded) SetRequestID(requestID *string) {
+	f.RequestID = requestID
+	f.require(feedTemplateInvalidEncodedFieldRequestID)
+}
+
+// SetPlaceholder sets the Placeholder field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedTemplateInvalidEncoded) SetPlaceholder(placeholder *string) {
+	f.Placeholder = placeholder
+	f.require(feedTemplateInvalidEncodedFieldPlaceholder)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedTemplateInvalidEncoded) SetReason(reason FeedTemplateInvalidEncodedReason) {
+	f.Reason = reason
+	f.require(feedTemplateInvalidEncodedFieldReason)
+}
+
+func (f *FeedTemplateInvalidEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler FeedTemplateInvalidEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FeedTemplateInvalidEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FeedTemplateInvalidEncoded) MarshalJSON() ([]byte, error) {
+	type embed FeedTemplateInvalidEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FeedTemplateInvalidEncoded) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FeedTemplateInvalidEncodedReason string
+
+const (
+	FeedTemplateInvalidEncodedReasonEmpty              FeedTemplateInvalidEncodedReason = "empty"
+	FeedTemplateInvalidEncodedReasonTooLong            FeedTemplateInvalidEncodedReason = "tooLong"
+	FeedTemplateInvalidEncodedReasonUnknownPlaceholder FeedTemplateInvalidEncodedReason = "unknownPlaceholder"
+)
+
+func NewFeedTemplateInvalidEncodedReasonFromString(s string) (FeedTemplateInvalidEncodedReason, error) {
+	switch s {
+	case "empty":
+		return FeedTemplateInvalidEncodedReasonEmpty, nil
+	case "tooLong":
+		return FeedTemplateInvalidEncodedReasonTooLong, nil
+	case "unknownPlaceholder":
+		return FeedTemplateInvalidEncodedReasonUnknownPlaceholder, nil
+	}
+	var t FeedTemplateInvalidEncodedReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FeedTemplateInvalidEncodedReason) Ptr() *FeedTemplateInvalidEncodedReason {
+	return &f
+}
+
+var (
+	feedUnreadableEncodedFieldCode      = big.NewInt(1 << 0)
+	feedUnreadableEncodedFieldMessage   = big.NewInt(1 << 1)
+	feedUnreadableEncodedFieldRequestID = big.NewInt(1 << 2)
+	feedUnreadableEncodedFieldReason    = big.NewInt(1 << 3)
+)
+
+type FeedUnreadableEncoded struct {
+	Code      *string                     `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                     `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                     `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Reason    FeedUnreadableEncodedReason `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FeedUnreadableEncoded) GetCode() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Code
+}
+
+func (f *FeedUnreadableEncoded) GetMessage() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Message
+}
+
+func (f *FeedUnreadableEncoded) GetRequestID() *string {
+	if f == nil {
+		return nil
+	}
+	return f.RequestID
+}
+
+func (f *FeedUnreadableEncoded) GetReason() FeedUnreadableEncodedReason {
+	if f == nil {
+		return ""
+	}
+	return f.Reason
+}
+
+func (f *FeedUnreadableEncoded) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FeedUnreadableEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedUnreadableEncoded) SetCode(code *string) {
+	f.Code = code
+	f.require(feedUnreadableEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedUnreadableEncoded) SetMessage(message *string) {
+	f.Message = message
+	f.require(feedUnreadableEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedUnreadableEncoded) SetRequestID(requestID *string) {
+	f.RequestID = requestID
+	f.require(feedUnreadableEncodedFieldRequestID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FeedUnreadableEncoded) SetReason(reason FeedUnreadableEncodedReason) {
+	f.Reason = reason
+	f.require(feedUnreadableEncodedFieldReason)
+}
+
+func (f *FeedUnreadableEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler FeedUnreadableEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FeedUnreadableEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FeedUnreadableEncoded) MarshalJSON() ([]byte, error) {
+	type embed FeedUnreadableEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FeedUnreadableEncoded) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FeedUnreadableEncodedReason string
+
+const (
+	FeedUnreadableEncodedReasonNotAFeed    FeedUnreadableEncodedReason = "notAFeed"
+	FeedUnreadableEncodedReasonTooLarge    FeedUnreadableEncodedReason = "tooLarge"
+	FeedUnreadableEncodedReasonUnreachable FeedUnreadableEncodedReason = "unreachable"
+)
+
+func NewFeedUnreadableEncodedReasonFromString(s string) (FeedUnreadableEncodedReason, error) {
+	switch s {
+	case "notAFeed":
+		return FeedUnreadableEncodedReasonNotAFeed, nil
+	case "tooLarge":
+		return FeedUnreadableEncodedReasonTooLarge, nil
+	case "unreachable":
+		return FeedUnreadableEncodedReasonUnreachable, nil
+	}
+	var t FeedUnreadableEncodedReason
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FeedUnreadableEncodedReason) Ptr() *FeedUnreadableEncodedReason {
+	return &f
+}
+
 type FieldDefault struct {
 	Boolean bool
 	Double  float64
@@ -21199,6 +21947,175 @@ func (t *TooManyConnectLinksEncoded) String() string {
 }
 
 var (
+	tooManyFeedsEncodedFieldTag       = big.NewInt(1 << 0)
+	tooManyFeedsEncodedFieldCode      = big.NewInt(1 << 1)
+	tooManyFeedsEncodedFieldMessage   = big.NewInt(1 << 2)
+	tooManyFeedsEncodedFieldRequestID = big.NewInt(1 << 3)
+	tooManyFeedsEncodedFieldAllowed   = big.NewInt(1 << 4)
+)
+
+type TooManyFeedsEncoded struct {
+	Tag       TooManyFeedsEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string                `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string                `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string                `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Allowed   int                    `json:"allowed" url:"allowed"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TooManyFeedsEncoded) GetTag() TooManyFeedsEncodedTag {
+	if t == nil {
+		return ""
+	}
+	return t.Tag
+}
+
+func (t *TooManyFeedsEncoded) GetCode() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Code
+}
+
+func (t *TooManyFeedsEncoded) GetMessage() *string {
+	if t == nil {
+		return nil
+	}
+	return t.Message
+}
+
+func (t *TooManyFeedsEncoded) GetRequestID() *string {
+	if t == nil {
+		return nil
+	}
+	return t.RequestID
+}
+
+func (t *TooManyFeedsEncoded) GetAllowed() int {
+	if t == nil {
+		return 0
+	}
+	return t.Allowed
+}
+
+func (t *TooManyFeedsEncoded) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TooManyFeedsEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyFeedsEncoded) SetTag(tag TooManyFeedsEncodedTag) {
+	t.Tag = tag
+	t.require(tooManyFeedsEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyFeedsEncoded) SetCode(code *string) {
+	t.Code = code
+	t.require(tooManyFeedsEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyFeedsEncoded) SetMessage(message *string) {
+	t.Message = message
+	t.require(tooManyFeedsEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyFeedsEncoded) SetRequestID(requestID *string) {
+	t.RequestID = requestID
+	t.require(tooManyFeedsEncodedFieldRequestID)
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyFeedsEncoded) SetAllowed(allowed int) {
+	t.Allowed = allowed
+	t.require(tooManyFeedsEncodedFieldAllowed)
+}
+
+func (t *TooManyFeedsEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler TooManyFeedsEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TooManyFeedsEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TooManyFeedsEncoded) MarshalJSON() ([]byte, error) {
+	type embed TooManyFeedsEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TooManyFeedsEncoded) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TooManyFeedsEncodedTag string
+
+const (
+	TooManyFeedsEncodedTagTooManyFeeds TooManyFeedsEncodedTag = "TooManyFeeds"
+)
+
+func NewTooManyFeedsEncodedTagFromString(s string) (TooManyFeedsEncodedTag, error) {
+	switch s {
+	case "TooManyFeeds":
+		return TooManyFeedsEncodedTagTooManyFeeds, nil
+	}
+	var t TooManyFeedsEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (t TooManyFeedsEncodedTag) Ptr() *TooManyFeedsEncodedTag {
+	return &t
+}
+
+var (
 	tooManyInvitationsEncodedFieldCode      = big.NewInt(1 << 0)
 	tooManyInvitationsEncodedFieldMessage   = big.NewInt(1 << 1)
 	tooManyInvitationsEncodedFieldRequestID = big.NewInt(1 << 2)
@@ -21786,9 +22703,9 @@ func (t TooManyRequestsEncodedTag) Ptr() *TooManyRequestsEncodedTag {
 }
 
 type TooManyRequestsErrorBody struct {
-	Type                string
-	TooManyConnectLinks *TooManyConnectLinksEncoded
-	TooManyRequests     *TooManyRequestsEncoded
+	Type             string
+	FeedReadsLimited *FeedReadsLimitedEncoded
+	TooManyRequests  *TooManyRequestsEncoded
 
 	rawJSON json.RawMessage
 }
@@ -21800,11 +22717,11 @@ func (t *TooManyRequestsErrorBody) GetType() string {
 	return t.Type
 }
 
-func (t *TooManyRequestsErrorBody) GetTooManyConnectLinks() *TooManyConnectLinksEncoded {
+func (t *TooManyRequestsErrorBody) GetFeedReadsLimited() *FeedReadsLimitedEncoded {
 	if t == nil {
 		return nil
 	}
-	return t.TooManyConnectLinks
+	return t.FeedReadsLimited
 }
 
 func (t *TooManyRequestsErrorBody) GetTooManyRequests() *TooManyRequestsEncoded {
@@ -21826,12 +22743,12 @@ func (t *TooManyRequestsErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", t)
 	}
 	switch unmarshaler.Type {
-	case "TooManyConnectLinks":
-		value := new(TooManyConnectLinksEncoded)
+	case "FeedReadsLimited":
+		value := new(FeedReadsLimitedEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		t.TooManyConnectLinks = value
+		t.FeedReadsLimited = value
 	case "TooManyRequests":
 		value := new(TooManyRequestsEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -21847,8 +22764,8 @@ func (t TooManyRequestsErrorBody) MarshalJSON() ([]byte, error) {
 	if err := t.validate(); err != nil {
 		return nil, err
 	}
-	if t.TooManyConnectLinks != nil {
-		return internal.MarshalJSONWithExtraProperty(t.TooManyConnectLinks, "_tag", "TooManyConnectLinks")
+	if t.FeedReadsLimited != nil {
+		return internal.MarshalJSONWithExtraProperty(t.FeedReadsLimited, "_tag", "FeedReadsLimited")
 	}
 	if t.TooManyRequests != nil {
 		return internal.MarshalJSONWithExtraProperty(t.TooManyRequests, "_tag", "TooManyRequests")
@@ -21860,13 +22777,13 @@ func (t TooManyRequestsErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type TooManyRequestsErrorBodyVisitor interface {
-	VisitTooManyConnectLinks(*TooManyConnectLinksEncoded) error
+	VisitFeedReadsLimited(*FeedReadsLimitedEncoded) error
 	VisitTooManyRequests(*TooManyRequestsEncoded) error
 }
 
 func (t *TooManyRequestsErrorBody) Accept(visitor TooManyRequestsErrorBodyVisitor) error {
-	if t.TooManyConnectLinks != nil {
-		return visitor.VisitTooManyConnectLinks(t.TooManyConnectLinks)
+	if t.FeedReadsLimited != nil {
+		return visitor.VisitFeedReadsLimited(t.FeedReadsLimited)
 	}
 	if t.TooManyRequests != nil {
 		return visitor.VisitTooManyRequests(t.TooManyRequests)
@@ -21879,8 +22796,8 @@ func (t *TooManyRequestsErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", t)
 	}
 	var fields []string
-	if t.TooManyConnectLinks != nil {
-		fields = append(fields, "TooManyConnectLinks")
+	if t.FeedReadsLimited != nil {
+		fields = append(fields, "FeedReadsLimited")
 	}
 	if t.TooManyRequests != nil {
 		fields = append(fields, "TooManyRequests")
@@ -22786,9 +23703,11 @@ func (u UnauthenticatedEncodedTag) Ptr() *UnauthenticatedEncodedTag {
 }
 
 type UnprocessableEntityErrorBody struct {
-	Type                     string
-	RecyclingEndsTooSoon     *RecyclingEndsTooSoonEncoded
-	RecyclingVariantsInvalid *RecyclingVariantsInvalidEncoded
+	Type                string
+	FeedAddressRefused  *FeedAddressRefusedEncoded
+	FeedTemplateInvalid *FeedTemplateInvalidEncoded
+	FeedUnreadable      *FeedUnreadableEncoded
+	UnknownChannels     *UnknownChannelsEncoded
 
 	rawJSON json.RawMessage
 }
@@ -22800,18 +23719,32 @@ func (u *UnprocessableEntityErrorBody) GetType() string {
 	return u.Type
 }
 
-func (u *UnprocessableEntityErrorBody) GetRecyclingEndsTooSoon() *RecyclingEndsTooSoonEncoded {
+func (u *UnprocessableEntityErrorBody) GetFeedAddressRefused() *FeedAddressRefusedEncoded {
 	if u == nil {
 		return nil
 	}
-	return u.RecyclingEndsTooSoon
+	return u.FeedAddressRefused
 }
 
-func (u *UnprocessableEntityErrorBody) GetRecyclingVariantsInvalid() *RecyclingVariantsInvalidEncoded {
+func (u *UnprocessableEntityErrorBody) GetFeedTemplateInvalid() *FeedTemplateInvalidEncoded {
 	if u == nil {
 		return nil
 	}
-	return u.RecyclingVariantsInvalid
+	return u.FeedTemplateInvalid
+}
+
+func (u *UnprocessableEntityErrorBody) GetFeedUnreadable() *FeedUnreadableEncoded {
+	if u == nil {
+		return nil
+	}
+	return u.FeedUnreadable
+}
+
+func (u *UnprocessableEntityErrorBody) GetUnknownChannels() *UnknownChannelsEncoded {
+	if u == nil {
+		return nil
+	}
+	return u.UnknownChannels
 }
 
 func (u *UnprocessableEntityErrorBody) UnmarshalJSON(data []byte) error {
@@ -22826,18 +23759,30 @@ func (u *UnprocessableEntityErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", u)
 	}
 	switch unmarshaler.Type {
-	case "RecyclingEndsTooSoon":
-		value := new(RecyclingEndsTooSoonEncoded)
+	case "FeedAddressRefused":
+		value := new(FeedAddressRefusedEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		u.RecyclingEndsTooSoon = value
-	case "RecyclingVariantsInvalid":
-		value := new(RecyclingVariantsInvalidEncoded)
+		u.FeedAddressRefused = value
+	case "FeedTemplateInvalid":
+		value := new(FeedTemplateInvalidEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		u.RecyclingVariantsInvalid = value
+		u.FeedTemplateInvalid = value
+	case "FeedUnreadable":
+		value := new(FeedUnreadableEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.FeedUnreadable = value
+	case "UnknownChannels":
+		value := new(UnknownChannelsEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.UnknownChannels = value
 	}
 	u.rawJSON = json.RawMessage(data)
 	return nil
@@ -22847,11 +23792,17 @@ func (u UnprocessableEntityErrorBody) MarshalJSON() ([]byte, error) {
 	if err := u.validate(); err != nil {
 		return nil, err
 	}
-	if u.RecyclingEndsTooSoon != nil {
-		return internal.MarshalJSONWithExtraProperty(u.RecyclingEndsTooSoon, "_tag", "RecyclingEndsTooSoon")
+	if u.FeedAddressRefused != nil {
+		return internal.MarshalJSONWithExtraProperty(u.FeedAddressRefused, "_tag", "FeedAddressRefused")
 	}
-	if u.RecyclingVariantsInvalid != nil {
-		return internal.MarshalJSONWithExtraProperty(u.RecyclingVariantsInvalid, "_tag", "RecyclingVariantsInvalid")
+	if u.FeedTemplateInvalid != nil {
+		return internal.MarshalJSONWithExtraProperty(u.FeedTemplateInvalid, "_tag", "FeedTemplateInvalid")
+	}
+	if u.FeedUnreadable != nil {
+		return internal.MarshalJSONWithExtraProperty(u.FeedUnreadable, "_tag", "FeedUnreadable")
+	}
+	if u.UnknownChannels != nil {
+		return internal.MarshalJSONWithExtraProperty(u.UnknownChannels, "_tag", "UnknownChannels")
 	}
 	if len(u.rawJSON) > 0 {
 		return u.rawJSON, nil
@@ -22860,16 +23811,24 @@ func (u UnprocessableEntityErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type UnprocessableEntityErrorBodyVisitor interface {
-	VisitRecyclingEndsTooSoon(*RecyclingEndsTooSoonEncoded) error
-	VisitRecyclingVariantsInvalid(*RecyclingVariantsInvalidEncoded) error
+	VisitFeedAddressRefused(*FeedAddressRefusedEncoded) error
+	VisitFeedTemplateInvalid(*FeedTemplateInvalidEncoded) error
+	VisitFeedUnreadable(*FeedUnreadableEncoded) error
+	VisitUnknownChannels(*UnknownChannelsEncoded) error
 }
 
 func (u *UnprocessableEntityErrorBody) Accept(visitor UnprocessableEntityErrorBodyVisitor) error {
-	if u.RecyclingEndsTooSoon != nil {
-		return visitor.VisitRecyclingEndsTooSoon(u.RecyclingEndsTooSoon)
+	if u.FeedAddressRefused != nil {
+		return visitor.VisitFeedAddressRefused(u.FeedAddressRefused)
 	}
-	if u.RecyclingVariantsInvalid != nil {
-		return visitor.VisitRecyclingVariantsInvalid(u.RecyclingVariantsInvalid)
+	if u.FeedTemplateInvalid != nil {
+		return visitor.VisitFeedTemplateInvalid(u.FeedTemplateInvalid)
+	}
+	if u.FeedUnreadable != nil {
+		return visitor.VisitFeedUnreadable(u.FeedUnreadable)
+	}
+	if u.UnknownChannels != nil {
+		return visitor.VisitUnknownChannels(u.UnknownChannels)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", u)
 }
@@ -22879,11 +23838,17 @@ func (u *UnprocessableEntityErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", u)
 	}
 	var fields []string
-	if u.RecyclingEndsTooSoon != nil {
-		fields = append(fields, "RecyclingEndsTooSoon")
+	if u.FeedAddressRefused != nil {
+		fields = append(fields, "FeedAddressRefused")
 	}
-	if u.RecyclingVariantsInvalid != nil {
-		fields = append(fields, "RecyclingVariantsInvalid")
+	if u.FeedTemplateInvalid != nil {
+		fields = append(fields, "FeedTemplateInvalid")
+	}
+	if u.FeedUnreadable != nil {
+		fields = append(fields, "FeedUnreadable")
+	}
+	if u.UnknownChannels != nil {
+		fields = append(fields, "UnknownChannels")
 	}
 	if len(fields) == 0 {
 		if u.Type != "" {

@@ -1427,6 +1427,39 @@ func TestGettersNoticeEvent(t *testing.T) {
 		_ = obj.GetRecyclingEnded() // Should return zero value
 	})
 
+	t.Run("GetFeedStopped", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEvent{}
+		var expected *NoticeEventFeedStopped
+		obj.FeedStopped = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetFeedStopped(), "getter should return the property value")
+	})
+
+	t.Run("GetFeedStopped_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEvent{}
+		obj.FeedStopped = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetFeedStopped(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetFeedStopped_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetFeedStopped() // Should return zero value
+	})
+
 }
 
 func TestSettersNoticeEventAdBoostChanged(t *testing.T) {
@@ -2357,6 +2390,139 @@ func TestSettersMarkExplicitNoticeEventCommentsReceived(t *testing.T) {
 
 		// Act
 		obj.SetThreadID(fernTestValueThreadID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersNoticeEventFeedStopped(t *testing.T) {
+	t.Run("SetFeedID", func(t *testing.T) {
+		obj := &NoticeEventFeedStopped{}
+		var fernTestValueFeedID string
+		obj.SetFeedID(fernTestValueFeedID)
+		assert.Equal(t, fernTestValueFeedID, obj.FeedID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetReason", func(t *testing.T) {
+		obj := &NoticeEventFeedStopped{}
+		var fernTestValueReason FeedStopReason
+		obj.SetReason(fernTestValueReason)
+		assert.Equal(t, fernTestValueReason, obj.Reason)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersNoticeEventFeedStopped(t *testing.T) {
+	t.Run("GetFeedID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventFeedStopped{}
+		var expected string
+		obj.FeedID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetFeedID(), "getter should return the property value")
+	})
+
+	t.Run("GetFeedID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEventFeedStopped
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetFeedID() // Should return zero value
+	})
+
+	t.Run("GetReason", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventFeedStopped{}
+		var expected FeedStopReason
+		obj.Reason = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetReason(), "getter should return the property value")
+	})
+
+	t.Run("GetReason_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEventFeedStopped
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetReason() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitNoticeEventFeedStopped(t *testing.T) {
+	t.Run("SetFeedID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventFeedStopped{}
+		var fernTestValueFeedID string
+
+		// Act
+		obj.SetFeedID(fernTestValueFeedID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetReason_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventFeedStopped{}
+		var fernTestValueReason FeedStopReason
+
+		// Act
+		obj.SetReason(fernTestValueReason)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -5637,6 +5803,39 @@ func TestJSONMarshalingNoticeEventCommentsReceived(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingNoticeEventFeedStopped(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NoticeEventFeedStopped{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled NoticeEventFeedStopped
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj NoticeEventFeedStopped
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj NoticeEventFeedStopped
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingNoticeEventPostApprovalRequested(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -6628,6 +6827,22 @@ func TestStringNoticeEventCommentsReceived(t *testing.T) {
 	})
 }
 
+func TestStringNoticeEventFeedStopped(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &NoticeEventFeedStopped{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEventFeedStopped
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
 func TestStringNoticeEventPostApprovalRequested(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -6897,6 +7112,56 @@ func TestStringUnreadNotices(t *testing.T) {
 		var obj *UnreadNotices
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestEnumFeedStopReason(t *testing.T) {
+	t.Run("NewFromString_unreachable", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFeedStopReasonFromString("unreachable")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FeedStopReason("unreachable"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_notAFeed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFeedStopReasonFromString("notAFeed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FeedStopReason("notAFeed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_gone", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFeedStopReasonFromString("gone")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FeedStopReason("gone"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_starterGone", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFeedStopReasonFromString("starterGone")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FeedStopReason("starterGone"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_queueGone", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFeedStopReasonFromString("queueGone")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FeedStopReason("queueGone"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewFeedStopReasonFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewFeedStopReasonFromString("unreachable")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
 	})
 }
 
@@ -7265,6 +7530,29 @@ func TestExtraPropertiesNoticeEventCommentsReceived(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *NoticeEventCommentsReceived
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesNoticeEventFeedStopped(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &NoticeEventFeedStopped{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *NoticeEventFeedStopped
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

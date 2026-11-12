@@ -12,8 +12,11 @@ const pad = (value: number, length: number) =>
 export const dayOf = ({ day, month, year }: LocalDate): string =>
   `${pad(year, 4)}-${pad(month, 2)}-${pad(day, 2)}`;
 
-// How the rule's starter reached Peal, as a post's origin is shown.
-const originView = (origin: PostOrigin): RuleView["startedVia"] =>
+/**
+ * How the starter of what acts later (a rule, a feed) reached Peal, as a
+ * post's origin is shown.
+ */
+export const originView = (origin: PostOrigin): RuleView["startedVia"] =>
   Match.valueTags(origin, {
     apiKey: ({ apiKeyId, name }) => ({
       id: apiKeyId,

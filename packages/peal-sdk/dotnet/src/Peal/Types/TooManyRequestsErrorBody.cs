@@ -19,11 +19,11 @@ public record TooManyRequestsErrorBody
     }
 
     /// <summary>
-    /// Create an instance of TooManyRequestsErrorBody with <see cref="TooManyRequestsErrorBody.TooManyConnectLinks"/>.
+    /// Create an instance of TooManyRequestsErrorBody with <see cref="TooManyRequestsErrorBody.FeedReadsLimited"/>.
     /// </summary>
-    public TooManyRequestsErrorBody(TooManyRequestsErrorBody.TooManyConnectLinks value)
+    public TooManyRequestsErrorBody(TooManyRequestsErrorBody.FeedReadsLimited value)
     {
-        Type = "TooManyConnectLinks";
+        Type = "FeedReadsLimited";
         Value = value.Value;
     }
 
@@ -48,9 +48,9 @@ public record TooManyRequestsErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "TooManyConnectLinks"
+    /// Returns true if <see cref="Type"/> is "FeedReadsLimited"
     /// </summary>
-    public bool IsTooManyConnectLinks => Type == "TooManyConnectLinks";
+    public bool IsFeedReadsLimited => Type == "FeedReadsLimited";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "TooManyRequests"
@@ -58,14 +58,14 @@ public record TooManyRequestsErrorBody
     public bool IsTooManyRequests => Type == "TooManyRequests";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.TooManyConnectLinksEncoded"/> if <see cref="Type"/> is 'TooManyConnectLinks', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.FeedReadsLimitedEncoded"/> if <see cref="Type"/> is 'FeedReadsLimited', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyConnectLinks'.</exception>
-    public Peal.TooManyConnectLinksEncoded AsTooManyConnectLinks() =>
-        IsTooManyConnectLinks
-            ? (Peal.TooManyConnectLinksEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'FeedReadsLimited'.</exception>
+    public Peal.FeedReadsLimitedEncoded AsFeedReadsLimited() =>
+        IsFeedReadsLimited
+            ? (Peal.FeedReadsLimitedEncoded)Value!
             : throw new global::System.Exception(
-                "TooManyRequestsErrorBody.Type is not 'TooManyConnectLinks'"
+                "TooManyRequestsErrorBody.Type is not 'FeedReadsLimited'"
             );
 
     /// <summary>
@@ -80,29 +80,29 @@ public record TooManyRequestsErrorBody
             );
 
     public T Match<T>(
-        Func<Peal.TooManyConnectLinksEncoded, T> onTooManyConnectLinks,
+        Func<Peal.FeedReadsLimitedEncoded, T> onFeedReadsLimited,
         Func<Peal.TooManyRequestsEncoded, T> onTooManyRequests,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "TooManyConnectLinks" => onTooManyConnectLinks(AsTooManyConnectLinks()),
+            "FeedReadsLimited" => onFeedReadsLimited(AsFeedReadsLimited()),
             "TooManyRequests" => onTooManyRequests(AsTooManyRequests()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.TooManyConnectLinksEncoded> onTooManyConnectLinks,
+        Action<Peal.FeedReadsLimitedEncoded> onFeedReadsLimited,
         Action<Peal.TooManyRequestsEncoded> onTooManyRequests,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "TooManyConnectLinks":
-                onTooManyConnectLinks(AsTooManyConnectLinks());
+            case "FeedReadsLimited":
+                onFeedReadsLimited(AsFeedReadsLimited());
                 break;
             case "TooManyRequests":
                 onTooManyRequests(AsTooManyRequests());
@@ -114,13 +114,13 @@ public record TooManyRequestsErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.TooManyConnectLinksEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.FeedReadsLimitedEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsTooManyConnectLinks(out Peal.TooManyConnectLinksEncoded? value)
+    public bool TryAsFeedReadsLimited(out Peal.FeedReadsLimitedEncoded? value)
     {
-        if (Type == "TooManyConnectLinks")
+        if (Type == "FeedReadsLimited")
         {
-            value = (Peal.TooManyConnectLinksEncoded)Value!;
+            value = (Peal.FeedReadsLimitedEncoded)Value!;
             return true;
         }
         value = null;
@@ -144,7 +144,7 @@ public record TooManyRequestsErrorBody
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator TooManyRequestsErrorBody(
-        TooManyRequestsErrorBody.TooManyConnectLinks value
+        TooManyRequestsErrorBody.FeedReadsLimited value
     ) => new(value);
 
     public static implicit operator TooManyRequestsErrorBody(
@@ -192,10 +192,10 @@ public record TooManyRequestsErrorBody
 
             var value = discriminator switch
             {
-                "TooManyConnectLinks" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyConnectLinksEncoded?>(options)
+                "FeedReadsLimited" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.FeedReadsLimitedEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.TooManyConnectLinksEncoded"
+                            "Failed to deserialize Peal.FeedReadsLimitedEncoded"
                         ),
                 "TooManyRequests" => json.Deserialize<Peal.TooManyRequestsEncoded?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.TooManyRequestsEncoded"),
@@ -213,7 +213,7 @@ public record TooManyRequestsErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "TooManyConnectLinks" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "FeedReadsLimited" => JsonSerializer.SerializeToNode(value.Value, options),
                     "TooManyRequests" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
@@ -244,22 +244,22 @@ public record TooManyRequestsErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for TooManyConnectLinks
+    /// Discriminated union type for FeedReadsLimited
     /// </summary>
     [Serializable]
-    public struct TooManyConnectLinks
+    public struct FeedReadsLimited
     {
-        public TooManyConnectLinks(Peal.TooManyConnectLinksEncoded value)
+        public FeedReadsLimited(Peal.FeedReadsLimitedEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.TooManyConnectLinksEncoded Value { get; set; }
+        internal Peal.FeedReadsLimitedEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator TooManyRequestsErrorBody.TooManyConnectLinks(
-            Peal.TooManyConnectLinksEncoded value
+        public static implicit operator TooManyRequestsErrorBody.FeedReadsLimited(
+            Peal.FeedReadsLimitedEncoded value
         ) => new(value);
     }
 

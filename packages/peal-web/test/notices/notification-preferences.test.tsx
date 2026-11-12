@@ -9,6 +9,7 @@ const preferences = {
   email: {
     channelReconnect: true,
     comments: true,
+    feedStopped: true,
     postFailed: true,
     postPublished: false,
     postReview: true,
@@ -74,6 +75,7 @@ describe(PreferencesFields, () => {
           { checked: true, labelled: true },
         ],
         ["A post stops repeating", { checked: true, labelled: true }],
+        ["A feed stops making posts", { checked: true, labelled: true }],
         [
           "A channel must be reconnected, now or soon",
           { checked: true, labelled: true },

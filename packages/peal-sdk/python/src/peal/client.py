@@ -21,6 +21,7 @@ if typing.TYPE_CHECKING:
     from .channel_sets.client import AsyncChannelSetsClient, ChannelSetsClient
     from .channels.client import AsyncChannelsClient, ChannelsClient
     from .connect_links.client import AsyncConnectLinksClient, ConnectLinksClient
+    from .feeds.client import AsyncFeedsClient, FeedsClient
     from .inbox.client import AsyncInboxClient, InboxClient
     from .invitations.client import AsyncInvitationsClient, InvitationsClient
     from .lookups.client import AsyncLookupsClient, LookupsClient
@@ -160,6 +161,7 @@ class Peal:
         self._channel_sets: typing.Optional[ChannelSetsClient] = None
         self._queues: typing.Optional[QueuesClient] = None
         self._recycling: typing.Optional[RecyclingClient] = None
+        self._feeds: typing.Optional[FeedsClient] = None
         self._channel_defaults: typing.Optional[ChannelDefaultsClient] = None
         self._short_links: typing.Optional[ShortLinksClient] = None
 
@@ -412,6 +414,14 @@ class Peal:
         return self._recycling
 
     @property
+    def feeds(self):
+        if self._feeds is None:
+            from .feeds.client import FeedsClient  # noqa: E402
+
+            self._feeds = FeedsClient(client_wrapper=self._client_wrapper)
+        return self._feeds
+
+    @property
     def channel_defaults(self):
         if self._channel_defaults is None:
             from .channel_defaults.client import ChannelDefaultsClient  # noqa: E402
@@ -564,6 +574,7 @@ class AsyncPeal:
         self._channel_sets: typing.Optional[AsyncChannelSetsClient] = None
         self._queues: typing.Optional[AsyncQueuesClient] = None
         self._recycling: typing.Optional[AsyncRecyclingClient] = None
+        self._feeds: typing.Optional[AsyncFeedsClient] = None
         self._channel_defaults: typing.Optional[AsyncChannelDefaultsClient] = None
         self._short_links: typing.Optional[AsyncShortLinksClient] = None
 
@@ -814,6 +825,14 @@ class AsyncPeal:
 
             self._recycling = AsyncRecyclingClient(client_wrapper=self._client_wrapper)
         return self._recycling
+
+    @property
+    def feeds(self):
+        if self._feeds is None:
+            from .feeds.client import AsyncFeedsClient  # noqa: E402
+
+            self._feeds = AsyncFeedsClient(client_wrapper=self._client_wrapper)
+        return self._feeds
 
     @property
     def channel_defaults(self):

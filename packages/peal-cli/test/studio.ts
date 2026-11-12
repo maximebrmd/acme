@@ -70,6 +70,7 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 import type {
+  Feed,
   LivePostChange,
   LivePostRefusal,
   AccountExport,
@@ -141,6 +142,7 @@ import {
   playlistPage,
   videoCategories,
 } from "./studio-capabilities.ts";
+import { studioFeedsOf } from "./studio-feeds.ts";
 import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
 import type { InboxState } from "./studio-inbox.ts";
 import { studioQueues, studioQueuesOf } from "./studio-queues.ts";
@@ -777,6 +779,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     email: {
       channelReconnect: true,
       comments: false,
+      feedStopped: true,
       postFailed: true,
       postPublished: false,
       postReview: true,
@@ -1204,6 +1207,8 @@ export interface StudioState {
   readonly posts: readonly Post[];
   /** The workspace's recycling rules, oldest first. */
   readonly recyclingRules: readonly RecyclingRule[];
+  /** The web feeds the workspace follows, oldest first. */
+  readonly feeds: readonly Feed[];
   /** The workspace's queues, oldest first. */
   readonly queues: readonly StudioQueue[];
   /** The posts made under an idempotency key, with the request's body. */
@@ -1294,6 +1299,7 @@ export const makeStudio = (
       connectLinks: [usedLink],
       defaults: {},
       deliveries,
+      feeds: [],
       invitations: [invitation],
       links: [],
       media: [image(readyMediaId, { altText: "A synthetic catalogue cover" })],
@@ -2327,6 +2333,14 @@ const recyclingOfStudio = studioRecyclingOf({
   workspaceId: studioId,
 });
 
+// The studio's feeds.
+const feedsOfStudio = studioFeedsOf({
+  allowed,
+  now: studioNow,
+  record,
+  workspaceId: studioId,
+});
+
 // The studio's queues, over what the rest of it holds.
 const queuesOfStudio = studioQueuesOf({
   allowed,
@@ -2989,6 +3003,7 @@ export const studioGroupsLive = (studio: Studio) =>
     adsGroupLive(studio),
     queuesOfStudio.groupLive(studio),
     recyclingOfStudio.groupLive(studio),
+    feedsOfStudio.groupLive(studio),
     HttpApiBuilder.group(Api, "session", (handlers) =>
       handlers.handleAll({
         me: () => inPerson.pipe(Effect.as(studio.me)),

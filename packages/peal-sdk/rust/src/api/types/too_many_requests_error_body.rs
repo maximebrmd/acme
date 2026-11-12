@@ -5,7 +5,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum TooManyRequestsErrorBody {
     #[non_exhaustive]
-    TooManyConnectLinks {
+    FeedReadsLimited {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -13,8 +13,9 @@ pub enum TooManyRequestsErrorBody {
         #[serde(rename = "requestId")]
         #[serde(skip_serializing_if = "Option::is_none")]
         request_id: Option<String>,
+        #[serde(rename = "retryAfterSeconds")]
         #[serde(default)]
-        allowed: i64,
+        retry_after_seconds: i64,
     },
 
     #[non_exhaustive]
@@ -44,12 +45,12 @@ pub enum TooManyRequestsErrorBody {
 }
 
 impl TooManyRequestsErrorBody {
-    pub fn too_many_connect_links(allowed: i64) -> Self {
-        Self::TooManyConnectLinks {
+    pub fn feed_reads_limited(retry_after_seconds: i64) -> Self {
+        Self::FeedReadsLimited {
             code: None,
             message: None,
             request_id: None,
-            allowed,
+            retry_after_seconds,
         }
     }
 
@@ -64,45 +65,45 @@ impl TooManyRequestsErrorBody {
         }
     }
 
-    pub fn too_many_connect_links_with_code(
+    pub fn feed_reads_limited_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
-        allowed: i64,
+        retry_after_seconds: i64,
     ) -> Self {
-        Self::TooManyConnectLinks {
+        Self::FeedReadsLimited {
             code: Some(code),
             message,
             request_id,
-            allowed,
+            retry_after_seconds,
         }
     }
 
-    pub fn too_many_connect_links_with_message(
+    pub fn feed_reads_limited_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
-        allowed: i64,
+        retry_after_seconds: i64,
     ) -> Self {
-        Self::TooManyConnectLinks {
+        Self::FeedReadsLimited {
             code,
             message: Some(message),
             request_id,
-            allowed,
+            retry_after_seconds,
         }
     }
 
-    pub fn too_many_connect_links_with_request_id(
+    pub fn feed_reads_limited_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
-        allowed: i64,
+        retry_after_seconds: i64,
     ) -> Self {
-        Self::TooManyConnectLinks {
+        Self::FeedReadsLimited {
             code,
             message,
             request_id: Some(request_id),
-            allowed,
+            retry_after_seconds,
         }
     }
 

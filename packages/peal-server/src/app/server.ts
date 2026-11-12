@@ -93,6 +93,7 @@ import {
   PublishingLive,
   QueuesApiLive,
   RecyclingApiLive,
+  FeedsApiLive,
   SignaturesApiLive,
   TagsApiLive,
   TikTokApiLive,
@@ -170,6 +171,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   ChannelSetsApiLive,
   QueuesApiLive,
   RecyclingApiLive,
+  FeedsApiLive,
   ChannelDefaultsApiLive,
   AdsApiLive,
   ShortLinksApiLive

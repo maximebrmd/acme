@@ -33,6 +33,7 @@ use Peal\Signatures\SignaturesClient;
 use Peal\ChannelSets\ChannelSetsClient;
 use Peal\Queues\QueuesClient;
 use Peal\Recycling\RecyclingClient;
+use Peal\Feeds\FeedsClient;
 use Peal\ChannelDefaults\ChannelDefaultsClient;
 use Peal\ShortLinks\ShortLinksClient;
 use Psr\Http\Client\ClientInterface;
@@ -196,6 +197,11 @@ class PealClient
     public RecyclingClient $recycling;
 
     /**
+     * @var FeedsClient $feeds
+     */
+    public FeedsClient $feeds;
+
+    /**
      * @var ChannelDefaultsClient $channelDefaults
      */
     public ChannelDefaultsClient $channelDefaults;
@@ -287,6 +293,7 @@ class PealClient
         $this->channelSets = new ChannelSetsClient($this->client, $this->options);
         $this->queues = new QueuesClient($this->client, $this->options);
         $this->recycling = new RecyclingClient($this->client, $this->options);
+        $this->feeds = new FeedsClient($this->client, $this->options);
         $this->channelDefaults = new ChannelDefaultsClient($this->client, $this->options);
         $this->shortLinks = new ShortLinksClient($this->client, $this->options);
     }

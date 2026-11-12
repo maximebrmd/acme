@@ -3,12 +3,12 @@
 import * as Peal from "../index.js";
 
 export type TooManyRequestsErrorBody = 
-    | Peal.TooManyRequestsErrorBody.TooManyConnectLinks
+    | Peal.TooManyRequestsErrorBody.FeedReadsLimited
     | Peal.TooManyRequestsErrorBody.TooManyRequests;
 
 export namespace TooManyRequestsErrorBody {
-    export interface TooManyConnectLinks extends Peal.TooManyConnectLinksEncoded {
-        _tag: "TooManyConnectLinks";
+    export interface FeedReadsLimited extends Peal.FeedReadsLimitedEncoded {
+        _tag: "FeedReadsLimited";
     }
 
     export interface TooManyRequests extends Peal.TooManyRequestsEncoded {

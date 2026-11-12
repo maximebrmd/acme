@@ -22,7 +22,8 @@ export type NoticeEvent =
     | Peal.NoticeEvent.WebhookDeliveriesFailing
     | Peal.NoticeEvent.AdBoostChanged
     | Peal.NoticeEvent.AdConnectionReconnectRequired
-    | Peal.NoticeEvent.RecyclingEnded;
+    | Peal.NoticeEvent.RecyclingEnded
+    | Peal.NoticeEvent.FeedStopped;
 
 export namespace NoticeEvent {
     export interface PostPublished extends Peal.NoticeEventPostPublished {
@@ -103,5 +104,9 @@ export namespace NoticeEvent {
 
     export interface RecyclingEnded extends Peal.NoticeEventRecyclingEnded {
         _tag: "RecyclingEnded";
+    }
+
+    export interface FeedStopped extends Peal.NoticeEventFeedStopped {
+        _tag: "FeedStopped";
     }
 }

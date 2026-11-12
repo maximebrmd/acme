@@ -60,6 +60,11 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       postId,
       threadId,
     }),
+    FeedStopped: ({ feedId, reason }): NoticeEventRecord => ({
+      _tag: "FeedStopped",
+      feedId,
+      reason,
+    }),
     PostApprovalRequested: ({ postId, scheduledAt }): NoticeEventRecord => ({
       _tag: "PostApprovalRequested",
       postId,
@@ -208,6 +213,7 @@ export const DrizzleNoticeRecords = Layer.effect(
                 email: {
                   channelReconnect: chosen.emailChannelReconnect,
                   comments: chosen.emailComments,
+                  feedStopped: chosen.emailFeedStopped,
                   postFailed: chosen.emailPostFailed,
                   postPublished: chosen.emailPostPublished,
                   postReview: chosen.emailPostReview,

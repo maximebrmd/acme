@@ -10,7 +10,6 @@ import {
 
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { PostContent as Content } from "#publishing/domain/post-content.ts";
-import { isSameOrigin, originOf } from "#publishing/domain/post-origin.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
 import type { RecyclingEndReason } from "#publishing/domain/recycling-end-reason.ts";
@@ -44,11 +43,10 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
-import { can } from "#shared/domain/access.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { PostId } from "#shared/domain/ids.ts";
-import { MissingPermission } from "#shared/domain/missing-permission.ts";
+import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
 import type { AccountRules } from "./account-rules.ts";
@@ -72,6 +70,7 @@ import { RecyclingNotices } from "./recycling-notices.ts";
 import { RecyclingRuleNotFound } from "./recycling-rule-not-found.ts";
 import { RecyclingStore } from "./recycling-store.ts";
 import { RecyclingVariantsRejected } from "./recycling-variants-rejected.ts";
+import { mayChangeStarted, notImpersonating, starterOf } from "./started-by.ts";
 import type { TagStore } from "./tag-store.ts";
 import { TooManyRecyclingRules } from "./too-many-recycling-rules.ts";
 import type { WorkspaceChannels } from "./workspace-channels.ts";
@@ -320,42 +319,15 @@ export class Recycling extends Context.Service<
       const mayStart = Effect.fn("Recycling.mayStart")(function* mayStart(
         actor: Actor
       ) {
-        if (
-          actor.subject._tag === "user" &&
-          Option.isSome(actor.subject.impersonatedBy)
-        ) {
-          return yield* new MissingPermission({ permission: "post:schedule" });
-        }
+        yield* notImpersonating(actor);
 
         return yield* scheduling.mayAsk(actor);
       });
 
       // Those who may schedule change any rule; its starter changes their
-      // own while they may still ask, and only from where they started it:
-      // a member's application that may not publish never rewrites what
-      // goes out in their name from the web, nor the other way round.
-      const mayChange = Effect.fn("Recycling.mayChange")(function* mayChange(
-        actor: Actor,
-        rule: RecyclingRule
-      ) {
-        if (!can(actor, "post:schedule")) {
-          yield* mayStart(actor);
-
-          const sameOrigin = isSameOrigin(
-            originOf(actor, Option.none()),
-            rule.startedVia
-          );
-
-          const sameStarter =
-            actor.subject._tag === "user"
-              ? Option.contains(rule.startedBy, actor.subject.userId)
-              : Option.isNone(rule.startedBy);
-
-          if (!(sameOrigin && sameStarter)) {
-            yield* new MissingPermission({ permission: "post:schedule" });
-          }
-        }
-      });
+      // own while they may still ask, and only from where they started it.
+      const mayChange = (actor: Actor, rule: RecyclingRule) =>
+        mayChangeStarted(actor, rule, mayStart(actor));
 
       const found = Effect.fn("Recycling.found")(function* found(
         actor: Actor,
@@ -539,10 +511,7 @@ export class Recycling extends Context.Service<
                   interval: request.interval,
                   queueId: request.queueId,
                   sourcePostId: post.id,
-                  startedBy:
-                    actor.subject._tag === "user"
-                      ? Option.some(actor.subject.userId)
-                      : Option.none(),
+                  startedBy: starterOf(actor),
                   startedVia: via,
                   timeZone: status.schedule.timeZone,
                   until: request.until,

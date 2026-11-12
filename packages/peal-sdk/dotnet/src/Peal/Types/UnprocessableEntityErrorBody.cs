@@ -19,20 +19,38 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.RecyclingEndsTooSoon"/>.
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.FeedAddressRefused"/>.
     /// </summary>
-    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.RecyclingEndsTooSoon value)
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.FeedAddressRefused value)
     {
-        Type = "RecyclingEndsTooSoon";
+        Type = "FeedAddressRefused";
         Value = value.Value;
     }
 
     /// <summary>
-    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.RecyclingVariantsInvalid"/>.
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.FeedTemplateInvalid"/>.
     /// </summary>
-    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.RecyclingVariantsInvalid value)
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.FeedTemplateInvalid value)
     {
-        Type = "RecyclingVariantsInvalid";
+        Type = "FeedTemplateInvalid";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.FeedUnreadable"/>.
+    /// </summary>
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.FeedUnreadable value)
+    {
+        Type = "FeedUnreadable";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.UnknownChannels"/>.
+    /// </summary>
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.UnknownChannels value)
+    {
+        Type = "UnknownChannels";
         Value = value.Value;
     }
 
@@ -48,64 +66,108 @@ public record UnprocessableEntityErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "RecyclingEndsTooSoon"
+    /// Returns true if <see cref="Type"/> is "FeedAddressRefused"
     /// </summary>
-    public bool IsRecyclingEndsTooSoon => Type == "RecyclingEndsTooSoon";
+    public bool IsFeedAddressRefused => Type == "FeedAddressRefused";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "RecyclingVariantsInvalid"
+    /// Returns true if <see cref="Type"/> is "FeedTemplateInvalid"
     /// </summary>
-    public bool IsRecyclingVariantsInvalid => Type == "RecyclingVariantsInvalid";
+    public bool IsFeedTemplateInvalid => Type == "FeedTemplateInvalid";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.RecyclingEndsTooSoonEncoded"/> if <see cref="Type"/> is 'RecyclingEndsTooSoon', otherwise throws an exception.
+    /// Returns true if <see cref="Type"/> is "FeedUnreadable"
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'RecyclingEndsTooSoon'.</exception>
-    public Peal.RecyclingEndsTooSoonEncoded AsRecyclingEndsTooSoon() =>
-        IsRecyclingEndsTooSoon
-            ? (Peal.RecyclingEndsTooSoonEncoded)Value!
+    public bool IsFeedUnreadable => Type == "FeedUnreadable";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "UnknownChannels"
+    /// </summary>
+    public bool IsUnknownChannels => Type == "UnknownChannels";
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.FeedAddressRefusedEncoded"/> if <see cref="Type"/> is 'FeedAddressRefused', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'FeedAddressRefused'.</exception>
+    public Peal.FeedAddressRefusedEncoded AsFeedAddressRefused() =>
+        IsFeedAddressRefused
+            ? (Peal.FeedAddressRefusedEncoded)Value!
             : throw new global::System.Exception(
-                "UnprocessableEntityErrorBody.Type is not 'RecyclingEndsTooSoon'"
+                "UnprocessableEntityErrorBody.Type is not 'FeedAddressRefused'"
             );
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.RecyclingVariantsInvalidEncoded"/> if <see cref="Type"/> is 'RecyclingVariantsInvalid', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.FeedTemplateInvalidEncoded"/> if <see cref="Type"/> is 'FeedTemplateInvalid', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'RecyclingVariantsInvalid'.</exception>
-    public Peal.RecyclingVariantsInvalidEncoded AsRecyclingVariantsInvalid() =>
-        IsRecyclingVariantsInvalid
-            ? (Peal.RecyclingVariantsInvalidEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'FeedTemplateInvalid'.</exception>
+    public Peal.FeedTemplateInvalidEncoded AsFeedTemplateInvalid() =>
+        IsFeedTemplateInvalid
+            ? (Peal.FeedTemplateInvalidEncoded)Value!
             : throw new global::System.Exception(
-                "UnprocessableEntityErrorBody.Type is not 'RecyclingVariantsInvalid'"
+                "UnprocessableEntityErrorBody.Type is not 'FeedTemplateInvalid'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.FeedUnreadableEncoded"/> if <see cref="Type"/> is 'FeedUnreadable', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'FeedUnreadable'.</exception>
+    public Peal.FeedUnreadableEncoded AsFeedUnreadable() =>
+        IsFeedUnreadable
+            ? (Peal.FeedUnreadableEncoded)Value!
+            : throw new global::System.Exception(
+                "UnprocessableEntityErrorBody.Type is not 'FeedUnreadable'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.UnknownChannelsEncoded"/> if <see cref="Type"/> is 'UnknownChannels', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'UnknownChannels'.</exception>
+    public Peal.UnknownChannelsEncoded AsUnknownChannels() =>
+        IsUnknownChannels
+            ? (Peal.UnknownChannelsEncoded)Value!
+            : throw new global::System.Exception(
+                "UnprocessableEntityErrorBody.Type is not 'UnknownChannels'"
             );
 
     public T Match<T>(
-        Func<Peal.RecyclingEndsTooSoonEncoded, T> onRecyclingEndsTooSoon,
-        Func<Peal.RecyclingVariantsInvalidEncoded, T> onRecyclingVariantsInvalid,
+        Func<Peal.FeedAddressRefusedEncoded, T> onFeedAddressRefused,
+        Func<Peal.FeedTemplateInvalidEncoded, T> onFeedTemplateInvalid,
+        Func<Peal.FeedUnreadableEncoded, T> onFeedUnreadable,
+        Func<Peal.UnknownChannelsEncoded, T> onUnknownChannels,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "RecyclingEndsTooSoon" => onRecyclingEndsTooSoon(AsRecyclingEndsTooSoon()),
-            "RecyclingVariantsInvalid" => onRecyclingVariantsInvalid(AsRecyclingVariantsInvalid()),
+            "FeedAddressRefused" => onFeedAddressRefused(AsFeedAddressRefused()),
+            "FeedTemplateInvalid" => onFeedTemplateInvalid(AsFeedTemplateInvalid()),
+            "FeedUnreadable" => onFeedUnreadable(AsFeedUnreadable()),
+            "UnknownChannels" => onUnknownChannels(AsUnknownChannels()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.RecyclingEndsTooSoonEncoded> onRecyclingEndsTooSoon,
-        Action<Peal.RecyclingVariantsInvalidEncoded> onRecyclingVariantsInvalid,
+        Action<Peal.FeedAddressRefusedEncoded> onFeedAddressRefused,
+        Action<Peal.FeedTemplateInvalidEncoded> onFeedTemplateInvalid,
+        Action<Peal.FeedUnreadableEncoded> onFeedUnreadable,
+        Action<Peal.UnknownChannelsEncoded> onUnknownChannels,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "RecyclingEndsTooSoon":
-                onRecyclingEndsTooSoon(AsRecyclingEndsTooSoon());
+            case "FeedAddressRefused":
+                onFeedAddressRefused(AsFeedAddressRefused());
                 break;
-            case "RecyclingVariantsInvalid":
-                onRecyclingVariantsInvalid(AsRecyclingVariantsInvalid());
+            case "FeedTemplateInvalid":
+                onFeedTemplateInvalid(AsFeedTemplateInvalid());
+                break;
+            case "FeedUnreadable":
+                onFeedUnreadable(AsFeedUnreadable());
+                break;
+            case "UnknownChannels":
+                onUnknownChannels(AsUnknownChannels());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -114,13 +176,13 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.RecyclingEndsTooSoonEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.FeedAddressRefusedEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsRecyclingEndsTooSoon(out Peal.RecyclingEndsTooSoonEncoded? value)
+    public bool TryAsFeedAddressRefused(out Peal.FeedAddressRefusedEncoded? value)
     {
-        if (Type == "RecyclingEndsTooSoon")
+        if (Type == "FeedAddressRefused")
         {
-            value = (Peal.RecyclingEndsTooSoonEncoded)Value!;
+            value = (Peal.FeedAddressRefusedEncoded)Value!;
             return true;
         }
         value = null;
@@ -128,13 +190,41 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.RecyclingVariantsInvalidEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.FeedTemplateInvalidEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsRecyclingVariantsInvalid(out Peal.RecyclingVariantsInvalidEncoded? value)
+    public bool TryAsFeedTemplateInvalid(out Peal.FeedTemplateInvalidEncoded? value)
     {
-        if (Type == "RecyclingVariantsInvalid")
+        if (Type == "FeedTemplateInvalid")
         {
-            value = (Peal.RecyclingVariantsInvalidEncoded)Value!;
+            value = (Peal.FeedTemplateInvalidEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.FeedUnreadableEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsFeedUnreadable(out Peal.FeedUnreadableEncoded? value)
+    {
+        if (Type == "FeedUnreadable")
+        {
+            value = (Peal.FeedUnreadableEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.UnknownChannelsEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsUnknownChannels(out Peal.UnknownChannelsEncoded? value)
+    {
+        if (Type == "UnknownChannels")
+        {
+            value = (Peal.UnknownChannelsEncoded)Value!;
             return true;
         }
         value = null;
@@ -144,11 +234,19 @@ public record UnprocessableEntityErrorBody
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator UnprocessableEntityErrorBody(
-        UnprocessableEntityErrorBody.RecyclingEndsTooSoon value
+        UnprocessableEntityErrorBody.FeedAddressRefused value
     ) => new(value);
 
     public static implicit operator UnprocessableEntityErrorBody(
-        UnprocessableEntityErrorBody.RecyclingVariantsInvalid value
+        UnprocessableEntityErrorBody.FeedTemplateInvalid value
+    ) => new(value);
+
+    public static implicit operator UnprocessableEntityErrorBody(
+        UnprocessableEntityErrorBody.FeedUnreadable value
+    ) => new(value);
+
+    public static implicit operator UnprocessableEntityErrorBody(
+        UnprocessableEntityErrorBody.UnknownChannels value
     ) => new(value);
 
     [Serializable]
@@ -192,18 +290,23 @@ public record UnprocessableEntityErrorBody
 
             var value = discriminator switch
             {
-                "RecyclingEndsTooSoon" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.RecyclingEndsTooSoonEncoded?>(options)
+                "FeedAddressRefused" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.FeedAddressRefusedEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.RecyclingEndsTooSoonEncoded"
+                            "Failed to deserialize Peal.FeedAddressRefusedEncoded"
                         ),
-                "RecyclingVariantsInvalid" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.RecyclingVariantsInvalidEncoded?>(
-                        options
-                    )
+                "FeedTemplateInvalid" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.FeedTemplateInvalidEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.RecyclingVariantsInvalidEncoded"
+                            "Failed to deserialize Peal.FeedTemplateInvalidEncoded"
                         ),
+                "FeedUnreadable" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.FeedUnreadableEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.FeedUnreadableEncoded"
+                        ),
+                "UnknownChannels" => json.Deserialize<Peal.UnknownChannelsEncoded?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.UnknownChannelsEncoded"),
                 _ => json.Deserialize<object?>(options),
             };
             return new UnprocessableEntityErrorBody(discriminator, value);
@@ -218,11 +321,10 @@ public record UnprocessableEntityErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "RecyclingEndsTooSoon" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "RecyclingVariantsInvalid" => JsonSerializer.SerializeToNode(
-                        value.Value,
-                        options
-                    ),
+                    "FeedAddressRefused" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "FeedTemplateInvalid" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "FeedUnreadable" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "UnknownChannels" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -252,42 +354,82 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for RecyclingEndsTooSoon
+    /// Discriminated union type for FeedAddressRefused
     /// </summary>
     [Serializable]
-    public struct RecyclingEndsTooSoon
+    public struct FeedAddressRefused
     {
-        public RecyclingEndsTooSoon(Peal.RecyclingEndsTooSoonEncoded value)
+        public FeedAddressRefused(Peal.FeedAddressRefusedEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.RecyclingEndsTooSoonEncoded Value { get; set; }
+        internal Peal.FeedAddressRefusedEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator UnprocessableEntityErrorBody.RecyclingEndsTooSoon(
-            Peal.RecyclingEndsTooSoonEncoded value
+        public static implicit operator UnprocessableEntityErrorBody.FeedAddressRefused(
+            Peal.FeedAddressRefusedEncoded value
         ) => new(value);
     }
 
     /// <summary>
-    /// Discriminated union type for RecyclingVariantsInvalid
+    /// Discriminated union type for FeedTemplateInvalid
     /// </summary>
     [Serializable]
-    public struct RecyclingVariantsInvalid
+    public struct FeedTemplateInvalid
     {
-        public RecyclingVariantsInvalid(Peal.RecyclingVariantsInvalidEncoded value)
+        public FeedTemplateInvalid(Peal.FeedTemplateInvalidEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.RecyclingVariantsInvalidEncoded Value { get; set; }
+        internal Peal.FeedTemplateInvalidEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator UnprocessableEntityErrorBody.RecyclingVariantsInvalid(
-            Peal.RecyclingVariantsInvalidEncoded value
+        public static implicit operator UnprocessableEntityErrorBody.FeedTemplateInvalid(
+            Peal.FeedTemplateInvalidEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for FeedUnreadable
+    /// </summary>
+    [Serializable]
+    public struct FeedUnreadable
+    {
+        public FeedUnreadable(Peal.FeedUnreadableEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.FeedUnreadableEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator UnprocessableEntityErrorBody.FeedUnreadable(
+            Peal.FeedUnreadableEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for UnknownChannels
+    /// </summary>
+    [Serializable]
+    public struct UnknownChannels
+    {
+        public UnknownChannels(Peal.UnknownChannelsEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.UnknownChannelsEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator UnprocessableEntityErrorBody.UnknownChannels(
+            Peal.UnknownChannelsEncoded value
         ) => new(value);
     }
 }

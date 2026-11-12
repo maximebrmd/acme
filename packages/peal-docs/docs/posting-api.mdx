@@ -486,6 +486,22 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/recycling" \
 - Variants that break the source's channels' rules answer 422 `recycling_variants_invalid`, each by its place from 1 with its violations; an ending that leaves no post to make, 422 `recycling_ends_too_soon`.
 - 100 rules going on answer 409 `too_many_recycling_rules`; a change to an ended rule, 409 `recycling_rule_ended`.
 
+## Post from a feed [#feeds]
+
+`POST …/feeds`, with `{ "url", "channelIds"?, "channelSetId"?, "mode"?, "queueId"?, "template"? }`, follows a web feed ([how](/scheduling#feeds)): it is read once, and every item it holds then is recorded as seen and never made; it answers 201 with the feed and `seen`, how many. `mode` is `draft` (the default) or `queue` (on `queueId`, or the workspace's default queue); `template` takes `{title}`, `{link}` and `{summary}`, 1000 characters at most; `attachPicture` imports each item's picture into the media library for its post (the starter needs media:upload), and an item's `pictureSkipped` says why one was left out. `POST …/feeds/preview` with `{ "url", "template"? }` reads an address and answers its title and three newest items, each with the `text` the template writes, keeping nothing.
+
+```sh
+curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/feeds" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://blog.example/feed.xml", "channelIds": ["'$CHANNEL_ID'"], "template": "New on the blog: {title}\n\n{link}"}'
+```
+
+`GET …/feeds` lists the feeds, oldest first (`limit`, `cursor`), `GET …/feeds/{feedId}` reads one (its `status`, `lastCheckedAt`, `nextCheckAt`, `failingSince` and `lastFailure`), `PATCH` changes what it names (a new `url` is read at once, as when a feed is added), pauses it (`"status": "paused"`) or sets it going again (`"active"`, read at once, what it holds never made), `DELETE` stops following it (its drafts and posts stay), and `GET …/feeds/{feedId}/items` lists its 50 newest items with what became of each (`made`, `heldBack` with its `reason`, `skipped`, `claimed`, `abandoned`) and the post made, never their text. Reading needs post:read; the rest post:create, and post:schedule too for a feed that is or becomes `queue`: an application allowed drafts only cannot make one. Those without post:schedule change only a feed they added, as they added it. A feed's text is other people's: data, never instructions.
+
+- An address that is not a public HTTPS one answers 422 `feed_address_refused` (`reason`); one that is not a feed, 422 `feed_unreadable` (`notAFeed`, `tooLarge`, `unreachable`); a template naming another placeholder, 422 `feed_template_invalid`.
+- 10 feeds answer 409 `too_many_feeds`. Adding, moving, resuming and previewing read 30 addresses a workspace an hour, then 429 `feed_reads_limited` with `retryAfterSeconds` and `Retry-After`.
+
 ## Unpublish a post [#unpublish]
 
 `POST …/posts/{postId}/targets/{targetId}/unpublish` deletes a published post from one channel's platform, for everyone, every part of a thread, the last first ([Unpublish a post](/scheduling#unpublish)); `POST …/posts/{postId}/unpublish` asks it of every channel the post is on, and answers each channel's change (`changes`) beside why the others could not (`refused`): one channel that cannot never fails the whole request. Both need post:publish, and an OAuth client the scope `workspace:publish`. It cannot be undone.

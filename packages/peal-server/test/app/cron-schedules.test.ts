@@ -96,6 +96,19 @@ describe("the crons' schedules", () => {
       })
   );
 
+  it.effect("read the feeds every ten minutes from minute 6", () =>
+    Effect.gen(function* feeds() {
+      const cron = (yield* everyCron).find(
+        ({ name }) => name === "publishing.feeds"
+      );
+
+      assert.deepStrictEqual(
+        cron === undefined ? [] : minutesOf(cron).slice(0, 3),
+        [6, 16, 26]
+      );
+    })
+  );
+
   it.effect("never start two jobs that use the gates on the same minute", () =>
     Effect.gen(function* takesTurns() {
       const crons = (yield* everyCron).filter(({ name }) =>
