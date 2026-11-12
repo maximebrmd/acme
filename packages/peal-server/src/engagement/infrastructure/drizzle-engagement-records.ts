@@ -4,8 +4,10 @@ import { SqlClient } from "effect/sql";
 
 import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import type { CollectionEnd } from "#engagement/domain/thread.ts";
+import { boundsKeeping } from "#engagement/infrastructure/platforms/refresh-bounds.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type { SentReplyRecord } from "#shared/application/personal-data.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { shareFollowingLock } from "./following-lock.ts";
@@ -105,12 +107,21 @@ export const DrizzleEngagementRecords = Layer.effect(
         .where(and(eq(threads.targetId, targetId), isNull(threads.endedAt)))
         .pipe(Effect.asVoid, Effect.mapError(failed));
 
-    // Each bounded thread of the channel is taken first, as every writer
-    // of a thread's comments takes it; its comments then keep their ids
+    // On a platform that bounds keeping, every thread of the channel, read
+    // or not, is taken first, as every writer of a thread's comments
+    // takes it, and ends; its comments then keep their ids
     // and nothing their authors wrote or are, as `expireComment` leaves
     // them, and its counts follow.
     const channelGone = Effect.fn("EngagementRecords.channelGone")(
-      function* channelGone(channelId: string, at: DateTime.Utc) {
+      function* channelGone(
+        channelId: string,
+        platform: Platform,
+        at: DateTime.Utc
+      ) {
+        if (!boundsKeeping(platform)) {
+          return;
+        }
+
         const instant = DateTime.formatIso(at);
 
         yield* sql
@@ -119,7 +130,6 @@ export const DrizzleEngagementRecords = Layer.effect(
               const held = yield* sql<{ readonly id: string }>`
                 SELECT id FROM engagement.threads
                 WHERE channel_id = ${channelId}::uuid
-                  AND refresh_by IS NOT NULL
                 ORDER BY id
                 FOR UPDATE
               `;

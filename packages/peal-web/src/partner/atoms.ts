@@ -43,6 +43,17 @@ export const partnerWorkspacesOf = Atom.family((workspaceId: string) =>
 );
 
 /**
+ * What needs attention in the newest workspaces the account owns, as
+ * `partnerWorkspacesOf` lists them: the same page, in the same order.
+ */
+export const partnerHealthOf = Atom.family((workspaceId: string) =>
+  PealApi.query("partnerAccount", "overview", {
+    params: { workspaceId },
+    query: {},
+  })
+);
+
+/**
  * What the account and its workspaces used over a period, a page of its
  * workspaces at a time: `before` names the page after the first.
  */

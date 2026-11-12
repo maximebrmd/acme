@@ -35,6 +35,7 @@ public partial class PealClient : IPealClient
         _client = new RawClient(clientOptionsWithAuth);
         System = new SystemClient(_client);
         Session = new SessionClient(_client);
+        Credential = new CredentialClient(_client);
         ApiKeys = new ApiKeysClient(_client);
         Channels = new ChannelsClient(_client);
         Posts = new PostsClient(_client);
@@ -73,6 +74,8 @@ public partial class PealClient : IPealClient
     public ISystemClient System { get; }
 
     public ISessionClient Session { get; }
+
+    public ICredentialClient Credential { get; }
 
     public IApiKeysClient ApiKeys { get; }
 

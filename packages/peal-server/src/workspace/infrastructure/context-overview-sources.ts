@@ -17,9 +17,8 @@ import type {
  * What the overview reads of the other contexts, through their
  * application layers: publishing's posts, the channels context's channels
  * and their platforms, the inbox's waiting threads, analytics' report across
- * workspaces, and billing's standing,
- * which has no form across workspaces: it is asked once per workspace of
- * the page (50 at most), rather than written a second time.
+ * workspaces, and billing's standing: a few reads each for a page,
+ * whatever its number of workspaces.
  */
 export const ContextOverviewSourcesLive = Layer.effect(
   OverviewSources,
@@ -54,9 +53,9 @@ export const ContextOverviewSourcesLive = Layer.effect(
           };
         });
       }),
+      bills: standing.bills,
       channels: (workspaceIds) => channels.statesIn(workspaceIds),
-      overPlan: (actor) =>
-        standing.of(actor).pipe(Effect.map(({ mustReduce }) => mustReduce)),
+      overPlan: (workspaceIds) => standing.overPlanIn(workspaceIds),
       posts: (workspaceIds, now) => posts.countsIn(workspaceIds, now),
       // The overview passes the actors that may read analytics, over the
       // last 7, 30 or 90 days, which is always a range.

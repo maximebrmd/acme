@@ -6,6 +6,7 @@ from ..core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ..core.request_options import RequestOptions
 from ..types.customer_workspace import CustomerWorkspace
 from ..types.customer_workspace_page import CustomerWorkspacePage
+from ..types.partner_health import PartnerHealth
 from ..types.partner_overview import PartnerOverview
 from .raw_client import AsyncRawPartnerClient, RawPartnerClient
 
@@ -52,6 +53,42 @@ class PartnerClient:
         client.partner.account()
         """
         _response = self._raw_client.account(request_options=request_options)
+        return _response.data
+
+    def overview(
+        self,
+        *,
+        before: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> PartnerHealth:
+        """
+        Answers, for each workspace the partner owns, what needs attention: its channels (`connected`, `toReconnect`: to reconnect, as `channel.reconnect_needed` told; `off`: turned off), its posts (`scheduledNext7Days`, `awaitingApproval`, `failedLast7Days`: finished in the last 7 days with a channel that failed, as `post.failed` told; `unconfirmedLast7Days`: one that may be live and must be checked) and its inbox (`unanswered`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. `account` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill); with no customer yet, it is the home workspace's own standing. Each section needs the permission that reads it in a workspace: `channel:read`, `post:read`, `engagement:read`, and `mayApprove` says whether the key holds `post:approve`. Needs the scope workspaces:read. Takes a partner key (`Authorization: Bearer peal_partner_…`): any other credential answers 403.
+
+        Parameters
+        ----------
+        before : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        PartnerHealth
+            PartnerHealth
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.partner.overview()
+        """
+        _response = self._raw_client.overview(before=before, limit=limit, request_options=request_options)
         return _response.data
 
     def list_workspaces(
@@ -293,6 +330,50 @@ class AsyncPartnerClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.account(request_options=request_options)
+        return _response.data
+
+    async def overview(
+        self,
+        *,
+        before: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> PartnerHealth:
+        """
+        Answers, for each workspace the partner owns, what needs attention: its channels (`connected`, `toReconnect`: to reconnect, as `channel.reconnect_needed` told; `off`: turned off), its posts (`scheduledNext7Days`, `awaitingApproval`, `failedLast7Days`: finished in the last 7 days with a channel that failed, as `post.failed` told; `unconfirmedLast7Days`: one that may be live and must be checked) and its inbox (`unanswered`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. `account` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill); with no customer yet, it is the home workspace's own standing. Each section needs the permission that reads it in a workspace: `channel:read`, `post:read`, `engagement:read`, and `mayApprove` says whether the key holds `post:approve`. Needs the scope workspaces:read. Takes a partner key (`Authorization: Bearer peal_partner_…`): any other credential answers 403.
+
+        Parameters
+        ----------
+        before : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        PartnerHealth
+            PartnerHealth
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.partner.overview()
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.overview(before=before, limit=limit, request_options=request_options)
         return _response.data
 
     async def list_workspaces(

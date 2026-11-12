@@ -1,4 +1,5 @@
 import { and, count, desc, eq, gt, ilike, lt, lte, or, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { Digest } from "effect/crypto";
 import { SqlClient } from "effect/sql";
@@ -6,6 +7,7 @@ import { SqlClient } from "effect/sql";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { CustomerWorkspaces } from "#workspace/application/customer-workspaces.ts";
 import type {
@@ -104,6 +106,35 @@ export const DrizzleCustomerWorkspaces = Layer.effect(
           organization,
           eq(organization.id, partnerWorkspaces.workspaceId)
         );
+
+    // The partner of each workspace `where` names, with its home
+    // workspace.
+    const owners = (where: SQL, limit?: number) => {
+      const query = db
+        .select({
+          externalId: partnerWorkspaces.externalId,
+          homeWorkspaceId: partners.workspaceId,
+          partnerId: partnerWorkspaces.partnerId,
+          workspaceId: partnerWorkspaces.workspaceId,
+        })
+        .from(partnerWorkspaces)
+        .innerJoin(partners, eq(partners.id, partnerWorkspaces.partnerId))
+        .where(where);
+
+      return (limit === undefined ? query : query.limit(limit)).pipe(
+        Effect.mapError(failed),
+        Effect.map((rows) =>
+          rows.map((found) => ({
+            owner: {
+              externalId: Option.fromNullOr(found.externalId),
+              homeWorkspaceId: WorkspaceIdSchema.make(found.homeWorkspaceId),
+              partnerId: PartnerIdSchema.make(found.partnerId),
+            } satisfies WorkspaceOwner,
+            workspaceId: WorkspaceIdSchema.make(found.workspaceId),
+          }))
+        )
+      );
+    };
 
     const findByExternalId = (partnerId: PartnerId, externalId: string) =>
       owned()
@@ -300,6 +331,32 @@ export const DrizzleCustomerWorkspaces = Layer.effect(
               rows.map(({ workspaceId }) => WorkspaceIdSchema.make(workspaceId))
             )
           ),
+      idsOfEach: (partnerIds) =>
+        partnerIds.length === 0
+          ? Effect.succeed(new Map())
+          : db
+              .select({
+                partnerId: partnerWorkspaces.partnerId,
+                workspaceId: partnerWorkspaces.workspaceId,
+              })
+              .from(partnerWorkspaces)
+              .where(anyUuid(partnerWorkspaces.partnerId, partnerIds))
+              .pipe(
+                Effect.mapError(failed),
+                Effect.map((rows) => {
+                  const byPartner = new Map<PartnerId, WorkspaceId[]>();
+
+                  for (const row of rows) {
+                    const partnerId = PartnerIdSchema.make(row.partnerId);
+                    const workspaces = byPartner.get(partnerId) ?? [];
+
+                    workspaces.push(WorkspaceIdSchema.make(row.workspaceId));
+                    byPartner.set(partnerId, workspaces);
+                  }
+
+                  return byPartner;
+                })
+              ),
       keyUse: (partnerId, request, since) =>
         digestsOf(request).pipe(
           Effect.flatMap((digests) => useOf(partnerId, digests, since))
@@ -392,30 +449,20 @@ export const DrizzleCustomerWorkspaces = Layer.effect(
           .limit(1)
           .pipe(Effect.mapError(failed), Effect.flatMap(one)),
       ownerOf: (workspaceId) =>
-        db
-          .select({
-            externalId: partnerWorkspaces.externalId,
-            homeWorkspaceId: partners.workspaceId,
-            partnerId: partnerWorkspaces.partnerId,
-          })
-          .from(partnerWorkspaces)
-          .innerJoin(partners, eq(partners.id, partnerWorkspaces.partnerId))
-          .where(eq(partnerWorkspaces.workspaceId, workspaceId))
-          .limit(1)
-          .pipe(
-            Effect.mapError(failed),
-            Effect.map(([row]) =>
-              Option.fromUndefinedOr(row).pipe(
-                Option.map((found): WorkspaceOwner => ({
-                  externalId: Option.fromNullOr(found.externalId),
-                  homeWorkspaceId: WorkspaceIdSchema.make(
-                    found.homeWorkspaceId
-                  ),
-                  partnerId: PartnerIdSchema.make(found.partnerId),
-                }))
+        owners(eq(partnerWorkspaces.workspaceId, workspaceId), 1).pipe(
+          Effect.map(([found]) => Option.fromUndefinedOr(found?.owner))
+        ),
+      ownersIn: (workspaceIds) =>
+        workspaceIds.length === 0
+          ? Effect.succeed(new Map())
+          : owners(anyUuid(partnerWorkspaces.workspaceId, workspaceIds)).pipe(
+              Effect.map(
+                (found) =>
+                  new Map(
+                    found.map(({ owner, workspaceId }) => [workspaceId, owner])
+                  )
               )
-            )
-          ),
+            ),
       purgeKeys: (before) =>
         db
           .delete(partnerIdempotencyKeys)

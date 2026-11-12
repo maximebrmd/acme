@@ -11,6 +11,7 @@ import {
 } from "effect";
 import type { Scope } from "effect";
 import { MessageStorage } from "effect/cluster";
+import { SqlClient } from "effect/sql";
 
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
@@ -814,12 +815,19 @@ describe("a missed post's post.finished event", () => {
           const { post } = yield* schedule(owner, [channel]);
 
           yield* eventually("the job sleeps", isSuspended(post.id));
-          // More than the hour a post may be late, as when the server was
-          // down: the job's claim marks every target missed.
+
+          // The job that sleeps until 08:00 is made a past revision's, so
+          // it wakes to nothing (superseded) whenever TestClock wakes it on
+          // the way; the current revision is claimed at 09:30, more than
+          // the hour a post may be late, as when the server was down.
+          // Claimed by the job at 08:00 instead, the post would publish.
+          const sql = yield* SqlClient.SqlClient;
+
+          yield* sql`UPDATE publishing.posts SET schedule_revision = schedule_revision + 1 WHERE id = ${post.id}`;
           yield* setTime("2026-06-15T09:30:00Z");
 
           assert.deepStrictEqual(
-            yield* claimPostRun(post.id, post.scheduleRevision),
+            yield* claimPostRun(post.id, post.scheduleRevision + 1),
             { _tag: "missed" }
           );
 

@@ -776,6 +776,7 @@ const DowngradingTest = Layer.succeed(
               })
         )
       ),
+    ofEach: () => Effect.die("not read here"),
   })
 );
 

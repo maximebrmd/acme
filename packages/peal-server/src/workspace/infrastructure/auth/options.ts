@@ -47,6 +47,8 @@ import {
   workspaceClaim,
 } from "./oauth.ts";
 import type { AuthConfiguration } from "./settings.ts";
+import { refuseUnadmittedSignUps } from "./sign-up-gate.ts";
+import type { SignUpAdmission } from "./sign-up-gate.ts";
 import {
   guardTwoStepChanges,
   forgetTrustedBrowsers,
@@ -89,6 +91,8 @@ export interface AuthHooks extends BillingHooks {
   readonly invitation: (link: InvitationLink) => void;
   readonly log: (level: AuthLogLevel, message: string) => void;
   readonly resetPassword: (link: AuthLink) => void;
+  /** Awaited on each sign-up: whether the server's mode admits the address. */
+  readonly signUp: SignUpAdmission;
   /**
    * Awaited on the routes that read or change a workspace, and on turning
    * two-step verification off: what the user's workspaces require.
@@ -312,10 +316,11 @@ const oauthServer = (settings: AuthConfiguration) => {
 // Every route's before hook. A request staff send while acting as someone
 // is checked and recorded first, refused or not. Then what two-step
 // verification decides: a workspace's routes for a member it refuses, and
-// turning it on or off.
+// turning it on or off, and a sign-up the server's mode does not admit.
 const beforeEveryRoute = (hooks: AuthHooks) =>
   createAuthMiddleware(async (ctx) => {
     await guardImpersonatedRequest(ctx, hooks.impersonatedRequest);
+    await refuseUnadmittedSignUps(ctx, hooks.signUp);
     await refuseImpersonatedChanges(ctx);
     refusePersonalSubscriptions(ctx);
     await refuseLockedOutMembers(ctx, hooks.twoStep);

@@ -76,7 +76,13 @@ Workspaces:
   Clients (editor)  clients  3f2b8a41-5d6c-4e7f-8a9b-0c1d2e3f4a5b
 ```
 
-Chaque espace de travail vient avec son slug et son identifiant, que prend `--workspace`. `peal whoami` s’adresse à une personne connectée : avec une [clé d’API](#api-key), il est refusé, car une clé n’est personne.
+Chaque espace de travail vient avec son slug et son identifiant, que prend `--workspace`. Avec une [clé d’API](#api-key), une clé n’étant personne, `peal whoami` dit plutôt de quelle clé il s’agit, par `GET /api/credential` : son nom, le nom et l’identifiant de son espace de travail, ses permissions et sa date d’expiration, jamais la clé.
+
+```text
+The API key in PEAL_API_KEY is "nightly" (peal_AbCd…), of the workspace Studio (7c9e6679-7425-40de-944b-e07fc1f90ae7), on https://peal.example.com.
+Permissions: channel:read, post:read, post:create.
+It never expires.
+```
 
 Quand la connexion ne fonctionne plus, parce qu’elle a été révoquée ou que votre compte a été banni, `peal whoami` le dit et vous demande de relancer `peal login`. Avant toute connexion, il répond que vous n’êtes pas connecté.
 
@@ -114,7 +120,7 @@ peal drafts list --json
 - Tant que `PEAL_API_KEY` est définie, elle l’emporte sur une connexion enregistrée. Une valeur vide n’est pas une clé.
 - `--workspace` ou `PEAL_WORKSPACE` doit donner l’identifiant de l’espace de travail, pas son slug, et il n’y a pas de valeur par défaut : une clé ne peut pas chercher les espaces de travail. L’identifiant figure dans l’adresse des pages de l’espace de travail dans l’application web (`/app/<id>/settings`), et `peal whoami`, connecté en tant que personne, le liste. Sinon la commande s’arrête avec `workspace_id_required`.
 - La clé fait ce que ses permissions permettent, et rien de plus : sans `post:schedule`, elle écrit tout au plus des brouillons. Un refus arrive dans les mots du serveur, avec la permission qui manque.
-- Ce que seule une personne fait est refusé avant toute requête (`person_required`) : `peal login`, `peal whoami`, `peal account export` et `peal account apps`, `peal members list`, et toutes les commandes `peal invitations`.
+- Ce que seule une personne fait est refusé avant toute requête (`person_required`) : `peal login`, `peal account export` et `peal account apps`, `peal members list`, et toutes les commandes `peal invitations`.
 - Une clé que le serveur n’accepte plus, révoquée, expirée ou venue d’un autre serveur, est signalée comme telle (`api_key_refused`), et non comme une connexion à renouveler.
 
 ## Vérifier la configuration [#doctor]
@@ -670,9 +676,10 @@ peal partner show
 peal partner keys
 peal partner workspaces --external-id cus_42
 peal partner usage --from 2026-11-01 --to 2026-11-30
+peal partner overview --limit 100
 ```
 
-Pour les propriétaires et administrateurs d’un espace de travail qui a un [compte partenaire](/embedding) : `show` affiche ce que voient ses clients, les origines vers lesquelles les pages hébergées peuvent les renvoyer, et ce qu’il détient ; `keys` liste ses clés, jamais les clés elles-mêmes ; `workspaces` liste les espaces de travail qu’il possède, du plus récent au plus ancien, avec leurs identifiants externes et leurs canaux, `--external-id` en trouvant un exactement et `--name` cherchant ; `usage` affiche ce que le compte a utilisé par client sur une période de jours UTC (`--from`, `--to`, les 30 derniers par défaut, 92 au plus) : sur la première page, ce qu’il détient aujourd’hui et les totaux ; puis une ligne par espace de travail, l’identifiant externe en premier, son espace principal en tête de la première page, `--limit` et `--before` paginant comme l’[API](/embedding#usage), et la commande de la page suivante, sur les mêmes jours. Créer et supprimer ces espaces revient à l’API partenaire, avec une clé partenaire, et créer une clé aux **Paramètres** de l’espace de travail.
+Pour les propriétaires et administrateurs d’un espace de travail qui a un [compte partenaire](/embedding) : `show` affiche ce que voient ses clients, les origines vers lesquelles les pages hébergées peuvent les renvoyer, et ce qu’il détient ; `keys` liste ses clés, jamais les clés elles-mêmes ; `workspaces` liste les espaces de travail qu’il possède, du plus récent au plus ancien, avec leurs identifiants externes et leurs canaux, `--external-id` en trouvant un exactement et `--name` cherchant ; `usage` affiche ce que le compte a utilisé par client sur une période de jours UTC (`--from`, `--to`, les 30 derniers par défaut, 92 au plus) : sur la première page, ce qu’il détient aujourd’hui et les totaux ; puis une ligne par espace de travail, l’identifiant externe en premier, son espace principal en tête de la première page, `--limit` et `--before` paginant comme l’[API](/embedding#usage), et la commande de la page suivante, sur les mêmes jours ; `overview` affiche ce qui demande votre attention dans l’espace de chaque client ([Santé](/embedding#health)) : canaux à reconnecter ou désactivés, publications en échec, à confirmer ou à approuver, fils qui attendent, une seule fois « Nothing needs attention. » là où rien n’en demande, et sur la première page si l’offre contient leurs canaux, du plus récent au plus ancien, `--limit` et `--cursor` paginant. Créer et supprimer ces espaces revient à l’API partenaire, avec une clé partenaire, et créer une clé aux **Paramètres** de l’espace de travail.
 
 ## Publicités [#ads]
 

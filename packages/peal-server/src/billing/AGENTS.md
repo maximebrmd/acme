@@ -94,7 +94,17 @@
   `.members`, at scheduling and again in `RoutedPlatformPublisher`); posts
   already scheduled fail when due as `planLimit` and are reposted
   afterwards, never moved to drafts. `GET …/billing/standing`
-  (`WorkspaceStanding`) tells every member; `POST …/billing/reduction`
+  (`WorkspaceStanding.of`) tells every member; views across workspaces
+  ask `overPlanIn` instead, which names the workspaces of a set that must
+  reduce in a few reads whatever their number (`ofEach`'s holders and
+  subscriptions, `WorkspaceUsage.heldIn`'s pools, channels and members),
+  and reads only what decides it, through the domain's `excessesOf` and
+  `mustReduce`. It takes no partner's hold
+  (`PartnerOwnership.poolsIn`, `ChannelAllowance.sharingIn`): it reports
+  a state and adds nothing, and a page would queue behind every
+  connection. It must stay equal to `of` for every shape of workspace
+  (`test/billing/integration/standing-across-workspaces.test.ts`): a new
+  limit that decides `mustReduce` joins it there; `POST …/billing/reduction`
   (`ReduceWorkspace`, in `billingActions`) keeps the channels and members a
   manager chose: the whole choice is checked first, members go before
   channels (`WorkspaceMembers.keepOnly`, `membersToRemove`: whoever chooses

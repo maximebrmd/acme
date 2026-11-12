@@ -40,7 +40,10 @@
   is the bearer token, wins over a saved sign-in, stays `Redacted`, and
   `--workspace` or `PEAL_WORKSPACE` must then be the workspace's id, as a
   key cannot read `/api/me`. What only a person does (`login`, `account`,
-  members and invitations) says so without asking the server.
+  members and invitations) says so without asking the server; `peal
+  whoami` with a key reads `credential.get` instead of `/api/me`, and
+  prints the key's name, start, workspace, permissions and expiry, never
+  the key.
 - Every command that reads or changes through the API takes `--json`
   (`jsonFlag`, `printJson`) and prints the API's answer as it came; an
   answer without a body prints `null`. With `--json` a failure is one JSON
@@ -151,7 +154,10 @@
   `peal partner` (show, keys, workspaces, usage), which read; `peal
   partner usage` (`--from`, `--to`, `--limit`, `--before`) reads the
   member's `usage.partner`, and `partnerUsage.get` (a partner key's) is
-  exempt from parity, as the rest of the partner API is; the MCP toolkit
+  exempt from parity, as the rest of the partner API is; `peal partner
+  overview` (`--limit`, `--cursor`) reads the member's
+  `partnerAccount.overview` (`partner.overview` is exempt the same way),
+  and no MCP tool has it; the MCP toolkit
   `connect-tools.ts` has the same, `create_connect_link` and
   `revoke_connect_link` changing. Neither creates a partner key or a
   customer's workspace: the first is a person's, the second a partner

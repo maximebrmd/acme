@@ -268,6 +268,32 @@ func TestPartnerAccountRevokeKeyWithWireMock(
 	VerifyRequestCount(t, "TestPartnerAccountRevokeKeyWithWireMock", "DELETE", "/api/workspaces/workspaceId/partner/keys/partnerKeyId", nil, 1)
 }
 
+func TestPartnerAccountOverviewWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.OverviewPartnerAccountRequest{
+		WorkspaceID: "workspaceId",
+	}
+	_, invocationErr := client.PartnerAccount.Overview(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPartnerAccountOverviewWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPartnerAccountOverviewWithWireMock", "GET", "/api/workspaces/workspaceId/partner/overview", nil, 1)
+}
+
 func TestPartnerAccountListWorkspacesWithWireMock(
 	t *testing.T,
 ) {

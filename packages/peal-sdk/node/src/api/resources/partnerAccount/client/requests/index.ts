@@ -4,5 +4,6 @@ export type { ListKeysPartnerAccountRequest } from "./ListKeysPartnerAccountRequ
 export type { ListWorkspacesPartnerAccountRequest } from "./ListWorkspacesPartnerAccountRequest.js";
 export type { NewPartnerKey } from "./NewPartnerKey.js";
 export type { OpenPartner } from "./OpenPartner.js";
+export type { OverviewPartnerAccountRequest } from "./OverviewPartnerAccountRequest.js";
 export type { PartnerChange } from "./PartnerChange.js";
 export type { RevokeKeyPartnerAccountRequest } from "./RevokeKeyPartnerAccountRequest.js";

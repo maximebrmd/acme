@@ -2,7 +2,7 @@
 title: Environment variables
 description: Every environment variable the Peal server, the web app and the command line read, whether it is required, its default, and what it does.
 sidebar:
-  order: 21
+  order: 22
 ---
 
 The server, the web app and the command line read plain environment variables, so they run on any host. This page lists every one they read. Values shown are examples.
@@ -44,6 +44,7 @@ The server runs in production mode when `NODE_ENV` is `production`, as its image
 | `MCP_DYNAMIC_REGISTRATION`        | `false`                                      | `true` lets MCP clients register themselves, which most of them need before they sign in. Anyone may then register a client under any name; the consent page says Peal has not checked it.                                                                                                                                                                                                                                                  |
 | `PEAL_PARTNER_SELF_SERVICE`       | `false`                                      | `true` lets the owners and admins of any workspace open a [partner account](/embedding) for it themselves, in its settings. Unset or `false`, only staff open one, from the [staff console](/staff#partners). Another value stops the server.                                                                                                                                                                                               |
 | `PEAL_STAFF_TWO_STEP`             | `false`                                      | `true` refuses the [staff console](/staff#two-step) to staff whose own account does not have [two-step verification](/settings#two-step) on; anyone else still finds no console. Members turn it on themselves, and owners may require it of a workspace: neither needs a setting. Another value stops the server.                                                                                                                          |
+| `PEAL_SIGN_UP`                    | `open`                                       | Who may make an account. `open` lets anyone; `invitation` only whoever opens a pending invitation's link and signs up with the address it went to, and the first account of a server that has none ([Who may sign up](/self-hosting#sign-up)). Another value stops the server.                                                                                                                                                              |
 
 Better Auth also reads `BETTER_AUTH_TRUSTED_ORIGINS`, which adds origins as `TRUSTED_ORIGINS` does. Prefer `TRUSTED_ORIGINS`, which `media-cors` reads too.
 

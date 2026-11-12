@@ -99,6 +99,30 @@ func TestPartnerAccountWithWireMock(
 	VerifyRequestCount(t, "TestPartnerAccountWithWireMock", "GET", "/api/partner", nil, 1)
 }
 
+func TestPartnerOverviewWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.OverviewPartnerRequest{}
+	_, invocationErr := client.Partner.Overview(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPartnerOverviewWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPartnerOverviewWithWireMock", "GET", "/api/partner/overview", nil, 1)
+}
+
 func TestPartnerListWorkspacesWithWireMock(
 	t *testing.T,
 ) {

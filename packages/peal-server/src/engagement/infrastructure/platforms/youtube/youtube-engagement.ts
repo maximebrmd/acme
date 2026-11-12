@@ -201,8 +201,8 @@ const isSuccess = (response: HttpClientResponse.HttpClientResponse) =>
  * - `rateLimited`: 429, `rateLimitExceeded`, `userRateLimitExceeded`.
  * - `unavailable`: 5xx.
  * - `disabled`: `commentsDisabled`, the video's comments are off.
- * - `gone`: `videoNotFound`, `commentNotFound` or `parentCommentNotFound`,
- *   the video or the comment no longer exists.
+ * - `gone`: a reason the method documents as gone (`goneReasons`): the
+ *   video, the thread, the channel or the comment no longer exists.
  * - `tooLong`: `commentTextTooLong`, a reply past a length YouTube does
  *   not state.
  * - `refused`: anything else.
@@ -223,17 +223,25 @@ const rateReasons: ReadonlySet<string> = new Set([
   "userRateLimitExceeded",
 ]);
 
-// What YouTube answers when the video, a comment or its parent is gone
-// (commentThreads.list, comments.list, comments.insert, comments.delete,
-// comments.setModerationStatus, each read 2026-11-12).
-const goneReasons: ReadonlySet<string> = new Set([
-  "commentNotFound",
-  "parentCommentNotFound",
+// What each method documents as gone (each read 2026-11-12):
+// commentThreads.list answers `videoNotFound`, `commentThreadNotFound` or
+// `channelNotFound`; comments.list, .insert, .delete and
+// .setModerationStatus `commentNotFound` or `parentCommentNotFound`. A
+// reason another method documents proves nothing.
+const threadsGone: ReadonlySet<string> = new Set([
+  "channelNotFound",
+  "commentThreadNotFound",
   "videoNotFound",
 ]);
 
+const commentsGone: ReadonlySet<string> = new Set([
+  "commentNotFound",
+  "parentCommentNotFound",
+]);
+
 const refusalOf = (
-  response: HttpClientResponse.HttpClientResponse
+  response: HttpClientResponse.HttpClientResponse,
+  goneReasons: ReadonlySet<string> = commentsGone
 ): Effect.Effect<YouTubeRefusal> =>
   Effect.gen(function* refusing() {
     const { status } = response;
@@ -488,7 +496,10 @@ export const youtubeEngagement = Effect.fn("YouTubeEngagement.make")(
           response: HttpClientResponse.HttpClientResponse,
           listing: "replies" | "threads"
         ) {
-          const refusal = yield* refusalOf(response);
+          const refusal = yield* refusalOf(
+            response,
+            listing === "threads" ? threadsGone : commentsGone
+          );
 
           if (refusal === "token") {
             return yield* new TokenRejected();

@@ -76,7 +76,13 @@ Workspaces:
   Clients (editor)  clients  3f2b8a41-5d6c-4e7f-8a9b-0c1d2e3f4a5b
 ```
 
-Each workspace comes with its slug and its id, which `--workspace` takes. `peal whoami` is for a person signed in: with an [API key](#api-key) it is refused, as a key is nobody.
+Each workspace comes with its slug and its id, which `--workspace` takes. With an [API key](#api-key), a key being nobody, `peal whoami` says which key it is instead, through `GET /api/credential`: its name, its workspace's name and id, its permissions and when it expires, never the key.
+
+```text
+The API key in PEAL_API_KEY is "nightly" (peal_AbCd…), of the workspace Studio (7c9e6679-7425-40de-944b-e07fc1f90ae7), on https://peal.example.com.
+Permissions: channel:read, post:read, post:create.
+It never expires.
+```
 
 When the sign-in no longer works, because it was revoked or your account was banned, `peal whoami` says so and asks you to run `peal login` again. Before you sign in at all, it answers that you are not signed in.
 
@@ -114,7 +120,7 @@ peal drafts list --json
 - While `PEAL_API_KEY` is set, it wins over a saved sign-in. A blank value is no key.
 - `--workspace` or `PEAL_WORKSPACE` must give the workspace's id, not its slug, and there is no default: a key cannot look workspaces up. The id is in the address of the workspace's pages in the web app (`/app/<id>/settings`), and `peal whoami`, signed in as a person, lists it. Otherwise the command stops with `workspace_id_required`.
 - The key does what its permissions allow, and no more: without `post:schedule` it writes drafts at most. A refusal comes in the server's words, with the permission it lacks.
-- What only a person does is refused before any request (`person_required`): `peal login`, `peal whoami`, `peal account export` and `peal account apps`, `peal members list`, and every `peal invitations` command.
+- What only a person does is refused before any request (`person_required`): `peal login`, `peal account export` and `peal account apps`, `peal members list`, and every `peal invitations` command.
 - A key the server no longer takes, revoked, expired or another server's, is told as such (`api_key_refused`), not as a sign-in to renew.
 
 ## Check the setup [#doctor]
@@ -670,9 +676,10 @@ peal partner show
 peal partner keys
 peal partner workspaces --external-id cus_42
 peal partner usage --from 2026-11-01 --to 2026-11-30
+peal partner overview --limit 100
 ```
 
-For the owners and admins of a workspace with a [partner account](/embedding): `show` prints what its customers see, the origins hosted pages may send them back to, and what it holds; `keys` lists its keys, never the keys themselves; `workspaces` lists the workspaces it owns, newest first, with their external ids and channels, `--external-id` finding one exactly and `--name` searching; `usage` prints what the account used per customer over a period of UTC days (`--from`, `--to`, the last 30 by default, 92 at most): on the first page, what it holds now and the totals; then a row per workspace, external id first, its home workspace first on the first page, `--limit` and `--before` paging as the [API](/embedding#usage) does, and the command for the next page, with the same days. Creating and deleting those workspaces is for the partner API, with a partner key, and creating a key for the workspace's **Settings**.
+For the owners and admins of a workspace with a [partner account](/embedding): `show` prints what its customers see, the origins hosted pages may send them back to, and what it holds; `keys` lists its keys, never the keys themselves; `workspaces` lists the workspaces it owns, newest first, with their external ids and channels, `--external-id` finding one exactly and `--name` searching; `usage` prints what the account used per customer over a period of UTC days (`--from`, `--to`, the last 30 by default, 92 at most): on the first page, what it holds now and the totals; then a row per workspace, external id first, its home workspace first on the first page, `--limit` and `--before` paging as the [API](/embedding#usage) does, and the command for the next page, with the same days; `overview` prints what needs attention in each customer's workspace ([Health](/embedding#health)): channels to reconnect or turned off, posts that failed, wait to be confirmed or approved, threads waiting, once "Nothing needs attention." where nothing does, and on the first page whether the plan holds their channels, newest first, `--limit` and `--cursor` paging. Creating and deleting those workspaces is for the partner API, with a partner key, and creating a key for the workspace's **Settings**.
 
 ## Ads [#ads]
 

@@ -184,6 +184,42 @@ func (l *ListWorkspacesPartnerRequest) SetName(name *string) {
 }
 
 var (
+	overviewPartnerRequestFieldBefore = big.NewInt(1 << 0)
+	overviewPartnerRequestFieldLimit  = big.NewInt(1 << 1)
+)
+
+type OverviewPartnerRequest struct {
+	Before *string `json:"-" url:"before,omitempty"`
+	Limit  *string `json:"-" url:"limit,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (o *OverviewPartnerRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if o.explicitFields != nil {
+		next.Set(o.explicitFields)
+	}
+	next.Or(next, field)
+	o.explicitFields = next
+}
+
+// SetBefore sets the Before field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewPartnerRequest) SetBefore(before *string) {
+	o.Before = before
+	o.require(overviewPartnerRequestFieldBefore)
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OverviewPartnerRequest) SetLimit(limit *string) {
+	o.Limit = limit
+	o.require(overviewPartnerRequestFieldLimit)
+}
+
+var (
 	partnerOverviewFieldPartner = big.NewInt(1 << 0)
 	partnerOverviewFieldUsage   = big.NewInt(1 << 1)
 )

@@ -265,11 +265,31 @@ export const makeWorld = () => {
             .slice(0, perChannel)
         )
       ),
-    expiring: (at, limit) =>
+    expiring: (at, limit, after) =>
       Effect.succeed(
         [...state.threads.values()]
           .flatMap((thread) =>
-            isPastRefresh(thread.refreshBy, at) ? [thread.id] : []
+            Option.isSome(thread.refreshBy) &&
+            isPastRefresh(thread.refreshBy, at)
+              ? [{ refreshBy: thread.refreshBy.value, threadId: thread.id }]
+              : []
+          )
+          .toSorted(
+            (left, right) =>
+              DateTime.toEpochMillis(left.refreshBy) -
+                DateTime.toEpochMillis(right.refreshBy) ||
+              left.threadId.localeCompare(right.threadId)
+          )
+          .filter((listed) =>
+            Option.match(after, {
+              onNone: () => true,
+              onSome: (last) =>
+                DateTime.toEpochMillis(listed.refreshBy) >
+                  DateTime.toEpochMillis(last.refreshBy) ||
+                (DateTime.toEpochMillis(listed.refreshBy) ===
+                  DateTime.toEpochMillis(last.refreshBy) &&
+                  listed.threadId > last.threadId),
+            })
           )
           .slice(0, limit)
       ),

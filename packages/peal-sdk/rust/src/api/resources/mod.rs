@@ -4,6 +4,7 @@
 //!
 //! - **system**
 //! - **session**
+//! - **credential**
 //! - **apiKeys**
 //! - **channels**
 //! - **posts**
@@ -51,6 +52,7 @@ pub mod channel_defaults;
 pub mod channel_sets;
 pub mod channels;
 pub mod connect_links;
+pub mod credential;
 pub mod feeds;
 pub mod inbox;
 pub mod invitations;
@@ -79,6 +81,7 @@ pub struct PealClient {
     pub config: ClientConfig,
     pub system: SystemClient,
     pub session: SessionClient,
+    pub credential: CredentialClient,
     pub api_keys: ApiKeysClient,
     pub channels: ChannelsClient,
     pub posts: PostsClient,
@@ -120,6 +123,7 @@ impl PealClient {
             config: config.clone(),
             system: SystemClient::new(config.clone())?,
             session: SessionClient::new(config.clone())?,
+            credential: CredentialClient::new(config.clone())?,
             api_keys: ApiKeysClient::new(config.clone())?,
             channels: ChannelsClient::new(config.clone())?,
             posts: PostsClient::new(config.clone())?,
@@ -168,6 +172,7 @@ pub use channel_defaults::ChannelDefaultsClient;
 pub use channel_sets::ChannelSetsClient;
 pub use channels::ChannelsClient;
 pub use connect_links::ConnectLinksClient;
+pub use credential::CredentialClient;
 pub use feeds::FeedsClient;
 pub use inbox::InboxClient;
 pub use invitations::InvitationsClient;

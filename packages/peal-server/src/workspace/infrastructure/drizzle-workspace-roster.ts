@@ -1,9 +1,10 @@
-import { and, asc, eq, gt, lt, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, lt, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { defaultLocale, LocaleSchema } from "#shared/domain/locale.ts";
+import { anyUuid } from "#shared/infrastructure/any-uuid.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { DirectoryUnavailable } from "#workspace/application/directory-unavailable.ts";
 import { WorkspaceRoster } from "#workspace/application/workspace-roster.ts";
@@ -107,6 +108,33 @@ export const WorkspaceRosterLive = Layer.effect(
       }
     );
 
-    return WorkspaceRoster.of({ members, seatsPage });
+    // The members `members` lists: those whose account is there.
+    const seatsIn = Effect.fn("WorkspaceRoster.seatsIn")(function* seatsIn(
+      workspaceIds: readonly WorkspaceId[]
+    ) {
+      if (workspaceIds.length === 0) {
+        return new Map<WorkspaceId, number>();
+      }
+
+      const rows = yield* db
+        .select({
+          members: count(),
+          workspaceId: member.organizationId,
+        })
+        .from(member)
+        .innerJoin(user, eq(user.id, member.userId))
+        .where(anyUuid(member.organizationId, workspaceIds))
+        .groupBy(member.organizationId)
+        .pipe(unavailable);
+
+      return new Map(
+        rows.map((row) => [
+          WorkspaceIdSchema.make(row.workspaceId),
+          row.members,
+        ])
+      );
+    });
+
+    return WorkspaceRoster.of({ members, seatsIn, seatsPage });
   })
 );

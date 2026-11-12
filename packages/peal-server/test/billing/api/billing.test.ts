@@ -56,6 +56,7 @@ const SubscriptionsTest = subscriptionsHolding([
 const UsageTest = Layer.succeed(
   WorkspaceUsage,
   WorkspaceUsage.of({
+    heldIn: () => Effect.die("not read here"),
     of: () =>
       Effect.succeed({
         assistantRequests: { resetsAt: midnight, used: 4 },

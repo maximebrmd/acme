@@ -56,10 +56,6 @@ export const maxAgendaPageSize = 100;
 /** The longest range the agenda lists. */
 export const maxAgendaRange = Duration.days(31);
 
-// How many workspaces are resolved, or asked their standing, at once: each
-// is a query or two, on a pool the rest of the server shares.
-const concurrency = 8;
-
 /** Why a workspace shows no figure: it refuses the person as they stand. */
 export type Refusal = "twoStepRequired";
 
@@ -341,16 +337,14 @@ export class Overview extends Context.Service<
         const found = yield* Effect.all(
           {
             channels: ask(idsWhere(actors, "channels"), sources.channels),
-            overPlan: Effect.forEach(
-              actors,
-              (actor) =>
-                sources
-                  .overPlan(actor)
-                  .pipe(
-                    Effect.map((over) => [actor.workspaceId, over] as const)
+            // Every member's to read: asked of every workspace that lets
+            // the person in.
+            overPlan:
+              actors.length === 0
+                ? Effect.succeed<ReadonlySet<WorkspaceId>>(new Set())
+                : sources.overPlan(
+                    actors.map(({ workspaceId }) => workspaceId)
                   ),
-              { concurrency }
-            ).pipe(Effect.map((pairs) => new Map(pairs))),
             posts: ask(idsWhere(actors, "posts"), (ids) =>
               sources.posts(ids, generatedAt)
             ),
@@ -394,9 +388,7 @@ export class Overview extends Context.Service<
                   workspace.id,
                   0
                 ).pipe(Option.map((unanswered) => ({ unanswered }))),
-                overPlan: Option.fromUndefinedOr(
-                  found.overPlan.get(workspace.id)
-                ),
+                overPlan: Option.some(found.overPlan.has(workspace.id)),
                 posts: figureOf(
                   sections.posts,
                   found.posts,
