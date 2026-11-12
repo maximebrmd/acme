@@ -1,7 +1,7 @@
 ---
 title: Data deletion
 description: How to delete your Peal account and its data, what is deleted, and what may be kept.
-draft: true
+draft: false
 ---
 
 Under the GDPR, you can ask for your personal data to be erased (Article 17); the [privacy policy](/privacy/) lists your other rights. This page explains how to delete your account and its data on the hosted Peal service at app.peal.social.
