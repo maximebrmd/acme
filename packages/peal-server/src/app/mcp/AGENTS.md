@@ -68,6 +68,17 @@
   provider: a key typed into a chat reaches a model. The journal keeps
   the call by name, never the prompt. The text assistant has no tool: an
   agent writes its own text.
+- `get_media`, `get_media_usage` (reading), `describe_media` (not
+  destructive, idempotent) and `delete_media` (destructive: its
+  description says an agent calls it only when the user asked for that
+  file; drafts lose it and the answer names them, a scheduled post refuses
+  it in a `ToolRefused` listing the posts) answer the media API's views.
+  `list_review_links` (reading, never a token), `create_review_link` (view
+  or comment only: its input cannot ask for `approve`, made by a person in
+  the web app; the answer holds the address once, which the agent gives
+  the user; open world) and `revoke_review_link` (destructive) are in
+  `publishingTools`, as `ReviewLinks` checks post:approve. The CLI's are
+  `peal media describe|delete` and `peal review links|link|revoke`.
 - `get_usage` (`reports-tools.ts`) answers the usage endpoint's view
   (`#billing/api/usage-view.ts`), with `from` and `to` as text days;
   `get_billing` stays as it is. The CLI's is `peal usage`.

@@ -55,6 +55,9 @@
   text assistant stays without a command, as an agent writes its own text.
   Its answer says the file is marked as made by AI and that the post's
   options carry the platforms' AI labels.
+- `peal media describe <id> --text …|--clear` sets a media's
+  description; `peal media delete <id>` reads `media.usage` first to say
+  which drafts lose it, then asks (`confirmed`, `--yes`; `neverAsksInJson`).
 - `peal assistant image-provider` (`commands/assistant.ts`: show, set,
   clear) keeps the workspace's own image provider (assistant:configure).
   The key is never an argument: `set` reads it with `readSecret`
