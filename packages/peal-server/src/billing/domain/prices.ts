@@ -1,9 +1,11 @@
-import type { PaidPlan } from "#shared/domain/plan.ts";
+import { Option } from "effect";
+
+import type { LegacyPaidPlan, PaidPlan } from "#shared/domain/plan.ts";
 
 import type { BillingInterval } from "./billing-interval.ts";
 
 /**
- * A plan's published prices, in euro cents, excluding VAT: what Stripe's
+ * A legacy plan's published prices, in euro cents, excluding VAT: what Stripe's
  * tax-exclusive prices hold, and what a business with a validated VAT
  * number pays. A year costs ten months.
  */
@@ -27,7 +29,7 @@ export const displayVatRate = 20;
  * starter €9 a month or €90 a year, pro €15 or €150, business €30 or €300,
  * agency €60 or €600.
  */
-export const planPrices: Readonly<Record<PaidPlan, PlanPrice>> = {
+export const planPrices: Readonly<Record<LegacyPaidPlan, PlanPrice>> = {
   agency: { month: 5000, year: 50_000 },
   business: { month: 2500, year: 25_000 },
   pro: { month: 1250, year: 12_500 },
@@ -39,5 +41,17 @@ export const withDisplayVat = (cents: number): number =>
   Math.round((cents * (100 + displayVatRate)) / 100);
 
 /** The price of a plan for an interval, excluding VAT, in cents. */
-export const priceOf = (plan: PaidPlan, interval: BillingInterval): number =>
-  planPrices[plan][interval];
+export const priceOf = (
+  plan: LegacyPaidPlan,
+  interval: BillingInterval
+): number => planPrices[plan][interval];
+
+/**
+ * The listed price of a paid plan for an interval, excluding VAT, in
+ * cents: none for `payAsYouGo`, which the rate card prices by use.
+ */
+export const listedPriceOf = (
+  plan: PaidPlan,
+  interval: BillingInterval
+): Option.Option<number> =>
+  plan === "payAsYouGo" ? Option.none() : Option.some(priceOf(plan, interval));

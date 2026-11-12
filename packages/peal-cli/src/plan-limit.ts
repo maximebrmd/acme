@@ -14,6 +14,7 @@ const plans: Readonly<Record<PlanLimitReached["plan"], string>> = {
   agency: "Agency",
   business: "Business",
   free: "Free",
+  payAsYouGo: "Per-account pricing",
   pro: "Pro",
   starter: "Starter",
 };

@@ -8,6 +8,7 @@ import {
   usageRetentionDays as contractRetention,
   BillingIntervalSchema as ContractIntervalSchema,
   displayVatRate as contractVatRate,
+  OrderablePlanSchema as ContractOrderablePlanSchema,
   planCatalogue,
   trialOffer,
   PaidPlanSchema as ContractPaidPlanSchema,
@@ -29,6 +30,7 @@ import { BillingIntervalSchema } from "#billing/domain/billing-interval.ts";
 import { desiredDayHorizon } from "#billing/domain/desired-day.ts";
 import {
   planAllowances,
+  legacyPlans,
   plans,
   trialDays,
   trialPlan,
@@ -53,7 +55,11 @@ import {
   usageRetentionDays,
 } from "#billing/domain/usage-meter.ts";
 import { PlanLimitSchema } from "#shared/domain/plan-limit.ts";
-import { PaidPlanSchema, PlanSchema } from "#shared/domain/plan.ts";
+import {
+  LegacyPaidPlanSchema,
+  PaidPlanSchema,
+  PlanSchema,
+} from "#shared/domain/plan.ts";
 
 describe("the contract", () => {
   it("states the usage reports' ranges and retention the server keeps", () => {
@@ -76,6 +82,12 @@ describe("the contract", () => {
     );
   });
 
+  it("takes orders for the legacy plans only, as the server does", () => {
+    expect(ContractOrderablePlanSchema.literals).toStrictEqual(
+      LegacyPaidPlanSchema.literals
+    );
+  });
+
   it("lists the intervals the server bills", () => {
     expect(ContractIntervalSchema.literals).toStrictEqual(
       BillingIntervalSchema.literals
@@ -83,8 +95,8 @@ describe("the contract", () => {
   });
 
   // The site and the web app show these before anyone signs in.
-  it("publishes the plans' limits and prices the server bills", () => {
-    for (const plan of plans) {
+  it("publishes the legacy plans' limits and prices the server bills", () => {
+    for (const plan of legacyPlans) {
       const { limits, price } = planCatalogue[plan];
 
       expect(limits).toStrictEqual(
@@ -99,7 +111,7 @@ describe("the contract", () => {
     }
 
     expect(Object.keys(planCatalogue).toSorted()).toStrictEqual(
-      [...plans].toSorted()
+      [...legacyPlans].toSorted()
     );
   });
 

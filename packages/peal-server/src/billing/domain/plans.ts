@@ -2,8 +2,13 @@ import { Option } from "effect";
 
 import type { Allowance } from "#shared/domain/allowance.ts";
 import type { PlanLimit } from "#shared/domain/plan-limit.ts";
-import { PaidPlanSchema } from "#shared/domain/plan.ts";
-import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
+import { LegacyPaidPlanSchema } from "#shared/domain/plan.ts";
+import type {
+  LegacyPaidPlan,
+  LegacyPlan,
+  PaidPlan,
+  Plan,
+} from "#shared/domain/plan.ts";
 
 /** What a workspace may have, limit by limit. */
 export type Allowances = { readonly [L in PlanLimit]: Allowance };
@@ -33,7 +38,7 @@ export const unlimited: Allowances = {
  * by channels; every plan limits the assistant and storage, which cost the
  * server, and the free plan is kept small.
  */
-export const planAllowances: Readonly<Record<Plan, Allowances>> = {
+export const planAllowances: Readonly<Record<LegacyPlan, Allowances>> = {
   agency: {
     assistantRequests: upTo(80),
     channels: upTo(100),
@@ -71,14 +76,25 @@ export const planAllowances: Readonly<Record<Plan, Allowances>> = {
   },
 };
 
-/** The plans a workspace can be on, from the smallest. */
-export const plans: readonly Plan[] = [
+/**
+ * The allowances of `plan`. Per-account pricing (`payAsYouGo`) is not
+ * wired to the rate card yet and nothing records it: until it is, it is
+ * held to the free plan, never above what is paid for.
+ */
+export const allowancesOf = (plan: Plan): Allowances =>
+  planAllowances[plan === "payAsYouGo" ? "free" : plan];
+
+/** The legacy plans, from the smallest: what the billing page compares. */
+export const legacyPlans: readonly LegacyPlan[] = [
   "free",
-  "starter",
-  "pro",
-  "business",
-  "agency",
+  ...LegacyPaidPlanSchema.literals,
 ];
+
+/**
+ * The plans a workspace can be on, from the smallest, for the helpers that
+ * need a total order: the legacy plans, then `payAsYouGo`.
+ */
+export const plans: readonly Plan[] = [...legacyPlans, "payAsYouGo"];
 
 /** The larger of two paid plans. */
 export const largerPlan = (left: PaidPlan, right: PaidPlan): PaidPlan =>
@@ -87,7 +103,8 @@ export const largerPlan = (left: PaidPlan, right: PaidPlan): PaidPlan =>
 /**
  * The smallest plan larger than `current` whose allowance of `limit` holds
  * `needed`: the one to offer a workspace its plan refused something. None
- * past the largest plan, which is asked for by quote.
+ * past the largest plan, which is asked for by quote, and none above
+ * `payAsYouGo`.
  */
 export const planWithRoom = (
   current: Plan,
@@ -95,7 +112,7 @@ export const planWithRoom = (
   needed: number
 ): Option.Option<PaidPlan> =>
   Option.fromUndefinedOr(
-    PaidPlanSchema.literals.find(
+    LegacyPaidPlanSchema.literals.find(
       (plan) =>
         plans.indexOf(plan) > plans.indexOf(current) &&
         Option.match(planAllowances[plan][limit], {
@@ -116,7 +133,7 @@ export const planToPay = (current: Plan): PaidPlan =>
  * The plan a workspace may try for free, once: `trialDays` days, without a
  * payment method, after which it is back on the free plan unless it ordered.
  */
-export const trialPlan: PaidPlan = "pro";
+export const trialPlan: LegacyPaidPlan = "pro";
 
 /** How long a trial lasts. */
 export const trialDays = 14;

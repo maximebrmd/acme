@@ -695,6 +695,7 @@ export {
   BillingIntervalSchema,
   displayVatRate,
   MoneySchema,
+  OrderablePlanSchema,
   PaidPlanSchema,
   planCatalogue,
   PlanLimitSchema,
@@ -728,7 +729,10 @@ export type {
 
 export type {
   BillingInterval,
+  LegacyPaidPlan,
+  LegacyPlan,
   Money,
+  OrderablePlan,
   PaidPlan,
   Plan,
   PlanLimit,

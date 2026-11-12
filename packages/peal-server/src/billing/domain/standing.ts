@@ -1,7 +1,7 @@
 import { Option, Schema } from "effect";
 
 import type { PaidPlan } from "#shared/domain/plan.ts";
-import { PaidPlanSchema } from "#shared/domain/plan.ts";
+import { LegacyPaidPlanSchema } from "#shared/domain/plan.ts";
 
 import { planAllowances } from "./plans.ts";
 import type { Allowances } from "./plans.ts";
@@ -64,7 +64,7 @@ export const mustReduce = (excesses: readonly Excess[]): boolean =>
  */
 export const planHolding = (held: Holdings): Option.Option<PaidPlan> =>
   Option.fromUndefinedOr(
-    PaidPlanSchema.literals.find(
+    LegacyPaidPlanSchema.literals.find(
       (plan) => excessesOf(planAllowances[plan], held).length === 0
     )
   );
