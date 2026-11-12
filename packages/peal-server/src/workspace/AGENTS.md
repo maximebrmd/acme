@@ -29,7 +29,9 @@ The staff context follows these rules too. What the law has a host keep is in
   another; an admitted address with an account still gets Better Auth's
   made-up user. Two first sign-ups at once may both pass, and the rule
   opens again should every account be deleted: the docs tell the operator
-  to sign up before the address is public. The captcha plugin checks its
+  to sign up before the address is public. An unconfirmed account counts
+  (failing closed); the docs give the SQL that deletes unconfirmed accounts
+  while none is confirmed. The captcha plugin checks its
   token first (`onRequest`). `GET /api/captcha` answers `signUp` from
   `SignUpGate.modeNow`: `open` while a server by invitation has no
   account, so the web app shows the first account its form. An invited

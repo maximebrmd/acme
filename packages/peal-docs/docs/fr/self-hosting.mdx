@@ -375,6 +375,16 @@ Chaque personne que vous laissez entrer peut ensuite créer son propre espace de
 
 Tant que le serveur n’a aucun compte, le premier peut être créé sans invitation, pour qu’un nouveau serveur puisse être mis en place : la page d’inscription montre son formulaire jusque-là. Créez-le, puis votre espace de travail, avant que l’adresse soit publique ; deux inscriptions au même moment sur un serveur vide pourraient passer toutes les deux, et la règle s’ouvre à nouveau si tous les comptes sont supprimés. La connexion, la réinitialisation du mot de passe, l’acceptation d’une invitation, la [console de l’équipe](/staff), les [comptes partenaires](/embedding) et les liens de connexion fonctionnent comme avant.
 
+Un compte compte comme le premier avant même que son adresse soit confirmée. Si le premier compte ne peut pas être confirmé (une adresse mal tapée, un e-mail qui ne fonctionne pas encore, ou quelqu’un d’autre qui a pris la place le premier), personne ne peut se connecter pour inviter qui que ce soit. Supprimez les comptes que personne n’a confirmés, tant qu’aucun ne l’est, puis inscrivez-vous à nouveau :
+
+```bash
+docker compose --project-name peal --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/peal/peal.env exec postgres \
+  psql -U peal -d peal -c 'DELETE FROM auth."user" WHERE NOT email_verified AND NOT EXISTS (SELECT 1 FROM auth."user" WHERE email_verified);'
+```
+
+Elle ne supprime rien dès qu’un compte est confirmé.
+
 ## La ligne de commande et les clients MCP [#mcp]
 
 La [ligne de commande](/cli) se connecte avec un code que l’on approuve à `PUBLIC_URL/device`, et n’a besoin de rien d’autre.

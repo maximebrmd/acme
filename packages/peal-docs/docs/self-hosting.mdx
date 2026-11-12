@@ -375,6 +375,16 @@ Each person you let in may then make a workspace of their own and invite anyone 
 
 While the server has no account, the first one may be made without an invitation, so a new server can be set up: the sign-up page shows its form until then. Make it, then your workspace, before the address is public; two sign-ups at the same moment on an empty server could both pass, and the rule opens again should every account be deleted. Signing in, password resets, accepting an invitation, the [staff console](/staff), [partner accounts](/embedding) and connect links work as before.
 
+An account counts as the first even before its address is confirmed. If the first account cannot be confirmed (a mistyped address, email that does not work yet, or a stranger who took the slot first), nobody can sign in to invite anyone. Delete the accounts no one confirmed, as long as none is, then sign up again:
+
+```bash
+docker compose --project-name peal --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/peal/peal.env exec postgres \
+  psql -U peal -d peal -c 'DELETE FROM auth."user" WHERE NOT email_verified AND NOT EXISTS (SELECT 1 FROM auth."user" WHERE email_verified);'
+```
+
+It deletes nothing once an account is confirmed.
+
 ## The command line and MCP clients [#mcp]
 
 The [command line](/cli) signs in with a code that people approve at `PUBLIC_URL/device`, and needs nothing more.
