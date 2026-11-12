@@ -350,6 +350,102 @@ describe("LinkedIn pages' comments", () => {
   );
 
   it.effect(
+    "takes an empty first page, without a total, against a summary that counts comments for part of them",
+    () =>
+      Effect.gen(function* emptyFirst() {
+        const { account, api, platform } = yield* onLinkedIn(
+          {},
+          { maxCount: 10, withoutTotal: true }
+        );
+
+        api.addPost(share, activity);
+
+        for (let n = 1; n <= 35; n += 1) {
+          api.add(comment(n));
+        }
+
+        api.script("comments", [
+          json({
+            elements: [],
+            paging: { count: 100, links: [], start: 0 },
+          }),
+        ]);
+
+        assert.deepStrictEqual(
+          firstReading(yield* platform.read(account, [thread(1)])),
+          {
+            _tag: "read",
+            comments: [],
+            complete: false,
+            threadId: threadId(1),
+          }
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "reads past a summary whose count lags behind what the pages keep giving",
+    () =>
+      Effect.gen(function* lagging() {
+        const { account, api, platform } = yield* onLinkedIn(
+          {},
+          { maxCount: 10, withoutTotal: true }
+        );
+
+        api.addPost(share, activity);
+
+        for (let n = 1; n <= 35; n += 1) {
+          api.add(comment(n));
+        }
+
+        api.script("summary", [
+          json({ commentsSummary: { totalFirstLevelComments: 10 } }),
+        ]);
+
+        const reading = firstReading(
+          yield* platform.read(account, [thread(1)])
+        );
+
+        assert.strictEqual(
+          reading?._tag === "read" ? reading.comments.length : 0,
+          35
+        );
+        assert.isTrue(reading?._tag === "read" && reading.complete);
+        // The summary, four pages, then the empty one past them.
+        assert.lengthOf(api.requests(), 6);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "reads one page past a count reached on a page as long as LinkedIn gives",
+    () =>
+      Effect.gen(function* oneMore() {
+        const { account, api, platform } = yield* onLinkedIn(
+          {},
+          { maxCount: 10, withoutTotal: true }
+        );
+
+        api.addPost(share, activity);
+
+        for (let n = 1; n <= 20; n += 1) {
+          api.add(comment(n));
+        }
+
+        const reading = firstReading(
+          yield* platform.read(account, [thread(1)])
+        );
+
+        assert.strictEqual(
+          reading?._tag === "read" ? reading.comments.length : 0,
+          20
+        );
+        assert.isTrue(reading?._tag === "read" && reading.complete);
+        // The summary, two pages, then the empty one that confirms it.
+        assert.lengthOf(api.requests(), 4);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
     "stops reading, never publishing nor answering, once the day's calls for reads are spent",
     () =>
       Effect.gen(function* budget() {

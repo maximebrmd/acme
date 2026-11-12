@@ -190,24 +190,36 @@ const PageSchema = Schema.Struct({
 
 type Paging = (typeof PageSchema.Type)["paging"];
 
+/** How far a list was read: in all, on its last page, on its longest. */
+interface ListRead {
+  readonly last: number;
+  readonly longest: number;
+  readonly total: number;
+}
+
 /**
- * Whether a list ends with the `read` elements read so far: its
- * `paging.total` reached, or, without one, the first-level count its
- * summary gave (`expected`). Neither a page shorter than asked nor
- * `links` without a next one proves it: Rest.li adds a next link only to
- * a page as long as the `count` asked, so a page LinkedIn caps (its
- * samples show 10) has none. Without either, only an empty page ends it.
+ * Whether a list ends once `read`: its `paging.total` reached, or,
+ * without one, the first-level count its summary gave (`expected`) met
+ * exactly on a page shorter than one before it, the list's tail. Neither
+ * a page shorter than asked nor `links` without a next one proves it:
+ * Rest.li adds a next link only to a page as long as the `count` asked, so
+ * a page LinkedIn caps (its samples show 10) has none. A count met on a
+ * page as long as LinkedIn gives may lag behind the list, and one passed
+ * did: the next page tells, and only an empty page ends the list then.
  */
 const listEnds = (
   paging: Paging | undefined,
-  read: number,
+  read: ListRead,
   expected: Option.Option<number>
 ): boolean => {
   if (paging?.total !== undefined) {
-    return read >= paging.total;
+    return read.total >= paging.total;
   }
 
-  return Option.exists(expected, (count) => read >= count);
+  return Option.exists(
+    expected,
+    (count) => read.total === count && read.last < read.longest
+  );
 };
 
 // How many first-level comments a summary counts, if it says.
@@ -499,6 +511,8 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
       expected: Option.Option<number>
     ) {
       let start = 0;
+      // The longest page LinkedIn gave so far, which a tail is shorter than.
+      let longest = 0;
 
       for (let page = 0; page < listPages; page += 1) {
         if (
@@ -568,16 +582,24 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
           return Option.some(at.read(false));
         }
 
-        start += elements.length;
+        const read: ListRead = {
+          last: elements.length,
+          longest,
+          total: start + elements.length,
+        };
 
-        if (listEnds(paging, start, expected)) {
+        start = read.total;
+        longest = Math.max(longest, elements.length);
+
+        if (listEnds(paging, read, expected)) {
           return Option.none<Step>();
         }
 
-        // Nothing more came: the end, without a total; short of the total
+        // Nothing more came: the end, without a total, but for a first page
+        // against a summary that counted comments; short of the total
         // LinkedIn gave, not all of it.
         if (elements.length === 0) {
-          return paging?.total === undefined
+          return paging?.total === undefined && (start > 0 || noneShown)
             ? Option.none<Step>()
             : Option.some(at.read(false));
         }
@@ -904,7 +926,14 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
             });
           }
 
-          if (listEnds(body.value.paging, listed.length, Option.none())) {
+          // No count to meet: only a total ends it before an empty page.
+          const listedSoFar: ListRead = {
+            last: body.value.elements.length,
+            longest: body.value.elements.length,
+            total: listed.length,
+          };
+
+          if (listEnds(body.value.paging, listedSoFar, Option.none())) {
             return Option.some<readonly ListedReply[]>(listed);
           }
 
