@@ -185,6 +185,11 @@ and no socket, for tests.
   CORS for any origin, an ETag) and `/llms.txt`. Implement a discovery
   document only where a specification gives its path and format, and read
   the specification first.
+- `GET /api/l/:code` (`src/app/short-links/`) is a short link's redirect,
+  outside the contract and without credentials: a 302 that is never
+  cached, 404 and 410 in the general error envelope, 300 a minute per
+  address in the process (429). A short domain's proxy rewrites `/<code>`
+  to it, so the route rule holds.
 - `GET /api/health` is liveness: keep it free of the database.
   `GET /api/ready` is readiness: `SELECT 1` within 2 seconds, otherwise
   `DatabaseUnavailable` (503).

@@ -99,6 +99,12 @@ Le serveur répond à deux sondes :
 - `GET /api/health` répond `204 No Content` dès que le serveur a démarré, quel que soit l’état de sa base de données, ce qui convient à un contrôle de santé de conteneur. L’image du serveur l’utilise.
 - `GET /api/ready` répond `204 No Content` quand la base de données répond elle aussi, et `503 Service Unavailable` avec une erreur `DatabaseUnavailable` sinon : un répartiteur de charge peut ainsi retenir le trafic jusque-là.
 
+## Liens courts [#short-links]
+
+Les [liens courts](/scheduling#short-links) sont désactivés tant que `PEAL_SHORT_LINK_BASE` n’indique pas où ils se trouvent. Mettez-y `https://<votre domaine>/api/l/` et rien d’autre ne change : le serveur répond à `/api/l/<code>`, que l’application web transmet. Ou donnez-leur un domaine à eux, comme `https://go.example.com/` : son proxy envoie chaque `/<code>` (sept lettres et chiffres) vers `/api/l/<code>` du serveur, et répond 404 au reste ; `self-host/Caddyfile` en contient le bloc, commenté, avec `PEAL_SHORT_LINK_DOMAIN`. Un domaine à part tient les redirections à l’écart de l’adresse où l’on se connecte, au cas où une plateforme verrait d’un mauvais œil un hôte qui redirige. Changer ou retirer la base fait cesser de fonctionner les liens courts déjà envoyés.
+
+Une redirection est une `302` avec `Cache-Control: no-store`, pour que chaque visite atteigne le serveur et soit comptée, et `X-Robots-Tag: noindex, nofollow`. Chaque adresse peut suivre 300 liens courts par minute (dans chaque processus du serveur), au-delà elle reçoit `429` ; cela borne la recherche de codes au hasard, pas les clics. Le serveur journalise le chemin, avec son code, comme tout chemin, et jamais la destination d’un lien.
+
 ## Base de données [#database]
 
 Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, un serveur à la fois, et n’écoute qu’une fois qu’elles sont terminées. Chaque partie de Peal range ses tables dans un schéma Postgres à elle (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`) ; les tables de l’exécuteur de tâches (`cluster_*`) sont dans `public`.

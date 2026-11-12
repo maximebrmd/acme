@@ -534,6 +534,10 @@ curl -X POST "https://peal.example/api/workspaces/$WORKSPACE_ID/posts/$POST_ID/t
 - Avant tout appel, 409 `live_post_not_changeable` dit pourquoi pas, comme pour une suppression, avec aussi `approvalRequired` ; une partie que la publication n’a pas en ligne là est `noPlatformId`.
 - Les webhooks reçoivent `post.edited` ou `post.edit_failed` ([Webhooks](/webhooks#post-edited)), avec la partie, jamais le texte. `livePost.edit` et `livePost.editBlockedBy` des capacités disent d’avance où Peal modifie.
 
+## Liens courts [#short-links]
+
+`shortenLinks: true` sur `POST …/posts`, `PUT …/posts/{postId}`, `send` et chaque élément de `bulk` demande que les liens de la publication partent [raccourcis](/scheduling#short-links), sur un serveur qui a des liens courts (`GET …/short-links/status` l’indique, avec le début et la longueur d’une adresse courte). Sans lui, les liens d’une nouvelle publication partent tels qu’écrits et un brouillon modifié garde son choix ; chaque publication porte `shortenLinks` dans sa réponse. `validate` le prend et vérifie le texte tel qu’écrit, qu’une adresse courte n’allonge jamais. Un import CSV n’a pas de colonne pour lui. Les liens et leurs clics se lisent par `GET …/short-links` ([Clics sur les liens courts](/analytics#short-links)) ; aucun point d’accès ne raccourcit une adresse hors d’une publication.
+
 ## Depuis MCP et la ligne de commande [#tools]
 
 | Requête                             | Outil MCP                         | Commande                             |

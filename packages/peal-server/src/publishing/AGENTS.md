@@ -244,6 +244,22 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   platform's `PlatformClient`; tests use `FakePlatformPublisher`. A whole
   publish runs inside the gate: uploads, processing waits, token renewal,
   the post and its confirmation.
+- A post's `shortenLinks` (`posts.shorten_links`, carried by `copyOf`,
+  kept by an update only when the request names it) is read in one
+  place: `outgoing`, where the routed publisher replaces the links
+  `linksToShorten` takes (`domain/short-links.ts`: written with a scheme,
+  shortenable as the shortlinks context's rule says, a copy kept equal,
+  longer than a short address, never on Pinterest, whose help page
+  refuses shorteners) by the addresses `LinkShortener` answers
+  (`ShortLinksLinkShortener`, the shortlinks context's `ShortLinks.issue`:
+  one per target, part and destination, so a resume sends the same
+  text). A link is never replaced by something longer, so the text sent
+  is never longer than the text written and no check (`violationsOf`,
+  `previewOn`, the duplicate digest) changes; the text stored is never
+  touched. A table that cannot be written fails the attempt as
+  `databaseDown`: a post never goes out with long links for that. A
+  server without a base, and an edit of a live post, send the text as
+  written. Tests take `LinkShortener.none` unless they test this.
 - Platform adapters live in `publishing/infrastructure/platforms/<platform>/`
   (Mastodon, Bluesky, LinkedIn, X, TikTok, YouTube, Pinterest and Google
   Business Profile, and Threads, Instagram and Facebook Pages in `meta/`),

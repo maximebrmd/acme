@@ -360,6 +360,14 @@ The new text is checked as the channel's text is when a post is scheduled: the p
 
 Mastodon is sent the post again with its media, its content warning and its sensitivity as they are on Mastodon at that moment, changes made there since included, as Mastodon clears whatever an edit leaves out, and its language is left as it is; a post with a poll is refused, as the edit would remove the poll. Reading the post first needs the `read:statuses` permission, which channels connected before Peal asked for it lack: reconnect the channel. Each part of a thread is edited on its own, by its place from 0 (the post itself).
 
+## Shorten links [#short-links]
+
+On a server whose operator set where short links live (`PEAL_SHORT_LINK_BASE`), the composer shows **Shorten links** under the text, ticked for new posts when the workspace's settings say so. A post that asks goes out with each link written with `http://` or `https://`, and longer than a short address, replaced by one on each channel: the address redirects to the link and counts each visit. Every channel, and every part of a thread, gets addresses of its own, so you can tell which channel brought visitors; a run that is tried again sends the same addresses. A link without a scheme, a short one, or one naming a user and password is left as written, and the line under the box says how many links will be shortened.
+
+Peal never makes the text longer: a link is replaced only by an address that is not longer than it, so the counters, the previews and the checks made when the post was scheduled all still hold. The text Peal keeps stays as you wrote it; only what the platform receives changes. Pinterest always gets links as written, as its rules refuse link shorteners. An edit of a published post sends its text as written, without short addresses.
+
+A short link goes with its workspace: deleting the workspace, or the operator changing or removing the short address, makes the short links in its published posts stop working. Owners and admins choose whether new posts ask for short links by default, in the workspace's **Settings**; whoever writes a post chooses for that post. [Analytics](/analytics#short-links) says how clicks are counted.
+
 ## From an agent, the command line or the API [#api]
 
 What the composer does, an [MCP client](/mcp#tools), the [command line](/cli#posts) and the [HTTP API](/api-overview) do too, through the same checks: writing a draft, scheduling it, publishing it now, moving it, taking it back to draft and cancelling it. `POST /api/workspaces/{workspaceId}/posts/send` creates a post and sends it in one request, now or at an instant, and refuses it whole, listing every violation at once, when it breaks a rule of one of its channels' platforms. [Posting through the API](/posting-api) shows how to check a post first, send several at once, import them from a CSV file and list them.

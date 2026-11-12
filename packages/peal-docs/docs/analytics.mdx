@@ -89,6 +89,12 @@ Pick the last 7, 30 or 90 days. Days run in your browser's time zone, or in UTC 
 
 A post's page shows how it did on each channel it went out on: its latest counts, when they were read, and a chart of each reading, with the same figures as a table. A post that went out less than an hour ago says when its counts come, and one that went out on a platform Peal reads no counts on says they are not available there.
 
+## Clicks on short links [#short-links]
+
+A post that asked for [short links](/scheduling#short-links) counts how many times each was followed, by UTC day, per link, post and channel. A visit counts when a browser asks for the link: a request from an automated reader (a crawler, the link preview a platform or a messaging app makes), a prefetch, a `HEAD` request and a request without a `User-Agent` are redirected but not counted. Readers are told apart by the names they give themselves, which change, so the figure is approximate. Nothing about the visitor is kept: not their address, their browser, the page they came from or their country, only a count. Clicks are kept 400 days, by day, then deleted; the links go with their workspace.
+
+The post's page lists its links and their clicks over the last 30 days to members who read analytics. Through the API, `GET /api/workspaces/{workspaceId}/short-links` lists the workspace's links by cursor, newest first, those of a `postId` or a `channelId`, with their clicks from `from` to `to` (UTC days, 30 by default, 92 at most), and `GET …/short-links/{linkId}` answers one link with its clicks day by day; both need `analytics:read`. `GET …/short-links/status` says whether the server has short links (`post:read`), and `PUT …/short-links/settings` sets the workspace's default (`organization:update`). The [command line](/cli#short-links) and the [MCP tools](/mcp#tools) read the same.
+
 ## Through the API [#api]
 
 Every endpoint is under `/api/workspaces/{workspaceId}/analytics` and needs the `analytics:read` permission. A range is `days=7`, `30` or `90` (ending today in `timeZone`), or `from` and `to`, at most 366 days, as days run in an IANA `timeZone`.

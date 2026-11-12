@@ -234,6 +234,7 @@ peal post "Le catalogue de printemps est sorti" --channel <channel-id> --now --w
 - **Options.** `--options <channel-id>=<json>` règle les [options de la plateforme](/scheduling#options) d’un canal, comme les prend `peal drafts save`. Un canal pour lequel vous n’en donnez pas prend les options d’un groupe que vous nommez, puis les [options par défaut](#default-options) du canal.
 - **Signatures.** `--signature <id-ou-nom>` place l’une des [signatures](#signatures) de l’espace de travail sous le texte, sur tous les canaux ; `--default-signatures` place celle par défaut de chaque canal. Une signature fait partie du texte de la publication : elle compte dans la limite de chaque plateforme, et n’est jamais ajoutée deux fois.
 - **Étiquettes.** `--tag <id-ou-nom>` range la publication sous l’une des [étiquettes](#tags) de l’espace de travail ; répétez-le pour plusieurs.
+- **Liens courts.** `--shorten-links` envoie ses liens raccourcis, sur un serveur qui a des [liens courts](/scheduling#short-links) : `peal short-links list` lit ensuite leurs clics.
 - **La relancer.** `--idempotency-key` prend le texte de votre choix, de 255 caractères au plus, comme un UUID : dans les 24 heures, la même clé avec la même publication répond la publication créée la première fois, sans en faire une autre ; avec une autre publication, elle est refusée. Sans elle, `peal` n’envoie aucune clé. Pour relancer une publication avec des médias, donnez à `--media` des identifiants de médias : fichiers et adresses sont stockés de nouveau à chaque lancement, ce qui en fait une autre publication.
 - **Deux fois la même publication.** En dehors des clés, une publication dont le contenu (le texte que reçoit le canal et les mêmes médias, dans le même ordre) part déjà sur l’un de ses canaux à moins de 23 heures de son heure est refusée, et `peal` nomme la publication qui l’a déjà. `--allow-duplicate` la laisse passer, quand vous voulez vraiment publier deux fois la même chose ([Publications en double](/posting-api#duplicates)).
 - **Vérifier d’abord.** `--dry-run` vérifie la publication et ne publie rien : il dit ce qui serait refusé, et quels canaux d’un groupe seraient laissés de côté.
@@ -512,6 +513,17 @@ peal usage --from 2026-10-01 --to 2026-10-31
 ```
 
 `peal usage` affiche l’abonnement de l’espace de travail, chaque limite face à ce qui est utilisé maintenant, puis, sur des jours UTC (les 30 derniers sauf si `--from` et `--to` disent autre chose, 92 au plus), les publications parties par plateforme, les jours-canal, les publications sur les plateformes qui facturent à la publication, et une ligne pour chaque jour qui a quelque chose : ses publications, les canaux, membres et médias tels que le relevé du jour les a trouvés (un tiret pour un jour sans relevé), et ses demandes à l’assistant. `--json` affiche la réponse de l’API telle qu’elle est venue. Il ne change rien, et rien n’y est facturé ([Utilisation](/billing#usage)).
+
+## Liens courts [#short-links]
+
+```sh
+peal short-links status
+peal short-links set-default on
+peal short-links list --post <post-id>
+peal short-links show <link-id> --from 2026-11-01 --to 2026-11-30
+```
+
+`peal short-links status` indique si le serveur a des [liens courts](/scheduling#short-links) et si les nouvelles publications de l’espace de travail en demandent par défaut, ce que `peal short-links set-default on` ou `off` change (propriétaires et administrateurs). `peal post --shorten-links` et `peal drafts save --shorten-links` en demandent pour une publication. `peal short-links list` liste les liens de l’espace de travail, du plus récent au plus ancien, avec leurs clics sur des jours UTC (les 30 derniers sauf `--from` et `--to`, 92 au plus), ceux d’une publication (`--post`) ou d’un canal (`--channel`), une page à la fois (`--limit`, `--cursor`) ; `peal short-links show` affiche les clics d’un lien jour par jour. Les décomptes sont approximatifs : les lecteurs automatisés sont écartés, et rien des visiteurs n’est conservé ([Clics sur les liens courts](/analytics#short-links)). `--json` affiche la réponse de l’API telle quelle.
 
 ## Membres et invitations [#members]
 

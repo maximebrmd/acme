@@ -68,6 +68,9 @@ peal_settings:
   # allows, a page or a mailto: address. Unset, it tells them to write to
   # whoever runs the server: set it once the address exists.
   # PEAL_CONTACT_URL: https://peal.social/contact/
+  # Where short links live: off until the owner has a domain for them
+  # (a paid resource), with its tunnel route to the server's /api/l/.
+  # PEAL_SHORT_LINK_BASE: https://<short domain>/
   # Refuses the staff console to staff whose own account does not have
   # two-step verification on: set once every staff account has it on.
   # PEAL_STAFF_TWO_STEP: "true"

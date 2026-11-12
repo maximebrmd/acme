@@ -206,6 +206,7 @@ services:
       PEAL_ENGAGEMENT_CONCURRENCY:
       PEAL_ENGAGEMENT_WINDOW_DAYS:
       PEAL_LEGAL_RETENTION:
+      PEAL_SHORT_LINK_BASE:
       # What the operator declares about its processing, for each user's
       # export: the file PEAL_PRIVACY_DECLARATION names, mounted below.
       PEAL_PRIVACY_DECLARATION_FILE: /etc/peal/privacy-declaration.json

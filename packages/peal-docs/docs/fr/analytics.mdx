@@ -89,6 +89,12 @@ Choisissez les 7, 30 ou 90 derniers jours. Les jours suivent le fuseau horaire d
 
 La page d’une publication montre ce qu’elle a donné sur chaque canal où elle est parue : ses derniers chiffres, quand ils ont été relevés, et un graphique de chaque relevé, avec les mêmes chiffres en tableau. Une publication parue il y a moins d’une heure dit quand ses chiffres arrivent, et une publication parue sur une plateforme dont Peal ne relève pas les chiffres dit qu’ils n’y sont pas disponibles.
 
+## Clics sur les liens courts [#short-links]
+
+Une publication qui a demandé des [liens courts](/scheduling#short-links) compte combien de fois chacun a été suivi, par jour UTC, par lien, publication et canal. Une visite compte quand un navigateur demande le lien : une requête d’un lecteur automatisé (un robot d’indexation, l’aperçu de lien que font une plateforme ou une messagerie), un préchargement, une requête `HEAD` et une requête sans `User-Agent` sont redirigés mais pas comptés. Les lecteurs se distinguent par le nom qu’ils se donnent, qui change, si bien que le chiffre est approximatif. Rien n’est conservé du visiteur : ni son adresse, ni son navigateur, ni la page d’où il vient, ni son pays, seulement un décompte. Les clics sont conservés 400 jours, par jour, puis supprimés ; les liens suivent leur espace de travail.
+
+La page de la publication liste ses liens et leurs clics des 30 derniers jours aux membres qui lisent les statistiques. Par l’API, `GET /api/workspaces/{workspaceId}/short-links` liste les liens de l’espace de travail par curseur, du plus récent au plus ancien, ceux d’un `postId` ou d’un `channelId`, avec leurs clics de `from` à `to` (jours UTC, 30 par défaut, 92 au plus), et `GET …/short-links/{linkId}` donne un lien avec ses clics jour par jour ; tous deux demandent `analytics:read`. `GET …/short-links/status` indique si le serveur a des liens courts (`post:read`), et `PUT …/short-links/settings` règle la valeur par défaut de l’espace de travail (`organization:update`). La [ligne de commande](/cli#short-links) et les [outils MCP](/mcp#tools) lisent les mêmes.
+
 ## Par l’API [#api]
 
 Chaque point d’accès est sous `/api/workspaces/{workspaceId}/analytics` et demande la permission `analytics:read`. Une période est `days=7`, `30` ou `90` (jusqu’à aujourd’hui dans `timeZone`), ou `from` et `to`, 366 jours au plus, les jours suivant un fuseau IANA `timeZone`.
