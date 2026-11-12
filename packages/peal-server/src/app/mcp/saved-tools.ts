@@ -389,7 +389,7 @@ export const GetRecyclingRule = Tool.make("get_recycling_rule", {
 export const StopRecyclingRule = Tool.make("stop_recycling_rule", {
   dependencies: [CurrentMember],
   description:
-    "Ends a recycling rule for good: it makes no more posts, and ends `stopped`. The posts it made stay as they are, scheduled ones included (cancel_post cancels one). A stopped rule cannot be resumed; recycle_post starts a new one on the same post. Do it only when the user asked for the post to stop repeating. Needs a role that schedules posts, or to be the rule's starter.",
+    "Ends a recycling rule for good: it makes no more posts, and ends `stopped`. The posts it made stay as they are, scheduled ones included (cancel_post cancels one). A stopped rule cannot be resumed; recycle_post starts a new one on the same post. Do it only when the user asked for the post to stop repeating. Needs a role that schedules posts.",
   failure: ToolRefused,
   parameters: Schema.Struct({ ruleId }),
   success: Schema.Struct({ stopped: Schema.String }),

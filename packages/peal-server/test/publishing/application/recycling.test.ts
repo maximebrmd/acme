@@ -15,6 +15,7 @@ import type { QueueId } from "#publishing/domain/queue-id.ts";
 import type { RecyclingRuleId } from "#publishing/domain/recycling-rule-id.ts";
 import { RecyclingVariant } from "#publishing/domain/recycling-variant.ts";
 import { newId } from "#shared/application/ids.ts";
+import { Actor } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
@@ -678,6 +679,77 @@ describe("making occurrences for a starter the gate holds", () => {
             "2026-06-22T07:01:00.000Z",
             "2026-06-29T07:01:00.000Z",
           ]);
+        }),
+        HoldingServer
+      ),
+    timeout
+  );
+
+  it.effect(
+    "lets no application without the publishing scope change, resume or stop a rule its member started on the web",
+    () =>
+      onServer(
+        Effect.gen(function* origins() {
+          yield* Ref.set(holdingAfterFirst, 0);
+
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const source = yield* published(workspaceId, channel);
+          const rule = yield* started(workspaceId, weekly(source));
+          const writes = permissionsFor("contributor");
+
+          // The same member, through a client that writes drafts only.
+          const member = actorIn(workspaceId, writes);
+
+          assert(member.subject._tag === "user");
+
+          const application = new Actor({
+            permissions: writes,
+            subject: { ...member.subject, clientId: "synthetic-client" },
+            workspaceId,
+          });
+
+          const variant = [
+            new RecyclingVariant({ overrides: [], text: "Not approved." }),
+          ];
+
+          const refusals = yield* Effect.all(
+            [
+              Recycling.use((recycling) =>
+                recycling.change(application, rule.id, { variants: variant })
+              ),
+              Recycling.use((recycling) =>
+                recycling.change(application, rule.id, { paused: true })
+              ),
+              Recycling.use((recycling) =>
+                recycling.resume(application, rule.id, Option.none())
+              ),
+              Recycling.use((recycling) =>
+                recycling.stop(application, rule.id)
+              ),
+            ].map((call) =>
+              call.pipe(
+                Effect.flip,
+                Effect.map(({ _tag }) => _tag)
+              )
+            )
+          );
+
+          assert.deepStrictEqual(refusals, [
+            "MissingPermission",
+            "MissingPermission",
+            "MissingPermission",
+            "MissingPermission",
+          ]);
+
+          // The member, from where they started it, still changes it.
+          const own = yield* Recycling.use((recycling) =>
+            recycling.change(member, rule.id, {
+              variants: variant,
+            })
+          );
+
+          assert.lengthOf(own.rule.variants, 1);
         }),
         HoldingServer
       ),

@@ -2,6 +2,7 @@ import { Array as Arr, Context, DateTime, Effect, Layer, Option } from "effect";
 
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { PostContent as Content } from "#publishing/domain/post-content.ts";
+import { isSameOrigin, originOf } from "#publishing/domain/post-origin.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { QueueId } from "#publishing/domain/queue-id.ts";
 import type { RecyclingEndReason } from "#publishing/domain/recycling-end-reason.ts";
@@ -179,8 +180,9 @@ const scheduledAt = (post: Post) =>
  * Reading rules needs post:read. Starting one needs to be able to ask for
  * posts to go out (`PostScheduling.mayAsk`), in person or as a key or an
  * application, never staff acting as a member; changing, pausing,
- * resuming or stopping one needs post:schedule, or to be its starter while
- * they may still ask. A source is a post that is scheduled, publishing or
+ * resuming or stopping one needs post:schedule, or to be its starter,
+ * through the same origin (the web, the same application, the same key),
+ * while they may still ask. A source is a post that is scheduled, publishing or
  * went out (unpublished from a platform since or not), one rule going on
  * at a time; a workspace keeps `maxRecyclingRulesPerWorkspace` rules
  * active or paused. Each variant is checked as the source with it would be
@@ -302,7 +304,9 @@ export class Recycling extends Context.Service<
       });
 
       // Those who may schedule change any rule; its starter changes their
-      // own while they may still ask.
+      // own while they may still ask, and only from where they started it:
+      // a member's application that may not publish never rewrites what
+      // goes out in their name from the web, nor the other way round.
       const mayChange = Effect.fn("Recycling.mayChange")(function* mayChange(
         actor: Actor,
         rule: RecyclingRule
@@ -310,13 +314,17 @@ export class Recycling extends Context.Service<
         if (!can(actor, "post:schedule")) {
           yield* mayStart(actor);
 
-          const theirs =
+          const sameOrigin = isSameOrigin(
+            originOf(actor, Option.none()),
+            rule.startedVia
+          );
+
+          const sameStarter =
             actor.subject._tag === "user"
               ? Option.contains(rule.startedBy, actor.subject.userId)
-              : rule.startedVia._tag === "apiKey" &&
-                rule.startedVia.apiKeyId === actor.subject.apiKeyId;
+              : Option.isNone(rule.startedBy);
 
-          if (!theirs) {
+          if (!(sameOrigin && sameStarter)) {
             yield* new MissingPermission({ permission: "post:schedule" });
           }
         }

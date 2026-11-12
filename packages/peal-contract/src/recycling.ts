@@ -316,7 +316,7 @@ export class RecyclingApi extends HttpApiGroup.make("recycling")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Changes a rule's variants, its `count` or `until` (null takes it away), or pauses it (`paused` true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter.",
+          "Changes a rule's variants, its `count` or `until` (null takes it away), or pauses it (`paused` true) or sets it going again (false); what it leaves out stays. A post already made keeps what it says. An ended rule changes no more (RecyclingRuleEnded): resume it. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.",
         summary: "Update a recycling rule",
       })
     ),
@@ -335,7 +335,7 @@ export class RecyclingApi extends HttpApiGroup.make("recycling")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Sets a paused rule going again, or one that ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`), with other `variants` if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Needs post:schedule, or to be the rule's starter.",
+          "Sets a paused rule going again, or one that ended for a reason that can be put right (`planLimit`, `contentRejected`, `noChannels`, `queueFull`), with other `variants` if given: its next post is due at the first due instant after now. Any other ended rule is RecyclingRuleEnded. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.",
         summary: "Resume a recycling rule",
       })
     ),
@@ -346,7 +346,7 @@ export class RecyclingApi extends HttpApiGroup.make("recycling")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Stops a rule: it makes no more posts and ends `stopped`; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter.",
+          "Stops a rule: it makes no more posts and ends `stopped`; the posts it made stay as they are, scheduled ones included. Stopping an ended rule changes nothing. Needs post:schedule, or to be the rule's starter acting as they started it: in the web app, through the same application or with the same API key.",
         summary: "Stop a recycling rule",
       })
     )
