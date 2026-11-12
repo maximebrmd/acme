@@ -210,7 +210,7 @@ Chaque SDK renvoie, avec un délai croissant, un GET, un PUT ou un DELETE auquel
 
 ## Pages [#paging]
 
-Les listes qui grandissent sans fin se lisent page par page : passez `limit` et `cursor`, puis le `nextCursor` de la réponse comme `cursor` suivant, jusqu’à ce qu’il soit `null` ([Pagination](/api-conventions#paging)). Les listes de l’API partenaire (`/api/partner/workspaces`, `/api/partner/usage`) prennent `before` à la place, et répondent `next`. Les SDK passent les deux tels quels : ils n’ont pas d’aide qui lise toutes les pages pour vous.
+Les listes qui grandissent sans fin se lisent page par page : passez `limit` et `cursor`, puis le `nextCursor` de la réponse comme `cursor` suivant, jusqu’à ce qu’il soit `null` ([Pagination](/api-conventions#paging)). Les listes de l’API partenaire (`/api/partner/workspaces`, `/api/partner/usage`, `/api/partner/overview`) prennent `before` à la place, et répondent `next`. Les SDK passent les deux tels quels : ils n’ont pas d’aide qui lise toutes les pages pour vous.
 
 ```ts
 let cursor: string | undefined;
