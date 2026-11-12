@@ -573,6 +573,8 @@
     "description": "Write posts once, schedule them everywhere.",
     "submit": "Create my account",
     "submitting": "Creating your account…",
+    "acceptTerms": "By creating an account, you accept the terms of service.",
+    "privacy": "How your data is processed: the privacy policy.",
     "haveAccount": "Already have an account?",
     "signIn": "Sign in",
     "checkInbox": "Check your inbox",

@@ -108,6 +108,10 @@ peal_settings:
   PEAL_POSTGRES_EFFECTIVE_CACHE_SIZE: 12GB
   PEAL_POSTGRES_MAINTENANCE_WORK_MEM: 512MB
   PEAL_POSTGRES_RANDOM_PAGE_COST: "1.1"
+  # The platforms' production apps: their ids here, their secrets in the
+  # vault. X's analytics stay off: X bills each read.
+  YOUTUBE_CLIENT_ID: 370547380506-ap0ocl7sbbjqgc0n9pihspup46dn9505.apps.googleusercontent.com
+  X_CLIENT_ID: OTdwb0p4d0QzaWFpRU5iamYzWGU6MTpjaQ
   # Where the web app sends people who need more than the largest plan
   # allows, a page or a mailto: address. Unset, it tells them to write to
   # whoever runs the server: set it once the address exists.

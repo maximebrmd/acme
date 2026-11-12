@@ -45,6 +45,17 @@ def test_the_server_knows_where_its_documentation_is(rendered: Path, environment
 
 
 @pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_the_web_app_links_the_legal_pages(rendered: Path, environment: str) -> None:
+    """The sign-up form and the billing page link the site's terms, and the
+    sign-up form its privacy policy."""
+    host_env = _host_env(rendered, environment)
+    site = settings(environment)["peal_hostnames"]["site"]
+
+    assert host_env["PEAL_TERMS_URL"] == f"https://{site}/terms/"
+    assert host_env["PEAL_PRIVACY_URL"] == f"https://{site}/privacy/"
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
 def test_peals_servers_keep_what_french_law_has_a_host_keep(rendered: Path, environment: str) -> None:
     """The software keeps nothing by default; Peal, a host established in
     France, must (loi n° 2004-575, art. 6, V, A)."""

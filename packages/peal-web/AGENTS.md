@@ -447,6 +447,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   hides its link to sign up (`offersSignUp`). The server answers `open`
   while it has no account, so the first one can be made. The server decides: its
   `SIGN_UP_BY_INVITATION` reads from `Auth.errors`.
+- Creating an account accepts the terms of service: the sign-up form says
+  so under its button, linking `PEAL_TERMS_URL` and, when set,
+  `PEAL_PRIVACY_URL` (`#billing/terms.ts`, read at request time). Keep
+  that line.
 - `src/proxy.ts` rewrites `/api/*` and `/.well-known/oauth-*` to
   `PEAL_API_URL`, read per request. Keep it there, not in `next.config.ts`:
   Next resolves config rewrites at build time and writes the URL into the
