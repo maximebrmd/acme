@@ -5,11 +5,9 @@ import { Feeds } from "#publishing/application/feeds.ts";
 import { PlatformQuota } from "#publishing/application/platform-quota.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { Recycling } from "#publishing/application/recycling.ts";
+import { quotaLedgerKeptDays } from "#publishing/domain/quota-retention.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { addDays, localDateOf } from "#shared/domain/wall-clock.ts";
-
-// The quota ledger's days kept: a week, past the day any platform counts.
-const ledgerKeptDays = 7;
 
 const utc = TimeZoneIdSchema.make("UTC");
 
@@ -194,7 +192,7 @@ export const QuotaRetentionCron = ClusterCron.make({
     const now = yield* DateTime.now;
 
     const deleted = yield* PlatformQuota.use((quota) =>
-      quota.purge(addDays(localDateOf(now, utc), -ledgerKeptDays))
+      quota.purge(addDays(localDateOf(now, utc), -quotaLedgerKeptDays))
     );
 
     if (deleted > 0) {
