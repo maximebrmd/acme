@@ -3,10 +3,8 @@ import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
   BillingUnavailable,
-  CurrentPrincipal,
   DeletionIncomplete,
   ExternalIdTaken,
-  Forbidden,
   IdempotencyKeyReused,
   MediaStoreUnavailable,
   PartnerDetailsInvalid,
@@ -14,11 +12,15 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 
+import {
+  partnerClosed,
+  partnerKeyOnly,
+  withoutPartnerScope,
+} from "#shared/api/partner-key.ts";
 import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { OffboardWorkspace } from "#workspace/application/offboard-workspace.ts";
 import { PartnerWorkspaces } from "#workspace/application/partner-workspaces.ts";
 import type { WorkspaceListRequest } from "#workspace/application/partner-workspaces.ts";
-import type { MissingPartnerScope } from "#workspace/domain/missing-partner-scope.ts";
 
 import { recordMade } from "./activity-recording.ts";
 import {
@@ -29,39 +31,11 @@ import {
 } from "./partner-view.ts";
 import { partnerKeyPrincipalOf } from "./principal.ts";
 
-// The key works, and its partner account is gone: closed meanwhile.
-const forbidden = () =>
-  Effect.fail(
-    new Forbidden({
-      message:
-        "The partner account this key belongs to was closed: its keys do nothing more.",
-    })
-  );
-
-// A key without the scope a request takes is told which, and who gives it.
-const withoutScope = ({ scope }: MissingPartnerScope) =>
-  Effect.fail(
-    new Forbidden({
-      message: `This partner key was not given the scope ${scope}, which this request takes. An owner or an admin of the partner's workspace creates a key that has it.`,
-      reason: "missingScope",
-      scope,
-    })
-  );
-
 const notFound = () => Effect.fail(new WorkspaceNotFound());
 
-// The partner key a request to the partner API carries. Anything else, a
-// workspace's API key and a member's session included, may not call it.
-const currentKey = Effect.gen(function* currentKey() {
-  const principal = yield* CurrentPrincipal;
-
-  return principal._tag === "partnerKey"
-    ? partnerKeyPrincipalOf(principal)
-    : yield* new Forbidden({
-        message:
-          "The partner API takes a partner key, sent as a bearer token: not a session, a workspace's API key or an application's token.",
-      });
-});
+// The partner key a request to the partner API carries, as the domain
+// names it.
+const currentKey = partnerKeyOnly.pipe(Effect.map(partnerKeyPrincipalOf));
 
 /** The filters and the page a list of workspaces was asked with. */
 export const listRequestOf = (query: {
@@ -104,7 +78,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
             Effect.catchTags({
               DatabaseError: Effect.die,
               // The key's account went between its check and this read.
-              PartnerNotFound: forbidden,
+              PartnerNotFound: partnerClosed,
             })
           );
 
@@ -140,8 +114,8 @@ export const PartnerHandlers = HttpApiBuilder.group(
                   Effect.fail(new ExternalIdTaken({ workspaceId })),
                 InvalidWorkspaceDetails: ({ field }) =>
                   Effect.fail(new PartnerDetailsInvalid({ field })),
-                MissingPartnerScope: withoutScope,
-                PartnerNotFound: forbidden,
+                MissingPartnerScope: withoutPartnerScope,
+                PartnerNotFound: partnerClosed,
               })
             );
 
@@ -187,7 +161,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
                 ).pipe(
                   Effect.andThen(Effect.fail(new MediaStoreUnavailable()))
                 ),
-              MissingPartnerScope: withoutScope,
+              MissingPartnerScope: withoutPartnerScope,
               WorkspaceBusy: ({ workspaceId }) =>
                 Effect.fail(new WorkspaceBusy({ workspaceId })),
             })
@@ -201,7 +175,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
             Effect.catchTags({
               CustomerWorkspaceNotFound: notFound,
               DatabaseError: Effect.die,
-              MissingPartnerScope: withoutScope,
+              MissingPartnerScope: withoutPartnerScope,
             })
           );
 
@@ -216,7 +190,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
               DatabaseError: Effect.die,
               InvalidWorkspaceCursor: () =>
                 Effect.fail(new HttpApiError.BadRequest()),
-              MissingPartnerScope: withoutScope,
+              MissingPartnerScope: withoutPartnerScope,
             })
           );
 
@@ -236,7 +210,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
                   Effect.fail(new ExternalIdTaken({ workspaceId })),
                 InvalidWorkspaceDetails: ({ field }) =>
                   Effect.fail(new PartnerDetailsInvalid({ field })),
-                MissingPartnerScope: withoutScope,
+                MissingPartnerScope: withoutPartnerScope,
               })
             );
 
