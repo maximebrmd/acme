@@ -4,7 +4,7 @@ import * as pulumi from "@pulumi/pulumi";
 import type { AccountSettings } from "./settings.ts";
 
 /** Addresses on the domain, each forwarded to the owner's mailbox. */
-const forwardedLocals = ["hello", "notifications"] as const;
+const forwardedLocals = ["hello", "notifications", "sandbox"] as const;
 
 /**
  * What the whole Cloudflare account shares, whatever the environment: the
