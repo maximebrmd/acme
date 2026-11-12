@@ -17,7 +17,8 @@
     "./errors": "./src/error-catalogue.ts",
     "./openapi-document": "./src/openapi-document.ts",
     "./path-spelling": "./src/path-spelling.ts",
-    "./post-text": "./src/post-text.ts"
+    "./post-text": "./src/post-text.ts",
+    "./rate-card": "./src/rate-card.ts"
   },
   "dependencies": {
     "effect": "4.1.2"

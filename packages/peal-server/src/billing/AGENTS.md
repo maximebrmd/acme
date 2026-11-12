@@ -6,10 +6,36 @@
   limit, and the assistant keeps `PEAL_AI_DAILY_REQUESTS`. Keep it so: a
   self-hosted server limits nothing, and its billing routes answer
   `BillingNotEnabled`.
-- Plans are priced by connected channels, in tiers: free, starter, pro,
-  business, agency, each a monthly and a yearly price (ten months). Their
-  allowances are `billing/domain/plans.ts` and their prices, euro cents
-  excluding VAT, `prices.ts`; their ids (`#shared/domain/plan.ts`), the
+- Per-account pricing's every number is the rate card
+  (`billing/domain/rate-card.ts`): its `prices`, keyed by currency with
+  US dollars only (Stripe converts at checkout; add no other list), hold
+  the graduated account ladder and each meter's unit price; the rest is
+  written once: account-days at one thirtieth (the 31st free), each
+  meter's monthly allowance with and without a payment method and its
+  default ceiling (per billing account, across the workspaces it pays
+  for), the assistant's margin, storage, the API's rate limits and X's
+  rates. What is not decided yet (the assistant's figures are
+  placeholders) sits together in `awaitingDecision`. Prices are
+  computed by its pure functions (`accountsCharge`, `meterCharge`,
+  `stripeTiersOf`…), never written by hand. The contract copies it
+  (`peal-contract/rate-card`), kept equal by
+  `test/billing/api/contract.test.ts`: change both, never one. The plan
+  `payAsYouGo` is per-account pricing; nothing records or offers it yet
+  (`allowancesOf` holds it to the free plan, and `largerPlan` ranks it
+  below every legacy plan so it never takes a legacy plan's place; Better
+  Auth's plans, the price check and the contract's `OrderablePlan` leave
+  it out). The change that wires it computes its allowances from the rate
+  card and ranks it again, before any Stripe price maps to it, with a test
+  of a workspace holding a legacy plan and `payAsYouGo` together; and
+  `planToPay` must not offer it a price of 0. The pricing functions refuse
+  a count that is not a whole number of zero or more (`RangeError`);
+  Stripe's rounding of a half cent on a meter is assumed half up until a
+  sandbox invoice settles it.
+- The legacy plans are priced by connected channels, in tiers: free,
+  starter, pro, business, agency (`LegacyPlan`, `LegacyPaidPlan`), each a
+  monthly and a yearly price (ten months), kept for the subscriptions that
+  still hold one. Their allowances are `billing/domain/plans.ts` and their
+  prices, euro cents excluding VAT, `prices.ts`; their ids (`#shared/domain/plan.ts`), the
   limits' names (`plan-limit.ts`: channels, members, scheduledPosts,
   assistantRequests, mediaStorage in decimal bytes), `PlanLimitReached`
   and `roomFor`/`roomForOneMore`/`withinAllowance` (`allowance.ts`) are in
@@ -21,11 +47,10 @@
   (`peal-site/src/pricing.ts`) and the docs' variables
   (`peal-docs/pricing-variables.ts`, `{{starter-month-en}}`…) read that
   catalogue: never write a price by hand. `GET …/billing` answers it too.
-- Each paid tier must stay strictly cheaper than the comparable tier of
-  the per-account schedulers Peal is measured against, monthly and yearly,
-  with or without VAT, by a margin a 25% move of the EUR/USD rate does not
-  undo; recheck before any price change. The comparison lives outside the
-  repository: never name another product here.
+- Before any change to the ladder, compare its monthly totals at 10, 20,
+  100 and 1,000 accounts (`accountsMonthly`) with those of the
+  per-account schedulers Peal is measured against. The comparison lives
+  outside the repository: never name another product here.
 - Stripe prices are tax-exclusive EUR prices found by lookup key,
   `<prefix>_<plan>_monthly` and `_yearly` (`STRIPE_LOOKUP_KEY_PREFIX`,
   `peal`), never by id: Better Auth's plans carry `lookupKey` and

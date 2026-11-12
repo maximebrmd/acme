@@ -1,13 +1,24 @@
 import { Schema } from "effect";
 
-/** The plans a workspace can be on, from the smallest. */
+/**
+ * The plans a workspace can be on, from the smallest: `free`, without a
+ * subscription, the legacy plans priced by tiers of connected channels
+ * (`starter` to `agency`, kept for the subscriptions that still hold one),
+ * and `payAsYouGo`, per-account pricing on the rate card
+ * (`peal-contract/rate-card`).
+ */
 export const PlanSchema = Schema.Literals([
   "free",
   "starter",
   "pro",
   "business",
   "agency",
-]).annotate({ identifier: "Plan" });
+  "payAsYouGo",
+]).annotate({
+  description:
+    "The plan a workspace is on: `free` without a subscription; `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, which no workspace holds yet.",
+  identifier: "Plan",
+});
 
 export type Plan = typeof PlanSchema.Type;
 
@@ -17,9 +28,30 @@ export const PaidPlanSchema = Schema.Literals([
   "pro",
   "business",
   "agency",
-]).annotate({ identifier: "PaidPlan" });
+  "payAsYouGo",
+]).annotate({
+  description:
+    "The plan a subscription buys: `starter`, `pro`, `business` and `agency`, the plans priced by tiers of connected channels, kept for the subscriptions that hold one; `payAsYouGo`, pricing per connected account and per use, which no subscription holds yet.",
+  identifier: "PaidPlan",
+});
 
 export type PaidPlan = typeof PaidPlanSchema.Type;
+
+/** `free` and the plans priced by tiers of connected channels. Legacy. */
+export type LegacyPlan = Exclude<Plan, "payAsYouGo">;
+
+/** The paid plans priced by tiers of connected channels. Legacy. */
+export type LegacyPaidPlan = Exclude<PaidPlan, "payAsYouGo">;
+
+/** The plans an order may name. */
+export const OrderablePlanSchema = Schema.Literals([
+  "starter",
+  "pro",
+  "business",
+  "agency",
+]).annotate({ identifier: "OrderablePlan" });
+
+export type OrderablePlan = typeof OrderablePlanSchema.Type;
 
 /**
  * What a plan limits: `channels` connected, `members` (pending invitations
@@ -38,7 +70,10 @@ export const PlanLimitSchema = Schema.Literals([
 
 export type PlanLimit = typeof PlanLimitSchema.Type;
 
-/** How often a subscription is paid for. */
+/**
+ * How often a subscription is paid for. `year` is legacy: only the plans
+ * priced by tiers of connected channels had it.
+ */
 export const BillingIntervalSchema = Schema.Literals([
   "month",
   "year",
@@ -49,22 +84,24 @@ export type BillingInterval = typeof BillingIntervalSchema.Type;
 /** What a plan allows, limit by limit; null for no limit. */
 export type PlanLimits = { readonly [L in PlanLimit]: number | null };
 
-/** A paid plan's prices, in euro cents excluding VAT. */
+/** A legacy paid plan's prices, in euro cents excluding VAT. Legacy. */
 export interface PlanPrices {
   readonly month: number;
   readonly year: number;
 }
 
 /**
- * Peal Cloud's published plans, as the server's billing context holds them
- * (src/billing/domain/plans.ts and prices.ts, the source; a test keeps them
- * equal), for pages that show prices before anyone signs in, such as the
- * site's pricing page. Prices are euro cents excluding VAT; a year costs
- * ten months. A server that does not bill has no plan.
+ * Peal Cloud's plans priced by tiers of connected channels, as the
+ * server's billing context holds them (src/billing/domain/plans.ts and
+ * prices.ts, the source; a test keeps them equal), for pages that show
+ * prices before anyone signs in, such as the site's pricing page. Prices
+ * are euro cents excluding VAT; a year costs ten months. A server that
+ * does not bill has no plan. Legacy: per-account pricing replaces them
+ * (`peal-contract/rate-card`), and `payAsYouGo` has no entry here.
  */
 export const planCatalogue: Readonly<
   Record<
-    Plan,
+    LegacyPlan,
     { readonly limits: PlanLimits; readonly price: PlanPrices | null }
   >
 > = {
@@ -131,11 +168,14 @@ export const billingCurrency = "eur";
  */
 export const displayVatRate = 20;
 
-/** The plan a workspace may try once, and for how many days. */
+/**
+ * The plan a workspace may try once, and for how many days. Legacy: the
+ * rate card's free accounts replace the trial.
+ */
 export const trialOffer = {
   days: 14,
   plan: "pro",
-} as const satisfies { readonly days: number; readonly plan: PaidPlan };
+} as const satisfies { readonly days: number; readonly plan: LegacyPaidPlan };
 
 /** A price in cents with the VAT shown first (`displayVatRate`). */
 export const withDisplayVat = (cents: number): number =>

@@ -2,7 +2,7 @@ import { Context, DateTime, Effect, Layer, Match, Option } from "effect";
 
 import type { BillingNotice, Money } from "#billing/domain/billing-notice.ts";
 import { planAllowances } from "#billing/domain/plans.ts";
-import { currency, priceOf } from "#billing/domain/prices.ts";
+import { currency, listedPriceOf } from "#billing/domain/prices.ts";
 import {
   confirmationOf,
   reminderKey,
@@ -36,10 +36,9 @@ const chargedFor = (reminder: Reminder) =>
         // VAT, which an order would cost.
         subscription.status === "trialing"
           ? Effect.succeed(
-              Option.some<Money>({
-                amount: priceOf(subscription.plan, subscription.interval),
-                currency,
-              })
+              listedPriceOf(subscription.plan, subscription.interval).pipe(
+                Option.map((amount): Money => ({ amount, currency }))
+              )
             )
           : stripe
               .paidInvoices(workspaceId, id)

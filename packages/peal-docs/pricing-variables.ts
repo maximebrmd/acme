@@ -4,7 +4,7 @@ import {
   trialOffer,
   withDisplayVat,
 } from "peal-contract/billing-plans";
-import type { Plan, PlanLimit } from "peal-contract/billing-plans";
+import type { LegacyPlan, PlanLimit } from "peal-contract/billing-plans";
 
 // The plans' prices and limits as docs variables, `{{starter-month-en}}`
 // and the like, from the contract's catalogue, which the server bills
@@ -14,7 +14,13 @@ const locales = ["en", "fr"] as const;
 
 type Locale = (typeof locales)[number];
 
-const plans: readonly Plan[] = ["free", "starter", "pro", "business", "agency"];
+const plans: readonly LegacyPlan[] = [
+  "free",
+  "starter",
+  "pro",
+  "business",
+  "agency",
+];
 
 const limits: readonly PlanLimit[] = [
   "channels",
@@ -53,7 +59,10 @@ const limitValue = (locale: Locale, limit: PlanLimit, value: number | null) => {
     : new Intl.NumberFormat(locale).format(value);
 };
 
-const planVariables = (plan: Plan, locale: Locale): [string, string][] => {
+const planVariables = (
+  plan: LegacyPlan,
+  locale: Locale
+): [string, string][] => {
   const { limits: allowed, price } = planCatalogue[plan];
 
   const prices: [string, string][] =

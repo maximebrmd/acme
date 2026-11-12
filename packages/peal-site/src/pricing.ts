@@ -6,7 +6,7 @@ import {
   withDisplayVat,
 } from "peal-contract/billing-plans";
 import type {
-  Plan,
+  LegacyPlan,
   PlanLimit,
   PlanLimits,
   PlanPrices,
@@ -19,7 +19,7 @@ import type { Messages } from "./i18n/messages.ts";
 // which the server bills from (a test there keeps them equal).
 
 /** The plans, from the smallest. */
-export const pricedPlans: readonly Plan[] = [
+export const pricedPlans: readonly LegacyPlan[] = [
   "free",
   "starter",
   "pro",
@@ -81,7 +81,7 @@ export interface PlanCardPrices {
 export interface PlanCard {
   readonly limits: readonly string[];
   readonly name: string;
-  readonly plan: Plan;
+  readonly plan: LegacyPlan;
   /** None for the free plan. */
   readonly prices?: PlanCardPrices;
 }

@@ -3,7 +3,7 @@ import { Option, Schema } from "effect";
 import { PlanSchema } from "#shared/domain/plan.ts";
 import type { Plan } from "#shared/domain/plan.ts";
 
-import { largerPlan, planAllowances, unlimited } from "./plans.ts";
+import { allowancesOf, largerPlan, unlimited } from "./plans.ts";
 import type { Allowances } from "./plans.ts";
 import { entitles, Subscription } from "./subscription.ts";
 
@@ -21,7 +21,7 @@ export class Entitlements extends Schema.Class<Entitlements>(
   get allowances(): Allowances {
     return Option.match(this.plan, {
       onNone: () => unlimited,
-      onSome: (plan) => planAllowances[plan],
+      onSome: allowancesOf,
     });
   }
 }

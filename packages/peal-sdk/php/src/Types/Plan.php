@@ -9,4 +9,5 @@ enum Plan: string
     case Pro = "pro";
     case Business = "business";
     case Agency = "agency";
+    case PayAsYouGo = "payAsYouGo";
 }

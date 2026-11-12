@@ -17,7 +17,7 @@ import { TrialUnavailable } from "#billing/domain/trial-unavailable.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
-import type { PaidPlan } from "#shared/domain/plan.ts";
+import type { LegacyPaidPlan } from "#shared/domain/plan.ts";
 
 import { holdsSince, trialOpen } from "./place-order.ts";
 import { Orders } from "./ports/orders.ts";
@@ -34,7 +34,7 @@ export interface CheckoutRequest {
   readonly interval: BillingInterval;
   /** As the checkout's metadata names it: no order has another shape. */
   readonly orderId: string;
-  readonly plan: PaidPlan;
+  readonly plan: LegacyPaidPlan;
   readonly userId: UserId;
   readonly workspaceId: WorkspaceId;
 }
