@@ -5,7 +5,6 @@ import { Base64Url } from "effect/encoding";
 import { Dns } from "effect/net";
 
 import { DrizzleAnalyticsRecords } from "#analytics/infrastructure/drizzle-analytics-records.ts";
-import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ConnectLinkJournal } from "#channels/application/connect-link-journal.ts";
@@ -17,6 +16,7 @@ import { ChannelsLive } from "#channels/container.ts";
 import { platforms } from "#channels/domain/platform.ts";
 import { platformRegistrations } from "#channels/infrastructure/platforms/platform-addresses.ts";
 import type { PlatformRegistration } from "#channels/infrastructure/platforms/platform-addresses.ts";
+import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { Notify } from "#notifications/application/notify.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
