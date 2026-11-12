@@ -36,10 +36,9 @@ const adminPaths = [
 ] as const;
 
 /**
- * How long the uptime server's service token is valid: a year, Cloudflare's
- * longest but `forever`. Renewed before it ends with the dashboard's
- * Refresh, which keeps its id and secret (README.md, "The uptime server's
- * service token").
+ * How long the uptime server's service token is valid: a year, in hours.
+ * Renewed before it ends with the dashboard's Refresh, which keeps its id
+ * and secret (README.md, "The uptime server").
  */
 const uptimeTokenDuration = "8760h";
 
