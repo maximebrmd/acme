@@ -10,8 +10,8 @@ import { invitation, user } from "./auth-schema.generated.ts";
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
 /**
- * Better Auth's accounts and invitations, as a sign-up is decided: the
- * invitation's address is read on its index, by address and status.
+ * Better Auth's accounts and invitations, as a sign-up is decided: an
+ * invitation is read by its id, its address and its status.
  */
 export const DrizzleSignUpStore = Layer.effect(
   SignUpStore,
@@ -30,13 +30,18 @@ export const DrizzleSignUpStore = Layer.effect(
       }
     );
 
-    const hasPendingInvitation = Effect.fn("SignUpStore.hasPendingInvitation")(
-      function* hasPendingInvitation(email: string, at: DateTime.Utc) {
+    const invitationTo = Effect.fn("SignUpStore.invitationTo")(
+      function* invitationTo(
+        invitationId: string,
+        email: string,
+        at: DateTime.Utc
+      ) {
         const rows = yield* db
           .select({ id: invitation.id })
           .from(invitation)
           .where(
             and(
+              eq(invitation.id, invitationId),
               eq(invitation.email, email),
               eq(invitation.status, "pending"),
               gt(invitation.expiresAt, DateTime.toDateUtc(at))
@@ -49,6 +54,6 @@ export const DrizzleSignUpStore = Layer.effect(
       }
     );
 
-    return SignUpStore.of({ hasAccounts, hasPendingInvitation });
+    return SignUpStore.of({ hasAccounts, invitationTo });
   })
 );

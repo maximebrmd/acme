@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Effect, Layer } from "effect";
+import { Effect, Layer, Option } from "effect";
 
 import { SignUpGate } from "#workspace/application/sign-up-gate.ts";
 import { SignUpSettings } from "#workspace/application/sign-up-settings.ts";
@@ -11,9 +11,13 @@ import type { SignUpMode } from "#workspace/domain/sign-up-mode.ts";
 // test/workspace/integration/sign-up-gate.test.ts, whose server always has
 // accounts already, so the first account is tested here.
 
+const invitationId = "0190f3a0-0000-7000-8000-00000000e001";
+const otherInvitationId = "0190f3a0-0000-7000-8000-00000000e002";
+
 interface Server {
   readonly accounts: boolean;
-  readonly invited: readonly string[];
+  // Each pending invitation, by its id, with the address it went to.
+  readonly invitations: Readonly<Record<string, string>>;
 }
 
 const asked: string[] = [];
@@ -26,11 +30,15 @@ const gate = (mode: SignUpMode, server: Server) =>
         Layer.succeed(
           SignUpStore,
           SignUpStore.of({
-            hasAccounts: () => Effect.succeed(server.accounts),
-            hasPendingInvitation: (email, at) => {
-              asked.push(`${email} ${DateTime.formatIso(at)}`);
+            hasAccounts: () => {
+              asked.push("accounts");
 
-              return Effect.succeed(server.invited.includes(email));
+              return Effect.succeed(server.accounts);
+            },
+            invitationTo: (id, email) => {
+              asked.push(`invitation ${id}`);
+
+              return Effect.succeed(server.invitations[id] === email);
             },
           })
         )
@@ -38,8 +46,15 @@ const gate = (mode: SignUpMode, server: Server) =>
     )
   );
 
-const mayRegister = (email: string) =>
-  SignUpGate.use((signUps) => signUps.mayRegister(email));
+const mayRegister = (email: string, invitation = Option.none<string>()) =>
+  SignUpGate.use((signUps) => signUps.mayRegister(email, invitation));
+
+const modeNow = SignUpGate.use((signUps) => signUps.modeNow());
+
+const invited: Server = {
+  accounts: true,
+  invitations: { [invitationId]: "ada@example.test" },
+};
 
 describe(SignUpGate, () => {
   it.effect("lets anyone in on an open server, asking nothing", () =>
@@ -47,36 +62,71 @@ describe(SignUpGate, () => {
       asked.length = 0;
 
       assert.isTrue(yield* mayRegister("anyone@example.test"));
+      assert.strictEqual(yield* modeNow, "open");
       assert.deepStrictEqual(asked, []);
-    }).pipe(Effect.provide(gate("open", { accounts: true, invited: [] })))
+    }).pipe(Effect.provide(gate("open", invited)))
   );
 
-  it.effect("lets an invited address in, as Better Auth compares them", () =>
-    Effect.gen(function* invited() {
-      assert.isTrue(yield* mayRegister("Ada@Example.TEST"));
-      assert.isTrue(yield* mayRegister(" ada@example.test "));
-    }).pipe(
-      Effect.provide(
-        gate("invitation", { accounts: true, invited: ["ada@example.test"] })
-      )
-    )
+  it.effect("lets in the address of the invitation it names", () =>
+    Effect.gen(function* withInvitation() {
+      assert.isTrue(
+        yield* mayRegister("ada@example.test", Option.some(invitationId))
+      );
+      // Better Auth lower-cases the address it stores.
+      assert.isTrue(
+        yield* mayRegister("Ada@Example.TEST", Option.some(invitationId))
+      );
+    }).pipe(Effect.provide(gate("invitation", invited)))
   );
 
-  it.effect("refuses an address without an invitation", () =>
-    Effect.gen(function* uninvited() {
-      assert.isFalse(yield* mayRegister("grace@example.test"));
-    }).pipe(
-      Effect.provide(
-        gate("invitation", { accounts: true, invited: ["ada@example.test"] })
-      )
-    )
+  it.effect("refuses an invited address that names no invitation", () =>
+    Effect.gen(function* withoutInvitation() {
+      assert.isFalse(yield* mayRegister("ada@example.test"));
+    }).pipe(Effect.provide(gate("invitation", invited)))
   );
 
-  it.effect("lets the first account of an empty server in", () =>
+  it.effect("refuses an invitation's id with another address", () =>
+    Effect.gen(function* otherAddress() {
+      assert.isFalse(
+        yield* mayRegister("grace@example.test", Option.some(invitationId))
+      );
+      assert.isFalse(
+        yield* mayRegister("ada@example.test", Option.some(otherInvitationId))
+      );
+    }).pipe(Effect.provide(gate("invitation", invited)))
+  );
+
+  it.effect("checks the address exactly as it would be stored", () =>
+    Effect.gen(function* untrimmed() {
+      assert.isFalse(
+        yield* mayRegister(" ada@example.test", Option.some(invitationId))
+      );
+    }).pipe(Effect.provide(gate("invitation", invited)))
+  );
+
+  it.effect("reads no invitation for an id that is not one", () =>
+    Effect.gen(function* notAnId() {
+      asked.length = 0;
+
+      assert.isFalse(
+        yield* mayRegister("ada@example.test", Option.some("not-an-id"))
+      );
+      assert.deepStrictEqual(asked, ["accounts"]);
+    }).pipe(Effect.provide(gate("invitation", invited)))
+  );
+
+  it.effect("lets the first account of an empty server in, and says so", () =>
     Effect.gen(function* first() {
       assert.isTrue(yield* mayRegister("owner@example.test"));
+      assert.strictEqual(yield* modeNow, "open");
     }).pipe(
-      Effect.provide(gate("invitation", { accounts: false, invited: [] }))
+      Effect.provide(gate("invitation", { accounts: false, invitations: {} }))
     )
+  );
+
+  it.effect("says invitation once the server has an account", () =>
+    Effect.gen(function* afterFirst() {
+      assert.strictEqual(yield* modeNow, "invitation");
+    }).pipe(Effect.provide(gate("invitation", invited)))
   );
 });

@@ -10,11 +10,12 @@ export class SignUpStore extends Context.Service<
     /** Whether the server has any account at all. */
     readonly hasAccounts: () => Effect.Effect<boolean, DatabaseError>;
     /**
-     * Whether a workspace invited this address (lower case) and the
-     * invitation is still pending at `at`: neither accepted, rejected nor
-     * cancelled, nor expired.
+     * Whether the invitation with this id went to this address (as stored:
+     * lower case) and is still pending at `at`: neither accepted, rejected
+     * nor cancelled, nor expired.
      */
-    readonly hasPendingInvitation: (
+    readonly invitationTo: (
+      invitationId: string,
       email: string,
       at: DateTime.Utc
     ) => Effect.Effect<boolean, DatabaseError>;

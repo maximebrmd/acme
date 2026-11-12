@@ -370,7 +370,10 @@ export const BetterAuthLive = Layer.effect(
         run(emails.send({ _tag: "ResetPassword", ...link }));
       },
       // Awaited on each sign-up. A database failure refuses it.
-      signUp: async (email) => await runPromise(signUps.mayRegister(email)),
+      signUp: async (email, invitationId) =>
+        await runPromise(
+          signUps.mayRegister(email, Option.fromNullishOr(invitationId))
+        ),
       // Awaited: the webhook answers an error until the event is recorded,
       // so Stripe sends it again.
       subscriptionChanged: async (event) => {
