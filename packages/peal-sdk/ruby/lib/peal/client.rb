@@ -130,6 +130,11 @@ module Peal
       @partner ||= Peal::Partner::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::PartnerUsage::Client]
+    def partner_usage
+      @partner_usage ||= Peal::PartnerUsage::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::PartnerAccount::Client]
     def partner_account
       @partner_account ||= Peal::PartnerAccount::Client.new(client: @raw_client)

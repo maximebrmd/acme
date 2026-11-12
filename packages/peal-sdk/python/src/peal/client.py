@@ -30,6 +30,7 @@ if typing.TYPE_CHECKING:
     from .notification_preferences.client import AsyncNotificationPreferencesClient, NotificationPreferencesClient
     from .partner.client import AsyncPartnerClient, PartnerClient
     from .partner_account.client import AsyncPartnerAccountClient, PartnerAccountClient
+    from .partner_usage.client import AsyncPartnerUsageClient, PartnerUsageClient
     from .posts.client import AsyncPostsClient, PostsClient
     from .queues.client import AsyncQueuesClient, QueuesClient
     from .recycling.client import AsyncRecyclingClient, RecyclingClient
@@ -149,6 +150,7 @@ class Peal:
         self._ads: typing.Optional[AdsClient] = None
         self._activity: typing.Optional[ActivityClient] = None
         self._partner: typing.Optional[PartnerClient] = None
+        self._partner_usage: typing.Optional[PartnerUsageClient] = None
         self._partner_account: typing.Optional[PartnerAccountClient] = None
         self._connect_links: typing.Optional[ConnectLinksClient] = None
         self._review: typing.Optional[ReviewClient] = None
@@ -334,6 +336,14 @@ class Peal:
 
             self._partner = PartnerClient(client_wrapper=self._client_wrapper)
         return self._partner
+
+    @property
+    def partner_usage(self):
+        if self._partner_usage is None:
+            from .partner_usage.client import PartnerUsageClient  # noqa: E402
+
+            self._partner_usage = PartnerUsageClient(client_wrapper=self._client_wrapper)
+        return self._partner_usage
 
     @property
     def partner_account(self):
@@ -535,6 +545,7 @@ class AsyncPeal:
         self._ads: typing.Optional[AsyncAdsClient] = None
         self._activity: typing.Optional[AsyncActivityClient] = None
         self._partner: typing.Optional[AsyncPartnerClient] = None
+        self._partner_usage: typing.Optional[AsyncPartnerUsageClient] = None
         self._partner_account: typing.Optional[AsyncPartnerAccountClient] = None
         self._connect_links: typing.Optional[AsyncConnectLinksClient] = None
         self._review: typing.Optional[AsyncReviewClient] = None
@@ -720,6 +731,14 @@ class AsyncPeal:
 
             self._partner = AsyncPartnerClient(client_wrapper=self._client_wrapper)
         return self._partner
+
+    @property
+    def partner_usage(self):
+        if self._partner_usage is None:
+            from .partner_usage.client import AsyncPartnerUsageClient  # noqa: E402
+
+            self._partner_usage = AsyncPartnerUsageClient(client_wrapper=self._client_wrapper)
+        return self._partner_usage
 
     @property
     def partner_account(self):

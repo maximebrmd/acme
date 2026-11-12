@@ -164,6 +164,7 @@ const coverage = {
   "partnerAccount.open": exempt(partnerSettings),
   "partnerAccount.revokeKey": exempt(partnerSettings),
   "partnerAccount.update": exempt(partnerSettings),
+  "partnerUsage.get": exempt(partnerApi),
   "posts.attempts": by("posts attempts"),
   "posts.bulk": exempt(
     "A CSV file is the command line's way to several posts, with peal posts import; a program that builds the JSON calls the API itself."
@@ -234,6 +235,7 @@ const coverage = {
   "tags.update": by("tags update"),
   "tiktok.creator": by("channels tiktok"),
   "usage.get": by("usage"),
+  "usage.partner": by("partner usage"),
   "webhooks.create": by("webhooks create"),
   "webhooks.delete": by("webhooks delete"),
   "webhooks.get": by("webhooks show"),

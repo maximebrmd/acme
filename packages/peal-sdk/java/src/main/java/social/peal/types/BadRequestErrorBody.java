@@ -26,16 +26,16 @@ public final class BadRequestErrorBody {
         return value.visit(visitor);
     }
 
-    public static BadRequestErrorBody invalidTimeRange(InvalidTimeRangeEncoded value) {
-        return new BadRequestErrorBody(new InvalidTimeRangeValue(value));
+    public static BadRequestErrorBody invalidDateRange(InvalidDateRangeEncoded value) {
+        return new BadRequestErrorBody(new InvalidDateRangeValue(value));
     }
 
     public static BadRequestErrorBody badRequest(EffectHttpApiErrorBadRequestEncoded value) {
         return new BadRequestErrorBody(new BadRequestValue(value));
     }
 
-    public boolean isInvalidTimeRange() {
-        return value instanceof InvalidTimeRangeValue;
+    public boolean isInvalidDateRange() {
+        return value instanceof InvalidDateRangeValue;
     }
 
     public boolean isBadRequest() {
@@ -46,9 +46,9 @@ public final class BadRequestErrorBody {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<InvalidTimeRangeEncoded> getInvalidTimeRange() {
-        if (isInvalidTimeRange()) {
-            return Optional.of(((InvalidTimeRangeValue) value).value);
+    public Optional<InvalidDateRangeEncoded> getInvalidDateRange() {
+        if (isInvalidDateRange()) {
+            return Optional.of(((InvalidDateRangeValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,7 +89,7 @@ public final class BadRequestErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitInvalidTimeRange(InvalidTimeRangeEncoded invalidTimeRange);
+        T visitInvalidDateRange(InvalidDateRangeEncoded invalidDateRange);
 
         T visitBadRequest(EffectHttpApiErrorBadRequestEncoded badRequest);
 
@@ -97,38 +97,38 @@ public final class BadRequestErrorBody {
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(InvalidTimeRangeValue.class), @JsonSubTypes.Type(BadRequestValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(InvalidDateRangeValue.class), @JsonSubTypes.Type(BadRequestValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("InvalidTimeRange")
+    @JsonTypeName("InvalidDateRange")
     @JsonIgnoreProperties("_tag")
-    private static final class InvalidTimeRangeValue implements Value {
+    private static final class InvalidDateRangeValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private InvalidTimeRangeEncoded value;
+        private InvalidDateRangeEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private InvalidTimeRangeValue() {}
+        private InvalidDateRangeValue() {}
 
-        private InvalidTimeRangeValue(InvalidTimeRangeEncoded value) {
+        private InvalidDateRangeValue(InvalidDateRangeEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitInvalidTimeRange(value);
+            return visitor.visitInvalidDateRange(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof InvalidTimeRangeValue && equalTo((InvalidTimeRangeValue) other);
+            return other instanceof InvalidDateRangeValue && equalTo((InvalidDateRangeValue) other);
         }
 
-        private boolean equalTo(InvalidTimeRangeValue other) {
+        private boolean equalTo(InvalidDateRangeValue other) {
             return value.equals(other.value);
         }
 

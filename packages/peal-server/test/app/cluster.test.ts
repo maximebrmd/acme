@@ -145,7 +145,9 @@ const ChannelJobsTest = Layer.mergeAll(
   ),
   Layer.succeed(
     MeterPartnerUsage,
-    MeterPartnerUsage.of({ run: Effect.succeed({ keys: 0, partners: 0 }) })
+    MeterPartnerUsage.of({
+      run: Effect.succeed({ days: 0, keys: 0, partners: 0 }),
+    })
   ),
   Layer.succeed(
     PurgeReviewData,

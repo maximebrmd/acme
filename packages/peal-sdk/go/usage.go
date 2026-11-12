@@ -55,177 +55,25 @@ func (g *GetUsageRequest) SetTo(to *CalendarDay) {
 }
 
 var (
-	meteredPostsFieldMonth          = big.NewInt(1 << 0)
-	meteredPostsFieldPlatform       = big.NewInt(1 << 1)
-	meteredPostsFieldPosts          = big.NewInt(1 << 2)
-	meteredPostsFieldPostsWithLinks = big.NewInt(1 << 3)
+	partnerUsageRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	partnerUsageRequestFieldBefore      = big.NewInt(1 << 1)
+	partnerUsageRequestFieldFrom        = big.NewInt(1 << 2)
+	partnerUsageRequestFieldLimit       = big.NewInt(1 << 3)
+	partnerUsageRequestFieldTo          = big.NewInt(1 << 4)
 )
 
-type MeteredPosts struct {
-	Month          CalendarDay `json:"month" url:"month"`
-	Platform       Platform    `json:"platform" url:"platform"`
-	Posts          int         `json:"posts" url:"posts"`
-	PostsWithLinks int         `json:"postsWithLinks" url:"postsWithLinks"`
+type PartnerUsageRequest struct {
+	WorkspaceID string       `json:"-" url:"-"`
+	Before      *string      `json:"-" url:"before,omitempty"`
+	From        *CalendarDay `json:"-" url:"from,omitempty"`
+	Limit       *string      `json:"-" url:"limit,omitempty"`
+	To          *CalendarDay `json:"-" url:"to,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
 }
 
-func (m *MeteredPosts) GetMonth() CalendarDay {
-	if m == nil {
-		return ""
-	}
-	return m.Month
-}
-
-func (m *MeteredPosts) GetPlatform() Platform {
-	if m == nil {
-		return ""
-	}
-	return m.Platform
-}
-
-func (m *MeteredPosts) GetPosts() int {
-	if m == nil {
-		return 0
-	}
-	return m.Posts
-}
-
-func (m *MeteredPosts) GetPostsWithLinks() int {
-	if m == nil {
-		return 0
-	}
-	return m.PostsWithLinks
-}
-
-func (m *MeteredPosts) GetExtraProperties() map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return m.extraProperties
-}
-
-func (m *MeteredPosts) require(field *big.Int) {
-	next := new(big.Int)
-	if m.explicitFields != nil {
-		next.Set(m.explicitFields)
-	}
-	next.Or(next, field)
-	m.explicitFields = next
-}
-
-// SetMonth sets the Month field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MeteredPosts) SetMonth(month CalendarDay) {
-	m.Month = month
-	m.require(meteredPostsFieldMonth)
-}
-
-// SetPlatform sets the Platform field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MeteredPosts) SetPlatform(platform Platform) {
-	m.Platform = platform
-	m.require(meteredPostsFieldPlatform)
-}
-
-// SetPosts sets the Posts field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MeteredPosts) SetPosts(posts int) {
-	m.Posts = posts
-	m.require(meteredPostsFieldPosts)
-}
-
-// SetPostsWithLinks sets the PostsWithLinks field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (m *MeteredPosts) SetPostsWithLinks(postsWithLinks int) {
-	m.PostsWithLinks = postsWithLinks
-	m.require(meteredPostsFieldPostsWithLinks)
-}
-
-func (m *MeteredPosts) UnmarshalJSON(data []byte) error {
-	type unmarshaler MeteredPosts
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*m = MeteredPosts(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *m)
-	if err != nil {
-		return err
-	}
-	m.extraProperties = extraProperties
-	m.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (m *MeteredPosts) MarshalJSON() ([]byte, error) {
-	type embed MeteredPosts
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*m),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (m *MeteredPosts) String() string {
-	if m == nil {
-		return "<nil>"
-	}
-	if len(m.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(m); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", m)
-}
-
-var (
-	platformPostsFieldPlatform = big.NewInt(1 << 0)
-	platformPostsFieldPosts    = big.NewInt(1 << 1)
-)
-
-type PlatformPosts struct {
-	Platform Platform `json:"platform" url:"platform"`
-	Posts    int      `json:"posts" url:"posts"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (p *PlatformPosts) GetPlatform() Platform {
-	if p == nil {
-		return ""
-	}
-	return p.Platform
-}
-
-func (p *PlatformPosts) GetPosts() int {
-	if p == nil {
-		return 0
-	}
-	return p.Posts
-}
-
-func (p *PlatformPosts) GetExtraProperties() map[string]interface{} {
-	if p == nil {
-		return nil
-	}
-	return p.extraProperties
-}
-
-func (p *PlatformPosts) require(field *big.Int) {
+func (p *PartnerUsageRequest) require(field *big.Int) {
 	next := new(big.Int)
 	if p.explicitFields != nil {
 		next.Set(p.explicitFields)
@@ -234,60 +82,39 @@ func (p *PlatformPosts) require(field *big.Int) {
 	p.explicitFields = next
 }
 
-// SetPlatform sets the Platform field and marks it as non-optional;
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PlatformPosts) SetPlatform(platform Platform) {
-	p.Platform = platform
-	p.require(platformPostsFieldPlatform)
+func (p *PartnerUsageRequest) SetWorkspaceID(workspaceID string) {
+	p.WorkspaceID = workspaceID
+	p.require(partnerUsageRequestFieldWorkspaceID)
 }
 
-// SetPosts sets the Posts field and marks it as non-optional;
+// SetBefore sets the Before field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PlatformPosts) SetPosts(posts int) {
-	p.Posts = posts
-	p.require(platformPostsFieldPosts)
+func (p *PartnerUsageRequest) SetBefore(before *string) {
+	p.Before = before
+	p.require(partnerUsageRequestFieldBefore)
 }
 
-func (p *PlatformPosts) UnmarshalJSON(data []byte) error {
-	type unmarshaler PlatformPosts
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*p = PlatformPosts(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *p)
-	if err != nil {
-		return err
-	}
-	p.extraProperties = extraProperties
-	p.rawJSON = json.RawMessage(data)
-	return nil
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerUsageRequest) SetFrom(from *CalendarDay) {
+	p.From = from
+	p.require(partnerUsageRequestFieldFrom)
 }
 
-func (p *PlatformPosts) MarshalJSON() ([]byte, error) {
-	type embed PlatformPosts
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*p),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
-	return json.Marshal(explicitMarshaler)
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerUsageRequest) SetLimit(limit *string) {
+	p.Limit = limit
+	p.require(partnerUsageRequestFieldLimit)
 }
 
-func (p *PlatformPosts) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	if len(p.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(p); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", p)
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerUsageRequest) SetTo(to *CalendarDay) {
+	p.To = to
+	p.require(partnerUsageRequestFieldTo)
 }
 
 var (
@@ -488,108 +315,6 @@ func (u *UsageDay) String() string {
 }
 
 var (
-	usagePeriodFieldFrom = big.NewInt(1 << 0)
-	usagePeriodFieldTo   = big.NewInt(1 << 1)
-)
-
-type UsagePeriod struct {
-	From CalendarDay `json:"from" url:"from"`
-	To   CalendarDay `json:"to" url:"to"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (u *UsagePeriod) GetFrom() CalendarDay {
-	if u == nil {
-		return ""
-	}
-	return u.From
-}
-
-func (u *UsagePeriod) GetTo() CalendarDay {
-	if u == nil {
-		return ""
-	}
-	return u.To
-}
-
-func (u *UsagePeriod) GetExtraProperties() map[string]interface{} {
-	if u == nil {
-		return nil
-	}
-	return u.extraProperties
-}
-
-func (u *UsagePeriod) require(field *big.Int) {
-	next := new(big.Int)
-	if u.explicitFields != nil {
-		next.Set(u.explicitFields)
-	}
-	next.Or(next, field)
-	u.explicitFields = next
-}
-
-// SetFrom sets the From field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UsagePeriod) SetFrom(from CalendarDay) {
-	u.From = from
-	u.require(usagePeriodFieldFrom)
-}
-
-// SetTo sets the To field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UsagePeriod) SetTo(to CalendarDay) {
-	u.To = to
-	u.require(usagePeriodFieldTo)
-}
-
-func (u *UsagePeriod) UnmarshalJSON(data []byte) error {
-	type unmarshaler UsagePeriod
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*u = UsagePeriod(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *u)
-	if err != nil {
-		return err
-	}
-	u.extraProperties = extraProperties
-	u.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (u *UsagePeriod) MarshalJSON() ([]byte, error) {
-	type embed UsagePeriod
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*u),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (u *UsagePeriod) String() string {
-	if u == nil {
-		return "<nil>"
-	}
-	if len(u.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(u); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", u)
-}
-
-var (
 	usageSharingFieldPartnerWorkspaceID = big.NewInt(1 << 0)
 )
 
@@ -661,156 +386,6 @@ func (u *UsageSharing) MarshalJSON() ([]byte, error) {
 }
 
 func (u *UsageSharing) String() string {
-	if u == nil {
-		return "<nil>"
-	}
-	if len(u.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(u); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", u)
-}
-
-var (
-	usageTotalsFieldByPlatform     = big.NewInt(1 << 0)
-	usageTotalsFieldChannelDays    = big.NewInt(1 << 1)
-	usageTotalsFieldDaysCounted    = big.NewInt(1 << 2)
-	usageTotalsFieldMeteredPosts   = big.NewInt(1 << 3)
-	usageTotalsFieldPublishedPosts = big.NewInt(1 << 4)
-)
-
-type UsageTotals struct {
-	ByPlatform     []*PlatformPosts `json:"byPlatform" url:"byPlatform"`
-	ChannelDays    int64            `json:"channelDays" url:"channelDays"`
-	DaysCounted    int              `json:"daysCounted" url:"daysCounted"`
-	MeteredPosts   []*MeteredPosts  `json:"meteredPosts" url:"meteredPosts"`
-	PublishedPosts int              `json:"publishedPosts" url:"publishedPosts"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (u *UsageTotals) GetByPlatform() []*PlatformPosts {
-	if u == nil {
-		return nil
-	}
-	return u.ByPlatform
-}
-
-func (u *UsageTotals) GetChannelDays() int64 {
-	if u == nil {
-		return 0
-	}
-	return u.ChannelDays
-}
-
-func (u *UsageTotals) GetDaysCounted() int {
-	if u == nil {
-		return 0
-	}
-	return u.DaysCounted
-}
-
-func (u *UsageTotals) GetMeteredPosts() []*MeteredPosts {
-	if u == nil {
-		return nil
-	}
-	return u.MeteredPosts
-}
-
-func (u *UsageTotals) GetPublishedPosts() int {
-	if u == nil {
-		return 0
-	}
-	return u.PublishedPosts
-}
-
-func (u *UsageTotals) GetExtraProperties() map[string]interface{} {
-	if u == nil {
-		return nil
-	}
-	return u.extraProperties
-}
-
-func (u *UsageTotals) require(field *big.Int) {
-	next := new(big.Int)
-	if u.explicitFields != nil {
-		next.Set(u.explicitFields)
-	}
-	next.Or(next, field)
-	u.explicitFields = next
-}
-
-// SetByPlatform sets the ByPlatform field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UsageTotals) SetByPlatform(byPlatform []*PlatformPosts) {
-	u.ByPlatform = byPlatform
-	u.require(usageTotalsFieldByPlatform)
-}
-
-// SetChannelDays sets the ChannelDays field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UsageTotals) SetChannelDays(channelDays int64) {
-	u.ChannelDays = channelDays
-	u.require(usageTotalsFieldChannelDays)
-}
-
-// SetDaysCounted sets the DaysCounted field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UsageTotals) SetDaysCounted(daysCounted int) {
-	u.DaysCounted = daysCounted
-	u.require(usageTotalsFieldDaysCounted)
-}
-
-// SetMeteredPosts sets the MeteredPosts field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UsageTotals) SetMeteredPosts(meteredPosts []*MeteredPosts) {
-	u.MeteredPosts = meteredPosts
-	u.require(usageTotalsFieldMeteredPosts)
-}
-
-// SetPublishedPosts sets the PublishedPosts field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UsageTotals) SetPublishedPosts(publishedPosts int) {
-	u.PublishedPosts = publishedPosts
-	u.require(usageTotalsFieldPublishedPosts)
-}
-
-func (u *UsageTotals) UnmarshalJSON(data []byte) error {
-	type unmarshaler UsageTotals
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*u = UsageTotals(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *u)
-	if err != nil {
-		return err
-	}
-	u.extraProperties = extraProperties
-	u.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (u *UsageTotals) MarshalJSON() ([]byte, error) {
-	type embed UsageTotals
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*u),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (u *UsageTotals) String() string {
 	if u == nil {
 		return "<nil>"
 	}

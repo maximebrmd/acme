@@ -102,3 +102,29 @@ func TestUsageGetWithWireMock(
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestUsageGetWithWireMock", "GET", "/api/workspaces/workspaceId/usage", nil, 1)
 }
+
+func TestUsagePartnerWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.PartnerUsageRequest{
+		WorkspaceID: "workspaceId",
+	}
+	_, invocationErr := client.Usage.Partner(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestUsagePartnerWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestUsagePartnerWithWireMock", "GET", "/api/workspaces/workspaceId/usage/partner", nil, 1)
+}

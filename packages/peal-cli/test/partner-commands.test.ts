@@ -212,12 +212,80 @@ describe("peal partner", () => {
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect(
+    "shows what the partner account used per customer, page by page",
+    () =>
+      Effect.gen(function* usage() {
+        const session = yield* signedIn();
+
+        const shown = yield* session.printed([
+          "partner",
+          "usage",
+          "--from",
+          "2026-11-01",
+          "--to",
+          "2026-11-03",
+          "--limit",
+          "2",
+          ...inStudio,
+        ]);
+
+        assert.include(
+          shown,
+          "Usage of the partner account of Studio from 2026-11-01 to 2026-11-03, by UTC day:"
+        );
+        assert.match(shown, /Workspaces\s+2/u);
+        assert.match(shown, /Channels\s+5/u);
+        assert.match(shown, /Posts published\s+7: bluesky 3, x 4/u);
+        assert.match(shown, /Channel-days\s+14, over 2 days counted/u);
+        assert.match(
+          shown,
+          /External id\s+Name\s+Channels\s+Channel-days\s+Posts published/u
+        );
+        assert.match(shown, /–\s+Studio \(home\)\s+2\s+4\s+1/u);
+        assert.match(shown, /cus_002\s+Garage Dupont\s+2\s+4\s+4/u);
+        // The next page keeps the period and the page's size.
+        assert.include(
+          shown,
+          "More: peal partner usage --from 2026-11-01 --to 2026-11-03 --limit 2 --before studio-next-page"
+        );
+        assert.include(shown, "Customers deleted since are not listed.");
+
+        const rest = yield* session.printed([
+          "partner",
+          "usage",
+          "--before",
+          "studio-next-page",
+          ...inStudio,
+        ]);
+
+        assert.match(rest, /cus_001\s+Boulangerie Martin\s+1\s+2\s+2/u);
+        assert.notInclude(rest, "Studio (home)");
+        assert.notInclude(rest, "More:");
+        // The account as a whole comes with the first page only.
+        assert.notInclude(rest, "Posts published  ");
+        assert.notMatch(rest, /Channel-days\s+\d+, over/u);
+
+        const json = parsed(
+          yield* session.printed(["partner", "usage", "--json", ...inStudio])
+        );
+
+        assert.deepInclude(json, {
+          current: { channels: 5, workspaces: 2 },
+        });
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("says so when a workspace has none, or may not read it", () =>
     Effect.gen(function* none() {
       const session = yield* signedIn();
 
       assert.include(
         yield* session.refused(["partner", "show", "--workspace", "shop"]),
+        "Peal refused: your role in this workspace does not allow it"
+      );
+      assert.include(
+        yield* session.refused(["partner", "usage", "--workspace", "shop"]),
         "Peal refused: your role in this workspace does not allow it"
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))

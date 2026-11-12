@@ -132,10 +132,12 @@ const ActorsNowTest = ActorsNow.layer.pipe(
           keys: () => read(({ partnerKeys }) => partnerKeys),
           ofWorkspace: () => Effect.succeedNone,
           open: fail("open"),
+          purgeUsageBefore: fail("purgeUsageBefore"),
           recordUsage: fail("recordUsage"),
           removeKey: fail("removeKey"),
           save: fail("save"),
           usage: fail("usage"),
+          usageBetween: fail("usageBetween"),
         })
       ),
       Layer.succeed(

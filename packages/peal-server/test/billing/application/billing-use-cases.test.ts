@@ -314,6 +314,7 @@ const MeteredPostsInMemory = Layer.effect(
         }),
       eraseWorkspace: () => Ref.set(counts, []),
       ofWorkspace: () => Ref.get(counts),
+      ofWorkspaces: () => Effect.succeed([]),
     });
   })
 );
@@ -344,6 +345,8 @@ const UsageInMemory = Layer.effect(
       allOf: () => Ref.get(records),
       eraseWorkspace: () => Ref.set(records, []),
       ofWorkspace: () => Ref.get(records),
+      ofWorkspaces: () => Effect.succeed([]),
+      postsAcross: () => Effect.succeed([]),
       purgeBefore: () => Effect.succeed(0),
       set: () => Effect.void,
     });
