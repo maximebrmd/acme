@@ -1,4 +1,4 @@
-import { and, asc, count, eq, gte } from "drizzle-orm";
+import { and, asc, between, count, eq, gte, lt } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -220,6 +220,16 @@ export const DrizzlePartnerStore = Layer.effect(
             })
           )
           .pipe(Effect.mapError(failed)),
+      // One statement on the `day` index, counted in the database.
+      purgeUsageBefore: (day) =>
+        db
+          .delete(partnerUsageDays)
+          .where(lt(partnerUsageDays.day, DateTime.formatIsoDateUtc(day)))
+          .returning({ day: partnerUsageDays.day })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length)
+          ),
       recordUsage: (partnerId, usage) =>
         db
           .insert(partnerUsageDays)
@@ -268,6 +278,26 @@ export const DrizzlePartnerStore = Layer.effect(
             and(
               eq(partnerUsageDays.partnerId, partnerId),
               gte(partnerUsageDays.day, DateTime.formatIsoDateUtc(since))
+            )
+          )
+          .orderBy(asc(partnerUsageDays.day))
+          .pipe(Effect.mapError(failed)),
+      usageBetween: (partnerId, from, to) =>
+        db
+          .select({
+            channels: partnerUsageDays.channels,
+            day: partnerUsageDays.day,
+            workspaces: partnerUsageDays.workspaces,
+          })
+          .from(partnerUsageDays)
+          .where(
+            and(
+              eq(partnerUsageDays.partnerId, partnerId),
+              between(
+                partnerUsageDays.day,
+                DateTime.formatIsoDateUtc(from),
+                DateTime.formatIsoDateUtc(to)
+              )
             )
           )
           .orderBy(asc(partnerUsageDays.day))

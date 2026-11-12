@@ -22,6 +22,7 @@ import {
   ProbeStateSchema,
   RejectionReasonSchema,
   RoleSchema,
+  usageRetentionDays,
   WorkspaceAccess,
 } from "peal-contract";
 
@@ -55,6 +56,7 @@ import {
   maxPartnerNameLength as domainMaxPartnerNameLength,
 } from "#workspace/domain/partner.ts";
 import { maxReturnOrigins as domainMaxReturnOrigins } from "#workspace/domain/return-origin.ts";
+import { partnerUsageRetentionDays } from "#workspace/domain/partner-usage-retention.ts";
 import { RoleSchema as DomainRoleSchema } from "#workspace/domain/roles.ts";
 
 describe("the contract", () => {
@@ -92,6 +94,10 @@ describe("the contract", () => {
       maxWorkspaceNameLength: domainMaxWorkspaceNameLength,
       maxWorkspacePageSize: serverMaxPageSize,
     });
+  });
+
+  it("keeps a partner's daily counts as long as it says usage is kept", () => {
+    expect(partnerUsageRetentionDays).toBe(usageRetentionDays);
   });
 
   it("lists the server's roles", () => {

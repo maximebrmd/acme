@@ -222,6 +222,18 @@ export class PartnerWorkspaces extends Context.Service<
       PartnerUsage,
       DatabaseError | MissingPermission | PartnerNotFound
     >;
+    /**
+     * A page of the partner's workspaces, as `list` answers it, for the
+     * workspace context's use cases that have checked who asks
+     * (`PartnerTenants`).
+     */
+    readonly pageOf: (
+      partnerId: PartnerId,
+      request: WorkspaceListRequest
+    ) => Effect.Effect<
+      CountedWorkspacePage,
+      DatabaseError | InvalidWorkspaceCursor
+    >;
     /** Counts what every partner holds today (UTC), and keeps it. */
     readonly meter: Effect.Effect<number, DatabaseError>;
     /** Forgets the idempotency keys past their time, and says how many. */
@@ -572,6 +584,7 @@ export class PartnerWorkspaces extends Context.Service<
         list,
         listFor,
         meter,
+        pageOf: page,
         purgeKeys,
         usageFor,
       });

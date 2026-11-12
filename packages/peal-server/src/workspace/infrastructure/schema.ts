@@ -141,7 +141,8 @@ export const partnerIdempotencyKeys = workspaceSchema.table(
 /**
  * What each partner held at the end of each day (UTC): the workspaces it
  * owned and the channels connected in them. Counts only, for a price by
- * the workspace or by the connected channel.
+ * the workspace or by the connected channel. Rows are kept 400 days
+ * (`partnerUsageRetentionDays`), the `day` index serving the daily purge.
  */
 export const partnerUsageDays = workspaceSchema.table(
   "partner_usage_days",
@@ -155,6 +156,8 @@ export const partnerUsageDays = workspaceSchema.table(
   },
   (table) => [
     primaryKey({ columns: [table.partnerId, table.day] }),
+    // The daily purge of the days past `partnerUsageRetentionDays`.
+    index("partner_usage_days_day").on(table.day),
     check(
       "partner_usage_days_counts",
       sql`${table.channels} >= 0 AND ${table.workspaces} >= 0`
