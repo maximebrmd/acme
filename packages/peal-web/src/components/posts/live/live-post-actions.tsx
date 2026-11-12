@@ -11,7 +11,7 @@ import type {
   PostContent,
   PostTarget,
 } from "peal-contract";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { platformCapabilities } from "#analytics/api.ts";
@@ -31,9 +31,11 @@ import {
   postChanges,
   postsKeys,
   unpublishTarget,
+  workspacePost,
 } from "#posts/api.ts";
 import {
   editStateOf,
+  endedSince,
   isRemoving,
   liveStateOf,
   partTextOn,
@@ -101,6 +103,7 @@ export const LivePostActions = ({
   const changesQuery = postChanges(workspaceId, postId);
   const changes = useAtomValue(changesQuery);
   const refreshChanges = useAtomRefresh(changesQuery);
+  const refreshPost = useAtomRefresh(workspacePost(workspaceId, postId));
   const capabilities = useAtomValue(platformCapabilities(workspaceId));
   const unpublish = useAtomSet(unpublishTarget, { mode: "promiseExit" });
   const edit = useAtomSet(editTarget, { mode: "promiseExit" });
@@ -112,6 +115,18 @@ export const LivePostActions = ({
     : noChanges;
 
   const removing = isRemoving(listed);
+
+  // Once a change ends, the post says something new (an edit's text, the
+  // channel removed): read it again, so an editor opens on the new text.
+  const lastListed = useRef(listed);
+
+  useEffect(() => {
+    if (endedSince(lastListed.current, listed)) {
+      refreshPost();
+    }
+
+    lastListed.current = listed;
+  }, [listed, refreshPost]);
 
   const refresh = useCallback(() => {
     if (removing) {

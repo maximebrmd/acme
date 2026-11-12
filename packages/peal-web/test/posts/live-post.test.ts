@@ -4,6 +4,7 @@ import type { LivePostChange, PostTarget } from "peal-contract";
 
 import {
   editStateOf,
+  endedSince,
   isRemovedEverywhere,
   isRemoving,
   liveStateOf,
@@ -89,6 +90,32 @@ describe("where a channel of a live post stands", () => {
       liveStateOf(target({ status: "failed" }), [], deletes)
     ).toStrictEqual({ _tag: "none" });
     expect(isRemoving([change("1", "done")])).toBeFalsy();
+  });
+});
+
+describe("a change that ended since the page last read the changes", () => {
+  it("is one that was pending and no longer is, whatever its kind", () => {
+    const before = [change("1", "pending", null, "edit")];
+
+    expect(
+      endedSince(before, [change("1", "done", null, "edit")])
+    ).toBeTruthy();
+    expect(
+      endedSince(before, [change("1", "failed", "postGone", "edit")])
+    ).toBeTruthy();
+    expect(
+      endedSince([change("2", "pending")], [change("2", "done")])
+    ).toBeTruthy();
+  });
+
+  it("is none while it is pending, or when nothing was pending before", () => {
+    expect(
+      endedSince([change("1", "pending")], [change("1", "pending")])
+    ).toBeFalsy();
+    expect(endedSince([], [change("1", "done")])).toBeFalsy();
+    expect(
+      endedSince([change("1", "done")], [change("1", "done")])
+    ).toBeFalsy();
   });
 });
 

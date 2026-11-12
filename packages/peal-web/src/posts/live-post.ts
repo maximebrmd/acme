@@ -176,6 +176,22 @@ export const isRemoving = (changes: readonly LivePostChange[]): boolean =>
   changes.some(({ status }) => status === "pending");
 
 /**
+ * Whether a change that was pending in `before` has ended in `now`: the
+ * post then says something new (an edit's text, a removal), so the page
+ * reads it again.
+ */
+export const endedSince = (
+  before: readonly LivePostChange[],
+  now: readonly LivePostChange[]
+): boolean => {
+  const pending = new Set(
+    before.flatMap(({ id, status }) => (status === "pending" ? [id] : []))
+  );
+
+  return now.some(({ id, status }) => pending.has(id) && status !== "pending");
+};
+
+/**
  * Whether Peal removed the post from every channel it went live on: the
  * calendar shows it dimmed.
  */
