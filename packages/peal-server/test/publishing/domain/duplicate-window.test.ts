@@ -141,6 +141,31 @@ describe(contentOn, () => {
     ).not.toBe(contentOn(shown, channel, story));
   });
 
+  it("takes two stories of the same file for the same, whatever text they hold, as a story sends none", () => {
+    const shown = (text: string) =>
+      new PostContent({
+        media: [new MediaAttachment({ altText: "", mediaId: picture })],
+        overrides: [],
+        text,
+      });
+
+    for (const story of [
+      Option.some(new InstagramOptions({ format: "story" })),
+      Option.some(new FacebookOptions({ format: "story" })),
+    ]) {
+      expect(contentOn(shown("Low tide at six."), channel, story)).toBe(
+        contentOn(shown("High tide at noon."), channel, story)
+      );
+    }
+
+    // A reel sends its text: two reels of different text differ.
+    const reel = Option.some(new FacebookOptions({ format: "reel" }));
+
+    expect(contentOn(shown("Low tide at six."), channel, reel)).not.toBe(
+      contentOn(shown("High tide at noon."), channel, reel)
+    );
+  });
+
   it("reads a feed post as it did before formats, the digests kept matching", () => {
     const shown = new PostContent({
       media: [new MediaAttachment({ altText: "", mediaId: picture })],
@@ -171,8 +196,6 @@ describe(contentOn, () => {
         channel,
         Option.some(new InstagramOptions({ format: "story" }))
       )
-    ).toBe(
-      `{"media":["${picture}"],"text":"Low tide at six.","format":"story"}`
-    );
+    ).toBe(`{"media":["${picture}"],"text":"","format":"story"}`);
   });
 });
