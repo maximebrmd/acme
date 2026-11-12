@@ -299,6 +299,7 @@ describe("feeds", () => {
       onServer(
         Effect.gen(function* permissionFirst() {
           const { params, viewer } = yield* studio;
+
           const missing = {
             ...params,
             feedId: "0190f3a0-0000-7000-8000-00000000dead",
