@@ -2558,6 +2558,7 @@
       "notStaff": "Votre session d’équipe a pris fin. Reconnectez-vous.",
       "self": "L’équipe ne fait pas cela à son propre compte.",
       "staff": "L’équipe n’agit jamais à la place d’autres membres de l’équipe.",
+      "twoStepOff": "La validation en deux étapes est désactivée sur ce compte : il n’y a rien à réinitialiser.",
       "unknown": "Cela n’a pas marché. Réessayez.",
       "verified": "Cette adresse est déjà confirmée.",
       "workspaceGone": "Cet espace de travail n’existe plus, ou un partenaire le possède."

@@ -12,6 +12,7 @@ const member: Target = {
   emailVerified: true,
   id: UserIdSchema.make("7c9e6679-7425-40de-944b-e07fc1f90ae7"),
   staff: false,
+  twoStepEnabled: true,
 };
 
 const self: Target = { ...member, id: staffId, staff: true };
@@ -59,6 +60,14 @@ describe(mayAct, () => {
     assert.strictEqual(
       refusal({ ...member, banned: true }, { action: "impersonate" }),
       "banned"
+    );
+  });
+
+  it("only resets two-step verification an account has on", () => {
+    assert.strictEqual(refusal(member, { action: "resetTwoStep" }), "allowed");
+    assert.strictEqual(
+      refusal({ ...member, twoStepEnabled: false }, { action: "resetTwoStep" }),
+      "twoStepOff"
     );
   });
 

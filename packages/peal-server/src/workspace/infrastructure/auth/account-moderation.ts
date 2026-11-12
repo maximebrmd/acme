@@ -178,8 +178,9 @@ export const AccountModerationLive = Layer.effect(
         ),
       resetTwoStep: Effect.fn("AccountModeration.resetTwoStep")(
         function* resetTwoStep({ staffSession, userId }) {
-          yield* forgetTwoStep(userId, yield* DateTime.now).pipe(unavailable);
-
+          // Signed out first, then forgotten: a failure between the two
+          // leaves the account signed out with its second step still on,
+          // which the same reset, tried again, completes.
           const ending = yield* impersonationsOf(userId);
 
           yield* attempt(
@@ -191,6 +192,7 @@ export const AccountModerationLive = Layer.effect(
           );
 
           yield* endImpersonations(userId);
+          yield* forgetTwoStep(userId, yield* DateTime.now).pipe(unavailable);
 
           const account = yield* directory.account(userId).pipe(unavailable);
 

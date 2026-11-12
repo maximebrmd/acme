@@ -2558,6 +2558,7 @@
       "notStaff": "Your staff session has ended. Sign in again.",
       "self": "Staff do not do this to their own account.",
       "staff": "Staff never act as other staff.",
+      "twoStepOff": "Two-step verification is off on this account: there is nothing to reset.",
       "unknown": "That did not work. Try again.",
       "verified": "This address is confirmed already.",
       "workspaceGone": "This workspace no longer exists, or a partner owns it."
