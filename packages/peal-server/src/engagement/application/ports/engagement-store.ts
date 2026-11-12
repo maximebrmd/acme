@@ -196,6 +196,24 @@ export class EngagementStore extends Context.Service<
       at: DateTime.Utc
     ) => Effect.Effect<boolean, DatabaseError>;
     /**
+     * Up to `limit` threads whose comments must be read again by `at` or
+     * be forgotten (their `refreshBy` passed), the longest past first.
+     */
+    readonly expiring: (
+      at: DateTime.Utc,
+      limit: number
+    ) => Effect.Effect<readonly ThreadId[], DatabaseError>;
+    /**
+     * Takes the thread's refresh bound off if it passed at `at`, and says
+     * whether it did: false when a read moved it meanwhile, and the
+     * comments are kept. In the transaction that forgets them, after
+     * `lockThread`.
+     */
+    readonly clearRefresh: (
+      threadId: ThreadId,
+      at: DateTime.Utc
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
      * Deletes up to `limit` threads whose collection ended at `endedBefore`
      * or earlier, with their comments and replies, and says how many.
      */

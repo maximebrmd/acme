@@ -62,6 +62,10 @@ export class Comment extends Schema.Class<Comment>(
   // None once the platform no longer shows the comment.
   author: Schema.Option(CommentAuthorSchema),
   channelId: ChannelIdSchema,
+  // When Peal forgot it because its platform bounds how long a comment is
+  // kept without being read again, and no read found it since; none for
+  // one the platform no longer shows, and for any other.
+  expiredAt: Schema.Option(Schema.DateTimeUtc),
   id: CommentIdSchema,
   // Whether the channel's account likes it.
   liked: Schema.Boolean,
@@ -110,6 +114,7 @@ const withFields = (comment: Comment, changed: Partial<Fields>): Comment =>
     answeredAt: comment.answeredAt,
     author: comment.author,
     channelId: comment.channelId,
+    expiredAt: comment.expiredAt,
     id: comment.id,
     liked: comment.liked,
     parentPlatformId: comment.parentPlatformId,
@@ -225,6 +230,7 @@ export const receiveComment = (
     answeredAt: Option.none(),
     author: reading.author,
     channelId: thread.channelId,
+    expiredAt: Option.none(),
     id,
     liked: Option.getOrElse(reading.liked, () => false),
     parentPlatformId: reading.parentPlatformId,
@@ -253,6 +259,7 @@ export const refreshComment = (
 
   return withFields(comment, {
     author: reading.author,
+    expiredAt: Option.none(),
     liked: Option.getOrElse(reading.liked, () => comment.liked),
     permalink: reading.permalink,
     state: Option.getOrElse(reading.hidden, () => comment.state === "hidden")
@@ -274,6 +281,16 @@ export const forgetComment = (comment: Comment): Comment =>
     state: "deleted",
     text: "",
   });
+
+/**
+ * The comment once Peal may keep it no longer, at `now`: its platform
+ * bounds how long what it gave is kept without being read again, and no
+ * read found it in that time. Like a comment the platform no longer
+ * shows, it keeps its ids and nothing its author wrote or is; a later
+ * read that finds it writes it back.
+ */
+export const expireComment = (comment: Comment, now: DateTime.Utc): Comment =>
+  withFields(forgetComment(comment), { expiredAt: Option.some(now) });
 
 /** Whether the comment can still be answered or moderated. */
 export const isOnPlatform = (comment: Comment): boolean =>

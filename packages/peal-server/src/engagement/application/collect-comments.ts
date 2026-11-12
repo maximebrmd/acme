@@ -442,7 +442,8 @@ export class CollectComments extends Context.Service<
       const record = Effect.fn("CollectComments.record")(function* record(
         thread: Thread,
         reading: ThreadReading,
-        at: DateTime.Utc
+        at: DateTime.Utc,
+        refreshWithin: Option.Option<Duration.Duration>
       ) {
         if (reading._tag === "failed") {
           return yield* postponing([thread], at);
@@ -467,7 +468,15 @@ export class CollectComments extends Context.Service<
           );
         }
 
-        const read = recordCollection(thread, now, at, pace.window);
+        // Read, whole or not: what it found may be kept as long as its
+        // platform allows from now.
+        const read = recordCollection(
+          thread,
+          now,
+          at,
+          pace.window,
+          refreshWithin
+        );
 
         // The comments are read under the thread's lock, which a member's
         // action takes too: what reconcile writes is what it read.
@@ -519,7 +528,8 @@ export class CollectComments extends Context.Service<
       const recordOrPutOff = (
         thread: Thread,
         reading: ThreadReading,
-        at: DateTime.Utc
+        at: DateTime.Utc,
+        refreshWithin: Option.Option<Duration.Duration>
       ) => {
         const putOff = (kind: "database" | "fault") =>
           Effect.logWarning(
@@ -535,7 +545,7 @@ export class CollectComments extends Context.Service<
             }))
           );
 
-        return record(thread, reading, at).pipe(
+        return record(thread, reading, at, refreshWithin).pipe(
           Effect.catchTag("DatabaseError", () => putOff("database")),
           Effect.catchDefect(() => putOff("fault"))
         );
@@ -597,7 +607,12 @@ export class CollectComments extends Context.Service<
                 byId.delete(reading.threadId);
                 total = addTallies(
                   total,
-                  yield* recordOrPutOff(thread, reading, at)
+                  yield* recordOrPutOff(
+                    thread,
+                    reading,
+                    at,
+                    Option.fromUndefinedOr(outcome.success.refreshWithin)
+                  )
                 );
               }
             }

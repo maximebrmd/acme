@@ -24,9 +24,11 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * The comments under one post that went live on one channel: the
  * platform's id for the post, when it went live, when its comments are
  * read next (`next_collection_at`), or since when they are not
- * (`ended_at`, `end_reason`), and what its list shows: how many comments
- * the platform still shows, how many wait for an answer, and when the
- * latest was written. `author_id` is the member who wrote the post, null
+ * (`ended_at`, `end_reason`), when they must be read again or be
+ * forgotten (`refresh_by`, on a platform that bounds how long Peal keeps
+ * what it gave without reading it again; null elsewhere), and what its
+ * list shows: how many comments the platform still shows, how many wait
+ * for an answer, and when the latest was written. `author_id` is the member who wrote the post, null
  * for an API key's or once their account is closed. One thread per
  * published target.
  */
@@ -46,6 +48,7 @@ export const threads = engagement.table(
     platformPostId: text("platform_post_id").notNull(),
     postId: uuid("post_id").notNull(),
     publishedAt: instant("published_at").notNull(),
+    refreshBy: instant("refresh_by"),
     targetId: uuid("target_id").notNull(),
     unansweredCount: integer("unanswered_count").notNull().default(0),
     workspaceId: uuid("workspace_id").notNull(),
@@ -73,6 +76,11 @@ export const threads = engagement.table(
     index("threads_ended")
       .on(table.endedAt)
       .where(sql`${table.endedAt} IS NOT NULL`),
+    // The threads whose comments must be forgotten: few, on the platforms
+    // that bound how long comments are kept.
+    index("threads_refresh_by")
+      .on(table.refreshBy)
+      .where(sql`${table.refreshBy} IS NOT NULL`),
     check(
       "threads_collection",
       sql`(${table.nextCollectionAt} IS NULL) <> (${table.endedAt} IS NULL)`
@@ -84,7 +92,9 @@ export const threads = engagement.table(
  * A comment as its platform gave it: its id there, the comment it answers
  * (null when it answers the post), its author's id, handle and display
  * name, its text, and where it stands for the workspace. A comment the
- * platform no longer shows (`deleted`) keeps neither text nor author.
+ * platform no longer shows (`deleted`) keeps neither text nor author;
+ * `expired_at` says when one was forgotten because its platform bounds
+ * how long a comment is kept without being read again, null otherwise.
  */
 export const comments = engagement.table(
   "comments",
@@ -94,6 +104,7 @@ export const comments = engagement.table(
     authorHandle: text("author_handle"),
     authorPlatformId: text("author_platform_id"),
     channelId: uuid("channel_id").notNull(),
+    expiredAt: instant("expired_at"),
     id: uuid("id").primaryKey(),
     liked: boolean("liked").notNull().default(false),
     parentPlatformId: text("parent_platform_id"),
