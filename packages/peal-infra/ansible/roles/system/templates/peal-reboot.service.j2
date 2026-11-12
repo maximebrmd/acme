@@ -1,0 +1,8 @@
+# Managed by Ansible (peal-infra). Reboots the server if an update asked
+# for it and every md array is whole.
+[Unit]
+Description=Reboot if an update asked for it, unless a RAID array is degraded
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/peal-reboot
