@@ -3578,5 +3578,38 @@
     "edit": "Edit",
     "save": "Save",
     "saved": "The feed is saved."
+  },
+  "Overview": {
+    "home": {
+      "attentionLabel": "What needs attention in {workspace}",
+      "nothing": "Nothing needs attention.",
+      "overPlan": "Over its plan: nothing goes out until it is back within it",
+      "failed": "{count, plural, one {# post failed} other {# posts failed}} on a channel in the last 7 days",
+      "unconfirmed": "{count, plural, one {# post} other {# posts}} to check: a channel may have it live",
+      "awaitingApproval": "{count, plural, one {# post waits} other {# posts wait}} for an approval",
+      "awaitingYourApproval": "{count, plural, one {# post waits} other {# posts wait}} for your approval",
+      "toReconnect": "{count, plural, one {# channel} other {# channels}} to reconnect",
+      "channelsOff": "{count, plural, one {# channel is} other {# channels are}} off",
+      "unanswered": "{count, plural, one {# thread} other {# threads}} with a comment waiting for an answer",
+      "scheduled": "{count, plural, =0 {Nothing goes out in the next 7 days} one {# post goes out in the next 7 days} other {# posts go out in the next 7 days}}",
+      "agenda": "Agenda across workspaces"
+    },
+    "agenda": {
+      "title": "Agenda",
+      "description": "What goes out in the next 14 days, across the workspaces where you may read posts. Each post opens in its workspace.",
+      "filter": "Workspace",
+      "allWorkspaces": "All workspaces",
+      "loading": "Loading the agenda…",
+      "loadFailed": "The agenda could not be loaded.",
+      "reload": "Try again",
+      "empty": "Nothing goes out in the next 14 days.",
+      "loadMore": "Load more",
+      "listLabel": "Posts going out on {day}",
+      "noPlatform": "No channel left",
+      "noText": "(no text)",
+      "status": "{status, select, awaitingApproval {Waiting for approval} scheduled {Scheduled} publishing {Publishing} finished {Finished} other {{status}}}",
+      "time": "{at, time, short}",
+      "day": "{at, date, full}"
+    }
   }
 }

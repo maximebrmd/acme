@@ -2,6 +2,7 @@ import { Option } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import type { WorkspaceOverview } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
 import {
   Card,
@@ -16,11 +17,30 @@ import {
 import { currentUser } from "#auth/session.ts";
 import { UpgradePrompts } from "#components/billing/upgrade-prompts.tsx";
 import { CreateWorkspaceForm } from "#components/create-workspace-form.tsx";
+import { WorkspaceAttentionView } from "#components/overview/overview-views.tsx";
 import { Link, redirect } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
+import { byAttention } from "#overview/attention.ts";
+import { overviewOrNothing } from "#overview/server.ts";
+
+const attentionLink = (href: string, label: string) => (
+  <Link href={href} className="underline-offset-4 hover:underline">
+    {label}
+  </Link>
+);
+
+// What needs attention in a card's workspace, when the overview told it.
+const attentionOn = (found: WorkspaceOverview | undefined) =>
+  found === undefined ? null : (
+    <CardContent>
+      <WorkspaceAttentionView linkTo={attentionLink} workspace={found} />
+    </CardContent>
+  );
 
 // The signed-in home: the user's workspaces, read from GET /api/me with the
-// visitor's cookies. Anyone else is sent to sign in.
+// visitor's cookies, those with something to attend first, each with what
+// needs attention as GET /api/me/overview tells it. Anyone else is sent to
+// sign in. Without the overview, the cards show their links alone.
 const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   const { locale } = await params;
 
@@ -35,7 +55,9 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   }
 
   const { user, workspaces } = me.value;
+  const overview = await overviewOrNothing();
   const t = await getTranslations("AppPage");
+  const tOverview = await getTranslations("Overview.home");
   const channels = await getTranslations("ChannelsPage");
   const tPosts = await getTranslations("Posts.nav");
   const media = await getTranslations("Media.page");
@@ -54,12 +76,20 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
           {t("title", { name: user.name })}
         </h1>
         <p className="text-muted-foreground">{t("description")}</p>
+        {workspaces.length > 1 ? (
+          <Link
+            href="/app/agenda"
+            className="text-sm underline-offset-4 hover:underline"
+          >
+            {tOverview("agenda")}
+          </Link>
+        ) : null}
       </div>
       {workspaces.length === 0 ? (
         <p className="text-muted-foreground">{t("empty")}</p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
-          {workspaces.map((workspace) => (
+          {byAttention(workspaces, overview).map((workspace) => (
             <li key={workspace.id}>
               <Card>
                 <CardHeader>
@@ -77,6 +107,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                     </Badge>
                   </CardAction>
                 </CardHeader>
+                {attentionOn(overview.get(workspace.id))}
                 <CardFooter>
                   <nav
                     aria-label={tPosts("workspaceLinks", {

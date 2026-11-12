@@ -34,7 +34,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   deletion status `data-deletion/[code]`, the page behind a review link
   `review` (no sign-in, noindex; the token is the address's fragment, read
   in the browser), and the signed-in
-  app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
+  app: `app` (workspaces), `app/agenda`, `app/notices`, `app/notices/preferences`,
   `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
   `…/analytics`, `…/inbox` and `…/inbox/[threadId]` (for `engagement:read`:
   not-found otherwise, as for staff acting as a member), `…/ads`,
@@ -67,6 +67,21 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   them without cookies, each error once, ten a page at most. The release
   comes from `PEAL_RELEASE`, through the locale layout's `peal-release`
   meta tag.
+- The signed-in home (`app`) reads `GET /api/me/overview` on the server
+  with the request's cookies (`overviewOrNothing`, `#overview/server.ts`,
+  as `currentUser()` reads `/api/me`); when it fails the cards show their
+  links alone, never an error. Each card gains what needs attention
+  (`WorkspaceAttentionView`, `components/overview/overview-views.tsx`,
+  links as props), from `attentionOf` (`#overview/attention.ts`): a link
+  to the page that shows each, "Nothing needs attention." once where
+  nothing does, never a row of zeros, nothing for a section the role may
+  not read, and nothing for a workspace that refuses the person, whose
+  card keeps its two-step badge. Cards with something to attend come
+  first (`byAttention`). `app/agenda` lists the next 14 days across
+  workspaces (`AgendaScreen`, after hydration: the visitor's cookies, the
+  current time and their zone), grouped by day, a filter by workspace and
+  **Load more**: a list, never the week's grid, as nothing is moved across
+  workspaces. Strings in `Overview`.
 - Pages fetch through the client derived from `peal-contract`, with
   `@effect/atom-react`: query atoms come from `PealApi` in `src/api/client.ts`.
   Browsers call `/api`; server code calls `PEAL_API_URL`.
