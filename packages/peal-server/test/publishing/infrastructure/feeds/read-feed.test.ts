@@ -91,22 +91,23 @@ describe("an RSS 2.0 feed", () => {
   });
 });
 
+// The link an RSS item with this guid and no link gives.
+const linkOfGuid = (guid: string) =>
+  Option.getOrUndefined(
+    Option.getOrThrow(
+      readFeed(
+        `<rss><channel><item><guid>${guid}</guid><title>T</title></item></channel></rss>`,
+        "https://blog.example/feed.xml"
+      )
+    ).items[0]?.link ?? Option.none()
+  );
+
 describe("an RSS guid", () => {
   it("is an item's link only when it is an absolute address", () => {
-    const read = (guid: string) =>
-      Option.getOrUndefined(
-        Option.getOrThrow(
-          readFeed(
-            `<rss><channel><item><guid>${guid}</guid><title>T</title></item></channel></rss>`,
-            "https://blog.example/feed.xml"
-          )
-        ).items[0]?.link ?? Option.none()
-      );
-
     expect([
-      read("1"),
-      read("posts/1"),
-      read("https://blog.example/a"),
+      linkOfGuid("1"),
+      linkOfGuid("posts/1"),
+      linkOfGuid("https://blog.example/a"),
     ]).toStrictEqual([undefined, undefined, "https://blog.example/a"]);
   });
 });
