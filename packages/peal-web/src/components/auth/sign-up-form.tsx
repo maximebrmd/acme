@@ -5,7 +5,7 @@ import { signUpInvitationHeader } from "peal-contract";
 import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import { useState, useTransition } from "react";
-import type { SubmitEvent } from "react";
+import type { ReactNode, SubmitEvent } from "react";
 
 import { authClient } from "#auth/client.ts";
 import { authErrorKey } from "#auth/errors.ts";
@@ -15,13 +15,30 @@ import { FormField } from "#components/auth/form-field.tsx";
 import { useCaptcha } from "#components/auth/turnstile-field.tsx";
 import { getPathname } from "#i18n/navigation.ts";
 
+// A legal page's link, its whole sentence, as on the billing page.
+const LegalLink = ({
+  children,
+  href,
+}: {
+  readonly children: ReactNode;
+  readonly href: string;
+}) => (
+  <a className="underline underline-offset-4" href={href}>
+    {children}
+  </a>
+);
+
 // Creates the account, in the page's language, which its emails will use.
 // The confirmation link signs the new user in on the verify-email page.
 // With a Turnstile site key, the server wants the widget's token too; from
-// an invitation's page, the invitation's id goes with it.
+// an invitation's page, the invitation's id goes with it. Creating the
+// account accepts the terms, which the form says under its button, with
+// links to the terms and privacy policy the server names.
 export const SignUpForm = ({
   captchaSiteKey,
   invitationId,
+  privacyUrl,
+  termsUrl,
 }: {
   readonly captchaSiteKey: string | null;
   /**
@@ -29,6 +46,8 @@ export const SignUpForm = ({
    * made by invitation needs with the address it went to.
    */
   readonly invitationId: string | null;
+  readonly privacyUrl: string | null;
+  readonly termsUrl: string | null;
 }) => {
   const t = useTranslations("SignUpPage");
   const fields = useTranslations("Auth");
@@ -118,6 +137,19 @@ export const SignUpForm = ({
       >
         {isPending ? t("submitting") : t("submit")}
       </Button>
+      <p className="text-muted-foreground text-xs">
+        {termsUrl === null ? (
+          t("acceptTerms")
+        ) : (
+          <LegalLink href={termsUrl}>{t("acceptTerms")}</LegalLink>
+        )}
+        {privacyUrl === null ? null : (
+          <>
+            {" "}
+            <LegalLink href={privacyUrl}>{t("privacy")}</LegalLink>
+          </>
+        )}
+      </p>
     </form>
   );
 };
