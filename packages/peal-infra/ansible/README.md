@@ -22,7 +22,7 @@ self-hosting page, and [`peal-docker`](../../peal-docker)).
 | Access    | Cloudflare Zero Trust Access guards Grafana, SSH, the admin and the whole sandbox                                                           |
 | Stack     | [`compose.production.yaml`](../../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1               |
 | Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                                              |
-| Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                                              |
+| Alerts    | Grafana's alert rules, sent to a Telegram chat, on the stack's telemetry and on what the host reports: backups and disks                    |
 | Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                                              |
 | Uptime    | Gatus on a server of its own checks the public endpoints, hears Grafana's heartbeat and serves the status page ([Uptime](#uptime))          |
 
@@ -86,6 +86,7 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 | `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                                                                                                                                                                         |
 | `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`                                                                                                                                                       |
 | `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days                                                                                                                                                             |
+| `peal_disks`     | smartmontools, and `peal-disk-health` and its timer: the RAID arrays' and the disks' health reported to the collector every 15 minutes ([Disks](#disks))                                                                                              |
 | `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                                                                                                                                                                         |
 | `uptime`         | Gatus and Caddy on the uptime server, or Gatus behind a shared host's Caddy, their configuration from the inventory (`uptime.yml`)                                                                                                                    |
 
@@ -746,6 +747,39 @@ says what that costs.
 
 [`runbooks/restore-database.md`](runbooks/restore-database.md) restores the
 database, to its latest state or to a time.
+
+## Disks
+
+A server's disks may be mirrored with Linux software RAID (md), as
+production's two SSDs are: `md0` for `/boot`, `md1` for `/`. A mirror buys
+time, not a repair: on production's offer the provider does not replace a
+disk, so a degraded array means moving to another server while this one
+still runs.
+
+Every 15 minutes, `peal-disk-health` (the `peal_disks` role) counts the md
+arrays, those missing a device (`/sys/block/md*/md/degraded`) and the whole
+disks smartctl says are failing (its exit status: SMART's verdict, or a
+prefail attribute at its threshold), and reports the three numbers to the
+collector, as `peal-backup` reports each backup. Grafana alerts on Telegram
+when an array is degraded (`peal-raid-degraded`) and when a disk is failing
+(`peal-disk-failing`). A server without arrays reports none, and a disk
+without SMART, as a virtual machine's, is not failing, so the sandbox stays
+quiet. No rule sees the timer stop reporting, as a server without the role
+never reports at all: read the three series once after setting a server up
+([the runbook's check](runbooks/failed-disk.md#check-it-reports)).
+
+Ubuntu's own timers do the rest: `mdcheck_start.timer` reads both halves of
+each mirror once a month, which is how a disk's unreadable sectors are found
+before the other one is needed, and `fstrim.timer` trims the SSDs weekly,
+through md. mdadm and smartd would mail `root` on a problem; the server has
+no mail transport, which is why the alerts go through the collector.
+
+Never fail a disk to test this: on a mirror whose disks cannot be replaced,
+`mdadm --fail` is an incident. The script is tested on a made-up `/sys` in
+`tests/test_disks.py`.
+
+[`runbooks/failed-disk.md`](runbooks/failed-disk.md) says what to do when
+either alert fires.
 
 ## Uptime
 

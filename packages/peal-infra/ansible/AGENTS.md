@@ -98,6 +98,12 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   `PEAL_MEDIA_PUBLIC_BASE_URL` without `peal_erasure_ledger_bucket`. The server migrates when it
   starts, so write migrations that the previous release can still run
   against, and roll back by releasing the previous commit.
+- The disks' health goes to the collector as the backups' does:
+  `peal_disks` posts gauges of the md arrays and of SMART, and Grafana's
+  rules alert on them (`peal-docker`'s `rules.yaml`), with no mail
+  transport or credential on the host. Never fail a disk, on any server,
+  to test it: the script is tested on a made-up `/sys`
+  (`tests/test_disks.py`), the rules by their expressions.
 - `site.yml` restarts the server when the privacy declaration changes (the
   server reads it at startup), refuses to remove the image's account while
   connected as it, and takes a storage endpoint only in the EU: R2's `.eu.`
