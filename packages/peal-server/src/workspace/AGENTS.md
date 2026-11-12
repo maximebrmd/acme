@@ -16,6 +16,28 @@ The staff context follows these rules too. What the law has a host keep is in
   shows the widget only then. Tests check tokens with Cloudflare's test keys
   against the fake siteverify in `test/workspace/fakes/fake-turnstile.ts`,
   through `TURNSTILE_VERIFY_URL`.
+- `PEAL_SIGN_UP` (`sign-up-settings.ts`, `SignUpSettings`): `open`, the
+  default, or `invitation`, where `refuseUnadmittedSignUps`
+  (`auth/sign-up-gate.ts`, in `beforeEveryRoute`, after the impersonation
+  guard) refuses `/sign-up/email` with 403 `SIGN_UP_BY_INVITATION` unless
+  `SignUpGate` admits it: the invitation named in `x-peal-invitation`
+  (`signUpInvitationHeader`, a UUID only its link carries) is pending,
+  unexpired and went to the address given, lower-cased as Better Auth
+  stores it and nothing more (`DrizzleSignUpStore`, by id); or the server
+  has no account at all, the first one. An address alone never passes, and
+  every refusal answers the same, so nothing tells an invited address from
+  another; an admitted address with an account still gets Better Auth's
+  made-up user. Two first sign-ups at once may both pass, and the rule
+  opens again should every account be deleted: the docs tell the operator
+  to sign up before the address is public. An unconfirmed account counts
+  (failing closed); the docs give the SQL that deletes unconfirmed accounts
+  while none is confirmed. The captcha plugin checks its
+  token first (`onRequest`). `GET /api/captcha` answers `signUp` from
+  `SignUpGate.modeNow`: `open` while a server by invitation has no
+  account, so the web app shows the first account its form. An invited
+  person may make workspaces and invite in turn: the mode limits who signs
+  up, not who invites. Everything else (signing in, resets, accepting,
+  staff, partners, connect and review links) is the same in both modes.
 - Workspaces are Better Auth organizations. The five roles (owner, admin,
   editor, contributor, viewer) and their grants are in
   `workspace/domain/roles.ts`, translated for Better Auth in
@@ -53,9 +75,9 @@ The staff context follows these rules too. What the law has a host keep is in
   which `ContextOverviewSourcesLive` backs at the composition root with
   one set-based read per context (publishing's `PostAttention`, the
   channels' `ChannelOverview`, engagement's `InboxWaiting`, all ids in one
-  `anyUuid` parameter) and billing's `WorkspaceStanding`, which has no
-  form across workspaces and is asked per workspace of the page (50 at
-  most). Workspaces page by name then id (`workspacePage`), the agenda by
+  `anyUuid` parameter) and billing's `WorkspaceStanding.overPlanIn`, asked
+  once for the page (seven statements for 50 workspaces, a partner's pool
+  among them). Workspaces page by name then id (`workspacePage`), the agenda by
   time then id, 31 days at most; cursors are opaque. `Overview.report`
   passes analytics the actors with `analytics:read` alone
   (`AnalyticsQueries.acrossWorkspaces`); its CSV (`/api/me/report/export`)
@@ -408,8 +430,27 @@ The staff context follows these rules too. What the law has a host keep is in
   partner owns and answers 404 for every other, the home workspace
   included (`PartnerOwnership.ownerOf`). `/api/me` and the groups for
   people answer it 403, and `/api/partner` answers 403 to anything else.
+  `GET /api/credential` (`CredentialCheck`) answers every principal, a
+  partner key included, with its partner, scopes and permissions, never
+  its workspaces; a session or token of a member a workspace refuses is
+  answered too (the bound workspace `refused`), as it names no data, and
+  `Authentication` alone guards it: never add the workspace policy there.
   `test/workspace/integration/partners.test.ts` holds the matrix: add a
   new workspace group to it.
+- `PartnerHealth` (`forKey`, a partner key with `workspaces:read`;
+  `forMember`, partner:read in the home workspace) answers
+  `GET /api/partner/overview` and `…/partner/overview` of the home
+  workspace: a page of `PartnerWorkspaces.listingOf` (its order and
+  cursor, the home workspace left out) with the overview's own sources
+  (`OverviewSources`, one read each for the page), each section only
+  where the key holds its permission (`sectionsHeld`), a member where they
+  hold it in the home workspace (`sectionsFor`, as the people's overview:
+  staff acting as one read no inbox) and never `mayApprove`, and on the
+  first page alone the account's `overPlan`, asked of one customer (they
+  share the pool's plan and channels and have no member), or of the home
+  workspace while there is none, none when the server does not bill
+  (`OverviewSources.bills`). No filter on what needs attention: it would
+  read every workspace; a product pages through.
 - `PartnerWorkspaces` creates, lists (counts, `externalId`, `name`,
   `before`), changes and offboards. Creation is idempotent twice over:
   `externalId` taken answers `ExternalIdTaken` with the workspace's id, and
@@ -425,6 +466,9 @@ The staff context follows these rules too. What the law has a host keep is in
   home workspace and every workspace the partner owns, under the partner's
   advisory lock (`CustomerWorkspaces.hold`, `ChannelAllowance.sharedWith`,
   `SharedChannelAllowanceLive`); the other limits apply per workspace.
+  What only reports how workspaces stand reads their pools a set at a time
+  and without the hold (`PartnerOwnership.poolsIn`, `ownersIn`): never
+  count with it and then add.
   Locks are taken in one order, never the other way: a connect link's row
   (`ConnectLinkStore.lock`), then the workspace's channel additions
   (`ChannelRepository.addingTo`), then the partner's hold, which

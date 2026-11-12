@@ -7,6 +7,7 @@ from ..core.request_options import RequestOptions
 from ..types.created_partner_key import CreatedPartnerKey
 from ..types.customer_workspace_page import CustomerWorkspacePage
 from ..types.partner import Partner
+from ..types.partner_health import PartnerHealth
 from ..types.partner_key import PartnerKey
 from ..types.partner_scope import PartnerScope
 from ..types.partner_standing import PartnerStanding
@@ -291,6 +292,47 @@ class PartnerAccountClient:
         )
         """
         _response = self._raw_client.revoke_key(workspace_id, partner_key_id, request_options=request_options)
+        return _response.data
+
+    def overview(
+        self,
+        workspace_id: str,
+        *,
+        before: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> PartnerHealth:
+        """
+        Answers, for each workspace the partner owns, what needs attention: its channels (`connected`, `toReconnect`: to reconnect, as `channel.reconnect_needed` told; `off`: turned off), its posts (`scheduledNext7Days`, `awaitingApproval`, `failedLast7Days`: finished in the last 7 days with a channel that failed, as `post.failed` told; `unconfirmedLast7Days`: one that may be live and must be checked) and its inbox (`unanswered`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. `account` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill); with no customer yet, it is the home workspace's own standing. For the home workspace's people: each section only where the caller holds its permission in the home workspace (`channel:read`, `post:read`, `engagement:read`), as the overview across their workspaces gives it, so staff acting as a member read no inbox; `mayApprove` is always false, as they are members of no customer's workspace. Needs partner:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        before : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        PartnerHealth
+            PartnerHealth
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.partner_account.overview(
+            workspace_id="workspaceId",
+        )
+        """
+        _response = self._raw_client.overview(workspace_id, before=before, limit=limit, request_options=request_options)
         return _response.data
 
     def list_workspaces(
@@ -682,6 +724,57 @@ class AsyncPartnerAccountClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.revoke_key(workspace_id, partner_key_id, request_options=request_options)
+        return _response.data
+
+    async def overview(
+        self,
+        workspace_id: str,
+        *,
+        before: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> PartnerHealth:
+        """
+        Answers, for each workspace the partner owns, what needs attention: its channels (`connected`, `toReconnect`: to reconnect, as `channel.reconnect_needed` told; `off`: turned off), its posts (`scheduledNext7Days`, `awaitingApproval`, `failedLast7Days`: finished in the last 7 days with a channel that failed, as `post.failed` told; `unconfirmedLast7Days`: one that may be live and must be checked) and its inbox (`unanswered`: threads with a comment waiting for an answer). It tells the state at the time of the call; webhooks tell each change as it happens. A section is null where the credential may not read it, never zero. The partner's home workspace is not listed: it is no customer. Newest first, 50 a page unless `limit` (at most 100) says otherwise, in the order and with the cursor of the list of the partner's workspaces (pass `next` as `before`; anything else is refused, 400): page through every customer to find those that need attention, as nothing filters them. `account` comes with the first page only: whether the account's workspaces, which share one plan and one channel count, hold more channels than the plan allows, and so schedule and publish nothing (null on a server that does not bill); with no customer yet, it is the home workspace's own standing. For the home workspace's people: each section only where the caller holds its permission in the home workspace (`channel:read`, `post:read`, `engagement:read`), as the overview across their workspaces gives it, so staff acting as a member read no inbox; `mayApprove` is always false, as they are members of no customer's workspace. Needs partner:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        before : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        PartnerHealth
+            PartnerHealth
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.partner_account.overview(
+                workspace_id="workspaceId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.overview(
+            workspace_id, before=before, limit=limit, request_options=request_options
+        )
         return _response.data
 
     async def list_workspaces(

@@ -141,11 +141,15 @@ export class OverviewSources extends Context.Service<
       workspaceIds: readonly WorkspaceId[]
     ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>, DatabaseError>;
     /**
-     * Whether the actor's workspace holds more than its plan allows, and
-     * schedules nothing until it comes back within it: the billing page's
-     * standing, one workspace at a time.
+     * Those of these workspaces that hold more than their plan allows, and
+     * schedule nothing until they come back within it: the billing page's
+     * standing (`mustReduce`), every member's to read.
      */
-    readonly overPlan: (actor: Actor) => Effect.Effect<boolean, DatabaseError>;
+    readonly overPlan: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlySet<WorkspaceId>, DatabaseError>;
+    /** Whether the server bills, without which nothing is over a plan. */
+    readonly bills: boolean;
     /**
      * The posts with a time in the range, by time then id, after the
      * position: `limit` of them at most.

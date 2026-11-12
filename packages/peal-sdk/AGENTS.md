@@ -100,6 +100,11 @@
   Containers reach it as `host.docker.internal`; Ruby's client sends plain
   HTTP to localhost alone, so its test forwards from its container's
   loopback. Fern's own tests (Go's call WireMock) do not run.
+- The docs' `sdks.mdx` (en and fr) has code in every language, written
+  with the generated names (`reference.md`: `credential.get`,
+  `media.importFromUrl`, Ruby's `send_`…) and the TypeScript journey
+  compiled against `node/src`: recheck them when the contract renames an
+  operation or a generator upgrade renames a method.
 - What each package ships is chosen, not found: npm's `files`, Ruby's
   gemspec (`lib/`, the README, the license: `finish.ts`), Rust's `exclude`,
   PHP's `.gitattributes` (`export-ignore`, for Composer's downloads), the

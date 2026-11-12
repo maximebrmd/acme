@@ -292,6 +292,61 @@ describe("peal partner", () => {
   );
 });
 
+describe("peal partner overview", () => {
+  it.effect(
+    "shows which customers need attention, page by page, and the API's answer with --json",
+    () =>
+      Effect.gen(function* overview() {
+        const session = yield* signedIn();
+
+        const shown = yield* session.printed([
+          "partner",
+          "overview",
+          "--limit",
+          "1",
+          ...inStudio,
+        ]);
+
+        assert.include(
+          shown,
+          "What needs attention in the partner account of Studio's workspaces (1 of 2, newest first):"
+        );
+        assert.match(
+          shown,
+          /cus_002\s+Garage Dupont\s+1 to reconnect, 2 failed in 7 days/u
+        );
+        assert.include(shown, "The plan holds every channel.");
+        assert.include(
+          shown,
+          "More: peal partner overview --limit 1 --cursor studio-health-next"
+        );
+
+        const next = yield* session.printed([
+          "partner",
+          "overview",
+          "--cursor",
+          "studio-health-next",
+          ...inStudio,
+        ]);
+
+        assert.match(
+          next,
+          /cus_001\s+Boulangerie Martin\s+Nothing needs attention\./u
+        );
+        assert.notInclude(next, "The plan holds");
+
+        const json = yield* session.printed([
+          "partner",
+          "overview",
+          "--json",
+          ...inStudio,
+        ]);
+
+        assert.include(json, '"toReconnect": 1');
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
 describe("--json on links and the partner account", () => {
   it.effect("prints the API's answers, a new link's address included", () =>
     Effect.gen(function* json() {

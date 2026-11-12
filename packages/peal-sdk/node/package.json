@@ -40,6 +40,17 @@
       },
       "default": "./dist/cjs/api/resources/session/exports.js"
     },
+    "./credential": {
+      "import": {
+        "types": "./dist/esm/api/resources/credential/exports.d.mts",
+        "default": "./dist/esm/api/resources/credential/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/credential/exports.d.ts",
+        "default": "./dist/cjs/api/resources/credential/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/credential/exports.js"
+    },
     "./apiKeys": {
       "import": {
         "types": "./dist/esm/api/resources/apiKeys/exports.d.mts",

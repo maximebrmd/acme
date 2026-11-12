@@ -15,6 +15,7 @@ import (
 	channelsets "github.com/peal-social/peal/packages/peal-sdk/go/channelsets"
 	connectlinks "github.com/peal-social/peal/packages/peal-sdk/go/connectlinks"
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
+	credential "github.com/peal-social/peal/packages/peal-sdk/go/credential"
 	feeds "github.com/peal-social/peal/packages/peal-sdk/go/feeds"
 	inbox "github.com/peal-social/peal/packages/peal-sdk/go/inbox"
 	internal "github.com/peal-social/peal/packages/peal-sdk/go/internal"
@@ -46,6 +47,7 @@ import (
 type Client struct {
 	System                  *system.Client
 	Session                 *session.Client
+	Credential              *credential.Client
 	APIKeys                 *apikeys.Client
 	Channels                *channels.Client
 	Posts                   *posts.Client
@@ -90,6 +92,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 	return &Client{
 		System:                  system.NewClient(options),
 		Session:                 session.NewClient(options),
+		Credential:              credential.NewClient(options),
 		APIKeys:                 apikeys.NewClient(options),
 		Channels:                channels.NewClient(options),
 		Posts:                   posts.NewClient(options),

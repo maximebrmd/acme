@@ -72,7 +72,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   meta tag.
 - The signed-in home (`app`) reads `GET /api/me/overview` on the server
   with the request's cookies (`overviewOrNothing`, `#overview/server.ts`,
-  as `currentUser()` reads `/api/me`); when it fails the cards show their
+  as `currentUser()` reads `/api/me`), a page at a time, 20 at most, each
+  within 5 seconds and all within 8 (`overviewPages`, `#overview/pages.ts`,
+  `homeBudget`): the pages read before one that fails, or before the
+  budget runs out, are kept, and the cards the others hold show their
   links alone, never an error. Each card gains what needs attention
   (`WorkspaceAttentionView`, `components/overview/overview-views.tsx`,
   links as props), from `attentionOf` (`#overview/attention.ts`): a link
@@ -435,6 +438,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   request time (`captchaSiteKey()`, `GET /api/captcha`); `useCaptcha` shows
   the widget only with one, sends its token as `x-captcha-response`, and
   resets it after every call, since a token works once.
+- The sign-up and sign-in pages read who may sign up at request time
+  (`signUpSettings()`, the same answer's `signUp`, `open` when it says
+  nothing). By invitation, the sign-up page shows the form only to a
+  visitor the invitation page sent (`?invitation=<id>`,
+  `signUpFormShown`), whose form sends the id in `signUpInvitationHeader`
+  (`invitationOf`), `SignUpByInvitation` otherwise, and the sign-in page
+  hides its link to sign up (`offersSignUp`). The server answers `open`
+  while it has no account, so the first one can be made. The server decides: its
+  `SIGN_UP_BY_INVITATION` reads from `Auth.errors`.
 - `src/proxy.ts` rewrites `/api/*` and `/.well-known/oauth-*` to
   `PEAL_API_URL`, read per request. Keep it there, not in `next.config.ts`:
   Next resolves config rewrites at build time and writes the URL into the

@@ -33,6 +33,8 @@ const KnownErrorSchema = Schema.Literals([
   "EMAIL_NOT_VERIFIED_FOR_TWO_STEP",
   "TWO_STEP_REQUIRED_BY_WORKSPACE",
   "TWO_STEP_REQUIRED",
+  // A server where accounts are made by invitation refused the address.
+  "SIGN_UP_BY_INVITATION",
 ]);
 
 export type AuthErrorKey =

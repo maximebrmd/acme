@@ -137,8 +137,42 @@ describe(Overview, () => {
         assert.deepStrictEqual(asked.posts, [[alpha]]);
         assert.deepStrictEqual(asked.channels, [[alpha]]);
         assert.deepStrictEqual(asked.unanswered, [[alpha]]);
-        assert.deepStrictEqual(asked.overPlan, [alpha]);
+        assert.deepStrictEqual(asked.overPlan, [[alpha]]);
       })
+  );
+
+  it.effect("asks the standing of a whole page at once", () =>
+    Effect.gen(function* standing() {
+      const calls = yield* noCalls();
+
+      const page = yield* Overview.use((overview) =>
+        overview.page(person, firstPage)
+      ).pipe(
+        Effect.provide(
+          overviewOver(
+            [
+              { id: alpha, name: "Alpha", role: "viewer" },
+              { id: bravo, name: "Bravo", role: "editor" },
+            ],
+            calls
+          )
+        )
+      );
+
+      assert.deepStrictEqual(
+        page.workspaces.map(({ overPlan, workspace }) => [
+          workspace.id,
+          overPlan,
+        ]),
+        [
+          [alpha, Option.some(false)],
+          [bravo, Option.some(true)],
+        ]
+      );
+      assert.deepStrictEqual((yield* Ref.get(calls)).overPlan, [
+        [alpha, bravo],
+      ]);
+    })
   );
 
   it.effect("refuses a banned person whole", () =>

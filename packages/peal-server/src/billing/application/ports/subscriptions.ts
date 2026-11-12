@@ -22,6 +22,16 @@ export class Subscriptions extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly Subscription[], DatabaseError>;
     /**
+     * Every subscription each of these workspaces has had, in one read;
+     * one that never had any is left out.
+     */
+    readonly ofWorkspaces: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<
+      ReadonlyMap<WorkspaceId, readonly Subscription[]>,
+      DatabaseError
+    >;
+    /**
      * The subscriptions that may be due a reminder at `now`: trials ending
      * within days, plans renewing within weeks (`reminderOf` decides).
      */

@@ -17,6 +17,7 @@ import social.peal.resources.channeldefaults.AsyncChannelDefaultsClient;
 import social.peal.resources.channels.AsyncChannelsClient;
 import social.peal.resources.channelsets.AsyncChannelSetsClient;
 import social.peal.resources.connectlinks.AsyncConnectLinksClient;
+import social.peal.resources.credential.AsyncCredentialClient;
 import social.peal.resources.feeds.AsyncFeedsClient;
 import social.peal.resources.inbox.AsyncInboxClient;
 import social.peal.resources.invitations.AsyncInvitationsClient;
@@ -48,6 +49,8 @@ public class AsyncPealClient implements AutoCloseable {
     protected final Supplier<AsyncSystemClient> systemClient;
 
     protected final Supplier<AsyncSessionClient> sessionClient;
+
+    protected final Supplier<AsyncCredentialClient> credentialClient;
 
     protected final Supplier<AsyncApiKeysClient> apiKeysClient;
 
@@ -119,6 +122,7 @@ public class AsyncPealClient implements AutoCloseable {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new AsyncSystemClient(clientOptions));
         this.sessionClient = Suppliers.memoize(() -> new AsyncSessionClient(clientOptions));
+        this.credentialClient = Suppliers.memoize(() -> new AsyncCredentialClient(clientOptions));
         this.apiKeysClient = Suppliers.memoize(() -> new AsyncApiKeysClient(clientOptions));
         this.channelsClient = Suppliers.memoize(() -> new AsyncChannelsClient(clientOptions));
         this.postsClient = Suppliers.memoize(() -> new AsyncPostsClient(clientOptions));
@@ -161,6 +165,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncSessionClient session() {
         return this.sessionClient.get();
+    }
+
+    public AsyncCredentialClient credential() {
+        return this.credentialClient.get();
     }
 
     public AsyncApiKeysClient apiKeys() {

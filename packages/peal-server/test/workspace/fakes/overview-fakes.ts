@@ -1,6 +1,5 @@
 import { DateTime, Effect, Layer, Option, Ref } from "effect";
 
-import type { Actor } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { LocalDateSchema } from "#shared/domain/wall-clock.ts";
@@ -97,7 +96,7 @@ export const reportDays = {
 export interface Calls {
   readonly agenda: AgendaRequest[];
   readonly channels: (readonly WorkspaceId[])[];
-  readonly overPlan: WorkspaceId[];
+  readonly overPlan: (readonly WorkspaceId[])[];
   readonly posts: (readonly WorkspaceId[])[];
   readonly report: (readonly WorkspaceId[])[];
   readonly unanswered: (readonly WorkspaceId[])[];
@@ -193,16 +192,17 @@ export const overviewOver = (
         ...current,
         agenda: [...current.agenda, request],
       })).pipe(Effect.as(options.entries ?? [])),
+    bills: true,
     channels: (ids) =>
       record((current) => ({
         ...current,
         channels: [...current.channels, ids],
       })).pipe(Effect.as(mapOf(ids, figures.channels))),
-    overPlan: (actor: Actor) =>
+    overPlan: (ids) =>
       record((current) => ({
         ...current,
-        overPlan: [...current.overPlan, actor.workspaceId],
-      })).pipe(Effect.as(actor.workspaceId === bravo)),
+        overPlan: [...current.overPlan, ids],
+      })).pipe(Effect.as(new Set(ids.filter((id) => id === bravo)))),
     posts: (ids) =>
       record((current) => ({
         ...current,

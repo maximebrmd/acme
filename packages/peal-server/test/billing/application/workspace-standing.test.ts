@@ -4,6 +4,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option, Ref } from "effect";
 
+import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { WorkspaceHoldings } from "#billing/application/ports/workspace-holdings.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
@@ -58,6 +59,7 @@ const run = <A, E>(
     const usage = Layer.succeed(
       WorkspaceUsage,
       WorkspaceUsage.of({
+        heldIn: () => Effect.die("not read here"),
         of: () =>
           Ref.get(state).pipe(
             Effect.map(({ channels, members }) => ({
@@ -119,7 +121,17 @@ const run = <A, E>(
       Effect.provide(
         ReduceWorkspace.layer.pipe(
           Layer.provideMerge(WorkspaceStanding.layer),
-          Layer.provide(Layer.mergeAll(usage, holdings, entitlements))
+          Layer.provide(
+            Layer.mergeAll(
+              usage,
+              holdings,
+              entitlements,
+              Layer.succeed(
+                BillingMode,
+                BillingMode.of({ enabled: Option.isSome(plan) })
+              )
+            )
+          )
         )
       )
     );

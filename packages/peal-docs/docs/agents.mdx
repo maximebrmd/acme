@@ -52,7 +52,7 @@ An agent that runs on a schedule or on a server has no browser to sign in with. 
 - on the [HTTP API](#api), the same header;
 - on the [command line](#cli), in the `PEAL_API_KEY` variable, never a flag, with the workspace named by its id ([Run it with an API key](/cli#api-key)).
 
-A key has no scope: what it may do is the list of its permissions, which `whoami` answers. It puts posts out only when it holds `post:schedule`, and the tools that only a person uses, such as inviting someone, refuse it. Keep the key in the agent's secrets, and revoke it, under **API keys**, the day the agent stops.
+A key has no scope: what it may do is the list of its permissions, which `whoami` answers, and `GET /api/credential` over HTTP ([SDKs](/sdks#credential)). It puts posts out only when it holds `post:schedule`, and the tools that only a person uses, such as inviting someone, refuse it. Keep the key in the agent's secrets, and revoke it, under **API keys**, the day the agent stops.
 
 ## What each permission allows [#scopes]
 
@@ -314,7 +314,7 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send \
 - The same key with another body answers 409 `idempotency_key_reused`, and makes nothing: send a new request under a new key.
 - Once that post was deleted, the key answers 404 `post_not_found`. Keys are kept per workspace.
 
-[Posting through the API](/posting-api) shows the other requests with examples: checking a post without making it, waiting for the outcome of a post that goes out now, sending several posts at once, importing them from a CSV file, the duplicate refusal, and listing posts with filters.
+The [SDKs](/sdks) make these calls in eight languages. [Posting through the API](/posting-api) shows the other requests with examples: checking a post without making it, waiting for the outcome of a post that goes out now, sending several posts at once, importing them from a CSV file, the duplicate refusal, and listing posts with filters.
 
 `POST …/media/import` takes `{ "url": "https://files.example/spring/cover.jpg", "altText": "…" }` and answers the media, as `import_media` does. It needs `media:upload`.
 

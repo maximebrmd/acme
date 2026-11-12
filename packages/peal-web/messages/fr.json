@@ -553,7 +553,8 @@
       "INVALID_PASSWORD": "Le mot de passe est incorrect.",
       "EMAIL_NOT_VERIFIED_FOR_TWO_STEP": "Confirmez votre adresse e-mail avant d’activer la validation en deux étapes.",
       "TWO_STEP_REQUIRED_BY_WORKSPACE": "Un espace de travail dont vous êtes membre exige la validation en deux étapes : elle reste activée tant que vous en êtes membre.",
-      "TWO_STEP_REQUIRED": "Cet espace de travail exige la validation en deux étapes. Activez-la dans les paramètres de votre compte, puis réessayez."
+      "TWO_STEP_REQUIRED": "Cet espace de travail exige la validation en deux étapes. Activez-la dans les paramètres de votre compte, puis réessayez.",
+      "SIGN_UP_BY_INVITATION": "Ce serveur ne crée de comptes que sur invitation : ouvrez le lien de l’e-mail qui vous a invité, avec l’adresse à laquelle il a été envoyé."
     }
   },
   "SignInPage": {
@@ -575,7 +576,9 @@
     "haveAccount": "Vous avez déjà un compte ?",
     "signIn": "Se connecter",
     "checkInbox": "Consultez votre boîte de réception",
-    "sent": "Nous avons envoyé un lien à {email}. Ouvrez-le pour confirmer votre adresse : il vous connecte."
+    "sent": "Nous avons envoyé un lien à {email}. Ouvrez-le pour confirmer votre adresse : il vous connecte.",
+    "byInvitation": "Les comptes sont créés ici sur invitation",
+    "byInvitationDescription": "Ouvrez le lien de l’e-mail qui vous a invité dans un espace de travail, puis créez votre compte depuis cette page."
   },
   "VerifyEmailPage": {
     "title": "Adresse confirmée",
@@ -2438,6 +2441,8 @@
       "noWorkspaces": "Le compte ne possède encore aucun espace de travail. Créez-les par l’API, avec une clé partenaire.",
       "workspaceLine": "{channels, plural, =0 {Aucun canal} one {# canal} other {# canaux}} · {externalId, select, none {sans identifiant externe} other {identifiant externe {externalId}}}",
       "moreWorkspaces": "Les {shown} plus récents sur {total}. L’API les liste tous.",
+      "healthToReconnect": "À reconnecter : {count}",
+      "healthFailed": "En échec, 7 jours : {count}",
       "closeTitle": "Fermer le compte partenaire",
       "closeHint": "Ses clés cessent de fonctionner aussitôt. Un compte ne se ferme qu’une fois qu’il ne possède plus aucun espace de travail : supprimez chacun par l’API d’abord.",
       "close": "Fermer le compte partenaire",

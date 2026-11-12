@@ -26,7 +26,32 @@ const make = Effect.gen(function* WorkspaceEntitlementsLive() {
     return entitlementsOf(yield* subscriptions.ofWorkspace(holder));
   });
 
-  return { of };
+  // The same, for a set of workspaces: their holders in one read, then
+  // the holders' subscriptions in one more.
+  const ofEach = Effect.fn("WorkspaceEntitlements.ofEach")(function* ofEach(
+    workspaceIds: readonly WorkspaceId[]
+  ) {
+    if (!enabled || workspaceIds.length === 0) {
+      return new Map<WorkspaceId, Entitlements>(
+        workspaceIds.map((id) => [id, unmetered])
+      );
+    }
+
+    const holderOf = yield* holders.holdersOf(workspaceIds);
+
+    const held = yield* subscriptions.ofWorkspaces([
+      ...new Set(holderOf.values()),
+    ]);
+
+    return new Map<WorkspaceId, Entitlements>(
+      workspaceIds.map((id) => [
+        id,
+        entitlementsOf(held.get(holderOf.get(id) ?? id) ?? []),
+      ])
+    );
+  });
+
+  return { of, ofEach };
 });
 
 /**
@@ -44,6 +69,10 @@ export class WorkspaceEntitlements extends Context.Service<
     readonly of: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<Entitlements, DatabaseError>;
+    /** What each of these workspaces' plans allows, as `of` answers it. */
+    readonly ofEach: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, Entitlements>, DatabaseError>;
   }
 >()("peal-server/billing/application/WorkspaceEntitlements") {
   /**

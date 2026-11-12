@@ -2,7 +2,7 @@
 title: Auto-hébergement
 description: Les services nécessaires à une instance Peal auto-hébergée, comment faire tourner le serveur et l’application web derrière une seule adresse, et comment configurer l’e-mail, les médias, les canaux, l’assistant de rédaction et MCP.
 sidebar:
-  order: 20
+  order: 21
 ---
 
 Peal accède à chaque service extérieur par un port doté d’une option par défaut auto-hébergeable. Une instance auto-hébergée fait tourner deux programmes à elle, le serveur et l’application web, et a besoin de Postgres, d’un stockage objet compatible S3 et d’un moyen d’envoyer des e-mails. Tout le reste est facultatif et reste désactivé tant que vous ne le configurez pas.
@@ -341,7 +341,7 @@ L’assistant de rédaction de l’éditeur réécrit une publication sur un ton
 
 Un fournisseur nommé sans les réglages qu’il demande arrête le serveur au démarrage, et l’erreur nomme la variable manquante. Le serveur appelle le fournisseur directement, sans passer par la garde qui limite les appels aux plateformes aux adresses publiques : le point d’accès peut tourner sur la même machine ou sur votre réseau privé.
 
-Chaque espace de travail peut envoyer à l’assistant `PEAL_AI_DAILY_REQUESTS` demandes par jour UTC, 100 sans réglage ; `0` n’en laisse passer aucune. Avec la [facturation](#billing), chaque abonnement fixe la sienne à la place. Sans elle, chaque espace de travail en a autant : sur une instance où tout le monde peut s’inscrire, chaque nouvel espace de travail s’ajoute à ce que votre fournisseur peut facturer. Une demande pour laquelle le fournisseur n’a pas pu être joint ne compte pas. Une demande sans réponse au bout de 90 secondes échoue et compte, car le fournisseur a pu la traiter.
+Chaque espace de travail peut envoyer à l’assistant `PEAL_AI_DAILY_REQUESTS` demandes par jour UTC, 100 sans réglage ; `0` n’en laisse passer aucune. Avec la [facturation](#billing), chaque abonnement fixe la sienne à la place. Sans elle, chaque espace de travail en a autant : sur une instance où tout le monde peut s’inscrire, chaque nouvel espace de travail s’ajoute à ce que votre fournisseur peut facturer ([Qui peut s’inscrire](#sign-up) dit comment la fermer). Une demande pour laquelle le fournisseur n’a pas pu être joint ne compte pas. Une demande sans réponse au bout de 90 secondes échoue et compte, car le fournisseur a pu la traiter.
 
 Ce que les membres envoient, c’est le texte de la publication, ou le sujet d’une publication à rédiger, jusqu’à 5 000 caractères, et les réponses sont limitées à 4 096 tokens. Le texte est envoyé comme une donnée, avec des consignes que le texte ne peut pas changer. Le serveur n’écrit jamais le texte ni la réponse dans ses journaux ou ses traces, n’enregistre ni l’un ni l’autre, et n’envoie au fournisseur aucun contexte de trace : ses journaux et ses traces ne nomment que le fournisseur, le modèle, le nombre de tokens et le type d’échec.
 
@@ -370,6 +370,24 @@ Chacun peut résilier un contrat ou s’en rétracter sans se connecter, depuis 
 ## Captcha [#captcha]
 
 Avec `TURNSTILE_SITE_KEY` et `TURNSTILE_SECRET_KEY`, l’inscription et la demande de réinitialisation du mot de passe demandent un jeton Cloudflare Turnstile : les formulaires montrent le widget, et le serveur vérifie chaque jeton auprès de Cloudflare avant de continuer. La connexion s’appuie sur ses limites de fréquence. Ajoutez votre adresse publique aux noms d’hôte du widget dans Cloudflare. Les clés de test de Cloudflare permettent d’essayer sans vrai widget.
+
+## Qui peut s’inscrire [#sign-up]
+
+Quiconque atteint votre instance peut créer un compte, puis un espace de travail, qui utilise vos applications de plateformes et les demandes de votre assistant de rédaction. Pour faire tourner Peal pour vos seules équipes, définissez `PEAL_SIGN_UP=invitation` : un compte n’est alors créé que depuis le lien d’une invitation, celui de son e-mail ou celui que donne **Copier le lien**, avec l’adresse à laquelle elle a été envoyée, tant qu’elle est en attente. Connaître une adresse invitée ne suffit pas. La page d’inscription dit à toute autre personne que les comptes sont créés sur invitation, et le serveur refuse toute autre inscription de la même façon : sa réponse ne dit jamais si une adresse a été invitée.
+
+Chaque personne que vous laissez entrer peut ensuite créer son propre espace de travail et y inviter qui elle veut, qui peut en faire autant : le mode sur invitation fait confiance à chacun de ceux qu’il laisse entrer pour inviter.
+
+Tant que le serveur n’a aucun compte, le premier peut être créé sans invitation, pour qu’un nouveau serveur puisse être mis en place : la page d’inscription montre son formulaire jusque-là. Créez-le, puis votre espace de travail, avant que l’adresse soit publique ; deux inscriptions au même moment sur un serveur vide pourraient passer toutes les deux, et la règle s’ouvre à nouveau si tous les comptes sont supprimés. La connexion, la réinitialisation du mot de passe, l’acceptation d’une invitation, la [console de l’équipe](/staff), les [comptes partenaires](/embedding) et les liens de connexion fonctionnent comme avant.
+
+Un compte compte comme le premier avant même que son adresse soit confirmée. Si le premier compte ne peut pas être confirmé (une adresse mal tapée, un e-mail qui ne fonctionne pas encore, ou quelqu’un d’autre qui a pris la place le premier), personne ne peut se connecter pour inviter qui que ce soit. Supprimez les comptes que personne n’a confirmés, tant qu’aucun ne l’est, puis inscrivez-vous à nouveau :
+
+```bash
+docker compose --project-name peal --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/peal/peal.env exec postgres \
+  psql -U peal -d peal -c 'DELETE FROM auth."user" WHERE NOT email_verified AND NOT EXISTS (SELECT 1 FROM auth."user" WHERE email_verified);'
+```
+
+Elle ne supprime rien dès qu’un compte est confirmé.
 
 ## La ligne de commande et les clients MCP [#mcp]
 

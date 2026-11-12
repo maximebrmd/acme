@@ -51,5 +51,12 @@ export class WorkspaceRoster extends Context.Service<
     readonly seatsPage: (
       request: WorkspacePageRequest
     ) => Effect.Effect<readonly WorkspaceSeatCount[], DirectoryUnavailable>;
+    /**
+     * How many members each of these workspaces has, as `members` lists
+     * them, in one query; one without any is left out.
+     */
+    readonly seatsIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>, DirectoryUnavailable>;
   }
 >()("peal-server/workspace/application/WorkspaceRoster") {}

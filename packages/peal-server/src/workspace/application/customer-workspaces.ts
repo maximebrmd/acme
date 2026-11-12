@@ -97,6 +97,16 @@ export class CustomerWorkspaces extends Context.Service<
       partnerId: PartnerId
     ) => Effect.Effect<readonly WorkspaceId[], DatabaseError>;
     /**
+     * Every workspace each of these partners owns, by partner, in one
+     * read; a partner that owns none is left out.
+     */
+    readonly idsOfEach: (
+      partnerIds: readonly PartnerId[]
+    ) => Effect.Effect<
+      ReadonlyMap<PartnerId, readonly WorkspaceId[]>,
+      DatabaseError
+    >;
+    /**
      * Saves the workspace's name and external id, and says whether it was
      * still there: refused when another of the partner's workspaces has
      * the external id.
@@ -112,6 +122,13 @@ export class CustomerWorkspaces extends Context.Service<
     readonly ownerOf: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<Option.Option<WorkspaceOwner>, DatabaseError>;
+    /**
+     * The partner that owns each of these workspaces, in one read; one no
+     * partner owns is left out.
+     */
+    readonly ownersIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, WorkspaceOwner>, DatabaseError>;
     /**
      * Forgets that a partner owns the workspace, in the caller's
      * transaction, as the workspace is deleted.

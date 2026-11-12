@@ -2,7 +2,10 @@ import { Effect, Layer } from "effect";
 
 import { AssistantRequests } from "#assistant/application/assistant-requests.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
-import type { Usage } from "#billing/application/ports/workspace-usage.ts";
+import type {
+  Seated,
+  Usage,
+} from "#billing/application/ports/workspace-usage.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { MediaStorageUsage } from "#media/application/media-storage-usage.ts";
 import { PostUsage } from "#publishing/application/post-usage.ts";
@@ -55,6 +58,30 @@ export const ContextWorkspaceUsageLive = Layer.effect(
       return usage;
     });
 
-    return WorkspaceUsage.of({ of });
+    const heldIn = Effect.fn("WorkspaceUsage.heldIn")(function* heldIn(
+      workspaceIds: readonly WorkspaceId[]
+    ) {
+      const counted = yield* Effect.all(
+        {
+          channels: channels.connectedAcross(workspaceIds),
+          members: seats
+            .takenIn(workspaceIds)
+            .pipe(Effect.mapError(({ cause }) => new DatabaseError({ cause }))),
+        },
+        { concurrency: "unbounded" }
+      );
+
+      return new Map(
+        workspaceIds.map((id): [WorkspaceId, Seated] => [
+          id,
+          {
+            channels: counted.channels.get(id) ?? 0,
+            members: counted.members.get(id) ?? 0,
+          },
+        ])
+      );
+    });
+
+    return WorkspaceUsage.of({ heldIn, of });
   })
 );

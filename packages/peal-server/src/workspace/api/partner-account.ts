@@ -13,16 +13,18 @@ import {
 import { actorOf } from "#shared/api/actor.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
 import { PartnerAccounts } from "#workspace/application/partner-accounts.ts";
+import { PartnerHealth } from "#workspace/application/partner-health.ts";
 import { PartnerKeys } from "#workspace/application/partner-keys.ts";
 import { PartnerWorkspaces } from "#workspace/application/partner-workspaces.ts";
 
 import {
   customerWorkspacePageView,
+  partnerHealthView,
   partnerKeyView,
   partnerUsageView,
   partnerView,
 } from "./partner-view.ts";
-import { listRequestOf } from "./partner.ts";
+import { healthRequestOf, listRequestOf } from "./partner.ts";
 
 const noPartner = () => Effect.fail(new PartnerNotFound());
 
@@ -36,6 +38,7 @@ export const PartnerAccountHandlers = HttpApiBuilder.group(
     const accounts = yield* PartnerAccounts;
     const keys = yield* PartnerKeys;
     const workspaces = yield* PartnerWorkspaces;
+    const health = yield* PartnerHealth;
 
     return handlers.handleAll({
       close: () =>
@@ -158,6 +161,24 @@ export const PartnerAccountHandlers = HttpApiBuilder.group(
           );
 
           return partnerView(partner);
+        }),
+      overview: ({ query }) =>
+        Effect.gen(function* overview() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const page = yield* health
+            .forMember(actor, healthRequestOf(query))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                InvalidWorkspaceCursor: () =>
+                  Effect.fail(new HttpApiError.BadRequest()),
+                MissingPermission: forbidden,
+                PartnerNotFound: noPartner,
+              })
+            );
+
+          return partnerHealthView(page);
         }),
       revokeKey: ({ params }) =>
         Effect.gen(function* revokeKey() {

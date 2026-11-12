@@ -132,6 +132,7 @@ const ActorsNowTest = ActorsNow.layer.pipe(
           keyByDigest: fail("keyByDigest"),
           keys: () => read(({ partnerKeys }) => partnerKeys),
           ofWorkspace: () => Effect.succeedNone,
+          ofWorkspaces: fail("ofWorkspaces"),
           open: fail("open"),
           purgeUsageBefore: fail("purgeUsageBefore"),
           recordUsage: fail("recordUsage"),
@@ -160,7 +161,9 @@ const ActorsNowTest = ActorsNow.layer.pipe(
                 }))
               )
             ),
+          ownersIn: () => Effect.succeed(new Map()),
           poolOf: () => Effect.succeedNone,
+          poolsIn: () => Effect.succeed(new Map()),
           presentedAs: () => Effect.succeedNone,
         })
       )

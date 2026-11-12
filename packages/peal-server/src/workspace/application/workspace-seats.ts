@@ -19,6 +19,10 @@ export class WorkspaceSeats extends Context.Service<
     readonly taken: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<number, DirectoryUnavailable>;
+    /** What `taken` answers for each of these workspaces, every one. */
+    readonly takenIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>, DirectoryUnavailable>;
     /**
      * Every workspace, a page at a time in the order of their ids, with
      * how many members each has.
@@ -47,6 +51,17 @@ export class WorkspaceSeats extends Context.Service<
               })
             ),
             Effect.withSpan("WorkspaceSeats.taken")
+          ),
+        takenIn: (workspaceIds) =>
+          (workspaceIds.length === 0
+            ? Effect.succeed(new Map<WorkspaceId, number>())
+            : roster.seatsIn(workspaceIds)
+          ).pipe(
+            Effect.map(
+              (seats) =>
+                new Map(workspaceIds.map((id) => [id, seats.get(id) ?? 0]))
+            ),
+            Effect.withSpan("WorkspaceSeats.takenIn")
           ),
       });
     })
