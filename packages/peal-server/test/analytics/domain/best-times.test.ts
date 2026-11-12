@@ -9,7 +9,14 @@ import {
 } from "#analytics/domain/best-times.ts";
 import type { WeighedPost } from "#analytics/domain/best-times.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
-import { LocalDateSchema } from "#shared/domain/wall-clock.ts";
+import type { TimeZoneId } from "#shared/domain/time-zone.ts";
+import {
+  addDays,
+  fromWallClock,
+  LocalDateSchema,
+  LocalTimeSchema,
+} from "#shared/domain/wall-clock.ts";
+import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
 const paris = TimeZoneIdSchema.make("Europe/Paris");
 
@@ -74,6 +81,35 @@ describe(hourStarts, () => {
       folded.buckets.map(({ hour, posts }) => [hour, posts])
     ).toStrictEqual([[2, 2]]);
   });
+});
+
+// Each local hour's start from fromWallClock, one at a time: what
+// hourStarts must equal, however it gets there.
+const hourByHour = (from: LocalDate, days: number, zone: TimeZoneId) =>
+  Array.from({ length: days }, (_, offset) => addDays(from, offset))
+    .flatMap((date) =>
+      Array.from({ length: 24 }, (_, hour) =>
+        DateTime.toEpochMillis(
+          fromWallClock(date, LocalTimeSchema.make({ hour, minute: 0 }), zone)
+        )
+      )
+    )
+    .filter((millis, index, all) => all[index + 1] !== millis);
+
+describe("hourStarts over a year", () => {
+  it.each(["Europe/Paris", "America/Santiago", "Australia/Lord_Howe", "UTC"])(
+    "starts every hour where fromWallClock does, in %s",
+    (zone) => {
+      const timeZone = TimeZoneIdSchema.make(zone);
+      const from = day(2026, 1, 1);
+
+      expect(
+        hourStarts(from, day(2026, 12, 31), timeZone).map(({ at: start }) =>
+          DateTime.toEpochMillis(start)
+        )
+      ).toStrictEqual(hourByHour(from, 365, timeZone));
+    }
+  );
 });
 
 describe(bestTimesOf, () => {

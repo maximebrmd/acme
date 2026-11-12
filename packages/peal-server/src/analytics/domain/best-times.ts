@@ -79,6 +79,8 @@ const weekdays: readonly Weekday[] = [
 
 const hours = Array.from({ length: 24 }, (_, hour) => hour);
 
+const dayMillis = 24 * 60 * 60 * 1000;
+
 const byDay: Order.Order<LocalDate> = Order.combine(
   Order.mapInput(Order.Number, ({ year }: LocalDate) => year),
   Order.combine(
@@ -100,18 +102,34 @@ export const hourStarts = (
   timeZone: TimeZoneId
 ): HourStart[] => {
   const starts: HourStart[] = [];
+  const midnight = LocalTimeSchema.make({ hour: 0, minute: 0 });
+  let dayStart = fromWallClock(from, midnight, timeZone);
 
   for (
     let date = from;
     Order.isLessThanOrEqualTo(byDay)(date, to);
     date = addDays(date, 1)
   ) {
+    const next = addDays(date, 1);
+    const nextStart = fromWallClock(next, midnight, timeZone);
+    const weekday = weekdays[DateTime.getPart(dayStart, "weekDay")] ?? "sunday";
+
+    // A day of 24 hours has no change of the clocks: its hours follow its
+    // midnight, an hour apart. Only a day the clocks change is read hour
+    // by hour, so a reading of 180 days asks the zone's rules about 180
+    // midnights, not 4,320 hours.
+    const plain =
+      DateTime.toEpochMillis(nextStart) - DateTime.toEpochMillis(dayStart) ===
+      dayMillis;
+
     for (const hour of hours) {
-      const zoned = fromWallClock(
-        date,
-        LocalTimeSchema.make({ hour, minute: 0 }),
-        timeZone
-      );
+      const zoned = plain
+        ? DateTime.add(dayStart, { hours: hour })
+        : fromWallClock(
+            date,
+            LocalTimeSchema.make({ hour, minute: 0 }),
+            timeZone
+          );
 
       const at = DateTime.toUtc(zoned);
       const last = starts.at(-1);
@@ -121,12 +139,10 @@ export const hourStarts = (
         starts.pop();
       }
 
-      starts.push({
-        at,
-        hour,
-        weekday: weekdays[DateTime.getPart(zoned, "weekDay")] ?? "sunday",
-      });
+      starts.push({ at, hour, weekday });
     }
+
+    dayStart = nextStart;
   }
 
   return starts;
