@@ -66,11 +66,11 @@ export const feedHost = (answers: Map<string, FeedAnswer>) =>
       })
   );
 
-const rssType: Readonly<Record<string, string>> = {
+const rssType = {
   "content-type": "application/rss+xml",
 };
 
-const noHeaders: Readonly<Record<string, string>> = {};
+const noHeaders = {};
 
 /** A whole answer with a body. */
 export const serving =

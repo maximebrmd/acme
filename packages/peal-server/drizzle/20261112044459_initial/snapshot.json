@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "695348bd-ab1e-43d2-ab8a-ef5e75f6a51f",
+  "id": "b7d3de17-22d7-4842-8f6d-0e25d89a0b0e",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -1097,6 +1097,63 @@
         "n|type|publishing.channel_sets",
         "n|rel|publishing.channel_sets_pkey",
         "n|rel|publishing.channel_sets_workspace_name"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "feed_items"
+      ],
+      "writes": [
+        "s|tbl|publishing.feed_items",
+        "n|tbl|publishing.feed_items",
+        "e|tbl|publishing.feed_items",
+        "n|rel|publishing.feed_items",
+        "n|type|publishing.feed_items",
+        "n|rel|publishing.feed_items_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "feed_reads"
+      ],
+      "writes": [
+        "s|tbl|publishing.feed_reads",
+        "n|tbl|publishing.feed_reads",
+        "e|tbl|publishing.feed_reads",
+        "n|rel|publishing.feed_reads",
+        "n|type|publishing.feed_reads",
+        "n|rel|publishing.feed_reads_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "feeds"
+      ],
+      "writes": [
+        "s|tbl|publishing.feeds",
+        "n|tbl|publishing.feeds",
+        "e|tbl|publishing.feeds",
+        "n|rel|publishing.feeds",
+        "n|type|publishing.feeds",
+        "n|rel|publishing.feeds_pkey"
       ],
       "reads": [
         "n|sch|publishing"
@@ -3876,6 +3933,89 @@
       "statementTarget": [
         "index",
         "publishing",
+        "feed_items",
+        "feed_items_seen"
+      ],
+      "writes": [
+        "s|idx|publishing.feed_items_seen",
+        "n|idx|publishing.feed_items_seen",
+        "e|idx|publishing.feed_items_seen",
+        "n|rel|publishing.feed_items_seen"
+      ],
+      "reads": [
+        "n|tbl|publishing.feed_items",
+        "n|sch|publishing",
+        "n|col|publishing.feed_items.feed_id",
+        "n|col|publishing.feed_items.seen_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "feed_reads",
+        "feed_reads_window_start"
+      ],
+      "writes": [
+        "s|idx|publishing.feed_reads_window_start",
+        "n|idx|publishing.feed_reads_window_start",
+        "e|idx|publishing.feed_reads_window_start",
+        "n|rel|publishing.feed_reads_window_start"
+      ],
+      "reads": [
+        "n|tbl|publishing.feed_reads",
+        "n|sch|publishing",
+        "n|col|publishing.feed_reads.window_start"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "feeds",
+        "feeds_due"
+      ],
+      "writes": [
+        "s|idx|publishing.feeds_due",
+        "n|idx|publishing.feeds_due",
+        "e|idx|publishing.feeds_due",
+        "n|rel|publishing.feeds_due"
+      ],
+      "reads": [
+        "n|tbl|publishing.feeds",
+        "n|sch|publishing",
+        "n|col|publishing.feeds.next_check_at",
+        "n|col|publishing.feeds.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "feeds",
+        "feeds_workspace_id"
+      ],
+      "writes": [
+        "s|idx|publishing.feeds_workspace_id",
+        "n|idx|publishing.feeds_workspace_id",
+        "e|idx|publishing.feeds_workspace_id",
+        "n|rel|publishing.feeds_workspace_id"
+      ],
+      "reads": [
+        "n|tbl|publishing.feeds",
+        "n|sch|publishing",
+        "n|col|publishing.feeds.workspace_id",
+        "n|col|publishing.feeds.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
         "idempotency_keys",
         "idempotency_keys_created_at"
       ],
@@ -5676,6 +5816,29 @@
       "statementTarget": [
         "table",
         "publishing",
+        "feed_items"
+      ],
+      "writes": [
+        "s|fk|publishing.feed_items.feed_items_feed_id_feeds_id_fkey",
+        "n|fk|publishing.feed_items.feed_items_feed_id_feeds_id_fkey",
+        "e|fk|publishing.feed_items.feed_items_feed_id_feeds_id_fkey",
+        "n|con|publishing.feed_items.feed_items_feed_id_feeds_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|publishing.feed_items",
+        "n|sch|publishing",
+        "n|tbl|publishing.feeds",
+        "n|sch|publishing",
+        "n|col|publishing.feed_items.feed_id",
+        "n|col|publishing.feeds.id",
+        "e|uniqueness|publishing.feeds.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "publishing",
         "live_post_changes"
       ],
       "writes": [
@@ -6706,6 +6869,24 @@
     {
       "schema": "publishing",
       "name": "channel_sets",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "feed_items",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "feed_reads",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "feeds",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -13325,6 +13506,448 @@
     {
       "schema": "publishing",
       "table": "channel_sets",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_items",
+      "name": "feed_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_items",
+      "name": "item_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_items",
+      "name": "item_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_items",
+      "name": "outcome",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_items",
+      "name": "post_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_items",
+      "name": "reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_items",
+      "name": "seen_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_reads",
+      "name": "reads",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_reads",
+      "name": "window_start",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_reads",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "attach_picture",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "channel_ids",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": "'{}'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "channel_set_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "etag",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "failing_since",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "last_checked_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "last_failure",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "last_modified",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "mode",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "next_check_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "queue_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "since",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "started_by",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "started_via",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "status_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "stop_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "template",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "title",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "url",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
@@ -22151,6 +22774,111 @@
     },
     {
       "schema": "publishing",
+      "table": "feed_items",
+      "name": "feed_items_seen",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "feed_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "seen_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_reads",
+      "name": "feed_reads_window_start",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "window_start",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "feeds_due",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "next_check_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"status\" = 'active'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "feeds_workspace_id",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
       "table": "idempotency_keys",
       "name": "idempotency_keys_created_at",
       "nameExplicit": true,
@@ -24123,6 +24851,23 @@
     },
     {
       "schema": "publishing",
+      "table": "feed_items",
+      "name": "feed_items_feed_id_feeds_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "feed_id"
+      ],
+      "schemaTo": "publishing",
+      "tableTo": "feeds",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "publishing",
       "table": "live_post_changes",
       "name": "live_post_changes_target_id_post_targets_id_fkey",
       "nameExplicit": false,
@@ -24771,6 +25516,28 @@
     },
     {
       "schema": "publishing",
+      "table": "feed_items",
+      "name": "feed_items_pkey",
+      "columns": [
+        "feed_id",
+        "item_digest"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_reads",
+      "name": "feed_reads_pkey",
+      "columns": [
+        "workspace_id",
+        "window_start"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
       "table": "idempotency_keys",
       "name": "idempotency_keys_pkey",
       "columns": [
@@ -25182,6 +25949,16 @@
       "schema": "publishing",
       "table": "channel_sets",
       "name": "channel_sets_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "feeds_pkey",
       "columns": [
         "id"
       ],
@@ -26127,6 +26904,27 @@
       "table": "media_assets",
       "name": "media_assets_dimensions",
       "value": "(\"width\" IS NULL) = (\"height\" IS NULL)",
+      "entityType": "checks"
+    },
+    {
+      "schema": "publishing",
+      "table": "feed_reads",
+      "name": "feed_reads_reads",
+      "value": "\"reads\" > 0",
+      "entityType": "checks"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "feeds_mode",
+      "value": "\"mode\" IN ('draft', 'queue')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "publishing",
+      "table": "feeds",
+      "name": "feeds_status",
+      "value": "\"status\" IN ('active', 'paused', 'stopped')",
       "entityType": "checks"
     },
     {
