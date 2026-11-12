@@ -209,14 +209,16 @@ export type FailureReason = typeof FailureReasonSchema.Type;
 /**
  * Why Peal cannot tell whether an unconfirmed post went out: no answer came
  * (`noResponse`), the answer could not be read (`unreadableResponse`), the
- * server stopped during the call (`interrupted`), or Peal's own code failed
- * during it (`adapterFailure`).
+ * server stopped during the call (`interrupted`), Peal's own code failed
+ * during it (`adapterFailure`), or the platform took the post and was still
+ * processing it when Peal stopped checking (`stillProcessing`).
  */
 export const UnconfirmedReasonSchema = Schema.Literals([
   "noResponse",
   "unreadableResponse",
   "interrupted",
   "adapterFailure",
+  "stillProcessing",
 ]).annotate({ identifier: "UnconfirmedReason" });
 
 export type UnconfirmedReason = typeof UnconfirmedReasonSchema.Type;

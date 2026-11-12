@@ -3,7 +3,12 @@ import { createHmac } from "node:crypto";
 import { assert, describe, it } from "@effect/vitest";
 import { Duration, Effect, Option } from "effect";
 
+import { defaultStepTiming } from "#publishing/application/publication-steps.ts";
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
+import {
+  videoPublishingWait,
+  videoStepTiming,
+} from "#publishing/infrastructure/platforms/meta/facebook-formats.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import {
@@ -574,6 +579,156 @@ describe("a Facebook reel", () => {
       assert.isFalse(
         steps(graph).some((step) => step.endsWith("video_reels finish"))
       );
+    }).pipe(Effect.scoped)
+  );
+});
+
+describe("a Facebook reel Meta is still processing", () => {
+  it("reads Meta's status on for the whole publishing wait, in production", () => {
+    const { confirmDelays } = videoStepTiming(defaultStepTiming);
+
+    assert.strictEqual(
+      confirmDelays.reduce(
+        (total, delay) => total + Duration.toMillis(delay),
+        0
+      ),
+      Duration.toMillis(videoPublishingWait)
+    );
+  });
+
+  it.live(
+    "is Published only once Meta says its publishing is done, checking again after the finish",
+    () =>
+      Effect.gen(function* checkedAgain() {
+        const clip = testFile("video", 4096);
+
+        const { client, graph } = yield* onPage({
+          files: [clip],
+          graph: { videoPublishLag: 2 },
+        });
+
+        const result = yield* client.publish(
+          yield* outgoing({
+            accountId: facebookPageId,
+            media: [attached(clip)],
+            options: reel,
+          })
+        );
+
+        assert.strictEqual(result._tag, "published");
+        assert.lengthOf(
+          steps(graph).filter((step) => step.endsWith("video_reels finish")),
+          1
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "is left unconfirmed, never Published nor finished again, while Meta never says it is done",
+    () =>
+      Effect.gen(function* neverDone() {
+        const clip = testFile("video", 4096);
+
+        const { client, graph } = yield* onPage({
+          files: [clip],
+          graph: { videoPublishLag: 50 },
+        });
+
+        const result = yield* client.publish(
+          yield* outgoing({
+            accountId: facebookPageId,
+            media: [attached(clip)],
+            options: reel,
+          })
+        );
+
+        assert.deepStrictEqual(result, {
+          _tag: "unconfirmed",
+          reason: "stillProcessing",
+        });
+        assert.lengthOf(
+          steps(graph).filter((step) => step.endsWith("video_reels finish")),
+          1
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("fails with Meta's processing error shown after the finish", () =>
+    Effect.gen(function* lateError() {
+      const clip = testFile("video", 4096);
+
+      const { client } = yield* onPage({
+        files: [clip],
+        graph: { videoProcessingErrorAfterFinish: true },
+      });
+
+      const failure = yield* Effect.flip(
+        client.publish(
+          yield* outgoing({
+            accountId: facebookPageId,
+            media: [attached(clip)],
+            options: reel,
+          })
+        )
+      );
+
+      assert.strictEqual(failure._tag, "MediaRejected");
+      assert.strictEqual(
+        "code" in failure ? failure.code : undefined,
+        "processingFailed"
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "fails with Meta's processing error read while confirming a lost finish",
+    () =>
+      Effect.gen(function* lostThenRefused() {
+        const clip = testFile("video", 4096);
+
+        const { client, graph } = yield* onPage({
+          files: [clip],
+          graph: { videoProcessingErrorAfterFinish: true },
+        });
+
+        graph.loseAnswer(`POST /v27.0/${facebookPageId}/video_reels#finish`);
+
+        const failure = yield* Effect.flip(
+          client.publish(
+            yield* outgoing({
+              accountId: facebookPageId,
+              media: [attached(clip)],
+              options: reel,
+            })
+          )
+        );
+
+        assert.strictEqual(failure._tag, "MediaRejected");
+        assert.lengthOf(
+          steps(graph).filter((step) => step.endsWith("video_reels finish")),
+          1
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("takes a null error for no error", () =>
+    Effect.gen(function* nullError() {
+      const clip = testFile("video", 4096);
+
+      const { client } = yield* onPage({
+        files: [clip],
+        graph: { videoNullError: true },
+      });
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: facebookPageId,
+          media: [attached(clip)],
+          options: reel,
+        })
+      );
+
+      assert.strictEqual(result._tag, "published");
     }).pipe(Effect.scoped)
   );
 });

@@ -318,12 +318,13 @@ Peal ne peut pas savoir si la publication est en ligne sur le canal, et ne la re
 | `attemptedAt` | chaîne         | Le moment de l’envoi, en instant UTC                        |
 | `reason`      | chaîne         | Pourquoi Peal ne peut pas savoir, l’un des codes ci-dessous |
 
-| `reason`             | Ce qui s’est passé                                                             |
-| -------------------- | ------------------------------------------------------------------------------ |
-| `noResponse`         | La requête a peut-être atteint la plateforme, et aucune réponse n’est revenue. |
-| `unreadableResponse` | Une réponse est revenue, que Peal n’a pas pu lire.                             |
-| `interrupted`        | Le serveur s’est arrêté pendant l’appel : on ne sait pas si elle est partie.   |
-| `adapterFailure`     | Le code de Peal a échoué pendant l’appel, après que la requête a pu partir.    |
+| `reason`             | Ce qui s’est passé                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| `noResponse`         | La requête a peut-être atteint la plateforme, et aucune réponse n’est revenue.            |
+| `unreadableResponse` | Une réponse est revenue, que Peal n’a pas pu lire.                                        |
+| `interrupted`        | Le serveur s’est arrêté pendant l’appel : on ne sait pas si elle est partie.              |
+| `adapterFailure`     | Le code de Peal a échoué pendant l’appel, après que la requête a pu partir.               |
+| `stillProcessing`    | La plateforme a pris la publication et la traitait encore quand Peal a cessé de vérifier. |
 
 ```json title="post.unconfirmed"
 {

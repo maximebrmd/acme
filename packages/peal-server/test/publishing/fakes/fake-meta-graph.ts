@@ -84,6 +84,14 @@ export interface FakeMetaGraphOptions {
    * low), and its finish still answers success, posting nothing.
    */
   readonly videoProcessingError?: boolean;
+  /**
+   * Meta's processing refuses the video only once its finish was accepted
+   * (the finish answers success, posting nothing), as the reels guide
+   * leaves possible.
+   */
+  readonly videoProcessingErrorAfterFinish?: boolean;
+  /** A null `processing_phase.error` in every status, as no error. */
+  readonly videoNullError?: boolean;
   /** A video story's finish answers success without its post id. */
   readonly storyFinishWithoutPostId?: boolean;
   /** Polls a video container stays IN_PROGRESS for. */
@@ -382,7 +390,10 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
 
       video.finished = true;
 
-      if (options.videoProcessingError === true) {
+      if (
+        options.videoProcessingError === true ||
+        options.videoProcessingErrorAfterFinish === true
+      ) {
         return json({ success: true });
       }
 
@@ -440,7 +451,11 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
   // What a video's publishing shows, once its finish was accepted: not
   // begun for `publishLag` reads, then done.
   const publishingOf = (video: FakeVideo) => {
-    if (!video.finished || options.videoProcessingError === true) {
+    if (
+      !video.finished ||
+      options.videoProcessingError === true ||
+      options.videoProcessingErrorAfterFinish === true
+    ) {
       return { status: "not_started" };
     }
 
@@ -459,6 +474,15 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
     return { publish_status: "published", status: "complete" };
   };
 
+  // A processing phase that shows no error, with a null one if asked.
+  const quietProcessing = (video: FakeVideo) => {
+    const status = video.finished ? "complete" : "not_started";
+
+    return options.videoNullError === true
+      ? { error: null, status }
+      : { status };
+  };
+
   // A video's status, as Meta reports each phase.
   const videoStatus = (video: FakeVideo): PlatformAnswer => {
     const uploaded = video.fileUrl !== undefined && video.uploadReads === 0;
@@ -467,7 +491,9 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
       video.uploadReads -= 1;
     }
 
-    const processingError = options.videoProcessingError === true && uploaded;
+    const processingError =
+      (options.videoProcessingError === true && uploaded) ||
+      (options.videoProcessingErrorAfterFinish === true && video.finished);
 
     let upload = "complete";
     let state = processingError ? "processing" : "upload_complete";
@@ -491,7 +517,7 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
               },
               status: "not_started",
             }
-          : { status: video.finished ? "complete" : "not_started" },
+          : quietProcessing(video),
         publishing_phase: publishingOf(video),
         uploading_phase: { status: upload },
         video_status: state,

@@ -556,8 +556,12 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   header, which traces redact), poll `?fields=status` until the
   `uploading_phase` is done (`video_status` says `processing` mid-upload
   too), and publish with the `finish` phase (`finishPhase`), then read the
-  status once more: a `processing_phase` error, before or right after the
-  finish, is MediaRejected `processingFailed`. A photo story uploads its
+  status again: Published only once `publishing_phase` is done; a
+  non-null `processing_phase` error, before or after the finish, is
+  MediaRejected `processingFailed` (a lookUp answers `refused`); still
+  processing, it is confirmed over `videoPublishingWait` (10 minutes,
+  `videoStepTiming`), then unconfirmed `stillProcessing`, never sent
+  again. A photo story uploads its
   photo unpublished in `prepare`, every run its own, and publishes it with
   `photo_stories`. Their `lookUp` reads what the run holds and never
   answers `absent` (Meta's samples show `not_started` after an upload, and

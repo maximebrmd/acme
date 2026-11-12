@@ -42,7 +42,10 @@ type CommitAnswer =
 interface Options {
   readonly commits?: readonly CommitAnswer[];
   readonly confirmation:
-    | { readonly _tag: "lookUp"; readonly found: readonly LookUp["_tag"][] }
+    | {
+        readonly _tag: "lookUp";
+        readonly found: readonly Exclude<LookUp["_tag"], "refused">[];
+      }
     | { readonly _tag: "none" }
     | { readonly _tag: "resend"; readonly window: Duration.Duration };
   // How many looks at the media find it still processing, a minute apart.

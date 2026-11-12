@@ -35,6 +35,9 @@ export const UnconfirmedReasonSchema = Schema.Literals([
   "interrupted",
   // The adapter failed during the call, after the request may have left.
   "adapterFailure",
+  // The platform took the post and, when Peal stopped checking, still had
+  // not said it was published (a video it was still processing).
+  "stillProcessing",
 ]);
 
 export type UnconfirmedReason = typeof UnconfirmedReasonSchema.Type;

@@ -1320,7 +1320,7 @@
     "viewPost": "See it on {platform}",
     "failed": "It did not go out: {reason}",
     "unconfirmed": "Peal cannot tell whether it went out: {reason}. Check {platform} before you post it again, then say what you found.",
-    "unconfirmedReason": "{reason, select, noResponse {the platform did not answer} unreadableResponse {its answer could not be read} interrupted {the server stopped during the call} adapterFailure {Peal failed during the call} other {{reason}}}",
+    "unconfirmedReason": "{reason, select, noResponse {the platform did not answer} unreadableResponse {its answer could not be read} interrupted {the server stopped during the call} adapterFailure {Peal failed during the call} stillProcessing {the platform was still processing it when Peal stopped checking} other {{reason}}}",
     "cancelled": "It was cancelled before it went out.",
     "pending": "It waits for its turn.",
     "sending": "It is going out.",
@@ -2651,7 +2651,7 @@
       "disabledToReconnect": "Turned off, to reconnect"
     },
     "troubleStatus": "{status, select, failed {Failed} other {Unconfirmed}}",
-    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} partsNotSent {Later parts not sent} repliesNotAllowed {Replies refused by X} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} partsNotSent {Later parts not sent} repliesNotAllowed {Replies refused by X} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} stillProcessing {Still processing} other {{reason}}}",
     "requests": {
       "title": "Contract requests",
       "description": "Requests to cancel a contract or withdraw from one that the form could not apply by itself: no contract was found, or their sender has not followed the link emailed to them. Apply one to a workspace only once you know its sender holds that contract; it takes effect as of the date it was received, and the sender is told.",

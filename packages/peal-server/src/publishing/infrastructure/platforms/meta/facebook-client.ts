@@ -32,7 +32,7 @@ import {
   publishedOf,
 } from "./container-publishing.ts";
 import type { ListedPost } from "./container-publishing.ts";
-import { facebookFormatSteps } from "./facebook-formats.ts";
+import { facebookFormatSteps, videoStepTiming } from "./facebook-formats.ts";
 import {
   formPost,
   graphCalls,
@@ -343,8 +343,11 @@ export const facebookClient = Effect.fn("FacebookClient.make")(
       uploads,
     });
 
-    const reel = sequenced(formatSteps.reel, timing);
-    const story = sequenced(formatSteps.story, timing);
+    // A reel's and a video story's publishing is read on after the finish,
+    // over `videoPublishingWait`; a test's timing stays its own.
+    const formatTiming = options.timing ?? videoStepTiming(defaultStepTiming);
+    const reel = sequenced(formatSteps.reel, formatTiming);
+    const story = sequenced(formatSteps.story, formatTiming);
 
     // The client of the format the post's options choose: a feed post's
     // without one.

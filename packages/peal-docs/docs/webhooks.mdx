@@ -318,12 +318,13 @@ Peal cannot tell whether the post went live on the channel, and never sends it a
 | `attemptedAt` | string         | When the attempt was made, as an instant in UTC                |
 | `reason`      | string         | Why Peal cannot tell, one of the codes below                   |
 
-| `reason`             | What happened                                                            |
-| -------------------- | ------------------------------------------------------------------------ |
-| `noResponse`         | The request may have reached the platform, and no answer came back.      |
-| `unreadableResponse` | An answer came back that Peal could not read.                            |
-| `interrupted`        | The server stopped during the call, so whether it went out is not known. |
-| `adapterFailure`     | Peal's own code failed during the call, after the request may have left. |
+| `reason`             | What happened                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `noResponse`         | The request may have reached the platform, and no answer came back.                |
+| `unreadableResponse` | An answer came back that Peal could not read.                                      |
+| `interrupted`        | The server stopped during the call, so whether it went out is not known.           |
+| `adapterFailure`     | Peal's own code failed during the call, after the request may have left.           |
+| `stillProcessing`    | The platform took the post and was still processing it when Peal stopped checking. |
 
 ```json title="post.unconfirmed"
 {

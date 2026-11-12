@@ -1320,7 +1320,7 @@
     "viewPost": "La voir sur {platform}",
     "failed": "Elle n’est pas partie : {reason}",
     "unconfirmed": "Peal ne sait pas si elle est partie : {reason}. Vérifiez sur {platform} avant de la republier, puis indiquez ce que vous avez trouvé.",
-    "unconfirmedReason": "{reason, select, noResponse {la plateforme n’a pas répondu} unreadableResponse {sa réponse n’a pas pu être lue} interrupted {le serveur s’est arrêté pendant l’envoi} adapterFailure {Peal a échoué pendant l’envoi} other {{reason}}}",
+    "unconfirmedReason": "{reason, select, noResponse {la plateforme n’a pas répondu} unreadableResponse {sa réponse n’a pas pu être lue} interrupted {le serveur s’est arrêté pendant l’envoi} adapterFailure {Peal a échoué pendant l’envoi} stillProcessing {la plateforme la traitait encore quand Peal a cessé de vérifier} other {{reason}}}",
     "cancelled": "Elle a été annulée avant de partir.",
     "pending": "Elle attend son tour.",
     "sending": "Elle est en train de partir.",
@@ -2651,7 +2651,7 @@
       "disabledToReconnect": "Désactivé, à reconnecter"
     },
     "troubleStatus": "{status, select, failed {Échec} other {Non confirmé}}",
-    "reason": "{reason, select, contentRejected {Contenu refusé} channelDisconnected {Canal déconnecté} channelDisabled {Canal désactivé} mediaRemoved {Média supprimé} mediaRejected {Média refusé} missed {Manquée} notPublished {Introuvable après vérification} rateLimited {Limite de débit} tokenExpired {Autorisation expirée} unavailable {Plateforme injoignable} appNotAudited {Publications privées seulement, application non auditée} quotaExceeded {Allocation quotidienne de mises en ligne épuisée} appBillingLimit {Application du serveur non réglée} planLimit {Limite de l’abonnement atteinte} partsNotSent {Suite non envoyée} repliesNotAllowed {Réponses refusées par X} noResponse {Pas de réponse} unreadableResponse {Réponse illisible} interrupted {Interrompue} adapterFailure {Échec pendant l’appel} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {Contenu refusé} channelDisconnected {Canal déconnecté} channelDisabled {Canal désactivé} mediaRemoved {Média supprimé} mediaRejected {Média refusé} missed {Manquée} notPublished {Introuvable après vérification} rateLimited {Limite de débit} tokenExpired {Autorisation expirée} unavailable {Plateforme injoignable} appNotAudited {Publications privées seulement, application non auditée} quotaExceeded {Allocation quotidienne de mises en ligne épuisée} appBillingLimit {Application du serveur non réglée} planLimit {Limite de l’abonnement atteinte} partsNotSent {Suite non envoyée} repliesNotAllowed {Réponses refusées par X} noResponse {Pas de réponse} unreadableResponse {Réponse illisible} interrupted {Interrompue} adapterFailure {Échec pendant l’appel} stillProcessing {Traitement en cours} other {{reason}}}",
     "requests": {
       "title": "Demandes sur les contrats",
       "description": "Les demandes de résiliation ou de rétractation que le formulaire n’a pas pu appliquer seul : aucun contrat trouvé, ou leur auteur n’a pas suivi le lien reçu par e-mail. N’en appliquez une à un espace de travail qu’une fois certain que son auteur est titulaire de ce contrat ; elle prend effet à la date de sa réception, et son auteur en est informé.",
