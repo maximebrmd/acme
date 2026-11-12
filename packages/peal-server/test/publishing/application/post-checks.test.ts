@@ -5,6 +5,7 @@ import { SqlClient } from "effect/sql";
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { isSendable, PostChecks } from "#publishing/application/post-checks.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { PinterestOptions } from "#publishing/domain/pinterest-options.ts";
 import { newId } from "#shared/application/ids.ts";
 import {
@@ -173,10 +174,10 @@ describe("PostChecks.check", () => {
             channelIds: [pinterest],
             content: contentOf("A synthetic Pin."),
             options: [
-              {
+              new ChannelOptions({
                 channelId: pinterest,
                 options: new PinterestOptions({ platform: "pinterest" }),
-              },
+              }),
             ],
             when: Option.none(),
           });

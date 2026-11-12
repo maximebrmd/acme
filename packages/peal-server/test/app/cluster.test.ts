@@ -524,8 +524,9 @@ describe("the cluster on Postgres", () => {
 
           assert.strictEqual(yield* runners, 1);
         }).pipe(
-          Effect.provide(serverWith(FakePlatformPublisher)),
-          Effect.provide(Database)
+          Effect.provide(
+            serverWith(FakePlatformPublisher).pipe(Layer.provideMerge(Database))
+          )
         )
       ),
     30_000
@@ -599,8 +600,9 @@ describe("the cluster on Postgres", () => {
 
           assert.lengthOf(yield* platform.calls, 1);
         }).pipe(
-          Effect.provide(serverWith(FakePlatformPublisher)),
-          Effect.provide(Database)
+          Effect.provide(
+            serverWith(FakePlatformPublisher).pipe(Layer.provideMerge(Database))
+          )
         )
       ),
     30_000
