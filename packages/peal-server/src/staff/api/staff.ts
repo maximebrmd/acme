@@ -356,6 +356,26 @@ export const StaffHandlers = HttpApiBuilder.group(
         }),
       disableShortLink: ({ params, payload }) =>
         turnShortLink(shortLinks.disable, params.code, payload.reason),
+      disableWorkspaceShortLinks: ({ params, payload }) =>
+        Effect.gen(function* disableWorkspaceShortLinks() {
+          const workspaceId = decodeWorkspaceId(params.workspaceId);
+
+          if (Option.isNone(workspaceId)) {
+            return yield* new WorkspaceNotFound();
+          }
+
+          const { userId } = yield* currentStaff;
+
+          const disabled = yield* shortLinks
+            .disableWorkspace({
+              reason: yield* decodeReason(payload.reason).pipe(Effect.orDie),
+              staffId: userId,
+              workspaceId: workspaceId.value,
+            })
+            .pipe(Effect.orDie);
+
+          return { disabled };
+        }),
       enableShortLink: ({ params, payload }) =>
         turnShortLink(shortLinks.enable, params.code, payload.reason),
       grantPartner: ({ params, payload }) =>
@@ -490,6 +510,18 @@ export const StaffHandlers = HttpApiBuilder.group(
                 WorkspaceNotFound: () => Effect.fail(new WorkspaceNotFound()),
               }),
               Effect.flatMap(workspaceView)
+            ),
+        }),
+      workspaceShortLinks: ({ params }) =>
+        Option.match(decodeWorkspaceId(params.workspaceId), {
+          onNone: () => Effect.fail(new WorkspaceNotFound()),
+          onSome: (workspaceId) =>
+            shortLinks.ofWorkspace(workspaceId).pipe(
+              Effect.orDie,
+              Effect.map(({ links, total }) => ({
+                items: links.map(shortLinkView),
+                total,
+              }))
             ),
         }),
       workspaces: ({ query }) =>

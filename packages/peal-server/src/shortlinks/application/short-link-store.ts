@@ -108,6 +108,19 @@ export class ShortLinkStore extends Context.Service<
     readonly exportWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly ShortLink[], DatabaseError>;
+    /** A workspace's links, newest first, at most `limit`, and how many. */
+    readonly ofWorkspace: (
+      workspaceId: WorkspaceId,
+      limit: number
+    ) => Effect.Effect<
+      { readonly links: readonly ShortLink[]; readonly total: number },
+      DatabaseError
+    >;
+    /** Turns off every link of the workspace still on; says how many. */
+    readonly disableWorkspace: (
+      workspaceId: WorkspaceId,
+      at: DateTime.Utc
+    ) => Effect.Effect<number, DatabaseError>;
     /** Turns a link off or on again, by its code; false when none has it. */
     readonly setDisabled: (
       code: ShortCode,

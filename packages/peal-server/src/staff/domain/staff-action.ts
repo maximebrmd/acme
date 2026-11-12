@@ -46,6 +46,9 @@ export const StaffActionSchema = Schema.Literals([
   "disableShortLink",
   // Turned it back on.
   "enableShortLink",
+  // Turned off every short link of the event's workspace still on: the
+  // object ids hold how many (`links`).
+  "disableWorkspaceShortLinks",
 ]);
 
 export type StaffAction = typeof StaffActionSchema.Type;

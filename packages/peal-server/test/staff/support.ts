@@ -264,7 +264,28 @@ export const memoryStaff = (
                   : Effect.succeedNone;
 
               return ShortLinkDesk.of({
+                disableWorkspace: (asked) =>
+                  asked === workspaceId
+                    ? Ref.get(disabledAt).pipe(
+                        Effect.flatMap((at) =>
+                          Option.isSome(at)
+                            ? Effect.succeed(0)
+                            : Ref.set(
+                                disabledAt,
+                                Option.some(
+                                  DateTime.makeUnsafe("2026-11-11T09:00:00Z")
+                                )
+                              ).pipe(Effect.as(1))
+                        )
+                      )
+                    : Effect.succeed(0),
                 find: found,
+                ofWorkspace: (asked) =>
+                  asked === workspaceId
+                    ? read.pipe(
+                        Effect.map((link) => ({ links: [link], total: 1 }))
+                      )
+                    : Effect.succeed({ links: [], total: 0 }),
                 setDisabled: (code, disabled) =>
                   code === shortLinkCode
                     ? Ref.set(

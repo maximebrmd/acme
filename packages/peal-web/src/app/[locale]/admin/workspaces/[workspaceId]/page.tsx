@@ -17,6 +17,7 @@ import { ChannelHealth } from "#components/staff/channel-health.tsx";
 import { Instant } from "#components/staff/instant.tsx";
 import { PartnerPosition } from "#components/staff/partner-position.tsx";
 import { Fact, Section } from "#components/staff/section.tsx";
+import { WorkspaceShortLinks } from "#components/staff/workspace-short-links.tsx";
 import { Link } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
 import { staffRead } from "#staff/server.ts";
@@ -45,6 +46,10 @@ const WorkspacePage = async ({
     staff.workspace({ params: { workspaceId } })
   );
 
+  const links = await staffRead((staff) =>
+    staff.workspaceShortLinks({ params: { workspaceId } })
+  );
+
   const partner = await staffRead((staff) =>
     staff.partner({ params: { workspaceId } })
   );
@@ -57,6 +62,7 @@ const WorkspacePage = async ({
   const roles = await getTranslations("WorkspaceSettings");
   const billing = await getTranslations("Billing");
   const partners = await getTranslations("Staff.partner");
+  const shortLinks = await getTranslations("Staff.shortLinks");
   const { subscription } = workspace.billing;
 
   return (
@@ -122,6 +128,9 @@ const WorkspacePage = async ({
             workspaces: partners("workspaces"),
           }}
         />
+      </Section>
+      <Section title={shortLinks("title")}>
+        <WorkspaceShortLinks page={links} workspaceId={workspaceId} />
       </Section>
       <Section title={t("billingTitle")}>
         {workspace.billing.plan === null ? (

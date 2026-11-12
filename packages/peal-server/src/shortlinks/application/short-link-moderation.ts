@@ -1,6 +1,7 @@
 import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { ShortCodeSchema } from "#shortlinks/domain/short-code.ts";
 import type { ShortLink } from "#shortlinks/domain/short-link.ts";
 
@@ -21,6 +22,18 @@ export class ShortLinkModeration extends Context.Service<
     readonly byCode: (
       code: string
     ) => Effect.Effect<Option.Option<ShortLink>, DatabaseError>;
+    /** A workspace's links, newest first, at most `limit`, and how many. */
+    readonly ofWorkspace: (
+      workspaceId: WorkspaceId,
+      limit: number
+    ) => Effect.Effect<
+      { readonly links: readonly ShortLink[]; readonly total: number },
+      DatabaseError
+    >;
+    /** Turns off every link of the workspace still on; says how many. */
+    readonly disableWorkspace: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<number, DatabaseError>;
     /** Turns the link off, or on again; none when no link has the code. */
     readonly setDisabled: (
       code: string,
@@ -57,7 +70,16 @@ export class ShortLinkModeration extends Context.Service<
         }
       );
 
-      return ShortLinkModeration.of({ byCode, setDisabled });
+      return ShortLinkModeration.of({
+        byCode,
+        disableWorkspace: (workspaceId) =>
+          DateTime.now.pipe(
+            Effect.flatMap((now) => store.disableWorkspace(workspaceId, now))
+          ),
+        ofWorkspace: (workspaceId, limit) =>
+          store.ofWorkspace(workspaceId, limit),
+        setDisabled,
+      });
     })
   );
 }

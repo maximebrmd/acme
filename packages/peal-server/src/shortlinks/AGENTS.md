@@ -47,3 +47,20 @@
   staff use case records `disableShortLink` or `enableShortLink` in the
   audit log, with the link's workspace and its code, before it asks. A
   link turned off (`disabled_at`) answers 410 and counts nothing.
+- A link redirects only while the part of the post that holds it is live
+  on its platform (publishing's `LiveTargetParts`: a live part, not taken
+  down), 404 otherwise, so a post that never goes out leaves no working
+  link; and only while its workspace is in good standing (the workspace
+  context's `WorkspaceStanding`: it exists, and not every account that
+  owns it is banned), 410 otherwise. Both through `LinkStanding`, which
+  `ContextLinkStanding` backs at the composition root; tests take
+  `OpenLinkStanding` (`test/shortlinks/support.ts`).
+- Staff list a workspace's links and turn every one still on off at once
+  (`disableWorkspaceShortLinks`, recorded once, with how many).
+- A destination is stored and redirected to as `URL.href` writes it
+  (ASCII: punycode host, percent-encoded path), 2,048 characters at most
+  so written (`destinationOf`, the same rule in publishing's domain and
+  the contract's `post-text`); a value no header can carry answers 404,
+  never a redirect that throws. The redirect has no server span
+  (`ShortLinkRedirectsUntraced`): the HTTP tracer would keep the
+  visitor's browser and address.

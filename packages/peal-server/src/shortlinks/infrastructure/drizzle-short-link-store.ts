@@ -1,4 +1,14 @@
-import { and, asc, between, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  between,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  lt,
+  sql,
+} from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -104,6 +114,18 @@ export const DrizzleShortLinkStore = Layer.effect(
               }))
             )
           ),
+      disableWorkspace: (workspaceId, at) =>
+        db
+          .update(links)
+          .set({ disabledAt: DateTime.toDateUtc(at) })
+          .where(
+            and(eq(links.workspaceId, workspaceId), isNull(links.disabledAt))
+          )
+          .returning({ id: links.id })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length)
+          ),
       eraseWorkspace: (workspaceId) =>
         Effect.all(
           [
@@ -169,6 +191,25 @@ export const DrizzleShortLinkStore = Layer.effect(
                 : toLink(rows[0]).pipe(Effect.map(Option.some))
             )
           ),
+      ofWorkspace: Effect.fn("ShortLinkStore.ofWorkspace")(
+        function* ofWorkspace(workspaceId, limit) {
+          const rows = yield* db
+            .select()
+            .from(links)
+            .where(eq(links.workspaceId, workspaceId))
+            .orderBy(desc(links.id))
+            .limit(limit)
+            .pipe(Effect.mapError(failed));
+
+          const [counted] = yield* db
+            .select({ total: sql<number>`count(*)::int` })
+            .from(links)
+            .where(eq(links.workspaceId, workspaceId))
+            .pipe(Effect.mapError(failed));
+
+          return { links: yield* linksOf(rows), total: counted?.total ?? 0 };
+        }
+      ),
       page: Effect.fn("ShortLinkStore.page")(
         function* page(workspaceId, filter, range) {
           const rows = yield* db

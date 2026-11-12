@@ -121,6 +121,26 @@ layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
           { action: "enableShortLink", reason, workspace_id: workspaceId },
         ]);
 
+        // Every link of the workspace at once, recorded once.
+        const all = yield* app.request(
+          `/api/admin/workspaces/${workspaceId}/short-links/disable`,
+          { body: { reason }, headers: { cookie }, method: "POST" }
+        );
+
+        assert.strictEqual(all.status, 200);
+        assert.deepStrictEqual(all.body, { disabled: 1 });
+        assert.strictEqual(
+          (yield* app.request(pathname, { headers: browser })).status,
+          410
+        );
+
+        const listed = yield* app.request(
+          `/api/admin/workspaces/${workspaceId}/short-links`,
+          { headers: { cookie } }
+        );
+
+        assert.strictEqual(listed.status, 200);
+
         // Anyone else is told nothing is there.
         const refused = yield* app.request(
           `/api/admin/short-links/${code}/disable`,

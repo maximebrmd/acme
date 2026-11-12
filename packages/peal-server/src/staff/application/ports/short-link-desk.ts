@@ -22,6 +22,21 @@ export class ShortLinkDesk extends Context.Service<
     readonly find: (
       code: string
     ) => Effect.Effect<Option.Option<StaffShortLinkSummary>, DatabaseError>;
+    /** A workspace's links, newest first, at most `limit`, and how many. */
+    readonly ofWorkspace: (
+      workspaceId: WorkspaceId,
+      limit: number
+    ) => Effect.Effect<
+      {
+        readonly links: readonly StaffShortLinkSummary[];
+        readonly total: number;
+      },
+      DatabaseError
+    >;
+    /** Turns off every link of the workspace still on; says how many. */
+    readonly disableWorkspace: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<number, DatabaseError>;
     /** Turns it off or on again; none when no link has the code. */
     readonly setDisabled: (
       code: string,

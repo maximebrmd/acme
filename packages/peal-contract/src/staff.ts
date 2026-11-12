@@ -66,7 +66,9 @@ export const StaffReasonSchema = Schema.Trim.check(
  * object ids; and an account's two-step verification turned off for its
  * person, who lost their phone and codes (`resetTwoStep`); and a short
  * link turned off or on again (`disableShortLink`, `enableShortLink`), its
- * workspace and its code among the object ids.
+ * workspace and its code among the object ids; and every short link of a
+ * workspace turned off at once (`disableWorkspaceShortLinks`), with how
+ * many among the object ids.
  */
 export const StaffActionSchema = Schema.Literals([
   "ban",
@@ -84,6 +86,7 @@ export const StaffActionSchema = Schema.Literals([
   "resetTwoStep",
   "disableShortLink",
   "enableShortLink",
+  "disableWorkspaceShortLinks",
 ]).annotate({ identifier: "StaffAction" });
 
 /**
@@ -445,6 +448,23 @@ export type StaffShortLink = typeof StaffShortLinkSchema.Type;
 
 const shortLinkParams = { code: Schema.String };
 
+/** The most short links staff read of a workspace at once. */
+export const staffShortLinkPageSize = 100;
+
+/** A workspace's short links, newest first, as staff read them. */
+export const StaffShortLinkPageSchema = Schema.Struct({
+  items: Schema.Array(StaffShortLinkSchema),
+  // How many the workspace has, those turned off included.
+  total: Schema.Int,
+}).annotate({ identifier: "StaffShortLinkPage" });
+
+export type StaffShortLinkPage = typeof StaffShortLinkPageSchema.Type;
+
+/** How many of a workspace's short links staff turned off. */
+export const StaffShortLinksDisabledSchema = Schema.Struct({
+  disabled: Schema.Int,
+}).annotate({ identifier: "StaffShortLinksDisabled" });
+
 /**
  * The staff console, for the people who run the server: accounts,
  * workspaces, the system's health, and the audit log of what staff did.
@@ -603,6 +623,36 @@ export class StaffApi extends HttpApiGroup.make("staff")
         description:
           "Turns the short link back on: it redirects and counts again. Recorded in the audit log, with the reason, its workspace and its code, before it is done.",
         summary: "Turn a short link back on",
+      })
+    ),
+    HttpApiEndpoint.get(
+      "workspaceShortLinks",
+      "/workspaces/:workspaceId/short-links",
+      {
+        error: WorkspaceNotFound,
+        params: { workspaceId: Schema.String },
+        success: StaffShortLinkPageSchema,
+      }
+    ).annotateMerge(
+      OpenApi.annotations({
+        description: `Answers the workspace's short links, newest first, ${staffShortLinkPageSize} at most, with how many it has: where each leads, its post, and whether it is on.`,
+        summary: "List a workspace's short links",
+      })
+    ),
+    HttpApiEndpoint.post(
+      "disableWorkspaceShortLinks",
+      "/workspaces/:workspaceId/short-links/disable",
+      {
+        error: WorkspaceNotFound,
+        params: { workspaceId: Schema.String },
+        payload: StaffReasonPayloadSchema,
+        success: StaffShortLinksDisabledSchema,
+      }
+    ).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Turns off every short link of the workspace that is still on, as when it is reported for abuse: each answers 410. Recorded once in the audit log, with the reason and how many, before it is done.",
+        summary: "Turn off a workspace's short links",
       })
     ),
     HttpApiEndpoint.get("system", "/system", {
