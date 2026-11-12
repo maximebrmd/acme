@@ -6,15 +6,35 @@ it, its R2 buckets with their lifecycle and CORS rules, the addresses
 Email Routing forwards, and the short-link domain, peal.link. TypeScript,
 run by Bun (`runtime: bun`).
 
-| Project       | Stacks                      | What it holds                                                                                   |
-| ------------- | --------------------------- | ----------------------------------------------------------------------------------------------- |
-| `account`     | `peal`                      | What the account shares: the Access policies, the forwarded addresses, the short-link domain    |
-| `environment` | `sandbox` (production next) | An environment's tunnel, host names (its short-link one included), Access applications, buckets |
+| Project       | Stacks                  | What it holds                                                                                   |
+| ------------- | ----------------------- | ----------------------------------------------------------------------------------------------- |
+| `account`     | `peal`                  | What the account shares: the Access policies, the forwarded addresses, the short-link domain    |
+| `environment` | `sandbox`, `production` | An environment's tunnel, host names (its short-link one included), Access applications, buckets |
 
 Each environment's stack reads the policies from the account's stack, so
 the account comes first. Pulumi comes before Ansible: the Ansible project
 configures the servers behind what this one makes, and its inventory holds
 the values this one outputs (the audience tags, the tunnel's id).
+
+## The two environments
+
+Both stacks make the same tunnel, records, buckets, keys and bucket rules,
+on their own names (`Pulumi.<stack>.yaml`). They differ by what Access
+guards, as the Ansible project's `peal_access_everything` says:
+
+| What                        | `sandbox`                                                                                                | `production`                                                                                                                                 |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Host names                  | `sandbox`, `sandbox-site`, `sandbox-docs`, `sandbox-grafana`, `sandbox-ssh`                              | `app`, the bare domain (`@`: `peal.social`, which Cloudflare flattens), `docs`, `grafana`, `ssh`                                             |
+| Short links                 | `sandbox.peal.link`                                                                                      | `peal.link`                                                                                                                                  |
+| Access applications         | `access-app` (app, site, docs, short links), `access-callbacks` (Bypass), `access-grafana`, `access-ssh` | `access-admin` (the admin's five paths on the app), `access-grafana`, `access-ssh`: none over the app, the site, the docs or the short links |
+| Audience tags (`accessAud`) | `app`, `grafana`, `ssh`                                                                                  | `admin`, `grafana`, `ssh`                                                                                                                    |
+
+`access-admin`'s paths are the Ansible project's `peal_access_paths`
+(`/api/auth/admin`, `/api/admin`, `/admin`, `/en/admin`, `/fr/admin`):
+a path added there is added to `adminPaths` in `src/environment.ts`.
+`test/sandbox-resources.ts` holds every resource the sandbox's stack makes,
+by name and inputs: the sandbox is applied, and a change there is a change
+its preview shows.
 
 ## Secrets and Ansible
 
@@ -55,9 +75,8 @@ Each environment's stack points its own host name on the zone
 (`shortLinkHost`) at its tunnel, from the zone id the account's stack
 outputs (`linkZoneId`): `sandbox.peal.link` for the sandbox, behind its
 Access application like the rest of it; `peal.link` for production, public,
-once production has its stack (until then, its record is made in the
-dashboard, never with `cloudflared tunnel route dns`: the Ansible project's
-README, "Before the first run"). An unknown code answers the server's 404, and a path that
+in no Access application. Never make the record with `cloudflared tunnel
+route dns`, which can put it in peal.social's zone. An unknown code answers the server's 404, and a path that
 is no code cloudflared's: neither leads to the site, so a mistyped or
 erased link says it is not one.
 
@@ -109,6 +128,10 @@ bun scripts/pulumi.ts account preview --stack peal --diff
 bun scripts/pulumi.ts account up --stack peal
 bun scripts/pulumi.ts environment preview --stack sandbox --diff
 ```
+
+Production's stack file is committed without its salt: `bun scripts/pulumi.ts
+environment stack init production` adds it (`encryptionsalt`), keeping the
+settings; commit it then. Its stack needs no secret setting.
 
 Install the Pulumi CLI (3.227 or later, for `runtime: bun`) first. Preview
 every change before applying it; a preview with no change is the norm.

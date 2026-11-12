@@ -286,6 +286,14 @@ These are made by hand, by the owner, on free plans. Anything that costs
 money, the server and the domain first, or R2 beyond its free tier, needs
 the owner's approval.
 
+Steps 2 to 4 are Pulumi's for Peal's own environments, the sandbox and
+production: each has a stack that makes its Access applications, its tunnel,
+its DNS records (the short-link one in the peal.link zone) and its buckets
+with their keys, lifecycle and CORS rules, but for the Zero Trust team,
+made once for the account ([`../pulumi`](../pulumi/README.md), and
+[Credentials](#credentials) for what follows). They are written here for a
+copy run without Pulumi, and for what Pulumi does in their place.
+
 1. **The zone** on Cloudflare, for the domain, and the short-link domain's
    (peal.link), which the Pulumi project's account stack holds.
 2. **Zero Trust**: a team (`<team>.cloudflareaccess.com`) and these Access
@@ -320,8 +328,8 @@ the owner's approval.
    (`peal.link.peal.social`) while it reports success. Make production's
    short-link record in the dashboard instead (peal.link › DNS › Records):
    a CNAME named `@` to `<tunnel id>.cfargotunnel.com`, proxied, the id
-   `cloudflared tunnel list` gives; or with Pulumi, once production has its
-   stack (`shortLinkHost`). Then check that it landed in the right zone:
+   `cloudflared tunnel list` gives (Pulumi makes it there, from
+   `shortLinkHost`). Then check that it landed in the right zone:
 
    ```sh
    dig +short peal.link @bella.ns.cloudflare.com            # Cloudflare's addresses: the record is there
@@ -516,19 +524,20 @@ services issue reaches it in one of two ways:
   ssh -t ops@ssh.peal.social 'sudo install -o root -g cloudflared -m 440 /dev/stdin /etc/cloudflared/token'
   ```
 
-For an environment that has a Pulumi stack (the sandbox), Cloudflare's
-part comes from it ([`../pulumi`](../pulumi/README.md)): its Access audience
+For an environment that has a Pulumi stack (the sandbox and production),
+Cloudflare's part comes from it ([`../pulumi`](../pulumi/README.md)): its Access audience
 tags, its buckets and their endpoints in `group_vars/<environment>/cloudflare.yml`,
 generated and committed, and the tunnel's token and the buckets' keys in its
 vault. After each `pulumi up` of the environment, run
 
 ```sh
 uv run python scripts/cloudflare_from_pulumi.py \
-  --vault-id sandbox@scripts/vault-keychain-client.py
+  --vault-id sandbox@scripts/vault-keychain-client.py      # or production@…
 ```
 
-then `site.yml`. Steps 3 and 4 of [Before the first run](#before-the-first-run)
-are then Pulumi's for that environment, the lifecycle and CORS rules included.
+then `site.yml`. Steps 2 to 4 of [Before the first run](#before-the-first-run)
+are then Pulumi's for that environment, the lifecycle and CORS rules
+included, but for the Zero Trust team.
 
 `site.yml` stops and names what is missing either way. Keep a copy of the
 backup passphrase (`PGBACKREST_REPO1_CIPHER_PASS`) outside the server, in a

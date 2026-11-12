@@ -4,12 +4,13 @@ inventory, so they live in one place, Pulumi's (packages/peal-infra/pulumi):
     uv run python scripts/cloudflare_from_pulumi.py \\
       --vault-id sandbox@scripts/vault-keychain-client.py
 
-It writes group_vars/<group>/cloudflare.yml, which is committed and never
-edited by hand: the audience tags of the environment's Access applications,
-its buckets and their endpoints. Then, once the stack has made them, it
-writes the tunnel's token and the buckets' keys into the group's vault, as
-Ansible encrypts it, and names the entries it changed, never their values.
-Run it after each `pulumi up` of the environment, then site.yml.
+or production@…. It writes group_vars/<group>/cloudflare.yml, which is
+committed and never edited by hand: the audience tags of the environment's
+Access applications, its buckets and their endpoints. Then, once the stack
+has made them, it writes the tunnel's token and the buckets' keys into the
+group's vault, as Ansible encrypts it, and names the entries it changed,
+never their values. Run it after each `pulumi up` of the environment, then
+site.yml.
 """
 
 from __future__ import annotations
@@ -38,8 +39,12 @@ HEADER = """---
 """
 
 # The Access application each audience tag of the inventory names, by
-# environment: the sandbox has one application for its app, site and docs.
-AUD_NAMES = {"sandbox": {"sandbox": "app", "grafana": "grafana", "ssh": "ssh"}}
+# environment: the sandbox has one application for its app, site and docs;
+# production, public, one for its admin paths (peal_access_paths) alone.
+AUD_NAMES = {
+    "sandbox": {"sandbox": "app", "grafana": "grafana", "ssh": "ssh"},
+    "production": {"admin": "admin", "grafana": "grafana", "ssh": "ssh"},
+}
 
 Outputs = dict[str, Any]
 

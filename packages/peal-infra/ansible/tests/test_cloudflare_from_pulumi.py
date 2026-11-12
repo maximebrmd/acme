@@ -32,25 +32,36 @@ OUTPUTS = {
 }
 
 
+# Production's stack names its Access applications otherwise: public, it
+# has one over its admin paths, none over the app, the site or the docs.
+PRODUCTION_OUTPUTS = {
+    **OUTPUTS,
+    "accessAud": {"admin": "aud-admin", "grafana": "aud-grafana", "ssh": "aud-ssh"},
+    "mediaBucket": "peal-production-media",
+    "backupBucket": "peal-production-backups",
+}
+
+
 @pytest.fixture
 def inventory(tmp_path: Path) -> Path:
-    folder = tmp_path / "group_vars" / "sandbox"
-    folder.mkdir(parents=True)
     secret = VaultSecret(PASSWORD)
     plain = {"cloudflared_tunnel_token": "old-token", "peal_credentials": {"RESEND_API_KEY": "kept-synthetic"}}
-    (folder / "vault.yml").write_bytes(VaultLib([("default", secret)]).encrypt(yaml.safe_dump(plain).encode(), secret))
+    for group in ("sandbox", "production"):
+        folder = tmp_path / "group_vars" / group
+        folder.mkdir(parents=True)
+        (folder / "vault.yml").write_bytes(VaultLib([("default", secret)]).encrypt(yaml.safe_dump(plain).encode(), secret))
     (tmp_path / "password").write_bytes(PASSWORD + b"\n")
     return tmp_path
 
 
-def run(inventory: Path, outputs: dict, source: Path | None = None) -> int:
-    args = ["--vault-id", f"sandbox@{source or inventory / 'password'}", "--inventory", str(inventory)]
+def run(inventory: Path, outputs: dict, source: Path | None = None, group: str = "sandbox") -> int:
+    args = ["--vault-id", f"{group}@{source or inventory / 'password'}", "--inventory", str(inventory)]
     return script.main(args, outputs_of=lambda _group: outputs)
 
 
-def vault_of(inventory: Path) -> dict:
+def vault_of(inventory: Path, group: str = "sandbox") -> dict:
     vault = VaultLib([("default", VaultSecret(PASSWORD))])
-    return yaml.safe_load(vault.decrypt((inventory / "group_vars" / "sandbox" / "vault.yml").read_bytes()))
+    return yaml.safe_load(vault.decrypt((inventory / "group_vars" / group / "vault.yml").read_bytes()))
 
 
 def test_the_inventory_takes_the_stack_s_public_values(inventory: Path) -> None:
@@ -107,9 +118,39 @@ def test_the_vault_waits_for_the_stack_s_keys(inventory: Path) -> None:
     assert vault_of(inventory)["cloudflared_tunnel_token"] == "old-token"
 
 
+def test_production_takes_its_admin_application_s_tag(inventory: Path) -> None:
+    run(inventory, PRODUCTION_OUTPUTS, group="production")
+
+    written = yaml.safe_load((inventory / "group_vars" / "production" / "cloudflare.yml").read_text())
+    assert written == {
+        "cloudflare_access_aud": {"admin": "aud-admin", "grafana": "aud-grafana", "ssh": "aud-ssh"},
+        "peal_media_endpoint": ENDPOINT,
+        "peal_media_bucket": "peal-production-media",
+        "peal_backup_endpoint": "account-synthetic.eu.r2.example.test",
+        "peal_backup_bucket": "peal-production-backups",
+    }
+    assert "environment/production" in (inventory / "group_vars" / "production" / "cloudflare.yml").read_text()
+    assert not (inventory / "group_vars" / "sandbox" / "cloudflare.yml").exists()
+
+
+def test_production_s_secrets_go_to_its_own_vault(inventory: Path) -> None:
+    run(inventory, PRODUCTION_OUTPUTS, group="production")
+
+    vault = vault_of(inventory, "production")
+    assert vault["cloudflared_tunnel_token"] == "synthetic-tunnel-token"
+    assert vault["peal_credentials"] == {
+        "RESEND_API_KEY": "kept-synthetic",
+        "PEAL_S3_ACCESS_KEY_ID": "media-id",
+        "PEAL_S3_SECRET_ACCESS_KEY": "media-secret-synthetic",
+        "PGBACKREST_REPO1_S3_KEY": "backup-id",
+        "PGBACKREST_REPO1_S3_KEY_SECRET": "backup-secret-synthetic",
+    }
+    assert vault_of(inventory)["cloudflared_tunnel_token"] == "old-token"
+
+
 def test_an_environment_no_stack_describes_is_refused(inventory: Path) -> None:
-    with pytest.raises(SystemExit, match="production"):
-        script.inventory_values("production", OUTPUTS)
+    with pytest.raises(SystemExit, match="uptime"):
+        script.inventory_values("uptime", OUTPUTS)
 
 
 def test_the_vault_password_can_come_from_a_client_script(inventory: Path) -> None:
