@@ -129,7 +129,9 @@ peal_settings: {}
 # serves English pages next-intl's proxy skips (paths with a dot). Each is a
 # regular expression cloudflared matches against the path,
 # once it has resolved dot segments, backslashes and repeated slashes
-# (tests/test_cloudflared.py), in any letter case.
+# (tests/test_cloudflared.py), in any letter case. The Pulumi project's
+# adminPaths and the web app's locales name the same paths, which
+# test_admin_paths_agree_across_pulumi_ansible_and_the_web_app checks.
 peal_access_paths:
   - path: (?i)^/+api/+auth/+admin(/|$)
     to: server
