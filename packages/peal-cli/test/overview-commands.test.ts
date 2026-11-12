@@ -1,9 +1,13 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Schema } from "effect";
-import { AgendaPageSchema, OverviewSchema } from "peal-contract";
+import { Effect, FileSystem, Path, Schema } from "effect";
+import {
+  AgendaPageSchema,
+  OverviewSchema,
+  ReportAcrossWorkspacesSchema,
+} from "peal-contract";
 
 import { draftingKey, filesLayer, signedIn } from "./signed-in.ts";
-import { awaitingId, scheduledId, studioMe } from "./studio.ts";
+import { awaitingId, scheduledId, studioId, studioMe } from "./studio.ts";
 
 // peal overview and peal agenda, against the in-memory studio: what they
 // print across the person's workspaces, and that a key is refused before
@@ -11,6 +15,10 @@ import { awaitingId, scheduledId, studioMe } from "./studio.ts";
 
 const decodeOverview = Schema.decodeUnknownSync(
   Schema.fromJsonString(Schema.toCodecJson(OverviewSchema))
+);
+
+const decodeReport = Schema.decodeUnknownSync(
+  Schema.fromJsonString(Schema.toCodecJson(ReportAcrossWorkspacesSchema))
 );
 
 const decodeAgenda = Schema.decodeUnknownSync(
@@ -171,6 +179,79 @@ describe("peal agenda", () => {
         refusal,
         "The agenda lists 31 days at most: give a --to closer to --from."
       );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
+describe("peal report", () => {
+  it.effect(
+    "prints each workspace's figures beside the days before, a dash where nothing is kept to compare",
+    () =>
+      Effect.gen(function* prose() {
+        const session = yield* signedIn();
+
+        const printed = yield* session.printed([
+          "report",
+          "--time-zone",
+          "Europe/Paris",
+        ]);
+
+        assert.include(
+          printed,
+          "From 2026-10-11 to 2026-11-09 in Europe/Paris, beside 2026-09-11 to 2026-10-10."
+        );
+        assert.match(
+          printed,
+          /Studio\s+5 \(\+3\)\s+20 \(\+12\)\s+500 \(\+300\)\s+320 \(\+12\)/u
+        );
+        // The shop's range before is not all kept: no change against it.
+        assert.match(printed, /Shop\s+0\s+0\s+0\s+320 \(\+12\)/u);
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("prints the API's answer with --json", () =>
+    Effect.gen(function* json() {
+      const session = yield* signedIn();
+
+      const page = decodeReport(
+        yield* session.printed(["report", "--days", "7", "--json"])
+      );
+
+      assert.strictEqual(page.from, "2026-11-03");
+      assert.strictEqual(page.workspaces[0]?.analytics?.totals.posts, 5);
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("saves the CSV with --csv, and never over a file", () =>
+    Effect.gen(function* csv() {
+      const session = yield* signedIn();
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const file = path.join(session.directory, "report.csv");
+
+      const shown = yield* session.printed(["report", "--csv", file]);
+
+      assert.include(shown, `Saved to ${file}.`);
+      assert.strictEqual(
+        yield* fs.readFileString(file),
+        `workspaceId,workspace,from,to,posts\r\n${studioId},Studio,2026-10-11,2026-11-09,5\r\n`
+      );
+      assert.include(
+        yield* session.refused(["report", "--csv", file]),
+        `${file} exists already: give another --csv.`
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("is refused to an API key before any request", () =>
+    Effect.gen(function* key() {
+      const session = yield* signedIn({ keys: [draftingKey], signIn: false });
+
+      const refusal = yield* session
+        .withEnv({ PEAL_API_KEY: draftingKey.key })
+        .refused(["report"]);
+
+      assert.include(refusal, "An API key cannot read across workspaces");
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });

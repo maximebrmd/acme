@@ -7,14 +7,22 @@ import {
   maxAgendaPageSize,
   maxOverviewPageSize,
   OverviewSchema,
+  ReportAcrossWorkspacesSchema,
 } from "peal-contract";
-import type { AgendaItem, Membership, WorkspaceOverview } from "peal-contract";
+import type {
+  AgendaItem,
+  DashboardTotals,
+  Membership,
+  WorkspaceOverview,
+  WorkspaceReport,
+} from "peal-contract";
 
 import { personOnly } from "#api-key.ts";
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns, excerpt, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
+import { saveNew } from "#saved-file.ts";
 import { instantOf, zoneFlag } from "#when.ts";
 import { signedIn } from "#workspace.ts";
 
@@ -364,5 +372,136 @@ export const agenda = Command.make(
 ).pipe(
   Command.withDescription(
     `List what goes out across the workspaces you belong to: each post with a time, its workspace, its platforms, its status and how its text starts, the next ${String(agendaDays)} days unless --from and --to say otherwise (${String(maxAgendaDays)} days at most). For a person signed in: an API key belongs to one workspace.`
+  )
+);
+
+const reportDays = { "30": 30, "7": 7, "90": 90 } as const;
+
+// A count no platform gives, or a range before that is not all kept: a dash.
+const shown = (value: number | null): string =>
+  value === null ? "–" : String(value);
+
+const change = (
+  now: number | null,
+  before: number | null,
+  kept: boolean
+): string => {
+  if (!kept || now === null || before === null) {
+    return "";
+  }
+
+  const delta = now - before;
+
+  return ` (${delta >= 0 ? "+" : ""}${String(delta)})`;
+};
+
+const reportRow = (workspace: WorkspaceReport): string[] => {
+  const { analytics } = workspace;
+
+  if (analytics === null) {
+    return [
+      `  ${workspace.name}`,
+      workspace.refused === null
+        ? "not read with your role"
+        : "requires two-step verification",
+    ];
+  }
+
+  const { previousKept, previousTotals, totals } = analytics;
+
+  const cell = (pick: (figures: DashboardTotals) => number | null) =>
+    `${shown(pick(totals))}${change(pick(totals), pick(previousTotals), previousKept)}`;
+
+  return [
+    `  ${workspace.name}`,
+    cell(({ posts }) => posts),
+    cell(({ engagement }) => engagement),
+    cell(({ impressions }) => impressions),
+    `${shown(analytics.followers.current)}${analytics.followers.gained === null ? "" : ` (${analytics.followers.gained >= 0 ? "+" : ""}${String(analytics.followers.gained)})`}`,
+  ];
+};
+
+export const report = Command.make(
+  "report",
+  {
+    csv: Flag.String("csv").pipe(
+      Flag.withMetavar("<file>"),
+      Flag.withDescription(
+        "Save the report as CSV to this file, one line a workspace, rather than print it. One that exists is kept."
+      ),
+      Flag.optional
+    ),
+    cursor: cursorFlag,
+    days: Flag.Literals("days", ["7", "30", "90"]).pipe(
+      Flag.withDescription(
+        "The last 7, 30 or 90 days, today included, beside the days before. Defaults to 30."
+      ),
+      Flag.withDefault("30" as const)
+    ),
+    json: jsonFlag,
+    limit: limitFlag(maxOverviewPageSize, maxOverviewPageSize),
+    timeZone: zoneFlag(
+      "The IANA time zone the days run in, such as Europe/Paris."
+    ),
+  },
+  Effect.fn("report")(function* showReport(input) {
+    yield* personOnly("read across workspaces");
+
+    const { client, url } = yield* signedIn;
+    const days = reportDays[input.days];
+
+    if (Option.isSome(input.csv)) {
+      const file = yield* saveNew(
+        input.csv.value,
+        "--csv",
+        client.overview
+          .reportExport({ query: { days, timeZone: input.timeZone } })
+          .pipe(Effect.mapError(explain(url)))
+      );
+
+      yield* Console.log(`Saved to ${file}.`);
+
+      return;
+    }
+
+    const page = yield* client.overview
+      .report({
+        query: {
+          days,
+          timeZone: input.timeZone,
+          ...given(input.cursor, (cursor) => ({ cursor })),
+          ...given(input.limit, (size) => ({
+            limit: within(size, maxOverviewPageSize),
+          })),
+        },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(ReportAcrossWorkspacesSchema, page);
+
+      return;
+    }
+
+    yield* Console.log(
+      `From ${page.from} to ${page.to} in ${page.timeZone}, beside ${page.previous.from} to ${page.previous.to}. Counts of different platforms are not alike: compare a workspace with itself.`
+    );
+
+    for (const line of columns([
+      ["  Workspace", "Posts", "Engagement", "Impressions", "Followers"],
+      ...page.workspaces.map(reportRow),
+    ])) {
+      yield* Console.log(line);
+    }
+
+    if (page.nextCursor !== null) {
+      yield* Console.log(
+        `More: the same command with --cursor ${page.nextCursor}`
+      );
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "Show what went out in each workspace you belong to and how it did, beside the days before: posts published, engagement, impressions and followers, where your role there reads analytics. --csv saves it as a file. For a person signed in: an API key belongs to one workspace."
   )
 );

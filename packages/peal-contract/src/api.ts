@@ -971,6 +971,7 @@ export {
   AgendaItemSchema,
   AgendaPageSchema,
   defaultAgendaPageSize,
+  defaultReportDays,
   maxAgendaDays,
   maxAgendaPageSize,
   maxOverviewPageSize,
@@ -980,7 +981,11 @@ export {
   OverviewPostsSchema,
   OverviewRefusalSchema,
   OverviewSchema,
+  ReportAcrossWorkspacesSchema,
+  reportColumns,
+  WorkspaceAnalyticsSchema,
   WorkspaceOverviewSchema,
+  WorkspaceReportSchema,
 } from "./overview.ts";
 
 export type {
@@ -991,7 +996,10 @@ export type {
   OverviewInbox,
   OverviewPosts,
   OverviewRefusal,
+  ReportAcrossWorkspaces,
+  WorkspaceAnalytics,
   WorkspaceOverview,
+  WorkspaceReport,
 } from "./overview.ts";
 
 export {

@@ -1,5 +1,6 @@
 import { Effect, Layer } from "effect";
 
+import { AnalyticsQueries } from "#analytics/application/analytics-queries.ts";
 import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
 import { ChannelOverview } from "#channels/application/channel-overview.ts";
 import { InboxWaiting } from "#engagement/application/inbox-waiting.ts";
@@ -7,12 +8,16 @@ import { PostAttention } from "#publishing/application/post-attention.ts";
 import { platforms } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { OverviewSources } from "#workspace/application/overview-sources.ts";
-import type { AgendaEntry } from "#workspace/application/overview-sources.ts";
+import type {
+  AgendaEntry,
+  ReportAnswer,
+} from "#workspace/application/overview-sources.ts";
 
 /**
  * What the overview reads of the other contexts, through their
  * application layers: publishing's posts, the channels context's channels
- * and their platforms, the inbox's waiting threads and billing's standing,
+ * and their platforms, the inbox's waiting threads, analytics' report across
+ * workspaces, and billing's standing,
  * which has no form across workspaces: it is asked once per workspace of
  * the page (50 at most), rather than written a second time.
  */
@@ -23,6 +28,7 @@ export const ContextOverviewSourcesLive = Layer.effect(
     const channels = yield* ChannelOverview;
     const inbox = yield* InboxWaiting;
     const standing = yield* WorkspaceStanding;
+    const analytics = yield* AnalyticsQueries;
 
     return OverviewSources.of({
       agenda: Effect.fn("OverviewSources.agenda")(function* agenda(request) {
@@ -52,6 +58,22 @@ export const ContextOverviewSourcesLive = Layer.effect(
       overPlan: (actor) =>
         standing.of(actor).pipe(Effect.map(({ mustReduce }) => mustReduce)),
       posts: (workspaceIds, now) => posts.countsIn(workspaceIds, now),
+      // The overview passes the actors that may read analytics, over the
+      // last 7, 30 or 90 days, which is always a range.
+      report: (actors, { days, timeZone }) =>
+        analytics
+          .acrossWorkspaces(actors, { _tag: "last", days, timeZone })
+          .pipe(
+            Effect.catchTags({
+              InvalidReportRange: Effect.die,
+              MissingPermission: Effect.die,
+            }),
+            Effect.map(({ previous, range, workspaces }): ReportAnswer => ({
+              previous: { from: previous.from, to: previous.to },
+              range: { from: range.from, to: range.to },
+              workspaces,
+            }))
+          ),
       unanswered: (workspaceIds) => inbox.unansweredIn(workspaceIds),
     });
   })

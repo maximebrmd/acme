@@ -17,13 +17,24 @@ import type { TrackedPost } from "#analytics/domain/tracked-post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
-import type { ChannelId, PostId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { localDateOf } from "#shared/domain/wall-clock.ts";
 import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
-import { dashboardOf, followersOf, totalsOf } from "./analytics-dashboard.ts";
-import type { ChannelSeries, Dashboard } from "./analytics-dashboard.ts";
+import { AnalyticsAcrossReads } from "./analytics-across-reads.ts";
+import type { OfWorkspace } from "./analytics-across-reads.ts";
+import {
+  comparisonOf,
+  dashboardOf,
+  followersOf,
+  totalsOf,
+} from "./analytics-dashboard.ts";
+import type {
+  ChannelSeries,
+  Comparison,
+  Dashboard,
+} from "./analytics-dashboard.ts";
 import { AnalyticsReports } from "./analytics-reports.ts";
 import type {
   AccountDayRow,
@@ -142,6 +153,32 @@ export type ExportRow =
   | { readonly _tag: "post"; readonly row: ExportedPost }
   | { readonly _tag: "accountDay"; readonly row: AccountDayRow };
 
+/**
+ * Several workspaces' ranges beside the ones before, each as its own
+ * dashboard answers it, for the same range: a workspace whose analytics
+ * hold nothing for it answers totals of no post.
+ */
+export interface AcrossWorkspaces {
+  readonly previous: ReportRange;
+  readonly range: ReportRange;
+  readonly workspaces: ReadonlyMap<WorkspaceId, Comparison>;
+}
+
+// The rows of several workspaces, by workspace.
+const byWorkspace = <A>(rows: readonly OfWorkspace<A>[]) => {
+  const grouped = new Map<WorkspaceId, OfWorkspace<A>[]>();
+
+  for (const row of rows) {
+    const kept = grouped.get(row.workspaceId) ?? [];
+
+    kept.push(row);
+    grouped.set(row.workspaceId, kept);
+  }
+
+  return (workspaceId: WorkspaceId): readonly OfWorkspace<A>[] =>
+    grouped.get(workspaceId) ?? [];
+};
+
 /** How many rows an export reads from the store at a time. */
 export const exportPage = 500;
 
@@ -205,12 +242,25 @@ export class AnalyticsQueries extends Context.Service<
       Stream.Stream<ExportRow, DatabaseError>,
       InvalidReportRange | MissingPermission
     >;
+    /**
+     * The workspaces of these actors over the same range, each beside the
+     * range before, as its dashboard answers them: one query a kind of
+     * row for all of them. Each actor needs analytics:read in its own.
+     */
+    readonly acrossWorkspaces: (
+      actors: readonly Actor[],
+      asked: RangeAsked
+    ) => Effect.Effect<
+      AcrossWorkspaces,
+      DatabaseError | InvalidReportRange | MissingPermission
+    >;
   }
 >()("peal-server/analytics/application/AnalyticsQueries") {
   static readonly layer = Layer.effect(
     AnalyticsQueries,
     Effect.gen(function* AnalyticsQueriesLive() {
       const reports = yield* AnalyticsReports;
+      const across = yield* AnalyticsAcrossReads;
 
       const post = Effect.fn("AnalyticsQueries.post")(function* post(
         actor: Actor,
@@ -465,7 +515,89 @@ export class AnalyticsQueries extends Context.Service<
         }
       );
 
+      const acrossWorkspaces = Effect.fn("AnalyticsQueries.acrossWorkspaces")(
+        function* acrossWorkspaces(
+          actors: readonly Actor[],
+          asked: RangeAsked
+        ) {
+          for (const actor of actors) {
+            yield* Effect.fromResult(authorize(actor, "analytics:read"));
+          }
+
+          const range = yield* rangeOf(asked);
+          const previous = previousRange(range);
+          const ids = actors.map(({ workspaceId }) => workspaceId);
+
+          if (ids.length === 0) {
+            const nothing: AcrossWorkspaces = {
+              previous,
+              range,
+              workspaces: new Map(),
+            };
+
+            return nothing;
+          }
+
+          const span = yield* spanOf(range);
+          const before = yield* spanOf(previous);
+          const now = yield* DateTime.now;
+
+          const found = yield* Effect.all(
+            {
+              accountDays: across.accountDays(
+                ids,
+                utcDayFrom(previous.from),
+                utcDayFrom(range.to)
+              ),
+              channels: across.channels(ids),
+              counts: across.counts(ids, span.start, span.end),
+              previousCounts: across.counts(ids, before.start, before.end),
+            },
+            { concurrency: "unbounded" }
+          );
+
+          const accountDays = byWorkspace(found.accountDays);
+          const channels = byWorkspace(found.channels);
+          const counts = byWorkspace(found.counts);
+          const previousCounts = byWorkspace(found.previousCounts);
+          const rangeDays = daysOf(range);
+
+          const previousSpan = {
+            from: utcDayFrom(previous.from),
+            to: utcDayFrom(previous.to),
+          };
+
+          const workspaces = new Map(
+            ids.map((workspaceId) => [
+              workspaceId,
+              comparisonOf({
+                accountDays: accountDays(workspaceId),
+                counts: counts(workspaceId),
+                platforms: new Map(
+                  channels(workspaceId).map((followedChannel) => [
+                    followedChannel.channelId,
+                    followedChannel.platform,
+                  ])
+                ),
+                previous,
+                previousCounts: previousCounts(workspaceId),
+                previousKeptOn: (platform) =>
+                  keptSince(platform, before.start, now),
+                previousSpan,
+                range,
+                rangeDays,
+              }),
+            ])
+          );
+
+          const answered: AcrossWorkspaces = { previous, range, workspaces };
+
+          return answered;
+        }
+      );
+
       return AnalyticsQueries.of({
+        acrossWorkspaces,
         channel,
         dashboard,
         exportRows,

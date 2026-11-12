@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Ref } from "effect";
+import { DateTime, Duration, Effect, Ref, Stream } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
@@ -11,8 +11,10 @@ import {
 import type {
   AgendaItem,
   Channel,
+  DashboardTotals,
   Post,
   WorkspaceOverview,
+  WorkspaceReport,
 } from "peal-contract";
 
 import type { Studio } from "./studio.ts";
@@ -110,6 +112,44 @@ const overviewOf = (
     };
   });
 
+const totals = (posts: number): DashboardTotals => ({
+  clicks: null,
+  engagement: posts * 4,
+  impressions: posts * 100,
+  likes: posts * 3,
+  posts,
+  quotes: null,
+  reach: null,
+  replies: 0,
+  reposts: posts,
+  saves: null,
+});
+
+// Each workspace's report: the studio's figures where the person reads
+// analytics, its range before kept; the shop's range before not kept.
+const reportOf = (studio: Studio, studioId: string): WorkspaceReport[] =>
+  studio.me.workspaces.map((workspace) => {
+    const refused = workspace.twoStepRequired && !studio.me.user.twoStepEnabled;
+
+    return {
+      analytics:
+        refused || !workspace.permissions.includes("analytics:read")
+          ? null
+          : {
+              followers: { current: 320, gained: 12 },
+              previousFollowers: { current: 308, gained: null },
+              previousKept: workspace.id === studioId,
+              previousTotals: totals(2),
+              totals: totals(workspace.id === studioId ? 5 : 0),
+            },
+      id: workspace.id,
+      name: workspace.name,
+      refused: refused ? "twoStepRequired" : null,
+      role: workspace.role,
+      slug: workspace.slug,
+    };
+  });
+
 const listed = new Set([
   "awaitingApproval",
   "scheduled",
@@ -180,5 +220,30 @@ export const overviewGroupLive = (studio: Studio, studioId: string) =>
             workspaces: overviewOf(studio, posts, channels, overPlan, studioId),
           };
         }),
+      report: ({ query }) =>
+        Effect.gen(function* report() {
+          yield* inPerson;
+
+          return {
+            from: query.days === 7 ? "2026-11-03" : "2026-10-11",
+            nextCursor: null,
+            previous:
+              query.days === 7
+                ? { from: "2026-10-27", to: "2026-11-02" }
+                : { from: "2026-09-11", to: "2026-10-10" },
+            timeZone: query.timeZone,
+            to: "2026-11-09",
+            workspaces: reportOf(studio, studioId),
+          };
+        }),
+      reportExport: () =>
+        inPerson.pipe(
+          Effect.as(
+            Stream.make(
+              "workspaceId,workspace,from,to,posts\r\n",
+              `${studioId},Studio,2026-10-11,2026-11-09,5\r\n`
+            ).pipe(Stream.encodeText)
+          )
+        ),
     })
   );

@@ -84,6 +84,13 @@ const dateOf = (dateTime: DateTime.DateTime): LocalDate => {
 };
 
 /** The date `days` days after `date`; negative counts go back. */
+const pad = (value: number, length = 2) =>
+  value.toString().padStart(length, "0");
+
+/** A date as ISO 8601 writes it: YYYY-MM-DD. */
+export const isoDateOf = ({ day, month, year }: LocalDate): string =>
+  `${pad(year, 4)}-${pad(month)}-${pad(day)}`;
+
 export const addDays = (date: LocalDate, days: number): LocalDate =>
   dateOf(DateTime.add(midnightUtc(date), { days }));
 

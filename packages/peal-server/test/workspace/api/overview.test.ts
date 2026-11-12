@@ -1,11 +1,13 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Stream } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiError, HttpApiTest } from "effect/http-api";
 import {
   Api,
   Forbidden,
   InvalidTimeRange,
+  InvalidTimeZone,
+  reportColumns,
   Unauthenticated,
 } from "peal-contract";
 import type { Member, Principal } from "peal-contract";
@@ -14,6 +16,7 @@ import {
   alpha,
   at,
   bravo,
+  charlie,
   noCalls,
   overviewOver,
   userId,
@@ -32,6 +35,8 @@ import { OverviewApiLive } from "#workspace/container.ts";
 const places: readonly Place[] = [
   { id: alpha, name: "Alpha", role: "viewer" },
   { id: bravo, name: "Bravo", role: "owner", twoStepRequired: true },
+  // A name a spreadsheet would take for a formula.
+  { id: charlie, name: "=Charlie, Inc", role: "unknown" },
 ];
 
 const clientWith = <E, R>(
@@ -81,12 +86,13 @@ describe("the overview endpoints", () => {
         assert.deepStrictEqual(
           overview.workspaces.map(({ id, refused }) => ({ id, refused })),
           [
+            { id: charlie, refused: null },
             { id: alpha, refused: null },
             { id: bravo, refused: "twoStepRequired" },
           ]
         );
 
-        const [viewer, refused] = overview.workspaces;
+        const [, viewer, refused] = overview.workspaces;
 
         assert.isDefined(viewer);
         assert.isDefined(refused);
@@ -214,6 +220,90 @@ describe("the overview endpoints", () => {
 
         assert.deepStrictEqual(page, { items: [], nextCursor: null });
       })
+    );
+  });
+
+  describe("the report", () => {
+    it.effect(
+      "answers each workspace's analytics where the role reads them, null elsewhere",
+      () =>
+        Effect.gen(function* report() {
+          const client = yield* as(person);
+
+          const answered = yield* client.overview.report({
+            query: { days: 7, timeZone: "Europe/Paris" },
+          });
+
+          assert.deepStrictEqual(
+            [answered.from, answered.to, answered.timeZone],
+            ["2026-11-01", "2026-11-07", "Europe/Paris"]
+          );
+          assert.deepStrictEqual(
+            answered.workspaces.map(({ analytics, id }) => ({
+              id,
+              read: analytics !== null,
+            })),
+            [
+              { id: charlie, read: false },
+              { id: alpha, read: true },
+              { id: bravo, read: false },
+            ]
+          );
+          assert.deepStrictEqual(answered.workspaces[1]?.analytics?.totals, {
+            clicks: null,
+            engagement: 20,
+            impressions: 500,
+            likes: 15,
+            posts: 5,
+            quotes: null,
+            reach: null,
+            replies: 0,
+            reposts: 5,
+            saves: null,
+          });
+        })
+    );
+
+    it.effect("refuses a zone that is not one", () =>
+      Effect.gen(function* badZone() {
+        const client = yield* as(person);
+
+        const refused = yield* client.overview
+          .report({ query: { timeZone: "+01:00" } })
+          .pipe(Effect.flip);
+
+        assert.instanceOf(refused, InvalidTimeZone);
+      })
+    );
+
+    it.effect(
+      "exports a CSV line a workspace, empty where nothing is read, and never a formula",
+      () =>
+        Effect.gen(function* exports() {
+          const client = yield* as(person);
+
+          const text = yield* client.overview
+            .reportExport({ query: { days: 7, timeZone: "UTC" } })
+            .pipe(
+              Effect.flatMap((file) =>
+                file.pipe(Stream.decodeText(), Stream.mkString)
+              )
+            );
+
+          const lines = text.split("\r\n");
+
+          assert.strictEqual(lines[0], reportColumns.join(","));
+          assert.strictEqual(
+            lines[1],
+            `${charlie},"'=Charlie, Inc",2026-11-01,2026-11-07${",".repeat(reportColumns.length - 4)}`
+          );
+          assert.strictEqual(
+            lines[2],
+            `${alpha},Alpha,2026-11-01,2026-11-07,5,15,5,0,,500,,,,20,120,20,true,3,9,3,0,,300,,,,12,100,`
+          );
+          assert.match(lines[3] ?? "", new RegExp(`^${bravo},Bravo,`, "u"));
+          assert.deepStrictEqual(lines.slice(4), [""]);
+        })
     );
   });
 });

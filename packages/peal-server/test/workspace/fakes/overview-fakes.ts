@@ -3,11 +3,13 @@ import { DateTime, Effect, Layer, Option, Ref } from "effect";
 import type { Actor } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { LocalDateSchema } from "#shared/domain/wall-clock.ts";
 import { MemberDirectory } from "#workspace/application/member-directory.ts";
 import { OverviewSources } from "#workspace/application/overview-sources.ts";
 import type {
   AgendaEntry,
   AgendaRequest,
+  ReportTotals,
 } from "#workspace/application/overview-sources.ts";
 import { Overview } from "#workspace/application/overview.ts";
 import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
@@ -55,6 +57,19 @@ export interface Place {
 export const at = (iso: string) => DateTime.makeUnsafe(iso);
 
 // The figures every source answers, for the workspaces named.
+const reportTotals = (posts: number): ReportTotals => ({
+  clicks: Option.none(),
+  engagement: posts * 4,
+  impressions: Option.some(posts * 100),
+  likes: posts * 3,
+  posts,
+  quotes: Option.none(),
+  reach: Option.none(),
+  replies: 0,
+  reposts: posts,
+  saves: Option.none(),
+});
+
 export const figures = {
   channels: { connected: 4, off: 1, toReconnect: 2 },
   posts: {
@@ -63,7 +78,20 @@ export const figures = {
     scheduledNext7Days: 5,
     unconfirmedLast7Days: 2,
   },
+  report: {
+    followers: { current: Option.some(120), gained: Option.some(20) },
+    previousFollowers: { current: Option.some(100), gained: Option.none() },
+    previousKept: true,
+    previousTotals: reportTotals(3),
+    totals: reportTotals(5),
+  },
   unanswered: 7,
+};
+
+/** The range every report of the fake covers: 1 to 7 November 2026. */
+export const reportDays = {
+  from: LocalDateSchema.make({ day: 1, month: 11, year: 2026 }),
+  to: LocalDateSchema.make({ day: 7, month: 11, year: 2026 }),
 };
 
 export interface Calls {
@@ -71,6 +99,7 @@ export interface Calls {
   readonly channels: (readonly WorkspaceId[])[];
   readonly overPlan: WorkspaceId[];
   readonly posts: (readonly WorkspaceId[])[];
+  readonly report: (readonly WorkspaceId[])[];
   readonly unanswered: (readonly WorkspaceId[])[];
 }
 
@@ -159,6 +188,22 @@ export const overviewOver = (
         ...current,
         posts: [...current.posts, ids],
       })).pipe(Effect.as(mapOf(ids, figures.posts))),
+    report: (actors) =>
+      record((current) => ({
+        ...current,
+        report: [
+          ...current.report,
+          actors.map(({ workspaceId }) => workspaceId),
+        ],
+      })).pipe(
+        Effect.as({
+          previous: reportDays,
+          range: reportDays,
+          workspaces: new Map(
+            actors.map(({ workspaceId }) => [workspaceId, figures.report])
+          ),
+        })
+      ),
     unanswered: (ids) =>
       record((current) => ({
         ...current,
@@ -184,6 +229,7 @@ export const noCalls = (): Effect.Effect<Ref.Ref<Calls>> =>
     channels: [],
     overPlan: [],
     posts: [],
+    report: [],
     unanswered: [],
   });
 

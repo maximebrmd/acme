@@ -9,6 +9,7 @@ import {
 } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { can } from "#shared/domain/access.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -38,6 +39,9 @@ import type {
   AgendaStatus,
   ChannelStates,
   PostAttention,
+  ReportAsked,
+  ReportDays,
+  ReportFigures,
 } from "./overview-sources.ts";
 import { ResolveMember } from "./resolve-member.ts";
 
@@ -109,6 +113,26 @@ export interface AgendaPageRequest extends OverviewPageRequest {
   readonly to: DateTime.Utc;
   /** Only these of the person's workspaces; all of them when none. */
   readonly workspaceIds: Option.Option<readonly WorkspaceId[]>;
+}
+
+/** One workspace of the report across workspaces, as the person may read it. */
+export interface WorkspaceReport {
+  /** None where the member may not read its analytics, or it refuses them. */
+  readonly analytics: Option.Option<ReportFigures>;
+  readonly refused: Option.Option<Refusal>;
+  readonly workspace: WorkspaceMembership;
+}
+
+/** A page of the report: the range, the one before, and the workspaces. */
+export interface ReportPage {
+  readonly next: Option.Option<string>;
+  readonly previous: ReportDays;
+  readonly range: ReportDays;
+  readonly workspaces: readonly WorkspaceReport[];
+}
+
+export interface ReportPageRequest extends OverviewPageRequest {
+  readonly asked: ReportAsked;
 }
 
 type Failure =
@@ -222,6 +246,15 @@ export class Overview extends Context.Service<
       principal: UserPrincipal,
       request: AgendaPageRequest
     ) => Effect.Effect<AgendaPage, Failure | InvalidAgendaRange>;
+    /**
+     * A page of the person's workspaces, by name then id, each with its
+     * analytics over the range beside the range before, where the member
+     * may read them (`analytics:read`), none otherwise.
+     */
+    readonly report: (
+      principal: UserPrincipal,
+      request: ReportPageRequest
+    ) => Effect.Effect<ReportPage, Failure>;
   }
 >()("peal-server/workspace/application/Overview") {
   static readonly layer = Layer.effect(
@@ -455,7 +488,56 @@ export class Overview extends Context.Service<
         return answered;
       });
 
-      return Overview.of({ agenda, page });
+      const report = Effect.fn("Overview.report")(function* report(
+        principal: UserPrincipal,
+        request: ReportPageRequest
+      ) {
+        const after = yield* decodeWorkspaceCursor(request.cursor);
+        const all = yield* workspacesOf(principal);
+        const listed = workspacePage(all, after, request.limit);
+        const resolved = yield* resolveAll(principal, listed.workspaces);
+
+        const readers = actorsOf(resolved).filter((actor) =>
+          can(actor, "analytics:read")
+        );
+
+        const answered = yield* sources.report(readers, request.asked);
+
+        const workspaces = resolved.flatMap(
+          ({ standing, ...workspace }): WorkspaceReport[] =>
+            standing._tag === "gone"
+              ? []
+              : [
+                  {
+                    analytics: Option.fromUndefinedOr(
+                      answered.workspaces.get(workspace.id)
+                    ),
+                    refused:
+                      standing._tag === "refused"
+                        ? Option.some(standing.refusal)
+                        : Option.none(),
+                    workspace,
+                  },
+                ]
+        );
+
+        const next = yield* Option.match(listed.next, {
+          onNone: () => Effect.succeedNone,
+          onSome: (position) =>
+            encodeWorkspaceCursor(position).pipe(Effect.orDie, Effect.asSome),
+        });
+
+        const found: ReportPage = {
+          next,
+          previous: answered.previous,
+          range: answered.range,
+          workspaces,
+        };
+
+        return found;
+      });
+
+      return Overview.of({ agenda, page, report });
     })
   );
 }

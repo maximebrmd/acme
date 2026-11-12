@@ -3,12 +3,20 @@ import {
   HttpApiEndpoint,
   HttpApiError,
   HttpApiGroup,
+  HttpApiSchema,
   OpenApi,
 } from "effect/http-api";
 
+import {
+  CalendarDaySchema,
+  DashboardTotalsSchema,
+  dashboardPeriods,
+  FollowerChangeSchema,
+} from "./analytics.ts";
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
 import { InvalidTimeRange } from "./invalid-time-range.ts";
+import { InvalidTimeZone } from "./invalid-time-zone.ts";
 import { PlatformSchema } from "./platform.ts";
 import { PostStatusSchema } from "./post-status.ts";
 import { Unauthenticated } from "./unauthenticated.ts";
@@ -128,6 +136,95 @@ export const AgendaPageSchema = Schema.Struct({
 
 export type AgendaPage = typeof AgendaPageSchema.Type;
 
+/**
+ * A workspace's analytics over the report's range beside the range before,
+ * as its own dashboard answers them at its top: the totals of the posts
+ * published in each (null where no platform of the workspace gives a
+ * count, never zero), followers at the end of each and their change, and
+ * whether the range before is still all kept.
+ */
+export const WorkspaceAnalyticsSchema = Schema.Struct({
+  followers: FollowerChangeSchema,
+  previousFollowers: FollowerChangeSchema,
+  previousKept: Schema.Boolean,
+  previousTotals: DashboardTotalsSchema,
+  totals: DashboardTotalsSchema,
+}).annotate({ identifier: "WorkspaceAnalytics" });
+
+export type WorkspaceAnalytics = typeof WorkspaceAnalyticsSchema.Type;
+
+/** One workspace of the report: null analytics where the role may not read them. */
+export const WorkspaceReportSchema = Schema.Struct({
+  analytics: Schema.NullOr(WorkspaceAnalyticsSchema),
+  id: Schema.String,
+  name: Schema.String,
+  refused: Schema.NullOr(OverviewRefusalSchema),
+  role: Schema.String,
+  slug: Schema.String,
+}).annotate({ identifier: "WorkspaceReport" });
+
+export type WorkspaceReport = typeof WorkspaceReportSchema.Type;
+
+export const ReportAcrossWorkspacesSchema = Schema.Struct({
+  from: CalendarDaySchema,
+  // Pass it as `cursor` for the next page; null on the last one.
+  nextCursor: Schema.NullOr(Schema.String),
+  // The range before, of the same length, which a change compares with.
+  previous: Schema.Struct({ from: CalendarDaySchema, to: CalendarDaySchema }),
+  timeZone: Schema.String,
+  to: CalendarDaySchema,
+  workspaces: Schema.Array(WorkspaceReportSchema),
+}).annotate({ identifier: "ReportAcrossWorkspaces" });
+
+export type ReportAcrossWorkspaces = typeof ReportAcrossWorkspacesSchema.Type;
+
+/** The report's days unless `days` says otherwise. */
+export const defaultReportDays = 30;
+
+/** The columns of the report's CSV, one line a workspace, in this order. */
+export const reportColumns = [
+  "workspaceId",
+  "workspace",
+  "from",
+  "to",
+  "posts",
+  "likes",
+  "reposts",
+  "replies",
+  "quotes",
+  "impressions",
+  "clicks",
+  "reach",
+  "saves",
+  "engagement",
+  "followers",
+  "followersGained",
+  "previousKept",
+  "previousPosts",
+  "previousLikes",
+  "previousReposts",
+  "previousReplies",
+  "previousQuotes",
+  "previousImpressions",
+  "previousClicks",
+  "previousReach",
+  "previousSaves",
+  "previousEngagement",
+  "previousFollowers",
+  "previousFollowersGained",
+] as const;
+
+const reportQuery = {
+  days: Schema.optionalKey(
+    Schema.NumberFromString.pipe(
+      Schema.decodeTo(Schema.Literals(dashboardPeriods))
+    )
+  ),
+  timeZone: Schema.String,
+};
+
+const reportRange = `The range is \`days\` (7, 30 or 90, ${String(defaultReportDays)} unless given: that many days ending today in \`timeZone\`, an IANA zone such as Europe/Paris), beside the range before, of the same length.`;
+
 const refusals =
   "API keys belong to a workspace, not to anyone, and get 403, as do OAuth tokens bound to one workspace; the command line's token, bound to none, reads every workspace with what its scopes allow there.";
 
@@ -178,6 +275,39 @@ export class OverviewApi extends HttpApiGroup.make("overview")
       OpenApi.annotations({
         description: `Lists the posts with a time from \`from\` (included) to \`to\` (excluded), at most ${maxAgendaDays} days apart (InvalidTimeRange otherwise), across the workspaces where the user may read posts (\`post:read\`), or only those of them that \`workspaceIds\` names (comma-separated ids). Posts waiting for an approval, scheduled, publishing and finished are listed; drafts and cancelled posts are not. They come by time, then id, ${defaultAgendaPageSize} a page unless \`limit\` (at most ${maxAgendaPageSize}) says otherwise; pass the page's \`nextCursor\` as \`cursor\`, with the same query, for the next one. Each post is light: its workspace, its time and zone, its status, its platforms (null where the user may not read the workspace's channels) and the first ${agendaExcerptLength} characters of its text. ${refusals}`,
         summary: "List the agenda across workspaces",
+      })
+    ),
+    HttpApiEndpoint.get("report", "/report", {
+      error: [
+        Forbidden,
+        Unauthenticated,
+        InvalidTimeZone,
+        HttpApiError.BadRequest,
+      ],
+      query: {
+        ...reportQuery,
+        cursor: Schema.optionalKey(Schema.String),
+        limit: Schema.optionalKey(
+          Schema.Int.check(
+            Schema.isBetween({ maximum: maxOverviewPageSize, minimum: 1 })
+          )
+        ),
+      },
+      success: ReportAcrossWorkspacesSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Answers what went out in each workspace the user belongs to and how it did, ${maxOverviewPageSize} workspaces a page at most, by name then id: each workspace's totals of the posts published in the range (likes, reposts, replies, quotes, impressions, clicks, reach, saves; null where no platform of the workspace gives one, never zero), followers and their change, and the same for the range before with \`previousKept\` (false where a platform's terms keep less than the range before goes back: show no change then), as that workspace's own dashboard answers them. ${reportRange} \`analytics\` is null where the user's role may not read the workspace's analytics (\`analytics:read\`), and in a workspace that refuses the user (\`refused\`). Figures of different platforms are not alike: compare a workspace with itself, not with another. Pass the page's \`nextCursor\` as \`cursor\` for the next one. ${refusals}`,
+        summary: "Get a report across workspaces",
+      })
+    ),
+    HttpApiEndpoint.get("reportExport", "/report/export", {
+      error: [Forbidden, Unauthenticated, InvalidTimeZone],
+      query: reportQuery,
+      success: HttpApiSchema.StreamUint8Array({ contentType: "text/csv" }),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Streams the report across workspaces as a CSV file, RFC 4180: a header line, then one line a workspace the user belongs to, by name then id, with the columns ${reportColumns.map((column) => `\`${column}\``).join(", ")}. A count no platform gives, a workspace whose analytics the user may not read, and the range before where \`previousKept\` is false, are empty cells; a cell that would start a formula in a spreadsheet starts with an apostrophe. ${reportRange} ${refusals}`,
+        summary: "Export the report across workspaces",
       })
     )
   )

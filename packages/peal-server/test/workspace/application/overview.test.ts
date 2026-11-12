@@ -4,6 +4,7 @@ import { Effect, Option, Ref } from "effect";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
+import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
   alpha,
   at,
@@ -14,6 +15,7 @@ import {
   noCalls,
   overviewOver,
   person,
+  reportDays,
   staffId,
   userId,
 } from "#test/workspace/fakes/overview-fakes.ts";
@@ -580,6 +582,64 @@ describe(Overview, () => {
             page.items.map(({ platforms }) => platforms),
             [Option.some<readonly Platform[]>(["mastodon"])]
           );
+        })
+    );
+  });
+
+  describe("report", () => {
+    const lastWeek = {
+      days: 7 as const,
+      timeZone: TimeZoneIdSchema.make("Europe/Paris"),
+    };
+
+    it.effect(
+      "gives each workspace's analytics where the role reads them, and none where it does not or the workspace refuses",
+      () =>
+        Effect.gen(function* report() {
+          const calls = yield* noCalls();
+
+          const page = yield* Overview.use((overview) =>
+            overview.report(person, { ...firstPage, asked: lastWeek })
+          ).pipe(
+            Effect.provide(
+              overviewOver(
+                [
+                  { id: alpha, name: "Alpha", role: "viewer" },
+                  { id: bravo, name: "Bravo", role: "unknown" },
+                  {
+                    id: charlie,
+                    name: "Charlie",
+                    role: "owner",
+                    twoStepRequired: true,
+                  },
+                ],
+                calls
+              )
+            )
+          );
+
+          assert.deepStrictEqual(
+            page.workspaces.map(({ analytics, refused, workspace }) => ({
+              analytics: Option.isSome(analytics),
+              id: workspace.id,
+              refused,
+            })),
+            [
+              { analytics: true, id: alpha, refused: Option.none() },
+              { analytics: false, id: bravo, refused: Option.none() },
+              {
+                analytics: false,
+                id: charlie,
+                refused: Option.some("twoStepRequired"),
+              },
+            ]
+          );
+          assert.deepStrictEqual(
+            page.workspaces[0]?.analytics,
+            Option.some(figures.report)
+          );
+          assert.deepStrictEqual(page.range, reportDays);
+          assert.deepStrictEqual((yield* Ref.get(calls)).report, [[alpha]]);
         })
     );
   });

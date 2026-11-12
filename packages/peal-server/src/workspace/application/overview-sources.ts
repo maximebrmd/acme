@@ -5,6 +5,8 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
+import type { TimeZoneId } from "#shared/domain/time-zone.ts";
+import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
 /**
  * A workspace's posts that need someone: those going out in the next 7
@@ -65,6 +67,59 @@ export interface AgendaRequest {
 }
 
 /**
+ * The latest counts of a range's posts, added up, as a workspace's
+ * dashboard gives them: none where no platform of the workspace gives a
+ * count, never zero.
+ */
+export interface ReportTotals {
+  readonly clicks: Option.Option<number>;
+  readonly engagement: number;
+  readonly impressions: Option.Option<number>;
+  readonly likes: number;
+  readonly posts: number;
+  readonly quotes: Option.Option<number>;
+  readonly reach: Option.Option<number>;
+  readonly replies: number;
+  readonly reposts: number;
+  readonly saves: Option.Option<number>;
+}
+
+/** Followers at the end of a range, and their change over it. */
+export interface ReportFollowers {
+  readonly current: Option.Option<number>;
+  readonly gained: Option.Option<number>;
+}
+
+/** A workspace's range beside the one before, as its dashboard answers it. */
+export interface ReportFigures {
+  readonly followers: ReportFollowers;
+  readonly previousFollowers: ReportFollowers;
+  /** Whether the range before is still all kept by every platform. */
+  readonly previousKept: boolean;
+  readonly previousTotals: ReportTotals;
+  readonly totals: ReportTotals;
+}
+
+/** The days of a report, both included. */
+export interface ReportDays {
+  readonly from: LocalDate;
+  readonly to: LocalDate;
+}
+
+/** The last `days` ending today in `timeZone`. */
+export interface ReportAsked {
+  readonly days: 7 | 30 | 90;
+  readonly timeZone: TimeZoneId;
+}
+
+/** A report's range, the one before, and the workspaces' figures. */
+export interface ReportAnswer {
+  readonly previous: ReportDays;
+  readonly range: ReportDays;
+  readonly workspaces: ReadonlyMap<WorkspaceId, ReportFigures>;
+}
+
+/**
  * What the overview reads of the other contexts, a set of workspaces at a
  * time: one read each, which answers a map by workspace and leaves out a
  * workspace with nothing. None checks a permission: the overview decided
@@ -98,5 +153,14 @@ export class OverviewSources extends Context.Service<
     readonly agenda: (
       request: AgendaRequest
     ) => Effect.Effect<readonly AgendaEntry[], DatabaseError>;
+    /**
+     * The workspaces of these actors over the same range, each beside the
+     * range before, as its own dashboard answers them; the range alone
+     * when there is no actor. Each actor may read its analytics.
+     */
+    readonly report: (
+      actors: readonly Actor[],
+      asked: ReportAsked
+    ) => Effect.Effect<ReportAnswer, DatabaseError>;
   }
 >()("peal-server/workspace/application/OverviewSources") {}

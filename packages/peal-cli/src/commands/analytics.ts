@@ -1,13 +1,4 @@
-import {
-  Config,
-  Console,
-  DateTime,
-  Effect,
-  FileSystem,
-  Option,
-  Path,
-  Stream,
-} from "effect";
+import { Config, Console, DateTime, Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
   AnalyticsDashboardSchema,
@@ -28,6 +19,7 @@ import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns, count, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
+import { saveNew } from "#saved-file.ts";
 import { channelNames, inWorkspace, named, workspaceFlag } from "#workspace.ts";
 
 // The range the web app shows unless asked otherwise: 30 days, today
@@ -509,56 +501,18 @@ const exportFile = Command.make(
   },
   Effect.fn("analytics.export")(function* exportFile(input) {
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
     const query = yield* rangeOf(input);
-    const file = path.resolve(input.output);
 
-    const cannotSave = (failure: { readonly message: string }) =>
-      new Refused({ reason: `Cannot save ${file} (${failure.message}).` });
-
-    if (yield* fs.exists(file).pipe(Effect.mapError(cannotSave))) {
-      yield* new Refused({
-        reason: `${file} exists already: give another --output.`,
-      });
-    }
-
-    const rows = yield* client.analytics
-      .export({
-        params: { workspaceId: workspace.id },
-        query: { ...query, format: input.format, kind: input.kind },
-      })
-      .pipe(Effect.mapError(explain(url)));
-
-    // Written as it comes, beside the file, to one made for it alone:
-    // never through a link, nor over a file made since it was checked. The
-    // file itself appears only once every row came: an export cut off on
-    // the way leaves nothing that looks complete.
-    const partial = `${file}.partial`;
-
-    const discard = fs.remove(partial).pipe(Effect.catch(() => Effect.void));
-
-    yield* rows.pipe(
-      Stream.run(fs.sink(partial, { flag: "wx" })),
-      Effect.catchTags({
-        HttpClientError: (failure) =>
-          discard.pipe(
-            Effect.andThen(
-              Effect.fail(
-                new Refused({
-                  reason: `The export was cut off before its end (${failure.message}): nothing was saved. Run the command again.`,
-                })
-              )
-            )
-          ),
-        PlatformError: (failure) =>
-          discard.pipe(Effect.andThen(Effect.fail(cannotSave(failure)))),
-      })
+    const file = yield* saveNew(
+      input.output,
+      "--output",
+      client.analytics
+        .export({
+          params: { workspaceId: workspace.id },
+          query: { ...query, format: input.format, kind: input.kind },
+        })
+        .pipe(Effect.mapError(explain(url)))
     );
-
-    yield* fs
-      .link(partial, file)
-      .pipe(Effect.mapError(cannotSave), Effect.ensuring(discard));
 
     yield* Console.log(`Saved to ${file}.`);
   })

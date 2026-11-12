@@ -21,7 +21,7 @@ import { logout } from "#commands/logout.ts";
 import { mcp } from "#commands/mcp.ts";
 import { media } from "#commands/media.ts";
 import { members } from "#commands/members.ts";
-import { agenda, overview } from "#commands/overview.ts";
+import { agenda, overview, report } from "#commands/overview.ts";
 import { partner } from "#commands/partner.ts";
 import { post } from "#commands/post.ts";
 import { posts } from "#commands/posts.ts";
@@ -54,6 +54,7 @@ export const cli = peal.pipe(
     whoami,
     overview,
     agenda,
+    report,
     mcp,
     channels,
     drafts,

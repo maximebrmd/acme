@@ -25,19 +25,15 @@ import type { FollowerChange } from "#analytics/domain/account-series.ts";
 import { engagementOf } from "#analytics/domain/post-metrics.ts";
 import type { PostMetrics } from "#analytics/domain/post-metrics.ts";
 import type { TrackedPost } from "#analytics/domain/tracked-post.ts";
-import { LocalDateSchema } from "#shared/domain/wall-clock.ts";
+import { isoDateOf, LocalDateSchema } from "#shared/domain/wall-clock.ts";
 import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
 // What clients see of analytics, which the API and the MCP tools answer.
 
 const decodeDate = Schema.decodeUnknownOption(LocalDateSchema);
 
-const pad = (value: number, length = 2) =>
-  value.toString().padStart(length, "0");
-
 /** A day as the contract writes it: YYYY-MM-DD. */
-export const dayView = ({ day, month, year }: LocalDate): CalendarDay =>
-  `${pad(year, 4)}-${pad(month)}-${pad(day)}`;
+export const dayView = (date: LocalDate): CalendarDay => isoDateOf(date);
 
 /**
  * The day a request names. The contract checked it is on the calendar. One

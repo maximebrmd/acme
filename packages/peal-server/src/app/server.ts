@@ -447,13 +447,15 @@ const BillingContextLive = BillingOverviewLive.pipe(
 
 // What a person reads across their workspaces: each decided as the
 // workspace context decides any request, with the posts publishing counts
-// and lists, the channels and their platforms, the inbox's waiting threads
-// and each workspace's standing against its plan, as billing tells it.
+// and lists, the channels and their platforms, the inbox's waiting threads,
+// analytics' report across workspaces and each workspace's standing
+// against its plan, as billing tells it.
 const OverviewContextLive = OverviewLive.pipe(
   Layer.provide(
     Layer.mergeAll(
       ChannelsWithNoticesLive,
       BillingContextLive,
+      AnalyticsLive,
       PostAttentionLive,
       ChannelOverviewLive,
       InboxWaitingLive
