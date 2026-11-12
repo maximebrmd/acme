@@ -369,9 +369,11 @@ With `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`, signing up and asking for 
 
 ## Who may sign up [#sign-up]
 
-Anyone who reaches your instance may make an account, then a workspace, which uses your platform apps and your writing assistant's requests. To run Peal for your own people only, set `PEAL_SIGN_UP=invitation`: an account is then made only for an address a workspace invited, while its invitation is pending, through the link in the invitation's email. The sign-up page says accounts are made by invitation to anyone else, and the server refuses any other sign-up, the same way whatever the address.
+Anyone who reaches your instance may make an account, then a workspace, which uses your platform apps and your writing assistant's requests. To run Peal for your own people only, set `PEAL_SIGN_UP=invitation`: an account is then made only from an invitation's link, the one its email carries or **Copy link** gives, with the address the invitation went to, while it is pending. Knowing an invited address is not enough. The sign-up page says accounts are made by invitation to anyone else, and the server refuses any other sign-up the same way, so its answer never tells whether an address was invited.
 
-The first account of a server that has none may always be made, so a new server can be set up. Make it, then your workspace, before the address is public; two sign-ups at the same moment on an empty server could both pass. Signing in, password resets, accepting an invitation, the [staff console](/staff), [partner accounts](/embedding) and connect links work as before.
+Each person you let in may then make a workspace of their own and invite anyone to it, who may do the same: invitation mode trusts everyone it lets in to invite.
+
+While the server has no account, the first one may be made without an invitation, so a new server can be set up: the sign-up page shows its form until then. Make it, then your workspace, before the address is public; two sign-ups at the same moment on an empty server could both pass, and the rule opens again should every account be deleted. Signing in, password resets, accepting an invitation, the [staff console](/staff), [partner accounts](/embedding) and connect links work as before.
 
 ## The command line and MCP clients [#mcp]
 
