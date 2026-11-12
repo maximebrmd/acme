@@ -17,6 +17,7 @@ import type { ShortCode } from "#shortlinks/domain/short-code.ts";
 import { ShortLinkIdSchema } from "#shortlinks/domain/short-link-id.ts";
 
 import type { CodeTaken } from "./code-taken.ts";
+import { LinkStanding } from "./link-standing.ts";
 import { ShortCodes } from "./short-codes.ts";
 import { ShortLinkBase, shortUrlOf } from "./short-link-base.ts";
 import { ShortLinkStore } from "./short-link-store.ts";
@@ -61,8 +62,10 @@ export class ShortLinks extends Context.Service<
       request: IssueRequest
     ) => Effect.Effect<readonly string[], DatabaseError>;
     /**
-     * Where a code leads, counting the visit when it counts. A count that
-     * cannot be kept never stops the redirect.
+     * Where a code leads, counting the visit when it counts: unknown while
+     * the part of the post that holds it is not live on its platform, and
+     * disabled when staff turned it off or its workspace is no longer in
+     * good standing. A count that cannot be kept never stops the redirect.
      */
     readonly follow: (
       code: string,
@@ -77,6 +80,7 @@ export class ShortLinks extends Context.Service<
       const codes = yield* ShortCodes;
       const ids = yield* Ids;
       const { base } = yield* ShortLinkBase;
+      const standing = yield* LinkStanding;
 
       // The link's code, drawing again while another link holds the one
       // drawn: a defect past `maxCodeDraws`, as the codes are far from full.
@@ -138,7 +142,17 @@ export class ShortLinks extends Context.Service<
 
         const link = found.value;
 
-        if (Option.isSome(link.disabledAt)) {
+        // Not live on its platform (yet, or any more): as if there were
+        // none, so a post that never goes out leaves no working link.
+        if (!(yield* standing.isLive(link.targetId, link.part))) {
+          return { _tag: "unknown" } satisfies Followed;
+        }
+
+        // Turned off by staff, or its workspace no longer in good standing.
+        if (
+          Option.isSome(link.disabledAt) ||
+          !(yield* standing.isWorkspaceActive(link.workspaceId))
+        ) {
           return { _tag: "disabled" } satisfies Followed;
         }
 

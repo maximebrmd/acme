@@ -33,6 +33,7 @@ import { DrizzleShortLinkStore } from "#shortlinks/infrastructure/drizzle-short-
 import { RandomShortCodes } from "#shortlinks/infrastructure/random-short-codes.ts";
 import { ShortLinkBaseLive } from "#shortlinks/infrastructure/short-link-settings.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
+import { OpenLinkStanding } from "#test/shortlinks/support.ts";
 
 const base = "https://go.example.test/";
 
@@ -43,6 +44,7 @@ const browser = {
 };
 
 const ShortLinksTest = ShortLinksLive.pipe(
+  Layer.provide(OpenLinkStanding),
   Layer.provide(
     ConfigProvider.layerAdd(
       ConfigProvider.fromUnknown({ PEAL_SHORT_LINK_BASE: base }),
@@ -263,6 +265,7 @@ const baseTest = ConfigProvider.layerAdd(
 
 layer(
   ShortLinks.layer.pipe(
+    Layer.provide(OpenLinkStanding),
     Layer.provideMerge(queuedCodes),
     Layer.provide(Layer.mergeAll(DrizzleShortLinkStore, ShortLinkBaseLive)),
     Layer.provide(baseTest),

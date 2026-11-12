@@ -22,6 +22,7 @@ import {
   freshWorkspace,
   memberOf,
 } from "#test/channels/support.ts";
+import { OpenLinkStanding } from "#test/shortlinks/support.ts";
 import { securityTest } from "#workspace/api/security.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 import type { Role } from "#workspace/domain/roles.ts";
@@ -29,6 +30,7 @@ import type { Role } from "#workspace/domain/roles.ts";
 const base = "https://go.example.test/";
 
 const ShortLinksTest = ShortLinksLive.pipe(
+  Layer.provide(OpenLinkStanding),
   Layer.provide(
     ConfigProvider.layerAdd(
       ConfigProvider.fromUnknown({ PEAL_SHORT_LINK_BASE: base }),

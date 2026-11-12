@@ -5,15 +5,16 @@ import { assert, layer } from "@effect/vitest";
 import { ConfigProvider, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
-import { newId } from "#shared/application/ids.ts";
 import {
   ChannelIdSchema,
   PostIdSchema,
   PostTargetIdSchema,
+  WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import { ShortLinks } from "#shortlinks/application/short-links.ts";
 import { ShortLinksLive } from "#shortlinks/container.ts";
-import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
+import { DatabaseTest } from "#test/channels/support.ts";
+import { liveTarget, OpenLinkStanding } from "#test/shortlinks/support.ts";
 import {
   confirmedAccount,
   makeAdmin,
@@ -29,6 +30,7 @@ const settings = { ...unconfirmedEmails, PEAL_SHORT_LINK_BASE: base };
 const Test = Layer.mergeAll(
   TestApp.layerWith(settings),
   ShortLinksLive.pipe(
+    Layer.provide(OpenLinkStanding),
     Layer.provide(
       ConfigProvider.layerAdd(ConfigProvider.fromUnknown(settings), {
         asPrimary: true,
@@ -56,14 +58,16 @@ layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
         const app = yield* TestApp;
         const links = yield* ShortLinks;
         const sql = yield* SqlClient.SqlClient;
-        const workspaceId = yield* freshWorkspace;
+
+        const target = yield* liveTarget("reported-link", true);
+        const workspaceId = WorkspaceIdSchema.make(target.workspaceId);
 
         const [shortUrl = ""] = yield* links.issue({
-          channelId: yield* newId(ChannelIdSchema),
+          channelId: ChannelIdSchema.make(target.channelId),
           destinations: ["https://example.test/reported-landing"],
           part: 0,
-          postId: yield* newId(PostIdSchema),
-          targetId: yield* newId(PostTargetIdSchema),
+          postId: PostIdSchema.make(target.postId),
+          targetId: PostTargetIdSchema.make(target.targetId),
           workspaceId,
         });
 

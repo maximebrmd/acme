@@ -8,15 +8,16 @@ import { ConfigProvider, Effect, Layer } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { redirectsPerMinute } from "#app/short-links/redirects.ts";
-import { newId } from "#shared/application/ids.ts";
 import {
   ChannelIdSchema,
   PostIdSchema,
   PostTargetIdSchema,
+  WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import { ShortLinks } from "#shortlinks/application/short-links.ts";
 import { ShortLinksLive } from "#shortlinks/container.ts";
-import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
+import { DatabaseTest } from "#test/channels/support.ts";
+import { liveTarget, OpenLinkStanding } from "#test/shortlinks/support.ts";
 import {
   TestApp,
   unconfirmedEmails,
@@ -31,6 +32,7 @@ const settings = { ...unconfirmedEmails, PEAL_SHORT_LINK_BASE: base };
 const Test = Layer.mergeAll(
   TestApp.layerWith(settings),
   ShortLinksLive.pipe(
+    Layer.provide(OpenLinkStanding),
     Layer.provide(
       ConfigProvider.layerAdd(ConfigProvider.fromUnknown(settings), {
         asPrimary: true,
@@ -42,24 +44,32 @@ const Test = Layer.mergeAll(
 
 const browser = "Mozilla/5.0 (synthetic browser)";
 
-// A link newly issued to `destination`, and its path on the server.
-const issued = Effect.fn("issued")(function* issued(destination: string) {
+// A link newly issued to `destination` in a post whose first part is live
+// (or not), in a workspace of its own, and its path on the server.
+const issuedIn = Effect.fn("issuedIn")(function* issuedIn(
+  destination: string,
+  live: boolean
+) {
   const links = yield* ShortLinks;
+  const target = yield* liveTarget(`links-${randomUUID().slice(0, 8)}`, live);
 
   const [shortUrl = ""] = yield* links.issue({
-    channelId: yield* newId(ChannelIdSchema),
+    channelId: ChannelIdSchema.make(target.channelId),
     destinations: [destination],
     part: 0,
-    postId: yield* newId(PostIdSchema),
-    targetId: yield* newId(PostTargetIdSchema),
-    workspaceId: yield* freshWorkspace,
+    postId: PostIdSchema.make(target.postId),
+    targetId: PostTargetIdSchema.make(target.targetId),
+    workspaceId: WorkspaceIdSchema.make(target.workspaceId),
   });
 
   return {
     code: shortUrl.slice(base.length),
+    owner: target.owner,
     path: new URL(shortUrl).pathname,
   };
 });
+
+const issued = (destination: string) => issuedIn(destination, true);
 
 const clicksOf = (code: string) =>
   SqlClient.SqlClient.use(
@@ -229,6 +239,46 @@ layer(Test, { excludeTestServices: true, timeout: "120 seconds" })(
             _tag: "NotFound",
             code: "not_found",
           });
+        })
+    );
+
+    it.effect(
+      "answers 404 while the part of the post that holds it is not live",
+      () =>
+        Effect.gen(function* notLive() {
+          const app = yield* TestApp;
+
+          const { path } = yield* issuedIn(
+            "https://example.test/never-out",
+            false
+          );
+
+          const reply = yield* app.request(path, {
+            headers: { ...fromAddress(), "user-agent": browser },
+          });
+
+          assert.strictEqual(reply.status, 404);
+          assert.isNull(reply.headers.get("location"));
+        })
+    );
+
+    it.effect(
+      "answers 410 once staff banned every owner of its workspace",
+      () =>
+        Effect.gen(function* banned() {
+          const app = yield* TestApp;
+          const { owner, path } = yield* issued("https://example.test/banned");
+
+          yield* SqlClient.SqlClient.use(
+            (sql) =>
+              sql`UPDATE auth."user" SET banned = true WHERE id = ${owner.id}`
+          ).pipe(Effect.orDie);
+
+          const reply = yield* app.request(path, {
+            headers: { ...fromAddress(), "user-agent": browser },
+          });
+
+          assert.strictEqual(reply.status, 410);
         })
     );
 

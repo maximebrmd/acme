@@ -28,6 +28,7 @@ import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { ShortLinksLive } from "#shortlinks/container.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
 import { credentialsOf } from "#test/publishing/platforms/support.ts";
+import { OpenLinkStanding } from "#test/shortlinks/support.ts";
 
 const base = "https://go.example.com/";
 
@@ -96,7 +97,12 @@ const publisherWith = <E, R>(
 const Shortening = publisherWith(
   "mastodon",
   ShortLinksLinkShortener.pipe(
-    Layer.provide(ShortLinksLive.pipe(Layer.provide(withBase))),
+    Layer.provide(
+      ShortLinksLive.pipe(
+        Layer.provide(OpenLinkStanding),
+        Layer.provide(withBase)
+      )
+    ),
     Layer.provide(DatabaseTest)
   )
 );
@@ -299,7 +305,12 @@ layer(
   publisherWith(
     "pinterest",
     ShortLinksLinkShortener.pipe(
-      Layer.provide(ShortLinksLive.pipe(Layer.provide(withBase))),
+      Layer.provide(
+        ShortLinksLive.pipe(
+          Layer.provide(OpenLinkStanding),
+          Layer.provide(withBase)
+        )
+      ),
       Layer.provide(DatabaseTest)
     )
   )

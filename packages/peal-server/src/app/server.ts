@@ -108,7 +108,11 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
-import { ShortLinksApiLive, ShortLinksLive } from "#shortlinks/container.ts";
+import {
+  LinkStandingLive,
+  ShortLinksApiLive,
+  ShortLinksLive,
+} from "#shortlinks/container.ts";
 import {
   ContractRequestAuditLive,
   ImpersonationAuditLive,
@@ -284,6 +288,19 @@ const PublishingContextLive = PublishingLive.pipe(
   )
 );
 
+// Short links, which answer only while the part of the post that holds
+// them is live (publishing) and their workspace in good standing (the
+// workspace context).
+const ShortLinksContextLive = ShortLinksLive.pipe(
+  Layer.provide(
+    LinkStandingLive.pipe(
+      Layer.provide(
+        Layer.mergeAll(PublishingContextLive, ChannelsWithNoticesLive)
+      )
+    )
+  )
+);
+
 // Reviews: links, comments and approvals of the posts publishing holds,
 // with their channels' names, their media and their members' names.
 const ReviewContextLive = ReviewLive.pipe(
@@ -356,7 +373,7 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       StaffRecordsLive,
       ReviewGateContextLive,
       AdsRoutesContextLive,
-      ShortLinksLive
+      ShortLinksContextLive
     )
   )
 );
@@ -372,7 +389,7 @@ const ErasedContextsLive = Layer.mergeAll(
   StaffRecordsLive,
   ReviewGateContextLive,
   AdsRoutesContextLive,
-  ShortLinksLive
+  ShortLinksContextLive
 );
 
 // The staff console, which reads accounts and workspaces from the workspace
@@ -386,7 +403,7 @@ const StaffContextLive = StaffLive.pipe(
       // Its ad accounts and boosts, as metadata.
       AdsRoutesContextLive,
       // The short links it turns off.
-      ShortLinksLive
+      ShortLinksContextLive
     )
   )
 );
@@ -465,7 +482,7 @@ const ServicesLive = Layer.mergeAll(
   ReviewContextLive,
   ContractRequestsContextLive,
   AdsRoutesContextLive,
-  ShortLinksLive
+  ShortLinksContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -538,7 +555,7 @@ const ContextsLive = Layer.mergeAll(
   ContractRequestsContextLive,
   // On the cluster, every call to an ad account goes through its gate.
   adsContext(GatedAds),
-  ShortLinksLive
+  ShortLinksContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

@@ -15,6 +15,7 @@ import { LivePostClients } from "#publishing/application/live-post-clients.ts";
 import { LivePostEdits } from "#publishing/application/live-post-edits.ts";
 import { LivePostEvents } from "#publishing/application/live-post-events.ts";
 import { LivePostHolds } from "#publishing/application/live-post-holds.ts";
+import { LiveTargetParts } from "#publishing/application/live-target-parts.ts";
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import { pacedLookups } from "#publishing/application/paced-lookups.ts";
 import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
@@ -168,7 +169,8 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6>(
     HeldPosts.layer,
     PostFollowUp.layer,
     PostUsage.layer,
-    LivePostChanges.layer
+    LivePostChanges.layer,
+    LiveTargetParts.layer
   ).pipe(
     Layer.provideMerge(PostPresets.layer),
     Layer.provideMerge(

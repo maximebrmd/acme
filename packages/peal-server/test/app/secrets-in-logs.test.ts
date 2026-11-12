@@ -20,15 +20,15 @@ import {
 } from "effect";
 
 import { FacebookOptions } from "#publishing/domain/facebook-options.ts";
-import { newId } from "#shared/application/ids.ts";
 import {
   ChannelIdSchema,
   PostIdSchema,
   PostTargetIdSchema,
+  WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import { ShortLinks } from "#shortlinks/application/short-links.ts";
 import { ShortLinksLive } from "#shortlinks/container.ts";
-import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
+import { DatabaseTest } from "#test/channels/support.ts";
 import {
   facebookPageId,
   fakeMetaGraph,
@@ -41,6 +41,7 @@ import {
   outgoing,
   testFile,
 } from "#test/publishing/platforms/support.ts";
+import { liveTarget, OpenLinkStanding } from "#test/shortlinks/support.ts";
 import {
   answered,
   FakeTransport,
@@ -408,6 +409,7 @@ const ShortLinksTest = Layer.mergeAll(
     Layer.merge(capture, Layer.succeed(Tracer.Tracer, tracer))
   ),
   ShortLinksLive.pipe(
+    Layer.provide(OpenLinkStanding),
     Layer.provide(
       ConfigProvider.layerAdd(ConfigProvider.fromUnknown(shortLinkSettings), {
         asPrimary: true,
@@ -430,13 +432,15 @@ layer(ShortLinksTest, { excludeTestServices: true, timeout: "120 seconds" })(
         const destination =
           "https://example.test/synthetic-destination-never-logged";
 
+        const target = yield* liveTarget("logged-link", true);
+
         const [shortUrl = ""] = yield* links.issue({
-          channelId: yield* newId(ChannelIdSchema),
+          channelId: ChannelIdSchema.make(target.channelId),
           destinations: [destination],
           part: 0,
-          postId: yield* newId(PostIdSchema),
-          targetId: yield* newId(PostTargetIdSchema),
-          workspaceId: yield* freshWorkspace,
+          postId: PostIdSchema.make(target.postId),
+          targetId: PostTargetIdSchema.make(target.targetId),
+          workspaceId: WorkspaceIdSchema.make(target.workspaceId),
         });
 
         const { pathname } = new URL(shortUrl);
