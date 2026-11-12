@@ -705,6 +705,13 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   its own on each channel is several items: a post has one schedule. Media
   of its own on a channel is not built: a post has one media list. The web
   app has no bulk screen yet: it would call these.
+- `PostAttention` counts several workspaces' posts at once for the
+  overview across workspaces (scheduled in the next 7 days, awaiting an
+  approval, finished in the last 7 days `failed` or `partiallyPublished`,
+  or `unconfirmed`, as the search's `outcome` filter names them) and lists
+  their agenda by `(scheduled_at, id)`, an excerpt of each text
+  (`excerptOf`, 140 characters as a reader counts them): ids as one
+  `anyUuid` parameter, no permission checked, as the caller decided.
 - `PostSearch` (`posts.search`, `list_posts`, `peal posts list`) pages by
   keyset on `(scheduled_at, id)` or on `id`, which orders by creation
   (UUIDv7), never by offset; a cursor is opaque (`PostPositionSchema`) and

@@ -137,6 +137,16 @@ Le reste d’un espace de travail partagé appartient à son équipe : le fichie
 
 Tant que vous êtes le seul propriétaire d’un espace de travail que d’autres membres utilisent, le compte ne peut pas être supprimé : Peal liste ces espaces. Nommez d’abord un autre membre propriétaire de chacun, ou supprimez-les. Quand un espace de travail qu’il supprimerait a un abonnement que Stripe peut encore facturer, la fenêtre dit ce que cela arrête et attend que vous cochiez **Résilier l’abonnement maintenant**, comme lors de la [suppression d’un espace de travail](#delete-workspace) : ces abonnements sont résiliés immédiatement, sans remboursement de la période payée, et l’e-mail de confirmation le précise.
 
+## Dans tous vos espaces de travail [#across-workspaces]
+
+Sur la page d’accueil, la carte de chaque espace de travail dit ce qui y demande votre attention, chaque ligne étant un lien vers la page qui le montre : les publications qui ont échoué sur un canal ces 7 derniers jours, celles à vérifier parce qu’un canal les a peut-être en ligne, celles qui attendent une approbation (et si vous pouvez la donner), les canaux à reconnecter ou désactivés, les commentaires qui attendent une réponse dans la boîte de réception, et un espace au-delà de son offre, qui ne publie rien tant qu’il n’y est pas revenu. Un espace où rien ne demande votre attention le dit une fois. Les cartes qui demandent votre attention viennent en premier.
+
+Chaque espace ne montre que ce que votre rôle y permet de lire, comme ses propres pages : pas de ligne de boîte de réception là où vous ne pouvez pas lire les commentaires, par exemple, plutôt qu’un compte à zéro. Un espace qui exige la [validation en deux étapes](#require-two-step) alors que votre compte ne l’a pas activée affiche son badge et aucun chiffre, jusqu’à ce que vous l’activiez.
+
+**Agenda de tous les espaces**, sur la page d’accueil quand vous appartenez à plusieurs espaces, liste ce qui part ces 14 prochains jours dans chaque espace où vous pouvez lire les publications, jour par jour dans votre fuseau horaire : l’heure de chaque publication, son espace, ses plateformes et le début de son texte, avec un lien vers la publication dans son espace. Choisissez un espace pour ne voir que celui-là. C’est une liste, pas la semaine du calendrier : une publication se déplace dans le calendrier de son propre espace.
+
+`GET /api/me/overview` et `GET /api/me/agenda` (`from`, `to`, à 31 jours d’écart au plus, et `workspaceIds`, séparés par des virgules) répondent la même chose, et la ligne de commande les propose sous `peal overview` et `peal agenda` ([Ligne de commande](/cli#across-workspaces)). Ils répondent à une personne : les clés d’API, qui appartiennent à un espace, et les jetons OAuth liés à un seul espace, comme celui d’un client MCP, reçoivent 403. Aucun outil MCP ne lit dans tous les espaces : une connexion agit dans l’espace que vous lui avez choisi.
+
 ## Par l’API [#api]
 
 | Point d’accès                            | Ce qu’il fait                                                        |

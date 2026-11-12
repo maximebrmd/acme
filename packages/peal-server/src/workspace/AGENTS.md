@@ -32,6 +32,27 @@ The staff context follows these rules too. What the law has a host keep is in
   plan's room) and sharing its constants and link (`invitationLifetime`,
   `pendingInvitationLimit`, `invitationUrl` in `options.ts`): change both
   together. The web app still invites through Better Auth's route.
+- `Overview` (`application/overview.ts`, `GET /api/me/overview` and
+  `/api/me/agenda`) reads across the workspaces a person belongs to, for
+  a user only (`overviewReader`: an OAuth token bound to one workspace is
+  `PersonRequired`, keys are refused by the handler). Each workspace is
+  decided through `ResolveMember`, never a second copy of bans, removals,
+  two-step verification or impersonation, and every case of
+  `AccessDenied` is named: a workspace that requires two-step
+  verification of a person without it is listed with `refused` and no
+  figure, one left meanwhile is left out, a ban refuses the whole read.
+  A section is read only where the actor holds the permission its page
+  checks (`sectionsFor`: `post:read`, `channel:read`, `engagement:read`,
+  `post:approve` for `mayApprove`) and is none otherwise, never zero, so
+  staff acting as a member get no inbox; the standing is every member's,
+  as `GET …/billing/standing` is. Its figures come from `OverviewSources`,
+  which `ContextOverviewSourcesLive` backs at the composition root with
+  one set-based read per context (publishing's `PostAttention`, the
+  channels' `ChannelOverview`, engagement's `InboxWaiting`, all ids in one
+  `anyUuid` parameter) and billing's `WorkspaceStanding`, which has no
+  form across workspaces and is asked per workspace of the page (50 at
+  most). Workspaces page by name then id (`workspacePage`), the agenda by
+  time then id, 31 days at most; cursors are opaque.
 - `ActorsNow` (`application/actors-now.ts`) is who someone a job acts for
   is now, from the ids it kept (a member, an application's grant read with
   `ConnectedAppStore.grantIn`, a workspace's or a partner's key, expiry

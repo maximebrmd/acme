@@ -19,6 +19,10 @@
   own workspace (`workspaceOfKey` in `Authenticate`: the one place to
   change if a key ever spans several). Past the rate limit it answers a
   JSON-RPC error with 429.
+- No tool reads across workspaces (the overview, the agenda, the report
+  of `/api/me`): a connection acts in the one workspace the person chose,
+  and a tool that read the others would hand a model what the person did
+  not connect. The command line has them.
 - The use cases' permission checks refuse a client the user let read only.
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,

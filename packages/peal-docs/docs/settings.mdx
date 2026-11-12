@@ -137,6 +137,16 @@ Each time a copy is downloaded, from the web app or the [command line](/cli#acco
 
 While you are the only owner of a workspace that other members use, the account cannot be deleted: Peal lists those workspaces. Make another member an owner of each, or delete them, first. When a workspace it would delete has a subscription Stripe may still bill, the dialog says what that ends and waits until you tick **Cancel the subscription now**, as [deleting a workspace](#delete-workspace) does: those subscriptions are cancelled at once, without a refund of the period paid for, and the confirmation email says so.
 
+## Across your workspaces [#across-workspaces]
+
+On the home page, each workspace's card says what needs attention there, each line a link to the page that shows it: posts that failed on a channel in the last 7 days, posts to check because a channel may have them live, posts waiting for an approval (and whether you may give it), channels to reconnect or turned off, comments waiting for an answer in the inbox, and a workspace over its plan, which publishes nothing until it is back within it. A workspace with nothing to attend says so once. Cards with something to attend come first.
+
+Each workspace shows only what your role there may read, as its own pages would: no inbox line where you may not read comments, for example, rather than a count of zero. A workspace that requires [two-step verification](#require-two-step) while your account does not have it on shows its badge and no figure at all, until you turn it on.
+
+**Agenda across workspaces**, on the home page when you belong to more than one, lists what goes out in the next 14 days in every workspace where you may read posts, by day in your time zone: each post's time, workspace, platforms and how its text starts, linked to the post in its workspace. Choose a workspace to see that one alone. It is a list, not the calendar's week: posts are moved within their own workspace's calendar.
+
+`GET /api/me/overview` and `GET /api/me/agenda` (`from`, `to`, at most 31 days apart, and `workspaceIds`, comma-separated) answer the same, and the command line has them as `peal overview` and `peal agenda` ([Command line](/cli#across-workspaces)). They answer a person: API keys, which belong to a workspace, and OAuth tokens bound to one workspace, such as an MCP client's, get 403. No MCP tool reads across workspaces: a connection acts in the one workspace you chose for it.
+
 ## Through the API [#api]
 
 | Endpoint                                 | What it does                                     |
