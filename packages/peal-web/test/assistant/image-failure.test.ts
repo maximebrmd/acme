@@ -7,7 +7,11 @@ import {
   MediaStoreUnavailable,
 } from "peal-contract";
 
-import { imageFailureKey, isImageRetryable } from "#assistant/image-failure.ts";
+import {
+  imageAllowanceHint,
+  imageFailureKey,
+  isImageRetryable,
+} from "#assistant/image-failure.ts";
 import { canGenerateImages } from "#assistant/permissions.ts";
 
 describe(imageFailureKey, () => {
@@ -52,5 +56,35 @@ describe(canGenerateImages, () => {
       canGenerateImages(["assistant:use"]),
       canGenerateImages(["media:upload"]),
     ]).toStrictEqual([true, false, false]);
+  });
+});
+
+describe(imageAllowanceHint, () => {
+  const images = {
+    aspects: ["square"] as const,
+    available: true,
+    dailyLimit: 20,
+    maxPromptLength: 1000,
+    requestCost: 5,
+  };
+
+  it("says when the plan makes no image, and when today is spent", () => {
+    expect([
+      imageAllowanceHint({
+        images: { ...images, dailyLimit: 3 },
+        remaining: 3,
+      }),
+      imageAllowanceHint({
+        images: { ...images, dailyLimit: 0 },
+        remaining: 20,
+      }),
+      imageAllowanceHint({ images, remaining: 4 }),
+      imageAllowanceHint({ images, remaining: 5 }),
+    ]).toStrictEqual([
+      "noImagesOnPlan",
+      "noImagesOnPlan",
+      "notEnoughToday",
+      null,
+    ]);
   });
 });

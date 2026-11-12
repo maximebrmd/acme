@@ -2,11 +2,12 @@ import { describe, expect, it } from "@effect/vitest";
 
 import {
   aiLabelOf,
+  aiLabelsNotice,
   labelledFor,
   labelledIn,
   presetAiLabels,
 } from "#posts/ai-labels.ts";
-import { initialValues } from "#posts/target-options.ts";
+import { channelOptionsOf, initialValues } from "#posts/target-options.ts";
 
 const youtube = { id: "c-youtube", platform: "youtube" } as const;
 const tiktok = { id: "c-tiktok", platform: "tiktok" } as const;
@@ -20,6 +21,7 @@ describe(presetAiLabels, () => {
       labelled: new Set(),
       madeByAi: true,
       values: {},
+      writable: true,
     });
 
     expect(preset.changed).toBeTruthy();
@@ -35,6 +37,7 @@ describe(presetAiLabels, () => {
       labelled: new Set(),
       madeByAi: false,
       values: {},
+      writable: true,
     });
 
     expect(preset.changed).toBeFalsy();
@@ -47,6 +50,7 @@ describe(presetAiLabels, () => {
       labelled: new Set(),
       madeByAi: true,
       values: {},
+      writable: true,
     });
 
     // The member turns the label off again: nothing turns it back on.
@@ -62,6 +66,7 @@ describe(presetAiLabels, () => {
       labelled: first.labelled,
       madeByAi: true,
       values: turnedOff,
+      writable: true,
     });
 
     expect(again.values[youtube.id]?.["containsSyntheticMedia"]).toBeFalsy();
@@ -72,6 +77,7 @@ describe(presetAiLabels, () => {
       labelled: again.labelled,
       madeByAi: true,
       values: again.values,
+      writable: true,
     });
 
     expect(settled.changed).toBeFalsy();
@@ -96,6 +102,7 @@ describe(presetAiLabels, () => {
       labelled: twice,
       madeByAi: true,
       values: { [tiktok.id]: { ...on, aiGenerated: false } },
+      writable: true,
     });
 
     expect(twice.has(tiktok.id)).toBeTruthy();
@@ -145,5 +152,94 @@ describe(labelledIn, () => {
       }),
     ]).toStrictEqual([youtube.id]);
     expect(labelledIn(undefined).size).toBe(0);
+  });
+});
+
+describe("a label the member settled", () => {
+  it("is sent and kept, so a reopened draft presets nothing", () => {
+    const preset = presetAiLabels({
+      channels: [x],
+      labelled: new Set(),
+      madeByAi: true,
+      values: {},
+      writable: true,
+    });
+
+    // The member turns it off: every other option is at its default.
+    const values = {
+      [x.id]: { ...preset.values[x.id], madeWithAi: false },
+    };
+
+    const { options } = channelOptionsOf(
+      [x],
+      values,
+      ["image"],
+      preset.labelled
+    );
+
+    expect(options.map(({ channelId }) => channelId)).toStrictEqual([x.id]);
+
+    const reopened = labelledIn({
+      targets: options.map(({ channelId, options: stored }) => ({
+        channelId,
+        options: stored,
+      })),
+    });
+
+    expect(
+      presetAiLabels({
+        channels: [x],
+        labelled: reopened,
+        madeByAi: true,
+        values,
+        writable: true,
+      }).changed
+    ).toBeFalsy();
+  });
+
+  it("is never preset on a post that cannot be written", () => {
+    expect(
+      presetAiLabels({
+        channels: [x, youtube],
+        labelled: new Set(),
+        madeByAi: true,
+        values: {},
+        writable: false,
+      }).changed
+    ).toBeFalsy();
+  });
+});
+
+describe(aiLabelsNotice, () => {
+  const on = { [x.id]: { ...initialValues("x"), madeWithAi: true } };
+
+  it("names where the label is on and where it is off", () => {
+    expect(
+      aiLabelsNotice({
+        channels: [x, youtube, bluesky],
+        madeByAi: true,
+        presetBy: new Set([x.id]),
+        values: on,
+      })
+    ).toStrictEqual({ _tag: "madeByAi", off: ["youtube"], on: ["x"] });
+  });
+
+  it("says a label Peal turned on stays on once the media is gone", () => {
+    expect(
+      aiLabelsNotice({
+        channels: [x, youtube],
+        madeByAi: false,
+        presetBy: new Set([x.id]),
+        values: on,
+      })
+    ).toStrictEqual({ _tag: "leftOn", platforms: ["x"] });
+    expect(
+      aiLabelsNotice({
+        channels: [x],
+        madeByAi: false,
+        presetBy: new Set(),
+        values: on,
+      })
+    ).toStrictEqual({ _tag: "none" });
   });
 });

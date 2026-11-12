@@ -275,12 +275,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   into the library, in `MediaPicker` (the new image is picked) and on the
   media page, for members `canGenerateImages` allows (assistant:use and
   media:upload) and only while the status answers `images.available`; it
-  shows the cost and the requests left, and a refusal of the quota or the
-  storage opens the upgrade dialog. The library and the picker mark
-  `aiGenerated` files. Attaching one presets the AI label of each channel
-  whose platform has one (`#posts/ai-labels.ts`, through `useAiLabels`):
-  once a channel, never over a label the member changed, which they may
-  turn off; `AiLabelsNotice` says so under the media.
+  shows the cost and the requests left (`imageAllowanceHint`) without
+  blocking: a refusal of the quota or the storage opens the upgrade dialog,
+  the free plan's and a trial's included. The library and the picker mark
+  `aiGenerated` files. Attaching one, to the post or a follow-up part,
+  presets the AI label of each channel whose platform has one
+  (`#posts/ai-labels.ts`, through `useAiLabels`): once a channel, only
+  while the post can be written, never over a label the member changed,
+  which they may turn off. A channel whose label is settled always sends
+  its options (`channelOptionsOf`'s `settled`), so a label turned off is
+  stored as off. `AiLabelsNotice` says where the label is on, where it is
+  not, and when one outlived the media.
 - A plan's refusal opens the one upgrade dialog (`UpgradeDialog`, its view
   `UpgradeView`): the limit with usage and plan, the smallest plan with
   room priced with VAT first (`offerOf`, from the contract's catalogue),

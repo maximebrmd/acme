@@ -363,6 +363,7 @@
     "close": "Close",
     "accepted": "Suggestion applied.",
     "images": {
+      "noImagesOnPlan": "Your workspace's plan makes no image today: an image costs more of the day's assistant requests than the plan holds for images (none during a trial).",
       "open": "Generate an image",
       "title": "Generate an image",
       "description": "Describe the picture you want. Your description goes to the image provider this Peal server uses, and the image is added to the media library, marked as made by AI.",
@@ -379,17 +380,17 @@
       "retry": "Try again",
       "generated": "The image is in the media library.",
       "errors": {
-        "unavailable": "This server makes no images.",
+        "unavailable": "This server makes no images now.",
         "quota": "Your workspace does not have enough assistant requests left today for an image.",
-        "storage": "Your workspace's media storage is full: there is no room for a new image.",
+        "storage": "Your workspace's media storage is full: there is no room for a new image. Nothing was spent.",
         "empty": "Describe the image first.",
         "tooLong": "The description is longer than the {maxLength, number} characters it may have.",
         "unreachable": "The image provider could not be reached. Nothing was spent: try again in a moment.",
-        "timedOut": "The image provider took too long to answer. Try again.",
-        "declined": "The image provider declined this description. Try another one.",
-        "invalidAnswer": "The image provider's answer could not be used. Try again.",
+        "timedOut": "The image provider took too long to answer. The requests it cost are spent, as it may have made the image.",
+        "declined": "The image provider declined this description. Nothing was spent: try another one.",
+        "invalidAnswer": "The image provider's answer could not be used. The requests it cost are spent.",
         "busy": "Two images are already being made in your workspace. Try again once one has finished.",
-        "storeDown": "The media storage could not be reached. Try again in a few minutes.",
+        "storeDown": "The image was made, but the media storage could not be reached to keep it. The requests it cost are spent; try again in a few minutes.",
         "forbidden": "Your role does not let you generate images.",
         "generic": "Something went wrong. Try again."
       }
@@ -1504,7 +1505,10 @@
     }
   },
   "PostMedia": {
-    "aiLabelsPreset": "This post shows media made by AI: Peal turned on the AI label on {platforms}. You can turn it off in each channel's options.",
+    "aiLabelsLeftOn": "No media made by AI is left in this post, but the AI label Peal turned on is still on for {platforms}. Turn it off in the channel's options if it no longer applies.",
+    "aiLabelsOff": "This post shows media made by AI, and has no AI label on {platforms}.",
+    "aiLabelsOn": "This post shows media made by AI: the AI label is on for {platforms}.",
+    "aiLabelsPreset": "This post shows media made by AI: the AI label is on for {platforms}. You can turn it off in each channel's options.",
     "aiMediaNoLabel": "This post shows media made by AI. Where a platform asks, say so in the post.",
     "count": "{count, plural, =0 {No image or video yet} one {# image or video} other {# images or videos}}, at most {maximum}.",
     "list": "Images and videos, in the order the post shows them",

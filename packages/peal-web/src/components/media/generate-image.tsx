@@ -31,7 +31,11 @@ import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { assistantStatus, generateImage } from "#assistant/api.ts";
-import { imageFailureKey, isImageRetryable } from "#assistant/image-failure.ts";
+import {
+  imageAllowanceHint,
+  imageFailureKey,
+  isImageRetryable,
+} from "#assistant/image-failure.ts";
 import type { ImageFailure } from "#assistant/image-failure.ts";
 import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import { mediaKey } from "#media/atoms.ts";
@@ -68,7 +72,8 @@ const GenerateDialog = ({
   const [generating, startTransition] = useTransition();
 
   const { images, remaining } = status;
-  const affordable = remaining >= images.requestCost;
+  // Shown, never blocking: a refusal of the quota opens the upgrade dialog.
+  const hint = imageAllowanceHint(status);
   const blank = prompt.trim() === "";
 
   const handleOpenChange = (next: boolean) => {
@@ -120,7 +125,7 @@ const GenerateDialog = ({
           onSubmit={(event) => {
             event.preventDefault();
 
-            if (!blank && affordable && !generating) {
+            if (!blank && !generating) {
               run();
             }
           }}
@@ -178,9 +183,13 @@ const GenerateDialog = ({
             {t("cost", { cost: images.requestCost, remaining })}
           </p>
           <div aria-live="polite" className="flex flex-col gap-2">
-            {affordable ? null : (
+            {hint === null ? null : (
               <Alert>
-                <AlertTitle>{t("notEnough")}</AlertTitle>
+                <AlertTitle>
+                  {hint === "noImagesOnPlan"
+                    ? t("noImagesOnPlan")
+                    : t("notEnough")}
+                </AlertTitle>
               </Alert>
             )}
             {generating ? (
@@ -209,7 +218,7 @@ const GenerateDialog = ({
             >
               {t("cancel")}
             </Button>
-            <Button type="submit" disabled={blank || !affordable || generating}>
+            <Button type="submit" disabled={blank || generating}>
               {failure !== null && isImageRetryable(failure)
                 ? t("retry")
                 : t("generate")}

@@ -1,6 +1,7 @@
 import { Match } from "effect";
 import type {
   AssistantFailed,
+  AssistantImagesStatus,
   AssistantInputRejected,
   AssistantQuotaExceeded,
   AssistantUnavailable,
@@ -79,3 +80,23 @@ export const isImageRetryable = (failure: ImageFailure): boolean =>
     "timedOut",
     "unreachable",
   ].includes(imageFailureKey(failure));
+
+/**
+ * What the dialog says before an image is asked for: the plan's day holds
+ * fewer requests than an image costs (as on the free plan, or during a
+ * trial), or today's are spent. Either way the request may still be sent:
+ * its refusal opens the upgrade dialog.
+ */
+export const imageAllowanceHint = ({
+  images,
+  remaining,
+}: {
+  readonly images: Pick<AssistantImagesStatus, "dailyLimit" | "requestCost">;
+  readonly remaining: number;
+}): "noImagesOnPlan" | "notEnoughToday" | null => {
+  if (images.dailyLimit < images.requestCost) {
+    return "noImagesOnPlan";
+  }
+
+  return remaining < images.requestCost ? "notEnoughToday" : null;
+};

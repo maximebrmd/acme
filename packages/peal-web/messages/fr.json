@@ -363,6 +363,7 @@
     "close": "Fermer",
     "accepted": "Suggestion appliquée.",
     "images": {
+      "noImagesOnPlan": "L’abonnement de votre espace de travail ne crée pas d’image aujourd’hui : une image coûte plus de demandes à l’assistant que l’abonnement n’en réserve aux images (aucune pendant un essai).",
       "open": "Générer une image",
       "title": "Générer une image",
       "description": "Décrivez l’image souhaitée. Votre description part chez le fournisseur d’images qu’utilise ce serveur Peal, et l’image est ajoutée à la médiathèque, marquée comme créée par IA.",
@@ -379,17 +380,17 @@
       "retry": "Réessayer",
       "generated": "L’image est dans la médiathèque.",
       "errors": {
-        "unavailable": "Ce serveur ne génère pas d’images.",
+        "unavailable": "Ce serveur ne génère pas d’images pour le moment.",
         "quota": "Il ne reste pas assez de demandes à l’assistant aujourd’hui à votre espace de travail pour une image.",
-        "storage": "Le stockage des médias de votre espace de travail est plein : il n’y a pas de place pour une nouvelle image.",
+        "storage": "Le stockage des médias de votre espace de travail est plein : il n’y a pas de place pour une nouvelle image. Rien n’a été décompté.",
         "empty": "Décrivez d’abord l’image.",
         "tooLong": "La description dépasse les {maxLength, number} caractères autorisés.",
         "unreachable": "Le fournisseur d’images est injoignable. Rien n’a été décompté : réessayez dans un instant.",
-        "timedOut": "Le fournisseur d’images a mis trop de temps à répondre. Réessayez.",
-        "declined": "Le fournisseur d’images a refusé cette description. Essayez-en une autre.",
-        "invalidAnswer": "La réponse du fournisseur d’images est inutilisable. Réessayez.",
+        "timedOut": "Le fournisseur d’images a mis trop de temps à répondre. Les demandes qu’elle a coûtées sont décomptées, car il a pu créer l’image.",
+        "declined": "Le fournisseur d’images a refusé cette description. Rien n’a été décompté : essayez-en une autre.",
+        "invalidAnswer": "La réponse du fournisseur d’images est inutilisable. Les demandes qu’elle a coûtées sont décomptées.",
         "busy": "Deux images sont déjà en cours de génération dans votre espace de travail. Réessayez quand l’une d’elles sera terminée.",
-        "storeDown": "Le stockage des médias est injoignable. Réessayez dans quelques minutes.",
+        "storeDown": "L’image a été créée, mais le stockage des médias est injoignable : elle n’a pas été conservée. Les demandes qu’elle a coûtées sont décomptées ; réessayez dans quelques minutes.",
         "forbidden": "Votre rôle ne vous permet pas de générer des images.",
         "generic": "Une erreur est survenue. Réessayez."
       }
@@ -1504,7 +1505,10 @@
     }
   },
   "PostMedia": {
-    "aiLabelsPreset": "Cette publication montre un média créé par IA : Peal a activé la mention IA sur {platforms}. Vous pouvez la désactiver dans les options de chaque canal.",
+    "aiLabelsLeftOn": "Cette publication ne montre plus de média créé par IA, mais la mention IA activée par Peal l’est toujours sur {platforms}. Désactivez-la dans les options du canal si elle ne s’applique plus.",
+    "aiLabelsOff": "Cette publication montre un média créé par IA, sans mention IA sur {platforms}.",
+    "aiLabelsOn": "Cette publication montre un média créé par IA : la mention IA est activée sur {platforms}.",
+    "aiLabelsPreset": "Cette publication montre un média créé par IA : la mention IA est activée sur {platforms}. Vous pouvez la désactiver dans les options de chaque canal.",
     "aiMediaNoLabel": "Cette publication montre un média créé par IA. Là où une plateforme le demande, indiquez-le dans la publication.",
     "count": "{count, plural, =0 {Aucune image ni vidéo pour l’instant} one {# image ou vidéo} other {# images ou vidéos}}, {maximum} au plus.",
     "list": "Images et vidéos, dans l’ordre où la publication les montre",

@@ -339,24 +339,34 @@ export const Composer = ({
   // so every option shows, while one is still being read.
   const mediaKinds = mediaKindsOf(attached);
 
-  // The options to send, and what is wrong with those filled in: while
-  // anything is, the post is neither saved nor scheduled. An option the
-  // media hide is not sent.
-  const { options, problems: optionProblems } = channelOptionsOf(
-    selected,
-    optionValues,
-    mediaKinds
-  );
-
-  const optionsTaken = optionProblems.length === 0;
+  // Every attachment of the post, its follow-up parts' included: media
+  // made by AI in any part presets the AI labels.
+  const everyAttached = useAttachedMedia(workspaceId, [
+    ...media,
+    ...parts.flatMap((part) => part.media),
+  ]);
 
   const aiLabels = useAiLabels({
-    attached,
+    attached: everyAttached,
     optionValues,
     post,
     selected,
     setOptionValues,
+    writable: canWrite,
   });
+
+  // The options to send, and what is wrong with those filled in: while
+  // anything is, the post is neither saved nor scheduled. An option the
+  // media hide is not sent; a channel whose AI label was settled always
+  // sends its options, so the label is kept as chosen.
+  const { options, problems: optionProblems } = channelOptionsOf(
+    selected,
+    optionValues,
+    mediaKinds,
+    aiLabels.labelled
+  );
+
+  const optionsTaken = optionProblems.length === 0;
 
   const optionsOfChannel = (channelId: string) =>
     options.find((chosen) => chosen.channelId === channelId)?.options;

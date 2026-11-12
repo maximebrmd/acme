@@ -1,44 +1,56 @@
 "use client";
 
 import { Option } from "effect";
-import type { Platform, Post } from "peal-contract";
+import type { Platform } from "peal-contract";
 import { useState } from "react";
 
 import {
-  aiLabelOf,
+  aiLabelsNotice,
   labelledFor,
   labelledIn,
   presetAiLabels,
 } from "#posts/ai-labels.ts";
+import type { AiLabelsNotice } from "#posts/ai-labels.ts";
 import type { AttachedMedia } from "#posts/media-fit.ts";
 import type { OptionValues, ValuesByChannel } from "#posts/target-options.ts";
 
 interface AiLabelsInput {
+  /** Every attachment of the post, its follow-up parts' included. */
   readonly attached: readonly AttachedMedia[];
   readonly optionValues: ValuesByChannel;
-  readonly post: Post | undefined;
+  readonly post:
+    | {
+        readonly targets: readonly {
+          readonly channelId: string;
+          readonly options: object | null;
+        }[];
+      }
+    | undefined;
   readonly selected: readonly {
     readonly id: string;
     readonly platform: Platform;
   }[];
   readonly setOptionValues: (values: ValuesByChannel) => void;
+  /** Whether the member may change the post now: a draft they may write. */
+  readonly writable: boolean;
 }
 
-/** Whether the post shows media made by AI, and what the composer did. */
+/** What the composer did with the AI labels, and what to say of them. */
 export interface AiLabels {
   /** Tells that the member changed a channel's options to `values`. */
   readonly changed: (channelId: string, values: OptionValues) => void;
-  readonly madeByAi: boolean;
-  /** The platforms of the post whose AI label Peal turned on. */
-  readonly platforms: readonly Platform[];
+  /** The channels whose label is settled: their options are always sent. */
+  readonly labelled: ReadonlySet<string>;
+  readonly notice: AiLabelsNotice;
+  readonly writable: boolean;
 }
 
 /**
  * The composer's AI labels: once the post shows media made by AI, each
  * selected channel whose platform has a label gets it on, once, unless the
- * member chose it (`presetAiLabels`). The preset is applied while
- * rendering, as the attachments arrive, which converges: a channel is
- * preset at most once.
+ * member chose it (`presetAiLabels`), and only while the post can be
+ * written. The preset is applied while rendering, as the attachments
+ * arrive, which converges: a channel is preset at most once.
  */
 export const useAiLabels = ({
   attached,
@@ -46,9 +58,15 @@ export const useAiLabels = ({
   post,
   selected,
   setOptionValues,
+  writable,
 }: AiLabelsInput): AiLabels => {
   const [labelled, setLabelled] = useState<ReadonlySet<string>>(() =>
     labelledIn(post)
+  );
+
+  // The channels whose label Peal turned on.
+  const [presetBy, setPresetBy] = useState<ReadonlySet<string>>(
+    () => new Set()
   );
 
   const madeByAi = attached.some(({ media }) =>
@@ -60,11 +78,13 @@ export const useAiLabels = ({
     labelled,
     madeByAi,
     values: optionValues,
+    writable,
   });
 
   if (preset.changed) {
     setOptionValues(preset.values);
     setLabelled(preset.labelled);
+    setPresetBy(new Set([...presetBy, ...preset.presetNow]));
   }
 
   return {
@@ -77,15 +97,13 @@ export const useAiLabels = ({
         );
       }
     },
-    madeByAi,
-    platforms: madeByAi
-      ? [
-          ...new Set(
-            selected.flatMap(({ platform }) =>
-              aiLabelOf(platform) === undefined ? [] : [platform]
-            )
-          ),
-        ]
-      : [],
+    labelled: preset.labelled,
+    notice: aiLabelsNotice({
+      channels: selected,
+      madeByAi,
+      presetBy,
+      values: preset.values,
+    }),
+    writable,
   };
 };
