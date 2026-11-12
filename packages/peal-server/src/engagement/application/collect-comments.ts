@@ -493,9 +493,9 @@ export class CollectComments extends Context.Service<
             if (
               Option.match(current, {
                 onNone: () => true,
-                onSome: ({ thread: now }) =>
-                  now.collection._tag === "ended" &&
-                  now.collection.reason === "disconnected",
+                onSome: ({ thread: stored }) =>
+                  stored.collection._tag === "ended" &&
+                  stored.collection.reason === "disconnected",
               })
             ) {
               const dropped: Reconciled = { changed: [], received: [] };
