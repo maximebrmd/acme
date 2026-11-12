@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Option, Schema } from "effect";
+import { Config, DateTime, Duration, Effect, Option, Schema } from "effect";
 import type { Redacted } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 
@@ -95,11 +95,23 @@ export const youtubeRefreshWithin = Duration.days(29);
 
 /**
  * The quota units comment reads may spend a Pacific day, across every
- * channel of the server: half of the project's 10,000, so publishing's
- * calls and analytics' keep the rest. Replies, hides and withdrawals are
- * a person's acts and are never held by it.
+ * channel of the server, unless `YOUTUBE_DAILY_COMMENT_UNITS` says
+ * otherwise: 3,000 of the project's 10,000, beside custom thumbnails'
+ * 4,000, which leaves 3,000 for what Peal does not count (a person's
+ * replies, hides and withdrawals, publishing's status reads and lookups,
+ * analytics). Replies, hides and withdrawals are never held by it.
  */
-export const youtubeCommentsDailyUnits = 5000;
+export const youtubeCommentsDailyUnits = 3000;
+
+/**
+ * `YOUTUBE_DAILY_COMMENT_UNITS`: the units comment reads may spend a day,
+ * across the server; 0 reads none. A value that is not a whole number
+ * stops the server.
+ */
+export const youtubeCommentUnitsConfig = Config.schema(
+  Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  "YOUTUBE_DAILY_COMMENT_UNITS"
+).pipe(Config.withDefault(youtubeCommentsDailyUnits));
 
 /** The ledger bucket comment reads are counted in, one unit a call. */
 export const youtubeCommentsBucket = "comments:youtube";

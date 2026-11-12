@@ -35,6 +35,7 @@ import { facebookEngagement } from "#engagement/infrastructure/platforms/meta/fa
 import { instagramEngagement } from "#engagement/infrastructure/platforms/meta/instagram-engagement.ts";
 import { maxThreadBytes } from "#engagement/infrastructure/platforms/thread-body.ts";
 import {
+  youtubeCommentUnitsConfig,
   youtubeEngagement,
   youtubeRefreshWithin,
 } from "#engagement/infrastructure/platforms/youtube/youtube-engagement.ts";
@@ -66,6 +67,8 @@ export interface EngagementSettings {
   readonly metaHosts: MetaHosts;
   /** The YouTube Data API's origin. */
   readonly youtubeApi: URL;
+  /** The units comment reads may spend a day (`YOUTUBE_DAILY_COMMENT_UNITS`). */
+  readonly youtubeCommentUnits: number;
 }
 
 /**
@@ -158,6 +161,7 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         }),
         youtube: yield* youtubeEngagement({
           api: settings.youtubeApi,
+          dailyUnits: settings.youtubeCommentUnits,
           http,
           reader,
         }),
@@ -398,14 +402,18 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
  * composition root provides.
  */
 export const PlatformEngagementLive = Layer.unwrap(
-  metaAppConfig.pipe(
-    Effect.map((app) =>
+  Effect.all({
+    app: metaAppConfig,
+    youtubeCommentUnits: youtubeCommentUnitsConfig,
+  }).pipe(
+    Effect.map(({ app, youtubeCommentUnits }) =>
       platformEngagementWith({
         blueskyAppView: new URL("https://public.api.bsky.app"),
         mastodonScheme: "https:",
         metaAppSecret: app.pipe(Option.map(({ appSecret }) => appSecret)),
         metaHosts,
         youtubeApi: new URL("https://www.googleapis.com"),
+        youtubeCommentUnits,
       })
     )
   )

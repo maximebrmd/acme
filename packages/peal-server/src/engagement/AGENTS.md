@@ -205,8 +205,10 @@
   next read forgets it. 403 `commentsDisabled` reads nothing and is not
   complete; 404 `videoNotFound` is `missing`; `insufficientPermissions`
   pauses the channel on a batch's first thread and fails a later one.
-  Each read call spends a unit of `youtubeCommentsDailyUnits` (5,000, half
-  the project's 10,000, by Pacific day) in publishing's `PlatformQuota`
+  Each read call spends a unit of `youtubeCommentsDailyUnits` (3,000 of
+  the project's 10,000 by Pacific day, `YOUTUBE_DAILY_COMMENT_UNITS`;
+  with thumbnails' 4,000 it leaves 3,000, `youtubeReservedUnits` at
+  least, for what Peal does not count) in publishing's `PlatformQuota`
   ledger (`comments:youtube`, shared by every process); past it, or on
   `quotaExceeded`, which exhausts the bucket, the read halts until the
   next day. Replies, hides and withdrawals are a person's acts and are

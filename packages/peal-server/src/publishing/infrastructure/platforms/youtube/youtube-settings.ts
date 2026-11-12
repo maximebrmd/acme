@@ -8,12 +8,14 @@ import { Config, Schema } from "effect";
 export const defaultDailyUploads = 100;
 
 /**
- * How many custom thumbnails the server sets a day: 100 by default. Each
+ * How many custom thumbnails the server sets a day: 80 by default. Each
  * thumbnails.set costs about 50 units of the project's general quota
  * (10,000 a day by default, "approximately 50 units", read 2026-11-11), so
- * the default spends half of it and leaves lookups and polls theirs.
+ * the default spends 4,000 of them; comment reads take 3,000
+ * (`YOUTUBE_DAILY_COMMENT_UNITS`), which leaves 3,000 for replies,
+ * lookups, polls and analytics (`youtubeReservedUnits` at least).
  */
-export const defaultDailyThumbnails = 100;
+export const defaultDailyThumbnails = 80;
 
 /**
  * `YOUTUBE_DAILY_THUMBNAILS`: the thumbnails this server sets a day,
