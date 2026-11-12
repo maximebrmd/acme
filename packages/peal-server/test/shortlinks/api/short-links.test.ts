@@ -27,7 +27,7 @@ import { securityTest } from "#workspace/api/security.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 import type { Role } from "#workspace/domain/roles.ts";
 
-const base = "https://go.example.test/";
+const base = "https://go.example.com/";
 
 const ShortLinksTest = ShortLinksLive.pipe(
   Layer.provide(OpenLinkStanding),

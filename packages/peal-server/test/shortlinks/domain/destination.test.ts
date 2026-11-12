@@ -7,7 +7,7 @@ import {
   maxDestinationLength,
 } from "#shortlinks/domain/destination.ts";
 
-const base = new URL("https://go.example.test/");
+const base = new URL("https://go.example.com/");
 
 describe("what a short link may lead to", () => {
   it("is an absolute http or https address", () => {
@@ -25,7 +25,7 @@ describe("what a short link may lead to", () => {
   });
 
   it("is not on the short links' own host", () => {
-    expect(isShortenable("https://go.example.test/AbC1234", base)).toBeFalsy();
+    expect(isShortenable("https://go.example.com/AbC1234", base)).toBeFalsy();
   });
 
   it("is not longer than the longest kept", () => {

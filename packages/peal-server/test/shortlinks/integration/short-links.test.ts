@@ -35,7 +35,7 @@ import { ShortLinkBaseLive } from "#shortlinks/infrastructure/short-link-setting
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
 import { OpenLinkStanding } from "#test/shortlinks/support.ts";
 
-const base = "https://go.example.test/";
+const base = "https://go.example.com/";
 
 const browser = {
   method: "GET",
