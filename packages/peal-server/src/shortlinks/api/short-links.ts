@@ -17,12 +17,7 @@ import { ShortLinkSettings } from "#shortlinks/application/short-link-settings.t
 import type { InvalidClickRange } from "#shortlinks/domain/invalid-click-range.ts";
 import { ShortLinkIdSchema } from "#shortlinks/domain/short-link-id.ts";
 
-import {
-  dayView,
-  linkView,
-  periodView,
-  statusView,
-} from "./short-links-view.ts";
+import { pageView, reportView, statusView } from "./short-links-view.ts";
 
 const decodeLinkId = Schema.decodeUnknownOption(ShortLinkIdSchema);
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
@@ -117,13 +112,7 @@ export const ShortLinksHandlers = HttpApiBuilder.group(
               })
             );
 
-          return {
-            items: report.links.map(({ clicks, link }) =>
-              linkView(link, clicks, written)
-            ),
-            nextCursor: Option.getOrNull(report.next),
-            period: periodView(report.range),
-          };
+          return pageView(report, written);
         })
       )
       .handle("get", ({ params, query }) =>
@@ -149,19 +138,7 @@ export const ShortLinksHandlers = HttpApiBuilder.group(
               })
             );
 
-          const total = report.days.reduce(
-            (sum, { clicks }) => sum + clicks,
-            0
-          );
-
-          return {
-            days: report.days.map(({ clicks, day }) => ({
-              clicks,
-              day: dayView(day),
-            })),
-            link: linkView(report.link, total, written),
-            period: periodView(report.range),
-          };
+          return reportView(report, written);
         })
       );
   })

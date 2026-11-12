@@ -60,6 +60,12 @@
 - `get_usage` (`reports-tools.ts`) answers the usage endpoint's view
   (`#billing/api/usage-view.ts`), with `from` and `to` as text days;
   `get_billing` stays as it is. The CLI's is `peal usage`.
+- `get_short_link_status`, `list_short_links` and `get_short_link`
+  (`reports-tools.ts`) answer the short links endpoints' views
+  (`#shortlinks/api/short-links-view.ts`); their descriptions say counts
+  are approximate and nothing about visitors is kept. `shortenLinks` on
+  the post tools asks for short links; no tool shortens an address
+  outside a post. The CLI's is `peal short-links`.
 - `get_channel_capabilities` and `run_channel_lookup`
   (`capabilities-tools.ts`) answer the views of the capabilities and lookups
   endpoints; they read, and are open world, as they may ask the platform.

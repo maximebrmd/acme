@@ -16,6 +16,13 @@ import {
   maxTopPosts,
   maxActivityPageSize,
   PostAnalyticsSchema,
+  defaultShortLinkRangeDays,
+  maxShortLinkPageSize,
+  maxShortLinkRangeDays,
+  shortLinkClickRetentionDays,
+  ShortLinkPageSchema,
+  ShortLinkReportSchema,
+  ShortLinkStatusSchema,
   WorkspaceUsageReportSchema,
 } from "peal-contract";
 
@@ -134,9 +141,57 @@ export const ListActivity = Tool.make("list_activity", {
   .annotateMerge(reading)
   .annotate(Tool.Title, "List activity");
 
+const approximateClicks = `Clicks are counted by UTC day and kept ${String(shortLinkClickRetentionDays)} days; automated readers (crawlers, link previews) and prefetches are left out by their names, so counts are approximate, and nothing about visitors is kept.`;
+
+export const GetShortLinkStatus = Tool.make("get_short_link_status", {
+  dependencies: [CurrentMember],
+  description:
+    "Answers whether this server shortens links (`available`: off unless its operator set where short links live), what a short address starts with (`base`) and how long it is (`shortLength`), and whether the workspace's new posts ask for short links by default (`byDefault`, which the web app's composer starts from). A post that asks (`shortenLinks` on create_draft, update_draft, create_post, create_posts) goes out with each link written with http:// or https:// and longer than a short address replaced, per channel; the text kept stays as written, and Pinterest keeps links as written.",
+  failure: ToolRefused,
+  parameters: Tool.EmptyParams,
+  success: ShortLinkStatusSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Get the short links' status");
+
+const clickDays = {
+  from: Schema.optionalKey(CalendarDaySchema),
+  to: Schema.optionalKey(CalendarDaySchema),
+};
+
+export const ListShortLinks = Tool.make("list_short_links", {
+  dependencies: [CurrentMember],
+  description: `Lists the short links the workspace's posts went out with, newest first, those of one post (\`postId\`) or one channel (\`channelId\`), each with where it leads, its post, channel and part, and its clicks from \`from\` to \`to\` (UTC days, both included, ${String(maxShortLinkRangeDays)} at most; the last ${String(defaultShortLinkRangeDays)} by default). Pass \`nextCursor\` as \`cursor\` for the next page (${String(maxShortLinkPageSize)} links at most a page). ${approximateClicks} Needs analytics:read.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelId: Schema.optionalKey(Schema.String),
+    cursor: Schema.optionalKey(Schema.String),
+    limit: Schema.optionalKey(
+      Schema.Int.check(
+        Schema.isBetween({ maximum: maxShortLinkPageSize, minimum: 1 })
+      )
+    ),
+    postId: Schema.optionalKey(Schema.String),
+    ...clickDays,
+  }),
+  success: ShortLinkPageSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "List short links");
+
+export const GetShortLink = Tool.make("get_short_link", {
+  dependencies: [CurrentMember],
+  description: `Answers one short link, by the id list_short_links gives, with its clicks each UTC day from \`from\` to \`to\` (both included, ${String(maxShortLinkRangeDays)} at most; the last ${String(defaultShortLinkRangeDays)} by default), oldest first. ${approximateClicks} Needs analytics:read.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({ linkId: Schema.String, ...clickDays }),
+  success: ShortLinkReportSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Get a short link");
+
 /**
  * The tools that read how the workspace's posts did, its plan and what it
- * used of it, and what was changed in it, by whom.
+ * used of it, what was changed in it, by whom, and its short links' clicks.
  */
 export const ReportTools = Toolkit.make(
   AnalyticsSummary,
@@ -145,5 +200,8 @@ export const ReportTools = Toolkit.make(
   PostAnalytics,
   GetBilling,
   GetUsage,
-  ListActivity
+  ListActivity,
+  GetShortLinkStatus,
+  ListShortLinks,
+  GetShortLink
 );

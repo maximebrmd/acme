@@ -68,6 +68,13 @@ const options = PostDraftSchema.fields.options.schema.annotate({
 });
 
 // The API's tags of a post, by id.
+// Whether the post's links go out shortened: an approximate count of
+// their clicks, nothing about visitors, list_short_links reads.
+const { shortenLinks } = NewPostSchema.fields;
+
+const shortened =
+  "Pass `shortenLinks: true` to send its links shortened where the server has short links (get_short_link_status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks, approximately and with nothing kept about visitors (list_short_links); the text kept stays as written, and Pinterest keeps links as written.";
+
 const tagIds = PostDraftSchema.fields.tagIds.schema.annotate({
   description:
     "The workspace's tags the post is filed under, as list_tags answers their ids, each once. Tags say nothing to the platforms.",
@@ -133,12 +140,13 @@ export const GetPost = Tool.make("get_post", {
 
 export const CreateDraft = Tool.make("create_draft", {
   dependencies: [CurrentMember],
-  description: `Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the parts that follow it, the channels it is for, the options of those whose platform asks for more (X, LinkedIn, Bluesky, Mastodon, Threads, Instagram, Facebook, TikTok, YouTube, Pinterest, Google Business Profile), and the workspace's tags it is filed under (\`tagIds\`, none when left out). The parts are \`content.followUps\`, in order, each with its text, media, texts by channel and \`delaySeconds\`, the wait after the part before it: replies in a thread on the platforms whose channels get_channel_capabilities describes with \`followUps\`, refused when scheduled on the others. ${takesSaved} A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.`,
+  description: `Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the parts that follow it, the channels it is for, the options of those whose platform asks for more (X, LinkedIn, Bluesky, Mastodon, Threads, Instagram, Facebook, TikTok, YouTube, Pinterest, Google Business Profile), and the workspace's tags it is filed under (\`tagIds\`, none when left out). The parts are \`content.followUps\`, in order, each with its text, media, texts by channel and \`delaySeconds\`, the wait after the part before it: replies in a thread on the platforms whose channels get_channel_capabilities describes with \`followUps\`, refused when scheduled on the others. ${takesSaved} A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once. ${shortened}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelIds,
     content: PostContentSchema,
     options: Schema.optionalKey(options),
+    shortenLinks,
     tagIds: Schema.optionalKey(tagIds),
     ...saved,
   }),
@@ -151,13 +159,14 @@ export const CreateDraft = Tool.make("create_draft", {
 
 export const UpdateDraft = Tool.make("update_draft", {
   dependencies: [CurrentMember],
-  description: `Replaces a draft's content and channels with those given: text, media, parts (\`content.followUps\`) and channels left out are removed from it. Read the draft with get_post first, and send back what should stay. Without \`options\`, the draft keeps the options it has on the channels it keeps; with them, they replace its options, and \`[]\` removes them all. Without \`tagIds\`, it keeps its tags too; with them, they replace its tags. ${namesSets} ${signs} A draft that changes takes no channel's default options: a channel without options takes those a set it names keeps for it, or none. A post scheduled or sent is not a draft, and is refused.`,
+  description: `Replaces a draft's content and channels with those given: text, media, parts (\`content.followUps\`) and channels left out are removed from it. Read the draft with get_post first, and send back what should stay. Without \`options\`, the draft keeps the options it has on the channels it keeps; with them, they replace its options, and \`[]\` removes them all. Without \`tagIds\`, it keeps its tags too; with them, they replace its tags. ${namesSets} ${signs} A draft that changes takes no channel's default options: a channel without options takes those a set it names keeps for it, or none. A post scheduled or sent is not a draft, and is refused. Without \`shortenLinks\`, it keeps its own choice. ${shortened}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelIds,
     content: PostContentSchema,
     options: Schema.optionalKey(options),
     postId,
+    shortenLinks,
     tagIds: Schema.optionalKey(tagIds),
     ...saved,
   }),
@@ -540,7 +549,7 @@ export const CancelPost = Tool.make("cancel_post", {
 
 export const CreatePost = Tool.make("create_post", {
   dependencies: [CurrentMember],
-  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the parts that follow it (\`content.followUps\`: a thread where the platform has threads, each part sent in order, after its \`delaySeconds\`, and never after a part that failed), the options of the channels whose platform asks for more (YouTube, TikTok), the workspace's tags it is filed under (\`tagIds\`), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${takesSaved} A set none of whose channels is left, with no other channel, is refused. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. Apart from keys, a post whose content already goes to one of its channels less than ${String(duplicateWindowHours)} hours from its time is refused, naming the post that has it: pass \`allowDuplicate: true\` only when the user means to post the same twice. ${waitsForOutcome} ${mayWait} ${needsPublishing}`,
+  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the parts that follow it (\`content.followUps\`: a thread where the platform has threads, each part sent in order, after its \`delaySeconds\`, and never after a part that failed), the options of the channels whose platform asks for more (YouTube, TikTok), the workspace's tags it is filed under (\`tagIds\`), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${takesSaved} A set none of whose channels is left, with no other channel, is refused. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. Apart from keys, a post whose content already goes to one of its channels less than ${String(duplicateWindowHours)} hours from its time is refused, naming the post that has it: pass \`allowDuplicate: true\` only when the user means to post the same twice. ${shortened} An edit of a live post (edit_published_post) sends the text as written. ${waitsForOutcome} ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     allowDuplicate: NewPostSchema.fields.allowDuplicate,
@@ -548,6 +557,7 @@ export const CreatePost = Tool.make("create_post", {
     content: NewPostSchema.fields.content,
     idempotencyKey: BulkPostSchema.fields.idempotencyKey,
     options: NewPostSchema.fields.options,
+    shortenLinks,
     tagIds: NewPostSchema.fields.tagIds,
     waitSeconds,
     when,
@@ -567,6 +577,7 @@ const newPost = {
   content: NewPostSchema.fields.content,
   idempotencyKey: BulkPostSchema.fields.idempotencyKey,
   options: NewPostSchema.fields.options,
+  shortenLinks,
   tagIds: NewPostSchema.fields.tagIds,
   when,
   ...saved,
@@ -592,13 +603,14 @@ export const CreatePosts = Tool.make("create_posts", {
 
 export const ValidatePost = Tool.make("validate_post", {
   dependencies: [CurrentMember],
-  description: `Checks a post without making it, and changes nothing: call it before create_post, create_posts or schedule_post to know what would be refused, and what each channel would receive. It answers \`valid\`, and everything that would refuse the post, all at once: per channel (\`channels\`), the text the channel receives, counted as its platform counts it against each of its limits (\`textCounts\`), its hashtags, mentions, links and media against the platform's maximum, the same for each part after the first of a thread (\`parts\`, by its place from 1), and every violation of the platform's rules and of the account's own, in any part; \`unknownChannels\` and \`unknownMedia\`, which are not the workspace's; and, when \`when\` is given, \`schedule\` (ok, inPast or invalidTimeZone), \`planLimit\` (the plan's limit it would pass, or null) \`duplicates\` (the channels that already have the same content from another post near its time) and \`awaitsApproval\` (whether the post would be made and then wait for a person to approve it, which refuses nothing). Leave \`when\` out to check a draft's content alone. It takes what the post would name of what the workspace saved, and checks the post as filled in: ${takesSaved} A post valid now can still be refused later: a channel disconnected, a month filled meanwhile.`,
+  description: `Checks a post without making it, and changes nothing: call it before create_post, create_posts or schedule_post to know what would be refused, and what each channel would receive. It answers \`valid\`, and everything that would refuse the post, all at once: per channel (\`channels\`), the text the channel receives, counted as its platform counts it against each of its limits (\`textCounts\`), its hashtags, mentions, links and media against the platform's maximum, the same for each part after the first of a thread (\`parts\`, by its place from 1), and every violation of the platform's rules and of the account's own, in any part; \`unknownChannels\` and \`unknownMedia\`, which are not the workspace's; and, when \`when\` is given, \`schedule\` (ok, inPast or invalidTimeZone), \`planLimit\` (the plan's limit it would pass, or null) \`duplicates\` (the channels that already have the same content from another post near its time) and \`awaitsApproval\` (whether the post would be made and then wait for a person to approve it, which refuses nothing). Leave \`when\` out to check a draft's content alone. It takes what the post would name of what the workspace saved, and checks the post as filled in: ${takesSaved} A post valid now can still be refused later: a channel disconnected, a month filled meanwhile. \`shortenLinks\` changes nothing it answers: a short address is never longer than the link it replaces, so the text is checked as written.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     allowDuplicate: NewPostSchema.fields.allowDuplicate,
     channelIds,
     content: PostContentSchema,
     options: Schema.optionalKey(options),
+    shortenLinks,
     when: Schema.optionalKey(when),
     ...saved,
   }),
