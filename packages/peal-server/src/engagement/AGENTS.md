@@ -22,7 +22,19 @@
   copies both (`inboxWindowDays`, `inboxRetentionDays`), the registry
   states them (`inbox` in `peal-contract/data-processing`), and the
   privacy policy's table and the docs' Inbox page follow: change them
-  together. Erasing a workspace deletes its threads and records it in
+  together. A platform may bound how long what it gives is kept without
+  being read again: the gate puts its bound on every batch
+  (`refreshWithin`, from `keptWithoutRefresh` in
+  `platform-engagement.ts`; YouTube's 29 days), `recordCollection` stamps
+  the thread's `refresh_by` at each read, and `PurgeEngagement.forgetExpired`
+  (hourly, `engagement.refresh-bound`, and before each daily purge)
+  forgets, under the thread's lock and while the bound is still past, the
+  comments of a thread no read reached in time (`expireComment`: the
+  `deleted` shape, with `expired_at`, shown as `forgotten: "expired"`); a
+  later read writes them back. A channel gone (`ChannelEvents.disconnected`,
+  through `engagementChannelEvents`) forgets at once its threads' comments
+  that carry a bound (`EngagementRecords.channelGone`); the others end at
+  their next read and keep their retention. Erasing a workspace deletes its threads and records it in
   `engagement.erased_workspaces` under the following lock, as analytics
   does; a closed account leaves its replies without an author
   (`EngagementRecords.forgetUser`), and its export lists the replies it
@@ -135,8 +147,7 @@
   (`infrastructure/platforms/engagement-platform.ts`) and entering
   `engagedPlatforms`, `abilitiesOf` and the registry in
   `platform-engagement.ts`, which does not compile without it; the
-  contract's `inboxPlatforms` and the docs' table follow. YouTube needs the
-  `youtube.force-ssl` scope (Google verification), not asked today.
+  contract's `inboxPlatforms` and the docs' table follow.
 - Facebook Pages and Instagram are read only where `PEAL_INBOX_PLATFORMS`
   names them (`#shared/infrastructure/inbox-platforms.ts`, read once into
   `CurrentInboxPlatforms`; another name, or a platform without its app,
@@ -178,6 +189,34 @@
   out by what it shows), watch `X-Business-Use-Case-Usage` there, and
   have the privacy policy name the two platforms (the registry's `inbox`
   entry, then the legal pages, through counsel).
+- YouTube is read only where `PEAL_INBOX_PLATFORMS` names it (with
+  `YOUTUBE_CLIENT_ID` and its secret), as Google verifies an app for
+  `youtube.force-ssl` (`youtubeCommentScope`), the one scope of every
+  comment method; the sign-in asks it as optional (`googleOAuth`'s
+  `optionalScopes`), off byte for byte as before. Read, reply, withdraw
+  and hide take it; YouTube has no like, and only an author deletes. The
+  adapter (`infrastructure/platforms/youtube/`) cites the API's pages and
+  the date read: `commentThreads.list` by video (100 a page, `order=time`,
+  plain text), then `comments.list` for a thread that came with fewer
+  replies than `totalReplyCount`; a reply goes under the top-level comment
+  (one level), hide rejects (never `banAuthor`), show publishes (the
+  reference and the guide disagree whether YouTube allows it: a refusal
+  changes nothing), and a rejected comment is no longer listed, so the
+  next read forgets it. 403 `commentsDisabled` reads nothing and is not
+  complete; 404 `videoNotFound` is `missing`; `insufficientPermissions`
+  pauses the channel on a batch's first thread and fails a later one.
+  Each read call spends a unit of `youtubeCommentsDailyUnits` (5,000, half
+  the project's 10,000, by Pacific day) in publishing's `PlatformQuota`
+  ledger (`comments:youtube`, shared by every process); past it, or on
+  `quotaExceeded`, which exhausts the bucket, the read halts until the
+  next day. Replies, hides and withdrawals are a person's acts and are
+  never held by it. A resume never sends: it lists the replies under the
+  top-level comment and uses `foundAmong`
+  (`infrastructure/platforms/resumed-reply.ts`, Meta's rule). Never run
+  against YouTube: before the setting is turned on anywhere, read, answer,
+  hide, show and withdraw one comment on a test channel (a reply to a
+  reply among them), and watch the project's quota for a day; have the
+  privacy policy name YouTube, and Google verify the scope.
 - Threads of a platform that is off end `unsupported` at their first
   read, and stay ended when the setting is turned on: only posts published
   afterwards are read. They are not reopened, because a thread does not
@@ -206,7 +245,9 @@
   or author, ids as one `anyUuid` parameter, no permission checked.
 - Test use cases on the in-memory world (`test/engagement/fakes/world.ts`),
   the store on Postgres at instants no other suite uses (2043; the purge
-  in 2031), deleting the workspace's rows after.
+  in 2031; the refresh bound in 1923, before the test clock's start, as
+  moving it forward past the pool's timers stalls the pool), deleting the
+  workspace's rows after.
 - Every string a platform gives is cleaned before anything keeps or
   compares it (`storableReading`, on `#shared/domain/platform-text.ts`):
   no NUL, no lone surrogate, no control character, a bounded text, name,

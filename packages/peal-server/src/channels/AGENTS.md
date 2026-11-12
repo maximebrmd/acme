@@ -145,7 +145,13 @@
   (`commentScopes`, Instagram Login's `instagramLoginScopes`), which a
   member may decline and still connect; off, they ask what they asked
   before, as `test/channels/infrastructure/meta-comment-scopes.test.ts`
-  holds.
+  holds. Where it names YouTube, YouTube's sign-in also asks
+  `youtube.force-ssl` through `googleOAuth`'s `optionalScopes` (asked
+  after the others, never needed: an owner who unticks it connects without
+  it); Google Business Profile's sign-in never changes
+  (`youtube-comment-scopes.test.ts`). Peal never sends
+  `include_granted_scopes`: a reconnection records what that consent
+  granted.
 - Instagram has two ways in, one platform with a connection kind
   (`InstagramConnectionSchema` in `#shared/domain/instagram-connection.ts`,
   copied by the contract): `instagramLogin`, the default, and
@@ -275,7 +281,9 @@
   workspace's webhook endpoints, then by analytics
   (`analyticsChannelEvents`), which keeps a gone channel's numbers a week
   for the same account to take back, and erases them at once for a data
-  deletion (`DisconnectionCause`). To gain a permission, members connect
+  deletion (`DisconnectionCause`), then by engagement
+  (`engagementChannelEvents`), which forgets at once the comments a
+  bounding platform (YouTube) gave under the channel's posts. To gain a permission, members connect
   the account again without disconnecting: the channel and its history
   stay. `channel.reconnect_needed` is
   published for a week after a channel enters `refreshNeeded` (`toldFor`),

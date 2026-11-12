@@ -292,6 +292,8 @@ Le serveur appelle `oauth2.googleapis.com` et `www.googleapis.com`, et y envoie 
 
 Jusqu’en novembre 2026, Google gardait privées les vidéos des projets d’API qu’il n’avait pas audités. Il ne le fait plus, mais les réglages d’une chaîne ou les restrictions de Google peuvent encore garder une vidéo privée : Peal compare la réponse de YouTube à la visibilité choisie par le membre, et le dit sur la page de la publication.
 
+Pour lire les commentaires de YouTube et y répondre dans la [boîte de réception](/inbox#youtube), ajoutez `youtube` à `PEAL_INBOX_PLATFORMS`, et ajoutez le champ d’application `https://www.googleapis.com/auth/youtube.force-ssl` à l’écran de consentement. La connexion le demande alors, en option : un propriétaire peut le décocher et se connecter quand même. C’est un champ d’application sensible : Google vérifie une application qui le demande avant que d’autres que ses utilisateurs test puissent l’accorder, et la vérification demande qu’on lui montre ce que l’application fait des commentaires, ce que le réglage permet d’enregistrer. La lecture des commentaires dépense au plus la moitié des 10 000 unités quotidiennes du projet, pour que la publication et les statistiques gardent le reste : demandez à Google un quota plus large avant que de nombreuses chaînes utilisent la boîte de réception.
+
 ### Pinterest [#pinterest]
 
 Un serveur connecte des comptes Pinterest une fois que vous avez enregistré une application pour lui sur le site des développeurs de Pinterest :
