@@ -132,7 +132,7 @@ const onLinkedIn = Effect.fnUntraced(function* onLinkedIn(
 
 describe("LinkedIn pages' comments", () => {
   it.effect(
-    "reads a post without comments from its summary alone, as all of them",
+    "reads a post without comments as all of them, once its list confirms none",
     () =>
       Effect.gen(function* none() {
         const { account, api, platform } = yield* onLinkedIn();
@@ -143,8 +143,8 @@ describe("LinkedIn pages' comments", () => {
           firstReading(yield* platform.read(account, [thread(1)])),
           { _tag: "read", comments: [], complete: true, threadId: threadId(1) }
         );
-        // The comments, which would answer 404, are not asked.
-        assert.lengthOf(api.requests(), 1);
+        // The comments are asked too, and their 404 confirms none.
+        assert.lengthOf(api.requests(), 2);
       }).pipe(Effect.scoped)
   );
 
@@ -497,6 +497,52 @@ describe("LinkedIn pages' comments", () => {
   );
 });
 
+describe("LinkedIn pages' comments, when LinkedIn's answers disagree", () => {
+  it.effect(
+    "reads the comments of a post whose summary shows none, and takes nothing for deleted on its word alone",
+    () =>
+      Effect.gen(function* summaryWithout() {
+        const { account, api, platform } = yield* onLinkedIn();
+
+        api.addPost(share, activity);
+        api.add(comment(1));
+        api.script("summary", [json({})]);
+
+        const reading = firstReading(
+          yield* platform.read(account, [thread(1)])
+        );
+
+        assert.strictEqual(
+          reading?._tag === "read" ? reading.comments.length : -1,
+          1
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "fails only a later thread whose post seems gone while the page does not read",
+    () =>
+      Effect.gen(function* laterGone() {
+        const { account, api, platform } = yield* onLinkedIn({
+          accountId: "urn:li:organization:9000000099",
+        });
+
+        api.addPost(share, activity);
+        api.script("summary", [json({}), linkedinError(404)]);
+
+        const batch = yield* platform.read(account, [
+          thread(1),
+          thread(2, "urn:li:share:7100000000000000002"),
+        ]);
+
+        assert.deepStrictEqual(
+          batch.readings.map(({ _tag }) => _tag),
+          ["read", "failed"]
+        );
+      }).pipe(Effect.scoped)
+  );
+});
+
 describe("LinkedIn pages' replies", () => {
   it.effect(
     "answers as the page under the top-level comment, a nested one's included",
@@ -586,6 +632,33 @@ describe("LinkedIn pages' replies", () => {
         reason: "noResponse",
       });
     }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "never takes another reply, kept by its bare id, for the one resumed",
+    () =>
+      Effect.gen(function* takenBare() {
+        const { account, api, platform } = yield* onLinkedIn();
+
+        api.addPost(share, activity);
+        api.add(comment(1));
+        api.add(
+          comment(9, {
+            actor: linkedinPageUrn,
+            parentUrn: commentUrn(1),
+            text: "Thank you, synthetic member!",
+            time: Date.parse("2025-11-10T09:00:30.000Z"),
+          })
+        );
+
+        assert.deepStrictEqual(
+          yield* platform.resume(
+            account,
+            outgoing({ takenIds: ["6800000000000000009"] })
+          ),
+          { _tag: "unconfirmed", reason: "interrupted" }
+        );
+      }).pipe(Effect.scoped)
   );
 
   it.effect("leaves a resumed reply to a person when none is found", () =>

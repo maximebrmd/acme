@@ -460,7 +460,8 @@ describe("the gate's reply sender", () => {
         });
 
         assert.deepStrictEqual(batch.refreshWithin, Duration.hours(24));
-        assert.lengthOf(server.requests(), 1);
+        // The summary, then its list, which confirms it has none.
+        assert.lengthOf(server.requests(), 2);
       }).pipe(Effect.scoped)
   );
 

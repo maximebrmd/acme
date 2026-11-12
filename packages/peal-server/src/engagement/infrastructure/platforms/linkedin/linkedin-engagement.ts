@@ -466,7 +466,9 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
       at: Progress,
       deadline: DateTime.Utc,
       first: boolean,
-      nested: string[]
+      nested: string[],
+      // The summary showed no comment: a 404 here confirms there is none.
+      noneShown: boolean
     ) {
       let start = 0;
 
@@ -499,9 +501,14 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
         if (!isSuccess(sent.success)) {
           const step = yield* refusedRead(sent.success, at, first);
 
-          // A list LinkedIn says is not there, after its summary said it
-          // was: what was read stands, not as all of it.
-          return Option.some(Option.getOrElse(step, () => at.read(false)));
+          // A list LinkedIn says is not there: all of it when the summary
+          // showed none either; otherwise what was read stands, not as
+          // all of it.
+          return Option.some(
+            Option.getOrElse(step, () =>
+              at.read(noneShown && at.comments.length === 0)
+            )
+          );
         }
 
         const body = yield* pageOf(sent.success);
@@ -597,8 +604,13 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
           return at.halt();
         }
 
+        // The page no longer reads either: on the batch's first thread
+        // the channel waits; later, only this thread, and the readings
+        // already made stand.
         if (!(yield* readsOwnPage(account, token))) {
-          return yield* new ChannelUnreadable({ reason: "paused" });
+          return first
+            ? yield* new ChannelUnreadable({ reason: "paused" })
+            : at.failed;
         }
 
         const missing: Step = {
@@ -615,11 +627,9 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
         return at.failed;
       }
 
-      // No summary of comments: none to read, and that is all of them.
-      if (countOf(counted.value.commentsSummary) === 0) {
-        return at.read(true);
-      }
-
+      // A summary that shows no comment is checked against the list: a
+      // 404 there is a complete read of nothing; anything else is read,
+      // so a summary that omits its count for a while forgets nothing.
       const nested: string[] = [];
 
       const top = yield* listInto(
@@ -629,7 +639,8 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
         at,
         deadline,
         first,
-        nested
+        nested,
+        countOf(counted.value.commentsSummary) === 0
       );
 
       if (Option.isSome(top)) {
@@ -644,7 +655,8 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
           at,
           deadline,
           first,
-          []
+          [],
+          false
         );
 
         if (Option.isSome(under)) {
@@ -879,7 +891,16 @@ export const linkedinEngagement = Effect.fn("LinkedInEngagement.make")(
             Effect.map(
               Option.match({
                 onNone: () => undecided,
-                onSome: (listed) => foundAmong(reply, listed),
+                // Another reply of the thread may be kept by its bare id
+                // or by its URN: either way it is not this one.
+                onSome: (listed) => {
+                  const taken = new Set(reply.takenIds.map(commentIdOf));
+
+                  return foundAmong(
+                    reply,
+                    listed.filter(({ id }) => !taken.has(commentIdOf(id)))
+                  );
+                },
               })
             )
           )

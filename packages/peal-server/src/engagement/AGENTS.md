@@ -252,7 +252,7 @@
   run against LinkedIn: before the setting is turned on anywhere, the
   pages app holds the Standard tier and both scopes (a pages sign-in fails
   without them), the privacy policy names LinkedIn, and one comment is
-  read, answered and withdrawn on a test page.
+  read, answered and withdrawn on a test page, and the pages' token answer checked to list `scope` (without it, Peal records the scopes asked, which LinkedIn's all-or-nothing consent should grant). A summary without `commentsSummary` is checked against the list (a 404 there is a complete read of nothing), a 404 on a later thread's summary while the page no longer reads fails that thread only, and a resume excludes the thread's other replies by the comment id inside their URN, whichever form they are kept in.
 - Threads of a platform that is off end `unsupported` at their first
   read, and stay ended when the setting is turned on: only posts published
   afterwards are read. They are not reopened, because a thread does not
