@@ -210,7 +210,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `PostDetail` does. `ShortenLinks` with `useShortLinking` shows only on
   a server with short links (`shortLinks.status`): the member's choice,
   else the post's, else the workspace's `byDefault`, sent as
-  `shortenLinks` with every save; its line counts with the contract's
+  `shortenLinks` with every save (the server gives a new post that
+  leaves it out the same default, whoever makes it); its line counts with the contract's
   `linksToShorten` (`#short-links/count.ts`), the server's rule. A post
   that asked shows `PostLinks` (its links and their clicks over 30 days)
   to members with analytics:read; the general settings hold the default

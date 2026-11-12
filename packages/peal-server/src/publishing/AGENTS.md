@@ -245,8 +245,15 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   publish runs inside the gate: uploads, processing waits, token renewal,
   the post and its confirmation.
 - A post's `shortenLinks` (`posts.shorten_links`, carried by `copyOf`,
-  kept by an update only when the request names it) is read in one
-  place: `outgoing`, where the routed publisher replaces the links
+  kept by an update only when the request names it) is decided when the
+  post is made: a new post that does not say (`PostDrafts.create` and
+  `PostScheduling`'s `scheduleNew`, so feeds, the API, MCP, the CLI and
+  imports alike) takes the workspace's default through
+  `ShortLinkDefaults` (`ShortLinksShortLinkDefaults`, the shortlinks
+  context's `ShortLinkSettings.defaultFor`: false on a server without a
+  base), and keeps it; `false` said wins. Tests take
+  `ShortLinkDefaults.none` (in `ReferencesTest` and `posts-server.ts`).
+  It is read in one place: `outgoing`, where the routed publisher replaces the links
   `linksToShorten` takes (`domain/short-links.ts`: written with a scheme,
   shortenable as the shortlinks context's rule says, a copy kept equal,
   longer than a short address, never on Pinterest, whose help page

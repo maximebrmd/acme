@@ -129,7 +129,7 @@ const setDefault = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Set whether the workspace's new posts ask for short links by default; each post still chooses. Owners and admins may."
+    "Set whether the workspace's new posts ask for short links when they do not say, whatever makes them: the web app, the API, MCP, this command line and feeds. Each post still chooses, and takes the default when it is made. Owners and admins may."
   )
 );
 

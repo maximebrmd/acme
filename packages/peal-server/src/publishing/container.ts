@@ -45,6 +45,7 @@ import { RecyclingActors } from "#publishing/application/recycling-actors.ts";
 import { RecyclingNotices } from "#publishing/application/recycling-notices.ts";
 import { Recycling } from "#publishing/application/recycling.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
+import type { ShortLinkDefaults } from "#publishing/application/short-link-defaults.ts";
 import { Signatures } from "#publishing/application/signatures.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import type { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
@@ -103,6 +104,7 @@ import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platfo
 import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platform-lookups-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
 import { ShortLinksLinkShortener } from "#publishing/infrastructure/shortlinks-link-shortener.ts";
+import { ShortLinksShortLinkDefaults } from "#publishing/infrastructure/shortlinks-short-link-defaults.ts";
 import { ToldLivePostEvents } from "#publishing/infrastructure/told-live-post-events.ts";
 import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
 import {
@@ -166,7 +168,7 @@ export const LivePostsUnused = Layer.mergeAll(
 
 const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6, E7, R7>(
   references: Layer.Layer<
-    AttachableMedia | PostAllowance | WorkspaceChannels,
+    AttachableMedia | PostAllowance | ShortLinkDefaults | WorkspaceChannels,
     E,
     R
   >,
@@ -244,7 +246,8 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4, R5, R6, E7, R7>(
  * follows; `PostOversight`, for the staff console; in `PublishingLive`,
  * `PostingCapabilities` and `ChannelLookups`, which tell clients what a
  * post may hold) and the adapters behind its ports, with `references` for
- * the channels and media posts refer to and the posts a month allows,
+ * the channels and media posts refer to, the posts a month allows and the
+ * workspaces' short links default,
  * `accounts` for what each account refuses (by default, nothing), `origins`
  * for the names of the keys and applications that write posts (by default,
  * none) and `events` for who hears what happens to posts (by default,
@@ -265,7 +268,7 @@ export const publishingWith = <
   R7 = never,
 >(
   references: Layer.Layer<
-    AttachableMedia | PostAllowance | WorkspaceChannels,
+    AttachableMedia | PostAllowance | ShortLinkDefaults | WorkspaceChannels,
     E,
     R
   >,
@@ -306,7 +309,7 @@ export const publishingBehind = <
 >(
   gate: Layer.Layer<ApprovalGate | G, E3, R3>,
   references: Layer.Layer<
-    AttachableMedia | PostAllowance | WorkspaceChannels,
+    AttachableMedia | PostAllowance | ShortLinkDefaults | WorkspaceChannels,
     E,
     R
   >,
@@ -329,7 +332,9 @@ export const publishingBehind = <
  * The use cases as the server runs them: channels are those the channels
  * context lists, media the ready media its library holds, and the posts a
  * month allows the workspace's plan, which the composition root provides
- * (ListChannels, MediaLibrary, WorkspaceEntitlements), and a post names the
+ * (ListChannels, MediaLibrary, WorkspaceEntitlements), a new post that does
+ * not say takes the workspace's short links default as the shortlinks
+ * context keeps it (ShortLinkSettings), and a post names the
  * key or application that wrote it as the workspace context does
  * (CredentialNames). How each target ends
  * is told through the notifications context (Notify), naming channels as
@@ -351,7 +356,8 @@ export const PublishingLive = publishingOver(
   Layer.mergeAll(
     ListedWorkspaceChannels,
     LibraryAttachableMedia,
-    PlanPostAllowanceLive
+    PlanPostAllowanceLive,
+    ShortLinksShortLinkDefaults
   ),
   AccountRules.layer.pipe(Layer.provide(ChannelAccessGrants)),
   NamedPostOrigins,

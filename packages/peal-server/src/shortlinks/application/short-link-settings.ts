@@ -3,6 +3,7 @@ import { Context, Effect, Layer, Option } from "effect";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import { ShortLinkBase, shortLengthOf } from "./short-link-base.ts";
@@ -21,7 +22,8 @@ export interface ShortLinkStatus {
 
 /**
  * The workspace's default for new posts: read with post:read, set by
- * owners and admins (organization:update). A post chooses for itself.
+ * owners and admins (organization:update). A post chooses for itself; one
+ * that does not takes the default when it is made (`defaultFor`).
  */
 export class ShortLinkSettings extends Context.Service<
   ShortLinkSettings,
@@ -29,6 +31,14 @@ export class ShortLinkSettings extends Context.Service<
     readonly status: (
       actor: Actor
     ) => Effect.Effect<ShortLinkStatus, DatabaseError | MissingPermission>;
+    /**
+     * Whether a new post of the workspace that does not say asks for short
+     * links: its default, and never on a server without them. No
+     * permission: publishing's adapter reads it for the post it makes.
+     */
+    readonly defaultFor: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<boolean, DatabaseError>;
     readonly setByDefault: (
       actor: Actor,
       byDefault: boolean
@@ -56,6 +66,16 @@ export class ShortLinkSettings extends Context.Service<
         return statusOf(yield* store.byDefault(actor.workspaceId));
       });
 
+      const defaultFor = Effect.fn("ShortLinkSettings.defaultFor")(
+        function* defaultFor(workspaceId: WorkspaceId) {
+          if (Option.isNone(base)) {
+            return false;
+          }
+
+          return yield* store.byDefault(workspaceId);
+        }
+      );
+
       const setByDefault = Effect.fn("ShortLinkSettings.setByDefault")(
         function* setByDefault(actor: Actor, byDefault: boolean) {
           yield* Effect.fromResult(authorize(actor, "organization:update"));
@@ -65,7 +85,7 @@ export class ShortLinkSettings extends Context.Service<
         }
       );
 
-      return ShortLinkSettings.of({ setByDefault, status });
+      return ShortLinkSettings.of({ defaultFor, setByDefault, status });
     })
   );
 }

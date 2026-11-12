@@ -59,11 +59,15 @@ or `https://` and longer than a short address becomes one, per channel,
 which counts its clicks. The text kept stays as written, Pinterest, Instagram
 and TikTok keep links as written, as does a link to a channel's own
 platform, and an edit of a live post sends the text as written.
-Ask only when the user wants clicks counted:
+Without a flag, a post takes the workspace's default (`byDefault` in
+`peal short-links status`) when it is made, whatever makes it. Pass
+`--shorten-links` when the user wants clicks counted, and
+`--no-shorten-links` when links must go out exactly as written:
 
 ```sh
 peal post "Read https://example.com/a/long/landing/page" --channel <channel-id> --at 2026-11-20T09:00:00Z --shorten-links --json
 peal drafts save --text "Read https://example.com/a/long/landing/page" --shorten-links --json
+peal post "Read https://example.com/a/long/landing/page" --channel <channel-id> --at 2026-11-20T09:00:00Z --no-shorten-links --json
 ```
 
 Then read the clicks by UTC day (30 days by default, 92 at most; needs

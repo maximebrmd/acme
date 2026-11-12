@@ -154,9 +154,9 @@ const save = Command.make(
     ),
     shortenLinks: Flag.Boolean("shorten-links").pipe(
       Flag.withDescription(
-        "Send the post's links shortened, where the server has short links (peal short-links status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks; the text kept stays as written, and Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform. A draft you change keeps its own choice without it."
+        "Send the post's links shortened, where the server has short links (peal short-links status): each link written with http:// or https:// and longer than a short address goes out as one, per channel, and counts its clicks; the text kept stays as written, and Pinterest, Instagram and TikTok keep links as written, as does a link to a channel's own platform. With --no-shorten-links, they go out as written. Without either, a new draft takes the workspace's default (peal short-links status) when it is made, and a draft you change keeps its own choice."
       ),
-      Flag.withDefault(false)
+      Flag.optional
     ),
     signature: signatureFlag(
       "A signature to put under the post's text, on every channel, by its id or its name, as peal signatures list shows them; under the last part of a post with --then parts. It is then text of the post, counted against each platform's limit, and never added twice."
@@ -184,10 +184,12 @@ const save = Command.make(
     // without them, and a draft that changes keeps its own.
     const tagged = tagIds.length === 0 ? {} : { tagIds };
 
-    // Asked for only with the flag: a draft that changes keeps its own.
-    const filed = input.shortenLinks
-      ? { ...tagged, shortenLinks: true }
-      : tagged;
+    // Sent only when a flag says: a new draft takes the workspace's
+    // default without, and a draft that changes keeps its own.
+    const filed = Option.match(input.shortenLinks, {
+      onNone: () => tagged,
+      onSome: (shortenLinks) => ({ ...tagged, shortenLinks }),
+    });
 
     const presets = yield* presetsOf(session, input);
 

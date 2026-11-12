@@ -22,6 +22,7 @@ import { claimPostRun } from "#publishing/application/post-publication.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
+import { ShortLinkDefaults } from "#publishing/application/short-link-defaults.ts";
 import { publishingWith, publishingWorkers } from "#publishing/container.ts";
 import { repostTarget } from "#publishing/domain/post-target.ts";
 import { reopenPost } from "#publishing/domain/post.ts";
@@ -91,7 +92,12 @@ const SilentOutcomes = Layer.succeed(
 // Publishing as the server wires it to the webhooks: what members do to a
 // post's schedule and how each target ends reach the workspace's endpoints.
 const PublishingTest = publishingWith(
-  Layer.mergeAll(ListedWorkspaceChannels, attachableMedia(), postAllowance()),
+  Layer.mergeAll(
+    ListedWorkspaceChannels,
+    attachableMedia(),
+    postAllowance(),
+    ShortLinkDefaults.none
+  ),
   AccountRules.none,
   PostOrigins.unnamed,
   WebhookPostEvents

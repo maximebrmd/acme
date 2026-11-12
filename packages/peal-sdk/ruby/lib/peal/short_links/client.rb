@@ -12,7 +12,9 @@ module Peal
 
       # Answers whether this server shortens links (`available`), what a short address starts with (`base`) and how long
       # it is (`shortLength`), and whether the workspace's new posts ask for short links by default (`byDefault`). A
-      # post that asks (`shortenLinks`) goes out with each link written with `http://` or `https://` and longer than a
+      # post that leaves `shortenLinks` out takes `byDefault` when it is made (the web app, the API, MCP, the command
+      # line and feeds alike), and `false` always wins; on a server without short links, nothing is shortened whatever
+      # the default. A post that asks goes out with each link written with `http://` or `https://` and longer than a
       # short address replaced by one, one per channel and link, which redirects to it and counts the visit; the text
       # kept stays as written, and Pinterest, Instagram and TikTok always get links as written, as does a link to a
       # channel's own platform. Needs post:read.
@@ -56,8 +58,10 @@ module Peal
         end
       end
 
-      # Sets whether the workspace's new posts ask for short links unless their author says otherwise; each post still
-      # chooses for itself. Needs organization:update, which owners and admins hold.
+      # Sets whether the workspace's new posts ask for short links unless they say otherwise (`shortenLinks`), whatever
+      # makes them: the web app, the API, MCP, the command line and feeds. Each post still chooses for itself, and takes
+      # the default when it is made, so a change reaches only posts made after it. Needs organization:update, which
+      # owners and admins hold.
       #
       # @param request_options [Hash]
       # @param params [Peal::ShortLinks::Types::ShortLinkSettings]

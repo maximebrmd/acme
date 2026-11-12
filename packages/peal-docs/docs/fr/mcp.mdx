@@ -222,7 +222,7 @@ Avant d’être programmée, une publication est vérifiée contre la plateforme
 
 `create_post` et `create_posts` refusent aussi une publication dont le contenu (le texte que reçoit le canal et les mêmes médias, dans le même ordre) part déjà sur l’un de ses canaux à moins de 23 heures de son heure, en nommant la publication qui l’a déjà : un appel fait deux fois par erreur ne crée pas de seconde publication. `allowDuplicate: true` la laisse passer, quand vous voulez vraiment publier deux fois la même chose. Programmer un brouillon avec `schedule_post` n’est pas vérifié ([Publications en double](/posting-api#duplicates)).
 
-`create_draft`, `update_draft`, `create_post` et `create_posts` prennent `shortenLinks: true` pour envoyer [raccourcis](/scheduling#short-links) les liens d’une publication ; aucun outil ne raccourcit une adresse hors d’une publication.
+`create_draft`, `update_draft`, `create_post` et `create_posts` prennent `shortenLinks: true` pour envoyer [raccourcis](/scheduling#short-links) les liens d’une publication et `false` pour les envoyer tels qu’écrits ; sans lui, une nouvelle publication prend le choix par défaut de l’espace de travail (`byDefault` de `get_short_link_status`) à sa création. Aucun outil ne raccourcit une adresse hors d’une publication.
 
 ### Signatures, groupes de canaux et options par défaut [#saved]
 

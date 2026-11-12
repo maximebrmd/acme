@@ -86,6 +86,7 @@ import { violationsOf } from "./publishability.ts";
 import { QueueHasNoRoom } from "./queue-has-no-room.ts";
 import type { QueueNotFound } from "./queue-not-found.ts";
 import { QueueStore } from "./queue-store.ts";
+import { ShortLinkDefaults } from "./short-link-defaults.ts";
 import type { SignatureNotFound } from "./signature-not-found.ts";
 import type { TagStore } from "./tag-store.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
@@ -119,7 +120,10 @@ export interface SchedulePostRequest {
   // The options it has on some channels, one at most per channel.
   readonly options?: readonly ChannelOptions[];
   readonly schedule: Schedule;
-  /** Whether its links go out shortened; left out, not. */
+  /**
+   * Whether its links go out shortened; left out, as the workspace's
+   * default says.
+   */
   readonly shortenLinks?: boolean | undefined;
   /** The workspace's tags it is filed under; left out, none. */
   readonly tagIds?: readonly TagId[];
@@ -154,7 +158,10 @@ export interface SendPostRequest {
   readonly options?: readonly ChannelOptions[];
   /** When it goes out: now, at an instant, or on a queue's next free slot. */
   readonly placement: Placement;
-  /** Whether its links go out shortened; left out, not. */
+  /**
+   * Whether its links go out shortened; left out, as the workspace's
+   * default says.
+   */
   readonly shortenLinks?: boolean | undefined;
   /** The workspace's tags it is filed under; left out, none. */
   readonly tagIds?: readonly TagId[];
@@ -176,7 +183,7 @@ export interface OccurrenceRequest<E, E2> {
   /** The rule that makes it, and its place among the rule's posts. */
   readonly occurrence: PostOccurrence;
   readonly options: readonly ChannelOptions[];
-  /** As the rule's source asks; left out, not. */
+  /** As the rule's source asks; left out, as the workspace's default says. */
   readonly shortenLinks?: boolean | undefined;
   readonly tagIds: readonly TagId[];
   /** The rule's zone, which a post at its due instant is shown in. */
@@ -292,6 +299,7 @@ type Ports =
   | PostPresets
   | PostRepository
   | QueueStore
+  | ShortLinkDefaults
   | TagStore
   | WorkspaceChannels;
 
@@ -879,7 +887,7 @@ export class PostScheduling extends Context.Service<
             content,
             occurrence,
             options = [],
-            shortenLinks = false,
+            shortenLinks,
             tagIds = [],
           }: NewPostRequest,
           placing: (received: DateTime.Utc) => Effect.Effect<Placed, E3>,
@@ -914,6 +922,13 @@ export class PostScheduling extends Context.Service<
 
           const via = yield* originOf(actor);
 
+          // Read once, as the post is made, so the post keeps what it does.
+          const shortened =
+            shortenLinks ??
+            (yield* ShortLinkDefaults.use((defaults) =>
+              defaults.byDefault(actor.workspaceId)
+            ).pipe(withPorts));
+
           const created = withLinksShortened(
             tagPost(
               createDraft(
@@ -925,7 +940,7 @@ export class PostScheduling extends Context.Service<
               ),
               tags
             ),
-            shortenLinks
+            shortened
           );
 
           const draft =

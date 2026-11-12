@@ -477,8 +477,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "For each link a published post went out with shortened, when its author asked for it: the address it leads to, which is the workspace’s own content, its short code, the post, channel and part it is in, and when it was made; and how many times it was followed each day (UTC). Counts only: nothing about the people who follow a link, neither their IP address, their browser, the page they came from nor their country",
-      fr: "Pour chaque lien qu’une publication mise en ligne a envoyé raccourci, à la demande de son auteur : l’adresse vers laquelle il mène, qui est le contenu de l’espace de travail, son code court, la publication, le canal et la partie où il figure, et sa date de création ; et combien de fois il a été suivi chaque jour (UTC). Des décomptes seulement : rien des personnes qui suivent un lien, ni leur adresse IP, ni leur navigateur, ni la page d’où elles viennent, ni leur pays",
+      en: "For each link a published post went out with shortened, when its author or the workspace’s default asked for it: the address it leads to, which is the workspace’s own content, its short code, the post, channel and part it is in, and when it was made; and how many times it was followed each day (UTC). Counts only: nothing about the people who follow a link, neither their IP address, their browser, the page they came from nor their country",
+      fr: "Pour chaque lien qu’une publication mise en ligne a envoyé raccourci, à la demande de son auteur ou selon le choix par défaut de l’espace de travail : l’adresse vers laquelle il mène, qui est le contenu de l’espace de travail, son code court, la publication, le canal et la partie où il figure, et sa date de création ; et combien de fois il a été suivi chaque jour (UTC). Des décomptes seulement : rien des personnes qui suivent un lien, ni leur adresse IP, ni leur navigateur, ni la page d’où elles viennent, ni leur pays",
     },
     id: "shortLinks",
     legalBasis: contract,
@@ -488,8 +488,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
     },
     operatorSet: false,
     purposes: {
-      en: "Send a post’s links shortened when its author asks, redirect whoever follows one to its address, and show the workspace how many times each was followed, by day, post and channel. Requests from automated readers are not counted, so the figure is approximate; nothing is used to follow or profile anyone",
-      fr: "Envoyer raccourcis les liens d’une publication quand son auteur le demande, rediriger qui en suit un vers son adresse, et montrer à l’espace de travail combien de fois chacun a été suivi, par jour, publication et canal. Les requêtes des lecteurs automatisés ne sont pas comptées, si bien que le chiffre est approximatif ; rien ne sert à suivre ni à profiler qui que ce soit",
+      en: "Send a post’s links shortened when its author or the workspace’s default asks, redirect whoever follows one to its address, and show the workspace how many times each was followed, by day, post and channel. Requests from automated readers are not counted, so the figure is approximate; nothing is used to follow or profile anyone",
+      fr: "Envoyer raccourcis les liens d’une publication quand son auteur ou le choix par défaut de l’espace de travail le demande, rediriger qui en suit un vers son adresse, et montrer à l’espace de travail combien de fois chacun a été suivi, par jour, publication et canal. Les requêtes des lecteurs automatisés ne sont pas comptées, si bien que le chiffre est approximatif ; rien ne sert à suivre ni à profiler qui que ce soit",
     },
     retention: {
       en: `The clicks: ${p.shortLinkClicks.days} days from each day, then deleted within a day. The links: as long as the workspace, which takes them, and their clicks, with it; its published posts’ short addresses then stop working`,

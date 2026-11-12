@@ -40,8 +40,17 @@ export interface CommandUsage {
 const dashed = (name: string): string =>
   name.startsWith("-") ? name : `--${name}`;
 
+// A boolean flag also takes its negation, `--no-<name>`, which effect/cli
+// accepts unless the flag says otherwise (no command does) and which its
+// help document does not list.
 const namesOf = (flags: readonly HelpDoc.FlagDoc[]): string[] =>
-  flags.flatMap(({ aliases, name }) => [name, ...aliases].map(dashed));
+  flags.flatMap(({ aliases, name, type }) =>
+    [
+      name,
+      ...aliases,
+      ...(type === "boolean" && !name.startsWith("-") ? [`no-${name}`] : []),
+    ].map(dashed)
+  );
 
 /**
  * What a command takes, from the help document of `peal <command> --help`.
