@@ -6,6 +6,7 @@ import {
   DuplicatePost,
   Forbidden,
   IdempotencyKeyReused,
+  ImportCellProblemSchema,
   ImportProblemSchema,
   InvalidTimeZone,
   PlanLimitReached,
@@ -187,6 +188,15 @@ describe(unreadableWords, () => {
 });
 
 describe(cellWords, () => {
+  it.each(ImportCellProblemSchema.fields.problem.literals)(
+    "has words for every cell problem: %s",
+    (problem) => {
+      expect(cellWords({ column: "at", problem }).key).toBe(
+        `Posts.Import.cell.${problem}`
+      );
+    }
+  );
+
   it.each(locales)("finds each cell problem's words in %s", async (locale) => {
     const catalogue = await loadMessages(locale);
 

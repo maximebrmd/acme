@@ -170,19 +170,25 @@ export type CellWords =
       readonly key: "Posts.Import.cell.count";
     };
 
+// One key a cell problem: a record over every problem, so a new one does
+// not compile until it has words.
+const cellKeys: Readonly<
+  Record<
+    ImportCellProblem["problem"],
+    "Posts.Import.cell.invalid" | "Posts.Import.cell.missing"
+  >
+> = {
+  invalid: "Posts.Import.cell.invalid",
+  missing: "Posts.Import.cell.missing",
+};
+
 export const cellWords = (
   problem:
     | ImportCellProblem
     | { readonly expected: number; readonly found: number }
 ): CellWords =>
   "column" in problem
-    ? {
-        column: problem.column,
-        key:
-          problem.problem === "missing"
-            ? "Posts.Import.cell.missing"
-            : "Posts.Import.cell.invalid",
-      }
+    ? { column: problem.column, key: cellKeys[problem.problem] }
     : {
         expected: problem.expected,
         found: problem.found,
