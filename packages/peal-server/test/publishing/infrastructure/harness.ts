@@ -109,14 +109,24 @@ export const clusterOver = <S, E, R>(storage: Layer.Layer<S, E, R>) =>
     Layer.provide([RunnerStorage.layerMemory, RunnerHealth.layerNoop]),
     Layer.provide(
       ShardingConfig.layer({
-        // Tests poll storage themselves (`eventually`), so the timers are
-        // backstops, kept long so a jump of a day of virtual time stays
-        // cheap.
-        entityMessagePollInterval: Duration.minutes(1),
+        // A jump of virtual time wakes, in turn, every timer that falls
+        // within it, and each wake costs real CPU: at a timer every ten
+        // seconds, a jump of three weeks took tens of seconds, and minutes
+        // under load. Tests poll storage themselves (`eventually`), and one
+        // in-memory runner holds every shard, so the cluster's own timers
+        // are backstops: kept to one an hour each. What is left is the
+        // entity reaper's ten seconds, which the cluster sets itself, so
+        // keep jumps to the days a test needs.
+        entityMessagePollInterval: Duration.hours(1),
         // Shutdown does not wait on virtual time.
         entityTerminationTimeout: Duration.zero,
-        refreshAssignmentsInterval: Duration.minutes(1),
+        refreshAssignmentsInterval: Duration.hours(1),
+        runnerHealthCheckInterval: Duration.hours(1),
         sendRetryInterval: Duration.millis(100),
+        // The locks are in memory, held by the one runner, and never lapse
+        // between two refreshes.
+        shardLockExpiration: Duration.hours(3),
+        shardLockRefreshInterval: Duration.hours(1),
       })
     )
   );
