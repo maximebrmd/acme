@@ -103,6 +103,8 @@ Le serveur répond à deux sondes :
 
 Les [liens courts](/scheduling#short-links) sont désactivés tant que `PEAL_SHORT_LINK_BASE` n’indique pas où ils se trouvent. Mettez-y `https://<votre domaine>/api/l/` et rien d’autre ne change : le serveur répond à `/api/l/<code>`, que l’application web transmet. Ou donnez-leur un domaine à eux, comme `https://go.example.com/` : son proxy envoie chaque `/<code>` (sept lettres et chiffres) vers `/api/l/<code>` du serveur, et répond 404 au reste ; `self-host/Caddyfile` en contient le bloc, commenté, avec `PEAL_SHORT_LINK_DOMAIN`. Un domaine à part tient les redirections à l’écart de l’adresse où l’on se connecte, au cas où une plateforme verrait d’un mauvais œil un hôte qui redirige. Changer ou retirer la base fait cesser de fonctionner les liens courts déjà envoyés.
 
+Le domaine court doit atteindre le serveur par la même frontière que l’application, qui pose l’en-tête que nomme `AUTH_IP_HEADERS` et remplace ce que le client a envoyé : sans elle, tous les visiteurs partagent l’adresse du proxy et la limite ci-dessous, et avec un en-tête que le client peut poser, la limite ne borne rien. La base doit être un domaine public que les plateformes reconnaissent comme lien : les liens courts ne s’essaient donc pas sur localhost.
+
 Une redirection est une `302` avec `Cache-Control: no-store`, pour que chaque visite atteigne le serveur et soit comptée, et `X-Robots-Tag: noindex, nofollow`. Chaque adresse peut suivre 300 liens courts par minute (dans chaque processus du serveur), au-delà elle reçoit `429` ; cela borne la recherche de codes au hasard, pas les clics. Le serveur journalise le chemin, avec son code, comme tout chemin, et jamais la destination d’un lien.
 
 ## Base de données [#database]

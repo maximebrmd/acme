@@ -32,6 +32,11 @@ export interface ShortLinking {
   readonly offered: ShortLinkStatus | undefined;
   /** What the request that saves the post adds to its payload. */
   readonly payload: { readonly shortenLinks?: boolean };
+  /**
+   * Whether the server's answer came, so a post saved now takes the
+   * workspace's default: the composer saves nothing before.
+   */
+  readonly settled: boolean;
   readonly setWanted: (wanted: boolean) => void;
   readonly wanted: boolean;
 }
@@ -59,6 +64,7 @@ export const useShortLinking = (
     offered,
     payload: offered === undefined ? {} : { shortenLinks: wanted },
     setWanted: setChosen,
+    settled: !AsyncResult.isInitial(status) && !status.waiting,
     wanted,
   };
 };

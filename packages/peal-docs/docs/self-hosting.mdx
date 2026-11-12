@@ -103,6 +103,8 @@ The server answers two probes:
 
 [Short links](/scheduling#short-links) are off until `PEAL_SHORT_LINK_BASE` says where they live. Set it to `https://<your domain>/api/l/` and nothing else changes: the server answers `/api/l/<code>`, which the web app forwards. Or give them a domain of their own, such as `https://go.example.com/`: its proxy sends each `/<code>` (seven letters and digits) to the server's `/api/l/<code>`, and answers 404 to anything else; `self-host/Caddyfile` has the block, commented, with `PEAL_SHORT_LINK_DOMAIN`. A domain of their own keeps the redirects off the address people sign in at, should a platform frown on a host that redirects. Changing or removing the base makes the short links already sent stop working.
 
+The short domain must reach the server through the same edge as the app, one that sets the header `AUTH_IP_HEADERS` names and replaces what the client sent: without it every visitor shares the proxy's address and the limit below, and with a header the client can set the limit bounds nothing. The base must be a public domain the platforms recognise as a link, so short links cannot be tried on localhost.
+
 A redirect is a `302` with `Cache-Control: no-store`, so every visit reaches the server and is counted, and `X-Robots-Tag: noindex, nofollow`. Each address may follow 300 short links a minute (in each server process), past which it gets `429`; this bounds guessing codes, not clicks. The server logs the path, with its code, as any path, and never where a link leads.
 
 ## Database [#database]

@@ -351,7 +351,9 @@ export const Composer = ({
     mediaKinds
   );
 
-  const optionsTaken = optionProblems.length === 0;
+  // Nothing is saved before the server says whether it shortens links, so
+  // a new post takes the workspace's default.
+  const optionsTaken = optionProblems.length === 0 && linking.settled;
 
   const optionsOfChannel = (channelId: string) =>
     options.find((chosen) => chosen.channelId === channelId)?.options;
