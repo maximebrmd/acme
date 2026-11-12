@@ -1,0 +1,23 @@
+#!/bin/sh
+# Managed by Ansible (peal-infra). Reboots the server when an update asked
+# for it (unattended-upgrades installs security updates daily, and a kernel
+# update leaves {{ system_reboot_required_file }}), unless an md array is
+# degraded: a mirror running on one disk is not rebooted, as it may not
+# come back (runbooks/failed-disk.md). The reboot then stays pending, and
+# the next night's run reboots once the array is whole. peal-reboot.timer
+# runs it at the reboot time.
+set -eu
+
+[ -e "{{ system_reboot_required_file }}" ] || exit 0
+
+for degraded in "{{ system_sys_block }}"/md*/md/degraded; do
+  [ -r "$degraded" ] || continue
+  if [ "$(cat "$degraded")" != 0 ]; then
+    array="${degraded%/md/degraded}"
+    echo "peal-reboot: a reboot is pending, held while ${array##*/} is degraded (runbooks/failed-disk.md)"
+    exit 0
+  fi
+done
+
+echo "peal-reboot: rebooting, as an update asked"
+exec {{ system_reboot_command }}

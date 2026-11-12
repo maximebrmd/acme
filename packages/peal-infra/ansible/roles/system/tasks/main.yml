@@ -107,13 +107,49 @@
        | map(attribute='path') | map('basename') | list) | list }}
 
 # Security updates install daily. A kernel update needs a reboot, which
-# happens at a fixed early-morning time instead of never. Docker restarts the
-# stack after it (restart: unless-stopped).
+# happens at a fixed early-morning time instead of never: peal-reboot's, at
+# unattended_reboot_time, held while an md array is degraded. Docker
+# restarts the stack after it (restart: unless-stopped).
 - name: Configure unattended upgrades
   ansible.builtin.template:
     src: 52unattended-upgrades-local.j2
     dest: /etc/apt/apt.conf.d/52unattended-upgrades-local
     mode: "0644"
+
+- name: Install peal-reboot
+  ansible.builtin.template:
+    src: peal-reboot.j2
+    dest: /usr/local/sbin/peal-reboot
+    owner: root
+    group: root
+    mode: "0750"
+
+# On a new server in check mode, the timer is not written yet, so there is
+# nothing to start.
+- name: Look for the reboot timer
+  ansible.builtin.stat:
+    path: /etc/systemd/system/peal-reboot.timer
+  register: system_reboot_timer
+
+- name: Write the reboot service and timer
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: /etc/systemd/system/{{ item }}
+    mode: "0644"
+  loop:
+    - peal-reboot.service
+    - peal-reboot.timer
+  notify: Reload systemd for the reboot units
+
+- name: Apply the changed reboot units now
+  ansible.builtin.meta: flush_handlers
+
+- name: Start the reboot timer at boot
+  ansible.builtin.systemd_service:
+    name: peal-reboot.timer
+    state: started
+    enabled: true
+  when: not ansible_check_mode or system_reboot_timer.stat.exists
 
 - name: Enable the daily apt timers
   ansible.builtin.copy:

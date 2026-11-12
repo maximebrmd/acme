@@ -1,0 +1,12 @@
+# Managed by Ansible (peal-infra). Each night at the reboot time, so a
+# reboot held one night is tried again the next. A night missed while the
+# server was down is not made up for at boot (Persistent=false).
+[Unit]
+Description=Reboot at {{ unattended_reboot_time }} UTC if an update asked for it
+
+[Timer]
+OnCalendar=*-*-* {{ unattended_reboot_time }}:00 UTC
+Persistent=false
+
+[Install]
+WantedBy=timers.target
