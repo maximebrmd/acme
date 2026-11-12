@@ -18,7 +18,10 @@ under Development stack.
   Postgres). It passes optional settings through by name (`NAME:` with no
   value), so one that is unset stays unset rather than empty, which the
   server would read as set, and names every server setting the docs'
-  environment variables page lists: a container sees no other. Every service
+  environment variables page lists: a container sees no other. A setting
+  inside a `command` (Postgres's `PEAL_POSTGRES_*`) needs a default there:
+  PostgreSQL's own, so a server that sets none runs as before, and a change
+  to one recreates Postgres at the next release. Every service
   runs `read_only` with `no-new-privileges`, writing to its volumes and tmpfs
   mounts only. The same test covers it, the web, static and
   Postgres images (CI's Node, the workspace's Bun, digests, nonroot) and

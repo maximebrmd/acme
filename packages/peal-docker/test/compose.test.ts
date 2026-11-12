@@ -24,6 +24,7 @@ const Volume = Schema.Union([Schema.String, Mount]);
 
 const ServiceSchema = Schema.Struct({
   build: Schema.optionalKey(Schema.Struct({ dockerfile: Schema.String })),
+  command: Schema.optionalKey(Schema.Array(Schema.String)),
   // `NAME:` with no value passes NAME through from Compose's environment.
   environment: Schema.optionalKey(
     Schema.Record(Schema.String, Schema.NullOr(Schema.String))
@@ -89,6 +90,10 @@ const isPinned = (image: string): boolean => {
 // A tag for reading, then the digest that fixes the bytes.
 const isPinnedByDigest = (image: string): boolean =>
   /^[^@\s]+:[^@\s]+@sha256:[\da-f]{64}$/u.test(image);
+
+// `setting=${PEAL_POSTGRES_<VARIABLE>:-<default>}` in Compose's syntax.
+const fallback = (setting: string, variable: string, value: string): string =>
+  `${setting}=\${PEAL_POSTGRES_${variable}:-${value}}`;
 
 const mountedImages = (service: Service): string[] =>
   (service.volumes ?? [])
@@ -219,6 +224,25 @@ describe("compose.production.yaml", () => {
           !["HOSTNAME", "NODE_ENV", "PORT"].includes(name)
       )
     ).toStrictEqual([]);
+  });
+
+  // Each memory setting falls back to PostgreSQL 18's own default, so a
+  // server that sets none runs as Postgres would alone.
+  it("gives Postgres its memory settings, with PostgreSQL's defaults", () => {
+    const postgres = production.find(([name]) => name === "postgres")?.[1];
+
+    const settings = (postgres?.command ?? []).filter(
+      (_argument, index, command) => command[index - 1] === "-c"
+    );
+
+    expect(settings).toStrictEqual(
+      expect.arrayContaining([
+        fallback("shared_buffers", "SHARED_BUFFERS", "128MB"),
+        fallback("effective_cache_size", "EFFECTIVE_CACHE_SIZE", "4GB"),
+        fallback("maintenance_work_mem", "MAINTENANCE_WORK_MEM", "64MB"),
+        fallback("random_page_cost", "RANDOM_PAGE_COST", "4"),
+      ])
+    );
   });
 
   it.each(production)(

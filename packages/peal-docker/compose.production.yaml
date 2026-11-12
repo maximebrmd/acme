@@ -49,7 +49,7 @@ services:
   # write-ahead log to the bucket the PGBACKREST_REPO1_* settings name;
   # backups run from the host (peal-infra's peal_backup role). Its image has
   # a tag of its own, which changes only with postgres.Dockerfile, so a
-  # release restarts Postgres only when its image changes.
+  # release restarts Postgres only when its image or its settings change.
   postgres:
     <<: *service
     image: peal-postgres:${PEAL_POSTGRES_VERSION:-local}
@@ -66,6 +66,17 @@ services:
       # bounds what a restore can lose.
       - -c
       - archive_timeout=300
+      # Memory, each defaulting to PostgreSQL 18's own value; the docs'
+      # environment variables page says how to size them. shared_buffers is
+      # read only at start, and is not in /dev/shm, so shm_size stays.
+      - -c
+      - shared_buffers=${PEAL_POSTGRES_SHARED_BUFFERS:-128MB}
+      - -c
+      - effective_cache_size=${PEAL_POSTGRES_EFFECTIVE_CACHE_SIZE:-4GB}
+      - -c
+      - maintenance_work_mem=${PEAL_POSTGRES_MAINTENANCE_WORK_MEM:-64MB}
+      - -c
+      - random_page_cost=${PEAL_POSTGRES_RANDOM_PAGE_COST:-4}
     environment:
       POSTGRES_USER: peal
       POSTGRES_DB: peal
