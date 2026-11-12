@@ -150,6 +150,26 @@ def test_the_sandbox_samples_every_trace(rendered: Path) -> None:
     assert "OTEL_TRACES_SAMPLER_ARG" not in host_env
 
 
+_POSTGRES_MEMORY = {
+    "PEAL_POSTGRES_SHARED_BUFFERS": "4GB",
+    "PEAL_POSTGRES_EFFECTIVE_CACHE_SIZE": "12GB",
+    "PEAL_POSTGRES_MAINTENANCE_WORK_MEM": "512MB",
+    "PEAL_POSTGRES_RANDOM_PAGE_COST": "1.1",
+}
+
+
+def test_production_gives_postgres_its_memory(rendered: Path) -> None:
+    host_env = _host_env(rendered, "production")
+
+    assert {name: host_env.get(name) for name in _POSTGRES_MEMORY} == _POSTGRES_MEMORY
+
+
+def test_the_sandbox_runs_postgres_on_its_defaults(rendered: Path) -> None:
+    host_env = _host_env(rendered, "sandbox")
+
+    assert [name for name in _POSTGRES_MEMORY if name in host_env] == []
+
+
 def test_the_sandbox_sends_none(rendered: Path) -> None:
     host_env = _host_env(rendered, "sandbox")
 
