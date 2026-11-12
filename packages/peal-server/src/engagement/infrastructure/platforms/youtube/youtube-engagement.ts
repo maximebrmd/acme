@@ -266,19 +266,27 @@ const notDone = (reason: ReplyFailure): ActionOutcome => ({
 });
 
 // The author as YouTube shows them: their channel's id and the name they
-// display, which is their handle when it reads as one (`@name`). Nothing
-// else of them. None without a channel id.
+// display. Nothing else of them. None without a channel id.
 const authorOf = (comment: YouTubeComment) =>
   Option.fromUndefinedOr(comment.snippet.authorChannelId?.value).pipe(
     Option.filter((id) => id !== ""),
     Option.map((platformId) => {
       const name = comment.snippet.authorDisplayName?.trim() ?? "";
 
-      return {
-        displayName: Option.some(name).pipe(Option.filter((n) => n !== "")),
-        handle: name.startsWith("@") ? name : "",
-        platformId,
-      };
+      // A name YouTube gives as a handle (`@name`) is that handle, which
+      // the clients show with its `@`; any other is a name, with no
+      // handle, as on Facebook.
+      return name.startsWith("@")
+        ? {
+            displayName: Option.none<string>(),
+            handle: name.slice(1),
+            platformId,
+          }
+        : {
+            displayName: Option.some(name).pipe(Option.filter((n) => n !== "")),
+            handle: "",
+            platformId,
+          };
     })
   );
 

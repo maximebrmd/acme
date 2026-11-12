@@ -238,8 +238,8 @@ describe("YouTube's comments", () => {
         assert.deepStrictEqual(
           first?.author,
           Option.some({
-            displayName: Option.some("@reader1"),
-            handle: "@reader1",
+            displayName: Option.none(),
+            handle: "reader1",
             platformId: reader,
           })
         );
